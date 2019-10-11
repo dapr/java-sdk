@@ -10,5 +10,5 @@ mvn package install
 ```sh
 cd examples/
 mvn compile
-dapr run --grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.examples.Example
+dapr run --protocol grpc --grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.examples.Example
 ```
