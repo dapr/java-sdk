@@ -1,4 +1,9 @@
-## Java client for dapr.
+## Dapr SDK for Java
+
+This is the Dapr SDK for Java, based on the auto-generated proto client.<br>
+
+For more info on Dapr and gRPC, visit [this link](https://github.com/dapr/docs/tree/master/howto/create-grpc-app).
+
 
 ### Installing
 ```sh
