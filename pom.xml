@@ -4,9 +4,17 @@
   <groupId>io.dapr</groupId>
   <artifactId>client</artifactId>
   <packaging>jar</packaging>
-  <version>0.0.1</version>
+  <version>0.1.0-preview</version>
   <name>dapr-client</name>
-  <url>https://github.com/dapr/dapr-client</url>
+  <url>https://dapr.io</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
