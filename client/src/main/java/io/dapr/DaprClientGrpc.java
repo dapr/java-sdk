@@ -17,7 +17,7 @@ import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
 
 /**
  * <pre>
- * User Code definitions
+ * User Code definitions by BRUNO
  * </pre>
  */
 @javax.annotation.Generated(
