@@ -24,7 +24,9 @@ import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 
 /**
- * OrderManager
+ * OrderManager web app.
+ * 
+ * Based on the helloworld Node.js example in https://github.com/dapr/samples/blob/master/1.hello-world/app.js
  */
 public class OrderManager {
 

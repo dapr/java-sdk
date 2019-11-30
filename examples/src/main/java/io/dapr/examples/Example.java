@@ -1,5 +1,7 @@
 package io.dapr.examples;
 
+import static java.lang.System.out;
+
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 
@@ -27,19 +29,19 @@ public class Example {
 
         var data = Any.newBuilder().setValue(ByteString.copyFromUtf8("foo")).build();
         client.publishEvent(PublishEventEnvelope.newBuilder().setTopic("foo").setData(data).build());
-        System.out.println("Published!");
+        out.println("Published!");
 
         var key = "mykey";
         var req = StateRequest.newBuilder().setKey(key)
                 .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8("my value")).build()).build();
         var state = SaveStateEnvelope.newBuilder().addRequests(req).build();
         client.saveState(state);
-        System.out.println("Saved!");
+        out.println("Saved!");
 
         var get = client.getState(GetStateEnvelope.newBuilder().setKey(key).build());
-        System.out.println("Got: " + get.getData().getValue().toStringUtf8());
+        out.println("Got: " + get.getData().getValue().toStringUtf8());
 
         client.deleteState(DeleteStateEnvelope.newBuilder().setKey(key).build());
-        System.out.println("Deleted!");
+        out.println("Deleted!");
     }
 }
