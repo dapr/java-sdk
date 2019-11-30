@@ -82,8 +82,17 @@
                 <include>${protobuf.input.directory}/dapr</include>
                 <include>${protobuf.input.directory}/daprclient</include>
               </inputDirectories>
-              <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-              <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}</pluginArtifact>
+              <outputTargets>
+                <outputTarget>
+                  <type>java</type>
+                  <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                </outputTarget>
+                <outputTarget>
+                  <type>grpc-java</type>
+                  <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                  <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}</pluginArtifact>
+                </outputTarget>
+              </outputTargets>
             </configuration>
           </execution>
         </executions>

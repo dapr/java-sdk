@@ -21,8 +21,8 @@ import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.24.0)",
-    comments = "Source: dapr/dapr.proto")
+    value = "by gRPC proto compiler (version 1.25.0)",
+    comments = "Source: dapr.proto")
 public final class DaprGrpc {
 
   private DaprGrpc() {}
