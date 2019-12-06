@@ -6,19 +6,19 @@
 
   <parent>
     <groupId>io.dapr</groupId>
-    <artifactId>client-parent</artifactId>
-    <version>0.1.0-preview02</version>
+    <artifactId>dapr-sdk-parent</artifactId>
+    <version>0.3.0-alpha</version>
   </parent>
 
-  <artifactId>client</artifactId>
+  <artifactId>dapr-sdk</artifactId>
   <packaging>jar</packaging>
-  <version>0.1.0-preview02</version>
-  <name>dapr-client</name>
-  <description>gRPC client for Dapr.</description>
+  <version>0.3.0-alpha</version>
+  <name>dapr-sdk</name>
+  <description>SDK for Dapr.</description>
 
   <properties>
     <protobuf.output.directory>generated-proto</protobuf.output.directory>
-    <protobuf.input.directory>${project.parent.basedir}/dapr/pkg/proto</protobuf.input.directory>
+    <protobuf.input.directory>${project.parent.basedir}/proto</protobuf.input.directory>
   </properties>
 
   <dependencies>
@@ -60,6 +60,11 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.github.os72</groupId>
+      <artifactId>protoc-jar-maven-plugin</artifactId>
+      <version>3.10.1</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -67,7 +72,7 @@
       <plugin>
         <groupId>com.github.os72</groupId>
         <artifactId>protoc-jar-maven-plugin</artifactId>
-        <version>3.9.2</version>
+        <version>3.10.1</version>
         <executions>
           <execution>
             <phase>generate-sources</phase>
@@ -75,6 +80,7 @@
               <goal>run</goal>
             </goals>
             <configuration>
+              <protocVersion>${protobuf.version}</protocVersion>
               <addProtoSources>inputs</addProtoSources>
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>

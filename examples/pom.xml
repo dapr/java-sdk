@@ -6,14 +6,14 @@
 
   <parent>
     <groupId>io.dapr</groupId>
-    <artifactId>client-parent</artifactId>
-    <version>0.1.0-preview02</version>
+    <artifactId>dapr-sdk-parent</artifactId>
+    <version>0.3.0-alpha</version>
   </parent>
 
-  <artifactId>examples</artifactId>
+  <artifactId>dapr-sdk-examples</artifactId>
   <packaging>jar</packaging>
-  <version>0.1.0-preview02</version>
-  <name>dapr-client-examples</name>
+  <version>0.3.0-alpha</version>
+  <name>dapr-sdk-examples</name>
 
   <dependencies>
     <dependency>
@@ -23,8 +23,8 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>client</artifactId>
-      <version>0.1.0-preview02</version>
+      <artifactId>dapr-sdk</artifactId>
+      <version>0.3.0-alpha</version>
     </dependency>
   </dependencies>
 

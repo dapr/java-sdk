@@ -20,70 +20,84 @@ public final class DaprClientProtos {
 
     /**
      * <code>string id = 1;</code>
+     * @return The id.
      */
     java.lang.String getId();
     /**
      * <code>string id = 1;</code>
+     * @return The bytes for id.
      */
     com.google.protobuf.ByteString
         getIdBytes();
 
     /**
      * <code>string source = 2;</code>
+     * @return The source.
      */
     java.lang.String getSource();
     /**
      * <code>string source = 2;</code>
+     * @return The bytes for source.
      */
     com.google.protobuf.ByteString
         getSourceBytes();
 
     /**
      * <code>string type = 3;</code>
+     * @return The type.
      */
     java.lang.String getType();
     /**
      * <code>string type = 3;</code>
+     * @return The bytes for type.
      */
     com.google.protobuf.ByteString
         getTypeBytes();
 
     /**
      * <code>string specVersion = 4;</code>
+     * @return The specVersion.
      */
     java.lang.String getSpecVersion();
     /**
      * <code>string specVersion = 4;</code>
+     * @return The bytes for specVersion.
      */
     com.google.protobuf.ByteString
         getSpecVersionBytes();
 
     /**
      * <code>string dataContentType = 5;</code>
+     * @return The dataContentType.
      */
     java.lang.String getDataContentType();
     /**
      * <code>string dataContentType = 5;</code>
+     * @return The bytes for dataContentType.
      */
     com.google.protobuf.ByteString
         getDataContentTypeBytes();
 
     /**
      * <code>string topic = 6;</code>
+     * @return The topic.
      */
     java.lang.String getTopic();
     /**
      * <code>string topic = 6;</code>
+     * @return The bytes for topic.
      */
     com.google.protobuf.ByteString
         getTopicBytes();
 
     /**
      * <code>.google.protobuf.Any data = 7;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>.google.protobuf.Any data = 7;</code>
+     * @return The data.
      */
     com.google.protobuf.Any getData();
     /**
@@ -227,6 +241,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object id_;
     /**
      * <code>string id = 1;</code>
+     * @return The id.
      */
     public java.lang.String getId() {
       java.lang.Object ref = id_;
@@ -242,6 +257,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string id = 1;</code>
+     * @return The bytes for id.
      */
     public com.google.protobuf.ByteString
         getIdBytes() {
@@ -261,6 +277,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object source_;
     /**
      * <code>string source = 2;</code>
+     * @return The source.
      */
     public java.lang.String getSource() {
       java.lang.Object ref = source_;
@@ -276,6 +293,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string source = 2;</code>
+     * @return The bytes for source.
      */
     public com.google.protobuf.ByteString
         getSourceBytes() {
@@ -295,6 +313,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object type_;
     /**
      * <code>string type = 3;</code>
+     * @return The type.
      */
     public java.lang.String getType() {
       java.lang.Object ref = type_;
@@ -310,6 +329,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string type = 3;</code>
+     * @return The bytes for type.
      */
     public com.google.protobuf.ByteString
         getTypeBytes() {
@@ -329,6 +349,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object specVersion_;
     /**
      * <code>string specVersion = 4;</code>
+     * @return The specVersion.
      */
     public java.lang.String getSpecVersion() {
       java.lang.Object ref = specVersion_;
@@ -344,6 +365,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string specVersion = 4;</code>
+     * @return The bytes for specVersion.
      */
     public com.google.protobuf.ByteString
         getSpecVersionBytes() {
@@ -363,6 +385,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object dataContentType_;
     /**
      * <code>string dataContentType = 5;</code>
+     * @return The dataContentType.
      */
     public java.lang.String getDataContentType() {
       java.lang.Object ref = dataContentType_;
@@ -378,6 +401,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string dataContentType = 5;</code>
+     * @return The bytes for dataContentType.
      */
     public com.google.protobuf.ByteString
         getDataContentTypeBytes() {
@@ -397,6 +421,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object topic_;
     /**
      * <code>string topic = 6;</code>
+     * @return The topic.
      */
     public java.lang.String getTopic() {
       java.lang.Object ref = topic_;
@@ -412,6 +437,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string topic = 6;</code>
+     * @return The bytes for topic.
      */
     public com.google.protobuf.ByteString
         getTopicBytes() {
@@ -431,12 +457,14 @@ public final class DaprClientProtos {
     private com.google.protobuf.Any data_;
     /**
      * <code>.google.protobuf.Any data = 7;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return data_ != null;
     }
     /**
      * <code>.google.protobuf.Any data = 7;</code>
+     * @return The data.
      */
     public com.google.protobuf.Any getData() {
       return data_ == null ? com.google.protobuf.Any.getDefaultInstance() : data_;
@@ -868,6 +896,7 @@ public final class DaprClientProtos {
       private java.lang.Object id_ = "";
       /**
        * <code>string id = 1;</code>
+       * @return The id.
        */
       public java.lang.String getId() {
         java.lang.Object ref = id_;
@@ -883,6 +912,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string id = 1;</code>
+       * @return The bytes for id.
        */
       public com.google.protobuf.ByteString
           getIdBytes() {
@@ -899,6 +929,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string id = 1;</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
        */
       public Builder setId(
           java.lang.String value) {
@@ -912,6 +944,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string id = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearId() {
         
@@ -921,6 +954,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string id = 1;</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
        */
       public Builder setIdBytes(
           com.google.protobuf.ByteString value) {
@@ -937,6 +972,7 @@ public final class DaprClientProtos {
       private java.lang.Object source_ = "";
       /**
        * <code>string source = 2;</code>
+       * @return The source.
        */
       public java.lang.String getSource() {
         java.lang.Object ref = source_;
@@ -952,6 +988,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string source = 2;</code>
+       * @return The bytes for source.
        */
       public com.google.protobuf.ByteString
           getSourceBytes() {
@@ -968,6 +1005,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string source = 2;</code>
+       * @param value The source to set.
+       * @return This builder for chaining.
        */
       public Builder setSource(
           java.lang.String value) {
@@ -981,6 +1020,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string source = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSource() {
         
@@ -990,6 +1030,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string source = 2;</code>
+       * @param value The bytes for source to set.
+       * @return This builder for chaining.
        */
       public Builder setSourceBytes(
           com.google.protobuf.ByteString value) {
@@ -1006,6 +1048,7 @@ public final class DaprClientProtos {
       private java.lang.Object type_ = "";
       /**
        * <code>string type = 3;</code>
+       * @return The type.
        */
       public java.lang.String getType() {
         java.lang.Object ref = type_;
@@ -1021,6 +1064,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string type = 3;</code>
+       * @return The bytes for type.
        */
       public com.google.protobuf.ByteString
           getTypeBytes() {
@@ -1037,6 +1081,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string type = 3;</code>
+       * @param value The type to set.
+       * @return This builder for chaining.
        */
       public Builder setType(
           java.lang.String value) {
@@ -1050,6 +1096,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string type = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearType() {
         
@@ -1059,6 +1106,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string type = 3;</code>
+       * @param value The bytes for type to set.
+       * @return This builder for chaining.
        */
       public Builder setTypeBytes(
           com.google.protobuf.ByteString value) {
@@ -1075,6 +1124,7 @@ public final class DaprClientProtos {
       private java.lang.Object specVersion_ = "";
       /**
        * <code>string specVersion = 4;</code>
+       * @return The specVersion.
        */
       public java.lang.String getSpecVersion() {
         java.lang.Object ref = specVersion_;
@@ -1090,6 +1140,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string specVersion = 4;</code>
+       * @return The bytes for specVersion.
        */
       public com.google.protobuf.ByteString
           getSpecVersionBytes() {
@@ -1106,6 +1157,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string specVersion = 4;</code>
+       * @param value The specVersion to set.
+       * @return This builder for chaining.
        */
       public Builder setSpecVersion(
           java.lang.String value) {
@@ -1119,6 +1172,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string specVersion = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSpecVersion() {
         
@@ -1128,6 +1182,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string specVersion = 4;</code>
+       * @param value The bytes for specVersion to set.
+       * @return This builder for chaining.
        */
       public Builder setSpecVersionBytes(
           com.google.protobuf.ByteString value) {
@@ -1144,6 +1200,7 @@ public final class DaprClientProtos {
       private java.lang.Object dataContentType_ = "";
       /**
        * <code>string dataContentType = 5;</code>
+       * @return The dataContentType.
        */
       public java.lang.String getDataContentType() {
         java.lang.Object ref = dataContentType_;
@@ -1159,6 +1216,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string dataContentType = 5;</code>
+       * @return The bytes for dataContentType.
        */
       public com.google.protobuf.ByteString
           getDataContentTypeBytes() {
@@ -1175,6 +1233,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string dataContentType = 5;</code>
+       * @param value The dataContentType to set.
+       * @return This builder for chaining.
        */
       public Builder setDataContentType(
           java.lang.String value) {
@@ -1188,6 +1248,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string dataContentType = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDataContentType() {
         
@@ -1197,6 +1258,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string dataContentType = 5;</code>
+       * @param value The bytes for dataContentType to set.
+       * @return This builder for chaining.
        */
       public Builder setDataContentTypeBytes(
           com.google.protobuf.ByteString value) {
@@ -1213,6 +1276,7 @@ public final class DaprClientProtos {
       private java.lang.Object topic_ = "";
       /**
        * <code>string topic = 6;</code>
+       * @return The topic.
        */
       public java.lang.String getTopic() {
         java.lang.Object ref = topic_;
@@ -1228,6 +1292,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string topic = 6;</code>
+       * @return The bytes for topic.
        */
       public com.google.protobuf.ByteString
           getTopicBytes() {
@@ -1244,6 +1309,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string topic = 6;</code>
+       * @param value The topic to set.
+       * @return This builder for chaining.
        */
       public Builder setTopic(
           java.lang.String value) {
@@ -1257,6 +1324,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string topic = 6;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTopic() {
         
@@ -1266,6 +1334,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string topic = 6;</code>
+       * @param value The bytes for topic to set.
+       * @return This builder for chaining.
        */
       public Builder setTopicBytes(
           com.google.protobuf.ByteString value) {
@@ -1284,12 +1354,14 @@ public final class DaprClientProtos {
           com.google.protobuf.Any, com.google.protobuf.Any.Builder, com.google.protobuf.AnyOrBuilder> dataBuilder_;
       /**
        * <code>.google.protobuf.Any data = 7;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return dataBuilder_ != null || data_ != null;
       }
       /**
        * <code>.google.protobuf.Any data = 7;</code>
+       * @return The data.
        */
       public com.google.protobuf.Any getData() {
         if (dataBuilder_ == null) {
@@ -1454,20 +1526,24 @@ public final class DaprClientProtos {
 
     /**
      * <code>string name = 1;</code>
+     * @return The name.
      */
     java.lang.String getName();
     /**
      * <code>string name = 1;</code>
+     * @return The bytes for name.
      */
     com.google.protobuf.ByteString
         getNameBytes();
 
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return The data.
      */
     com.google.protobuf.Any getData();
     /**
@@ -1636,6 +1712,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object name_;
     /**
      * <code>string name = 1;</code>
+     * @return The name.
      */
     public java.lang.String getName() {
       java.lang.Object ref = name_;
@@ -1651,6 +1728,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string name = 1;</code>
+     * @return The bytes for name.
      */
     public com.google.protobuf.ByteString
         getNameBytes() {
@@ -1670,12 +1748,14 @@ public final class DaprClientProtos {
     private com.google.protobuf.Any data_;
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return data_ != null;
     }
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return The data.
      */
     public com.google.protobuf.Any getData() {
       return data_ == null ? com.google.protobuf.Any.getDefaultInstance() : data_;
@@ -2149,6 +2229,7 @@ public final class DaprClientProtos {
       private java.lang.Object name_ = "";
       /**
        * <code>string name = 1;</code>
+       * @return The name.
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -2164,6 +2245,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string name = 1;</code>
+       * @return The bytes for name.
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -2180,6 +2262,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string name = 1;</code>
+       * @param value The name to set.
+       * @return This builder for chaining.
        */
       public Builder setName(
           java.lang.String value) {
@@ -2193,6 +2277,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string name = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearName() {
         
@@ -2202,6 +2287,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string name = 1;</code>
+       * @param value The bytes for name to set.
+       * @return This builder for chaining.
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {
@@ -2220,12 +2307,14 @@ public final class DaprClientProtos {
           com.google.protobuf.Any, com.google.protobuf.Any.Builder, com.google.protobuf.AnyOrBuilder> dataBuilder_;
       /**
        * <code>.google.protobuf.Any data = 2;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return dataBuilder_ != null || data_ != null;
       }
       /**
        * <code>.google.protobuf.Any data = 2;</code>
+       * @return The data.
        */
       public com.google.protobuf.Any getData() {
         if (dataBuilder_ == null) {
@@ -2513,10 +2602,12 @@ public final class DaprClientProtos {
 
     /**
      * <code>.google.protobuf.Any data = 1;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>.google.protobuf.Any data = 1;</code>
+     * @return The data.
      */
     com.google.protobuf.Any getData();
     /**
@@ -2526,19 +2617,25 @@ public final class DaprClientProtos {
 
     /**
      * <code>repeated string to = 2;</code>
+     * @return A list containing the to.
      */
     java.util.List<java.lang.String>
         getToList();
     /**
      * <code>repeated string to = 2;</code>
+     * @return The count of to.
      */
     int getToCount();
     /**
      * <code>repeated string to = 2;</code>
+     * @param index The index of the element to return.
+     * @return The to at the given index.
      */
     java.lang.String getTo(int index);
     /**
      * <code>repeated string to = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the to at the given index.
      */
     com.google.protobuf.ByteString
         getToBytes(int index);
@@ -2569,10 +2666,12 @@ public final class DaprClientProtos {
 
     /**
      * <code>string concurrency = 4;</code>
+     * @return The concurrency.
      */
     java.lang.String getConcurrency();
     /**
      * <code>string concurrency = 4;</code>
+     * @return The bytes for concurrency.
      */
     com.google.protobuf.ByteString
         getConcurrencyBytes();
@@ -2705,12 +2804,14 @@ public final class DaprClientProtos {
     private com.google.protobuf.Any data_;
     /**
      * <code>.google.protobuf.Any data = 1;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return data_ != null;
     }
     /**
      * <code>.google.protobuf.Any data = 1;</code>
+     * @return The data.
      */
     public com.google.protobuf.Any getData() {
       return data_ == null ? com.google.protobuf.Any.getDefaultInstance() : data_;
@@ -2726,6 +2827,7 @@ public final class DaprClientProtos {
     private com.google.protobuf.LazyStringList to_;
     /**
      * <code>repeated string to = 2;</code>
+     * @return A list containing the to.
      */
     public com.google.protobuf.ProtocolStringList
         getToList() {
@@ -2733,18 +2835,23 @@ public final class DaprClientProtos {
     }
     /**
      * <code>repeated string to = 2;</code>
+     * @return The count of to.
      */
     public int getToCount() {
       return to_.size();
     }
     /**
      * <code>repeated string to = 2;</code>
+     * @param index The index of the element to return.
+     * @return The to at the given index.
      */
     public java.lang.String getTo(int index) {
       return to_.get(index);
     }
     /**
      * <code>repeated string to = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the to at the given index.
      */
     public com.google.protobuf.ByteString
         getToBytes(int index) {
@@ -2790,6 +2897,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object concurrency_;
     /**
      * <code>string concurrency = 4;</code>
+     * @return The concurrency.
      */
     public java.lang.String getConcurrency() {
       java.lang.Object ref = concurrency_;
@@ -2805,6 +2913,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string concurrency = 4;</code>
+     * @return The bytes for concurrency.
      */
     public com.google.protobuf.ByteString
         getConcurrencyBytes() {
@@ -3248,12 +3357,14 @@ public final class DaprClientProtos {
           com.google.protobuf.Any, com.google.protobuf.Any.Builder, com.google.protobuf.AnyOrBuilder> dataBuilder_;
       /**
        * <code>.google.protobuf.Any data = 1;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return dataBuilder_ != null || data_ != null;
       }
       /**
        * <code>.google.protobuf.Any data = 1;</code>
+       * @return The data.
        */
       public com.google.protobuf.Any getData() {
         if (dataBuilder_ == null) {
@@ -3369,6 +3480,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @return A list containing the to.
        */
       public com.google.protobuf.ProtocolStringList
           getToList() {
@@ -3376,18 +3488,23 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @return The count of to.
        */
       public int getToCount() {
         return to_.size();
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @param index The index of the element to return.
+       * @return The to at the given index.
        */
       public java.lang.String getTo(int index) {
         return to_.get(index);
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the to at the given index.
        */
       public com.google.protobuf.ByteString
           getToBytes(int index) {
@@ -3395,6 +3512,9 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The to to set.
+       * @return This builder for chaining.
        */
       public Builder setTo(
           int index, java.lang.String value) {
@@ -3408,6 +3528,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @param value The to to add.
+       * @return This builder for chaining.
        */
       public Builder addTo(
           java.lang.String value) {
@@ -3421,6 +3543,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @param values The to to add.
+       * @return This builder for chaining.
        */
       public Builder addAllTo(
           java.lang.Iterable<java.lang.String> values) {
@@ -3432,6 +3556,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTo() {
         to_ = com.google.protobuf.LazyStringArrayList.EMPTY;
@@ -3441,6 +3566,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string to = 2;</code>
+       * @param value The bytes of the to to add.
+       * @return This builder for chaining.
        */
       public Builder addToBytes(
           com.google.protobuf.ByteString value) {
@@ -3697,6 +3824,7 @@ public final class DaprClientProtos {
       private java.lang.Object concurrency_ = "";
       /**
        * <code>string concurrency = 4;</code>
+       * @return The concurrency.
        */
       public java.lang.String getConcurrency() {
         java.lang.Object ref = concurrency_;
@@ -3712,6 +3840,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 4;</code>
+       * @return The bytes for concurrency.
        */
       public com.google.protobuf.ByteString
           getConcurrencyBytes() {
@@ -3728,6 +3857,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 4;</code>
+       * @param value The concurrency to set.
+       * @return This builder for chaining.
        */
       public Builder setConcurrency(
           java.lang.String value) {
@@ -3741,6 +3872,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearConcurrency() {
         
@@ -3750,6 +3882,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 4;</code>
+       * @param value The bytes for concurrency to set.
+       * @return This builder for chaining.
        */
       public Builder setConcurrencyBytes(
           com.google.protobuf.ByteString value) {
@@ -3821,20 +3955,24 @@ public final class DaprClientProtos {
 
     /**
      * <code>string method = 1;</code>
+     * @return The method.
      */
     java.lang.String getMethod();
     /**
      * <code>string method = 1;</code>
+     * @return The bytes for method.
      */
     com.google.protobuf.ByteString
         getMethodBytes();
 
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return The data.
      */
     com.google.protobuf.Any getData();
     /**
@@ -4003,6 +4141,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object method_;
     /**
      * <code>string method = 1;</code>
+     * @return The method.
      */
     public java.lang.String getMethod() {
       java.lang.Object ref = method_;
@@ -4018,6 +4157,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string method = 1;</code>
+     * @return The bytes for method.
      */
     public com.google.protobuf.ByteString
         getMethodBytes() {
@@ -4037,12 +4177,14 @@ public final class DaprClientProtos {
     private com.google.protobuf.Any data_;
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return data_ != null;
     }
     /**
      * <code>.google.protobuf.Any data = 2;</code>
+     * @return The data.
      */
     public com.google.protobuf.Any getData() {
       return data_ == null ? com.google.protobuf.Any.getDefaultInstance() : data_;
@@ -4516,6 +4658,7 @@ public final class DaprClientProtos {
       private java.lang.Object method_ = "";
       /**
        * <code>string method = 1;</code>
+       * @return The method.
        */
       public java.lang.String getMethod() {
         java.lang.Object ref = method_;
@@ -4531,6 +4674,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string method = 1;</code>
+       * @return The bytes for method.
        */
       public com.google.protobuf.ByteString
           getMethodBytes() {
@@ -4547,6 +4691,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string method = 1;</code>
+       * @param value The method to set.
+       * @return This builder for chaining.
        */
       public Builder setMethod(
           java.lang.String value) {
@@ -4560,6 +4706,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string method = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMethod() {
         
@@ -4569,6 +4716,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string method = 1;</code>
+       * @param value The bytes for method to set.
+       * @return This builder for chaining.
        */
       public Builder setMethodBytes(
           com.google.protobuf.ByteString value) {
@@ -4587,12 +4736,14 @@ public final class DaprClientProtos {
           com.google.protobuf.Any, com.google.protobuf.Any.Builder, com.google.protobuf.AnyOrBuilder> dataBuilder_;
       /**
        * <code>.google.protobuf.Any data = 2;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return dataBuilder_ != null || data_ != null;
       }
       /**
        * <code>.google.protobuf.Any data = 2;</code>
+       * @return The data.
        */
       public com.google.protobuf.Any getData() {
         if (dataBuilder_ == null) {
@@ -4880,19 +5031,25 @@ public final class DaprClientProtos {
 
     /**
      * <code>repeated string topics = 1;</code>
+     * @return A list containing the topics.
      */
     java.util.List<java.lang.String>
         getTopicsList();
     /**
      * <code>repeated string topics = 1;</code>
+     * @return The count of topics.
      */
     int getTopicsCount();
     /**
      * <code>repeated string topics = 1;</code>
+     * @param index The index of the element to return.
+     * @return The topics at the given index.
      */
     java.lang.String getTopics(int index);
     /**
      * <code>repeated string topics = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the topics at the given index.
      */
     com.google.protobuf.ByteString
         getTopicsBytes(int index);
@@ -4992,6 +5149,7 @@ public final class DaprClientProtos {
     private com.google.protobuf.LazyStringList topics_;
     /**
      * <code>repeated string topics = 1;</code>
+     * @return A list containing the topics.
      */
     public com.google.protobuf.ProtocolStringList
         getTopicsList() {
@@ -4999,18 +5157,23 @@ public final class DaprClientProtos {
     }
     /**
      * <code>repeated string topics = 1;</code>
+     * @return The count of topics.
      */
     public int getTopicsCount() {
       return topics_.size();
     }
     /**
      * <code>repeated string topics = 1;</code>
+     * @param index The index of the element to return.
+     * @return The topics at the given index.
      */
     public java.lang.String getTopics(int index) {
       return topics_.get(index);
     }
     /**
      * <code>repeated string topics = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the topics at the given index.
      */
     public com.google.protobuf.ByteString
         getTopicsBytes(int index) {
@@ -5347,6 +5510,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @return A list containing the topics.
        */
       public com.google.protobuf.ProtocolStringList
           getTopicsList() {
@@ -5354,18 +5518,23 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @return The count of topics.
        */
       public int getTopicsCount() {
         return topics_.size();
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @param index The index of the element to return.
+       * @return The topics at the given index.
        */
       public java.lang.String getTopics(int index) {
         return topics_.get(index);
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the topics at the given index.
        */
       public com.google.protobuf.ByteString
           getTopicsBytes(int index) {
@@ -5373,6 +5542,9 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The topics to set.
+       * @return This builder for chaining.
        */
       public Builder setTopics(
           int index, java.lang.String value) {
@@ -5386,6 +5558,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @param value The topics to add.
+       * @return This builder for chaining.
        */
       public Builder addTopics(
           java.lang.String value) {
@@ -5399,6 +5573,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @param values The topics to add.
+       * @return This builder for chaining.
        */
       public Builder addAllTopics(
           java.lang.Iterable<java.lang.String> values) {
@@ -5410,6 +5586,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTopics() {
         topics_ = com.google.protobuf.LazyStringArrayList.EMPTY;
@@ -5419,6 +5596,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string topics = 1;</code>
+       * @param value The bytes of the topics to add.
+       * @return This builder for chaining.
        */
       public Builder addTopicsBytes(
           com.google.protobuf.ByteString value) {
@@ -5490,19 +5669,25 @@ public final class DaprClientProtos {
 
     /**
      * <code>repeated string bindings = 1;</code>
+     * @return A list containing the bindings.
      */
     java.util.List<java.lang.String>
         getBindingsList();
     /**
      * <code>repeated string bindings = 1;</code>
+     * @return The count of bindings.
      */
     int getBindingsCount();
     /**
      * <code>repeated string bindings = 1;</code>
+     * @param index The index of the element to return.
+     * @return The bindings at the given index.
      */
     java.lang.String getBindings(int index);
     /**
      * <code>repeated string bindings = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the bindings at the given index.
      */
     com.google.protobuf.ByteString
         getBindingsBytes(int index);
@@ -5602,6 +5787,7 @@ public final class DaprClientProtos {
     private com.google.protobuf.LazyStringList bindings_;
     /**
      * <code>repeated string bindings = 1;</code>
+     * @return A list containing the bindings.
      */
     public com.google.protobuf.ProtocolStringList
         getBindingsList() {
@@ -5609,18 +5795,23 @@ public final class DaprClientProtos {
     }
     /**
      * <code>repeated string bindings = 1;</code>
+     * @return The count of bindings.
      */
     public int getBindingsCount() {
       return bindings_.size();
     }
     /**
      * <code>repeated string bindings = 1;</code>
+     * @param index The index of the element to return.
+     * @return The bindings at the given index.
      */
     public java.lang.String getBindings(int index) {
       return bindings_.get(index);
     }
     /**
      * <code>repeated string bindings = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the bindings at the given index.
      */
     public com.google.protobuf.ByteString
         getBindingsBytes(int index) {
@@ -5957,6 +6148,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @return A list containing the bindings.
        */
       public com.google.protobuf.ProtocolStringList
           getBindingsList() {
@@ -5964,18 +6156,23 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @return The count of bindings.
        */
       public int getBindingsCount() {
         return bindings_.size();
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @param index The index of the element to return.
+       * @return The bindings at the given index.
        */
       public java.lang.String getBindings(int index) {
         return bindings_.get(index);
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the bindings at the given index.
        */
       public com.google.protobuf.ByteString
           getBindingsBytes(int index) {
@@ -5983,6 +6180,9 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The bindings to set.
+       * @return This builder for chaining.
        */
       public Builder setBindings(
           int index, java.lang.String value) {
@@ -5996,6 +6196,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @param value The bindings to add.
+       * @return This builder for chaining.
        */
       public Builder addBindings(
           java.lang.String value) {
@@ -6009,6 +6211,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @param values The bindings to add.
+       * @return This builder for chaining.
        */
       public Builder addAllBindings(
           java.lang.Iterable<java.lang.String> values) {
@@ -6020,6 +6224,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearBindings() {
         bindings_ = com.google.protobuf.LazyStringArrayList.EMPTY;
@@ -6029,6 +6234,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>repeated string bindings = 1;</code>
+       * @param value The bytes of the bindings to add.
+       * @return This builder for chaining.
        */
       public Builder addBindingsBytes(
           com.google.protobuf.ByteString value) {
@@ -6100,20 +6307,24 @@ public final class DaprClientProtos {
 
     /**
      * <code>string key = 1;</code>
+     * @return The key.
      */
     java.lang.String getKey();
     /**
      * <code>string key = 1;</code>
+     * @return The bytes for key.
      */
     com.google.protobuf.ByteString
         getKeyBytes();
 
     /**
      * <code>.google.protobuf.Any value = 2;</code>
+     * @return Whether the value field is set.
      */
     boolean hasValue();
     /**
      * <code>.google.protobuf.Any value = 2;</code>
+     * @return The value.
      */
     com.google.protobuf.Any getValue();
     /**
@@ -6123,10 +6334,12 @@ public final class DaprClientProtos {
 
     /**
      * <code>string etag = 3;</code>
+     * @return The etag.
      */
     java.lang.String getEtag();
     /**
      * <code>string etag = 3;</code>
+     * @return The bytes for etag.
      */
     com.google.protobuf.ByteString
         getEtagBytes();
@@ -6167,10 +6380,12 @@ public final class DaprClientProtos {
 
     /**
      * <code>.daprclient.StateOptions options = 5;</code>
+     * @return Whether the options field is set.
      */
     boolean hasOptions();
     /**
      * <code>.daprclient.StateOptions options = 5;</code>
+     * @return The options.
      */
     io.dapr.DaprClientProtos.StateOptions getOptions();
     /**
@@ -6325,6 +6540,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object key_;
     /**
      * <code>string key = 1;</code>
+     * @return The key.
      */
     public java.lang.String getKey() {
       java.lang.Object ref = key_;
@@ -6340,6 +6556,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string key = 1;</code>
+     * @return The bytes for key.
      */
     public com.google.protobuf.ByteString
         getKeyBytes() {
@@ -6359,12 +6576,14 @@ public final class DaprClientProtos {
     private com.google.protobuf.Any value_;
     /**
      * <code>.google.protobuf.Any value = 2;</code>
+     * @return Whether the value field is set.
      */
     public boolean hasValue() {
       return value_ != null;
     }
     /**
      * <code>.google.protobuf.Any value = 2;</code>
+     * @return The value.
      */
     public com.google.protobuf.Any getValue() {
       return value_ == null ? com.google.protobuf.Any.getDefaultInstance() : value_;
@@ -6380,6 +6599,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object etag_;
     /**
      * <code>string etag = 3;</code>
+     * @return The etag.
      */
     public java.lang.String getEtag() {
       java.lang.Object ref = etag_;
@@ -6395,6 +6615,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string etag = 3;</code>
+     * @return The bytes for etag.
      */
     public com.google.protobuf.ByteString
         getEtagBytes() {
@@ -6490,12 +6711,14 @@ public final class DaprClientProtos {
     private io.dapr.DaprClientProtos.StateOptions options_;
     /**
      * <code>.daprclient.StateOptions options = 5;</code>
+     * @return Whether the options field is set.
      */
     public boolean hasOptions() {
       return options_ != null;
     }
     /**
      * <code>.daprclient.StateOptions options = 5;</code>
+     * @return The options.
      */
     public io.dapr.DaprClientProtos.StateOptions getOptions() {
       return options_ == null ? io.dapr.DaprClientProtos.StateOptions.getDefaultInstance() : options_;
@@ -6940,6 +7163,7 @@ public final class DaprClientProtos {
       private java.lang.Object key_ = "";
       /**
        * <code>string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -6955,6 +7179,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string key = 1;</code>
+       * @return The bytes for key.
        */
       public com.google.protobuf.ByteString
           getKeyBytes() {
@@ -6971,6 +7196,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string key = 1;</code>
+       * @param value The key to set.
+       * @return This builder for chaining.
        */
       public Builder setKey(
           java.lang.String value) {
@@ -6984,6 +7211,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string key = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearKey() {
         
@@ -6993,6 +7221,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string key = 1;</code>
+       * @param value The bytes for key to set.
+       * @return This builder for chaining.
        */
       public Builder setKeyBytes(
           com.google.protobuf.ByteString value) {
@@ -7011,12 +7241,14 @@ public final class DaprClientProtos {
           com.google.protobuf.Any, com.google.protobuf.Any.Builder, com.google.protobuf.AnyOrBuilder> valueBuilder_;
       /**
        * <code>.google.protobuf.Any value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return valueBuilder_ != null || value_ != null;
       }
       /**
        * <code>.google.protobuf.Any value = 2;</code>
+       * @return The value.
        */
       public com.google.protobuf.Any getValue() {
         if (valueBuilder_ == null) {
@@ -7126,6 +7358,7 @@ public final class DaprClientProtos {
       private java.lang.Object etag_ = "";
       /**
        * <code>string etag = 3;</code>
+       * @return The etag.
        */
       public java.lang.String getEtag() {
         java.lang.Object ref = etag_;
@@ -7141,6 +7374,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string etag = 3;</code>
+       * @return The bytes for etag.
        */
       public com.google.protobuf.ByteString
           getEtagBytes() {
@@ -7157,6 +7391,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string etag = 3;</code>
+       * @param value The etag to set.
+       * @return This builder for chaining.
        */
       public Builder setEtag(
           java.lang.String value) {
@@ -7170,6 +7406,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string etag = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEtag() {
         
@@ -7179,6 +7416,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string etag = 3;</code>
+       * @param value The bytes for etag to set.
+       * @return This builder for chaining.
        */
       public Builder setEtagBytes(
           com.google.protobuf.ByteString value) {
@@ -7320,12 +7559,14 @@ public final class DaprClientProtos {
           io.dapr.DaprClientProtos.StateOptions, io.dapr.DaprClientProtos.StateOptions.Builder, io.dapr.DaprClientProtos.StateOptionsOrBuilder> optionsBuilder_;
       /**
        * <code>.daprclient.StateOptions options = 5;</code>
+       * @return Whether the options field is set.
        */
       public boolean hasOptions() {
         return optionsBuilder_ != null || options_ != null;
       }
       /**
        * <code>.daprclient.StateOptions options = 5;</code>
+       * @return The options.
        */
       public io.dapr.DaprClientProtos.StateOptions getOptions() {
         if (optionsBuilder_ == null) {
@@ -7490,30 +7731,36 @@ public final class DaprClientProtos {
 
     /**
      * <code>string concurrency = 1;</code>
+     * @return The concurrency.
      */
     java.lang.String getConcurrency();
     /**
      * <code>string concurrency = 1;</code>
+     * @return The bytes for concurrency.
      */
     com.google.protobuf.ByteString
         getConcurrencyBytes();
 
     /**
      * <code>string consistency = 2;</code>
+     * @return The consistency.
      */
     java.lang.String getConsistency();
     /**
      * <code>string consistency = 2;</code>
+     * @return The bytes for consistency.
      */
     com.google.protobuf.ByteString
         getConsistencyBytes();
 
     /**
      * <code>.daprclient.RetryPolicy retryPolicy = 3;</code>
+     * @return Whether the retryPolicy field is set.
      */
     boolean hasRetryPolicy();
     /**
      * <code>.daprclient.RetryPolicy retryPolicy = 3;</code>
+     * @return The retryPolicy.
      */
     io.dapr.DaprClientProtos.RetryPolicy getRetryPolicy();
     /**
@@ -7629,6 +7876,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object concurrency_;
     /**
      * <code>string concurrency = 1;</code>
+     * @return The concurrency.
      */
     public java.lang.String getConcurrency() {
       java.lang.Object ref = concurrency_;
@@ -7644,6 +7892,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string concurrency = 1;</code>
+     * @return The bytes for concurrency.
      */
     public com.google.protobuf.ByteString
         getConcurrencyBytes() {
@@ -7663,6 +7912,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object consistency_;
     /**
      * <code>string consistency = 2;</code>
+     * @return The consistency.
      */
     public java.lang.String getConsistency() {
       java.lang.Object ref = consistency_;
@@ -7678,6 +7928,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string consistency = 2;</code>
+     * @return The bytes for consistency.
      */
     public com.google.protobuf.ByteString
         getConsistencyBytes() {
@@ -7697,12 +7948,14 @@ public final class DaprClientProtos {
     private io.dapr.DaprClientProtos.RetryPolicy retryPolicy_;
     /**
      * <code>.daprclient.RetryPolicy retryPolicy = 3;</code>
+     * @return Whether the retryPolicy field is set.
      */
     public boolean hasRetryPolicy() {
       return retryPolicy_ != null;
     }
     /**
      * <code>.daprclient.RetryPolicy retryPolicy = 3;</code>
+     * @return The retryPolicy.
      */
     public io.dapr.DaprClientProtos.RetryPolicy getRetryPolicy() {
       return retryPolicy_ == null ? io.dapr.DaprClientProtos.RetryPolicy.getDefaultInstance() : retryPolicy_;
@@ -8066,6 +8319,7 @@ public final class DaprClientProtos {
       private java.lang.Object concurrency_ = "";
       /**
        * <code>string concurrency = 1;</code>
+       * @return The concurrency.
        */
       public java.lang.String getConcurrency() {
         java.lang.Object ref = concurrency_;
@@ -8081,6 +8335,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 1;</code>
+       * @return The bytes for concurrency.
        */
       public com.google.protobuf.ByteString
           getConcurrencyBytes() {
@@ -8097,6 +8352,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 1;</code>
+       * @param value The concurrency to set.
+       * @return This builder for chaining.
        */
       public Builder setConcurrency(
           java.lang.String value) {
@@ -8110,6 +8367,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearConcurrency() {
         
@@ -8119,6 +8377,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string concurrency = 1;</code>
+       * @param value The bytes for concurrency to set.
+       * @return This builder for chaining.
        */
       public Builder setConcurrencyBytes(
           com.google.protobuf.ByteString value) {
@@ -8135,6 +8395,7 @@ public final class DaprClientProtos {
       private java.lang.Object consistency_ = "";
       /**
        * <code>string consistency = 2;</code>
+       * @return The consistency.
        */
       public java.lang.String getConsistency() {
         java.lang.Object ref = consistency_;
@@ -8150,6 +8411,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string consistency = 2;</code>
+       * @return The bytes for consistency.
        */
       public com.google.protobuf.ByteString
           getConsistencyBytes() {
@@ -8166,6 +8428,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string consistency = 2;</code>
+       * @param value The consistency to set.
+       * @return This builder for chaining.
        */
       public Builder setConsistency(
           java.lang.String value) {
@@ -8179,6 +8443,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string consistency = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearConsistency() {
         
@@ -8188,6 +8453,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string consistency = 2;</code>
+       * @param value The bytes for consistency to set.
+       * @return This builder for chaining.
        */
       public Builder setConsistencyBytes(
           com.google.protobuf.ByteString value) {
@@ -8206,12 +8473,14 @@ public final class DaprClientProtos {
           io.dapr.DaprClientProtos.RetryPolicy, io.dapr.DaprClientProtos.RetryPolicy.Builder, io.dapr.DaprClientProtos.RetryPolicyOrBuilder> retryPolicyBuilder_;
       /**
        * <code>.daprclient.RetryPolicy retryPolicy = 3;</code>
+       * @return Whether the retryPolicy field is set.
        */
       public boolean hasRetryPolicy() {
         return retryPolicyBuilder_ != null || retryPolicy_ != null;
       }
       /**
        * <code>.daprclient.RetryPolicy retryPolicy = 3;</code>
+       * @return The retryPolicy.
        */
       public io.dapr.DaprClientProtos.RetryPolicy getRetryPolicy() {
         if (retryPolicyBuilder_ == null) {
@@ -8376,25 +8645,30 @@ public final class DaprClientProtos {
 
     /**
      * <code>int32 threshold = 1;</code>
+     * @return The threshold.
      */
     int getThreshold();
 
     /**
      * <code>string pattern = 2;</code>
+     * @return The pattern.
      */
     java.lang.String getPattern();
     /**
      * <code>string pattern = 2;</code>
+     * @return The bytes for pattern.
      */
     com.google.protobuf.ByteString
         getPatternBytes();
 
     /**
      * <code>.google.protobuf.Duration interval = 3;</code>
+     * @return Whether the interval field is set.
      */
     boolean hasInterval();
     /**
      * <code>.google.protobuf.Duration interval = 3;</code>
+     * @return The interval.
      */
     com.google.protobuf.Duration getInterval();
     /**
@@ -8508,6 +8782,7 @@ public final class DaprClientProtos {
     private int threshold_;
     /**
      * <code>int32 threshold = 1;</code>
+     * @return The threshold.
      */
     public int getThreshold() {
       return threshold_;
@@ -8517,6 +8792,7 @@ public final class DaprClientProtos {
     private volatile java.lang.Object pattern_;
     /**
      * <code>string pattern = 2;</code>
+     * @return The pattern.
      */
     public java.lang.String getPattern() {
       java.lang.Object ref = pattern_;
@@ -8532,6 +8808,7 @@ public final class DaprClientProtos {
     }
     /**
      * <code>string pattern = 2;</code>
+     * @return The bytes for pattern.
      */
     public com.google.protobuf.ByteString
         getPatternBytes() {
@@ -8551,12 +8828,14 @@ public final class DaprClientProtos {
     private com.google.protobuf.Duration interval_;
     /**
      * <code>.google.protobuf.Duration interval = 3;</code>
+     * @return Whether the interval field is set.
      */
     public boolean hasInterval() {
       return interval_ != null;
     }
     /**
      * <code>.google.protobuf.Duration interval = 3;</code>
+     * @return The interval.
      */
     public com.google.protobuf.Duration getInterval() {
       return interval_ == null ? com.google.protobuf.Duration.getDefaultInstance() : interval_;
@@ -8920,12 +9199,15 @@ public final class DaprClientProtos {
       private int threshold_ ;
       /**
        * <code>int32 threshold = 1;</code>
+       * @return The threshold.
        */
       public int getThreshold() {
         return threshold_;
       }
       /**
        * <code>int32 threshold = 1;</code>
+       * @param value The threshold to set.
+       * @return This builder for chaining.
        */
       public Builder setThreshold(int value) {
         
@@ -8935,6 +9217,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>int32 threshold = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearThreshold() {
         
@@ -8946,6 +9229,7 @@ public final class DaprClientProtos {
       private java.lang.Object pattern_ = "";
       /**
        * <code>string pattern = 2;</code>
+       * @return The pattern.
        */
       public java.lang.String getPattern() {
         java.lang.Object ref = pattern_;
@@ -8961,6 +9245,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string pattern = 2;</code>
+       * @return The bytes for pattern.
        */
       public com.google.protobuf.ByteString
           getPatternBytes() {
@@ -8977,6 +9262,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string pattern = 2;</code>
+       * @param value The pattern to set.
+       * @return This builder for chaining.
        */
       public Builder setPattern(
           java.lang.String value) {
@@ -8990,6 +9277,7 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string pattern = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPattern() {
         
@@ -8999,6 +9287,8 @@ public final class DaprClientProtos {
       }
       /**
        * <code>string pattern = 2;</code>
+       * @param value The bytes for pattern to set.
+       * @return This builder for chaining.
        */
       public Builder setPatternBytes(
           com.google.protobuf.ByteString value) {
@@ -9017,12 +9307,14 @@ public final class DaprClientProtos {
           com.google.protobuf.Duration, com.google.protobuf.Duration.Builder, com.google.protobuf.DurationOrBuilder> intervalBuilder_;
       /**
        * <code>.google.protobuf.Duration interval = 3;</code>
+       * @return Whether the interval field is set.
        */
       public boolean hasInterval() {
         return intervalBuilder_ != null || interval_ != null;
       }
       /**
        * <code>.google.protobuf.Duration interval = 3;</code>
+       * @return The interval.
        */
       public com.google.protobuf.Duration getInterval() {
         if (intervalBuilder_ == null) {

@@ -1,5 +1,15 @@
+# IDE generated files and directories
+*.iml
+.idea/
+
+# Output folders
+**/target/
+
 # Compiled class file
 *.class
+
+# Proto meta
+*.pb.meta
 
 # Log file
 *.log
@@ -21,3 +31,6 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Some other generated folders/files
+components/

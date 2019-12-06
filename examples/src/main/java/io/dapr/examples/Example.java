@@ -1,47 +1,43 @@
 package io.dapr.examples;
 
-import static java.lang.System.out;
-
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-
 import io.dapr.DaprGrpc;
-import io.dapr.DaprProtos.DeleteStateEnvelope;
-import io.dapr.DaprProtos.GetStateEnvelope;
-import io.dapr.DaprProtos.PublishEventEnvelope;
-import io.dapr.DaprProtos.SaveStateEnvelope;
-import io.dapr.DaprProtos.StateRequest;
+import io.dapr.DaprGrpc.DaprBlockingStub;
+import io.dapr.DaprProtos.*;
+import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 /**
  * Simple example, to run:
- * 
- * <code>
- *  mvn compile 
- *  dapr run --grpc-port 50001 -- mvn
- *  exec:java -Dexec.mainClass=io.dapr.examples.Example
- * </code>
+ *   mvn clean install
+ *   dapr run --grpc-port 3000 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.Example
  */
 public class Example {
     public static void main(String[] args) {
-        var channel = ManagedChannelBuilder.forAddress("localhost", 50001).usePlaintext().build();
-        var client = DaprGrpc.newBlockingStub(channel);
+        ManagedChannel channel =
+                ManagedChannelBuilder.forAddress("localhost", 3000).usePlaintext().build();
+        DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
-        var data = Any.newBuilder().setValue(ByteString.copyFromUtf8("foo")).build();
+        Any data = Any.newBuilder().setValue(ByteString.copyFromUtf8("foo")).build();
         client.publishEvent(PublishEventEnvelope.newBuilder().setTopic("foo").setData(data).build());
-        out.println("Published!");
+        System.out.println("Published!");
 
-        var key = "mykey";
-        var req = StateRequest.newBuilder().setKey(key)
-                .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8("my value")).build()).build();
-        var state = SaveStateEnvelope.newBuilder().addRequests(req).build();
+        String key = "mykey";
+        StateRequest req = StateRequest.newBuilder()
+                .setKey(key)
+                .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8("my value")).build())
+                .build();
+        SaveStateEnvelope state = SaveStateEnvelope.newBuilder()
+                .addRequests(req)
+                .build();
         client.saveState(state);
-        out.println("Saved!");
+        System.out.println("Saved!");
 
-        var get = client.getState(GetStateEnvelope.newBuilder().setKey(key).build());
-        out.println("Got: " + get.getData().getValue().toStringUtf8());
+        GetStateResponseEnvelope get = client.getState(GetStateEnvelope.newBuilder().setKey(key).build());
+        System.out.println("Got: " + get.getData().getValue().toStringUtf8());
 
         client.deleteState(DeleteStateEnvelope.newBuilder().setKey(key).build());
-        out.println("Deleted!");
+        System.out.println("Deleted!");
     }
 }
