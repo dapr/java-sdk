@@ -6,12 +6,10 @@ For more info on Dapr and gRPC, visit [this link](https://github.com/dapr/docs/t
 
 ### Installing
 
-The client will generate gRPC Client and Protobuf classes during build. 
-
-Make sure to clone this repository including the submodules:
+Clone this repository including the submodules:
 
 ```sh
-git clone --recurse-submodules https://github.com/dapr/java-sdk.git
+git clone https://github.com/dapr/java-sdk.git
 ```
 
 Then head over to build the Maven project:
@@ -23,8 +21,7 @@ mvn install
 
 ### Running an example
 ```sh
-cd examples/
-dapr run --protocol grpc --grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.examples.Example
+dapr run --protocol grpc --grpc-port 50001 -- mvn exec:java -pl examples -Dexec.mainClass=io.dapr.examples.Example
 ```
 
 ### Creating and publishing the artifacts to Nexus Repository
