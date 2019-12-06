@@ -11,12 +11,12 @@ import io.grpc.ManagedChannelBuilder;
 /**
  * Simple example, to run:
  *   mvn clean install
- *   dapr run --grpc-port 3000 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.Example
+ *   dapr run --grpc-port 50001 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.Example
  */
 public class Example {
     public static void main(String[] args) {
         ManagedChannel channel =
-                ManagedChannelBuilder.forAddress("localhost", 3000).usePlaintext().build();
+                ManagedChannelBuilder.forAddress("localhost", 50001).usePlaintext().build();
         DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
         Any data = Any.newBuilder().setValue(ByteString.copyFromUtf8("foo")).build();
