@@ -1,4 +1,4 @@
-package io.dapr.examples;
+package io.dapr.examples.state.http;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -34,7 +34,7 @@ import static java.lang.System.out;
  *   mvn clean install
  *
  * To run (after step above):
- *   dapr run --app-id orderapp --app-port 3000 --port 3500 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.OrderManager
+ *   dapr run --app-id orderapp --app-port 3000 --port 3500 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.state.http.OrderManager
  *
  * If this class changes, run this before running it again:
  *   mvn compile
