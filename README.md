@@ -19,10 +19,11 @@ Then head over to build the Maven project:
 mvn install
 ```
 
-### Running an example
-```sh
-dapr run --protocol grpc --grpc-port 50001 -- mvn exec:java -pl examples -Dexec.mainClass=io.dapr.examples.Example
-```
+### Running the examples
+Try the following examples to learn more about Dapr's Java SDK:
+* [Invoking a service via Grpc](./examples/src/main/java/io/dapr/examples/invoke/grpc)
+* [State management over Grpc](./examples/src/main/java/io/dapr/examples/state/grpc)
+* [State management over HTTP](./examples/src/main/java/io/dapr/examples/state/http)
 
 ### Creating and publishing the artifacts to Nexus Repository
 From the root directory:
