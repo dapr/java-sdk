@@ -13,6 +13,7 @@
 
 # Log file
 *.log
+/syslog.txt
 
 # BlueJ files
 *.ctxt

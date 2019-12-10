@@ -7,17 +7,18 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>0.3.0-alpha</version>
+    <version>0.3.0-preview01</version>
   </parent>
 
   <artifactId>dapr-sdk-examples</artifactId>
   <packaging>jar</packaging>
-  <version>0.3.0-alpha</version>
+  <version>0.3.0-preview01</version>
   <name>dapr-sdk-examples</name>
 
   <properties>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.parent.basedir}/proto</protobuf.input.directory>
+    <java.version>1.11</java.version>
   </properties>
 
   <dependencies>
@@ -61,7 +62,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>0.3.0-alpha</version>
+      <version>0.3.0-preview01</version>
     </dependency>
   </dependencies>
 
