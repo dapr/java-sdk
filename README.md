@@ -12,7 +12,7 @@ Clone this repository including the submodules:
 git clone https://github.com/dapr/java-sdk.git
 ```
 
-Then head over to build the Maven project:
+Then head over to build the [Maven](https://maven.apache.org/install.html) (Apache Maven version 3.x) project:
 
 ```sh
 # make sure you are in the `java-sdk` directory.
