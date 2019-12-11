@@ -66,4 +66,6 @@ Now you can go to your IDE (like IntelliJ, for example) and debug your Java appl
 
 Calls to Dapr's APIs on `http://localhost:3500/*` should work now and trigger breakpoints in your code.
 
+**If your application needs to suscribe to topics or register Actors in Dapr, for example, then start debugging your app first and run dapr with load balancer last.**
+
 Reminder: for Dapr, your application is listening to port `3001` and not `3000` since it can only see the load balancer's port.
