@@ -47,13 +47,14 @@ mvn versions:commit
 ```
 
 ### Debug Java application or Dapr's Java SDK
+
 If you have a Java application or an issue on this SDK that needs to be debugged, follow the steps below:
 
 Install [Pen Load Balancer](https://sourceforge.net/projects/penloadbalancer/) or your preferred load balancer utility:
 ```sh
 sudo apt-get install pen
 ```
-Note: Pen is also available on Windows and MacOS.
+Note: Pen is also available on Windows in the link above. For MacOS, you will need to [build it from source code](https://github.com/UlricE/pen/wiki/Building-Pen-from-Git).
 
 Then run Dapr with the load balancer process listening on port 3001 and forwarding to port 3000. For Pen Load Balancer, it would be:
 ```sh
@@ -69,3 +70,5 @@ Calls to Dapr's APIs on `http://localhost:3500/*` should work now and trigger br
 **If your application needs to suscribe to topics or register Actors in Dapr, for example, then start debugging your app first and run dapr with load balancer last.**
 
 Reminder: for Dapr, your application is listening to port `3001` and not `3000` since it can only see the load balancer's port.
+
+**If using Visual Studio Code, also consider [this solution as well](https://github.com/dapr/docs/tree/master/howto/vscode-debugging-daprd).**
