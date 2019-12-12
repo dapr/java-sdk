@@ -44,12 +44,12 @@ class DaprHttpAsyncClient implements DaprAsyncClient {
 
     /**
      * Creates a new instance of {@link DaprHttpAsyncClient}.
-     * @param baseUrl Base Url for calling Dapr. (e.g. http://localhost:3500/)
+     * @param port Port for calling Dapr. (e.g. 3500)
      * @param httpClient RestClient used for all API calls in this new instance.
      */
-    DaprHttpAsyncClient(String baseUrl, OkHttpClient httpClient)
+    DaprHttpAsyncClient(int port, OkHttpClient httpClient)
     {
-        this.baseUrl = baseUrl;
+        this.baseUrl = String.format("http://%s:%d/", Constants.DEFAULT_HOSTNAME, port);;
         this.httpClient = httpClient;
     }
 

@@ -13,11 +13,6 @@ import okhttp3.OkHttpClient;
 class DaprClientBuilder {
 
     /**
-     * Default hostname for Dapr.
-     */
-    private String hostname = Constants.DEFAULT_HOSTNAME;
-
-    /**
      * Default port for Dapr after checking environment variable.
      */
     private int port = DaprClientBuilder.GetEnvPortOrDefault();
@@ -29,18 +24,7 @@ class DaprClientBuilder {
     public DaprAsyncClient buildAsyncClient() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
-        String baseUrl = String.format("http://%s:%d/", this.hostname, this.port);
-        return new DaprHttpAsyncClient(baseUrl, builder.build());
-    }
-
-    /**
-     * Overrides the hostname.
-     * @param hostname new hostname.
-     * @return This instance.
-     */
-    public DaprClientBuilder withHostname(String hostname) {
-        this.hostname = hostname;
-        return this;
+        return new DaprHttpAsyncClient(this.port, builder.build());
     }
 
     /**
