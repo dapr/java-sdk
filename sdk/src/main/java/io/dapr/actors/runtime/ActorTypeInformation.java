@@ -12,7 +12,7 @@ import java.util.Collections;
 /**
  * Contains the information about the class implementing an actor.
  */
-public final class ActorTypeInformation {
+final class ActorTypeInformation {
 
     /**
      * Actor type's name.
