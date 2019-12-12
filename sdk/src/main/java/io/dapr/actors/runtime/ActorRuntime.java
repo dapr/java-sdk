@@ -29,7 +29,7 @@ public class ActorRuntime {
         daprAsyncClient = new DaprClientBuilder().buildAsyncClient();
     }
 
-    /** TODO: maybe this should not be a singleton
+    /**
      * Returns an ActorRuntime object.
      * @return An ActorRuntime object.
      */
@@ -57,7 +57,7 @@ public class ActorRuntime {
      * Registers an actor with the runtime.
      * @param clazz The type of actor.
      */
-    void RegisterActor(Class clazz) {
+    <TActor extends AbstractActor> void RegisterActor(Class<TActor> clazz) {
         RegisterActor(clazz, null);
     }
 
@@ -66,7 +66,7 @@ public class ActorRuntime {
      * @param clazz The type of actor.
      * @param actorServiceFactory An optional delegate to create actor service. This can be used for dependency injection into actors.
      */
-    void RegisterActor(Class clazz, Function<ActorTypeInformation, ActorService> actorServiceFactory)
+    <TActor extends AbstractActor> void RegisterActor(Class<TActor> clazz, Function<ActorTypeInformation, ActorService> actorServiceFactory)
     {
         ActorTypeInformation actorTypeInfo = ActorTypeInformation.create(clazz);
 
@@ -154,8 +154,7 @@ public class ActorRuntime {
         {
             String errorMsg = String.format("Actor type %s is not registered with Actor runtime.", actorTypeName);
 
-            // TODO - figure out logging.  For now just print it straight out
-            System.out.println(errorMsg);
+            ActorTrace.WriteError(errorMsg);
             throw new IllegalStateException(errorMsg);
         }
 
