@@ -16,7 +16,7 @@ import io.dapr.actors.*;
  */
 public class ActorRuntime {
     private static volatile ActorRuntime instance;
-    private static DaprAsyncClient daprAsyncClient;
+    private static AppToDaprHttpAsyncClient appToDaprHttpAsyncClient;
     private final String TraceType = "ActorRuntime";
     private final HashMap<String, ActorManager> actorManagers;
 
@@ -26,7 +26,7 @@ public class ActorRuntime {
         }
 
         this.actorManagers = new HashMap<String, ActorManager>();
-        daprAsyncClient = new DaprClientBuilder().buildAsyncClient();
+        appToDaprHttpAsyncClient = new DaprClientBuilder().buildAsyncClient();
     }
 
     /**

@@ -21,10 +21,10 @@ public class DaprClientBuilder {
      * Builds an async client.
      * @return Builds an async client.
      */
-    public DaprAsyncClient buildAsyncClient() {
+    public AppToDaprAsyncClient buildAsyncClient() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
-        return new DaprHttpAsyncClient(this.port, builder.build());
+        return new AppToDaprHttpAsyncClient(this.port, builder.build());
     }
 
     /**

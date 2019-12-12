@@ -10,17 +10,7 @@ import reactor.core.publisher.Mono;
 /**
  * Interface for interacting with Dapr runtime.
  */
-public interface DaprAsyncClient {
-
-    /**
-     * Invokes an Actor method on Dapr.
-     * @param actorType Type of actor.
-     * @param actorId Actor Identifier.
-     * @param methodName Method name to invoke.
-     * @param jsonPayload Serialized body.
-     * @return Asynchronous result with the Actor's response.
-     */
-    Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload);
+public interface AppToDaprAsyncClient {
 
     /**
      * Gets a state from Dapr's Actor.
