@@ -16,7 +16,7 @@ import java.util.UUID;
 /**
  * Http client to call Dapr's API for actors.
  */
-class DaprHttpAsyncClient implements DaprAsyncClient {
+public class DaprHttpAsyncClient implements DaprAsyncClient {
 
     /**
      * Defines the standard application/json type for HTTP calls in Dapr.
@@ -47,7 +47,7 @@ class DaprHttpAsyncClient implements DaprAsyncClient {
      * @param port Port for calling Dapr. (e.g. 3500)
      * @param httpClient RestClient used for all API calls in this new instance.
      */
-    DaprHttpAsyncClient(int port, OkHttpClient httpClient)
+    public DaprHttpAsyncClient(int port, OkHttpClient httpClient)
     {
         this.baseUrl = String.format("http://%s:%d/", Constants.DEFAULT_HOSTNAME, port);;
         this.httpClient = httpClient;

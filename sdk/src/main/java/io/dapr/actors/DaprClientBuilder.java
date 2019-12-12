@@ -10,7 +10,7 @@ import okhttp3.OkHttpClient;
 /**
  * Builds an instance of DaprAsyncClient or DaprClient.
  */
-class DaprClientBuilder {
+public class DaprClientBuilder {
 
     /**
      * Default port for Dapr after checking environment variable.

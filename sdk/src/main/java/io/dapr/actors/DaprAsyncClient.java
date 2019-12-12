@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 /**
  * Interface for interacting with Dapr runtime.
  */
-interface DaprAsyncClient {
+public interface DaprAsyncClient {
 
     /**
      * Invokes an Actor method on Dapr.
