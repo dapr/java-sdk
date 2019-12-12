@@ -171,6 +171,7 @@ class DaprHttpAsyncClient implements DaprAsyncClient {
                 .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
                 .build();
 
+        // TODO: make this call async as well.
         Response response = this.httpClient.newCall(request).execute();
         if (!response.isSuccessful())
         {
