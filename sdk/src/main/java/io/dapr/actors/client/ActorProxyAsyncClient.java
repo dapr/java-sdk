@@ -3,14 +3,14 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.actors;
+package io.dapr.actors.client;
 
 import reactor.core.publisher.Mono;
 
 /**
  * Interface to invoke actor methods.
  */
-interface ActorProxyToAppAsyncClient {
+interface ActorProxyAsyncClient {
 
     /**
      * Invokes an Actor method on Dapr.

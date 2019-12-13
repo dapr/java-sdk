@@ -33,16 +33,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     @Override
     public Mono<String> getState(String actorType, String actorId, String keyName) {
         String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
-        return invokeAPI("GET", url, null);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Mono<Void> removeState(String actorType, String actorId, String keyName) {
-        String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
-        return invokeAPIVoid("DELETE", url, null);
+        return super.invokeAPI("GET", url, null);
     }
 
     /**
@@ -51,7 +42,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     @Override
     public Mono<Void> saveStateTransactionally(String actorType, String actorId, String data) {
         String url = String.format(Constants.ACTOR_STATE_RELATIVE_URL_FORMAT, actorType, actorId);
-        return invokeAPIVoid("PUT", url, data);
+        return super.invokeAPIVoid("PUT", url, data);
     }
 
     /**
@@ -60,7 +51,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     @Override
     public Mono<Void> registerReminder(String actorType, String actorId, String reminderName, String data) {
         String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
-        return invokeAPIVoid("PUT", url, data);
+        return super.invokeAPIVoid("PUT", url, data);
     }
 
     /**
@@ -69,7 +60,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     @Override
     public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
         String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
-        return invokeAPIVoid("DELETE", url, null);
+        return super.invokeAPIVoid("DELETE", url, null);
     }
 
     /**
@@ -78,7 +69,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     @Override
     public Mono<Void> registerTimer(String actorType, String actorId, String timerName, String data) {
         String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-        return invokeAPIVoid("PUT", url, data);
+        return super.invokeAPIVoid("PUT", url, data);
     }
 
     /**
@@ -87,6 +78,6 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     @Override
     public Mono<Void> unregisterTimerAsync(String actorType, String actorId, String timerName) {
         String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-        return invokeAPIVoid("DELETE", url, null);
+        return super.invokeAPIVoid("DELETE", url, null);
     }
 }

@@ -23,15 +23,6 @@ interface AppToDaprAsyncClient {
     Mono<String> getState(String actorType, String actorId, String keyName);
 
     /**
-     * Removes Actor state in Dapr. This is temporary until the Dapr runtime implements the Batch state update.
-     * @param actorType Type of actor.
-     * @param actorId Actor Identifier.
-     * @param keyName State name.
-     * @return Asynchronous void result.
-     */
-    Mono<Void> removeState(String actorType, String actorId, String keyName);
-
-    /**
      * Saves state batch to Dapr.
      * @param actorType Type of actor.
      * @param actorId Actor Identifier.

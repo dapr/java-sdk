@@ -3,28 +3,25 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.actors;
+package io.dapr.actors.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.actors.*;
+import io.dapr.actors.AbstractDaprClient;
 import okhttp3.*;
 import reactor.core.publisher.Mono;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.UUID;
 
 /**
  * Http client to call actors methods.
  */
-class ActorProxyToAppHttpAsyncClient extends AbstractDaprClient implements ActorProxyToAppAsyncClient {
+class ActorProxyHttpAsyncClient extends AbstractDaprClient implements ActorProxyAsyncClient {
 
 
     /**
-     * Creates a new instance of {@link ActorProxyToAppHttpAsyncClient}.
+     * Creates a new instance of {@link ActorProxyHttpAsyncClient}.
      * @param port Port for calling Dapr. (e.g. 3500)
      * @param httpClient RestClient used for all API calls in this new instance.
      */
-    public ActorProxyToAppHttpAsyncClient(int port, OkHttpClient httpClient)
+    public ActorProxyHttpAsyncClient(int port, OkHttpClient httpClient)
     {
         super(port, httpClient);
     }
@@ -35,6 +32,6 @@ class ActorProxyToAppHttpAsyncClient extends AbstractDaprClient implements Actor
     @Override
     public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
         String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
-        return invokeAPI("PUT", url, jsonPayload);
+        return super.invokeAPI("PUT", url, jsonPayload);
     }
 }
