@@ -10,7 +10,7 @@ import java.io.IOException;
 /**
  * A Dapr's specific exception.
  */
-class DaprException extends IOException {
+public class DaprException extends IOException {
 
     /**
      * Dapr's error code for this exception.
@@ -39,7 +39,7 @@ class DaprException extends IOException {
      * Returns the exception's error code.
      * @return Error code.
      */
-    String getErrorCode() {
+    public String getErrorCode() {
         return this.errorCode;
     }
 }

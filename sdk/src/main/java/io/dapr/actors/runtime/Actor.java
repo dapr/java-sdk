@@ -6,7 +6,7 @@
 package io.dapr.actors.runtime;
 
 /**
- * TODO
+ * TODO - this is the interface user Actor methods should implement to receive calls.
  */
 public interface Actor {
 }
