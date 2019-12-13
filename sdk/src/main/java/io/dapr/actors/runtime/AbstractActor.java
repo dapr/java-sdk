@@ -6,7 +6,7 @@
 package io.dapr.actors.runtime;
 
 /**
- * TODO
+ * TODO - this is the base class Actor implementations (user code) will extend.
  */
 public abstract class AbstractActor {
 }
