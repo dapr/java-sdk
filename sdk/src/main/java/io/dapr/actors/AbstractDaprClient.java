@@ -28,6 +28,9 @@ public abstract class AbstractDaprClient {
      */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    /**
+     * The base url used for form urls.  This is typically "http://localhost:3500".
+     */
     private final String baseUrl;
 
     /**

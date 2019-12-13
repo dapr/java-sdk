@@ -78,7 +78,7 @@ public class ActorRuntime {
      * Registers an actor with the runtime.
      * @param clazz The type of actor.
      */
-    public <TActor extends AbstractActor> void RegisterActor(Class<TActor> clazz) {
+    public <T extends AbstractActor> void RegisterActor(Class<T> clazz) {
         RegisterActor(clazz, null);
     }
 
@@ -87,7 +87,7 @@ public class ActorRuntime {
      * @param clazz The type of actor.
      * @param actorServiceFactory An optional delegate to create actor service. This can be used for dependency injection into actors.
      */
-    public <TActor extends AbstractActor> void RegisterActor(Class<TActor> clazz, Function<ActorTypeInformation, ActorService> actorServiceFactory)
+    public <T extends AbstractActor> void RegisterActor(Class<T> clazz, Function<ActorTypeInformation, ActorService> actorServiceFactory)
     {
         ActorTypeInformation actorTypeInfo = ActorTypeInformation.create(clazz);
 
