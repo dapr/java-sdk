@@ -14,8 +14,6 @@ import reactor.core.publisher.Mono;
  * Http client to call actors methods.
  */
 class ActorProxyHttpAsyncClient extends AbstractDaprClient implements ActorProxyAsyncClient {
-
-
     /**
      * Creates a new instance of {@link ActorProxyHttpAsyncClient}.
      * @param port Port for calling Dapr. (e.g. 3500)

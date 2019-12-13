@@ -5,6 +5,8 @@
 
 package io.dapr.actors.runtime;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Function;
@@ -15,18 +17,37 @@ import io.dapr.actors.*;
  * Contains methods to register actor types. Registering the types allows the runtime to create instances of the actor.
  */
 public class ActorRuntime {
+    /**
+     *  Gets an instance to the ActorRuntime.  There is only 1.
+     */
     private static volatile ActorRuntime instance;
-    private static AppToDaprAsyncClient appToDaprHttpAsyncClient;
-    private final String TraceType = "ActorRuntime";
+
+    /**
+     *  A client used to communicate from the actor to the Dapr runtime.
+     */
+    private static AppToDaprAsyncClient appToDaprAsyncClient;
+
+    /**
+     *  A trace type used when logging.
+     */
+    private static final String TraceType = "ActorRuntime";
+
+    /**
+     *  Map of ActorType --> ActorManager.
+     */
     private final HashMap<String, ActorManager> actorManagers;
 
+    /**
+     * The default constructor.  This should not be called directly.
+     * @throws IllegalStateException
+     */
     private ActorRuntime() throws IllegalStateException{
         if (instance != null) {
             throw new IllegalStateException("ActorRuntime should only be constructed once");
         }
 
         this.actorManagers = new HashMap<String, ActorManager>();
-        appToDaprHttpAsyncClient = new AppToDaprClientBuilder().buildAsyncClient();
+        appToDaprAsyncClient = new AppToDaprClientBuilder().buildAsyncClient();
     }
 
     /**
@@ -49,8 +70,8 @@ public class ActorRuntime {
      *
      * @return Actor type names registered with the runtime.
      */
-    public Set<String> getRegisteredActorTypes() {
-        return this.actorManagers.keySet();
+    public Collection<String> getRegisteredActorTypes() {
+        return Collections.unmodifiableCollection(this.actorManagers.keySet());
     }
 
     /**
@@ -81,7 +102,9 @@ public class ActorRuntime {
         }
 
         // Create ActorManagers, override existing entry if registered again.
-        this.actorManagers.put(actorTypeInfo.getName(), new ActorManager(actorService));
+        synchronized (this.actorManagers) {
+            this.actorManagers.put(actorTypeInfo.getName(), new ActorManager(actorService));
+        }
     }
 
     /**
