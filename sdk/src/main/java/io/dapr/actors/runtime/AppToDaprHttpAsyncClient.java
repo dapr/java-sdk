@@ -6,7 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.Constants;
-import io.dapr.actors.DaprClientBase;
+import io.dapr.actors.AbstractDaprClient;
 import okhttp3.*;
 import reactor.core.publisher.Mono;
 
@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
  * Http client to call Dapr's API for actors.
  */
 //public class DaprHttpAsyncClient implements DaprAsyncClient {
-class AppToDaprHttpAsyncClient extends DaprClientBase implements AppToDaprAsyncClient {
+class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAsyncClient {
 
     /**
      * Creates a new instance of {@link AppToDaprHttpAsyncClient}.

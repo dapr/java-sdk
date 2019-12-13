@@ -16,7 +16,7 @@ import java.util.UUID;
 /**
  * Http client to call actors methods.
  */
-class ActorProxyToAppHttpAsyncClient extends DaprClientBase implements ActorProxyToAppAsyncClient {
+class ActorProxyToAppHttpAsyncClient extends AbstractDaprClient implements ActorProxyToAppAsyncClient {
 
 
     /**
