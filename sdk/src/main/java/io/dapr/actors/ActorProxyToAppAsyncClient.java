@@ -7,7 +7,10 @@ package io.dapr.actors;
 
 import reactor.core.publisher.Mono;
 
-public interface ActorProxyToAppClient {
+/**
+ * Interface to invoke actor methods.
+ */
+interface ActorProxyToAppAsyncClient {
 
     /**
      * Invokes an Actor method on Dapr.

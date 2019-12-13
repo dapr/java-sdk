@@ -8,7 +8,7 @@ package io.dapr.actors;
 /**
  * Useful constants for the Dapr's Actor SDK.
  */
-final class Constants {
+public final class Constants {
 
     /**
      * Dapr API used in this client.

@@ -20,7 +20,7 @@ public class DaprHttpAsyncClientIT {
      */
     @Test(expected = RuntimeException.class)
     public void invokeUnknownActor() {
-        DaprAsyncClient daprAsyncClient = new DaprClientBuilder().buildAsyncClient();
+        ActorProxyToAppAsyncClient daprAsyncClient = new DaprClientBuilder().buildAsyncClient();
         daprAsyncClient
                 .invokeActorMethod("ActorThatDoesNotExist", "100", "GetData", null)
                 .doOnError(x -> {

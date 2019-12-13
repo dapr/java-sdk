@@ -2,12 +2,9 @@ package io.dapr.actors;
 
 
 
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import okhttp3.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -16,6 +13,38 @@ import java.util.UUID;
 
 // base class of hierarchy
 public class DaprClientBase {
+    /**
+     * Defines the standard application/json type for HTTP calls in Dapr.
+     */
+    private static final MediaType MEDIA_TYPE_APPLICATION_JSON = MediaType.get("application/json; charset=utf-8");
+
+    /**
+     * Shared object representing an empty request body in JSON.
+     */
+    private static final RequestBody REQUEST_BODY_EMPTY_JSON = RequestBody.create(MEDIA_TYPE_APPLICATION_JSON, "");
+
+    /**
+     * JSON Object Mapper.
+     */
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private final String baseUrl;
+
+    /**
+     * Http client used for all API calls.
+     */
+    private final OkHttpClient httpClient;
+
+    /**
+     * Creates a new instance of {@link DaprClientBase}.
+     * @param port Port for calling Dapr. (e.g. 3500)
+     * @param httpClient RestClient used for all API calls in this new instance.
+     */
+    public DaprClientBase(int port, OkHttpClient httpClient)
+    {
+        this.baseUrl = String.format("http://%s:%d/", Constants.DEFAULT_HOSTNAME, port);;
+        this.httpClient = httpClient;
+    }
 
     // common methods
     /**

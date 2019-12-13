@@ -6,6 +6,7 @@
 package io.dapr.actors;
 
 import okhttp3.OkHttpClient;
+import io.dapr.actors.*;
 
 /**
  * Builds an instance of DaprAsyncClient or DaprClient.
@@ -21,10 +22,10 @@ public class DaprClientBuilder {
      * Builds an async client.
      * @return Builds an async client.
      */
-    public AppToDaprAsyncClient buildAsyncClient() {
+    public ActorProxyToAppAsyncClient buildAsyncClient() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
-        return new AppToDaprHttpAsyncClient(this.port, builder.build());
+        return new ActorProxyToAppHttpAsyncClient(this.port, builder.build());
     }
 
     /**

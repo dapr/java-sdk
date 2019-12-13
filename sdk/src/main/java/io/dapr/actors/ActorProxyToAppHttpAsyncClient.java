@@ -14,33 +14,10 @@ import java.net.URL;
 import java.util.UUID;
 
 /**
- * Http client to call Dapr's API for actors.
+ * Http client to call actors methods.
  */
-public class ActorProxyToAppHttpAsyncClient extends DaprClientBase implements ActorProxyToAppClient {
+class ActorProxyToAppHttpAsyncClient extends DaprClientBase implements ActorProxyToAppAsyncClient {
 
-    /**
-     * Defines the standard application/json type for HTTP calls in Dapr.
-     */
-    private static final MediaType MEDIA_TYPE_APPLICATION_JSON = MediaType.get("application/json; charset=utf-8");
-
-    /**
-     * Shared object representing an empty request body in JSON.
-     */
-    private static final RequestBody REQUEST_BODY_EMPTY_JSON = RequestBody.create(MEDIA_TYPE_APPLICATION_JSON, "");
-
-    /**
-     * JSON Object Mapper.
-     */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    /**
-     * Base Url for calling Dapr. (e.g. http://localhost:3500/)
-     */
-    private final String baseUrl;
-
-    /**
-     * Http client used for all API calls.
-     */
-    private final OkHttpClient httpClient;
 
     /**
      * Creates a new instance of {@link ActorProxyToAppHttpAsyncClient}.
@@ -49,8 +26,7 @@ public class ActorProxyToAppHttpAsyncClient extends DaprClientBase implements Ac
      */
     public ActorProxyToAppHttpAsyncClient(int port, OkHttpClient httpClient)
     {
-        this.baseUrl = String.format("http://%s:%d/", Constants.DEFAULT_HOSTNAME, port);;
-        this.httpClient = httpClient;
+        super(port, httpClient);
     }
 
     /**
