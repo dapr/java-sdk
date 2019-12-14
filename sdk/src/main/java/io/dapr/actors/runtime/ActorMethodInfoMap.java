@@ -3,6 +3,9 @@ package io.dapr.actors.runtime;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
+/**
+ *  Actor method dispatcher map. Holds method_name -> Method for methods defined in Actor interfaces.
+ */
 class ActorMethodInfoMap {
     private final HashMap<String, Method> methods;
 
