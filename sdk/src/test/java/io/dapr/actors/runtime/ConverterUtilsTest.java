@@ -14,12 +14,15 @@ public class ConverterUtilsTest {
 
         String t = ConverterUtils.ConvertDurationToDaprFormat(d1);
         Assert.assertEquals(s, t);
+    }
 
+    @Test
+    public void largeHours() {
         // hours part is larger than 24
-        String u = "31h15m50s60ms";
-        Duration d2 = ConverterUtils.ConvertTimeSpanFromDaprFormat(s);
+        String s = "31h15m50s60ms";
+        Duration d1 = ConverterUtils.ConvertTimeSpanFromDaprFormat(s);
 
-        String v = ConverterUtils.ConvertDurationToDaprFormat(d2);
+        String t = ConverterUtils.ConvertDurationToDaprFormat(d1);
         Assert.assertEquals(s, t);
     }
 
