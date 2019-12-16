@@ -32,6 +32,7 @@ public class ConverterUtils {
         int milliseconds = Integer.parseInt(millisecondsSpan);
 
         return Duration.ZERO
+                .plusDays(days)
                 .plusHours(hours)
                 .plusMinutes(minutes)
                 .plusSeconds(seconds)

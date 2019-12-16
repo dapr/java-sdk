@@ -10,9 +10,16 @@ public class ConverterUtilsTest {
     @Test
     public void convertTimeBothWays() {
         String s = "4h15m50s60ms";
-        Duration d = ConverterUtils.ConvertTimeSpanFromDaprFormat(s);
+        Duration d1 = ConverterUtils.ConvertTimeSpanFromDaprFormat(s);
 
-        String t = ConverterUtils.ConvertDurationToDaprFormat(d);
+        String t = ConverterUtils.ConvertDurationToDaprFormat(d1);
+        Assert.assertEquals(s, t);
+
+        // hours part is larger than 24
+        String u = "31h15m50s60ms";
+        Duration d2 = ConverterUtils.ConvertTimeSpanFromDaprFormat(s);
+
+        String v = ConverterUtils.ConvertDurationToDaprFormat(d2);
         Assert.assertEquals(s, t);
     }
 
