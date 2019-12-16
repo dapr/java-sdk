@@ -3,9 +3,7 @@ package io.dapr.actors.runtime;
 // stub
 public class ActorManager {
 
-    public ActorManager(ActorService actorService) {
+  public ActorManager(ActorService actorService) {
 
-    }
+  }
 }
-
-

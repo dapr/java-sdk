@@ -2,7 +2,6 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-
 package io.dapr.actors.runtime;
 
 import java.lang.annotation.*;
@@ -15,6 +14,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ActorType {
 
-    String Name();
+  String Name();
 
 }
