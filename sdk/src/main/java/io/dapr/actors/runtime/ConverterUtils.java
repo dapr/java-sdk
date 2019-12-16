@@ -8,7 +8,13 @@ package io.dapr.actors.runtime;
 import java.time.*;
 
 public class ConverterUtils {
-    public static Duration ConvertTimeSpanFromDaprFormat(String valueString) {
+
+    /**
+     * Converts time from the String format used by Dapr into a Duration.
+     * @param valueString A String representing time in the Dapr runtime's format (e.g. 4h15m50s60ms).
+     * @return A Duration
+     */
+    public static Duration ConvertDurationFromDaprFormat(String valueString) {
         // Convert the format returned by the Dapr runtime into Duration
         // An example of the format is: 4h15m50s60ms. It does not include days.
         int hIndex = valueString.indexOf('h');
@@ -39,7 +45,11 @@ public class ConverterUtils {
                 .plusMillis(milliseconds);
     }
 
-    // Convert the duration to the format used by Dapr
+    /**
+     * Converts a Duration to the format used by the Dapr runtime.
+     * @param value Duration
+     * @return The Duration formatted as a String in the format the Dapr runtime uses (e.g. 4h15m50s60ms)
+     */
     public static String ConvertDurationToDaprFormat(Duration value) {
         String stringValue = "";
 
