@@ -10,7 +10,7 @@ package io.dapr.examples.actors.http;
  */
 public class DemoActorService {
 
-    public static void main(String[] args) throws Exception {
-        // TODO
-    }
+  public static void main(String[] args) throws Exception {
+    // TODO
+  }
 }
