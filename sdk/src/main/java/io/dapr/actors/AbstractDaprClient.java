@@ -90,12 +90,14 @@ public abstract class AbstractDaprClient {
   }
 
   /**
-   * Invokes an API synchronously and returns a text payload.
+   * Invokes an API synchronously and returns a text payload. The return value
+   * is passed to the DaprHttpCallback. The http response body variable requires
+   * to be closed (to free resources), thus the body is converted into a string
+   * and the string object is passed to the callback
    *
    * @param method HTTP method.
    * @param urlString url as String.
    * @param json JSON payload or null.
-   * @return text
    */
   private final void tryInvokeAPI(String method, String urlString, String json, final DaprHttpCallback cb) throws IOException, DaprException {
     String requestId = UUID.randomUUID().toString();
@@ -115,14 +117,19 @@ public abstract class AbstractDaprClient {
 
       @Override
       public void onResponse(Call call, Response response) throws IOException {
+        String respBodyString = "";
         try (ResponseBody responseBody = response.body()) {
           if (!response.isSuccessful()) {
-            DaprError error = parseDaprError(response.body().string());
+            respBodyString = responseBody.string();
+            DaprError error = parseDaprError(respBodyString);
+            response.close();
             if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
               throw new DaprException(error);
             }
           } else {
-            cb.onSuccess(responseBody.toString());
+            respBodyString = responseBody.string();
+            cb.onSuccess(respBodyString);
+            response.close();
           }
         }
       }
