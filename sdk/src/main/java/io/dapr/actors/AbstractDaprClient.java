@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 package io.dapr.actors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -163,17 +167,17 @@ public abstract class AbstractDaprClient {
      * called when the server response was not 2xx or when an exception was
      * thrown in the process
      *
-     * @param response - in case of server error (4xx, 5xx) this contains the
-     * server response in case of IO exception this is null
-     * @param throwable - contains the exception. in case of server error (4xx,
-     * 5xx) this is null
+     * @param call - is the call the actor made server
+     * @param e - contains the exception. in case of server error (4xx, 5xx)
+     * this is null
      */
     public void onFailure(Call call, Exception e);
 
     /**
      * contains the server response
      *
-     * @param response
+     * @param response - in case of server error (4xx, 5xx) this contains the
+     * response in case of IO exception this is null
      */
     public void onSuccess(String response);
   }
