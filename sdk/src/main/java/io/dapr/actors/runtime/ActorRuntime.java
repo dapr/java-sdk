@@ -8,7 +8,6 @@ import io.dapr.actors.*;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.function.Function;
 
 /**
  * Contains methods to register actor types. Registering the types allows the
@@ -88,18 +87,16 @@ public class ActorRuntime {
    * Registers an actor with the runtime.
    *
    * @param clazz The type of actor.
-   * @param actorServiceFactory An optional delegate to create actor service.
+   * @param actorFactory An optional factory to create actors.
    * This can be used for dependency injection into actors.
    */
-  public <T extends AbstractActor> void RegisterActor(Class<T> clazz, Function<ActorTypeInformation, ActorService> actorServiceFactory) {
+  public <T extends AbstractActor> void RegisterActor(Class<T> clazz, ActorFactory actorFactory) {
     ActorTypeInformation actorTypeInfo = ActorTypeInformation.create(clazz);
 
-    ActorService actorService;
-    if (actorServiceFactory != null) {
-      actorService = actorServiceFactory.apply(actorTypeInfo);
-    } else {
-      actorService = new ActorService(actorTypeInfo);
-    }
+    ActorFactory actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>(actorTypeInfo);
+      // TODO: Refactor into a Builder class.
+      DaprStateAsyncProvider stateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, new ActorStateProviderSerializer());
+      ActorService actorService = new ActorServiceImpl(actorTypeInfo, stateProvider, actualActorFactory);
 
     // Create ActorManagers, override existing entry if registered again.
     synchronized (this.actorManagers) {

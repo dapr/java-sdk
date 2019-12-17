@@ -1,14 +1,18 @@
 package io.dapr.actors.runtime;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.time.Duration;
 
 public class ActorTimerImplTest {
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   @Test
-  public void serialize() {
+  public void serialize() throws IOException {
     Duration dueTime = Duration.ZERO
       .plusMinutes(7)
       .plusSeconds(17);
@@ -27,11 +31,12 @@ public class ActorTimerImplTest {
     String s = timer.serialize();
 
     String expected = "{\"period\":\"1h0m3s0ms\",\"dueTime\":\"0h7m17s0ms\"}";
-    Assert.assertEquals(expected, s);
+    // Deep comparison via JsonNode.equals method.
+    Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }
 
   @Test
-  public void serializeWithOneTimePeriod() {
+  public void serializeWithOneTimePeriod() throws IOException {
     Duration dueTime = Duration.ZERO
       .plusMinutes(7)
       .plusSeconds(17);
@@ -52,6 +57,7 @@ public class ActorTimerImplTest {
 
     // A negative period will be serialized to an empty string which is interpreted by Dapr to mean fire once only.
     String expected = "{\"period\":\"\",\"dueTime\":\"0h7m17s0ms\"}";
-    Assert.assertEquals(expected, s);
+    // Deep comparison via JsonNode.equals method.
+    Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }
 }
