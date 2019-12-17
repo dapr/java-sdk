@@ -98,7 +98,8 @@ public abstract class AbstractDaprClient {
    * @param method HTTP method.
    * @param urlString url as String.
    * @param json JSON payload or null.
-   */
+
+*/
   private final void tryInvokeAPI(String method, String urlString, String json, final DaprHttpCallback cb) throws IOException, DaprException {
     String requestId = UUID.randomUUID().toString();
     RequestBody body = json != null ? RequestBody.create(MEDIA_TYPE_APPLICATION_JSON, json) : REQUEST_BODY_EMPTY_JSON;
