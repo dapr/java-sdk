@@ -9,8 +9,8 @@ package io.dapr.examples.actors.http;
  * Client that will use Actor.
  */
 public class ActorClient {
-    // TODO.
+  // TODO.
 
-    public static void main(String[] args) throws Exception {
-    }
+  public static void main(String[] args) throws Exception {
+  }
 }
