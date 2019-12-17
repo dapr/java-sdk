@@ -16,7 +16,7 @@ public interface ActorTimer {
 
   /**
    * Gets the periodic time when timer will be invoked.
-   * @return Periodic time as <see cref="System.TimeSpan"/> when timer will be invoked.
+   * @return Periodic time as Duration when timer will be invoked.
    */
   Duration getPeriod();
 
