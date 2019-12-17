@@ -9,8 +9,6 @@ import io.dapr.actors.ActorId;
 /**
  *
  * Provides the interface for implementation of proxy access for actor service.
- *
- * @author Swen Schisler <swen.schisler@fourtytwosoft.io>
  */
 public interface IActorProxy {
 

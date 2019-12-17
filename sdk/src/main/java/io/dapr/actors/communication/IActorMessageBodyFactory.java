@@ -7,9 +7,6 @@ package io.dapr.actors.communication;
 /**
  * Defines the interface that must be implemented for providing factory for
  * creating actor request body and response body objects.
- *
- *
- * @author Swen Schisler <swen.schisler@fourtytwosoft.io>
  */
 public interface IActorMessageBodyFactory {
 

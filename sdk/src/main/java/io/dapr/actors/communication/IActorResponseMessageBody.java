@@ -11,9 +11,6 @@ import java.lang.reflect.Type;
  * Body for remoting requests . This contains all the parameters remoting method
  * has.
  *
- * @author Swen Schisler <swen.schisler@fourtytwosoft.io
- *
- * >
  */
 public interface IActorResponseMessageBody {
 

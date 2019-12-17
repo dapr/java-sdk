@@ -10,8 +10,6 @@ import java.lang.reflect.Type;
  * Defines the interface that must be implemented to provide Request Message
  * Body for remoting requests . This contains all the parameters remoting method
  * has.
- *
- * @author Swen Schisler <swen.schisler@fourtytwosoft.io>
  */
 public interface IActorRequestMessageBody {
 

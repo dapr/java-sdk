@@ -6,10 +6,6 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 
-/**
- *
- * @author Swen Schisler <swen.schisler@fourtytwosoft.io>
- */
 public interface IActorProxyFactory {
 
   /**

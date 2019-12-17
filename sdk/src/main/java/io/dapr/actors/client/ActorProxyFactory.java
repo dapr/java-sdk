@@ -4,10 +4,6 @@
  */
 package io.dapr.actors.client;
 
-/**
- *
- * @author Swen Schisler <swen.schisler@fourtytwosoft.io>
- */
 class ActorProxyFactory {
 
 }
