@@ -12,7 +12,7 @@ import java.util.Collections;
 /**
  * Contains the information about the class implementing an actor.
  */
-final class ActorTypeInformation {
+final class ActorTypeInformation<T> {
 
   /**
    * Actor type's name.
@@ -22,7 +22,7 @@ final class ActorTypeInformation {
   /**
    * Actor's implementation class.
    */
-  private final Class implementationClass;
+  private final Class<T> implementationClass;
 
   /**
    * Actor's immediate interfaces.
@@ -49,7 +49,7 @@ final class ActorTypeInformation {
    * @param remindable Whether Actor type is remindable.
    */
   private ActorTypeInformation(String name,
-      Class implementationClass,
+      Class<T> implementationClass,
       Collection<Class> interfaces,
       boolean abstractClass,
       boolean remindable) {
@@ -74,7 +74,7 @@ final class ActorTypeInformation {
    *
    * @return The {@link Class} of implementing the actor.
    */
-  public Class getImplementationClass() {
+  public Class<T> getImplementationClass() {
     return this.implementationClass;
   }
 
@@ -129,7 +129,7 @@ final class ActorTypeInformation {
    * ActorTypeInformation for.
    * @return {@link #ActorTypeInformation} created from actorType.
    */
-  public static ActorTypeInformation create(Class actorClass) {
+  public static <T> ActorTypeInformation<T> create(Class<T> actorClass) {
     if (!ActorTypeUtilities.isActor(actorClass)) {
       throw new IllegalArgumentException(
           String.format(
