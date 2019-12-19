@@ -63,10 +63,8 @@ class ReminderInfo
   static ReminderInfo deserialize(byte[] stream) throws IOException {
     try {
       ObjectMapper om = new ObjectMapper();
-
-      final ObjectMapper mapper = new ObjectMapper();
-      final MapType type = mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
-      final Map<String, Object> data = mapper.readValue(stream, type);
+      MapType type = om.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
+      Map<String, Object> data = om.readValue(stream, type);
 
       String d = (String)data.getOrDefault("dueTime", "");
       Duration dueTime = ConverterUtils.ConvertDurationFromDaprFormat(d);
