@@ -5,8 +5,6 @@
 
 package io.dapr.actors.runtime;
 
-import java.io.IOException;
-
 /**
  * Represents a state change for an actor.
  * @param <T> Type of the value being changed.
