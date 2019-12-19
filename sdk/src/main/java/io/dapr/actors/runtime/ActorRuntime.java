@@ -78,6 +78,7 @@ public class ActorRuntime {
    * Registers an actor with the runtime.
    *
    * @param clazz The type of actor.
+   * @param <T> Actor class type.
    */
   public <T extends AbstractActor> void RegisterActor(Class<T> clazz) {
     RegisterActor(clazz, null);
@@ -88,6 +89,7 @@ public class ActorRuntime {
    *
    * @param clazz The type of actor.
    * @param actorFactory An optional factory to create actors.
+   * @param <T> Actor class type.
    * This can be used for dependency injection into actors.
    */
   public <T extends AbstractActor> void RegisterActor(Class<T> clazz, ActorFactory actorFactory) {
@@ -95,7 +97,7 @@ public class ActorRuntime {
 
     ActorFactory actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>(actorTypeInfo);
       // TODO: Refactor into a Builder class.
-      DaprStateAsyncProvider stateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, new ActorStateProviderSerializer());
+      DaprStateAsyncProvider stateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, new ActorStateSerializer());
       ActorService actorService = new ActorServiceImpl(actorTypeInfo, stateProvider, actualActorFactory);
 
     // Create ActorManagers, override existing entry if registered again.

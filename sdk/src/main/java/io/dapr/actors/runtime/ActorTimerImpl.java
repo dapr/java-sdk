@@ -1,10 +1,14 @@
 package io.dapr.actors.runtime;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -14,9 +18,9 @@ import java.util.function.Function;
 class ActorTimerImpl implements ActorTimer {
 
   /**
-   * Shared Json serializer/deserializer as per Jackson's documentation, used only for this class.
+   * Shared Json Factory as per Jackson's documentation, used only for this class.
    */
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
   /**
    * Actor that owns this timer.
@@ -118,9 +122,15 @@ class ActorTimerImpl implements ActorTimer {
    * @return JSON.
    */
   String serialize() throws IOException {
-    ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
-    objectNode.put("dueTime", ConverterUtils.ConvertDurationToDaprFormat(this.dueTime));
-    objectNode.put("period", ConverterUtils.ConvertDurationToDaprFormat(this.period));
-    return OBJECT_MAPPER.writeValueAsString(objectNode);
+    try (Writer writer = new StringWriter()) {
+      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+      generator.writeStartObject();
+      generator.writeStringField("dueTime", ConverterUtils.ConvertDurationToDaprFormat(this.dueTime));
+      generator.writeStringField("period", ConverterUtils.ConvertDurationToDaprFormat(this.period));
+      generator.writeEndObject();
+      generator.close();
+      writer.flush();
+      return writer.toString();
+    }
   }
 }

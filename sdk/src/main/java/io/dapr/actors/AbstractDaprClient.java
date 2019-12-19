@@ -152,20 +152,20 @@ public abstract class AbstractDaprClient {
   public interface DaprHttpCallback {
 
     /**
-     * called when the server response was not 2xx or when an exception was
+     * Called when the server response was not 2xx or when an exception was
      * thrown in the process
      *
-     * @param response - in case of server error (4xx, 5xx) this contains the
+     * @param call - in case of server error (4xx, 5xx) this contains the
      * server response in case of IO exception this is null
-     * @param throwable - contains the exception. in case of server error (4xx,
+     * @param e - contains the exception. in case of server error (4xx,
      * 5xx) this is null
      */
     public void onFailure(Call call, Exception e);
 
     /**
-     * contains the server response
+     * Contains the server response
      *
-     * @param response
+     * @param response Success response.
      */
     public void onSuccess(String response);
   }

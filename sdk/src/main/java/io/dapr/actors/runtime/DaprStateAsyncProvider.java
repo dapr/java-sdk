@@ -5,14 +5,13 @@
 
 package io.dapr.actors.runtime;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.io.StringWriter;
+import java.io.Writer;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
@@ -20,15 +19,15 @@ import java.util.Collection;
 class DaprStateAsyncProvider {
 
   /**
-   * Shared Json serializer/deserializer as per Jackson's documentation, used only for this class.
+   * Shared Json Factory as per Jackson's documentation, used only for this class.
    */
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
   private final AppToDaprAsyncClient daprAsyncClient;
 
-  private final ActorStateProviderSerializer serializer;
+  private final ActorStateSerializer serializer;
 
-  DaprStateAsyncProvider(AppToDaprAsyncClient daprAsyncClient, ActorStateProviderSerializer serializer) {
+  DaprStateAsyncProvider(AppToDaprAsyncClient daprAsyncClient, ActorStateSerializer serializer) {
     this.daprAsyncClient = daprAsyncClient;
     this.serializer = serializer;
   }
@@ -36,17 +35,15 @@ class DaprStateAsyncProvider {
   <T> Mono<T> load(String actorType, String actorId, String stateName, Class<T> clazz) {
     Mono<String> result = this.daprAsyncClient.getState(actorType, actorId, stateName);
 
-    return result.map(s -> {
-      if (s == null) {
-        return (T)null;
-      }
-
-      try {
-        return this.serializer.deserialize(s, clazz);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return result
+            .filter(s -> (s != null) && (!s.isEmpty()))
+            .map(s -> {
+              try {
+                return this.serializer.deserialize(s, clazz);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            });
   }
 
   Mono<Boolean> contains(String actorType, String actorId, String stateName) {
@@ -79,50 +76,65 @@ class DaprStateAsyncProvider {
    * @param stateChanges Collection of changes to be performed transactionally.
    * @return Void.
    */
-  Mono<Void> apply(String actorType, String actorId, Collection<ActorStateChange> stateChanges)
+  Mono<Void> apply(String actorType, String actorId, ActorStateChange... stateChanges)
   {
-    if ((stateChanges == null) || stateChanges.isEmpty()) {
-      return Mono.just(null);
+    if ((stateChanges == null) || stateChanges.length == 0) {
+      return Mono.empty();
     }
 
-    // Constructing the JSON "manually" to avoid creating transient classes to be parsed.
-    ArrayNode operations = OBJECT_MAPPER.createArrayNode();
-    for (ActorStateChange stateChange : stateChanges) {
-      if ((stateChange == null) || (stateChange.getChangeKind() == null)) {
-        continue;
-      }
+    int count = 0;
+    // Constructing the JSON via a stream API to avoid creating transient objects to be instantiated.
+    String payload = null;
+    try (Writer writer = new StringWriter()) {
+      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+      // Start array
+      generator.writeStartArray();
 
-      String operationName = stateChange.getChangeKind().getDaprStateChangeOperation();
-      if ((operationName == null) || (operationName.length() == 0)) {
-        continue;
-      }
-
-      try {
-        ObjectNode operation = OBJECT_MAPPER.createObjectNode();
-        operation.set("operation", operation.textNode(operationName));
-        ObjectNode request = OBJECT_MAPPER.createObjectNode();
-        request.put("key", stateChange.getStateName());
-        if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE) || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
-          request.put("value", this.serializer.serialize(stateChange.getValue()));
+      for (ActorStateChange stateChange : stateChanges) {
+        if ((stateChange == null) || (stateChange.getChangeKind() == null)) {
+          continue;
         }
 
-        operations.add(operation);
-      } catch (IOException e) {
-        e.printStackTrace();
-        return Mono.error(e);
+        String operationName = stateChange.getChangeKind().getDaprStateChangeOperation();
+        if ((operationName == null) || (operationName.length() == 0)) {
+          continue;
+        }
+
+        count++;
+
+        // Start operation object.
+        generator.writeStartObject();
+        generator.writeStringField("operation", operationName);
+
+        // Start request object.
+        generator.writeObjectFieldStart("request");
+        generator.writeStringField("key", stateChange.getStateName());
+        if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE) || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
+          generator.writeStringField("value", this.serializer.serialize(stateChange.getValue()));
+        }
+        // End request object.
+        generator.writeEndObject();
+
+        // End operation object.
+        generator.writeEndObject();
       }
-    }
 
-    if (operations.size() == 0) {
-      // No-op since there is no operation to be performed.
-      Mono.just(null);
-    }
+      // End array
+      generator.writeEndArray();
 
-    try {
-      return this.daprAsyncClient.saveStateTransactionally(actorType, actorId, OBJECT_MAPPER.writeValueAsString(operations));
-    } catch (JsonProcessingException e) {
+      generator.close();
+      writer.flush();
+      payload = writer.toString();
+    } catch (IOException e) {
       e.printStackTrace();
       return Mono.error(e);
     }
+
+    if (count == 0) {
+      // No-op since there is no operation to be performed.
+      Mono.empty();
+    }
+
+    return this.daprAsyncClient.saveStateTransactionally(actorType, actorId, payload);
   }
 }
