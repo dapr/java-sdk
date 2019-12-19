@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 package io.dapr.actors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -90,7 +94,7 @@ public abstract class AbstractDaprClient {
   }
 
   /**
-   * Invokes an API synchronously and returns a text payload.
+   * Invokes an API asynchronously and returns a text payload.
    *
    * @param method HTTP method.
    * @param urlString url as String.
@@ -108,6 +112,7 @@ public abstract class AbstractDaprClient {
         .build();
 
     this.httpClient.newCall(request).enqueue(new Callback() {
+
       @Override
       public void onFailure(Call call, IOException e) {
         cb.onFailure(call, e);
@@ -118,11 +123,14 @@ public abstract class AbstractDaprClient {
         try (ResponseBody responseBody = response.body()) {
           if (!response.isSuccessful()) {
             DaprError error = parseDaprError(response.body().string());
+            response.close();
             if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
               throw new DaprException(error);
             }
           } else {
-            cb.onSuccess(responseBody.toString());
+            String respBodyString = responseBody.string();
+            cb.onSuccess(respBodyString);
+            response.close();
           }
         }
       }
@@ -155,10 +163,10 @@ public abstract class AbstractDaprClient {
      * Called when the server response was not 2xx or when an exception was
      * thrown in the process
      *
-     * @param call - in case of server error (4xx, 5xx) this contains the
-     * server response in case of IO exception this is null
-     * @param e - contains the exception. in case of server error (4xx,
-     * 5xx) this is null
+     * @param call - in case of server error (4xx, 5xx) this contains the server
+     * response in case of IO exception this is null
+     * @param e - contains the exception. in case of server error (4xx, 5xx)
+     * this is null
      */
     public void onFailure(Call call, Exception e);
 
