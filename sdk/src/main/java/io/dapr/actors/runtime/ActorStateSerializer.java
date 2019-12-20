@@ -4,15 +4,24 @@
  */
 package io.dapr.actors.runtime;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 
 /**
  * Serializes and deserializes an object.
  */
 class ActorStateSerializer {
+
+    /**
+     * Shared Json Factory as per Jackson's documentation, used only for this class.
+     */
+    private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
     /**
      * Shared Json serializer/deserializer as per Jackson's documentation.
@@ -35,7 +44,12 @@ class ActorStateSerializer {
             return state.toString();
         }
 
-        if (isPrimitive(state.getClass())) {
+        if (state.getClass() == ActorTimer.class) {
+            // Special serializer for this internal classes.
+            return serialize((ActorTimer<?>) state);
+        }
+
+        if (isPrimitiveOrEquivalent(state.getClass())) {
             return state.toString();
         }
 
@@ -57,15 +71,19 @@ class ActorStateSerializer {
             return (T) value;
         }
 
-        if (isPrimitive(clazz)) {
+        if (isPrimitiveOrEquivalent(clazz)) {
             return parse(value, clazz);
+        }
+
+        if (value == null) {
+            return (T) null;
         }
 
         // Not string, not primitive, so it is a complex type: we use JSON for that.
         return OBJECT_MAPPER.readValue(value, clazz);
     }
 
-    private static boolean isPrimitive(Class<?> clazz) {
+    private static boolean isPrimitiveOrEquivalent(Class<?> clazz) {
         if (clazz == null) {
             return false;
         }
@@ -84,6 +102,14 @@ class ActorStateSerializer {
 
     private static <T> T parse(String value, Class<T> clazz) {
         if (value == null) {
+            if (boolean.class == clazz) return (T) Boolean.FALSE;
+            if (byte.class == clazz) return (T) Byte.valueOf((byte) 0);
+            if (short.class == clazz) return (T) Short.valueOf((short) 0);
+            if (int.class == clazz) return (T) Integer.valueOf(0);
+            if (long.class == clazz) return (T) Long.valueOf(0L);
+            if (float.class == clazz) return (T) Float.valueOf(0);
+            if (double.class == clazz) return (T) Double.valueOf(0);
+
             return null;
         }
 
@@ -96,5 +122,18 @@ class ActorStateSerializer {
         if ((Double.class == clazz) || (double.class == clazz)) return (T) Double.valueOf(value);
 
         return null;
+    }
+
+    private static String serialize(ActorTimer<?> timer) throws IOException {
+        try (Writer writer = new StringWriter()) {
+            JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+            generator.writeStartObject();
+            generator.writeStringField("dueTime", ConverterUtils.ConvertDurationToDaprFormat(timer.getDueTime()));
+            generator.writeStringField("period", ConverterUtils.ConvertDurationToDaprFormat(timer.getPeriod()));
+            generator.writeEndObject();
+            generator.close();
+            writer.flush();
+            return writer.toString();
+        }
     }
 }

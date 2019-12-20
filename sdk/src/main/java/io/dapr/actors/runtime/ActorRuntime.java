@@ -92,18 +92,16 @@ public class ActorRuntime {
    * @param <T> Actor class type.
    * This can be used for dependency injection into actors.
    */
-  public <T extends AbstractActor> void RegisterActor(Class<T> clazz, ActorFactory actorFactory) {
-    ActorTypeInformation actorTypeInfo = ActorTypeInformation.create(clazz);
+  public <T extends AbstractActor> void RegisterActor(Class<T> clazz, ActorFactory<T> actorFactory) {
+    ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
-    ActorFactory actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>(actorTypeInfo);
-      // TODO: Refactor into a Builder class.
-      DaprStateAsyncProvider stateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, new ActorStateSerializer());
-      ActorService actorService = new ActorServiceImpl(actorTypeInfo, stateProvider, actualActorFactory);
+    ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
+    // TODO: Refactor into a Builder class.
+    DaprStateAsyncProvider stateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, new ActorStateSerializer());
+    ActorService actorService = new ActorServiceImpl(actorTypeInfo, stateProvider, actualActorFactory);
 
     // Create ActorManagers, override existing entry if registered again.
-    synchronized (this.actorManagers) {
-      this.actorManagers.put(actorTypeInfo.getName(), new ActorManager(actorService));
-    }
+    this.actorManagers.put(actorTypeInfo.getName(), new ActorManager(actorService));
   }
 
   /**
@@ -112,7 +110,7 @@ public class ActorRuntime {
    * @param actorTypeName Actor type name to activate the actor for.
    * @param actorId Actor id for the actor to be activated.
    */
-  static void Activate(String actorTypeName, String actorId) {
+  void Activate(String actorTypeName, String actorId) {
     // uncomment when ActorManager implemented
     // return instance.GetActorManager(actorTypeName).ActivateActor(new ActorId(actorId));
   }

@@ -26,6 +26,7 @@ public class DefaultActorFactoryTest {
     ActorId actorId;
 
     public MyActor(ActorService actorService, ActorId actorId) {
+      super(timers);
       this.actorService = actorService;
       this.actorId = actorId;
     }
@@ -35,6 +36,9 @@ public class DefaultActorFactoryTest {
    * A non-compliant implementation of Actor to be used in the tests below.
    */
   static class InvalidActor extends AbstractActor {
+    InvalidActor() {
+      super(timers);
+    }
   }
 
   /**

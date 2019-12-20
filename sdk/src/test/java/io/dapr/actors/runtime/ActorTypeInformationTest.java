@@ -26,6 +26,9 @@ public class ActorTypeInformationTest {
   public void notRemindable() {
 
     class A extends AbstractActor implements MyActor {
+      A() {
+        super(timers);
+      }
     }
 
     ActorTypeInformation info = ActorTypeInformation.create(A.class);
@@ -45,6 +48,9 @@ public class ActorTypeInformationTest {
   public void remindable() {
 
     class A extends AbstractActor implements MyActor, Remindable {
+      A() {
+        super(timers);
+      }
     }
 
     ActorTypeInformation info = ActorTypeInformation.create(A.class);
@@ -65,6 +71,9 @@ public class ActorTypeInformationTest {
   public void renamedWithAnnotation() {
     @ActorType(Name = "B")
     class A extends AbstractActor implements MyActor {
+      A() {
+        super(timers);
+      }
     }
 
     ActorTypeInformation info = ActorTypeInformation.create(A.class);
@@ -83,6 +92,9 @@ public class ActorTypeInformationTest {
   @Test
   public void nonActorParentClass() {
     abstract class MyAbstractClass extends AbstractActor implements MyActor {
+      MyAbstractClass() {
+        super(timers);
+      }
     }
 
     class A extends MyAbstractClass {

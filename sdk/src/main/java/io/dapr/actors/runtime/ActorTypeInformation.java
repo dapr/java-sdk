@@ -84,7 +84,7 @@ final class ActorTypeInformation<T> {
    *
    * @return Collection of actor interfaces.
    */
-  public Collection<Class> getInterfaces() {
+  public Collection<Class<?>> getInterfaces() {
     return Collections.unmodifiableCollection(this.interfaces);
   }
 

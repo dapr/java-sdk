@@ -10,12 +10,12 @@ import io.dapr.actors.ActorId;
 /**
  * Implementation of the Actor Service that contains a state provider.
  */
-class ActorServiceImpl implements ActorService {
+class ActorServiceImpl<T extends AbstractActor> implements ActorService<T> {
 
   /**
    * Customizable factory for Actors.
    */
-  private final ActorFactory actorFactory;
+  private final ActorFactory<T> actorFactory;
 
   /**
    * State provider for Actors.
@@ -25,7 +25,7 @@ class ActorServiceImpl implements ActorService {
   /**
    * Information on the {@link Actor} type being serviced.
    */
-  private final ActorTypeInformation actorTypeInformation;
+  private final ActorTypeInformation<T> actorTypeInformation;
 
   /**
    * Instantiates a stateful service for a given {@link Actor} type.
@@ -33,7 +33,7 @@ class ActorServiceImpl implements ActorService {
    * @param stateProvider State provider for Actors.
    * @param actorFactory Customizable factor for Actors.
    */
-  public ActorServiceImpl(ActorTypeInformation actorTypeInformation, DaprStateAsyncProvider stateProvider, ActorFactory actorFactory) {
+  public ActorServiceImpl(ActorTypeInformation<T> actorTypeInformation, DaprStateAsyncProvider stateProvider, ActorFactory<T> actorFactory) {
     this.actorTypeInformation = actorTypeInformation;
     this.actorFactory = actorFactory;
     this.stateProvider = stateProvider;
@@ -51,17 +51,15 @@ class ActorServiceImpl implements ActorService {
    * Gets the information on the {@link Actor} Type.
    * @return Information on the {@link Actor} Type.
    */
-  ActorTypeInformation getActorTypeInformation() {
+  ActorTypeInformation<T> getActorTypeInformation() {
     return actorTypeInformation;
   }
 
   /**
-   * Creates an {@link Actor} for this service.
-   * @param actorId Identifier for the Actor to be created.
-   * @return New {@link Actor} instance.
+   * {@inheritDoc}
    */
   @Override
-  public AbstractActor createActor(ActorId actorId) {
+  public T createActor(ActorId actorId) {
     return this.actorFactory.createActor(this, actorId);
   }
 }
