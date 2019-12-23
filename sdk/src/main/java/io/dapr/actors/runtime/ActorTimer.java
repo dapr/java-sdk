@@ -9,8 +9,9 @@ import java.time.Duration;
 
 /**
  * Represents the timer set on an Actor, to be called once after due time and then every period.
+ * @param <T> State type.
  */
-class ActorTimer<T> {
+final class ActorTimer<T> {
 
   /**
    * Actor that owns this timer.

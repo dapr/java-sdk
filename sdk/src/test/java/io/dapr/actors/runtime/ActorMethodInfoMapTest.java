@@ -19,7 +19,7 @@ public class ActorMethodInfoMapTest {
 
   @Test
   public void normalUsage() {
-    ArrayList<Class<TestActor>> interfaceTypes = new ArrayList<Class<TestActor>>();
+    ArrayList<Class<?>> interfaceTypes = new ArrayList<>();
     interfaceTypes.add(TestActor.class);
     ActorMethodInfoMap m = new ActorMethodInfoMap(interfaceTypes);
 
@@ -37,7 +37,7 @@ public class ActorMethodInfoMapTest {
 
   @Test(expected = NoSuchMethodException.class)
   public void lookUpNonExistingMethod() throws NoSuchMethodException {
-    ArrayList<Class<TestActor>> interfaceTypes = new ArrayList<Class<TestActor>>();
+    ArrayList<Class<?>> interfaceTypes = new ArrayList<>();
     interfaceTypes.add(TestActor.class);
     ActorMethodInfoMap m = new ActorMethodInfoMap(interfaceTypes);
 

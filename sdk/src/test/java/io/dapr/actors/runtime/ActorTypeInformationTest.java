@@ -7,6 +7,9 @@ package io.dapr.actors.runtime;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 
 /**
  * Unit tests for ActorTypeInformation.
@@ -27,7 +30,7 @@ public class ActorTypeInformationTest {
 
     class A extends AbstractActor implements MyActor {
       A() {
-        super(timers);
+        super(null, null);
       }
     }
 
@@ -49,7 +52,17 @@ public class ActorTypeInformationTest {
 
     class A extends AbstractActor implements MyActor, Remindable {
       A() {
-        super(timers);
+        super(null, null);
+      }
+
+      @Override
+      public Class getReminderStateType() {
+        return null;
+      }
+
+      @Override
+      public Mono<Void> receiveReminder(String reminderName, Object state, Duration dueTime, Duration period) {
+        return null;
       }
     }
 
@@ -72,7 +85,7 @@ public class ActorTypeInformationTest {
     @ActorType(Name = "B")
     class A extends AbstractActor implements MyActor {
       A() {
-        super(timers);
+        super(null, null);
       }
     }
 
@@ -93,7 +106,7 @@ public class ActorTypeInformationTest {
   public void nonActorParentClass() {
     abstract class MyAbstractClass extends AbstractActor implements MyActor {
       MyAbstractClass() {
-        super(timers);
+        super(null, null);
       }
     }
 

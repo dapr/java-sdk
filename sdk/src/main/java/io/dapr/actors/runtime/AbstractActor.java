@@ -5,6 +5,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorTrace;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -16,27 +17,39 @@ import java.util.Map;
 /**
  * TODO - this is the base class Actor implementations (user code) will extend.
  */
-public abstract class AbstractActor<T extends AbstractActor> {
+public abstract class AbstractActor {
+
+  private static final String TRACE_TYPE = "Actor";
+
+  private final ActorRuntimeContext<?> actorRuntimeContext;
 
   private final ActorId id;
 
-  private final ActorRuntime actorRuntime;
+  private final ActorStateManager<?> actorStateManager;
 
-  private final ActorStateSerializer actorSerializer;
-
-  private final ActorService<T> actorService;
-
-  private final ActorStateManager<T> actorStateManager;
+  private final ActorTrace actorTrace;
 
   private final Map<String, ActorTimer<?>> timers;
 
-  protected AbstractActor(ActorRuntimeContext runtimeContext, ActorId id) {
+  protected <T extends AbstractActor>AbstractActor(ActorRuntimeContext runtimeContext, ActorId id) {
+    this.actorRuntimeContext = runtimeContext;
     this.id = id;
-    this.actorRuntime = runtimeContext.getActorRuntime();
-    this.actorSerializer = runtimeContext.getActorSerializer();
-    this.actorService = runtimeContext.getActorService();
     this.actorStateManager = new ActorStateManager<T>(runtimeContext.getActorTypeInformation().getName(), id);
+    this.actorTrace = runtimeContext.getActorTrace();
     this.timers = Collections.synchronizedMap(new HashMap<>());
+  }
+
+  protected <S> Mono<Void> registerReminder(
+          String reminderName,
+          S data,
+          Duration dueTime,
+          Duration period) throws IOException {
+    String serialized = this.actorRuntimeContext.getActorSerializer().serialize(data);
+    return this.actorRuntimeContext.getDaprClient().registerReminder(
+            this.actorRuntimeContext.getActorTypeInformation().getName(),
+            this.id.getStringId(),
+            reminderName,
+            serialized);
   }
 
   /**
@@ -50,19 +63,42 @@ public abstract class AbstractActor<T extends AbstractActor> {
    *                Specify zero (0) to start the timer immediately.
    * @param period The time interval between invocations of the async callback.
    *               Specify negative one (-1) milliseconds to disable periodic signaling.
-   * @param <T> Type for the state object.
+   * @param <S> Type for the state object.
    * @return Asynchronous result.
+   * @throws IOException in case cannot parse or register with Dapr.
    */
-  protected <T> Mono<Void> RegisterActorTimer(String timerName, String methodName, T state, Duration dueTime, Duration period) throws IOException {
+  protected <S> Mono<Void> registerActorTimer(
+          String timerName,
+          String methodName,
+          S state,
+          Duration dueTime,
+          Duration period) throws IOException {
     String name = timerName;
     if ((timerName == null) || (timerName.isEmpty())) {
-      name = String.format("%s_Timer_%d", this.id);
+      name = String.format("%s_Timer_%d", this.id.getStringId(), this.timers.size() + 1);
     }
 
-    ActorTimer<T> actorTimer = new ActorTimer(this, name, methodName, state, dueTime, period);
-    String serializedState = this.actorSerializer.serialize(actorTimer);
+    ActorTimer<S> actorTimer = new ActorTimer(this, name, methodName, state, dueTime, period);
+    String serializedTimer = this.actorRuntimeContext.getActorSerializer().serialize(actorTimer);
     this.timers.put(name, actorTimer);
+    return this.actorRuntimeContext.getDaprClient().registerTimer(
+            this.actorRuntimeContext.getActorTypeInformation().getName(),
+            this.id.getStringId(),
+            name,
+            serializedTimer);
   }
+
+  protected Mono<Void> unregister(ActorTimer<?> actorTimer) {
+    return this.actorRuntimeContext.getDaprClient().unregisterTimer(
+            this.actorRuntimeContext.getActorTypeInformation().getName(),
+            this.id.getStringId(),
+            actorTimer.getName())
+            .then(this.onUnregisteredTimer(actorTimer));
+  }
+
+  protected Mono<Void> onActivate() { return Mono.empty(); }
+
+  protected Mono<Void> onDeactivate() { return Mono.empty(); }
 
   protected Mono<Void> onPreActorMethod(ActorMethodContext actorMethodContext) {
     return Mono.empty();
@@ -73,12 +109,32 @@ public abstract class AbstractActor<T extends AbstractActor> {
   }
 
   protected Mono<Void> saveState() {
-    return this.actorStateManager.SaveState();
+    return this.actorStateManager.saveState();
   }
+
+  Mono<Void> resetState() { return this.actorStateManager.clearCache(); }
 
   ActorTimer getActorTimer(String timerName)
   {
     return timers.getOrDefault(timerName, null);
+  }
+
+  Mono<Void> onActivateInternal() {
+    this.actorTrace.writeInfo(TRACE_TYPE, this.id.getStringId(), "Activating ...");
+
+    return this.resetState()
+            .then(this.onActivate())
+            .then(this.doWriteInfo(TRACE_TYPE, this.id.getStringId(), "Activated"))
+            .then(this.saveState());
+  }
+
+  Mono<Void> onDeactivateInternal() {
+    this.actorTrace.writeInfo(TRACE_TYPE, this.id.getStringId(), "Deactivating ...");
+
+    return this.resetState()
+            .then(this.onDeactivate())
+            .then(this.doWriteInfo(TRACE_TYPE, this.id.getStringId(), "Deactivated"))
+            .then(this.saveState());
   }
 
   Mono<Void> onPreActorMethodInternal(ActorMethodContext actorMethodContext) {
@@ -86,6 +142,18 @@ public abstract class AbstractActor<T extends AbstractActor> {
   }
 
   Mono<Void> onPostActorMethodInternal(ActorMethodContext actorMethodContext) {
-    return this.onPostActorMethod(actorMethodContext);
+    return this.onPostActorMethod(actorMethodContext)
+            .then(this.saveState());
   }
+
+  Mono<Void> onUnregisteredTimer(ActorTimer<?> timer) {
+    this.timers.remove(timer.getName());
+    return Mono.empty();
+  }
+
+  private Mono<Void> doWriteInfo(String type, String id, String message) {
+    this.actorTrace.writeInfo(type, id, message);
+    return Mono.empty();
+  }
+
 }

@@ -20,7 +20,11 @@ class ActorStateManager<T extends AbstractActor> {
     this.actorId = actorId;
   }
 
-  Mono<Void> SaveState() {
+  Mono<Void> saveState() {
+    return Mono.empty();
+  }
+
+  public Mono<Void> clearCache() {
     return Mono.empty();
   }
 }

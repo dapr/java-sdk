@@ -21,13 +21,13 @@ public class DefaultActorFactoryTest {
    */
   static class MyActor extends AbstractActor implements Actor {
 
-    ActorService actorService;
+    ActorRuntimeContext<MyActor> context;
 
     ActorId actorId;
 
-    public MyActor(ActorService actorService, ActorId actorId) {
-      super(timers);
-      this.actorService = actorService;
+    public MyActor(ActorRuntimeContext<MyActor> context, ActorId actorId) {
+      super(context, actorId);
+      this.context = context;
       this.actorId = actorId;
     }
   }
@@ -35,9 +35,9 @@ public class DefaultActorFactoryTest {
   /**
    * A non-compliant implementation of Actor to be used in the tests below.
    */
-  static class InvalidActor extends AbstractActor {
+  static class InvalidActor extends AbstractActor implements Actor {
     InvalidActor() {
-      super(timers);
+      super(null, null);
     }
   }
 
@@ -46,13 +46,13 @@ public class DefaultActorFactoryTest {
    */
   @Test
   public void happyActor() {
-    DefaultActorFactory<MyActor> factory = new DefaultActorFactory(ActorTypeInformation.tryCreate(MyActor.class));
+    DefaultActorFactory<MyActor> factory = new DefaultActorFactory<>();
 
     ActorId actorId = ActorId.createRandom();
-    MyActor actor = factory.createActor(mock(ActorService.class), actorId);
+    MyActor actor = factory.createActor(createActorRuntimeContext(MyActor.class), actorId);
 
     Assert.assertEquals(actorId, actor.actorId);
-    Assert.assertNotNull(actor.actorService);
+    Assert.assertNotNull(actor.context);
   }
 
   /**
@@ -60,12 +60,21 @@ public class DefaultActorFactoryTest {
    */
   @Test
   public void noValidConstructor() {
-    DefaultActorFactory<InvalidActor> factory = new DefaultActorFactory(ActorTypeInformation.tryCreate(InvalidActor.class));
+    DefaultActorFactory<InvalidActor> factory = new DefaultActorFactory<>();
 
     ActorId actorId = ActorId.createRandom();
-    InvalidActor actor = factory.createActor(mock(ActorService.class), actorId);
+    InvalidActor actor = factory.createActor(createActorRuntimeContext(InvalidActor.class), actorId);
 
     Assert.assertNull(actor);
+  }
+
+  private static <T extends AbstractActor> ActorRuntimeContext<T> createActorRuntimeContext(Class<T> clazz) {
+    return new ActorRuntimeContext(
+        mock(ActorRuntime.class),
+        mock(ActorStateSerializer.class),
+        mock(ActorFactory.class),
+        ActorTypeInformation.create(clazz),
+        mock(AppToDaprAsyncClient.class));
   }
 
 }

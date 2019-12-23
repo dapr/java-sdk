@@ -26,11 +26,12 @@ class DefaultActorFactory<T extends AbstractActor> implements ActorFactory<T> {
       }
 
       Constructor<T> constructor = actorRuntimeContext
-        .getActorTypeInformation()
-        .getImplementationClass()
-        .getConstructor(ActorRuntimeContext.class, ActorId.class);
+          .getActorTypeInformation()
+          .getImplementationClass()
+          .getConstructor(ActorRuntimeContext.class, ActorId.class);
       return constructor.newInstance(actorRuntimeContext, actorId);
-    } catch (ReflectiveOperationException e) {
+    } catch (Exception e) {
+      //TODO: Use ActorTrace.
       e.printStackTrace();
     }
     return null;

@@ -5,7 +5,7 @@
 
 package io.dapr.actors.runtime;
 
-import java.time.*;
+import java.time.Duration;
 
 public class ConverterUtils {
 

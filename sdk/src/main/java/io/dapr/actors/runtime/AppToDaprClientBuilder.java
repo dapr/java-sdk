@@ -4,7 +4,7 @@
  */
 package io.dapr.actors.runtime;
 
-import io.dapr.actors.*;
+import io.dapr.actors.AbstractClientBuilder;
 import okhttp3.OkHttpClient;
 
 /**

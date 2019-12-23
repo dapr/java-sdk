@@ -11,7 +11,13 @@ import java.time.Duration;
 /**
  * Interface that actors must implement to consume reminders registered using RegisterReminderAsync.
  */
-public interface Remindable {
+public interface Remindable<T> {
+
+  /**
+   * Gets the class for state object.
+   * @return Class for state object.
+   */
+  Class<T> getReminderStateType();
 
   /**
    * The reminder call back invoked when an actor reminder is triggered.
@@ -26,5 +32,5 @@ public interface Remindable {
    * @param period The invocation period provided during registration.
    * @return A task that represents the asynchronous operation performed by this callback.
    */
-  Mono<Void> receiveReminder(String reminderName, byte[] state, Duration dueTime, Duration period);
+  Mono<Void> receiveReminder(String reminderName, T state, Duration dueTime, Duration period);
 }

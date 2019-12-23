@@ -71,5 +71,5 @@ interface AppToDaprAsyncClient {
    * @param timerName Name of timer to be unregistered.
    * @return Asynchronous void result.
    */
-  Mono<Void> unregisterTimerAsync(String actorType, String actorId, String timerName);
+  Mono<Void> unregisterTimer(String actorType, String actorId, String timerName);
 }

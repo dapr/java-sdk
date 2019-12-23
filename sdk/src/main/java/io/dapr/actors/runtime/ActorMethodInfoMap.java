@@ -1,6 +1,7 @@
 package io.dapr.actors.runtime;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,7 @@ class ActorMethodInfoMap {
    */
   private final Map<String, Method> methods;
 
-  ActorMethodInfoMap(Iterable<Class<?>> interfaceTypes) {
+  ActorMethodInfoMap(Collection<Class<?>> interfaceTypes) {
     Map<String, Method> methods = new HashMap<>();
 
     // Find methods which are defined in Actor interface.
