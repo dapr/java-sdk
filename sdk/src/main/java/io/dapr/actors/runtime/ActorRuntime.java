@@ -139,7 +139,7 @@ public class ActorRuntime {
    * @param actorId Actor id for the actor to be activated.
    * @return Async void task.
    */
-  Mono<Void> activate(String actorTypeName, String actorId) {
+  public Mono<Void> activate(String actorTypeName, String actorId) {
     return this.getActorManager(actorTypeName).flatMap(m -> m.activateActor(new ActorId(actorId)));
   }
 
@@ -150,7 +150,7 @@ public class ActorRuntime {
    * @param actorId Actor id for the actor to be deactivated.
    * @return Async void task.
    */
-  Mono<Void> deactivate(String actorTypeName, String actorId) {
+  public Mono<Void> deactivate(String actorTypeName, String actorId) {
     return this.getActorManager(actorTypeName).flatMap(m -> m.deactivateActor(new ActorId(actorId)));
   }
 
@@ -164,7 +164,7 @@ public class ActorRuntime {
    * @param request Payload for the actor method.
    * @return Response for the actor method.
    */
-  Mono<String> invoke(String actorTypeName, String actorId, String actorMethodName, String request) {
+  public Mono<String> invoke(String actorTypeName, String actorId, String actorMethodName, String request) {
     return this.getActorManager(actorTypeName).flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, request));
   }
 
@@ -177,7 +177,7 @@ public class ActorRuntime {
    * @param request Payload for the actor method
    * @return Async void task.
    */
-  Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, String request) {
+  public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, String request) {
     return this.getActorManager(actorTypeName).flatMap(m -> m.invokeReminder(new ActorId(actorId), reminderName, request));
   }
 
@@ -189,7 +189,7 @@ public class ActorRuntime {
    * @param timerName The name of timer provided during registration.
    * @return Async void task.
    */
-  Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
+  public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
     return this.getActorManager(actorTypeName).flatMap(m -> m.invokeTimer(new ActorId(actorId), timerName));
   }
 

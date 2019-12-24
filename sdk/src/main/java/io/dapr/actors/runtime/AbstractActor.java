@@ -31,10 +31,10 @@ public abstract class AbstractActor {
 
   private final Map<String, ActorTimer<?>> timers;
 
-  protected <T extends AbstractActor>AbstractActor(ActorRuntimeContext runtimeContext, ActorId id) {
+  protected AbstractActor(ActorRuntimeContext runtimeContext, ActorId id) {
     this.actorRuntimeContext = runtimeContext;
     this.id = id;
-    this.actorStateManager = new ActorStateManager<T>(runtimeContext.getActorTypeInformation().getName(), id);
+    this.actorStateManager = new ActorStateManager<AbstractActor>(runtimeContext.getActorTypeInformation().getName(), id);
     this.actorTrace = runtimeContext.getActorTrace();
     this.timers = Collections.synchronizedMap(new HashMap<>());
   }
