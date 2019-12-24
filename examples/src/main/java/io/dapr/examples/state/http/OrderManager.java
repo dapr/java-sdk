@@ -89,7 +89,7 @@ public class OrderManager {
         out.printf("Writing to state: %s\n", state.toString());
 
         post(stateUrl, state.toString()).thenAccept(response -> {
-          int resCode = response.statusCode() == 200 ? 200 : 500;
+          int resCode = response.statusCode() == 201 ? 201 : 500;
           String body = response.body();
           try {
             e.sendResponseHeaders(resCode, body.getBytes().length);

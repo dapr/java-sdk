@@ -72,25 +72,11 @@ public abstract class AbstractDaprClient {
    * @return Asynchronous text
    */
   public final Mono<String> invokeAPI(String method, String urlString, String json) throws RuntimeException {
-
-    DaprHttpCallback cb = new DaprHttpCallback() {
-
-      @Override
-      public void onFailure(Call call, Exception e) {
-        Mono.error(e);
-      }
-
-      @Override
-      public void onSuccess(String response) {
-        Mono.just(response);
-      }
-    };
     try {
-      tryInvokeAPI(method, urlString, json, cb);
+     return tryInvokeAPI(method, urlString, json);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    return Mono.empty();
   }
 
   /**
@@ -101,7 +87,7 @@ public abstract class AbstractDaprClient {
    * @param json JSON payload or null.
    * @return text
    */
-  private final void tryInvokeAPI(String method, String urlString, String json, final DaprHttpCallback cb) throws IOException, DaprException {
+  private final Mono<String> tryInvokeAPI(String method, String urlString, String json) throws IOException, DaprException {
     String requestId = UUID.randomUUID().toString();
     RequestBody body = json != null ? RequestBody.create(MEDIA_TYPE_APPLICATION_JSON, json) : REQUEST_BODY_EMPTY_JSON;
 
@@ -111,30 +97,21 @@ public abstract class AbstractDaprClient {
         .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
         .build();
 
-    this.httpClient.newCall(request).enqueue(new Callback() {
 
-      @Override
-      public void onFailure(Call call, IOException e) {
-        cb.onFailure(call, e);
-      }
-
-      @Override
-      public void onResponse(Call call, Response response) throws IOException {
-        try (ResponseBody responseBody = response.body()) {
-          if (!response.isSuccessful()) {
-            DaprError error = parseDaprError(response.body().string());
-            response.close();
-            if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-              throw new DaprException(error);
-            }
-          } else {
-            String respBodyString = responseBody.string();
-            cb.onSuccess(respBodyString);
-            response.close();
+    try (Response response = this.httpClient.newCall(request).execute()) {
+      try (ResponseBody responseBody = response.body()) {
+        if (!response.isSuccessful()) {
+          DaprError error = parseDaprError(response.body().string());
+          if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
+            return Mono.error(new DaprException(error));
           }
+          return Mono.empty();
+        } else {
+          String respBodyString = responseBody.string();
+          return Mono.just(respBodyString);
         }
       }
-    });
+    }
 
   }
 
@@ -157,25 +134,6 @@ public abstract class AbstractDaprClient {
     }
   }
 
-  public interface DaprHttpCallback {
 
-    /**
-     * Called when the server response was not 2xx or when an exception was
-     * thrown in the process
-     *
-     * @param call - in case of server error (4xx, 5xx) this contains the server
-     * response in case of IO exception this is null
-     * @param e - contains the exception. in case of server error (4xx, 5xx)
-     * this is null
-     */
-    public void onFailure(Call call, Exception e);
-
-    /**
-     * Contains the server response
-     *
-     * @param response Success response.
-     */
-    public void onSuccess(String response);
-  }
 
 }
