@@ -20,6 +20,8 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -42,6 +44,7 @@ import static java.lang.System.out;
 public class OrderManager {
 
   static HttpClient httpClient;
+  static final List<Integer> httpOkStatus = Arrays.asList(200,201);
 
   public static void main(String[] args) throws IOException {
     int httpPort = 3000;
@@ -89,7 +92,7 @@ public class OrderManager {
         out.printf("Writing to state: %s\n", state.toString());
 
         post(stateUrl, state.toString()).thenAccept(response -> {
-          int resCode = response.statusCode() == 201 ? 201 : 500;
+          int resCode = httpOkStatus.contains(response.statusCode()) ? 201 : 500;
           String body = response.body();
           try {
             e.sendResponseHeaders(resCode, body.getBytes().length);
