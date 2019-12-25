@@ -4,8 +4,7 @@
  */
 package io.dapr.actors.client;
 
-import io.dapr.actors.ActorId;
-import io.dapr.actors.DaprException;
+import io.dapr.actors.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -14,7 +13,7 @@ import org.junit.Test;
  * <p>
  * Requires Dapr running.
  */
-public class DaprHttpAsyncClientTest {
+public class DaprHttpAsyncClientIT {
 
   /**
    * Checks if the error is correctly parsed when trying to invoke a function on
@@ -22,23 +21,23 @@ public class DaprHttpAsyncClientTest {
    */
   @Test(expected = RuntimeException.class)
   public void invokeUnknownActor() {
-    ActorProxyAsyncClient daprAsyncClient = new ActorProxyClientBuilder().buildAsyncClient(new ActorId("200"),"DemoActor");
+    ActorProxyAsyncClient daprAsyncClient = new ActorProxyClientBuilder().buildAsyncClient();
     daprAsyncClient
-      .invokeActorMethod("GetData" )
+      .invokeActorMethod("ActorThatDoesNotExist", "100", "GetData", null)
       .doOnError(x -> {
-        Assert.assertTrue(x instanceof DaprException);
-        DaprException daprException = (DaprException) x;
+        Assert.assertTrue(x instanceof RuntimeException);
+        RuntimeException runtimeException = (RuntimeException) x;
+
+        Throwable cause = runtimeException.getCause();
+        Assert.assertTrue(cause instanceof DaprException);
+        DaprException daprException = (DaprException) cause;
 
         Assert.assertNotNull(daprException);
         Assert.assertEquals("ERR_INVOKE_ACTOR", daprException.getErrorCode());
         Assert.assertNotNull(daprException.getMessage());
         Assert.assertFalse(daprException.getMessage().isEmpty());
       })
-      .doOnSuccess(x ->
-              Assert.fail("This call should fail."))
+      .doOnSuccess(x -> Assert.fail("This call should fail."))
       .block();
-
   }
-
-
 }
