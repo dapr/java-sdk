@@ -4,15 +4,18 @@
  */
 package io.dapr.actors.runtime;
 
-import io.dapr.actors.AbstractDaprClient;
+import io.dapr.client.DaprHttpClient;
 import io.dapr.actors.Constants;
 import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+
 /**
  * Http client to call Dapr's API for actors.
  */
-class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAsyncClient {
+//public class DaprHttpAsyncClient implements DaprAsyncClient {
+class AppToDaprHttpAsyncClient extends DaprHttpClient implements AppToDaprAsyncClient {
 
   /**
    * Creates a new instance of {@link AppToDaprHttpAsyncClient}.
@@ -77,4 +80,26 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
     return super.invokeAPIVoid("DELETE", url, null);
   }
+
+
+  public void publishEvent(String topic, String data){
+
+  }
+
+  public void invokeBinding(String data, Map<String,String> metadata){
+
+  }
+
+  public String getState(String key, String consistency){
+    return null;
+  }
+
+  public void saveState(){
+
+  }
+
+  public void deleteState(){
+
+  }
+
 }

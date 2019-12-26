@@ -2,7 +2,9 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.actors;
+package io.dapr.client;
+
+import io.dapr.actors.Constants;
 
 /**
  * Base class for client builders

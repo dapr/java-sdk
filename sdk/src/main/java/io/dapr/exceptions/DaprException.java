@@ -2,7 +2,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.actors;
+package io.dapr.exceptions;
 
 import java.io.IOException;
 
@@ -21,7 +21,7 @@ public class DaprException extends IOException {
    *
    * @param daprError Server-side error.
    */
-  DaprException(DaprError daprError) {
+  public DaprException(DaprError daprError) {
     this(daprError.getErrorCode(), daprError.getMessage());
   }
 

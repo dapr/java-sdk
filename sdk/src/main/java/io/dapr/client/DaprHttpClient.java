@@ -2,7 +2,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.actors;
+package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -40,12 +40,12 @@ public abstract class AbstractDaprClient {
   private final OkHttpClient httpClient;
 
   /**
-   * Creates a new instance of {@link AbstractDaprClient}.
+   * Creates a new instance of {@link DaprHttpClient}.
    *
    * @param port Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  public AbstractDaprClient(int port, OkHttpClient httpClient) {
+  public DaprHttpClient(int port, OkHttpClient httpClient) {
     this.baseUrl = String.format("http://%s:%d/", Constants.DEFAULT_HOSTNAME, port);;
     this.httpClient = httpClient;
   }
