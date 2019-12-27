@@ -11,7 +11,6 @@ import java.util.UUID;
 import okhttp3.*;
 import reactor.core.publisher.Mono;
 
-// base class of hierarchy
 public abstract class AbstractDaprHttpClient {
 
   /**
