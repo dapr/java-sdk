@@ -63,4 +63,22 @@ public final class Constants {
    * String format for Actors timer registration relative url..
    */
   public static String ACTOR_TIMER_RELATIVE_URL_FORMAT = ACTORS_BASE_URL + "/%s/%s/reminders/%s";
+
+  /**
+   * Invoke Publish Path
+   */
+  public static String PUBLISH_PATH = DEFAULT_HOSTNAME + ":" + DEFAULT_PORT + API_VERSION + "/publish";
+
+  /**
+   * Invoke Binding Path
+   */
+  public static String BINDING_PATH = DEFAULT_HOSTNAME + ":" + DEFAULT_PORT + API_VERSION + "/binding";
+
+  /**
+   * State Path
+   */
+  public static String STATE_PATH = DEFAULT_HOSTNAME + ":" + DEFAULT_PORT + API_VERSION + "/state";
+
+
+
 }

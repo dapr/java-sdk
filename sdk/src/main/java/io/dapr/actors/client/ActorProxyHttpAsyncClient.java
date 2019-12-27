@@ -5,13 +5,14 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.*;
+import io.dapr.client.AbstractDaprHttpClient;
 import okhttp3.*;
 import reactor.core.publisher.Mono;
 
 /**
  * Http client to call actors methods.
  */
-class ActorProxyHttpAsyncClient extends AbstractDaprClient implements ActorProxyAsyncClient {
+class ActorProxyHttpAsyncClient extends AbstractDaprHttpClient implements ActorProxyAsyncClient {
 
   /**
    * Creates a new instance of {@link ActorProxyHttpAsyncClient}.

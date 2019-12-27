@@ -31,7 +31,7 @@ public class DaprException extends IOException {
    * @param errorCode Client-side error code.
    * @param message Client-side error message.
    */
-  DaprException(String errorCode, String message) {
+  public DaprException(String errorCode, String message) {
     super(String.format("%s: %s", errorCode, message));
     this.errorCode = errorCode;
   }

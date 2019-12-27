@@ -4,18 +4,27 @@
  */
 package io.dapr.actors.runtime;
 
-import io.dapr.client.DaprHttpClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.AbstractDaprHttpClient;
 import io.dapr.actors.Constants;
+import io.dapr.exceptions.DaprException;
 import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Http client to call Dapr's API for actors.
  */
 //public class DaprHttpAsyncClient implements DaprAsyncClient {
-class AppToDaprHttpAsyncClient extends DaprHttpClient implements AppToDaprAsyncClient {
+class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDaprAsyncClient {
+
+  private ObjectMapper mapper;
+
+  private Map<String,String> dataMap;
+
 
   /**
    * Creates a new instance of {@link AppToDaprHttpAsyncClient}.
@@ -82,23 +91,122 @@ class AppToDaprHttpAsyncClient extends DaprHttpClient implements AppToDaprAsyncC
   }
 
 
-  public void publishEvent(String topic, String data){
+  public <T> Mono<T> publishEvent(String topic, String data, String method) throws DaprException {
+
+    if(topic.isEmpty() || topic == null){
+      throw new DaprException("500","Topic cannot be null or empty.");
+    }
+
+    if(method.isEmpty() || method == null){
+      throw new DaprException("500","Method cannot be null or empty.");
+    }
+
+
+    String url = method.equals("POST") ?Constants.PUBLISH_PATH: Constants.PUBLISH_PATH+"/"+topic;
+
+     try{
+
+       dataMap = new HashMap();
+       dataMap.put(topic,data);
+
+       String jsonResult = mapper.writerWithDefaultPrettyPrinter()
+               .writeValueAsString(dataMap);
+
+       super.invokeAPI(method, url, jsonResult);
+     }catch(Exception e){
+      throw new RuntimeException(e);
+    }
+    return Mono.empty();
+  }
+
+  public <T> Mono<T> invokeBinding(String name, String data, String method) throws DaprException {
+
+    if(name.isEmpty() || name == null){
+      throw new DaprException("500","Name cannot be null or empty.");
+    }
+
+    if(method.isEmpty() || method == null){
+      throw new DaprException("500","Method cannot be null or empty.");
+    }
+
+    String url = method.equals("POST") ?Constants.BINDING_PATH : Constants.BINDING_PATH +"/" +name;
+
+    try{
+
+      dataMap = new HashMap();
+      dataMap.put(name,data);
+
+      String jsonResult = mapper.writerWithDefaultPrettyPrinter()
+              .writeValueAsString(dataMap);
+
+      super.invokeAPI(method, url, jsonResult);
+    }catch(Exception e){
+      throw new RuntimeException(e);
+    }
+
+    return Mono.empty();
+  }
+
+
+
+  public <T> Mono<T> getState(String key) throws DaprException {
+
+    if(key.isEmpty() || key == null){
+      throw new DaprException("500","Name cannot be null or empty.");
+    }
+
+    String url = Constants.STATE_PATH+"/"+key;
+
+    try{
+      super.invokeAPI("GET", url, null);
+    }catch(Exception e){
+      throw new RuntimeException(e);
+    }
+
+    return Mono.empty();
 
   }
 
-  public void invokeBinding(String data, Map<String,String> metadata){
+  public <T> Mono<T> saveState(String key, String data) throws DaprException {
+
+    if(key.isEmpty() || key == null){
+      throw new DaprException("500","Name cannot be null or empty.");
+    }
+
+    String url = Constants.STATE_PATH;
+
+    try{
+
+      dataMap = new HashMap();
+      dataMap.put(key,data);
+
+      String jsonResult = mapper.writerWithDefaultPrettyPrinter()
+              .writeValueAsString(dataMap);
+
+      super.invokeAPI("POST", url, jsonResult);
+    }catch(Exception e){
+      throw new RuntimeException(e);
+    }
+
+    return Mono.empty();
 
   }
 
-  public String getState(String key, String consistency){
-    return null;
-  }
+  public <T> Mono<T> deleteState(String key) throws DaprException {
 
-  public void saveState(){
+    if(key.isEmpty() || key == null){
+      throw new DaprException("500","Name cannot be null or empty.");
+    }
 
-  }
+    String url = Constants.STATE_PATH+"/"+key;
 
-  public void deleteState(){
+    try{
+      super.invokeAPI("DELETE", url, null);
+    }catch(Exception e){
+      throw new RuntimeException(e);
+    }
+
+    return Mono.empty();
 
   }
 
