@@ -26,11 +26,19 @@ public abstract class AbstractClientBuilder {
   }
 
   /**
+   * Returns configured port.
+   * @return
+   */
+  protected int getPort() {
+    return this.port;
+  }
+
+  /**
    * Tries to get a valid port from environment variable or returns default.
    *
    * @return Port defined in env variable or default.
    */
-  protected static int GetEnvPortOrDefault() {
+  private static int GetEnvPortOrDefault() {
     String envPort = System.getenv(Constants.ENV_DAPR_HTTP_PORT);
     if (envPort == null) {
       return Constants.DEFAULT_PORT;
@@ -44,4 +52,5 @@ public abstract class AbstractClientBuilder {
 
     return Constants.DEFAULT_PORT;
   }
+
 }

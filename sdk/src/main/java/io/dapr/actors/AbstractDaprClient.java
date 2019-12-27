@@ -5,16 +5,13 @@
 package io.dapr.actors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.*;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.UUID;
+import okhttp3.*;
+import reactor.core.publisher.Mono;
 
-/**
- * Base for Dapr HTTP Client.
- */
+// base class of hierarchy
 public abstract class AbstractDaprClient {
 
   /**
@@ -109,10 +106,10 @@ public abstract class AbstractDaprClient {
     RequestBody body = json != null ? RequestBody.create(MEDIA_TYPE_APPLICATION_JSON, json) : REQUEST_BODY_EMPTY_JSON;
 
     Request request = new Request.Builder()
-        .url(new URL(this.baseUrl + urlString))
-        .method(method, body)
-        .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
-        .build();
+      .url(new URL(this.baseUrl + urlString))
+      .method(method, body)
+      .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
+      .build();
 
     this.httpClient.newCall(request).enqueue(new Callback() {
 

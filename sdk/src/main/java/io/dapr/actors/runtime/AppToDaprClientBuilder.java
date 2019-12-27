@@ -13,11 +13,6 @@ import okhttp3.OkHttpClient;
 class AppToDaprClientBuilder extends AbstractClientBuilder {
 
   /**
-   * Default port for Dapr after checking environment variable.
-   */
-  private int port = AppToDaprClientBuilder.GetEnvPortOrDefault();
-
-  /**
    * Builds an async client.
    *
    * @return Builds an async client.
@@ -25,6 +20,6 @@ class AppToDaprClientBuilder extends AbstractClientBuilder {
   public AppToDaprAsyncClient buildAsyncClient() {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
     // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
-    return new AppToDaprHttpAsyncClient(this.port, builder.build());
+    return new AppToDaprHttpAsyncClient(super.getPort(), builder.build());
   }
 }

@@ -32,8 +32,8 @@ import java.util.Map;
  * Service for Actor runtime.
  * 1. Build and install jars:
  * mvn clean install
- * 2. Run in server mode:
- * dapr run --app-id hellogrpc --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorService -Dexec.args="-p 3000"
+ * 2. Run the server:
+ * dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorService -Dexec.args="-p 3000"
  */
 public class DemoActorService {
 
