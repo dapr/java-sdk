@@ -16,9 +16,9 @@ public interface ActorFactory<T extends AbstractActor> {
 
   /**
    * Creates an Actor.
-   * @param actorService Actor Service.
+   * @param actorRuntimeContext Actor type's context in the runtime.
    * @param actorId Actor Id.
    * @return Actor or null it failed.
    */
-  T createActor(ActorService actorService, ActorId actorId);
+  T createActor(ActorRuntimeContext<T> actorRuntimeContext, ActorId actorId);
 }

@@ -9,5 +9,6 @@ package io.dapr.examples.actors.http;
  * Example of implementation of an Actor.
  */
 public interface DemoActor {
-  // TODO.
+
+  String say(String something);
 }

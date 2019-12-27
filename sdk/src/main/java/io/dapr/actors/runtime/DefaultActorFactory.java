@@ -16,34 +16,22 @@ import java.lang.reflect.Constructor;
 class DefaultActorFactory<T extends AbstractActor> implements ActorFactory<T> {
 
   /**
-   * Information on the {@link Actor} type being serviced.
-   */
-  private final ActorTypeInformation<T> actorTypeInformation;
-
-  /**
-   * Instantiates the default factory for Actors of a given type.
-   * @param actorTypeInformation Information of the actor type for this instance.
-   */
-  DefaultActorFactory(ActorTypeInformation<T> actorTypeInformation) {
-    this.actorTypeInformation = actorTypeInformation;
-  }
-
-  /**
    * {@inheritDoc}
    */
   @Override
-  public T createActor(ActorService actorService, ActorId actorId) {
+  public T createActor(ActorRuntimeContext<T> actorRuntimeContext, ActorId actorId) {
     try {
-      if (this.actorTypeInformation == null) {
+      if (actorRuntimeContext == null) {
         return null;
       }
 
-      Constructor<T> constructor = this
-        .actorTypeInformation
-        .getImplementationClass()
-        .getConstructor(ActorService.class, ActorId.class);
-      return constructor.newInstance(actorService, actorId);
-    } catch (ReflectiveOperationException e) {
+      Constructor<T> constructor = actorRuntimeContext
+          .getActorTypeInformation()
+          .getImplementationClass()
+          .getConstructor(ActorRuntimeContext.class, ActorId.class);
+      return constructor.newInstance(actorRuntimeContext, actorId);
+    } catch (Exception e) {
+      //TODO: Use ActorTrace.
       e.printStackTrace();
     }
     return null;

@@ -27,7 +27,7 @@ final class ActorTypeInformation<T> {
   /**
    * Actor's immediate interfaces.
    */
-  private final Collection<Class> interfaces;
+  private final Collection<Class<?>> interfaces;
 
   /**
    * Whether Actor type is abstract.
@@ -50,7 +50,7 @@ final class ActorTypeInformation<T> {
    */
   private ActorTypeInformation(String name,
       Class<T> implementationClass,
-      Collection<Class> interfaces,
+      Collection<Class<?>> interfaces,
       boolean abstractClass,
       boolean remindable) {
     this.name = name;
@@ -84,7 +84,7 @@ final class ActorTypeInformation<T> {
    *
    * @return Collection of actor interfaces.
    */
-  public Collection<Class> getInterfaces() {
+  public Collection<Class<?>> getInterfaces() {
     return Collections.unmodifiableCollection(this.interfaces);
   }
 

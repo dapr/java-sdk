@@ -5,13 +5,16 @@
 package io.dapr.actors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.net.URL;
-import java.util.UUID;
 import okhttp3.*;
 import reactor.core.publisher.Mono;
 
-// base class of hierarchy
+import java.io.IOException;
+import java.net.URL;
+import java.util.UUID;
+
+/**
+ * Base for Dapr HTTP Client.
+ */
 public abstract class AbstractDaprClient {
 
   /**

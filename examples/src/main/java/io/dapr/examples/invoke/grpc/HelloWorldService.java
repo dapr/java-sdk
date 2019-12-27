@@ -125,7 +125,7 @@ public class HelloWorldService {
 
   public static void main(String[] args) throws Exception {
     Options options = new Options();
-    options.addRequiredOption("p", "port", true, "Port to listen or send event to.");
+    options.addRequiredOption("p", "port", true, "Port to listen to.");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);

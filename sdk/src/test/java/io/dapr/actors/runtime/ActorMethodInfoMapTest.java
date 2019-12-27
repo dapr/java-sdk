@@ -19,12 +19,12 @@ public class ActorMethodInfoMapTest {
 
   @Test
   public void normalUsage() {
-    ArrayList<Class<TestActor>> interfaceTypes = new ArrayList<Class<TestActor>>();
+    ArrayList<Class<?>> interfaceTypes = new ArrayList<>();
     interfaceTypes.add(TestActor.class);
     ActorMethodInfoMap m = new ActorMethodInfoMap(interfaceTypes);
 
     try {
-      Method m1 = m.LookupActorMethodInfo("getData");
+      Method m1 = m.get("getData");
       Assert.assertEquals("getData", m1.getName());
       Class c = m1.getReturnType();
       Assert.assertEquals(c.getClass(), String.class.getClass());
@@ -37,11 +37,11 @@ public class ActorMethodInfoMapTest {
 
   @Test(expected = NoSuchMethodException.class)
   public void lookUpNonExistingMethod() throws NoSuchMethodException {
-    ArrayList<Class<TestActor>> interfaceTypes = new ArrayList<Class<TestActor>>();
+    ArrayList<Class<?>> interfaceTypes = new ArrayList<>();
     interfaceTypes.add(TestActor.class);
     ActorMethodInfoMap m = new ActorMethodInfoMap(interfaceTypes);
 
-    m.LookupActorMethodInfo("thisMethodDoesNotExist");
+    m.get("thisMethodDoesNotExist");
   }
 
   /**
