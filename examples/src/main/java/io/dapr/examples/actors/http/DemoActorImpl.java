@@ -9,6 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.Actor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
+import io.dapr.actors.runtime.ActorType;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -18,6 +19,7 @@ import java.util.TimeZone;
 /**
  * Implementation of the DemoActor for the server side.
  */
+@ActorType(Name = "DemoActor")
 public class DemoActorImpl extends AbstractActor implements DemoActor, Actor {
 
   /**

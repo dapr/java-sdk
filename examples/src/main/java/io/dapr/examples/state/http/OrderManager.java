@@ -44,7 +44,6 @@ import static java.lang.System.out;
 public class OrderManager {
 
   static HttpClient httpClient;
-  static final List<Integer> httpOkStatus = Arrays.asList(200,201);
 
   public static void main(String[] args) throws IOException {
     int httpPort = 3000;
@@ -59,7 +58,7 @@ public class OrderManager {
       out.println("Fetching order!");
       fetch(stateUrl + "/order").thenAccept(response -> {
         int resCode = response.statusCode() == 200 ? 200 : 500;
-        String body = response.statusCode() == 200 ? response.body() : "Could not get state.";
+        String body = (response.statusCode() == 200) || (response.statusCode() == 201) ? response.body() : "Could not get state.";
 
         try {
           e.sendResponseHeaders(resCode, body.getBytes().length);
@@ -92,7 +91,7 @@ public class OrderManager {
         out.printf("Writing to state: %s\n", state.toString());
 
         post(stateUrl, state.toString()).thenAccept(response -> {
-          int resCode = httpOkStatus.contains(response.statusCode()) ? 201 : 500;
+          int resCode = (response.statusCode() == 200) || (response.statusCode() == 201) ? 201 : 500;
           String body = response.body();
           try {
             e.sendResponseHeaders(resCode, body.getBytes().length);

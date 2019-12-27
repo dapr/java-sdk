@@ -19,7 +19,7 @@ class ActorProxyHttpAsyncClient extends AbstractDaprClient implements ActorProxy
    * @param port Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  public ActorProxyHttpAsyncClient(int port, OkHttpClient httpClient) {
+  ActorProxyHttpAsyncClient(int port, OkHttpClient httpClient) {
     super(port, httpClient);
   }
 

@@ -9,7 +9,7 @@ import io.dapr.actors.ActorId;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 /**
  * Testing the default constructor of an Actor.

@@ -5,6 +5,9 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 
+/**
+ * Proxy to communicate to a given Actor instance in Dapr.
+ */
 public interface ActorProxy {
 
     /**
@@ -14,15 +17,12 @@ public interface ActorProxy {
      */
     ActorId getActorId();
 
-
-
     /**
      * Returns actor implementation type of the actor associated with the proxy object.
      *
-     * @return An String object.
+     * @return Actor's type name.
      */
     String getActorType();
-
 
     /**
      * Invokes an Actor method on Dapr.
@@ -41,7 +41,7 @@ public interface ActorProxy {
      * @param clazz The type of the return class.
      * @return Asynchronous result with the Actor's response.
      */
-    <T> Mono<T> invokeActorMethod(String methodName, Object data,  Class<T> clazz) throws IOException;
+    <T> Mono<T> invokeActorMethod(String methodName, Object data,  Class<T> clazz);
 
     /**
      * Invokes an Actor method on Dapr.
@@ -49,7 +49,7 @@ public interface ActorProxy {
      * @param methodName Method name to invoke.
      * @return Asynchronous result with the Actor's response.
      */
-    public Mono<String> invokeActorMethod(String methodName) ;
+    Mono<String> invokeActorMethod(String methodName);
 
     /**
      * Invokes an Actor method on Dapr.
@@ -58,6 +58,6 @@ public interface ActorProxy {
      * @param data Object with the data.
      * @return Asynchronous result with the Actor's response.
      */
-    public Mono<String> invokeActorMethod(String methodName, Object data) throws IOException;
+    Mono<String> invokeActorMethod(String methodName, Object data);
 
 }

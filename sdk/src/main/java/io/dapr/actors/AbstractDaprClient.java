@@ -5,16 +5,13 @@
 package io.dapr.actors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.*;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.UUID;
+import okhttp3.*;
+import reactor.core.publisher.Mono;
 
-/**
- * Base for Dapr HTTP Client.
- */
+// base class of hierarchy
 public abstract class AbstractDaprClient {
 
   /**
@@ -75,11 +72,25 @@ public abstract class AbstractDaprClient {
    * @return Asynchronous text
    */
   public final Mono<String> invokeAPI(String method, String urlString, String json) throws RuntimeException {
+
+    DaprHttpCallback cb = new DaprHttpCallback() {
+
+      @Override
+      public void onFailure(Call call, Exception e) {
+        Mono.error(e);
+      }
+
+      @Override
+      public void onSuccess(String response) {
+        Mono.just(response);
+      }
+    };
     try {
-     return tryInvokeAPI(method, urlString, json);
+      tryInvokeAPI(method, urlString, json, cb);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+    return Mono.empty();
   }
 
   /**
@@ -90,31 +101,40 @@ public abstract class AbstractDaprClient {
    * @param json JSON payload or null.
    * @return text
    */
-  private final Mono<String> tryInvokeAPI(String method, String urlString, String json) throws IOException, DaprException {
+  private final void tryInvokeAPI(String method, String urlString, String json, final DaprHttpCallback cb) throws IOException, DaprException {
     String requestId = UUID.randomUUID().toString();
     RequestBody body = json != null ? RequestBody.create(MEDIA_TYPE_APPLICATION_JSON, json) : REQUEST_BODY_EMPTY_JSON;
 
     Request request = new Request.Builder()
-        .url(new URL(this.baseUrl + urlString))
-        .method(method, body)
-        .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
-        .build();
+      .url(new URL(this.baseUrl + urlString))
+      .method(method, body)
+      .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
+      .build();
 
+    this.httpClient.newCall(request).enqueue(new Callback() {
 
-    try (Response response = this.httpClient.newCall(request).execute()) {
-      try (ResponseBody responseBody = response.body()) {
-        if (!response.isSuccessful()) {
-          DaprError error = parseDaprError(response.body().string());
-          if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-            return Mono.error(new DaprException(error));
+      @Override
+      public void onFailure(Call call, IOException e) {
+        cb.onFailure(call, e);
+      }
+
+      @Override
+      public void onResponse(Call call, Response response) throws IOException {
+        try (ResponseBody responseBody = response.body()) {
+          if (!response.isSuccessful()) {
+            DaprError error = parseDaprError(response.body().string());
+            response.close();
+            if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
+              throw new DaprException(error);
+            }
+          } else {
+            String respBodyString = responseBody.string();
+            cb.onSuccess(respBodyString);
+            response.close();
           }
-          return Mono.empty();
-        } else {
-          String respBodyString = responseBody.string();
-          return Mono.just(respBodyString);
         }
       }
-    }
+    });
 
   }
 
@@ -137,6 +157,25 @@ public abstract class AbstractDaprClient {
     }
   }
 
+  public interface DaprHttpCallback {
 
+    /**
+     * Called when the server response was not 2xx or when an exception was
+     * thrown in the process
+     *
+     * @param call - in case of server error (4xx, 5xx) this contains the server
+     * response in case of IO exception this is null
+     * @param e - contains the exception. in case of server error (4xx, 5xx)
+     * this is null
+     */
+    public void onFailure(Call call, Exception e);
+
+    /**
+     * Contains the server response
+     *
+     * @param response Success response.
+     */
+    public void onSuccess(String response);
+  }
 
 }
