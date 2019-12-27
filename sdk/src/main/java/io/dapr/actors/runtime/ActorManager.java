@@ -1,7 +1,6 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -13,28 +12,50 @@ import java.util.function.Function;
 
 /**
  * Manages actors of a specific type.
- *
  */
 class ActorManager<T extends AbstractActor> {
 
+  /**
+   * Context for the Actor runtime.
+   */
   private final ActorRuntimeContext<T> runtimeContext;
 
+  /**
+   * Methods found in Actors.
+   */
   private final ActorMethodInfoMap actorMethods;
 
+  /**
+   * Active Actor instances.
+   */
   private final Map<ActorId, T> activeActors;
 
+  /**
+   * Instantiates a new manager for a given actor referenced in the runtimeContext.
+   * @param runtimeContext Runtime context for the Actor.
+   */
   ActorManager(ActorRuntimeContext runtimeContext) {
     this.runtimeContext = runtimeContext;
     this.actorMethods = new ActorMethodInfoMap(runtimeContext.getActorTypeInformation().getInterfaces());
     this.activeActors = Collections.synchronizedMap(new HashMap<>());
   }
 
+  /**
+   * Activates an Actor.
+   * @param actorId Actor identifier.
+   * @return Asynchronous void response.
+   */
   Mono<Void> activateActor(ActorId actorId) {
     T actor = this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId);
 
     return actor.onActivateInternal().then(this.onActivatedActor(actorId, actor));
   }
 
+  /**
+   * Deactivates an Actor.
+   * @param actorId Actor identifier.
+   * @return Asynchronous void response.
+   */
   Mono<Void> deactivateActor(ActorId actorId) {
     T actor = this.activeActors.remove(actorId);
     if (actor != null) {
@@ -44,17 +65,31 @@ class ActorManager<T extends AbstractActor> {
     return Mono.empty();
   }
 
+  /**
+   * Invokes a given method in the Actor.
+   * @param actorId Identifier for Actor being invoked.
+   * @param methodName Name of method being invoked.
+   * @param request Input object for the method being invoked.
+   * @return Asynchronous void response.
+   */
   Mono<String> invokeMethod(ActorId actorId, String methodName, String request) {
     return invokeMethod(actorId, null, methodName, request);
   }
 
+  /**
+   * Invokes reminder for Actor.
+   * @param actorId Identifier for Actor being invoked.
+   * @param reminderName Name of reminder being invoked.
+   * @param request Input object for the reminder being invoked.
+   * @return Asynchronous void response.
+   */
   Mono<Void> invokeReminder(ActorId actorId, String reminderName, String request) {
     if (!this.runtimeContext.getActorTypeInformation().isRemindable()) {
       return Mono.empty();
     }
 
     try {
-      ActorReminderInfo reminder = this.runtimeContext.getActorSerializer().deserialize(request, ActorReminderInfo.class);
+      ActorReminderParams reminder = this.runtimeContext.getActorSerializer().deserialize(request, ActorReminderParams.class);
 
       return invoke(
           actorId,
@@ -66,13 +101,19 @@ class ActorManager<T extends AbstractActor> {
     }
   }
 
+  /**
+   * Invokes a timer for a given Actor.
+   * @param actorId Identifier for Actor.
+   * @param timerName Name of timer being invoked.
+   * @return Asynchronous void response.
+   */
   Mono<Void> invokeTimer(ActorId actorId, String timerName) {
     try {
       AbstractActor actor = this.activeActors.getOrDefault(actorId, null);
       if (actor == null) {
         throw new IllegalArgumentException(
             String.format("Could not find actor %s of type %s.",
-                actorId.getStringId(),
+                actorId.toString(),
                 this.runtimeContext.getActorTypeInformation().getName()));
       }
 
@@ -95,15 +136,28 @@ class ActorManager<T extends AbstractActor> {
     }
   }
 
+  /**
+   * Internal callback for when Actor is activated.
+   * @param actorId Actor identifier.
+   * @param actor Actor's instance.
+   * @return Asynchronous void response.
+   */
   private Mono<Void> onActivatedActor(ActorId actorId, T actor) {
     this.activeActors.put(actorId, actor);
     return Mono.empty();
   }
 
+  /**
+   * Internal method to actually invoke a reminder.
+   * @param actor Actor that owns the reminder.
+   * @param reminderName Name of the reminder.
+   * @param reminderParams Params for the reminder.
+   * @return Asynchronous void response.
+   */
   private Mono<Void> doReminderInvokation(
       Remindable actor,
       String reminderName,
-      ActorReminderInfo reminderParams) {
+      ActorReminderParams reminderParams) {
     try {
       Object data = this.runtimeContext.getActorSerializer().deserialize(
           reminderParams.getData(),
@@ -118,6 +172,14 @@ class ActorManager<T extends AbstractActor> {
     }
   }
 
+  /**
+   * Internal method to actually invoke Actor's method.
+   * @param actorId Identifier for the Actor.
+   * @param context Method context to be invoked.
+   * @param methodName Method name to be invoked.
+   * @param request Input object to be passed in to the invoked method.
+   * @return Asynchronous void response.
+   */
   private Mono<String> invokeMethod(ActorId actorId, ActorMethodContext context, String methodName, Object request) {
     ActorMethodContext actorMethodContext = context;
     if (actorMethodContext == null) {
@@ -126,12 +188,10 @@ class ActorManager<T extends AbstractActor> {
 
     return this.invoke(actorId, actorMethodContext, actor -> {
       try {
-        Class<T> clazz = this.runtimeContext.getActorTypeInformation().getImplementationClass();
-
         // Finds the actor method with the given name and 1 or no parameter.
         Method method = this.actorMethods.get(methodName);
 
-        Object response = null;
+        Object response;
 
         if (method.getParameterCount() == 0) {
           response = method.invoke(actor);
@@ -172,22 +232,27 @@ class ActorManager<T extends AbstractActor> {
     }).map(r -> r.toString());
   }
 
-  private <T> Mono<Object> invoke(ActorId actorId, ActorMethodContext context, Function<AbstractActor, Mono<T>> func) {
+  /**
+   * Internal call to invoke a method, timer or reminder for an Actor.
+   * @param actorId Actor identifier.
+   * @param context Context for the method/timer/reminder call.
+   * @param func Function to perform the method call.
+   * @param <T> Expected return type for the function call.
+   * @return Asynchronous response for the returned object.
+   */
+  private <T> Mono<T> invoke(ActorId actorId, ActorMethodContext context, Function<AbstractActor, Mono<T>> func) {
     try {
       AbstractActor actor = this.activeActors.getOrDefault(actorId, null);
       if (actor == null) {
         throw new IllegalArgumentException(
             String.format("Could not find actor %s of type %s.",
-                actorId.getStringId(),
+                actorId.toString(),
                 this.runtimeContext.getActorTypeInformation().getName()));
       }
 
-      Mono<Void> preMethodCall = actor.onPreActorMethodInternal(context);
-      Mono<T> methodCall = func.apply(actor);
-      Mono<Void> postMethodCall = actor.onPostActorMethodInternal(context);
-
-      // TODO: find a way to make this generic and return Mono<T> instead of Mono<Object>.
-      return Flux.concat(preMethodCall, methodCall, postMethodCall).singleOrEmpty();
+      return actor.onPreActorMethodInternal(context).then(
+        func.apply(actor).flatMap(result -> actor.onPostActorMethodInternal(context).thenReturn(result))
+      );
     } catch (Exception e) {
       return Mono.error(e);
     }

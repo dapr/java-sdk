@@ -50,9 +50,9 @@ class ActorStateSerializer {
       return serialize((ActorTimer<?>) state);
     }
 
-    if (state.getClass() == ActorReminderInfo.class) {
+    if (state.getClass() == ActorReminderParams.class) {
       // Special serializer for this internal classes.
-      return serialize((ActorReminderInfo) state);
+      return serialize((ActorReminderParams) state);
     }
 
     if (isPrimitiveOrEquivalent(state.getClass())) {
@@ -77,9 +77,9 @@ class ActorStateSerializer {
       return (T) value;
     }
 
-    if (clazz == ActorReminderInfo.class) {
+    if (clazz == ActorReminderParams.class) {
       // Special serializer for this internal classes.
-      return (T) deserialize(value);
+      return (T) deserializeActorReminder(value);
     }
 
     if (isPrimitiveOrEquivalent(clazz)) {
@@ -94,6 +94,11 @@ class ActorStateSerializer {
     return OBJECT_MAPPER.readValue(value, clazz);
   }
 
+  /**
+   * Checks if the class is a primitive or equivalent.
+   * @param clazz Class to be checked.
+   * @return True if primitive or equivalent.
+   */
   private static boolean isPrimitiveOrEquivalent(Class<?> clazz) {
     if (clazz == null) {
       return false;
@@ -111,6 +116,13 @@ class ActorStateSerializer {
         (clazz == Void.class));
   }
 
+  /**
+   * Parses a given String to the corresponding object defined by class.
+   * @param value String to be parsed.
+   * @param clazz Class of the expected result type.
+   * @param <T> Result type.
+   * @return Result as corresponding type.
+   */
   private static <T> T parse(String value, Class<T> clazz) {
     if (value == null) {
       if (boolean.class == clazz) return (T) Boolean.FALSE;
@@ -135,12 +147,18 @@ class ActorStateSerializer {
     return null;
   }
 
+  /**
+   * Faster serialization for Actor's timer.
+   * @param timer Timer to be serialized.
+   * @return JSON String.
+   * @throws IOException If cannot generate JSON.
+   */
   private static String serialize(ActorTimer<?> timer) throws IOException {
     try (Writer writer = new StringWriter()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
-      generator.writeStringField("dueTime", ConverterUtils.ConvertDurationToDaprFormat(timer.getDueTime()));
-      generator.writeStringField("period", ConverterUtils.ConvertDurationToDaprFormat(timer.getPeriod()));
+      generator.writeStringField("dueTime", DurationUtils.ConvertDurationToDaprFormat(timer.getDueTime()));
+      generator.writeStringField("period", DurationUtils.ConvertDurationToDaprFormat(timer.getPeriod()));
       generator.writeEndObject();
       generator.close();
       writer.flush();
@@ -148,12 +166,18 @@ class ActorStateSerializer {
     }
   }
 
-  private static String serialize(ActorReminderInfo reminder) throws IOException {
+  /**
+   * Faster serialization for Actor's reminder.
+   * @param reminder Reminder to be serialized.
+   * @return JSON String.
+   * @throws IOException If cannot generate JSON.
+   */
+  private static String serialize(ActorReminderParams reminder) throws IOException {
     try (Writer writer = new StringWriter()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
-      generator.writeStringField("dueTime", ConverterUtils.ConvertDurationToDaprFormat(reminder.getDueTime()));
-      generator.writeStringField("period", ConverterUtils.ConvertDurationToDaprFormat(reminder.getPeriod()));
+      generator.writeStringField("dueTime", DurationUtils.ConvertDurationToDaprFormat(reminder.getDueTime()));
+      generator.writeStringField("period", DurationUtils.ConvertDurationToDaprFormat(reminder.getPeriod()));
       if (reminder.getData() != null) {
         generator.writeStringField("data", reminder.getData());
       }
@@ -164,16 +188,22 @@ class ActorStateSerializer {
     }
   }
 
-  private static ActorReminderInfo deserialize(String value) throws IOException {
+  /**
+   * Deserializes an Actor Reminder.
+   * @param value String to be deserialized.
+   * @return Actor Reminder.
+   * @throws IOException If cannot parse JSON.
+   */
+  private static ActorReminderParams deserializeActorReminder(String value) throws IOException {
     if (value == null) {
       return null;
     }
 
     JsonNode node = OBJECT_MAPPER.readTree(value);
-    Duration dueTime = ConverterUtils.ConvertDurationFromDaprFormat(node.get("dueTime").asText());
-    Duration period = ConverterUtils.ConvertDurationFromDaprFormat(node.get("period").asText());
+    Duration dueTime = DurationUtils.ConvertDurationFromDaprFormat(node.get("dueTime").asText());
+    Duration period = DurationUtils.ConvertDurationFromDaprFormat(node.get("period").asText());
     String data = node.get("data") != null ? node.get("data").asText() : null;
 
-    return new ActorReminderInfo(data, dueTime, period);
+    return new ActorReminderParams(data, dueTime, period);
   }
 }

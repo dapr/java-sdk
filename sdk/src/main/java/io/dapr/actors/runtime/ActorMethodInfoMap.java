@@ -15,6 +15,10 @@ class ActorMethodInfoMap {
    */
   private final Map<String, Method> methods;
 
+  /**
+   * Instantiates a given Actor map based on the interfaces found in the class.
+   * @param interfaceTypes Interfaces found in the Actor class.
+   */
   ActorMethodInfoMap(Collection<Class<?>> interfaceTypes) {
     Map<String, Method> methods = new HashMap<>();
 
@@ -33,6 +37,12 @@ class ActorMethodInfoMap {
     this.methods = Collections.unmodifiableMap(methods);
   }
 
+  /**
+   * Gets the Actor's method by name.
+   * @param methodName Name of the method.
+   * @return Method.
+   * @throws NoSuchMethodException If method is not found.
+   */
   Method get(String methodName) throws NoSuchMethodException {
     Method method = this.methods.get(methodName);
     if (method == null) {

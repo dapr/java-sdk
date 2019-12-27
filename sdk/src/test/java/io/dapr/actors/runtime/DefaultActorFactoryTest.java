@@ -74,7 +74,8 @@ public class DefaultActorFactoryTest {
         mock(ActorStateSerializer.class),
         mock(ActorFactory.class),
         ActorTypeInformation.create(clazz),
-        mock(AppToDaprAsyncClient.class));
+        mock(AppToDaprAsyncClient.class),
+        mock(DaprStateAsyncProvider.class));
   }
 
 }

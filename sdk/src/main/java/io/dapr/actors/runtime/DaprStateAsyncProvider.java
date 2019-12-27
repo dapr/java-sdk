@@ -7,6 +7,7 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import io.dapr.actors.ActorId;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -32,8 +33,8 @@ class DaprStateAsyncProvider {
     this.serializer = serializer;
   }
 
-  <T> Mono<T> load(String actorType, String actorId, String stateName, Class<T> clazz) {
-    Mono<String> result = this.daprAsyncClient.getState(actorType, actorId, stateName);
+  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
+    Mono<String> result = this.daprAsyncClient.getState(actorType, actorId.toString(), stateName);
 
     return result
             .filter(s -> (s != null) && (!s.isEmpty()))
@@ -46,8 +47,8 @@ class DaprStateAsyncProvider {
             });
   }
 
-  Mono<Boolean> contains(String actorType, String actorId, String stateName) {
-    Mono<String> result = this.daprAsyncClient.getState(actorType, actorId, stateName);
+  Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
+    Mono<String> result = this.daprAsyncClient.getState(actorType, actorId.toString(), stateName);
 
     return result.map(s -> {
       return (s != null) && (s.length() > 0);
@@ -76,7 +77,7 @@ class DaprStateAsyncProvider {
    * @param stateChanges Collection of changes to be performed transactionally.
    * @return Void.
    */
-  Mono<Void> apply(String actorType, String actorId, ActorStateChange... stateChanges)
+  Mono<Void> apply(String actorType, ActorId actorId, ActorStateChange... stateChanges)
   {
     if ((stateChanges == null) || stateChanges.length == 0) {
       return Mono.empty();
@@ -135,6 +136,6 @@ class DaprStateAsyncProvider {
       Mono.empty();
     }
 
-    return this.daprAsyncClient.saveStateTransactionally(actorType, actorId, payload);
+    return this.daprAsyncClient.saveStateTransactionally(actorType, actorId.toString(), payload);
   }
 }

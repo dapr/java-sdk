@@ -125,7 +125,8 @@ public class ActorRuntime {
             this.actorSerializer,
             actualActorFactory,
             actorTypeInfo,
-            this.appToDaprAsyncClient);
+            this.appToDaprAsyncClient,
+            new DaprStateAsyncProvider(this.appToDaprAsyncClient, this.actorSerializer));
 
     // Create ActorManagers, override existing entry if registered again.
     this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
