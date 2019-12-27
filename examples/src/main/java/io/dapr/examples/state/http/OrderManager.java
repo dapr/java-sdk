@@ -20,6 +20,8 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -56,7 +58,7 @@ public class OrderManager {
       out.println("Fetching order!");
       fetch(stateUrl + "/order").thenAccept(response -> {
         int resCode = response.statusCode() == 200 ? 200 : 500;
-        String body = response.statusCode() == 200 ? response.body() : "Could not get state.";
+        String body = (response.statusCode() == 200) || (response.statusCode() == 201) ? response.body() : "Could not get state.";
 
         try {
           e.sendResponseHeaders(resCode, body.getBytes().length);
@@ -89,7 +91,7 @@ public class OrderManager {
         out.printf("Writing to state: %s\n", state.toString());
 
         post(stateUrl, state.toString()).thenAccept(response -> {
-          int resCode = response.statusCode() == 200 ? 200 : 500;
+          int resCode = (response.statusCode() == 200) || (response.statusCode() == 201) ? 201 : 500;
           String body = response.body();
           try {
             e.sendResponseHeaders(resCode, body.getBytes().length);
