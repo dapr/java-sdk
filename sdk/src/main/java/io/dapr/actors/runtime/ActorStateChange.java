@@ -7,9 +7,8 @@ package io.dapr.actors.runtime;
 
 /**
  * Represents a state change for an actor.
- * @param <T> Type of the value being changed.
  */
-public final class ActorStateChange<T> {
+public final class ActorStateChange {
 
   /**
    * Name of the state being changed.
@@ -19,7 +18,7 @@ public final class ActorStateChange<T> {
   /**
    * New value for the state being changed.
    */
-  private final T value;
+  private final Object value;
 
   /**
    * Type of change {@link ActorStateChangeKind}.
@@ -32,7 +31,7 @@ public final class ActorStateChange<T> {
    * @param value New value for the state being changed.
    * @param changeKind Kind of change.
    */
-  ActorStateChange(String stateName, T value, ActorStateChangeKind changeKind) {
+  ActorStateChange(String stateName, Object value, ActorStateChangeKind changeKind) {
     this.stateName = stateName;
     this.value = value;
     this.changeKind = changeKind;
@@ -50,7 +49,7 @@ public final class ActorStateChange<T> {
    * Gets the new value of the state being changed.
    * @return New value.
    */
-  T getValue() {
+  Object getValue() {
     return value;
   }
 

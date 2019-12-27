@@ -23,7 +23,7 @@ public class ActorIdTest {
   public void getId() {
     String id = "123";
     ActorId actorId = new ActorId(id);
-    Assert.assertEquals(id, actorId.getStringId());
+    Assert.assertEquals(id, actorId.toString());
   }
 
   @Test

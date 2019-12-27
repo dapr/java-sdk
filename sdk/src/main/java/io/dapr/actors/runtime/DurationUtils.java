@@ -5,9 +5,9 @@
 
 package io.dapr.actors.runtime;
 
-import java.time.*;
+import java.time.Duration;
 
-public class ConverterUtils {
+public class DurationUtils {
 
   /**
    * Converts time from the String format used by Dapr into a Duration.
@@ -84,8 +84,8 @@ public class ConverterUtils {
   /**
    * Helper to get the "days" part of the Duration.  For example if the duration is 26 hours, this returns 1.
    *
-   * @param d
-   * @return
+   * @param d Duration
+   * @return Number of days.
    */
   static long getDaysPart(Duration d) {
     long t = d.getSeconds() / 60 / 60 / 24;
@@ -95,7 +95,7 @@ public class ConverterUtils {
   /**
    * Helper to get the "hours" part of the Duration.  For example if the duration is 26 hours, this is 1 day, 2 hours, so this returns 2.
    *
-   * @param The duration to parse
+   * @param d The duration to parse
    * @return the hour part of the duration
    */
   static long getHoursPart(Duration d) {
@@ -107,7 +107,7 @@ public class ConverterUtils {
   /**
    * Helper to get the "minutes" part of the Duration.
    *
-   * @param The duration to parse
+   * @param d The duration to parse
    * @return the minutes part of the duration
    */
   static long getMinutesPart(Duration d) {
@@ -119,7 +119,7 @@ public class ConverterUtils {
   /**
    * Helper to get the "seconds" part of the Duration.
    *
-   * @param The duration to parse
+   * @param d The duration to parse
    * @return the seconds part of the duration
    */
   static long getSecondsPart(Duration d) {
@@ -131,7 +131,7 @@ public class ConverterUtils {
   /**
    * Helper to get the "millis" part of the Duration.
    *
-   * @param The duration to parse
+   * @param d The duration to parse
    * @return the milliseconds part of the duration
    */
   static long getMilliSecondsPart(Duration d) {

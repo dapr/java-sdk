@@ -4,16 +4,30 @@
  */
 package io.dapr.actors.runtime;
 
-import io.dapr.actors.*;
+import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorTrace;
+import reactor.core.publisher.Mono;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Contains methods to register actor types. Registering the types allows the
  * runtime to create instances of the actor.
  */
 public class ActorRuntime {
+
+  /**
+   * A trace type used when logging.
+   */
+  private static final String TRACE_TYPE = "ActorRuntime";
+
+  /**
+   * Tracing errors, warnings and info logs.
+   */
+  private static final ActorTrace ACTOR_TRACE = new ActorTrace();
 
   /**
    * Gets an instance to the ActorRuntime. There is only 1.
@@ -23,17 +37,22 @@ public class ActorRuntime {
   /**
    * A client used to communicate from the actor to the Dapr runtime.
    */
-  private static AppToDaprAsyncClient appToDaprAsyncClient;
+  private final AppToDaprAsyncClient appToDaprAsyncClient;
 
   /**
-   * A trace type used when logging.
+   * State provider for Dapr.
    */
-  private static final String TraceType = "ActorRuntime";
+  private final DaprStateAsyncProvider daprStateProvider;
+
+  /**
+   * Serializes/deserializes objects for Actors.
+   */
+  private final ActorStateSerializer actorSerializer;
 
   /**
    * Map of ActorType --> ActorManager.
    */
-  private final HashMap<String, ActorManager> actorManagers;
+  private final Map<String, ActorManager> actorManagers;
 
   /**
    * The default constructor. This should not be called directly.
@@ -45,8 +64,10 @@ public class ActorRuntime {
       throw new IllegalStateException("ActorRuntime should only be constructed once");
     }
 
-    this.actorManagers = new HashMap<String, ActorManager>();
-    appToDaprAsyncClient = new AppToDaprClientBuilder().buildAsyncClient();
+    this.actorManagers = Collections.synchronizedMap(new HashMap<>());
+    this.appToDaprAsyncClient = new AppToDaprClientBuilder().buildAsyncClient();
+    this.actorSerializer = new ActorStateSerializer();
+    this.daprStateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, this.actorSerializer);
   }
 
   /**
@@ -67,8 +88,8 @@ public class ActorRuntime {
   }
 
   /**
-   *
-   * @return Actor type names registered with the runtime.
+   * Gets the Actor type names registered with the runtime.
+   * @return Actor type names.
    */
   public Collection<String> getRegisteredActorTypes() {
     return Collections.unmodifiableCollection(this.actorManagers.keySet());
@@ -79,9 +100,10 @@ public class ActorRuntime {
    *
    * @param clazz The type of actor.
    * @param <T> Actor class type.
+   * @return Async void task.
    */
-  public <T extends AbstractActor> void RegisterActor(Class<T> clazz) {
-    RegisterActor(clazz, null);
+  public <T extends AbstractActor> Mono<Void> registerActor(Class<T> clazz) {
+    return registerActor(clazz, null);
   }
 
   /**
@@ -90,20 +112,25 @@ public class ActorRuntime {
    * @param clazz The type of actor.
    * @param actorFactory An optional factory to create actors.
    * @param <T> Actor class type.
+   * @return Async void task.
    * This can be used for dependency injection into actors.
    */
-  public <T extends AbstractActor> void RegisterActor(Class<T> clazz, ActorFactory actorFactory) {
-    ActorTypeInformation actorTypeInfo = ActorTypeInformation.create(clazz);
+  public <T extends AbstractActor> Mono<Void> registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
+    ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
-    ActorFactory actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>(actorTypeInfo);
-      // TODO: Refactor into a Builder class.
-      DaprStateAsyncProvider stateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, new ActorStateSerializer());
-      ActorService actorService = new ActorServiceImpl(actorTypeInfo, stateProvider, actualActorFactory);
+    ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
+
+    ActorRuntimeContext<T> context = new ActorRuntimeContext<T>(
+            this,
+            this.actorSerializer,
+            actualActorFactory,
+            actorTypeInfo,
+            this.appToDaprAsyncClient,
+            new DaprStateAsyncProvider(this.appToDaprAsyncClient, this.actorSerializer));
 
     // Create ActorManagers, override existing entry if registered again.
-    synchronized (this.actorManagers) {
-      this.actorManagers.put(actorTypeInfo.getName(), new ActorManager(actorService));
-    }
+    this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
+    return Mono.empty();
   }
 
   /**
@@ -111,10 +138,10 @@ public class ActorRuntime {
    *
    * @param actorTypeName Actor type name to activate the actor for.
    * @param actorId Actor id for the actor to be activated.
+   * @return Async void task.
    */
-  static void Activate(String actorTypeName, String actorId) {
-    // uncomment when ActorManager implemented
-    // return instance.GetActorManager(actorTypeName).ActivateActor(new ActorId(actorId));
+  public Mono<Void> activate(String actorTypeName, String actorId) {
+    return this.getActorManager(actorTypeName).flatMap(m -> m.activateActor(new ActorId(actorId)));
   }
 
   /**
@@ -122,10 +149,10 @@ public class ActorRuntime {
    *
    * @param actorTypeName Actor type name to deactivate the actor for.
    * @param actorId Actor id for the actor to be deactivated.
+   * @return Async void task.
    */
-  static void Deactivate(String actorTypeName, String actorId) {
-    // uncomment when ActorManager implemented
-    // return instance.GetActorManager(actorTypeName).DeactivateActor(new ActorId(actorId));
+  public Mono<Void> deactivate(String actorTypeName, String actorId) {
+    return this.getActorManager(actorTypeName).flatMap(m -> m.deactivateActor(new ActorId(actorId)));
   }
 
   /**
@@ -135,13 +162,11 @@ public class ActorRuntime {
    * @param actorTypeName Actor type name to invoke the method for.
    * @param actorId Actor id for the actor for which method will be invoked.
    * @param actorMethodName Method name on actor type which will be invoked.
-   * @param requestBodyStream Payload for the actor method.
-   * @param responseBodyStream Response for the actor method.
-   * @return
+   * @param request Payload for the actor method.
+   * @return Response for the actor method.
    */
-  static void Dispatch(String actorTypeName, String actorId, String actorMethodName, byte[] requestBodyStream, byte[] responseBodyStream) {
-    // uncomment when ActorManager implemented
-    // return instance.GetActorManager(actorTypeName).Dispatch(new ActorId(actorId), actorMethodName, requestBodyStream, responseBodyStream);
+  public Mono<String> invoke(String actorTypeName, String actorId, String actorMethodName, String request) {
+    return this.getActorManager(actorTypeName).flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, request));
   }
 
   /**
@@ -150,11 +175,11 @@ public class ActorRuntime {
    * @param actorTypeName Actor type name to invoke the method for.
    * @param actorId Actor id for the actor for which method will be invoked.
    * @param reminderName The name of reminder provided during registration.
-   * @param requestBodyStream Payload for the actor method
+   * @param request Payload for the actor method
+   * @return Async void task.
    */
-  static void FireReminder(String actorTypeName, String actorId, String reminderName, byte[] requestBodyStream) {
-    // uncomment when ActorManager implemented
-    // return instance.GetActorManager(actorTypeName).FireReminder(new ActorId(actorId), reminderName, requestBodyStream);
+  public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, String request) {
+    return this.getActorManager(actorTypeName).flatMap(m -> m.invokeReminder(new ActorId(actorId), reminderName, request));
   }
 
   /**
@@ -163,22 +188,32 @@ public class ActorRuntime {
    * @param actorTypeName Actor type name to invoke the method for.
    * @param actorId Actor id for the actor for which method will be invoked.
    * @param timerName The name of timer provided during registration.
+   * @return Async void task.
    */
-  static void FireTimer(String actorTypeName, String actorId, String timerName) {
-    // uncomment when ActorManager implemented
-    // return instance.GetActorManager(actorTypeName).FireTimerAsync(new ActorId(actorId), timerName);
+  public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
+    return this.getActorManager(actorTypeName).flatMap(m -> m.invokeTimer(new ActorId(actorId), timerName));
   }
 
-  private ActorManager GetActorManager(String actorTypeName) throws IllegalStateException {
+  /**
+   * Finds the actor manager or errors out.
+   * @param actorTypeName Actor type for the actor manager to be found.
+   * @return Actor manager or error if not found.
+   */
+  private Mono<ActorManager> getActorManager(String actorTypeName) {
     ActorManager actorManager = this.actorManagers.get(actorTypeName);
 
-    if (actorManager == null) {
-      String errorMsg = String.format("Actor type %s is not registered with Actor runtime.", actorTypeName);
+    try {
+      if (actorManager == null) {
+        String errorMsg = String.format("Actor type %s is not registered with Actor runtime.", actorTypeName);
 
-      ActorTrace.WriteError(errorMsg);
-      throw new IllegalStateException(errorMsg);
+        ACTOR_TRACE.writeError(TRACE_TYPE, actorTypeName, "Actor type is not registered with runtime.");
+
+        throw new IllegalStateException(errorMsg);
+      }
+    } catch (IllegalStateException e) {
+      return Mono.error(e);
     }
 
-    return actorManager;
+    return Mono.just(actorManager);
   }
 }

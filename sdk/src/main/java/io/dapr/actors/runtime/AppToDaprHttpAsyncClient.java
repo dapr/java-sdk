@@ -6,13 +6,12 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.AbstractDaprClient;
 import io.dapr.actors.Constants;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
 
 /**
  * Http client to call Dapr's API for actors.
  */
-//public class DaprHttpAsyncClient implements DaprAsyncClient {
 class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAsyncClient {
 
   /**
@@ -74,7 +73,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> unregisterTimerAsync(String actorType, String actorId, String timerName) {
+  public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
     return super.invokeAPIVoid("DELETE", url, null);
   }

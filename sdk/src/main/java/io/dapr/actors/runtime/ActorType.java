@@ -14,6 +14,10 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ActorType {
 
+  /**
+   * Overrides Actor's name.
+   * @return Actor's name.
+   */
   String Name();
 
 }

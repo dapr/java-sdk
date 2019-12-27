@@ -7,7 +7,7 @@ package io.dapr.actors.runtime;
 /**
  * Contains information about the method that is invoked by actor runtime.
  */
-class ActorMethodContext {
+public class ActorMethodContext {
 
   /**
    * Method name to be invoked.
@@ -20,7 +20,7 @@ class ActorMethodContext {
   private final ActorCallType callType;
 
   /**
-   * Constructs a new instance of {@link ActorMethodContext}
+   * Constructs a new instance of {@link ActorMethodContext}, representing a call for an Actor.
    *
    * @param methodName Method name to be invoked.
    * @param callType Call type to be used.
