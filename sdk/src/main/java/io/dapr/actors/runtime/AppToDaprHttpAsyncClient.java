@@ -6,12 +6,14 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.actors.utils.ObjectSerializer;
 import io.dapr.client.AbstractDaprHttpClient;
 import io.dapr.actors.Constants;
 import io.dapr.exceptions.DaprException;
 import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +26,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDa
   /**
    * ObjectMapper to Serialize data
    */
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectSerializer MAPPER = new ObjectSerializer();
 
   private Map<String,String> dataMap;
 
@@ -101,7 +103,7 @@ class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDa
    * @param method JSON payload or null.
    * @return Mono<String>
    */
-  public  Mono<String> publishEvent(String topic, String data, String method) throws DaprException, JsonProcessingException {
+  public  Mono<String> publishEvent(String topic, String data, String method) throws Exception {
 
     if (topic.isEmpty() || topic == null ) {
       throw new DaprException("500" , "Topic cannot be null or empty.");
@@ -116,21 +118,20 @@ class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDa
     dataMap = new HashMap();
     dataMap.put(topic,data);
 
-    String jsonResult = MAPPER.writerWithDefaultPrettyPrinter()
-               .writeValueAsString(dataMap);
+    String jsonResult = MAPPER.serialize(dataMap);
 
     return super.invokeAPI(method, url, jsonResult);
   }
 
   /**
-   * Creating invokeBinding for Http Client
+   * Creating invokeBinding Method for Http Client
    *
    * @param name HTTP method.
    * @param data url as String.
    * @param method JSON payload or null.
    * @return Mono<String>
    */
-  public Mono<String> invokeBinding(String name, String data, String method) throws DaprException, JsonProcessingException {
+  public Mono<String> invokeBinding(String name, String data, String method) throws Exception {
 
     if (name.isEmpty() || name == null) {
       throw new DaprException("500", "Name cannot be null or empty.");
@@ -145,14 +146,13 @@ class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDa
       dataMap = new HashMap();
       dataMap.put(name,data);
 
-      String jsonResult = MAPPER.writerWithDefaultPrettyPrinter()
-              .writeValueAsString(dataMap);
+      String jsonResult = MAPPER.serialize(dataMap);
 
      return super.invokeAPI(method, url, jsonResult);
   }
 
   /**
-   * Creating invokeBinding for Http Client
+   * Creating invokeBinding Method for Http Client
    *
    * @param key HTTP method.
    * @return Mono<String>
@@ -169,13 +169,13 @@ class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDa
   }
 
   /**
-   * Creating invokeBinding for Http Client
+   * Creating invokeBinding Method for Http Client
    *
    * @param key HTTP method.
    * @param data HTTP method.
    * @return Mono<String>
    */
-  public Mono<String> saveState(String key, String data) throws DaprException, JsonProcessingException {
+  public Mono<String> saveState(String key, String data) throws Exception {
 
     if (key.isEmpty() || key == null) {
       throw new DaprException("500", "Name cannot be null or empty.");
@@ -186,14 +186,13 @@ class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDa
       dataMap = new HashMap();
       dataMap.put(key,data);
 
-      String jsonResult = MAPPER.writerWithDefaultPrettyPrinter()
-              .writeValueAsString(dataMap);
+      String jsonResult = MAPPER.serialize(dataMap);
 
       return super.invokeAPI("POST", url, jsonResult);
   }
 
   /**
-   * Creating invokeBinding for Http Client
+   * Creating invokeBinding Method for Http Client
    *
    * @param key HTTP method.
    * @return Mono<String>

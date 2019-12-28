@@ -67,17 +67,17 @@ public final class Constants {
   /**
    * Invoke Publish Path
    */
-  public static String PUBLISH_PATH = DEFAULT_HOSTNAME + ":" + DEFAULT_PORT + API_VERSION + "/publish";
+  public static String PUBLISH_PATH = API_VERSION + "/publish";
 
   /**
    * Invoke Binding Path
    */
-  public static String BINDING_PATH = DEFAULT_HOSTNAME + ":" + DEFAULT_PORT + API_VERSION + "/binding";
+  public static String BINDING_PATH = API_VERSION + "/binding";
 
   /**
    * State Path
    */
-  public static String STATE_PATH = DEFAULT_HOSTNAME + ":" + DEFAULT_PORT + API_VERSION + "/state";
+  public static String STATE_PATH = API_VERSION + "/state";
 
 
 
