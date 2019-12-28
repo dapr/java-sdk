@@ -1,7 +1,6 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.ActorStateSerializer;
 import io.dapr.actors.utils.ObjectSerializer;
 
 /**
@@ -12,7 +11,7 @@ public class ActorProxyBuilder {
   /**
    * Serializer for content to be sent back and forth between actors.
    */
-  private static final ObjectSerializer SERIALIZER = new ActorStateSerializer();
+  private static final ObjectSerializer SERIALIZER = new ObjectSerializer();
 
   /**
    * Builder for the Dapr client.

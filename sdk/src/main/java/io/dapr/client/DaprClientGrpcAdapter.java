@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 package io.dapr.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -9,33 +13,36 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
+/**
+ * An adapter for the GRPC Client.
+ * @see io.dapr.DaprGrpc
+ * @see io.dapr.client.DaprClient
+ */
+class DaprClientGrpcAdapter implements DaprClient {
 
-public class DaprGrpcClientAdapter implements DaprClientAdapter {
-
+  /**
+   * The GRPC client to be used
+   * @see io.dapr.DaprGrpc.DaprFutureStub
+   */
   private DaprGrpc.DaprFutureStub client;
+  /**
+   * A utitlity class for serialize and deserialize the messages sent and retrived by the client.
+   */
   private ObjectSerializer objectSerializer;
 
-  private DaprGrpcClientAdapter(DaprGrpc.DaprFutureStub futureClient) {
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   * @param futureClient
+   * @see io.dapr.client.DaprClientBuilder
+   */
+  DaprClientGrpcAdapter(DaprGrpc.DaprFutureStub futureClient) {
     client = futureClient;
     objectSerializer = new ObjectSerializer();
   }
 
-  public static DaprClientAdapter build(String host, int port) {
-    if (null == host || "".equals(host.trim())) {
-      throw new IllegalStateException("Host must is required.");
-    }
-    if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
-    }
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-    return new DaprGrpcClientAdapter(DaprGrpc.newFutureStub(channel));
-  }
-
-  public static DaprClientAdapter build(String host) {
-    return build(host, 80);
-  }
-
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T> Mono<Void> publishEvent(T event) {
     try {
@@ -55,6 +62,9 @@ public class DaprGrpcClientAdapter implements DaprClientAdapter {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T, K> Mono<T> invokeService(K request, Class<T> clazz) {
     try {
@@ -76,6 +86,9 @@ public class DaprGrpcClientAdapter implements DaprClientAdapter {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T> Mono<Void> invokeBinding(T request) {
     try {
@@ -96,6 +109,9 @@ public class DaprGrpcClientAdapter implements DaprClientAdapter {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T, K> Mono<T> getState(K key, Class<T> clazz) {
     try {
@@ -114,6 +130,9 @@ public class DaprGrpcClientAdapter implements DaprClientAdapter {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T> Mono<Void> saveState(T state) {
     try {
@@ -133,6 +152,9 @@ public class DaprGrpcClientAdapter implements DaprClientAdapter {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T> Mono<Void> deleteState(T key) {
     try {
