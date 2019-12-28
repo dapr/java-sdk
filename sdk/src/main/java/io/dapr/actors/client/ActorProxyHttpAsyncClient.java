@@ -4,9 +4,9 @@
  */
 package io.dapr.actors.client;
 
-import io.dapr.actors.*;
 import io.dapr.client.AbstractDaprHttpClient;
-import okhttp3.*;
+import io.dapr.utils.Constants;
+import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
 
 /**
@@ -14,22 +14,22 @@ import reactor.core.publisher.Mono;
  */
 class ActorProxyHttpAsyncClient extends AbstractDaprHttpClient implements ActorProxyAsyncClient {
 
-  /**
-   * Creates a new instance of {@link ActorProxyHttpAsyncClient}.
-   *
-   * @param port Port for calling Dapr. (e.g. 3500)
-   * @param httpClient RestClient used for all API calls in this new instance.
-   */
-  ActorProxyHttpAsyncClient(int port, OkHttpClient httpClient) {
-    super(port, httpClient);
-  }
+    /**
+     * Creates a new instance of {@link ActorProxyHttpAsyncClient}.
+     *
+     * @param port       Port for calling Dapr. (e.g. 3500)
+     * @param httpClient RestClient used for all API calls in this new instance.
+     */
+    ActorProxyHttpAsyncClient(int port, OkHttpClient httpClient) {
+        super(port, httpClient);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
-    String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
-    return super.invokeAPI("PUT", url, jsonPayload);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
+        String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
+        return super.invokeAPI("PUT", url, jsonPayload);
+    }
 }

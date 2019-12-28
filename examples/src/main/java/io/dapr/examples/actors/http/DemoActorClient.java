@@ -8,7 +8,6 @@ package io.dapr.examples.actors.http;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,12 +52,13 @@ public class DemoActorClient {
 
   private static final CompletableFuture<Void> callActorNTimes(ActorProxy actor) {
     return CompletableFuture.runAsync(() -> {
+      actor.invokeActorMethod("registerReminder").block();
       for (int i = 0; i < NUM_MESSAGES_PER_ACTOR; i++) {
         String result = actor.invokeActorMethod(METHOD_NAME,
-          String.format("Actor %s said message #%d", actor.getActorId().toString(), i)).block();
+          String.format("Actor %s said message #%d", actor.getActorId().toString(), i), String.class).block();
         System.out.println(String.format("Actor %s got a reply: %s", actor.getActorId().toString(), result));
         try {
-          Thread.sleep(1000);
+          Thread.sleep((long)(1000 * Math.random()));
         } catch (InterruptedException e) {
           e.printStackTrace();
           Thread.currentThread().interrupt();

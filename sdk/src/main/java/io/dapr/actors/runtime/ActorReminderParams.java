@@ -34,9 +34,10 @@ final class ActorReminderParams {
 
     /**
      * Instantiates a new instance for the params of a reminder.
-     * @param data Data to be passed in as part of the reminder trigger.
+     *
+     * @param data    Data to be passed in as part of the reminder trigger.
      * @param dueTime Time the reminder is due for the 1st time.
-     * @param period Interval between triggers.
+     * @param period  Interval between triggers.
      */
     ActorReminderParams(String data, Duration dueTime, Duration period) {
         ValidateDueTime("DueTime", dueTime);
@@ -48,6 +49,7 @@ final class ActorReminderParams {
 
     /**
      * Gets the time the reminder is due for the 1st time.
+     *
      * @return Time the reminder is due for the 1st time.
      */
     Duration getDueTime() {
@@ -56,6 +58,7 @@ final class ActorReminderParams {
 
     /**
      * Gets the interval between triggers.
+     *
      * @return Interval between triggers.
      */
     Duration getPeriod() {
@@ -64,6 +67,7 @@ final class ActorReminderParams {
 
     /**
      * Gets the data to be passed in as part of the reminder trigger.
+     *
      * @return Data to be passed in as part of the reminder trigger.
      */
     String getData() {
@@ -72,8 +76,9 @@ final class ActorReminderParams {
 
     /**
      * Validates due time is valid, throws {@link IllegalArgumentException}.
+     *
      * @param argName Name of the argument passed in.
-     * @param value Vale being checked.
+     * @param value   Vale being checked.
      */
     private static void ValidateDueTime(String argName, Duration value) {
         if (value.compareTo(Duration.ZERO) < 0) {
@@ -85,8 +90,9 @@ final class ActorReminderParams {
 
     /**
      * Validates reminder period is valid, throws {@link IllegalArgumentException}.
+     *
      * @param argName Name of the argument passed in.
-     * @param value Vale being checked.
+     * @param value   Vale being checked.
      */
     private static void ValidatePeriod(String argName, Duration value) throws IllegalArgumentException {
         if (value.compareTo(MIN_TIME_PERIOD) < 0) {
