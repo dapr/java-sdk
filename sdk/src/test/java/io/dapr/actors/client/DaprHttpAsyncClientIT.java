@@ -4,7 +4,7 @@
  */
 package io.dapr.actors.client;
 
-import io.dapr.actors.*;
+import io.dapr.exceptions.DaprException;
 import org.junit.Assert;
 import org.junit.Test;
 

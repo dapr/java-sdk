@@ -19,6 +19,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +47,9 @@ public class DemoActorService {
     .get("/dapr/config", DemoActorService::handleDaprConfig)
     .post("/actors/{actorType}/{id}", DemoActorService::handleActorActivate)
     .delete("/actors/{actorType}/{id}", DemoActorService::handleActorDeactivate)
-    .put("/actors/{actorType}/{id}/method/{methodName}", DemoActorService::handleActorInvoke);
+    .put("/actors/{actorType}/{id}/method/{methodName}", DemoActorService::handleActorInvoke)
+    .put("/actors/{actorType}/{id}/method/timer/{timerName}", DemoActorService::handleActorTimer)
+    .put("/actors/{actorType}/{id}/method/remind/{reminderName}", DemoActorService::handleActorReminder);
 
   private final int port;
 
@@ -135,9 +138,37 @@ public class DemoActorService {
     String actorId = findParamValueOrNull(exchange, "id");
     String methodName = findParamValueOrNull(exchange, "methodName");
     exchange.startBlocking();
-    String data = findData(exchange.getInputStream());
+    String data = findMethodData(exchange.getInputStream());
     String result = ActorRuntime.getInstance().invoke(actorType, actorId, methodName, data).block();
     exchange.getResponseSender().send(buildResponse(result));
+  }
+
+  private static void handleActorTimer(HttpServerExchange exchange) throws IOException {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(DemoActorService::handleActorTimer);
+      return;
+    }
+
+    String actorType = findParamValueOrNull(exchange, "actorType");
+    String actorId = findParamValueOrNull(exchange, "id");
+    String timerName = findParamValueOrNull(exchange, "timerName");
+    ActorRuntime.getInstance().invokeTimer(actorType, actorId, timerName).block();
+    exchange.getResponseSender().send("");
+  }
+
+  private static void handleActorReminder(HttpServerExchange exchange) throws IOException {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(DemoActorService::handleActorReminder);
+      return;
+    }
+
+    String actorType = findParamValueOrNull(exchange, "actorType");
+    String actorId = findParamValueOrNull(exchange, "id");
+    String reminderName = findParamValueOrNull(exchange, "reminderName");
+    exchange.startBlocking();
+    String params = IOUtils.toString(exchange.getInputStream(), StandardCharsets.UTF_8);
+    ActorRuntime.getInstance().invokeReminder(actorType, actorId, reminderName, params).block();
+    exchange.getResponseSender().send("");
   }
 
   private static String findParamValueOrNull(HttpServerExchange exchange, String name) {
@@ -154,7 +185,7 @@ public class DemoActorService {
     return values.getFirst();
   }
 
-  private static String findData(InputStream stream) throws IOException {
+  private static String findMethodData(InputStream stream) throws IOException {
     JsonNode root = OBJECT_MAPPER.readTree(stream);
     if (root == null) {
       return null;
