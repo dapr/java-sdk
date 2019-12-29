@@ -2,17 +2,20 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.actors;
+package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URL;
 import java.util.UUID;
+
+import io.dapr.actors.Constants;
+import io.dapr.exceptions.DaprError;
+import io.dapr.exceptions.DaprException;
 import okhttp3.*;
 import reactor.core.publisher.Mono;
 
-// base class of hierarchy
-public abstract class AbstractDaprClient {
+public abstract class AbstractDaprHttpClient {
 
   /**
    * Defines the standard application/json type for HTTP calls in Dapr.
@@ -40,12 +43,12 @@ public abstract class AbstractDaprClient {
   private final OkHttpClient httpClient;
 
   /**
-   * Creates a new instance of {@link AbstractDaprClient}.
+   * Creates a new instance of {@link AbstractDaprHttpClient}.
    *
    * @param port Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  public AbstractDaprClient(int port, OkHttpClient httpClient) {
+  public AbstractDaprHttpClient(int port, OkHttpClient httpClient) {
     this.baseUrl = String.format("http://%s:%d/", Constants.DEFAULT_HOSTNAME, port);;
     this.httpClient = httpClient;
   }

@@ -4,15 +4,32 @@
  */
 package io.dapr.actors.runtime;
 
-import io.dapr.actors.AbstractDaprClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.actors.utils.ObjectSerializer;
+import io.dapr.client.AbstractDaprHttpClient;
 import io.dapr.actors.Constants;
+import io.dapr.exceptions.DaprException;
 import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Http client to call Dapr's API for actors.
  */
-class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAsyncClient {
+//public class DaprHttpAsyncClient implements DaprAsyncClient {
+class AppToDaprHttpAsyncClient extends AbstractDaprHttpClient implements AppToDaprAsyncClient {
+
+  /**
+   * ObjectMapper to Serialize data
+   */
+  private static final ObjectSerializer MAPPER = new ObjectSerializer();
+
+  private Map<String,String> dataMap;
+
 
   /**
    * Creates a new instance of {@link AppToDaprHttpAsyncClient}.
@@ -77,4 +94,118 @@ class AppToDaprHttpAsyncClient extends AbstractDaprClient implements AppToDaprAs
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
     return super.invokeAPIVoid("DELETE", url, null);
   }
+
+  /**
+   * Creating publishEvent for Http Client
+   *
+   * @param topic HTTP method.
+   * @param data url as String.
+   * @param method JSON payload or null.
+   * @return Mono<String>
+   */
+  public  Mono<String> publishEvent(String topic, String data, String method) throws Exception {
+
+    if (topic.isEmpty() || topic == null ) {
+      throw new DaprException("500" , "Topic cannot be null or empty.");
+    }
+
+    if ( method.isEmpty() || method == null ) {
+      throw new DaprException("500", "Method cannot be null or empty.");
+    }
+
+    String url = method.equals("POST") ? Constants.PUBLISH_PATH : Constants.PUBLISH_PATH + "/" + topic;
+
+    dataMap = new HashMap();
+    dataMap.put(topic,data);
+
+    String jsonResult = MAPPER.serialize(dataMap);
+
+    return super.invokeAPI(method, url, jsonResult);
+  }
+
+  /**
+   * Creating invokeBinding Method for Http Client
+   *
+   * @param name HTTP method.
+   * @param data url as String.
+   * @param method JSON payload or null.
+   * @return Mono<String>
+   */
+  public Mono<String> invokeBinding(String name, String data, String method) throws Exception {
+
+    if (name.isEmpty() || name == null) {
+      throw new DaprException("500", "Name cannot be null or empty.");
+    }
+
+    if (method.isEmpty() || method == null) {
+      throw new DaprException("500","Method cannot be null or empty.");
+    }
+
+    String url = method.equals("POST") ? Constants.BINDING_PATH : Constants.BINDING_PATH + "/" + name;
+
+      dataMap = new HashMap();
+      dataMap.put(name,data);
+
+      String jsonResult = MAPPER.serialize(dataMap);
+
+     return super.invokeAPI(method, url, jsonResult);
+  }
+
+  /**
+   * Creating invokeBinding Method for Http Client
+   *
+   * @param key HTTP method.
+   * @return Mono<String>
+   */
+  public Mono<String> getState(String key) throws DaprException {
+
+    if (key.isEmpty() || key == null) {
+      throw new DaprException("500", "Name cannot be null or empty.");
+    }
+
+    String url = Constants.STATE_PATH + "/" + key;
+
+    return super.invokeAPI("GET", url, null);
+  }
+
+  /**
+   * Creating invokeBinding Method for Http Client
+   *
+   * @param key HTTP method.
+   * @param data HTTP method.
+   * @return Mono<String>
+   */
+  public Mono<String> saveState(String key, String data) throws Exception {
+
+    if (key.isEmpty() || key == null) {
+      throw new DaprException("500", "Name cannot be null or empty.");
+    }
+
+    String url = Constants.STATE_PATH;
+
+      dataMap = new HashMap();
+      dataMap.put(key,data);
+
+      String jsonResult = MAPPER.serialize(dataMap);
+
+      return super.invokeAPI("POST", url, jsonResult);
+  }
+
+  /**
+   * Creating invokeBinding Method for Http Client
+   *
+   * @param key HTTP method.
+   * @return Mono<String>
+   */
+  public Mono<String> deleteState(String key) throws DaprException {
+
+    if (key.isEmpty() || key == null) {
+      throw new DaprException("500", "Name cannot be null or empty.");
+    }
+
+    String url = Constants.STATE_PATH + "/" + key;
+
+    return  super.invokeAPI("DELETE", url, null);
+  }
+
 }

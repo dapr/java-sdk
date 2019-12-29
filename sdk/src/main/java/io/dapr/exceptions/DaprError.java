@@ -2,12 +2,12 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.actors;
+package io.dapr.exceptions;
 
 /**
  * Represents an error message from Dapr.
  */
-class DaprError {
+public class DaprError {
 
   /**
    * Error code.
