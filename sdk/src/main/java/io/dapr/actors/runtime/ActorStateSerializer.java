@@ -16,14 +16,27 @@ import java.io.Writer;
 import java.time.Duration;
 
 /**
- * Serializes and deserializes special objects for Actors.
+ * Serializes and deserializes an object.
  */
-public class ActorStateSerializer extends ObjectSerializer {
+class ActorStateSerializer extends ObjectSerializer {
 
   /**
-   * {@inheritDoc}
+   * Shared Json Factory as per Jackson's documentation, used only for this class.
    */
-  @Override
+  private static final JsonFactory JSON_FACTORY = new JsonFactory();
+
+  /**
+   * Shared Json serializer/deserializer as per Jackson's documentation.
+   */
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  /**
+   * Serializes a given state object into byte array.
+   *
+   * @param state State object to be serialized.
+   * @return Array of bytes[] with the serialized content.
+   * @throws IOException
+   */
   public <T> String serialize(T state) throws IOException {
     if (state == null) {
       return null;
@@ -45,6 +58,13 @@ public class ActorStateSerializer extends ObjectSerializer {
 
   /**
    * {@inheritDoc}
+   * Deserializes the byte array into the original object.
+   *
+   * @param value String to be parsed.
+   * @param clazz Type of the object being deserialized.
+   * @param <T>   Generic type of the object being deserialized.
+   * @return Object of type T.
+   * @throws IOException
    */
   @Override
   public <T> T deserialize(String value, Class<T> clazz) throws IOException {
