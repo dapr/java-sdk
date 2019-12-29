@@ -10,24 +10,26 @@ package io.dapr.actors.client;
  */
 public class ActorMethodEnvelope {
 
-  /**
-   * Data serialized for input/output of Actor methods.
-   */
-  private byte[] data;
+    /**
+     * Data serialized for input/output of Actor methods.
+     */
+    private byte[] data;
 
-  /**
-   * Gets the data serialized for input/output of Actor methods.
-   * @return Data serialized for input/output of Actor methods.
-   */
-  public byte[] getData() {
-    return data;
-  }
+    /**
+     * Gets the data serialized for input/output of Actor methods.
+     *
+     * @return Data serialized for input/output of Actor methods.
+     */
+    public byte[] getData() {
+        return data;
+    }
 
-  /**
-   * Sets the data serialized for input/output of Actor methods.
-   * @param data Data serialized for input/output of Actor methods.
-   */
-  public void setData(byte[] data) {
-    this.data = data;
-  }
+    /**
+     * Sets the data serialized for input/output of Actor methods.
+     *
+     * @param data Data serialized for input/output of Actor methods.
+     */
+    public void setData(byte[] data) {
+        this.data = data;
+    }
 }

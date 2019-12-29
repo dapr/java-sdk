@@ -24,13 +24,13 @@ public class ActorTimerTest {
     ActorTimer timer = new ActorTimer(
       null,
       "testTimer",
-      null,
+      "myfunction",
       null,
       dueTime,
       period);
     String s = new ActorStateSerializer().serialize(timer);
 
-    String expected = "{\"period\":\"1h0m3s0ms\",\"dueTime\":\"0h7m17s0ms\"}";
+    String expected = "{\"period\":\"1h0m3s0ms\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
     // Deep comparison via JsonNode.equals method.
     Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }
@@ -49,14 +49,14 @@ public class ActorTimerTest {
     ActorTimer timer = new ActorTimer(
       null,
       "testTimer",
-      null,
+      "myfunction",
       null,
       dueTime,
       period);
     String s = new ActorStateSerializer().serialize(timer);
 
     // A negative period will be serialized to an empty string which is interpreted by Dapr to mean fire once only.
-    String expected = "{\"period\":\"\",\"dueTime\":\"0h7m17s0ms\"}";
+    String expected = "{\"period\":\"\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
     // Deep comparison via JsonNode.equals method.
     Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }

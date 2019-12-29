@@ -12,14 +12,14 @@ import okhttp3.OkHttpClient;
  */
 class AppToDaprClientBuilder extends AbstractClientBuilder {
 
-  /**
-   * Builds an async client.
-   *
-   * @return Builds an async client.
-   */
-  public AppToDaprAsyncClient buildAsyncClient() {
-    OkHttpClient.Builder builder = new OkHttpClient.Builder();
-    // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
-    return new AppToDaprHttpAsyncClient(super.getPort(), builder.build());
-  }
+    /**
+     * Builds an async client.
+     *
+     * @return Builds an async client.
+     */
+    public AppToDaprAsyncClient buildAsyncClient() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
+        return new AppToDaprHttpAsyncClient(super.getPort(), builder.build());
+    }
 }

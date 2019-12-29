@@ -56,7 +56,7 @@ public class ActorTypeInformationTest {
       }
 
       @Override
-      public Class getReminderStateType() {
+      public Class getStateType() {
         return null;
       }
 

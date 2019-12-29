@@ -10,5 +10,9 @@ package io.dapr.examples.actors.http;
  */
 public interface DemoActor {
 
+  void registerReminder();
+
   String say(String something);
+
+  void clock(String message);
 }

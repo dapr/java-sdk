@@ -3,8 +3,6 @@ package io.dapr.actors.client;
 import io.dapr.actors.ActorId;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-
 /**
  * Proxy to communicate to a given Actor instance in Dapr.
  */
@@ -28,7 +26,8 @@ public interface ActorProxy {
      * Invokes an Actor method on Dapr.
      *
      * @param methodName Method name to invoke.
-     * @param clazz The type of the return class.
+     * @param clazz      The type of the return class.
+     * @param <T>        The type to be returned.
      * @return Asynchronous result with the Actor's response.
      */
     <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz);
@@ -37,11 +36,12 @@ public interface ActorProxy {
      * Invokes an Actor method on Dapr.
      *
      * @param methodName Method name to invoke.
-     * @param data Object with the data.
-     * @param clazz The type of the return class.
+     * @param data       Object with the data.
+     * @param clazz      The type of the return class.
+     * @param <T>        The type to be returned.
      * @return Asynchronous result with the Actor's response.
      */
-    <T> Mono<T> invokeActorMethod(String methodName, Object data,  Class<T> clazz);
+    <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz);
 
     /**
      * Invokes an Actor method on Dapr.
@@ -49,15 +49,15 @@ public interface ActorProxy {
      * @param methodName Method name to invoke.
      * @return Asynchronous result with the Actor's response.
      */
-    Mono<String> invokeActorMethod(String methodName);
+    Mono<Void> invokeActorMethod(String methodName);
 
     /**
      * Invokes an Actor method on Dapr.
      *
      * @param methodName Method name to invoke.
-     * @param data Object with the data.
+     * @param data       Object with the data.
      * @return Asynchronous result with the Actor's response.
      */
-    Mono<String> invokeActorMethod(String methodName, Object data);
+    Mono<Void> invokeActorMethod(String methodName, Object data);
 
 }
