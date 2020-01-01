@@ -2,6 +2,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.ActorStateSerializer;
+import okhttp3.OkHttpClient;
 
 /**
  * Builder to generate an ActorProxy instance.
@@ -36,6 +37,21 @@ public class ActorProxyBuilder {
      */
     public ActorProxyBuilder withPort(int port) {
         this.clientBuilder.withPort(port);
+        return this;
+    }
+
+    public ActorProxyBuilder withHost(String host) {
+        this.clientBuilder.withHost(host);
+        return this;
+    }
+
+    public ActorProxyBuilder withThreadPoolSize(int threadPoolSize) {
+        this.clientBuilder.withThreadPoolSize(threadPoolSize);
+        return this;
+    }
+
+    public ActorProxyBuilder withOkHttpClientBuilder(OkHttpClient.Builder okHttpClientBuilder) {
+        this.clientBuilder.withOkHttpClientBuilder(okHttpClientBuilder);
         return this;
     }
 

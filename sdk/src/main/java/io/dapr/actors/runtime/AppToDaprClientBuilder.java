@@ -18,8 +18,9 @@ class AppToDaprClientBuilder extends AbstractClientBuilder {
      * @return Builds an async client.
      */
     public AppToDaprAsyncClient buildAsyncClient() {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
-        return new AppToDaprHttpAsyncClient(super.getPort(), builder.build());
+        return new AppToDaprHttpAsync(super.getHost(),
+            super.getPort(),
+            super.getThreadPoolSize(),
+            super.getOkHttpClientBuilder());
     }
 }

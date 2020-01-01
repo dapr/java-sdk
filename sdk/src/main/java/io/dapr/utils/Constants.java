@@ -17,7 +17,7 @@ public final class Constants {
     /**
      * Dapr's default hostname.
      */
-    public static final String DEFAULT_HOSTNAME = "localhost";
+    public static final String DEFAULT_HOSTNAME = "http://localhost";
 
     /**
      * Dapr's default port.
@@ -25,9 +25,23 @@ public final class Constants {
     public static final int DEFAULT_PORT = 3500;
 
     /**
+     * Dapr's HTTP Client default thread pool size.
+     */
+    public static final int DEFAULT_THREAD_POOL_SIZE  = 1;
+
+    public static enum defaultHttpMethodSupported {
+      GET,
+      PUT,
+      POST,
+      DELETE;
+    }
+
+    /**
      * Environment variable used to set Dapr's port.
      */
     public static final String ENV_DAPR_HTTP_PORT = "DAPR_HTTP_PORT";
+
+    public static final String ENV_DAPR_HTTP_HOST = "DAPR_HTTP_HOST";
 
     /**
      * Header used for request id in Dapr.

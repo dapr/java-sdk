@@ -18,8 +18,9 @@ class ActorProxyClientBuilder extends AbstractClientBuilder {
      * @return Builds an async client.
      */
     public ActorProxyAsyncClient buildAsyncClient() {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        // TODO: Expose configurations for OkHttpClient or com.microsoft.rest.RestClient.
-        return new ActorProxyHttpAsyncClient(super.getPort(), builder.build());
+        return new ActorProxyHttpAsyncClient(super.getHost(),
+            super.getPort(),
+            super.getThreadPoolSize(),
+            super.getOkHttpClientBuilder());
     }
 }
