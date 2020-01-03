@@ -65,19 +65,29 @@ class ActorProxyImpl implements ActorProxy {
      */
     @Override
     public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
+        String jasonPayload;
         try {
-            Mono<String> result = this.daprClient.invokeActorMethod(
-                    actorType,
-                    actorId.toString(),
-                    methodName,
-                    this.wrap(data));
-
-            return result
-                    .filter(s -> (s != null) && (!s.isEmpty()))
-                    .map(s -> unwrap(s, clazz));
+            jasonPayload = this.wrap(data);
         } catch (IOException e) {
             return Mono.error(e);
         }
+
+        Mono<String> result = this.daprClient.invokeActorMethod(
+                    actorType,
+                    actorId.toString(),
+                    methodName,
+                    jasonPayload
+                    );
+
+            return result
+                    .filter(s -> !s.isEmpty())
+                    .flatMap(s -> {
+                        try {
+                            return Mono.just(unwrap(s, clazz));
+                        } catch (IOException e) {
+                            return Mono.error(e);
+                        }
+                    });
     }
 
     /**
@@ -86,9 +96,15 @@ class ActorProxyImpl implements ActorProxy {
     @Override
     public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
         Mono<String> result = this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null);
-        return result
-                .filter(s -> (s != null) && (!s.isEmpty()))
-                .map(s -> unwrap(s, clazz));
+            return  result
+                    .filter(s -> !s.isEmpty())
+                    .flatMap(s -> {
+                        try {
+                            return Mono.just(unwrap(s, clazz));
+                        } catch (IOException e) {
+                           return Mono.error(e);
+                        }
+                    });
     }
 
     /**
@@ -105,16 +121,19 @@ class ActorProxyImpl implements ActorProxy {
      */
     @Override
     public Mono<Void> invokeActorMethod(String methodName, Object data) {
+        String jasonPayload;
         try {
-            Mono<String> result = this.daprClient.invokeActorMethod(
-                    actorType,
-                    actorId.toString(),
-                    methodName,
-                    this.wrap(data));
-            return result.then();
+            jasonPayload = this.wrap(data);
         } catch (IOException e) {
             return Mono.error(e);
         }
+        return this.daprClient.invokeActorMethod(
+                    actorType,
+                    actorId.toString(),
+                    methodName,
+                    jasonPayload).then();
+
+
     }
 
     /**
@@ -125,12 +144,8 @@ class ActorProxyImpl implements ActorProxy {
      * @param <T>      Expected response type.
      * @return Response object, null or RuntimeException.
      */
-    private <T> T unwrap(final String response, Class<T> clazz) {
-        try{
-            return this.serializer.deserialize(response, clazz);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    private <T> T unwrap(final String response, Class<T> clazz) throws IOException {
+        return this.serializer.deserialize(response, clazz);
     }
 
     /**

@@ -46,7 +46,7 @@ public class ActorIdTest {
     List<Wrapper> values = createEqualsTestValues();
     for (Wrapper w : values) {
       ActorId a1 = (ActorId) w.item1;
-      ActorId a2 = (ActorId) w.item2;
+      Object a2 =  w.item2;
       Assert.assertEquals(w.expectedResult, a1.equals(a2));
     }
   }
@@ -65,6 +65,7 @@ public class ActorIdTest {
     List<Wrapper> list = new ArrayList<Wrapper>();
     list.add(new Wrapper(new ActorId("1"), null, false));
     list.add(new Wrapper(new ActorId("1"), new ActorId("1"), true));
+    list.add(new Wrapper(new ActorId("1"), new Object(), false));
     list.add(new Wrapper(new ActorId("1"), new ActorId("2"), false));
 
     return list;
