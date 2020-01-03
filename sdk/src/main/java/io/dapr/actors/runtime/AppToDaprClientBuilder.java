@@ -5,7 +5,6 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.client.AbstractClientBuilder;
-import okhttp3.OkHttpClient;
 
 /**
  * Builds an instance of AppToDaprAsyncClient.
@@ -18,7 +17,7 @@ class AppToDaprClientBuilder extends AbstractClientBuilder {
      * @return Builds an async client.
      */
     public AppToDaprAsyncClient buildAsyncClient() {
-        return new AppToDaprHttpAsync(super.getHost(),
+        return new AppToDaprHttpAsyncClient(super.getHost(),
             super.getPort(),
             super.getThreadPoolSize(),
             super.getOkHttpClientBuilder());

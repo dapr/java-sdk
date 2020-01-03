@@ -88,7 +88,7 @@ public abstract class AbstractClientBuilder {
      */
     private static int getEnvPortOrDefault() {
         String envPort = System.getenv(Constants.ENV_DAPR_HTTP_PORT);
-        if (envPort == null || envPort.isBlank()) {
+        if (envPort == null || envPort.trim().isEmpty()) {
             return Constants.DEFAULT_PORT;
         }
 
@@ -103,7 +103,7 @@ public abstract class AbstractClientBuilder {
 
     private static String getEnvHostOrDefault() {
         String envHost = System.getenv(Constants.ENV_DAPR_HTTP_HOST);
-        if (envHost == null || envHost.isBlank()) {
+        if (envHost == null || envHost.trim().isEmpty()) {
             return Constants.DEFAULT_HOSTNAME;
         }
 
@@ -112,7 +112,7 @@ public abstract class AbstractClientBuilder {
 
     private static int getEnvThreadPoolSizeOrDefault() {
         String envThreadPoolSize = System.getenv(Constants.ENV_DAPR_HTTP_HOST);
-        if (envThreadPoolSize == null || envThreadPoolSize.isBlank()) {
+        if (envThreadPoolSize == null || envThreadPoolSize.trim().isEmpty()) {
             return Constants.DEFAULT_THREAD_POOL_SIZE;
         }
         try {

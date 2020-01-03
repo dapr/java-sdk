@@ -7,30 +7,27 @@ package io.dapr.actors.runtime;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.ClientRequestBuilder;
-import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
 import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
-
-import java.util.HashMap;
 
 /**
  * Http client to call Dapr's API for actors.
  */
 //public class DaprHttpAsyncClient implements DaprAsyncClient {
-class AppToDaprHttpAsync implements AppToDaprAsyncClient {
+class AppToDaprHttpAsyncClient implements AppToDaprAsyncClient {
 
   private DaprClient daprClient;
 
   /**
-   * Creates a new instance of {@link AppToDaprHttpAsync}.
+   * Creates a new instance of {@link AppToDaprHttpAsyncClient}.
    *
    * @param host              The base url for calling dapr (e.g. http://localhost
    * @param port              Port for calling Dapr. (e.g. 3500)
    * @param threadPoolSize    The size of the thread pool to be used by the http async client.
    * @param httpClientBuilder The HTTPClientBuilder already configured to build the HttpClient
    */
-  public AppToDaprHttpAsync(String host, int port, int threadPoolSize, OkHttpClient.Builder okHttpClientBuilder) {
+  public AppToDaprHttpAsyncClient(String host, int port, int threadPoolSize, OkHttpClient.Builder okHttpClientBuilder) {
     DaprClientBuilder clientBuilder = new DaprClientBuilder(DaprClientBuilder.DaprClientTypeEnum.HTTP)
         .withHost(host)
         .withPort(port)
