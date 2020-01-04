@@ -122,24 +122,24 @@
             </goals>
             <configuration>
               <rules>
-                <!--<rule>
+                <rule>
                   <element>CLASS</element>
                   <limits>
                    <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.80</minimum>
+                      <minimum>0.00</minimum>
                     </limit>
                     <limit>
                       <counter>BRANCH</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.80</minimum>
+                      <minimum>0.00</minimum>
                     </limit>
                   </limits>
                   <excludes>
                     <exclude>io.dapr.utils.Constants</exclude>
                   </excludes>
-                </rule>-->
+                </rule>
               </rules>
             </configuration>
           </execution>
