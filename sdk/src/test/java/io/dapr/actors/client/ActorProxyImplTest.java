@@ -31,8 +31,7 @@ public class ActorProxyImplTest {
         final ActorProxyHttpAsyncClient actorProxyAsyncClient = mock(ActorProxyHttpAsyncClient.class);
         when(actorProxyAsyncClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
                 .thenReturn(Mono.just("{\n" +
-                        "  \"propertyA\": \"valueA\",\n" +
-                        "  \"propertyB\": \"valueB\"\n" +
+                        "\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n" +
                         "}"));
 
         final ActorProxy actorProxy = new ActorProxyImpl(
@@ -92,8 +91,7 @@ public class ActorProxyImplTest {
         final ActorProxyHttpAsyncClient actorProxyAsyncClient = mock(ActorProxyHttpAsyncClient.class);
         when(actorProxyAsyncClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
                 .thenReturn(Mono.just("{\n" +
-                        "  \"propertyA\": \"valueA\",\n" +
-                        "  \"propertyB\": \"valueB\"\n" +
+                        "\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n" +
                         "}"));
 
         final ActorProxy actorProxy = new ActorProxyImpl(

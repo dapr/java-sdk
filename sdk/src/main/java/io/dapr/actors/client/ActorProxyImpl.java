@@ -145,7 +145,7 @@ class ActorProxyImpl implements ActorProxy {
      * @return Response object, null or RuntimeException.
      */
     private <T> T unwrap(final String response, Class<T> clazz) throws IOException {
-        return this.serializer.deserialize(response, clazz);
+        return this.serializer.unwrapMethodResponse(response, clazz);
     }
 
     /**
