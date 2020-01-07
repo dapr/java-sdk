@@ -33,7 +33,7 @@ public class DaprApplication {
    * @param args Command line arguments.
    */
   public static void main(String[] args) {
-    SpringApplication.run(DaprApplication.class, args);
+    DaprApplication.start(3000);
   }
 
 }

@@ -185,7 +185,7 @@ public class ObjectSerializerTest {
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
     try {
-      serializedValue = serializer.serialize(obj);
+      serializedValue = serializer.serializeString(obj);
       assertEquals("FOUND:[[" + serializedValue + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, serializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -197,7 +197,7 @@ public class ObjectSerializerTest {
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
     try {
-      serializedValue = serializer.serialize(null);
+      serializedValue = serializer.serializeString(null);
       assertNull("The expected result is null", serializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -210,7 +210,7 @@ public class ObjectSerializerTest {
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
     try {
-      serializedValue = serializer.serialize(valueToSerialize);
+      serializedValue = serializer.serializeString(valueToSerialize);
       assertEquals(valueToSerialize, serializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -224,7 +224,7 @@ public class ObjectSerializerTest {
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
     try {
-      serializedValue = serializer.serialize(valueToSerialize.intValue());
+      serializedValue = serializer.serializeString(valueToSerialize.intValue());
       assertEquals(expectedResult, serializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
