@@ -105,7 +105,7 @@ public abstract class AbstractDaprHttpClient {
 
                         Request request = new Request.Builder()
                                 .url(new URL(this.baseUrl + urlString))
-                                .method(method, body)
+                                .method(method, (json == null && method.equals("GET")) ? null : body)
                                 .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
                                 .build();
 

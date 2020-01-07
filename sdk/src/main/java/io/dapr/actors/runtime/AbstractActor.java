@@ -39,11 +39,6 @@ public abstract class AbstractActor {
     private final ActorId id;
 
     /**
-     * Manager for the states in Actors.
-     */
-    private final ActorStateManager actorStateManager;
-
-    /**
      * Emits trace messages for Actors.
      */
     private final ActorTrace actorTrace;
@@ -52,6 +47,11 @@ public abstract class AbstractActor {
      * Registered timers for this Actor.
      */
     private final Map<String, ActorTimer> timers;
+
+    /**
+     * Manager for the states in Actors.
+     */
+    protected final ActorStateManager actorStateManager;
 
     /**
      * Instantiates a new Actor.
