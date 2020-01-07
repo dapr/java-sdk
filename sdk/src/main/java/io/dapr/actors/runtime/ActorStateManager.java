@@ -44,7 +44,7 @@ public class ActorStateManager {
      * @param actorTypeName Name of Actor's type.
      * @param actorId       Actor's identifier.
      */
-    public ActorStateManager(DaprStateAsyncProvider stateProvider, String actorTypeName, ActorId actorId) {
+    ActorStateManager(DaprStateAsyncProvider stateProvider, String actorTypeName, ActorId actorId) {
         this.stateProvider = stateProvider;
         this.actorTypeName = actorTypeName;
         this.actorId = actorId;
