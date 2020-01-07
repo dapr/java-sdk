@@ -7,7 +7,7 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.2.0-preview01</version>
+  <version>0.2.0</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -32,6 +32,11 @@
         <version>${grpc.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-api</artifactId>
+        <version>${grpc.version}</version>
       </dependency>
       <dependency>
         <groupId>javax.annotation</groupId>
@@ -79,6 +84,7 @@
   <modules>
     <module>sdk-autogen</module>
     <module>sdk</module>
+    <module>sdk-springboot</module>
     <module>examples</module>
   </modules>
 
