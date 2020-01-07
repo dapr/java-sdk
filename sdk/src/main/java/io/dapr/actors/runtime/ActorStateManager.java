@@ -15,7 +15,7 @@ import java.util.*;
  * <p>
  * All changes are cached in-memory until save() is called.
  */
-class ActorStateManager {
+public class ActorStateManager {
 
     /**
      * Provides states using a state store.
@@ -59,7 +59,7 @@ class ActorStateManager {
      * @param <T>       Type of the object being added.
      * @return Asynchronous void operation.
      */
-    <T> Mono<Void> add(String stateName, T value) {
+    public <T> Mono<Void> add(String stateName, T value) {
         try {
             if (stateName == null) {
                 throw new IllegalArgumentException("State's name cannot be null.");
@@ -98,7 +98,7 @@ class ActorStateManager {
      * @param <T>       Type being fetched.
      * @return Asynchronous response with fetched object.
      */
-    <T> Mono<T> get(String stateName, Class<T> clazz) {
+    public <T> Mono<T> get(String stateName, Class<T> clazz) {
         try {
             if (stateName == null) {
                 throw new IllegalArgumentException("State's name cannot be null.");
@@ -133,7 +133,7 @@ class ActorStateManager {
      * @param <T>       Type of the value being set.
      * @return Asynchronous void result.
      */
-    <T> Mono<Void> set(String stateName, T value) {
+    public <T> Mono<Void> set(String stateName, T value) {
         try {
             if (stateName == null) {
                 throw new IllegalArgumentException("State's name cannot be null.");
@@ -169,7 +169,7 @@ class ActorStateManager {
      * @param stateName State being stored.
      * @return Asynchronous void result.
      */
-    Mono<Void> remove(String stateName) {
+    public Mono<Void> remove(String stateName) {
         try {
             if (stateName == null) {
                 throw new IllegalArgumentException("State's name cannot be null.");
@@ -209,7 +209,7 @@ class ActorStateManager {
      * @param stateName State being checked.
      * @return Asynchronous boolean result indicating whether state is present.
      */
-    Mono<Boolean> contains(String stateName) {
+    public Mono<Boolean> contains(String stateName) {
         try {
             if (stateName == null) {
                 throw new IllegalArgumentException("State's name cannot be null.");
@@ -236,7 +236,7 @@ class ActorStateManager {
      *
      * @return Asynchronous void result.
      */
-    Mono<Void> save() {
+    public Mono<Void> save() {
         if (this.stateChangeTracker.isEmpty()) {
             return Mono.empty();
         }
@@ -264,7 +264,7 @@ class ActorStateManager {
      *
      * @return
      */
-    Mono<Void> clear() {
+    public Mono<Void> clear() {
         this.stateChangeTracker.clear();
         return Mono.empty();
     }
