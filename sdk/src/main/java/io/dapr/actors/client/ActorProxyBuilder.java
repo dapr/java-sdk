@@ -2,6 +2,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.ActorStateSerializer;
+import io.dapr.client.DaprClientBuilder;
 import okhttp3.OkHttpClient;
 
 /**
@@ -17,7 +18,7 @@ public class ActorProxyBuilder {
     /**
      * Builder for the Dapr client.
      */
-    private final ActorProxyClientBuilder clientBuilder = new ActorProxyClientBuilder();
+    private final DaprClientBuilder clientBuilder = new DaprClientBuilder();
 
     /**
      * Actor's type.
@@ -28,32 +29,6 @@ public class ActorProxyBuilder {
      * Actor's identifier.
      */
     private ActorId actorId;
-
-    /**
-     * Changes build config to use specific port.
-     *
-     * @param port Port to be used.
-     * @return Same builder object.
-     */
-    public ActorProxyBuilder withPort(int port) {
-        this.clientBuilder.withPort(port);
-        return this;
-    }
-
-    public ActorProxyBuilder withHost(String host) {
-        this.clientBuilder.withHost(host);
-        return this;
-    }
-
-    public ActorProxyBuilder withThreadPoolSize(int threadPoolSize) {
-        this.clientBuilder.withThreadPoolSize(threadPoolSize);
-        return this;
-    }
-
-    public ActorProxyBuilder withOkHttpClientBuilder(OkHttpClient.Builder okHttpClientBuilder) {
-        this.clientBuilder.withOkHttpClientBuilder(okHttpClientBuilder);
-        return this;
-    }
 
     /**
      * Changes build config to use given Actor's type.
@@ -96,7 +71,7 @@ public class ActorProxyBuilder {
                 this.actorType,
                 this.actorId,
                 SERIALIZER,
-                this.clientBuilder.buildAsyncClient());
+                this.clientBuilder.build());
     }
 
 }

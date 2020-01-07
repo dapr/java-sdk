@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.client.DaprClient;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,7 +75,7 @@ public class DefaultActorFactoryTest {
         mock(ActorStateSerializer.class),
         mock(ActorFactory.class),
         ActorTypeInformation.create(clazz),
-        mock(AppToDaprAsyncClient.class),
+        mock(DaprClient.class),
         mock(DaprStateAsyncProvider.class));
   }
 

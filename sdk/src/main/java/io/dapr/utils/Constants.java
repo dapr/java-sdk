@@ -24,11 +24,6 @@ public final class Constants {
      */
     public static final int DEFAULT_PORT = 3500;
 
-    /**
-     * Dapr's HTTP Client default thread pool size.
-     */
-    public static final int DEFAULT_THREAD_POOL_SIZE  = 1;
-
     public static enum defaultHttpMethodSupported {
       GET,
       PUT,
@@ -41,12 +36,12 @@ public final class Constants {
      */
     public static final String ENV_DAPR_HTTP_PORT = "DAPR_HTTP_PORT";
 
-    public static final String ENV_DAPR_HTTP_HOST = "DAPR_HTTP_HOST";
-
     /**
      * Header used for request id in Dapr.
      */
     public static final String HEADER_DAPR_REQUEST_ID = "X-DaprRequestId";
+
+    public static final String HEADER_HTTP_ETAG_ID = "If-Match";
 
     /**
      * Base URL for Dapr Actor APIs.

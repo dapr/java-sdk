@@ -4,6 +4,8 @@
  */
 package io.dapr.actors.client;
 
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
 import io.dapr.exceptions.DaprException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,8 +23,8 @@ public class DaprHttpAsyncClientIT {
    */
   @Test(expected = RuntimeException.class)
   public void invokeUnknownActor() {
-    ActorProxyAsyncClient daprAsyncClient = new ActorProxyClientBuilder().buildAsyncClient();
-    daprAsyncClient
+    DaprClient daprClient = new DaprClientBuilder().build();
+    daprClient
       .invokeActorMethod("ActorThatDoesNotExist", "100", "GetData", null)
       .doOnError(x -> {
         Assert.assertTrue(x instanceof RuntimeException);

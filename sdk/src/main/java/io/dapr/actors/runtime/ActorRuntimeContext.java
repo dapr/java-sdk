@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorTrace;
+import io.dapr.client.DaprClient;
 
 /**
  * Provides the context for the Actor's runtime.
@@ -42,7 +43,7 @@ public class ActorRuntimeContext<T extends AbstractActor> {
     /**
      * Client to communicate to Dapr's API.
      */
-    private final AppToDaprAsyncClient daprClient;
+    private final DaprClient daprClient;
 
     /**
      * State provider for given Actor Type.
@@ -63,7 +64,7 @@ public class ActorRuntimeContext<T extends AbstractActor> {
                         ActorStateSerializer actorSerializer,
                         ActorFactory<T> actorFactory,
                         ActorTypeInformation<T> actorTypeInformation,
-                        AppToDaprAsyncClient daprClient,
+                        DaprClient daprClient,
                         DaprStateAsyncProvider stateProvider) {
         this.actorRuntime = actorRuntime;
         this.actorSerializer = actorSerializer;
@@ -124,7 +125,7 @@ public class ActorRuntimeContext<T extends AbstractActor> {
      *
      * @return Client to communicate to Dapr's API.
      */
-    AppToDaprAsyncClient getDaprClient() {
+    DaprClient getDaprClient() {
         return this.daprClient;
     }
 

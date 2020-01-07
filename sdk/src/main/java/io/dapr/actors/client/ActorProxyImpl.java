@@ -2,6 +2,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.ActorStateSerializer;
+import io.dapr.client.DaprClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -29,7 +30,7 @@ class ActorProxyImpl implements ActorProxy {
     /**
      * Client to talk to the Dapr's API.
      */
-    private final ActorProxyAsyncClient daprClient;
+    private final DaprClient daprClient;
 
     /**
      * Creates a new instance of {@link ActorProxyAsyncClient}.
@@ -39,7 +40,7 @@ class ActorProxyImpl implements ActorProxy {
      * @param serializer Serializer and deserializer for method calls.
      * @param daprClient Dapr client.
      */
-    ActorProxyImpl(String actorType, ActorId actorId, ActorStateSerializer serializer, ActorProxyAsyncClient daprClient) {
+    ActorProxyImpl(String actorType, ActorId actorId, ActorStateSerializer serializer, DaprClient daprClient) {
         this.actorType = actorType;
         this.actorId = actorId;
         this.daprClient = daprClient;

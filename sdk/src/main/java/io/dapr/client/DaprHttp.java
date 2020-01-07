@@ -18,9 +18,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,13 +67,12 @@ class DaprHttp {
    *
    * @param baseUrl        Base url calling Dapr (e.g. http://localhost)
    * @param port           Port for calling Dapr. (e.g. 3500)
-   * @param threadPoolSize Number of threads for http calls.
    * @param httpClient     RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String baseUrl, int port, int threadPoolSize, OkHttpClient httpClient) {
+  DaprHttp(String baseUrl, int port, OkHttpClient httpClient) {
     this.baseUrl = String.format("%s:%d/", baseUrl, port);
     this.httpClient = httpClient;
-    this.pool = Executors.newFixedThreadPool(threadPoolSize);
+    this.pool = Executors.newWorkStealingPool();
   }
 
   /**
@@ -86,8 +83,8 @@ class DaprHttp {
    * @param json      JSON payload or null.
    * @return Asynchronous Void
    */
-  protected final CompletableFuture<Void> invokeAPIVoid(String method, String urlString, String json) {
-    CompletableFuture<String> future = this.invokeAPI(method, urlString, json);
+  protected final CompletableFuture<Void> invokeAPIVoid(String method, String urlString, String json, Map<String, String> headers) {
+    CompletableFuture<String> future = this.invokeAPI(method, urlString, json, headers);
     return future.thenAcceptAsync(future::complete);
   }
 
@@ -99,7 +96,7 @@ class DaprHttp {
    * @param json      JSON payload or null.
    * @return Asynchronous text
    */
-  public final CompletableFuture<String> invokeAPI(String method, String urlString, String json) {
+  public final CompletableFuture<String> invokeAPI(String method, String urlString, String json, Map<String, String> headers) {
     CompletableFuture<String> future = CompletableFuture.supplyAsync(
         () -> {
           try {
@@ -107,11 +104,15 @@ class DaprHttp {
             RequestBody body =
                 json != null ? RequestBody.Companion.create(json, MEDIA_TYPE_APPLICATION_JSON) : REQUEST_BODY_EMPTY_JSON;
 
-            Request request = new Request.Builder()
+            Request.Builder requestBuilder = new Request.Builder()
                 .url(new URL(this.baseUrl + urlString))
                 .method(method, body)
-                .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId)
-                .build();
+                .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
+            Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream().forEach(header ->{
+              requestBuilder.addHeader(header.getKey(), header.getValue());
+            });
+
+            Request request = requestBuilder.build();
 
             try (Response response = this.httpClient.newCall(request).execute()) {
               if (!response.isSuccessful()) {
@@ -131,75 +132,6 @@ class DaprHttp {
         }, this.pool);
 
     return future;
-  }
-
-  protected final CompletableFuture<Void> publishEvent(String method, String topic, String data) {
-    StringBuilder url = new StringBuilder(Constants.PUBLISH_PATH);
-    if (Constants.defaultHttpMethodSupported.PUT.name().equals(method)) {
-      url.append("/").append(topic);
-    }
-
-    return invokeAPIVoid(method, url.toString(), data);
-  }
-
-  /**
-   * Creating invokeBinding Method for Http Client
-   *
-   * @param method         HTTP method.
-   * @param topic/name/key entity value
-   * @param data           JSON payload or null.
-   * @return Mono<String>
-   */
-  protected final CompletableFuture<Void> invokeBinding(String method, String topic, String data) {
-
-    StringBuilder url = new StringBuilder(Constants.BINDING_PATH);
-    if (Constants.defaultHttpMethodSupported.PUT.name().equals(method)) {
-      url.append("/").append(topic);
-    }
-
-    return invokeAPIVoid(method, url.toString(), data);
-  }
-
-  /**
-   * Creating invokeBinding Method for Http Client
-   *
-   * @param key HTTP method.
-   * @return Mono<String>
-   */
-  protected final CompletableFuture<String> getState(String key) {
-
-    String url = Constants.STATE_PATH + "/" + key;
-    return invokeAPI(Constants.defaultHttpMethodSupported.GET.name(), url, null);
-  }
-
-  /**
-   * Creating Save State Method for Http Client
-   *
-   * @param data data.
-   * @return Mono<String>
-   */
-  protected final CompletableFuture<Void> saveState(String data) throws Exception {
-
-    String url = Constants.STATE_PATH;
-
-    return invokeAPIVoid(Constants.defaultHttpMethodSupported.POST.name(), url, data);
-  }
-
-  /**
-   * Creating delete State Method for Http Client
-   *
-   * @param key HTTP method.
-   * @return Mono<String>
-   */
-  protected final CompletableFuture<Void> deleteState(String key) {
-
-    if (key.isEmpty() || key == null) {
-      throw new DaprException("500", "Name cannot be null or empty.");
-    }
-
-    String url = Constants.STATE_PATH + "/" + key;
-
-    return invokeAPIVoid(Constants.defaultHttpMethodSupported.DELETE.name(), url, null);
   }
 
   /**

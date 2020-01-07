@@ -1,11 +1,15 @@
 package io.dapr.client;
 
+import io.dapr.client.domain.StateKeyValue;
+import io.dapr.client.domain.StateOptions;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -44,25 +48,15 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> publishEvent(ClientRequest<T> event) {
+  public <T> Mono<Void> publishEvent(String topic, T event) {
     try {
-      if (event.getTopic() == null || event.getTopic().trim().isEmpty()) {
+      if (topic == null || topic.trim().isEmpty()) {
         throw new DaprException("500", "Name cannot be null or empty.");
       }
-      if (!Constants.defaultHttpMethodSupported.PUT.name().equals(event.getHttpMethod()) &&
-          !Constants.defaultHttpMethodSupported.POST.name().equals(event.getHttpMethod())) {
-        throw new DaprException("405", "HTTP Method not allowed.");
-      }
-
-      String serializedEvent = objectSerializer.serialize(event.getBody());
-      Map<String, String> jsonMap = new HashMap<>();
-      String key = "data";
-      if (event.getTopic() != null && !"".equals(event.getTopic().trim())) {
-        key = event.getTopic();
-      }
-      jsonMap.put(key, serializedEvent);
-      CompletableFuture<Void> futureVoid =
-          client.publishEvent(event.getHttpMethod(), event.getTopic(), objectSerializer.serialize(jsonMap));
+      String serializedEvent = objectSerializer.serialize(event);
+      StringBuilder url = new StringBuilder(Constants.PUBLISH_PATH).append("/").append(topic);
+      CompletableFuture<Void> futureVoid = client.invokeAPIVoid(
+          Constants.defaultHttpMethodSupported.POST.name(), url.toString(), serializedEvent, null);
       return Mono.just(futureVoid).flatMap(f -> {
         try {
           f.get();
@@ -80,21 +74,28 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, K> Mono<T> invokeService(ClientRequest<K> request, Class<T> clazz) {
+  public <T, K> Mono<T> invokeService(String verb, String appId, String method, K request, Class<T> clazz) {
     try {
-      Constants.defaultHttpMethodSupported method = Constants.defaultHttpMethodSupported.valueOf(request.getHttpMethod());
-      if (method == null) {
+      if (verb == null || verb.trim().isEmpty()) {
+        throw new DaprException("500", "App Id cannot be null or empty.");
+      }
+      Constants.defaultHttpMethodSupported httMethod = Constants.defaultHttpMethodSupported.valueOf(verb.toUpperCase());
+      if (httMethod == null) {
         throw new DaprException("405", "HTTP Method not allowed.");
       }
-      String serializedRequestBody = objectSerializer.serialize(request.getBody());
-      Map<String, String> jsonMap = new HashMap<>();
-      String key = "data";
-      if (request.getTopic() != null && !"".equals(request.getTopic().trim())) {
-        key = request.getTopic();
+      if (appId == null || appId.trim().isEmpty()) {
+        throw new DaprException("500", "App Id cannot be null or empty.");
       }
-      jsonMap.put(key, serializedRequestBody);
+      if (method == null || method.trim().isEmpty()) {
+        throw new DaprException("500", "App Id cannot be null or empty.");
+      }
+      StringBuilder urlSB = new StringBuilder("/invoke/");
+      urlSB.append(objectSerializer.serialize(appId));
+      urlSB.append("/method/");
+      urlSB.append(objectSerializer.serialize(method));
+      String serializedRequestBody = objectSerializer.serialize(request);
       CompletableFuture<String> futureResponse =
-          client.invokeAPI(request.getHttpMethod(), request.getHttpUrl(), objectSerializer.serialize(jsonMap));
+          client.invokeAPI(httMethod.name(), urlSB.toString(), serializedRequestBody, null);
       return Mono.just(futureResponse).flatMap(f -> {
         try {
           return Mono.just(objectSerializer.deserialize(f.get(), clazz));
@@ -111,22 +112,28 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> invokeService(ClientRequest<T> request) {
+  public <T> Mono<Void> invokeService(String verb, String appId, String method, T request) {
     try {
-      Constants.defaultHttpMethodSupported method =
-          Constants.defaultHttpMethodSupported.valueOf(request.getHttpMethod());
-      if (method == null) {
+      if (verb == null || verb.trim().isEmpty()) {
+        throw new DaprException("500", "App Id cannot be null or empty.");
+      }
+      Constants.defaultHttpMethodSupported httMethod = Constants.defaultHttpMethodSupported.valueOf(verb.toUpperCase());
+      if (httMethod == null) {
         throw new DaprException("405", "HTTP Method not allowed.");
       }
-      String serializedRequestBody = objectSerializer.serialize(request.getBody());
-      Map<String, String> jsonMap = new HashMap<>();
-      String key = "data";
-      if (request.getTopic() != null && !"".equals(request.getTopic().trim())) {
-        key = request.getTopic();
+      if (appId == null || appId.trim().isEmpty()) {
+        throw new DaprException("500", "App Id cannot be null or empty.");
       }
-      jsonMap.put(key, serializedRequestBody);
+      if (method == null || method.trim().isEmpty()) {
+        throw new DaprException("500", "Method to invoke cannot be null or empty.");
+      }
+      StringBuilder urlSB = new StringBuilder("/invoke/");
+      urlSB.append(objectSerializer.serialize(appId));
+      urlSB.append("/method/");
+      urlSB.append(objectSerializer.serialize(method));
+      String serializedRequestBody = objectSerializer.serialize(request);
       CompletableFuture<Void> futureVoid =
-          client.invokeAPIVoid(request.getHttpMethod(), request.getHttpUrl(), objectSerializer.serialize(jsonMap));
+          client.invokeAPIVoid(httMethod.name(), urlSB.toString(), serializedRequestBody, null);
       return Mono.just(futureVoid).flatMap(f -> {
         try {
           f.get();
@@ -144,26 +151,19 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> invokeBinding(ClientRequest<T> request) {
+  public <T> Mono<Void> invokeBinding(String name, T request) {
     try {
-      if (request.getTopic() == null || request.getTopic().trim().isEmpty()) {
-        throw new DaprException("500", "Name cannot be null or empty.");
+      if (name == null || name.trim().isEmpty()) {
+        throw new DaprException("500", "Name to bind cannot be null or empty.");
       }
 
-      if (!Constants.defaultHttpMethodSupported.PUT.name().equals(request.getHttpMethod()) &&
-          !Constants.defaultHttpMethodSupported.POST.name().equals(request.getHttpMethod())) {
-        throw new DaprException("405", "Method not allowed.");
-      }
+      String serializedBidingRequestBody = objectSerializer.serialize(request);
 
-      String serializedBidingRequestBody = objectSerializer.serialize(request.getBody());
       Map<String, String> jsonMap = new HashMap<>();
-      String key = "data";
-      if (request.getTopic() != null && !"".equals(request.getTopic().trim())) {
-        key = request.getTopic();
-      }
-      jsonMap.put(key, serializedBidingRequestBody);
-      CompletableFuture<Void> futureVoid =
-          client.invokeBinding(request.getHttpMethod(), request.getTopic(), objectSerializer.serialize(jsonMap));
+      jsonMap.put("Data", serializedBidingRequestBody);
+      StringBuilder url = new StringBuilder(Constants.BINDING_PATH).append("/").append(name);
+      CompletableFuture<Void> futureVoid = client.invokeAPIVoid(
+          Constants.defaultHttpMethodSupported.POST.name(), url.toString(), objectSerializer.serialize(jsonMap), null);
       return Mono.just(futureVoid).flatMap(f -> {
         try {
           f.get();
@@ -181,13 +181,22 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, K> Mono<T> getState(ClientRequest<K> key, Class<T> clazz) {
+  public <T, K> Mono<T> getState(StateKeyValue<K> state, StateOptions stateOptions, Class<T> clazz) {
     try {
-      if (key.getBody() == null) {
+      if (state.getKey() == null) {
         throw new DaprException("500", "Name cannot be null or empty.");
       }
-      String serializedKeyBody = objectSerializer.serialize(key.getBody());
-      CompletableFuture<String> futureResponse = client.getState(serializedKeyBody);
+      Map<String, String> headers = new HashMap<>();
+      if (state.getEtag() != null && !state.getEtag().trim().isEmpty()) {
+        headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
+      }
+      String serializedKeyBody = objectSerializer.serialize(state.getKey());
+      if (stateOptions.getConsistency() != null && !stateOptions.getConsistency().trim().isEmpty()) {
+        serializedKeyBody += "?consistency=" + objectSerializer.serialize(stateOptions.getConsistency());
+      }
+      StringBuilder url = new StringBuilder(Constants.STATE_PATH).append("/").append(serializedKeyBody);
+      CompletableFuture<String> futureResponse =
+          client.invokeAPI(Constants.defaultHttpMethodSupported.GET.name(), url.toString(), null, headers);
       return Mono.just(futureResponse).flatMap(f -> {
         try {
           return Mono.just(objectSerializer.deserialize(f.get(), clazz));
@@ -204,19 +213,21 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveState(ClientRequest<T> state) {
+  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states) {
     try {
-      if (state.getBody() == null) {
-        throw new DaprException("500", "Name cannot be null or empty.");
+      if (states == null || states.isEmpty()) {
+        return Mono.empty();
       }
-      String serializedStateBody = objectSerializer.serialize(state.getBody());
-      Map<String, String> jsonMap = new HashMap<>();
-      String key = "data";
-      if (state.getTopic() != null && !"".equals(state.getTopic().trim())) {
-        key = state.getTopic();
+      Map<String, String> headers = new HashMap<>();
+      String etag = states.stream().filter(state -> null != state.getEtag() && !state.getEtag().trim().isEmpty())
+          .findFirst().orElse(new StateKeyValue<>()).getEtag();
+      if (etag != null && !etag.trim().isEmpty()) {
+        headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
-      jsonMap.put(key, serializedStateBody);
-      CompletableFuture<Void> futureVoid = client.saveState(objectSerializer.serialize(jsonMap));
+      String url = Constants.STATE_PATH;
+      String serializedStateBody = objectSerializer.serialize(states);
+      CompletableFuture<Void> futureVoid = client.invokeAPIVoid(
+          Constants.defaultHttpMethodSupported.POST.name(), url, serializedStateBody, headers);
       return Mono.just(futureVoid).flatMap(f -> {
         try {
           f.get();
@@ -230,17 +241,107 @@ public class DaprClientHttpAdapter implements DaprClient {
     }
   }
 
+  @Override
+  public <T> Mono<Void> saveState(String key, String etag, T value) {
+    StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
+    return saveStates(Arrays.asList(state));
+  }
+
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> deleteState(ClientRequest<T> key) {
+  public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions stateOptions) {
     try {
-      if (key.getBody() == null) {
+      if (state.getKey() == null) {
         throw new DaprException("500", "Name cannot be null or empty.");
       }
-      String serializedKey = objectSerializer.serialize(key.getBody());
-      CompletableFuture<Void> futureVoid = client.deleteState(serializedKey);
+      Map<String, String> headers = new HashMap<>();
+      if (state.getEtag() != null && !state.getEtag().trim().isEmpty()) {
+        headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
+      }
+      String serializedKey = objectSerializer.serialize(state.getKey());
+      if (stateOptions.getConsistency() != null && !stateOptions.getConsistency().trim().isEmpty()) {
+        serializedKey += "?consistency=" + objectSerializer.serialize(stateOptions.getConsistency());
+      }
+      String url = Constants.STATE_PATH + "/" + serializedKey;
+      CompletableFuture<Void> futureVoid = client.invokeAPIVoid(
+          Constants.defaultHttpMethodSupported.DELETE.name(), url, null, headers);
+      return Mono.just(futureVoid).flatMap(f -> {
+        try {
+          f.get();
+        } catch (Exception ex) {
+          return Mono.error(ex);
+        }
+        return Mono.empty();
+      });
+    } catch (Exception ex) {
+      return Mono.error(ex);
+    }
+  }
+
+  @Override
+  public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
+    String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
+    return actorActionString(Constants.defaultHttpMethodSupported.POST.name(), url, jsonPayload);
+  }
+
+  @Override
+  public Mono<String> getActorState(String actorType, String actorId, String keyName) {
+    String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
+    return actorActionString(Constants.defaultHttpMethodSupported.GET.name(), url, null);
+  }
+
+  @Override
+  public Mono<Void> saveStateTransactionally(String actorType, String actorId, String data) {
+    String url = String.format(Constants.ACTOR_STATE_RELATIVE_URL_FORMAT, actorType, actorId);
+    return actorActionVoid(Constants.defaultHttpMethodSupported.PUT.name(), url, data);
+  }
+
+  @Override
+  public Mono<Void> registerReminder(String actorType, String actorId, String reminderName, String data) {
+    String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
+    return actorActionVoid(Constants.defaultHttpMethodSupported.PUT.name(), url, data);
+  }
+
+  @Override
+  public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
+    String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
+    return actorActionVoid(Constants.defaultHttpMethodSupported.DELETE.name(), url, null);
+  }
+
+  @Override
+  public Mono<Void> registerTimer(String actorType, String actorId, String timerName, String data) {
+    String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
+    return actorActionVoid(Constants.defaultHttpMethodSupported.PUT.name(), url, data);
+  }
+
+  @Override
+  public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
+    String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
+    return actorActionVoid(Constants.defaultHttpMethodSupported.DELETE.name(), url, null);
+  }
+
+  private Mono<String> actorActionString(String httpVerb, String url, String payload) {
+    try {
+      CompletableFuture<String> futureResponse =
+          client.invokeAPI(httpVerb, url, objectSerializer.serialize(payload), null);
+      return Mono.just(futureResponse).flatMap(f -> {
+        try {
+          return Mono.just(objectSerializer.deserialize(f.get(), String.class));
+        } catch (Exception ex) {
+          return Mono.error(ex);
+        }
+      });
+    } catch (Exception ex) {
+      return Mono.error(ex);
+    }
+  }
+
+  private Mono<Void> actorActionVoid(String httpVerb, String url, String payload) {
+    try {
+      CompletableFuture<Void> futureVoid =
+          client.invokeAPIVoid(httpVerb, url, objectSerializer.serialize(payload), null);
       return Mono.just(futureVoid).flatMap(f -> {
         try {
           f.get();

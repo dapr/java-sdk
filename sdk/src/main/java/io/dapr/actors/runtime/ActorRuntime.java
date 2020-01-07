@@ -6,6 +6,8 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
@@ -37,7 +39,7 @@ public class ActorRuntime {
     /**
      * A client used to communicate from the actor to the Dapr runtime.
      */
-    private final AppToDaprAsyncClient appToDaprAsyncClient;
+    private final DaprClient daprClient;
 
     /**
      * State provider for Dapr.
@@ -65,9 +67,9 @@ public class ActorRuntime {
         }
 
         this.actorManagers = Collections.synchronizedMap(new HashMap<>());
-        this.appToDaprAsyncClient = new AppToDaprClientBuilder().buildAsyncClient();
+        this.daprClient = new DaprClientBuilder().build();
         this.actorSerializer = new ActorStateSerializer();
-        this.daprStateProvider = new DaprStateAsyncProvider(this.appToDaprAsyncClient, this.actorSerializer);
+        this.daprStateProvider = new DaprStateAsyncProvider(this.daprClient, this.actorSerializer);
     }
 
     /**
@@ -126,8 +128,8 @@ public class ActorRuntime {
                 this.actorSerializer,
                 actualActorFactory,
                 actorTypeInfo,
-                this.appToDaprAsyncClient,
-                new DaprStateAsyncProvider(this.appToDaprAsyncClient, this.actorSerializer));
+                this.daprClient,
+                new DaprStateAsyncProvider(this.daprClient, this.actorSerializer));
 
         // Create ActorManagers, override existing entry if registered again.
         this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
