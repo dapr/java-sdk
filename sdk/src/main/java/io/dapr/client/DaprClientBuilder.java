@@ -54,13 +54,6 @@ public class DaprClientBuilder {
     }
 
     /**
-     * Creates an instance of the builder setting the type of client to be creted
-     *
-     */
-    public DaprClientBuilder() {
-    }
-
-    /**
      * Build an instance of the Client based on the provided setup.
      *
      * @return an instance of the setup Client
@@ -103,7 +96,7 @@ public class DaprClientBuilder {
         if (daprHttClient == null) {
             synchronized (okHttpClient) {
                 if (daprHttClient == null) {
-                    DaprHttp daprHtt = new DaprHttp(host, port, okHttpClient);
+                    DaprHttp daprHtt = new DaprHttp(Constants.DEFAULT_HTTP_PROTOCOL_IDENTIFIED+host, port, okHttpClient);
                     daprHttClient = new DaprClientHttpAdapter(daprHtt);
                 }
 

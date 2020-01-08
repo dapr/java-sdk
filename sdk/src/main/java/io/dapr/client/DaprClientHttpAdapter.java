@@ -7,6 +7,8 @@ import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -181,7 +183,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, K> Mono<T> getState(StateKeyValue<K> state, StateOptions stateOptions, Class<T> clazz) {
+  public <T, K> Mono<T> getState(StateKeyValue<K> state, StateOptions options, Class<T> clazz) {
     try {
       if (state.getKey() == null) {
         throw new DaprException("500", "Name cannot be null or empty.");
@@ -191,8 +193,9 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
       }
       String serializedKeyBody = objectSerializer.serialize(state.getKey());
-      if (stateOptions.getConsistency() != null && !stateOptions.getConsistency().trim().isEmpty()) {
-        serializedKeyBody += "?consistency=" + objectSerializer.serialize(stateOptions.getConsistency());
+      serializedKeyBody += getOptionsAsQueryParameter(options);
+      if (options.getConsistency() != null && !options.getConsistency().trim().isEmpty()) {
+        serializedKeyBody += "?consistency=" + objectSerializer.serialize(options.getConsistency());
       }
       StringBuilder url = new StringBuilder(Constants.STATE_PATH).append("/").append(serializedKeyBody);
       CompletableFuture<String> futureResponse =
@@ -213,18 +216,18 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states) {
+  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options) {
     try {
       if (states == null || states.isEmpty()) {
         return Mono.empty();
       }
       Map<String, String> headers = new HashMap<>();
       String etag = states.stream().filter(state -> null != state.getEtag() && !state.getEtag().trim().isEmpty())
-          .findFirst().orElse(new StateKeyValue<>()).getEtag();
+          .findFirst().orElse(new StateKeyValue<>(null, null, null)).getEtag();
       if (etag != null && !etag.trim().isEmpty()) {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
-      String url = Constants.STATE_PATH;
+      String url = Constants.STATE_PATH + getOptionsAsQueryParameter(options);;
       String serializedStateBody = objectSerializer.serialize(states);
       CompletableFuture<Void> futureVoid = client.invokeAPIVoid(
           Constants.defaultHttpMethodSupported.POST.name(), url, serializedStateBody, headers);
@@ -242,16 +245,16 @@ public class DaprClientHttpAdapter implements DaprClient {
   }
 
   @Override
-  public <T> Mono<Void> saveState(String key, String etag, T value) {
+  public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
     StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
-    return saveStates(Arrays.asList(state));
+    return saveStates(Arrays.asList(state), options);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions stateOptions) {
+  public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
     try {
       if (state.getKey() == null) {
         throw new DaprException("500", "Name cannot be null or empty.");
@@ -261,9 +264,7 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
       }
       String serializedKey = objectSerializer.serialize(state.getKey());
-      if (stateOptions.getConsistency() != null && !stateOptions.getConsistency().trim().isEmpty()) {
-        serializedKey += "?consistency=" + objectSerializer.serialize(stateOptions.getConsistency());
-      }
+      serializedKey += getOptionsAsQueryParameter(options);
       String url = Constants.STATE_PATH + "/" + serializedKey;
       CompletableFuture<Void> futureVoid = client.invokeAPIVoid(
           Constants.defaultHttpMethodSupported.DELETE.name(), url, null, headers);
@@ -293,31 +294,31 @@ public class DaprClientHttpAdapter implements DaprClient {
   }
 
   @Override
-  public Mono<Void> saveStateTransactionally(String actorType, String actorId, String data) {
+  public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data) {
     String url = String.format(Constants.ACTOR_STATE_RELATIVE_URL_FORMAT, actorType, actorId);
     return actorActionVoid(Constants.defaultHttpMethodSupported.PUT.name(), url, data);
   }
 
   @Override
-  public Mono<Void> registerReminder(String actorType, String actorId, String reminderName, String data) {
+  public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data) {
     String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
     return actorActionVoid(Constants.defaultHttpMethodSupported.PUT.name(), url, data);
   }
 
   @Override
-  public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
+  public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
     String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
     return actorActionVoid(Constants.defaultHttpMethodSupported.DELETE.name(), url, null);
   }
 
   @Override
-  public Mono<Void> registerTimer(String actorType, String actorId, String timerName, String data) {
+  public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data) {
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
     return actorActionVoid(Constants.defaultHttpMethodSupported.PUT.name(), url, data);
   }
 
   @Override
-  public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
+  public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
     return actorActionVoid(Constants.defaultHttpMethodSupported.DELETE.name(), url, null);
   }
@@ -354,4 +355,34 @@ public class DaprClientHttpAdapter implements DaprClient {
       return Mono.error(ex);
     }
   }
+
+  private String getOptionsAsQueryParameter(StateOptions options)
+      throws IllegalAccessException, IllegalArgumentException, IOException {
+    StringBuilder sb = new StringBuilder();
+    Map<String, Object> mapOptions = transformStateOptionsToMap(options);
+    if (mapOptions != null && !mapOptions.isEmpty()) {
+      sb.append("?");
+      for (Map.Entry<String, Object> option : mapOptions.entrySet()) {
+        sb.append(option.getKey()).append("=").append(objectSerializer.serialize(option.getValue())).append("&");
+      }
+      sb.deleteCharAt(sb.length()-1);
+    }
+    return sb.toString();
+  }
+
+  private Map<String, Object> transformStateOptionsToMap(StateOptions options)
+      throws IllegalAccessException, IllegalArgumentException {
+    Map<String, Object> mapOptions = null;
+    if (options != null) {
+      mapOptions = new HashMap<>();
+      for (Field field : options.getClass().getFields()) {
+        Object fieldValue = field.get(options);
+        if (fieldValue != null) {
+          mapOptions.put(field.getName(), fieldValue);
+        }
+      }
+    }
+    return mapOptions;
+  }
+
 }

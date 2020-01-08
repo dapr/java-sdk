@@ -77,7 +77,7 @@ public class DaprStateAsyncProviderTest {
   public void happyCaseApply() {
     DaprClient daprClient = mock(DaprClient.class);
     when(daprClient
-      .saveStateTransactionally(
+      .saveActorStateTransactionally(
         eq("MyActor"),
         eq("123"),
         argThat(s -> {
@@ -133,7 +133,7 @@ public class DaprStateAsyncProviderTest {
       createDeleteChange("flag"))
       .block();
 
-    verify(daprClient).saveStateTransactionally(eq("MyActor"), eq("123"), any());
+    verify(daprClient).saveActorStateTransactionally(eq("MyActor"), eq("123"), any());
   }
 
   @Test

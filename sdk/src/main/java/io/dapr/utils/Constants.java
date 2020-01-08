@@ -17,7 +17,12 @@ public final class Constants {
     /**
      * Dapr's default hostname.
      */
-    public static final String DEFAULT_HOSTNAME = "http://localhost";
+    public static final String DEFAULT_HOSTNAME = "localhost";
+
+    /**
+     * Dapr's default http protocol.
+     */
+    public static final String DEFAULT_HTTP_PROTOCOL_IDENTIFIED = "http://";
 
     /**
      * Dapr's default port.

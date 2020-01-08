@@ -13,6 +13,7 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -162,11 +163,16 @@ class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states) {
+  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options) {
     try {
-      String serializedRequest = objectSerializer.serialize(states);
-      Map<String, String> mapStates = new HashMap<>();
-      mapStates.put("Requests", serializedRequest);
+      List<Map<String, Object>> listStates = new ArrayList<>();
+      Map<String, Object> mapOptions = transformStateOptionsToMap(options);
+      for (StateKeyValue state : states) {
+        Map<String, Object> mapState = transformStateKeyValueToMap(state, mapOptions);
+        listStates.add(mapState);
+      };
+      Map<String, Object> mapStates = new HashMap<>();
+      mapStates.put("Requests", listStates);
       byte[] byteRequests = objectSerializer.serialize(mapStates).getBytes();
       DaprProtos.SaveStateEnvelope envelope = DaprProtos.SaveStateEnvelope.parseFrom(byteRequests);
       ListenableFuture<Empty> futureEmpty = client.saveState(envelope);
@@ -184,9 +190,9 @@ class DaprClientGrpcAdapter implements DaprClient {
   }
 
   @Override
-  public <T> Mono<Void> saveState(String key, String etag, T value) {
+  public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
     StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
-    return saveStates(Arrays.asList(state));
+    return saveStates(Arrays.asList(state), options);
   }
 
   /**
@@ -194,12 +200,11 @@ class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions stateOptions) {
+  public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
     try {
-      if (stateOptions != null)  {
-        state.setOptions(stateOptions);
-      }
-      String serializedState = objectSerializer.serialize(state);
+      Map<String, Object> mapOptions = transformStateOptionsToMap(options);
+      Map<String, Object> mapState = transformStateKeyValueToMap(state, mapOptions);
+      String serializedState = objectSerializer.serialize(mapState);
       DaprProtos.DeleteStateEnvelope envelope = DaprProtos.DeleteStateEnvelope.parseFrom(serializedState.getBytes());
       ListenableFuture<Empty> futureEmpty = client.deleteState(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
@@ -230,27 +235,54 @@ class DaprClientGrpcAdapter implements DaprClient {
   }
 
   @Override
-  public Mono<Void> saveStateTransactionally(String actorType, String actorId, String data) {
+  public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
   @Override
-  public Mono<Void> registerReminder(String actorType, String actorId, String reminderName, String data) {
+  public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
   @Override
-  public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
+  public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
   @Override
-  public Mono<Void> registerTimer(String actorType, String actorId, String timerName, String data) {
+  public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
   @Override
-  public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
+  public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
+  }
+
+  private Map<String, Object> transformStateOptionsToMap(StateOptions options)
+      throws IllegalAccessException, IllegalArgumentException {
+    Map<String, Object> mapOptions = null;
+    if (options != null) {
+      mapOptions = new HashMap<>();
+      for (Field field : options.getClass().getFields()) {
+        Object fieldValue = field.get(options);
+        if (fieldValue != null) {
+          mapOptions.put(field.getName(), fieldValue);
+        }
+      }
+    }
+    return mapOptions;
+  }
+
+  private Map<String, Object> transformStateKeyValueToMap(StateKeyValue state, Map<String, Object> mapOptions)
+      throws IllegalAccessException, IllegalArgumentException {
+    Map<String, Object> mapState = new HashMap<>();
+    for (Field field : state.getClass().getFields()) {
+      mapState.put(field.getName(), field.get(state));
+    }
+    if (mapOptions != null && !mapOptions.isEmpty()) {
+      mapState.put("Options", mapOptions);
+    }
+    return mapState;
   }
 }

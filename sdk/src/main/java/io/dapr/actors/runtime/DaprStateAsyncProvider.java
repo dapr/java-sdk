@@ -137,6 +137,6 @@ class DaprStateAsyncProvider {
             Mono.empty();
         }
 
-        return this.daprClient.saveStateTransactionally(actorType, actorId.toString(), payload);
+        return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), payload);
     }
 }
