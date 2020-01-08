@@ -22,16 +22,9 @@ public class DaprClientBuilder {
     private static final int port = DaprClientBuilder.getEnvPortOrDefault();
 
     /**
-     * Default host for Dapr after checking environment variable.
+     * Unique instance of httpClient to be shared.
      */
-    private static final String host = Constants.DEFAULT_HOSTNAME;
-
-    /**
-     * The HTTP Client  that will be used to injectto connect to Dapr
-     */
-    private static OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
-
-    private static DaprClientHttpAdapter daprHttClient;
+    private static volatile DaprClientHttpAdapter daprHttClient;
 
     /**
      * Tries to get a valid port from environment variable or returns default.
@@ -70,13 +63,10 @@ public class DaprClientBuilder {
      * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
      */
     private DaprClient buildDaprClientGrpc() {
-        if (null == this.host || "".equals(this.host.trim())) {
-            throw new IllegalStateException("Host must is required.");
-        }
         if (port <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, port).usePlaintext().build();
         return new DaprClientGrpcAdapter(DaprGrpc.newFutureStub(channel));
     }
 
@@ -87,21 +77,19 @@ public class DaprClientBuilder {
      * @return
      */
     private DaprClient buildDaprClientHttp() {
-        if (null == this.host || "".equals(this.host.trim())) {
-            throw new IllegalStateException("Host must is required.");
-        }
         if (port <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
-        if (daprHttClient == null) {
-            synchronized (okHttpClient) {
-                if (daprHttClient == null) {
-                    DaprHttp daprHtt = new DaprHttp(Constants.DEFAULT_HTTP_PROTOCOL_IDENTIFIED+host, port, okHttpClient);
-                    daprHttClient = new DaprClientHttpAdapter(daprHtt);
+        if (this.daprHttClient == null) {
+            synchronized (DaprClientBuilder.class) {
+                if (this.daprHttClient == null) {
+                    OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+                    DaprHttp daprHtt = new DaprHttp(Constants.DEFAULT_BASE_HTTP_URL, port, okHttpClient);
+                    this.daprHttClient = new DaprClientHttpAdapter(daprHtt);
                 }
 
             }
         }
-        return daprHttClient;
+        return this.daprHttClient;
     }
 }

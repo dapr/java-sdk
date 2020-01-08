@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.runtime.Dapr;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /**
  * SpringBoot Controller to handle callback APIs for Dapr.
@@ -30,12 +32,12 @@ public class DaprController {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  @RequestMapping("/")
+  @GetMapping("/")
   public String index() {
     return "Greetings from Dapr!";
   }
 
-  @RequestMapping("/dapr/config")
+  @GetMapping("/dapr/config")
   public String daprConfig() throws Exception {
     try (Writer writer = new StringWriter()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
@@ -45,10 +47,7 @@ public class DaprController {
         generator.writeString(actorClass);
       }
       generator.writeEndArray();
-      generator.writeStringField("actorIdleTimeout", "10s");
-      generator.writeStringField("actorScanInterval", "1s");
-      generator.writeStringField("drainOngoingCallTimeout", "1s");
-      generator.writeBooleanField("drainBalancedActors", true);
+      // TODO: handle configuration.
       generator.writeEndObject();
       generator.close();
       writer.flush();
@@ -56,19 +55,48 @@ public class DaprController {
     }
   }
 
-  @RequestMapping(method = RequestMethod.POST, path = "/actors/{type}/{id}")
+  @GetMapping("/dapr/subscribe")
+  public String daprSubscribe() throws Exception {
+    try (Writer writer = new StringWriter()) {
+      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+      generator.writeStartArray();
+      for (String topic : Dapr.getInstance().getSubscribedTopics()) {
+        generator.writeString(topic);
+      }
+      generator.writeEndArray();
+      generator.close();
+      writer.flush();
+      return writer.toString();
+    }
+  }
+
+  @PostMapping(path = "/{name}")
+  public Mono<byte[]> invokeMethodOrTopic(@PathVariable("name") String name,
+                                          @RequestBody(required = false) byte[] body,
+                                          @RequestHeader Map<String, String> header) {
+    return Dapr.getInstance().handleInvocation(name, body, header);
+  }
+
+  @PutMapping(path = "/{name}")
+  public Mono<byte[]> invokeMethodOrTopicViaPut(@PathVariable("name") String name,
+                                          @RequestBody(required = false) byte[] body,
+                                          @RequestHeader Map<String, String> header) {
+    return Dapr.getInstance().handleInvocation(name, body, header);
+  }
+
+  @PostMapping(path = "/actors/{type}/{id}")
   public Mono<Void> activateActor(@PathVariable("type") String type,
                                   @PathVariable("id") String id) throws Exception {
     return ActorRuntime.getInstance().activate(type, id);
   }
 
-  @RequestMapping(method = RequestMethod.DELETE, path = "/actors/{type}/{id}")
+  @DeleteMapping(path = "/actors/{type}/{id}")
   public Mono<Void> deactivateActor(@PathVariable("type") String type,
                                     @PathVariable("id") String id) throws Exception {
     return ActorRuntime.getInstance().deactivate(type, id);
   }
 
-  @RequestMapping(method = RequestMethod.PUT, path = "/actors/{type}/{id}/method/{method}")
+  @PutMapping(path = "/actors/{type}/{id}/method/{method}")
   public Mono<String> invokeActorMethod(@PathVariable("type") String type,
                                         @PathVariable("id") String id,
                                         @PathVariable("method") String method,
@@ -81,14 +109,14 @@ public class DaprController {
     }
   }
 
-  @RequestMapping(method = RequestMethod.PUT, path = "/actors/{type}/{id}/method/timer/{timer}")
+  @PutMapping(path = "/actors/{type}/{id}/method/timer/{timer}")
   public Mono<Void> invokeActorTimer(@PathVariable("type") String type,
                                      @PathVariable("id") String id,
                                      @PathVariable("timer") String timer) {
     return ActorRuntime.getInstance().invokeTimer(type, id, timer);
   }
 
-  @RequestMapping(method = RequestMethod.PUT, path = "/actors/{type}/{id}/method/remind/{reminder}")
+  @PutMapping(path = "/actors/{type}/{id}/method/remind/{reminder}")
   public Mono<Void> invokeActorReminder(@PathVariable("type") String type,
                                         @PathVariable("id") String id,
                                         @PathVariable("reminder") String reminder,

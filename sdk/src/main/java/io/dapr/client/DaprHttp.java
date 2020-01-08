@@ -18,17 +18,13 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 class DaprHttp {
-
-  /**
-   * ObjectMapper to Serialize data
-   */
-  private static final ObjectSerializer MAPPER = new ObjectSerializer();
 
   /**
    * Defines the standard application/json type for HTTP calls in Dapr.
@@ -41,6 +37,11 @@ class DaprHttp {
    */
   private static final RequestBody REQUEST_BODY_EMPTY_JSON =
       RequestBody.Companion.create("", MEDIA_TYPE_APPLICATION_JSON);
+
+  /**
+   * Empty input or output.
+   */
+  private static final byte[] EMPTY_BYTES = new byte[0];
 
   /**
    * JSON Object Mapper.
@@ -65,9 +66,9 @@ class DaprHttp {
   /**
    * Creates a new instance of {@link DaprHttp}.
    *
-   * @param baseUrl        Base url calling Dapr (e.g. http://localhost)
-   * @param port           Port for calling Dapr. (e.g. 3500)
-   * @param httpClient     RestClient used for all API calls in this new instance.
+   * @param baseUrl    Base url calling Dapr (e.g. http://localhost)
+   * @param port       Port for calling Dapr. (e.g. 3500)
+   * @param httpClient RestClient used for all API calls in this new instance.
    */
   DaprHttp(String baseUrl, int port, OkHttpClient httpClient) {
     this.baseUrl = String.format("%s:%d/", baseUrl, port);
@@ -76,16 +77,14 @@ class DaprHttp {
   }
 
   /**
-   * Invokes an API asynchronously that returns Void.
+   * Invokes an API asynchronously without payload that returns a text payload.
    *
    * @param method    HTTP method.
    * @param urlString url as String.
-   * @param json      JSON payload or null.
-   * @return Asynchronous Void
+   * @return Asynchronous text
    */
-  protected final CompletableFuture<Void> invokeAPIVoid(String method, String urlString, String json, Map<String, String> headers) {
-    CompletableFuture<String> future = this.invokeAPI(method, urlString, json, headers);
-    return future.thenAcceptAsync(future::complete);
+  public final Mono<String> invokeAPI(String method, String urlString, Map<String, String> headers) {
+    return this.invokeAPI(method, urlString, (byte[])null, headers);
   }
 
   /**
@@ -93,24 +92,47 @@ class DaprHttp {
    *
    * @param method    HTTP method.
    * @param urlString url as String.
-   * @param json      JSON payload or null.
+   * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public final CompletableFuture<String> invokeAPI(String method, String urlString, String json, Map<String, String> headers) {
-    CompletableFuture<String> future = CompletableFuture.supplyAsync(
+  public final Mono<String> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
+    return this.invokeAPI(method, urlString, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
+  }
+
+  /**
+   * Invokes an API asynchronously that returns a text payload.
+   *
+   * @param method    HTTP method.
+   * @param urlString url as String.
+   * @param content   payload to be posted.
+   * @return Asynchronous text
+   */
+  public final Mono<String> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
+    return Mono.fromFuture(CompletableFuture.supplyAsync(
         () -> {
           try {
             String requestId = UUID.randomUUID().toString();
-            RequestBody body =
-                json != null ? RequestBody.Companion.create(json, MEDIA_TYPE_APPLICATION_JSON) : REQUEST_BODY_EMPTY_JSON;
+            RequestBody body = REQUEST_BODY_EMPTY_JSON;
+
+            String contentType = headers != null ? headers.get("content-type") : null;
+            MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
+            if (content == null) {
+              body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON) ?
+                  REQUEST_BODY_EMPTY_JSON : RequestBody.Companion.create(new byte[0], mediaType);
+            } else {
+              body =  RequestBody.Companion.create(content, mediaType);
+            }
 
             Request.Builder requestBuilder = new Request.Builder()
                 .url(new URL(this.baseUrl + urlString))
                 .method(method, body)
                 .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
-            Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream().forEach(header ->{
-              requestBuilder.addHeader(header.getKey(), header.getValue());
-            });
+            if (headers != null) {
+              Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
+                  .forEach(header -> {
+                    requestBuilder.addHeader(header.getKey(), header.getValue());
+                  });
+            }
 
             Request request = requestBuilder.build();
 
@@ -129,9 +151,7 @@ class DaprHttp {
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
-        }, this.pool);
-
-    return future;
+        }, this.pool));
   }
 
   /**

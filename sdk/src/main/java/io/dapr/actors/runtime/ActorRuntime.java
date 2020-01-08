@@ -103,10 +103,9 @@ public class ActorRuntime {
      *
      * @param clazz The type of actor.
      * @param <T>   Actor class type.
-     * @return Async void task.
      */
-    public <T extends AbstractActor> Mono<Void> registerActor(Class<T> clazz) {
-        return registerActor(clazz, null);
+    public <T extends AbstractActor> void registerActor(Class<T> clazz) {
+        registerActor(clazz, null);
     }
 
     /**
@@ -115,10 +114,9 @@ public class ActorRuntime {
      * @param clazz        The type of actor.
      * @param actorFactory An optional factory to create actors.
      * @param <T>          Actor class type.
-     * @return Async void task.
      * This can be used for dependency injection into actors.
      */
-    public <T extends AbstractActor> Mono<Void> registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
+    public <T extends AbstractActor> void registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
         ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
         ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
@@ -133,7 +131,6 @@ public class ActorRuntime {
 
         // Create ActorManagers, override existing entry if registered again.
         this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
-        return Mono.empty();
     }
 
     /**

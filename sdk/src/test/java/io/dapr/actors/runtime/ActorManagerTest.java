@@ -177,7 +177,7 @@ public class ActorManagerTest {
 
   private String createReminderParams(String data) throws IOException {
     ActorReminderParams params = new ActorReminderParams(data, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return this.context.getActorSerializer().serialize(params);
+    return this.context.getActorSerializer().serializeString(params);
   }
 
   private static ActorId newActorId() {

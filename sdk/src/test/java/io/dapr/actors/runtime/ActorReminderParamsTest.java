@@ -30,7 +30,7 @@ public class ActorReminderParamsTest {
     ActorReminderParams original = new ActorReminderParams(null, Duration.ZERO.plusMinutes(2), Duration.ZERO.plusMinutes((5)));
     ActorReminderParams recreated = null;
     try {
-      String serialized = SERIALIZER.serialize(original);
+      String serialized = SERIALIZER.serializeString(original);
       recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
     }
     catch(Exception e) {
@@ -48,7 +48,7 @@ public class ActorReminderParamsTest {
     ActorReminderParams original = new ActorReminderParams("maru", Duration.ZERO.plusMinutes(2), Duration.ZERO.plusMinutes((5)));
     ActorReminderParams recreated = null;
     try {
-      String serialized = SERIALIZER.serialize(original);
+      String serialized = SERIALIZER.serializeString(original);
       recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
     }
     catch(Exception e) {

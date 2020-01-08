@@ -226,7 +226,7 @@ class ActorManager<T extends AbstractActor> {
                 if (response instanceof Mono) {
                     return ((Mono<Object>) response).map(r -> {
                         try {
-                            return this.runtimeContext.getActorSerializer().serialize(r);
+                            return this.runtimeContext.getActorSerializer().serializeString(r);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -234,7 +234,7 @@ class ActorManager<T extends AbstractActor> {
                 }
 
                 // Method was not Mono, so we serialize response.
-                return Mono.just(this.runtimeContext.getActorSerializer().serialize(response));
+                return Mono.just(this.runtimeContext.getActorSerializer().serializeString(response));
             } catch (Exception e) {
                 return Mono.error(e);
             }
