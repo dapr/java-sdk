@@ -112,7 +112,7 @@ class DaprStateAsyncProvider {
                 generator.writeObjectFieldStart("request");
                 generator.writeStringField("key", stateChange.getStateName());
                 if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE) || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
-                    generator.writeStringField("value", this.serializer.serialize(stateChange.getValue()));
+                    generator.writeStringField("value", this.serializer.serializeString(stateChange.getValue()));
                 }
                 // End request object.
                 generator.writeEndObject();

@@ -23,7 +23,7 @@ public class ActorStateSerializer extends ObjectSerializer {
      * {@inheritDoc}
      */
     @Override
-    public <T> String serialize(T state) throws IOException {
+    public <T> String serializeString(T state) throws IOException {
         if (state == null) {
             return null;
         }
@@ -39,7 +39,7 @@ public class ActorStateSerializer extends ObjectSerializer {
         }
 
         // Is not an special case.
-        return super.serialize(state);
+        return super.serializeString(state);
     }
 
     /**
@@ -105,13 +105,13 @@ public class ActorStateSerializer extends ObjectSerializer {
             return null;
         }
 
-        String json = this.serialize(request);
+        byte[] data = this.serialize(request);
 
         try (Writer writer = new StringWriter()) {
             JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
             generator.writeStartObject();
-            if (json != null) {
-                generator.writeBinaryField("data", json.getBytes());
+            if (data != null) {
+                generator.writeBinaryField("data", data);
             }
             generator.writeEndObject();
             generator.close();
@@ -139,7 +139,7 @@ public class ActorStateSerializer extends ObjectSerializer {
             generator.writeStringField("period", DurationUtils.ConvertDurationToDaprFormat(timer.getPeriod()));
             generator.writeStringField("callback", timer.getCallback());
             if (timer.getState() != null) {
-                generator.writeStringField("data", this.serialize(timer.getState()));
+                generator.writeStringField("data", this.serializeString(timer.getState()));
             }
             generator.writeEndObject();
             generator.close();

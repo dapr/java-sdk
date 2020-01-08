@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Serializes and deserializes an object.
@@ -33,13 +34,42 @@ public class ObjectSerializer {
      * @return Array of bytes[] with the serialized content.
      * @throws IOException In case state cannot be serialized.
      */
-    public <T> String serialize(T state) throws IOException {
+    public <T> byte[] serialize(T state) throws IOException {
+        if (state == null) {
+            return null;
+        }
+
+        if (state instanceof byte[]) {
+            return (byte[])state;
+        }
+
+        if (state.getClass() == String.class) {
+            return ((String) state).getBytes(StandardCharsets.UTF_8);
+        }
+
+        if (isPrimitiveOrEquivalent(state.getClass())) {
+            return state.toString().getBytes(StandardCharsets.UTF_8);
+        }
+
+        // Not string, not primitive, so it is a complex type: we use JSON for that.
+        return OBJECT_MAPPER.writeValueAsBytes(state);
+    }
+
+    /**
+     * Serializes a given state object into String.
+     *
+     * @param state State object to be serialized.
+     * @param <T>   Type of the state object.
+     * @return Array of bytes[] with the serialized content.
+     * @throws IOException In case state cannot be serialized.
+     */
+    public <T> String serializeString(T state) throws IOException {
         if (state == null) {
             return null;
         }
 
         if (state.getClass() == String.class) {
-            return state.toString();
+            return (String) state;
         }
 
         if (isPrimitiveOrEquivalent(state.getClass())) {
@@ -60,10 +90,6 @@ public class ObjectSerializer {
      * @throws IOException In case value cannot be deserialized.
      */
     public <T> T deserialize(Object value, Class<T> clazz) throws IOException {
-        if (clazz == String.class) {
-            return (T) value;
-        }
-
         if (isPrimitiveOrEquivalent(clazz)) {
             return parse(value, clazz);
         }
@@ -72,7 +98,21 @@ public class ObjectSerializer {
             return (T) null;
         }
 
-        // Not string, not primitive, so it is a complex type: we use JSON for that.
+        if (clazz == String.class) {
+            return (value instanceof byte[])
+                ? (T) new String((byte[])value, StandardCharsets.UTF_8) : (T) value.toString();
+        }
+
+        if (clazz == byte[].class) {
+            if (value instanceof String) {
+                return (T) value.toString().getBytes(StandardCharsets.UTF_8);
+            }
+
+            return (value instanceof byte[])
+                ? (T) value : null;
+        }
+
+        // Not string, not primitive, not byte[], so it is a complex type: we use JSON for that.
         if (value instanceof byte[]) {
             return OBJECT_MAPPER.readValue((byte[]) value, clazz);
         }
@@ -134,13 +174,16 @@ public class ObjectSerializer {
             if (isDoubleOrPrimitive(clazz) && isDoubleOrPrimitive(value.getClass())) return (T) value;
         }
 
-        if (isBooleanOrPrimitive(clazz)) return (T) Boolean.valueOf(value.toString());
-        if (isByteOrPrimitive(clazz)) return (T) Byte.valueOf(value.toString());
-        if (isShortOrPrimitive(clazz)) return (T) Short.valueOf(value.toString());
-        if (isIntegerOrPrimitive(clazz)) return (T) Integer.valueOf(value.toString());
-        if (isLongOrPrimitive(clazz)) return (T) Long.valueOf(value.toString());
-        if (isFloatOrPrimitive(clazz)) return (T) Float.valueOf(value.toString());
-        if (isDoubleOrPrimitive(clazz)) return (T) Double.valueOf(value.toString());
+        String valueString = (value instanceof byte[]) ?
+            new String((byte[])value, StandardCharsets.UTF_8) : value.toString();
+
+        if (isBooleanOrPrimitive(clazz)) return (T) Boolean.valueOf(valueString);
+        if (isByteOrPrimitive(clazz)) return (T) Byte.valueOf(valueString);
+        if (isShortOrPrimitive(clazz)) return (T) Short.valueOf(valueString);
+        if (isIntegerOrPrimitive(clazz)) return (T) Integer.valueOf(valueString);
+        if (isLongOrPrimitive(clazz)) return (T) Long.valueOf(valueString);
+        if (isFloatOrPrimitive(clazz)) return (T) Float.valueOf(valueString);
+        if (isDoubleOrPrimitive(clazz)) return (T) Double.valueOf(valueString);
 
         return null;
     }

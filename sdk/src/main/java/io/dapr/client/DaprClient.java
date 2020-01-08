@@ -9,6 +9,7 @@ import io.dapr.client.domain.StateOptions;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
@@ -19,15 +20,28 @@ public interface DaprClient {
 
   /**
    * Publish an event.
+   *
    * @param topic the topic where the event will be published
    * @param event the event to be published
-   * @param <T>   The type of event to be publishded.
+   * @param <T>   The type of event to be published.
    * @return a Mono plan of type Void
    */
   <T> Mono<Void> publishEvent(String topic, T event);
 
   /**
+   * Publish an event.
+   *
+   * @param topic    the topic where the event will be published
+   * @param event    the event to be published
+   * @param metadata The metadata for the published event.
+   * @param <T>      The type of event to be published.
+   * @return a Mono plan of type Void
+   */
+  <T> Mono<Void> publishEvent(String topic, T event, Map<String, String> metadata);
+
+  /**
    * Invoke a service
+   *
    * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
    * @param appId   The Application ID where the service is
    * @param method  The actual Method to be call in the application.
@@ -41,6 +55,7 @@ public interface DaprClient {
 
   /**
    * Invoke a service
+   *
    * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
    * @param appId   The Application ID where the service is
    * @param method  The actual Method to be call in the application.
@@ -52,6 +67,7 @@ public interface DaprClient {
 
   /**
    * Creating a Binding
+   *
    * @param name    The name of the biding to call
    * @param request The request needed for the binding
    * @param <T>     The type of the request.
@@ -62,11 +78,11 @@ public interface DaprClient {
   /**
    * Retrieve a State based on their key.
    *
-   * @param state   The key of the State to be retrieved
+   * @param state        The key of the State to be retrieved
    * @param stateOptions
-   * @param clazz the Type of State needed as return.
-   * @param <T>   the Type of the return
-   * @param <K>   The Type of the key of the State
+   * @param clazz        the Type of State needed as return.
+   * @param <T>          the Type of the return
+   * @param <K>          The Type of the key of the State
    * @return A Mono Plan for the requested State
    */
   <T, K> Mono<T> getState(StateKeyValue<K> state, StateOptions stateOptions, Class<T> clazz);
@@ -74,20 +90,21 @@ public interface DaprClient {
   /**
    * Save/Update a list of states.
    *
-   * @param states the States to be saved
+   * @param states  the States to be saved
    * @param options the Options to use for each state
-   * @param <T>   the Type of the State
+   * @param <T>     the Type of the State
    * @return a Mono plan of type Void
    */
   <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options);
 
   /**
    * Save/Update a state
-   * @param key    the key of the state
-   * @param etag   the etag to be used
-   * @param value  the value of the state
+   *
+   * @param key     the key of the state
+   * @param etag    the etag to be used
+   * @param value   the value of the state
    * @param options the Options to use for each state
-   * @param <T>    the Type of the State
+   * @param <T>     the Type of the State
    * @return a Mono plan of type Void
    */
   <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options);
@@ -95,9 +112,9 @@ public interface DaprClient {
   /**
    * Delete a state
    *
-   * @param state        The key of the State to be removed
+   * @param state   The key of the State to be removed
    * @param options The options of the state
-   * @param <T>          The Type of the key of the State
+   * @param <T>     The Type of the key of the State
    * @return a Mono plan of type Void
    */
   <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options);

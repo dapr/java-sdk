@@ -95,9 +95,9 @@ public abstract class AbstractActor {
             Duration dueTime,
             Duration period) {
         try {
-            String data = this.actorRuntimeContext.getActorSerializer().serialize(state);
+            String data = this.actorRuntimeContext.getActorSerializer().serializeString(state);
             ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
-            String serialized = this.actorRuntimeContext.getActorSerializer().serialize(params);
+            String serialized = this.actorRuntimeContext.getActorSerializer().serializeString(params);
             return this.actorRuntimeContext.getDaprClient().registerActorReminder(
                     this.actorRuntimeContext.getActorTypeInformation().getName(),
                     this.id.toString(),
@@ -139,7 +139,7 @@ public abstract class AbstractActor {
 
         try {
             ActorTimer actorTimer = new ActorTimer(this, name, callback, state, dueTime, period);
-            String serializedTimer = this.actorRuntimeContext.getActorSerializer().serialize(actorTimer);
+            String serializedTimer = this.actorRuntimeContext.getActorSerializer().serializeString(actorTimer);
 
             this.timers.put(name, actorTimer);
             return this.actorRuntimeContext.getDaprClient().registerActorTimer(

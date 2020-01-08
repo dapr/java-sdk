@@ -51,13 +51,22 @@ class DaprClientGrpcAdapter implements DaprClient {
    */
   @Override
   public <T> Mono<Void> publishEvent(String topic, T event) {
+    return this.publishEvent(topic, event, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<Void> publishEvent(String topic, T event, Map<String, String> metadata) {
     try {
-      String serializedEvent = objectSerializer.serialize(event);
+      String serializedEvent = objectSerializer.serializeString(event);
       Map<String, String> mapEvent = new HashMap<>();
       mapEvent.put("Topic", topic);
       mapEvent.put("Data", serializedEvent);
+      // TODO: handle metadata.
 
-      byte[] byteEvent = objectSerializer.serialize(mapEvent).getBytes();
+      byte[] byteEvent = objectSerializer.serialize(mapEvent);
 
       DaprProtos.PublishEventEnvelope envelope = DaprProtos.PublishEventEnvelope.parseFrom(byteEvent);
       ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
@@ -81,12 +90,12 @@ class DaprClientGrpcAdapter implements DaprClient {
   public <T, K> Mono<T> invokeService(String verb, String appId, String method, K request, Class<T> clazz) {
     try {
       Map<String, String> mapMessage = new HashMap<>();
-      mapMessage.put("Id", objectSerializer.serialize(appId));
-      mapMessage.put("Method", objectSerializer.serialize(verb));
-      mapMessage.put("Data", objectSerializer.serialize(request));
+      mapMessage.put("Id", appId);
+      mapMessage.put("Method", verb);
+      mapMessage.put("Data", objectSerializer.serializeString(request));
 
       DaprProtos.InvokeServiceEnvelope envelope =
-          DaprProtos.InvokeServiceEnvelope.parseFrom(objectSerializer.serialize(mapMessage).getBytes());
+          DaprProtos.InvokeServiceEnvelope.parseFrom(objectSerializer.serialize(mapMessage));
       ListenableFuture<DaprProtos.InvokeServiceResponseEnvelope> futureResponse =
           client.invokeService(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
@@ -118,9 +127,9 @@ class DaprClientGrpcAdapter implements DaprClient {
     try {
       Map<String, String> mapMessage = new HashMap<>();
       mapMessage.put("Name", name);
-      mapMessage.put("Data", objectSerializer.serialize(request));
+      mapMessage.put("Data", objectSerializer.serializeString(request));
       DaprProtos.InvokeBindingEnvelope envelope =
-          DaprProtos.InvokeBindingEnvelope.parseFrom(objectSerializer.serialize(mapMessage).getBytes());
+          DaprProtos.InvokeBindingEnvelope.parseFrom(objectSerializer.serialize(mapMessage));
       ListenableFuture<Empty> futureEmpty = client.invokeBinding(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
         try {
@@ -144,8 +153,8 @@ class DaprClientGrpcAdapter implements DaprClient {
       Map<String, String> request = new HashMap<>();
       request.put("Key", key.getKey());
       request.put("Consistency", stateOptions.getConsistency());
-      String serializedRequest = objectSerializer.serialize(request);
-      DaprProtos.GetStateEnvelope envelope = DaprProtos.GetStateEnvelope.parseFrom(serializedRequest.getBytes());
+      byte[] serializedRequest = objectSerializer.serialize(request);
+      DaprProtos.GetStateEnvelope envelope = DaprProtos.GetStateEnvelope.parseFrom(serializedRequest);
       ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
         try {
@@ -173,7 +182,7 @@ class DaprClientGrpcAdapter implements DaprClient {
       };
       Map<String, Object> mapStates = new HashMap<>();
       mapStates.put("Requests", listStates);
-      byte[] byteRequests = objectSerializer.serialize(mapStates).getBytes();
+      byte[] byteRequests = objectSerializer.serialize(mapStates);
       DaprProtos.SaveStateEnvelope envelope = DaprProtos.SaveStateEnvelope.parseFrom(byteRequests);
       ListenableFuture<Empty> futureEmpty = client.saveState(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
@@ -204,8 +213,8 @@ class DaprClientGrpcAdapter implements DaprClient {
     try {
       Map<String, Object> mapOptions = transformStateOptionsToMap(options);
       Map<String, Object> mapState = transformStateKeyValueToMap(state, mapOptions);
-      String serializedState = objectSerializer.serialize(mapState);
-      DaprProtos.DeleteStateEnvelope envelope = DaprProtos.DeleteStateEnvelope.parseFrom(serializedState.getBytes());
+      byte[] serializedState = objectSerializer.serialize(mapState);
+      DaprProtos.DeleteStateEnvelope envelope = DaprProtos.DeleteStateEnvelope.parseFrom(serializedState);
       ListenableFuture<Empty> futureEmpty = client.deleteState(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
         try {
