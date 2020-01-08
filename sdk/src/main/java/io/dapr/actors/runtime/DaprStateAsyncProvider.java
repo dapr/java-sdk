@@ -8,6 +8,7 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.actors.ActorId;
+import io.dapr.client.DaprClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -24,17 +25,17 @@ class DaprStateAsyncProvider {
      */
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
-    private final AppToDaprAsyncClient daprAsyncClient;
+    private final DaprClient daprClient;
 
     private final ActorStateSerializer serializer;
 
-    DaprStateAsyncProvider(AppToDaprAsyncClient daprAsyncClient, ActorStateSerializer serializer) {
-        this.daprAsyncClient = daprAsyncClient;
+    DaprStateAsyncProvider(DaprClient daprClient, ActorStateSerializer serializer) {
+        this.daprClient = daprClient;
         this.serializer = serializer;
     }
 
     <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
-        Mono<String> result = this.daprAsyncClient.getState(actorType, actorId.toString(), stateName);
+        Mono<String> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
 
         return result
                 .filter(s -> (s != null) && (!s.isEmpty()))
@@ -48,7 +49,7 @@ class DaprStateAsyncProvider {
     }
 
     Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
-        Mono<String> result = this.daprAsyncClient.getState(actorType, actorId.toString(), stateName);
+        Mono<String> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
 
         return result.map(s -> {
             return (s != null) && (s.length() > 0);
@@ -136,6 +137,6 @@ class DaprStateAsyncProvider {
             Mono.empty();
         }
 
-        return this.daprAsyncClient.saveStateTransactionally(actorType, actorId.toString(), payload);
+        return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), payload);
     }
 }
