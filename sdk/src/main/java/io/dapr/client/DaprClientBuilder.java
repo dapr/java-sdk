@@ -5,66 +5,52 @@
 package io.dapr.client;
 
 import io.dapr.DaprGrpc;
+import io.dapr.utils.Constants;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import okhttp3.OkHttpClient;
 
 /**
  * A builder for the DaprClient,
- * Only 2 type of clients are supported at the moment, HTTP and GRPC.
+ * Currently only and HTTP Client will be supported.
  */
 public class DaprClientBuilder {
 
     /**
-     * The type of client supported.
+     * Default port for Dapr after checking environment variable.
      */
-    public enum DaprClientTypeEnum {
-        GRPC,
-        HTTP;
-    }
+    private static final int port = DaprClientBuilder.getEnvPortOrDefault();
 
     /**
-     * An indicator of the client to be build by the instance of the builder.
+     * Default host for Dapr after checking environment variable.
      */
-    private DaprClientTypeEnum clientType;
-    /**
-     * The host to be used by the client to communicate.
-     */
-    private String host;
+    private static final String host = Constants.DEFAULT_HOSTNAME;
 
     /**
-     * The port to be used by the client to communicate
+     * The HTTP Client  that will be used to injectto connect to Dapr
      */
-    private Integer port;
+    private static OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+
+    private static DaprClientHttpAdapter daprHttClient;
 
     /**
-     * Creates an instance of the builder setting the type of client to be creted
+     * Tries to get a valid port from environment variable or returns default.
      *
-     * @param clientType Determines if clients need to be over Http or GRPC.
+     * @return Port defined in env variable or default.
      */
-    public DaprClientBuilder(DaprClientTypeEnum clientType) {
-        this.clientType = clientType;
-    }
+    private static int getEnvPortOrDefault() {
+        String envPort = System.getenv(Constants.ENV_DAPR_HTTP_PORT);
+        if (envPort == null || envPort.trim().isEmpty()) {
+            return Constants.DEFAULT_PORT;
+        }
 
-    /**
-     * Sets the host to be used by the client
-     *
-     * @param host Host to connect to Dapr.
-     * @return itself
-     */
-    public DaprClientBuilder withHost(String host) {
-        this.host = host;
-        return this;
-    }
+        try {
+            return Integer.parseInt(envPort.trim());
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
 
-    /**
-     * Sets the port to be used by the client
-     *
-     * @param port Port to connect to.
-     * @return itself
-     */
-    public DaprClientBuilder withPort(Integer port) {
-        this.port = port;
-        return this;
+        return Constants.DEFAULT_PORT;
     }
 
     /**
@@ -74,12 +60,7 @@ public class DaprClientBuilder {
      * @throws java.lang.IllegalStateException if any required field is missing
      */
     public DaprClient build() {
-        if (DaprClientTypeEnum.GRPC.equals(this.clientType)) {
-            return buildDaprClientGrpc();
-        } else if (DaprClientTypeEnum.HTTP.equals(this.clientType)) {
-            return buildDaprClientHttp();
-        }
-        throw new IllegalStateException("Unsupported client type.");
+        return buildDaprClientHttp();
     }
 
     /**
@@ -92,7 +73,7 @@ public class DaprClientBuilder {
         if (null == this.host || "".equals(this.host.trim())) {
             throw new IllegalStateException("Host must is required.");
         }
-        if (null == port || port <= 0) {
+        if (port <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
         ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
@@ -101,10 +82,26 @@ public class DaprClientBuilder {
 
     /**
      * Creates and instance of the HTTP CLient.
+     * If an okhttp3.OkHttpClient.Builder has not been provided, a defult builder will be used.
      *
      * @return
      */
     private DaprClient buildDaprClientHttp() {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        if (null == this.host || "".equals(this.host.trim())) {
+            throw new IllegalStateException("Host must is required.");
+        }
+        if (port <= 0) {
+            throw new IllegalStateException("Invalid port.");
+        }
+        if (daprHttClient == null) {
+            synchronized (okHttpClient) {
+                if (daprHttClient == null) {
+                    DaprHttp daprHtt = new DaprHttp(Constants.DEFAULT_HTTP_PROTOCOL_IDENTIFIED+host, port, okHttpClient);
+                    daprHttClient = new DaprClientHttpAdapter(daprHtt);
+                }
+
+            }
+        }
+        return daprHttClient;
     }
 }

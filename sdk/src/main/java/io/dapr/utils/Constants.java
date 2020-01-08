@@ -20,9 +20,21 @@ public final class Constants {
     public static final String DEFAULT_HOSTNAME = "localhost";
 
     /**
+     * Dapr's default http protocol.
+     */
+    public static final String DEFAULT_HTTP_PROTOCOL_IDENTIFIED = "http://";
+
+    /**
      * Dapr's default port.
      */
     public static final int DEFAULT_PORT = 3500;
+
+    public static enum defaultHttpMethodSupported {
+      GET,
+      PUT,
+      POST,
+      DELETE;
+    }
 
     /**
      * Environment variable used to set Dapr's port.
@@ -33,6 +45,8 @@ public final class Constants {
      * Header used for request id in Dapr.
      */
     public static final String HEADER_DAPR_REQUEST_ID = "X-DaprRequestId";
+
+    public static final String HEADER_HTTP_ETAG_ID = "If-Match";
 
     /**
      * Base URL for Dapr Actor APIs.
