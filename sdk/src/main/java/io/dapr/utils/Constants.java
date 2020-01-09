@@ -29,13 +29,6 @@ public final class Constants {
      */
     public static final int DEFAULT_PORT = 3500;
 
-    public static enum defaultHttpMethodSupported {
-      GET,
-      PUT,
-      POST,
-      DELETE;
-    }
-
     /**
      * Environment variable used to set Dapr's port.
      */
@@ -46,6 +39,9 @@ public final class Constants {
      */
     public static final String HEADER_DAPR_REQUEST_ID = "X-DaprRequestId";
 
+    /**
+     * Header for the conditional operation.
+     */
     public static final String HEADER_HTTP_ETAG_ID = "If-Match";
 
     /**

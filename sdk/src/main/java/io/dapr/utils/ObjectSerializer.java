@@ -4,12 +4,20 @@
  */
 package io.dapr.utils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.runtime.Dapr;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Serializes and deserializes an object.
@@ -24,7 +32,14 @@ public class ObjectSerializer {
     /**
      * Shared Json serializer/deserializer as per Jackson's documentation.
      */
-    protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+    /**
+     * Constant result for empty maps.
+     */
+    private static final Map<String, Object> EMPTY_MAP = Collections.unmodifiableMap(new HashMap<>());
 
     /**
      * Serializes a given state object into byte array.
@@ -98,6 +113,10 @@ public class ObjectSerializer {
             return (T) null;
         }
 
+        if (clazz == Dapr.Message.class) {
+            return (T) this.deserializeTopicMessage(value);
+        }
+
         if (clazz == String.class) {
             return (value instanceof byte[])
                 ? (T) new String((byte[])value, StandardCharsets.UTF_8) : (T) value.toString();
@@ -118,6 +137,50 @@ public class ObjectSerializer {
         }
 
         return OBJECT_MAPPER.readValue(value.toString(), clazz);
+    }
+
+    /**
+     * Deserialized a message topic from Dapr.
+     * @param payload Payload sent from Dapr.
+     * @return Message (can be null if input is null)
+     * @throws IOException If cannot parse.
+     */
+    private Dapr.Message deserializeTopicMessage(Object payload) throws IOException {
+        if (payload == null) {
+            return null;
+        }
+
+        JsonNode node = null;
+        if (payload instanceof byte[]) {
+            node = OBJECT_MAPPER.readTree((byte[])payload);
+        } else {
+            node = OBJECT_MAPPER.readTree(payload.toString());
+        }
+
+        if (node== null) {
+            return null;
+        }
+
+        String id = null;
+        if (node.has("id") && !node.get("id").isNull()) {
+            id = node.get("id").asText();
+        }
+
+        String dataType = null;
+        if (node.has("datacontenttype") && !node.get("datacontenttype").isNull()) {
+            dataType = node.get("datacontenttype").asText();
+        }
+
+        byte[] data = null;
+        if (node.has("data") && !node.get("data").isNull()) {
+            try {
+                data = node.get("data").binaryValue();
+            } catch (IOException e) {
+                data = node.get("data").textValue().getBytes(StandardCharsets.UTF_8);
+            }
+        }
+
+        return new Dapr.Message(id, dataType, data, null);
     }
 
     /**
@@ -188,30 +251,65 @@ public class ObjectSerializer {
         return null;
     }
 
+    /**
+     * Determines if this is boolean type.
+     * @param clazz Class to be checked.
+     * @return True if is boolean.
+     */
     private static boolean isBooleanOrPrimitive(Class<?> clazz) {
         return (Boolean.class == clazz) || (boolean.class == clazz);
     }
 
+    /**
+     * Determines if this is byte type.
+     * @param clazz Class to be checked.
+     * @return True if is byte.
+     */
     private static boolean isByteOrPrimitive(Class<?> clazz) {
         return (Byte.class == clazz) || (byte.class == clazz);
     }
 
+    /**
+     * Determines if this is short type.
+     * @param clazz Class to be checked.
+     * @return True if is short.
+     */
     private static boolean isShortOrPrimitive(Class<?> clazz) {
         return (Short.class == clazz) || (short.class == clazz);
     }
 
+    /**
+     * Determines if this is integer type.
+     * @param clazz Class to be checked.
+     * @return True if is integer.
+     */
     private static boolean isIntegerOrPrimitive(Class<?> clazz) {
         return (Integer.class == clazz) || (int.class == clazz);
     }
 
+    /**
+     * Determines if this is long type.
+     * @param clazz Class to be checked.
+     * @return True if is long.
+     */
     private static boolean isLongOrPrimitive(Class<?> clazz) {
         return (Long.class == clazz) || (long.class == clazz);
     }
 
+    /**
+     * Determines if this is float type.
+     * @param clazz Class to be checked.
+     * @return True if is float.
+     */
     private static boolean isFloatOrPrimitive(Class<?> clazz) {
         return (Float.class == clazz) || (float.class == clazz);
     }
 
+    /**
+     * Determines if this is double type.
+     * @param clazz Class to be checked.
+     * @return True if is double.
+     */
     private static boolean isDoubleOrPrimitive(Class<?> clazz) {
         return (Double.class == clazz) || (double.class == clazz);
     }
