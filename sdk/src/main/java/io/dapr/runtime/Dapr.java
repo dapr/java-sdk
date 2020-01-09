@@ -5,7 +5,9 @@
 
 package io.dapr.runtime;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.exceptions.DaprException;
@@ -18,28 +20,41 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Main interface to register and interface with local Dapr instance.
+ *
+ * This class DO NOT make I/O operations by itself, only via user-provided listeners.
+ */
 public final class Dapr implements DaprRuntime {
 
   /**
-   * Shared Json serializer/deserializer as per Jackson's documentation.
+   * Empty response.
    */
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
   private static final Mono<byte[]> EMPTY_BYTES_ASYNC = Mono.just(new byte[0]);
 
-  private static final byte[] EMPTY_BYTES = new byte[0];
-
+  /**
+   * Singleton instance for this class.
+   */
   private static volatile DaprRuntime instance;
 
+  /**
+   * Serializes and deserializes internal objects.
+   */
   private final ObjectSerializer serializer = new ObjectSerializer();
 
-  private final Map<String, Function<HandleRequest, Mono<byte[]>>> handlers = Collections.synchronizedMap(new HashMap<>());
+  /**
+   * Topics, methods and binding handles.
+   */
+  private final Map<String, Function<Message, Mono<byte[]>>> handlers = Collections.synchronizedMap(new HashMap<>());
 
+  /**
+   * Private constructor to keep it singleton.
+   */
   private Dapr() {
   }
 
   /**
-   * Returns an DaprRuntime object.
+   * Returns the only DaprRuntime object.
    *
    * @return DaprRuntime object.
    */
@@ -55,6 +70,9 @@ public final class Dapr implements DaprRuntime {
     return instance;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Collection<String> getSubscribedTopics() {
     return this.handlers
@@ -64,87 +82,179 @@ public final class Dapr implements DaprRuntime {
         .collect(Collectors.toCollection(ArrayList::new));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void subscribeToTopic(String topic, TopicListener listener) {
     this.handlers.putIfAbsent(topic, new TopicHandler(listener));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void registerServiceMethod(String name, MethodListener listener) {
     this.handlers.putIfAbsent(name, new MethodHandler(listener));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<byte[]> handleInvocation(String name, byte[] payload, Map<String, String> metadata) {
-    Function<HandleRequest, Mono<byte[]>> handler = this.handlers.get(name);
+    Function<Message, Mono<byte[]>> handler = this.handlers.get(name);
 
     if (handler == null) {
       return Mono.error(new DaprException("INVALID_METHOD_OR_TOPIC", "Did not find handler for : " + (name == null ? "" : name)));
     }
 
     try {
-      Map<String, Object> map = parse(payload);
-      String messageId = map.getOrDefault("id", "").toString();
-      String dataType = map.getOrDefault("datacontenttype", "").toString();
-      byte[] data = this.serializer.deserialize(map.get("data"), byte[].class);
-      return handler.apply(new HandleRequest(messageId, dataType, data, metadata)).switchIfEmpty(EMPTY_BYTES_ASYNC);
+      Message message = this.serializer.deserialize(payload, Message.class);
+      if (message == null) {
+        return EMPTY_BYTES_ASYNC;
+      }
+      message.setMetadata(metadata);
+      return handler.apply(message).switchIfEmpty(EMPTY_BYTES_ASYNC);
     } catch (Exception e) {
       // Handling exception in user code by propagating up via Mono.
       return Mono.error(e);
     }
   }
 
-  private static final class HandleRequest {
+  /**
+   * Internal class to encapsulate a request message.
+   */
+  public static final class Message {
 
-    private final String messageId;
+    /**
+     * Identifier of the message being processed.
+     */
+    private String id;
 
-    private final String dataType;
+    /**
+     * Type of the input payload.
+     */
+    private String datacontenttype;
 
-    private final byte[] payload;
+    /**
+     * Raw input payload.
+     */
+    private byte[] data;
 
-    private final Map<String, String> metadata;
+    /**
+     * Headers (or metadata).
+     */
+    private Map<String, String> metadata;
 
-    public HandleRequest(String messageId, String dataType, byte[] payload, Map<String, String> metadata) {
-      this.messageId = messageId;
-      this.dataType = dataType;
-      this.payload = payload;
-      this.metadata = Collections.unmodifiableMap(metadata);
+    /**
+     * Instantiates a new input request (useful for JSON deserialization).
+     */
+    public Message() {
+    }
+
+    /**
+     * Instantiates a new input request.
+     * @param id Identifier of the message being processed.
+     * @param datacontenttype Type of the input payload.
+     * @param data Input body.
+     * @param metadata Headers (or metadata) for the call.
+     */
+    public Message(String id, String datacontenttype, byte[] data, Map<String, String> metadata) {
+      this.id = id;
+      this.datacontenttype = datacontenttype;
+      this.data = data;
+      this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public byte[] getData() {
+      return data;
+    }
+
+    public void setData(byte[] data) {
+      this.data = data;
+    }
+
+    public String getDatacontenttype() {
+      return datacontenttype;
+    }
+
+    public void setDatacontenttype(String datacontenttype) {
+      this.datacontenttype = datacontenttype;
+    }
+
+    public Map<String, String> getMetadata() {
+      return metadata;
+    }
+
+    public void setMetadata(Map<String, String> metadata) {
+      this.metadata = metadata;
     }
   }
 
-  private static final class MethodHandler implements Function<HandleRequest, Mono<byte[]>> {
+  /**
+   * Internal class to handle a method call.
+   */
+  private static final class MethodHandler implements Function<Message, Mono<byte[]>> {
 
+    /**
+     * User-provided listener.
+     */
     private final MethodListener listener;
 
+    /**
+     * Instantiates a new method handler.
+     * @param listener Method to be executed on a given API call.
+     */
     private MethodHandler(MethodListener listener) {
       this.listener = listener;
     }
 
+    /**
+     * Executes the listener's method.
+     * @param r Internal request object.
+     * @return Raw output payload or empty.
+     */
     @Override
-    public Mono<byte[]> apply(HandleRequest r) {
-      return listener.process(r.payload, r.metadata);
+    public Mono<byte[]> apply(Message r) {
+      return listener.process(r.data, r.metadata);
     }
   }
 
-  private static final class TopicHandler implements Function<HandleRequest, Mono<byte[]>> {
+  /**
+   * Internal class to handle a topic message delivery.
+   */
+  private static final class TopicHandler implements Function<Message, Mono<byte[]>> {
 
+    /**
+     * User-provided listener.
+     */
     private final TopicListener listener;
 
+    /**
+     * Instantiates a new topic handler.
+     * @param listener Callback to be executed on a given message.
+     */
     private TopicHandler(TopicListener listener) {
       this.listener = listener;
     }
 
+    /**
+     * Executes the listener's method.
+     * @param r Internal request object.
+     * @return Always empty response.
+     */
     @Override
-    public Mono<byte[]> apply(HandleRequest r) {
-      return listener.process(r.messageId, r.dataType, r.payload, r.metadata).then(Mono.empty());
+    public Mono<byte[]> apply(Message r) {
+      return listener.process(r.id, r.datacontenttype, r.data, r.metadata).then(Mono.empty());
     }
-  }
-
-  public Map<String, Object> parse(final byte[] response) throws IOException {
-    if (response == null) {
-      return new HashMap<String, Object>();
-    }
-
-    return OBJECT_MAPPER.readValue(response, new TypeReference<Map<String, Object>>() {});
   }
 }

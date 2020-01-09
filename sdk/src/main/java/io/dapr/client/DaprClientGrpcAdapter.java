@@ -113,6 +113,8 @@ class DaprClientGrpcAdapter implements DaprClient {
 
   /**
    * Operation not supported for GRPC
+   *
+   * TODO: Implement this since this IS supported.
    * @throws UnsupportedOperationException every time is called.
    */
   public <T> Mono<Void> invokeService(String verb, String appId, String method, T request) {
@@ -198,6 +200,9 @@ class DaprClientGrpcAdapter implements DaprClient {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
     StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
@@ -238,38 +243,70 @@ class DaprClientGrpcAdapter implements DaprClient {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<String> getActorState(String actorType, String actorId, String keyName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Converts state options to map.
+   *
+   * TODO: Move this logic to StateOptions.
+   * @param options Instance to have is methods converted into map.
+   * @return Map for the state options.
+   * @throws IllegalAccessException Cannot extract params.
+   */
   private Map<String, Object> transformStateOptionsToMap(StateOptions options)
-      throws IllegalAccessException, IllegalArgumentException {
+      throws IllegalAccessException {
     Map<String, Object> mapOptions = null;
     if (options != null) {
       mapOptions = new HashMap<>();
@@ -283,8 +320,17 @@ class DaprClientGrpcAdapter implements DaprClient {
     return mapOptions;
   }
 
+  /**
+   * Creates an map for the given key-value operation.
+   *
+   * // TODO: Move this logic into StateKeyValue.
+   * @param state Key value for the state change.
+   * @param mapOptions Options to be applied to this operation.
+   * @return Map for the key-value operation.
+   * @throws IllegalAccessException Cannot identify key-value attributes.
+   */
   private Map<String, Object> transformStateKeyValueToMap(StateKeyValue state, Map<String, Object> mapOptions)
-      throws IllegalAccessException, IllegalArgumentException {
+      throws IllegalAccessException {
     Map<String, Object> mapState = new HashMap<>();
     for (Field field : state.getClass().getFields()) {
       mapState.put(field.getName(), field.get(state));
