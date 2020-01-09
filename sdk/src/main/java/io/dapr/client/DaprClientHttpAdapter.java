@@ -7,13 +7,11 @@ import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * An adapter for the GRPC Client.
@@ -67,7 +65,7 @@ public class DaprClientHttpAdapter implements DaprClient {
       byte[] serializedEvent = objectSerializer.serialize(event);
       StringBuilder url = new StringBuilder(Constants.PUBLISH_PATH).append("/").append(topic);
       return this.client.invokeAPI(
-          Constants.defaultHttpMethodSupported.POST.name(), url.toString(), serializedEvent, metadata).then();
+          DaprHttp.HttpMethods.POST.name(), url.toString(), serializedEvent, metadata).then();
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -82,7 +80,7 @@ public class DaprClientHttpAdapter implements DaprClient {
       if (verb == null || verb.trim().isEmpty()) {
         throw new DaprException("500", "App Id cannot be null or empty.");
       }
-      Constants.defaultHttpMethodSupported httMethod = Constants.defaultHttpMethodSupported.valueOf(verb.toUpperCase());
+      DaprHttp.HttpMethods httMethod = DaprHttp.HttpMethods.valueOf(verb.toUpperCase());
       if (httMethod == null) {
         throw new DaprException("405", "HTTP Method not allowed.");
       }
@@ -116,7 +114,7 @@ public class DaprClientHttpAdapter implements DaprClient {
       if (verb == null || verb.trim().isEmpty()) {
         throw new DaprException("500", "App Id cannot be null or empty.");
       }
-      Constants.defaultHttpMethodSupported httMethod = Constants.defaultHttpMethodSupported.valueOf(verb.toUpperCase());
+      DaprHttp.HttpMethods httMethod = DaprHttp.HttpMethods.valueOf(verb.toUpperCase());
       if (httMethod == null) {
         throw new DaprException("405", "HTTP Method not allowed.");
       }
@@ -151,7 +149,7 @@ public class DaprClientHttpAdapter implements DaprClient {
       StringBuilder url = new StringBuilder(Constants.BINDING_PATH).append("/").append(name);
       return this.client
           .invokeAPI(
-              Constants.defaultHttpMethodSupported.POST.name(),
+              DaprHttp.HttpMethods.POST.name(),
               url.toString(),
               objectSerializer.serialize(jsonMap),
               null)
@@ -180,7 +178,7 @@ public class DaprClientHttpAdapter implements DaprClient {
         .append(state.getKey())
         .append(getOptionsAsQueryParameter(options));
       return this.client
-          .invokeAPI(Constants.defaultHttpMethodSupported.GET.name(), url.toString(), headers)
+          .invokeAPI(DaprHttp.HttpMethods.GET.name(), url.toString(), headers)
           .flatMap(s -> {
             try {
               return Mono.just(objectSerializer.deserialize(s, clazz));
@@ -211,12 +209,15 @@ public class DaprClientHttpAdapter implements DaprClient {
       String url = Constants.STATE_PATH + getOptionsAsQueryParameter(options);;
       byte[] serializedStateBody = objectSerializer.serialize(states);
       return this.client.invokeAPI(
-          Constants.defaultHttpMethodSupported.POST.name(), url, serializedStateBody, headers).then();
+        DaprHttp.HttpMethods.POST.name(), url, serializedStateBody, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
     StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
@@ -237,70 +238,108 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
       }
       String url = Constants.STATE_PATH + "/" + state.getKey() + getOptionsAsQueryParameter(options);
-      return this.client.invokeAPI(Constants.defaultHttpMethodSupported.DELETE.name(), url, headers).then();
+      return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
     String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
-    return this.client.invokeAPI(Constants.defaultHttpMethodSupported.POST.name(), url, jsonPayload, null);
+    return this.client.invokeAPI(DaprHttp.HttpMethods.POST.name(), url, jsonPayload, null);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<String> getActorState(String actorType, String actorId, String keyName) {
     String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
-    return this.client.invokeAPI(Constants.defaultHttpMethodSupported.GET.name(), url, "", null);
+    return this.client.invokeAPI(DaprHttp.HttpMethods.GET.name(), url, "", null);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data) {
     String url = String.format(Constants.ACTOR_STATE_RELATIVE_URL_FORMAT, actorType, actorId);
-    return this.client.invokeAPI(Constants.defaultHttpMethodSupported.PUT.name(), url, data, null).then();
+    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url, data, null).then();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data) {
     String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
-    return this.client.invokeAPI(Constants.defaultHttpMethodSupported.PUT.name(), url, data, null).then();
+    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url, data, null).then();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
     String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
-    return this.client.invokeAPI(Constants.defaultHttpMethodSupported.DELETE.name(), url, null).then();
+    return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, null).then();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data) {
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-    return this.client.invokeAPI(Constants.defaultHttpMethodSupported.PUT.name(), url, data, null).then();
+    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url, data, null).then();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-    return this.client.invokeAPI(Constants.defaultHttpMethodSupported.DELETE.name(), url, null).then();
+    return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, null).then();
   }
 
+  /**
+   * Gets the string with params for a given URL.
+   *
+   * TODO: Move this logic down the stack to use okhttp's builder instead:
+   *   https://square.github.io/okhttp/4.x/okhttp/okhttp3/-http-url/-builder/add-query-parameter/
+   * @param options State options to be converted.
+   * @return String with query params.
+   * @throws IllegalAccessException Cannot extract params.
+   */
   private String getOptionsAsQueryParameter(StateOptions options)
-      throws IllegalAccessException, IllegalArgumentException, IOException {
+      throws IllegalAccessException {
     StringBuilder sb = new StringBuilder();
     Map<String, Object> mapOptions = transformStateOptionsToMap(options);
     if (mapOptions != null && !mapOptions.isEmpty()) {
       sb.append("?");
       for (Map.Entry<String, Object> option : mapOptions.entrySet()) {
-        sb.append(option.getKey()).append("=").append(objectSerializer.serialize(option.getValue())).append("&");
+        sb.append(option.getKey()).append("=").append(option.getValue()).append("&");
       }
       sb.deleteCharAt(sb.length()-1);
     }
     return sb.toString();
   }
 
+  /**
+   * Converts state options to map.
+   *
+   * TODO: Move this logic to StateOptions.
+   * @param options Instance to have is methods converted into map.
+   * @return Map for the state options.
+   * @throws IllegalAccessException Cannot extract params.
+   */
   private Map<String, Object> transformStateOptionsToMap(StateOptions options)
-      throws IllegalAccessException, IllegalArgumentException {
+      throws IllegalAccessException {
     Map<String, Object> mapOptions = null;
     if (options != null) {
       mapOptions = new HashMap<>();
