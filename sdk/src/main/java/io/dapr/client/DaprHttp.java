@@ -125,8 +125,14 @@ class DaprHttp {
 
             Request.Builder requestBuilder = new Request.Builder()
                 .url(new URL(this.baseUrl + urlString))
-                .method(method, body)
                 .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
+            if (Constants.defaultHttpMethodSupported.GET.name().equals(method)) {
+              requestBuilder.get();
+            } else if (Constants.defaultHttpMethodSupported.DELETE.name().equals(method)) {
+              requestBuilder.delete();
+            } else {
+              requestBuilder.method(method, body);
+            }
             if (headers != null) {
               Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
                   .forEach(header -> {
