@@ -29,13 +29,6 @@ public final class Constants {
      */
     public static final int DEFAULT_PORT = 3500;
 
-    public static enum defaultHttpMethodSupported {
-      GET,
-      PUT,
-      POST,
-      DELETE;
-    }
-
     /**
      * Environment variable used to set Dapr's port.
      */
@@ -46,6 +39,9 @@ public final class Constants {
      */
     public static final String HEADER_DAPR_REQUEST_ID = "X-DaprRequestId";
 
+    /**
+     * Header for the conditional operation.
+     */
     public static final String HEADER_HTTP_ETAG_ID = "If-Match";
 
     /**
@@ -77,6 +73,11 @@ public final class Constants {
      * String format for Actors timer registration relative url..
      */
     public static final String ACTOR_TIMER_RELATIVE_URL_FORMAT = ACTORS_BASE_URL + "/%s/%s/timers/%s";
+
+    /**
+     * Base path to invoke methods.
+     */
+    public static final String INVOKE_PATH = API_VERSION + "/invoke";
 
     /**
      * Invoke Publish Path

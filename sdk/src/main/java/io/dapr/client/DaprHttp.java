@@ -27,6 +27,11 @@ import java.util.concurrent.Executors;
 class DaprHttp {
 
   /**
+   * HTTP Methods supported.
+   */
+  enum HttpMethods { GET, PUT, POST, DELETE; }
+
+  /**
    * Defines the standard application/json type for HTTP calls in Dapr.
    */
   private static final MediaType MEDIA_TYPE_APPLICATION_JSON =
@@ -83,7 +88,7 @@ class DaprHttp {
    * @param urlString url as String.
    * @return Asynchronous text
    */
-  public final Mono<String> invokeAPI(String method, String urlString, Map<String, String> headers) {
+  public Mono<String> invokeAPI(String method, String urlString, Map<String, String> headers) {
     return this.invokeAPI(method, urlString, (byte[])null, headers);
   }
 
@@ -95,7 +100,7 @@ class DaprHttp {
    * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public final Mono<String> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
+  public Mono<String> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
     return this.invokeAPI(method, urlString, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
   }
 
@@ -107,7 +112,7 @@ class DaprHttp {
    * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public final Mono<String> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
+  public Mono<String> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
     return Mono.fromFuture(CompletableFuture.supplyAsync(
         () -> {
           try {
@@ -126,9 +131,9 @@ class DaprHttp {
             Request.Builder requestBuilder = new Request.Builder()
                 .url(new URL(this.baseUrl + urlString))
                 .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
-            if (Constants.defaultHttpMethodSupported.GET.name().equals(method)) {
+            if (HttpMethods.GET.name().equals(method)) {
               requestBuilder.get();
-            } else if (Constants.defaultHttpMethodSupported.DELETE.name().equals(method)) {
+            } else if (HttpMethods.DELETE.name().equals(method)) {
               requestBuilder.delete();
             } else {
               requestBuilder.method(method, body);
