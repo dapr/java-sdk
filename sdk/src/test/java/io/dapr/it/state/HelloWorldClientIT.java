@@ -1,8 +1,14 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 package io.dapr.it.state;
 
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
 import io.dapr.it.DaprIntegrationTestingRunner;
+import io.dapr.it.services.EmptyService;
 import io.dapr.it.services.HelloWorldGrpcStateService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -26,7 +32,7 @@ public class HelloWorldClientIT {
                         "BUILD SUCCESS",
                         HelloWorldGrpcStateService.class,
                         true,
-                        50001,
+                        50002,
                         2000
                         );
         daprIntegrationTestingRunner.initializeDapr();
@@ -35,7 +41,7 @@ public class HelloWorldClientIT {
     @Test
     public void testHelloWorldState(){
         ManagedChannel channel =
-                ManagedChannelBuilder.forAddress("localhost", 50001).usePlaintext().build();
+                ManagedChannelBuilder.forAddress("localhost", 50002).usePlaintext().build();
         DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
         String key = "mykey";

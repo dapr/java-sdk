@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 package io.dapr.it.services;
 
 import com.google.protobuf.Any;
@@ -16,29 +21,24 @@ import io.grpc.ManagedChannelBuilder;
  */
 public class HelloWorldGrpcStateService {
 
-  public static void main(String[] args) {
-    ManagedChannel channel =
-      ManagedChannelBuilder.forAddress("localhost", 50001).usePlaintext().build();
-    DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
+    public static void main(String[] args) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50002).usePlaintext().build();
+        DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
-    String key = "mykey";
-    // First, write key-value pair.
+        String key = "mykey";
+        // First, write key-value pair.
 
-      String value = "Hello World";
-      StateRequest req = StateRequest
-        .newBuilder()
-        .setKey(key)
-        .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8(value)).build())
-        .build();
-      SaveStateEnvelope state = SaveStateEnvelope.newBuilder()
-        .addRequests(req)
-        .build();
-      client.saveState(state);
-      System.out.println("Saved!");
-      channel.shutdown();
-
-
-
-
-  }
+        String value = "Hello World";
+        StateRequest req = StateRequest
+                .newBuilder()
+                .setKey(key)
+                .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8(value)).build())
+                .build();
+        SaveStateEnvelope state = SaveStateEnvelope.newBuilder()
+                .addRequests(req)
+                .build();
+        client.saveState(state);
+        System.out.println("Saved!");
+        channel.shutdown();
+    }
 }

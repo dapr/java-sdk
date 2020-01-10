@@ -12,7 +12,7 @@ public class DaprIntegrationTestingRunner {
     private Runtime rt = Runtime.getRuntime();
     private Process proc;
 
-    private  String successMessage;
+    private String successMessage;
     private Class serviceClass;
     private Boolean isGrpc;
     private int port;
@@ -35,22 +35,28 @@ public class DaprIntegrationTestingRunner {
 
     public void initializeDapr() throws IOException, InterruptedException, TimeoutException, ExecutionException {
 
-        File file= new File("../");
-        proc= rt.exec(this.buildDaprCommand(), null,file);
-        InputStream stdin = proc.getInputStream();
-        InputStreamReader isr = new InputStreamReader(stdin);
-        BufferedReader br = new BufferedReader(isr);
+        String daprCommand=this.buildDaprCommand();
+        System.out.println(daprCommand);
+        proc= rt.exec(daprCommand);
+
 
         final Runnable stuffToDo = new Thread(() -> {
             try {
-                String line ;
-                while ((line = br.readLine()) != null) {
-                    System.out.println(line);
-                    if (line.contains(successMessage)) {
-                        break;
+                try (InputStream stdin = proc.getInputStream()) {
+                    try(InputStreamReader isr = new InputStreamReader(stdin)) {
+                        try (BufferedReader br = new BufferedReader(isr)){
+                            String line;
+                            while ((line = br.readLine()) != null) {
+                                System.out.println(line);
+                                if (line.contains(successMessage)) {
+                                    break;
+                                }
+                            }
+                        }
                     }
+
                 }
-            }catch(IOException ex){
+            } catch (IOException ex) {
                 Assert.fail(ex.getMessage());
             }
         });
@@ -64,11 +70,11 @@ public class DaprIntegrationTestingRunner {
     }
 
     private static final String DAPR_RUN = "dapr run --app-id %s ";
-    private static final String DAPR_COMMAND = " -- mvn exec:java -pl=sdk -D exec.mainClass=%s -D exec.classpathScope=\"test\"";
+    private static final String DAPR_COMMAND = " -- mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=\"test\"";
 
     private String buildDaprCommand(){
         StringBuilder stringBuilder= new StringBuilder(String.format(DAPR_RUN,this.appName))
-                .append(this.isGrpc ? " --grpc-port ": " --app-port ")
+                .append(this.isGrpc ? " --grpc-port ": " --port ")
                 .append(this.port)
                 .append(String.format(DAPR_COMMAND, this.serviceClass.getCanonicalName()));
         return stringBuilder.toString();
@@ -82,6 +88,5 @@ public class DaprIntegrationTestingRunner {
     public  void destroyDapr() throws IOException {
         rt.exec("dapr stop --app-id " + this.appName);
         proc.destroy();
-
     }
 }
