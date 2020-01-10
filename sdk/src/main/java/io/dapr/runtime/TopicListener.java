@@ -5,6 +5,7 @@
 
 package io.dapr.runtime;
 
+import io.dapr.client.domain.CloudEventEnvelope;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -16,12 +17,11 @@ public interface TopicListener {
 
   /**
    * Processes a given topic's message delivery.
-   * @param messageId Message's identifier.
-   * @param dataType Type of the input data.
-   * @param data Input data.
+   * @param message Message event to be processed.
    * @param metadata Headers (or metadata).
    * @return Empty response.
+   * @throws Exception Any exception from user code.
    */
-  Mono<Void> process(String messageId, String dataType, byte[] data, Map<String, String> metadata);
+  Mono<Void> process(CloudEventEnvelope message, Map<String, String> metadata) throws Exception;
 
 }

@@ -5,17 +5,21 @@
 
 package io.dapr.runtime;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.client.*;
-import io.dapr.runtime.Dapr;
-import io.dapr.runtime.DaprRuntime;
-import io.dapr.runtime.TopicListener;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientTestBuilder;
+import io.dapr.client.DaprHttpStub;
+import io.dapr.client.domain.CloudEventEnvelope;
+import io.dapr.client.domain.Verb;
 import io.dapr.utils.Constants;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -27,11 +31,15 @@ import static org.mockito.Mockito.*;
 
 public class DaprRuntimeTest {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  protected static final JsonFactory JSON_FACTORY = new JsonFactory();
 
   private static final String TYPE_PLAIN_TEXT = "plain/text";
 
   private static final String TOPIC_NAME = "mytopic";
+
+  private static final String APP_ID = "myappid";
+
+  private static final String METHOD_NAME = "mymethod";
 
   private final DaprRuntime daprRuntime = Dapr.getInstance();
 
@@ -49,75 +57,166 @@ public class DaprRuntimeTest {
     Assert.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
 
     TopicListener listener = mock(TopicListener.class);
+    when(listener.process(any(), any())).thenReturn(Mono.empty());
+
     this.daprRuntime.subscribeToTopic(TOPIC_NAME, listener);
 
-    verify(listener, never()).process(any(), any(), any(), any());
+    verify(listener, never()).process(any(), any());
 
-    Dapr.Message[] messages = new Dapr.Message[]{
-      new Dapr.Message(
-        generateMessageId(),
-        TYPE_PLAIN_TEXT,
-        generatePayload(),
-        generateSingleMetadata()),
-      new Dapr.Message(
-        generateMessageId(),
-        TYPE_PLAIN_TEXT,
-        new byte[0],
-        generateSingleMetadata()),
-      new Dapr.Message(
-        generateMessageId(),
-        TYPE_PLAIN_TEXT,
-        null,
-        generateSingleMetadata()),
-      new Dapr.Message(
-        generateMessageId(),
-        TYPE_PLAIN_TEXT,
-        generatePayload(),
-        null),
-      new Dapr.Message(
-        "",
-        TYPE_PLAIN_TEXT,
-        generatePayload(),
-        generateSingleMetadata()),
-      new Dapr.Message(
-        null,
-        TYPE_PLAIN_TEXT,
-        generatePayload(),
-        generateSingleMetadata()),
-      new Dapr.Message(
-        generateMessageId(),
-        "",
-        generatePayload(),
-        generateSingleMetadata()),
-      new Dapr.Message(
-        generateMessageId(),
-        null,
-        generatePayload(),
-        generateSingleMetadata())
+    Message[] messages = new Message[]{
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            new byte[0],
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            null,
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            null),
+        new Message(
+            "",
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            null,
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            "",
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            null,
+            generatePayload(),
+            generateSingleMetadata())
     };
 
     DaprHttpStub daprHttp = mock(DaprHttpStub.class);
     DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
 
-    for (Dapr.Message message : messages) {
+    for (Message message : messages) {
       when(daprHttp.invokeAPI(
-              eq("POST"),
-              eq(Constants.PUBLISH_PATH + "/" + TOPIC_NAME),
-              eq(message.getData()),
-              eq(null)))
-              .thenAnswer(invocationOnMock -> {
-                this.daprRuntime.handleInvocation(
-                        TOPIC_NAME, OBJECT_MAPPER.writeValueAsBytes(message), message.getMetadata());
-                return Mono.empty();
-              });
+          eq("POST"),
+          eq(Constants.PUBLISH_PATH + "/" + TOPIC_NAME),
+          eq(message.data),
+          eq(null)))
+          .thenAnswer(invocationOnMock -> this.daprRuntime.handleInvocation(
+              TOPIC_NAME,
+              this.serialize(message),
+              message.metadata).then());
 
-      client.publishEvent(TOPIC_NAME, message.getData()).block();
+      client.publishEvent(TOPIC_NAME, message.data).block();
 
-      verify(listener, times(1))
-        .process(eq(message.getId()), eq(message.getDatacontenttype()), eq(message.getData()), eq(message.getMetadata()));
+      CloudEventEnvelope envelope = new CloudEventEnvelope(
+        message.id,
+        null,
+        null,
+        null,
+        message.datacontenttype,
+        message.data
+      );
+      verify(listener, times(1)).process(eq(envelope), eq(message.metadata));
     }
 
-    verify(listener, times(messages.length)).process(any(), any(), any(), any());
+    verify(listener, times(messages.length)).process(any(), any());
+  }
+
+  @Test
+  public void invokeHappyCase() throws Exception {
+    MethodListener listener = mock(MethodListener.class);
+
+    this.daprRuntime.registerServiceMethod(METHOD_NAME, listener);
+
+    verify(listener, never()).process(any(), any());
+
+    Message[] messages = new Message[]{
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            new byte[0],
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            null,
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            null),
+        new Message(
+            "",
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            null,
+            TYPE_PLAIN_TEXT,
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            "",
+            generatePayload(),
+            generateSingleMetadata()),
+        new Message(
+            generateMessageId(),
+            null,
+            generatePayload(),
+            generateSingleMetadata())
+    };
+
+    DaprHttpStub daprHttp = mock(DaprHttpStub.class);
+    DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
+
+    for (Message message : messages) {
+      byte[] expectedResponse = message.id == null ? new byte[0] : message.id.getBytes(StandardCharsets.UTF_8);
+      when(listener.process(eq(message.data), eq(message.metadata)))
+          .then(x -> Mono.just(expectedResponse));
+
+      when(daprHttp.invokeAPI(
+          eq("POST"),
+          eq(Constants.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
+          eq(message.data),
+          any()))
+          .thenAnswer(x ->
+              this.daprRuntime.handleInvocation(
+              METHOD_NAME,
+              message.data,
+              message.metadata)
+          .map(r -> new String(r, StandardCharsets.UTF_8)));
+
+      Mono<byte[]> response = client.invokeService(Verb.POST, APP_ID, METHOD_NAME, message.data, message.metadata);
+      Assert.assertEquals(
+          new String(expectedResponse, StandardCharsets.UTF_8),
+          new String(response.block(), StandardCharsets.UTF_8));
+
+      verify(listener, times(1))
+          .process(eq(message.data), eq(message.metadata));
+    }
+
+    verify(listener, times(messages.length)).process(any(), any());
   }
 
   @Test(expected = RuntimeException.class)
@@ -126,27 +225,29 @@ public class DaprRuntimeTest {
     Assert.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
 
     TopicListener listener = mock(TopicListener.class);
-    when(listener.process(any(), any(), any(), any()))
+    when(listener.process(any(), any()))
             .thenReturn(Mono.error(new RuntimeException()));
 
     this.daprRuntime.subscribeToTopic(TOPIC_NAME, listener);
 
-    Dapr.Message message = new Dapr.Message(
+    Message message = new Message(
             generateMessageId(),
             TYPE_PLAIN_TEXT,
             generatePayload(),
             generateSingleMetadata());
 
     Mono<byte[]> result = this.daprRuntime
-            .handleInvocation(TOPIC_NAME, OBJECT_MAPPER.writeValueAsBytes(message), message.getMetadata());
+            .handleInvocation(TOPIC_NAME, this.serialize(message), message.metadata);
 
-    verify(listener, times(1))
-            .process(
-                    eq(message.getId()),
-                    eq(message.getDatacontenttype()),
-                    eq(message.getData()),
-                    eq(message.getMetadata()));
-
+    CloudEventEnvelope envelope = new CloudEventEnvelope(
+      message.id,
+      null,
+      null,
+      null,
+      message.datacontenttype,
+      message.data
+    );
+    verify(listener, times(1)).process(eq(envelope), eq(message.metadata));
     result.block();
   }
 
@@ -159,21 +260,16 @@ public class DaprRuntimeTest {
 
     this.daprRuntime.subscribeToTopic(TOPIC_NAME, listener);
 
-    Dapr.Message message = new Dapr.Message(
+    Message message = new Message(
             generateMessageId(),
             TYPE_PLAIN_TEXT,
             generatePayload(),
             generateSingleMetadata());
 
     Mono<byte[]> result = this.daprRuntime
-            .handleInvocation("UNKNOWN", OBJECT_MAPPER.writeValueAsBytes(message), message.getMetadata());
+            .handleInvocation("UNKNOWN", serialize(message), message.metadata);
 
-    verify(listener, never())
-            .process(
-                    eq(message.getId()),
-                    eq(message.getDatacontenttype()),
-                    eq(message.getData()),
-                    eq(message.getMetadata()));
+    verify(listener, never()).process(any(), any());
 
     result.block();
   }
@@ -188,5 +284,47 @@ public class DaprRuntimeTest {
 
   private static final Map<String, String> generateSingleMetadata() {
     return Collections.singletonMap(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+  }
+
+  private static final class Message {
+
+    private final String id;
+
+    private final String datacontenttype;
+
+    private final byte[] data;
+
+    private final Map<String, String> metadata;
+
+    private Message(String id, String datacontenttype, byte[] data, Map<String, String> metadata) {
+      this.id = id;
+      this.datacontenttype = datacontenttype;
+      this.data = data;
+      this.metadata = metadata;
+    }
+  }
+
+  private byte[] serialize(Message message) throws IOException {
+    if (message == null) {
+      return null;
+    }
+
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+      JsonGenerator generator = JSON_FACTORY.createGenerator(bos);
+      generator.writeStartObject();
+      if (message.id != null) {
+        generator.writeStringField("id", message.id);
+      }
+      if (message.datacontenttype != null) {
+        generator.writeStringField("datacontenttype", message.datacontenttype);
+      }
+      if (message.data != null) {
+        generator.writeBinaryField("data", message.data);
+      }
+      generator.writeEndObject();
+      generator.close();
+      bos.flush();
+      return bos.toByteArray();
+    }
   }
 }

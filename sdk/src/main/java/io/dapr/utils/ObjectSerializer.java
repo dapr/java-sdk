@@ -6,12 +6,10 @@ package io.dapr.utils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.runtime.Dapr;
+import io.dapr.client.domain.CloudEventEnvelope;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +23,7 @@ import java.util.Map;
 public class ObjectSerializer {
 
     /**
-     * Shared Json Factory as per Jackson's documentation, used only for this class.
+     * Shared Json Factory as per Jackson's documentation.
      */
     protected static final JsonFactory JSON_FACTORY = new JsonFactory();
 
@@ -113,8 +111,8 @@ public class ObjectSerializer {
             return (T) null;
         }
 
-        if (clazz == Dapr.Message.class) {
-            return (T) this.deserializeTopicMessage(value);
+        if (clazz == CloudEventEnvelope.class) {
+            return (T) this.deserializeCloudEventEnvelope(value);
         }
 
         if (clazz == String.class) {
@@ -145,7 +143,7 @@ public class ObjectSerializer {
      * @return Message (can be null if input is null)
      * @throws IOException If cannot parse.
      */
-    private Dapr.Message deserializeTopicMessage(Object payload) throws IOException {
+    private CloudEventEnvelope deserializeCloudEventEnvelope(Object payload) throws IOException {
         if (payload == null) {
             return null;
         }
@@ -166,9 +164,24 @@ public class ObjectSerializer {
             id = node.get("id").asText();
         }
 
-        String dataType = null;
+        String source = null;
+        if (node.has("source") && !node.get("source").isNull()) {
+            source = node.get("source").asText();
+        }
+
+        String type = null;
+        if (node.has("type") && !node.get("type").isNull()) {
+            type = node.get("type").asText();
+        }
+
+        String specversion = null;
+        if (node.has("specversion") && !node.get("specversion").isNull()) {
+            specversion = node.get("specversion").asText();
+        }
+
+        String datacontenttype = null;
         if (node.has("datacontenttype") && !node.get("datacontenttype").isNull()) {
-            dataType = node.get("datacontenttype").asText();
+            datacontenttype = node.get("datacontenttype").asText();
         }
 
         byte[] data = null;
@@ -180,7 +193,7 @@ public class ObjectSerializer {
             }
         }
 
-        return new Dapr.Message(id, dataType, data, null);
+        return new CloudEventEnvelope(id, source, type, specversion, datacontenttype, data);
     }
 
     /**

@@ -4,8 +4,6 @@
  */
 package io.dapr.exceptions;
 
-import java.io.IOException;
-
 /**
  * A Dapr's specific exception.
  */

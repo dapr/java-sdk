@@ -1,7 +1,12 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
 package io.dapr.client;
 
 import io.dapr.client.domain.StateKeyValue;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.Verb;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
@@ -14,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An adapter for the GRPC Client.
+ * An adapter for the HTTP Client.
  *
  * @see io.dapr.client.DaprHttp
  * @see io.dapr.client.DaprClient
@@ -75,24 +80,21 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, K> Mono<T> invokeService(String verb, String appId, String method, K request, Class<T> clazz) {
+  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
     try {
-      if (verb == null || verb.trim().isEmpty()) {
-        throw new DaprException("500", "App Id cannot be null or empty.");
+      if (verb == null) {
+        throw new DaprException("500", "Verb cannot be null.");
       }
-      DaprHttp.HttpMethods httMethod = DaprHttp.HttpMethods.valueOf(verb.toUpperCase());
-      if (httMethod == null) {
-        throw new DaprException("405", "HTTP Method not allowed.");
-      }
+      String httMethod = verb.toString();
       if (appId == null || appId.trim().isEmpty()) {
         throw new DaprException("500", "App Id cannot be null or empty.");
       }
       if (method == null || method.trim().isEmpty()) {
-        throw new DaprException("500", "App Id cannot be null or empty.");
+        throw new DaprException("500", "Method name cannot be null or empty.");
       }
-      String path = String.format("/invoke/%s/method/%s", appId, method);
+      String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-      return this.client.invokeAPI(httMethod.name(), path, serializedRequestBody, null)
+      return this.client.invokeAPI(httMethod, path, serializedRequestBody, metadata)
           .flatMap(r -> {
             try {
               return Mono.just(objectSerializer.deserialize(r, clazz));
@@ -109,27 +111,32 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> invokeService(String verb, String appId, String method, T request) {
-    try {
-      if (verb == null || verb.trim().isEmpty()) {
-        throw new DaprException("500", "App Id cannot be null or empty.");
-      }
-      DaprHttp.HttpMethods httMethod = DaprHttp.HttpMethods.valueOf(verb.toUpperCase());
-      if (httMethod == null) {
-        throw new DaprException("405", "HTTP Method not allowed.");
-      }
-      if (appId == null || appId.trim().isEmpty()) {
-        throw new DaprException("500", "App Id cannot be null or empty.");
-      }
-      if (method == null || method.trim().isEmpty()) {
-        throw new DaprException("500", "Method to invoke cannot be null or empty.");
-      }
-      String path = String.format("/invoke/%s/method/%s", appId, method);
-      byte[] serializedRequestBody = objectSerializer.serialize(request);
-      return this.client.invokeAPI(httMethod.name(), path, serializedRequestBody, null).then();
-    } catch (Exception ex) {
-      return Mono.error(ex);
-    }
+  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
+    return this.invokeService(verb, appId, method, null, null, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata) {
+    return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> invokeService(Verb verb, String appId, String method, Map<String, String> metadata) {
+    return this.invokeService(verb, appId, method, null, metadata, byte[].class).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<byte[]> invokeService(Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
+    return this.invokeService(verb, appId, method, request, metadata, byte[].class);
   }
 
   /**

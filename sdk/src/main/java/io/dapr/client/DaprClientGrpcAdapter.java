@@ -5,16 +5,19 @@
 package io.dapr.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.protobuf.Any;
 import com.google.protobuf.Empty;
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
 import io.dapr.client.domain.StateKeyValue;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.Verb;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * An adapter for the GRPC Client.
@@ -30,6 +33,7 @@ class DaprClientGrpcAdapter implements DaprClient {
    * @see io.dapr.DaprGrpc.DaprFutureStub
    */
   private DaprGrpc.DaprFutureStub client;
+
   /**
    * A utitlity class for serialize and deserialize the messages sent and retrived by the client.
    */
@@ -87,20 +91,20 @@ class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, K> Mono<T> invokeService(String verb, String appId, String method, K request, Class<T> clazz) {
+  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
     try {
-      Map<String, String> mapMessage = new HashMap<>();
-      mapMessage.put("Id", appId);
-      mapMessage.put("Method", verb);
-      mapMessage.put("Data", objectSerializer.serializeString(request));
+      DaprProtos.InvokeServiceEnvelope.Builder envelopeBuilder = DaprProtos.InvokeServiceEnvelope.newBuilder();
+      envelopeBuilder.setId(appId);
+      envelopeBuilder.setMethod(verb.toString());
+      envelopeBuilder.setData(Any.parseFrom(objectSerializer.serialize(request)));
+      envelopeBuilder.getMetadataMap().putAll(metadata);
 
-      DaprProtos.InvokeServiceEnvelope envelope =
-          DaprProtos.InvokeServiceEnvelope.parseFrom(objectSerializer.serialize(mapMessage));
+      DaprProtos.InvokeServiceEnvelope envelope = envelopeBuilder.build();
       ListenableFuture<DaprProtos.InvokeServiceResponseEnvelope> futureResponse =
           client.invokeService(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
         try {
-          return Mono.just(objectSerializer.deserialize(f.get().getData().getValue().toStringUtf8(), clazz));
+          return Mono.just(objectSerializer.deserialize(f.get().getData().toByteArray(), clazz));
         } catch (Exception ex) {
           return Mono.error(ex);
         }
@@ -112,13 +116,35 @@ class DaprClientGrpcAdapter implements DaprClient {
   }
 
   /**
-   * Operation not supported for GRPC
-   *
-   * TODO: Implement this since this IS supported.
-   * @throws UnsupportedOperationException every time is called.
+   * {@inheritDoc}
    */
-  public <T> Mono<Void> invokeService(String verb, String appId, String method, T request) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
+  @Override
+  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
+    return this.invokeService(verb, appId, method, null, null, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata) {
+    return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> invokeService(Verb verb, String appId, String method, Map<String, String> metadata) {
+    return this.invokeService(verb, appId, method, null, metadata, byte[].class).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<byte[]> invokeService(Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
+    return this.invokeService(verb, appId, method, request, metadata, byte[].class);
   }
 
   /**

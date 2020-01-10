@@ -75,6 +75,11 @@ public final class Constants {
     public static final String ACTOR_TIMER_RELATIVE_URL_FORMAT = ACTORS_BASE_URL + "/%s/%s/timers/%s";
 
     /**
+     * Base path to invoke methods.
+     */
+    public static final String INVOKE_PATH = API_VERSION + "/invoke";
+
+    /**
      * Invoke Publish Path
      */
     public static final String PUBLISH_PATH = API_VERSION + "/publish";
