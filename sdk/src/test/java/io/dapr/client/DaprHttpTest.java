@@ -24,7 +24,7 @@ public class DaprHttpTest {
 
     private MockInterceptor mockInterceptor;
 
-    private final String expectedResult = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
+    private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
     @Before
     public void setUp() throws Exception {
@@ -37,12 +37,12 @@ public class DaprHttpTest {
 
         mockInterceptor.addRule()
                 .post("http://localhost:3500/v1.0/state")
-                .respond(expectedResult);
+                .respond(EXPECTED_RESULT);
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
         Mono<String> mono = daprHttp.invokeAPI("POST","v1.0/state",null);
-        assertEquals(expectedResult,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block());
 
     }
 
@@ -51,12 +51,12 @@ public class DaprHttpTest {
 
         mockInterceptor.addRule()
                 .delete("http://localhost:3500/v1.0/state")
-                .respond(expectedResult);
+                .respond(EXPECTED_RESULT);
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
         Mono<String> mono = daprHttp.invokeAPI("DELETE","v1.0/state",null);
-        assertEquals(expectedResult,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block());
 
     }
 
@@ -65,13 +65,13 @@ public class DaprHttpTest {
 
         mockInterceptor.addRule()
                 .get("http://localhost:3500/v1.0/get")
-                .respond(expectedResult);
+                .respond(EXPECTED_RESULT);
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
         Mono<String> mono = daprHttp.invokeAPI("GET","v1.0/get",null);
 
-        assertEquals(expectedResult,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block());
 
     }
 
@@ -84,12 +84,12 @@ public class DaprHttpTest {
 
         mockInterceptor.addRule()
                 .get("http://localhost:3500/v1.0/get")
-                .respond(expectedResult);
+                .respond(EXPECTED_RESULT);
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
         Mono<String> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
 
-        assertEquals(expectedResult,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block());
 
     }
 
@@ -109,7 +109,7 @@ public class DaprHttpTest {
 
         Mono<String> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
 
-        assertEquals(expectedResult,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block());
     }
 
 }
