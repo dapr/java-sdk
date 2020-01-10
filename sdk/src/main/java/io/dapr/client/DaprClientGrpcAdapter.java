@@ -6,6 +6,7 @@ package io.dapr.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
@@ -15,6 +16,7 @@ import io.dapr.client.domain.Verb;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -64,15 +66,12 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> publishEvent(String topic, T event, Map<String, String> metadata) {
     try {
-      String serializedEvent = objectSerializer.serializeString(event);
-      Map<String, String> mapEvent = new HashMap<>();
-      mapEvent.put("Topic", topic);
-      mapEvent.put("Data", serializedEvent);
+      byte[] byteEvent = objectSerializer.serialize(event);
+      Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteEvent)).build();
       // TODO: handle metadata.
 
-      byte[] byteEvent = objectSerializer.serialize(mapEvent);
-
-      DaprProtos.PublishEventEnvelope envelope = DaprProtos.PublishEventEnvelope.parseFrom(byteEvent);
+      DaprProtos.PublishEventEnvelope envelope = DaprProtos.PublishEventEnvelope.newBuilder()
+          .setTopic(topic).setData(data).build();
       ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
         try {
@@ -93,13 +92,7 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
     try {
-      DaprProtos.InvokeServiceEnvelope.Builder envelopeBuilder = DaprProtos.InvokeServiceEnvelope.newBuilder();
-      envelopeBuilder.setId(appId);
-      envelopeBuilder.setMethod(verb.toString());
-      envelopeBuilder.setData(Any.parseFrom(objectSerializer.serialize(request)));
-      envelopeBuilder.getMetadataMap().putAll(metadata);
-
-      DaprProtos.InvokeServiceEnvelope envelope = envelopeBuilder.build();
+      DaprProtos.InvokeServiceEnvelope envelope = getInvodeServceEnvelope(verb.toString(), appId, method, request);
       ListenableFuture<DaprProtos.InvokeServiceResponseEnvelope> futureResponse =
           client.invokeService(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
@@ -153,11 +146,12 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> invokeBinding(String name, T request) {
     try {
-      Map<String, String> mapMessage = new HashMap<>();
-      mapMessage.put("Name", name);
-      mapMessage.put("Data", objectSerializer.serializeString(request));
-      DaprProtos.InvokeBindingEnvelope envelope =
-          DaprProtos.InvokeBindingEnvelope.parseFrom(objectSerializer.serialize(mapMessage));
+      byte[] byteRequest = objectSerializer.serialize(request);
+      Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
+      DaprProtos.InvokeBindingEnvelope.Builder builder = DaprProtos.InvokeBindingEnvelope.newBuilder()
+          .setName(name)
+          .setData(data);
+      DaprProtos.InvokeBindingEnvelope envelope = builder.build();
       ListenableFuture<Empty> futureEmpty = client.invokeBinding(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
         try {
@@ -176,13 +170,12 @@ class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public<T, K> Mono<T> getState(StateKeyValue<K> key, StateOptions stateOptions, Class<T> clazz) {
+  public <T, K> Mono<T> getState(StateKeyValue<K> key, StateOptions stateOptions, Class<T> clazz) {
     try {
-      Map<String, String> request = new HashMap<>();
-      request.put("Key", key.getKey());
-      request.put("Consistency", stateOptions.getConsistency());
-      byte[] serializedRequest = objectSerializer.serialize(request);
-      DaprProtos.GetStateEnvelope envelope = DaprProtos.GetStateEnvelope.parseFrom(serializedRequest);
+      DaprProtos.GetStateEnvelope.Builder builder = DaprProtos.GetStateEnvelope.newBuilder()
+          .setKey(key.getKey())
+          .setConsistency(stateOptions.getConsistency());
+      DaprProtos.GetStateEnvelope envelope = builder.build();
       ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
         try {
@@ -202,16 +195,21 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options) {
     try {
-      List<Map<String, Object>> listStates = new ArrayList<>();
-      Map<String, Object> mapOptions = transformStateOptionsToMap(options);
+      DaprProtos.StateRequestOptions.Builder optionBuilder = DaprProtos.StateRequestOptions.newBuilder()
+          .setConsistency(options.getConsistency());
+      DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
       for (StateKeyValue state : states) {
-        Map<String, Object> mapState = transformStateKeyValueToMap(state, mapOptions);
-        listStates.add(mapState);
-      };
-      Map<String, Object> mapStates = new HashMap<>();
-      mapStates.put("Requests", listStates);
-      byte[] byteRequests = objectSerializer.serialize(mapStates);
-      DaprProtos.SaveStateEnvelope envelope = DaprProtos.SaveStateEnvelope.parseFrom(byteRequests);
+        byte[] byteState = objectSerializer.serialize(state.getValue());
+        Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteState)).build();
+        DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder()
+            .setEtag(state.getEtag())
+            .setKey(state.getKey())
+            .setValue(data);
+        stateBuilder.setOptions(optionBuilder.build());
+        builder.addRequests(stateBuilder.build());
+      }
+      DaprProtos.SaveStateEnvelope envelope = builder.build();
+
       ListenableFuture<Empty> futureEmpty = client.saveState(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
         try {
@@ -226,9 +224,6 @@ class DaprClientGrpcAdapter implements DaprClient {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
     StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
@@ -242,10 +237,13 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
     try {
-      Map<String, Object> mapOptions = transformStateOptionsToMap(options);
-      Map<String, Object> mapState = transformStateKeyValueToMap(state, mapOptions);
-      byte[] serializedState = objectSerializer.serialize(mapState);
-      DaprProtos.DeleteStateEnvelope envelope = DaprProtos.DeleteStateEnvelope.parseFrom(serializedState);
+      DaprProtos.StateOptions.Builder stateOptions = DaprProtos.StateOptions.newBuilder()
+          .setConsistency(options.getConsistency());
+      DaprProtos.DeleteStateEnvelope.Builder builder = DaprProtos.DeleteStateEnvelope.newBuilder()
+          .setOptions(stateOptions)
+          .setEtag(state.getEtag())
+          .setKey(state.getKey());
+      DaprProtos.DeleteStateEnvelope envelope = builder.build();
       ListenableFuture<Empty> futureEmpty = client.deleteState(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {
         try {
@@ -262,6 +260,7 @@ class DaprClientGrpcAdapter implements DaprClient {
 
   /**
    * Operation not supported for GRPC
+   *
    * @throws UnsupportedOperationException every time is called.
    */
   @Override
@@ -269,101 +268,45 @@ class DaprClientGrpcAdapter implements DaprClient {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  /**
-   * Operation not supported for GRPC
-   * @throws UnsupportedOperationException every time is called.
-   */
   @Override
   public Mono<String> getActorState(String actorType, String actorId, String keyName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  /**
-   * Operation not supported for GRPC
-   * @throws UnsupportedOperationException every time is called.
-   */
   @Override
   public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  /**
-   * Operation not supported for GRPC
-   * @throws UnsupportedOperationException every time is called.
-   */
   @Override
   public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  /**
-   * Operation not supported for GRPC
-   * @throws UnsupportedOperationException every time is called.
-   */
   @Override
   public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  /**
-   * Operation not supported for GRPC
-   * @throws UnsupportedOperationException every time is called.
-   */
   @Override
   public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  /**
-   * Operation not supported for GRPC
-   * @throws UnsupportedOperationException every time is called.
-   */
   @Override
   public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  /**
-   * Converts state options to map.
-   *
-   * TODO: Move this logic to StateOptions.
-   * @param options Instance to have is methods converted into map.
-   * @return Map for the state options.
-   * @throws IllegalAccessException Cannot extract params.
-   */
-  private Map<String, Object> transformStateOptionsToMap(StateOptions options)
-      throws IllegalAccessException {
-    Map<String, Object> mapOptions = null;
-    if (options != null) {
-      mapOptions = new HashMap<>();
-      for (Field field : options.getClass().getFields()) {
-        Object fieldValue = field.get(options);
-        if (fieldValue != null) {
-          mapOptions.put(field.getName(), fieldValue);
-        }
-      }
-    }
-    return mapOptions;
+  private <K> DaprProtos.InvokeServiceEnvelope getInvodeServceEnvelope(
+      String verb, String appId, String method, K request) throws IOException {
+    byte[] byteRequest = objectSerializer.serialize(request);
+    Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
+    DaprProtos.InvokeServiceEnvelope.Builder envelopeBuilder = DaprProtos.InvokeServiceEnvelope.newBuilder()
+        .setId(appId)
+        .setMethod(verb)
+        .setData(data);
+    return envelopeBuilder.build();
   }
 
-  /**
-   * Creates an map for the given key-value operation.
-   *
-   * // TODO: Move this logic into StateKeyValue.
-   * @param state Key value for the state change.
-   * @param mapOptions Options to be applied to this operation.
-   * @return Map for the key-value operation.
-   * @throws IllegalAccessException Cannot identify key-value attributes.
-   */
-  private Map<String, Object> transformStateKeyValueToMap(StateKeyValue state, Map<String, Object> mapOptions)
-      throws IllegalAccessException {
-    Map<String, Object> mapState = new HashMap<>();
-    for (Field field : state.getClass().getFields()) {
-      mapState.put(field.getName(), field.get(state));
-    }
-    if (mapOptions != null && !mapOptions.isEmpty()) {
-      mapState.put("Options", mapOptions);
-    }
-    return mapState;
-  }
 }
