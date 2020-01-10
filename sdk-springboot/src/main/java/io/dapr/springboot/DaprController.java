@@ -71,14 +71,10 @@ public class DaprController {
   }
 
   @PostMapping(path = "/{name}")
-  public Mono<byte[]> invokeMethodOrTopic(@PathVariable("name") String name,
-                                          @RequestBody(required = false) byte[] body,
-                                          @RequestHeader Map<String, String> header) {
-    return Dapr.getInstance().handleInvocation(name, body, header);
-  }
-
   @PutMapping(path = "/{name}")
-  public Mono<byte[]> invokeMethodOrTopicViaPut(@PathVariable("name") String name,
+  @DeleteMapping(path = "/{name}")
+  @GetMapping(path = "/{name}")
+  public Mono<byte[]> invokeMethodOrTopic(@PathVariable("name") String name,
                                           @RequestBody(required = false) byte[] body,
                                           @RequestHeader Map<String, String> header) {
     return Dapr.getInstance().handleInvocation(name, body, header);

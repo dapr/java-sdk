@@ -5,17 +5,11 @@
 
 package io.dapr.runtime;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.CloudEventEnvelope;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,11 +20,6 @@ import java.util.stream.Collectors;
  * This class DO NOT make I/O operations by itself, only via user-provided listeners.
  */
 public final class Dapr implements DaprRuntime {
-
-  /**
-   * Empty response.
-   */
-  private static final Mono<byte[]> EMPTY_BYTES_ASYNC = Mono.just(new byte[0]);
 
   /**
    * Singleton instance for this class.
@@ -45,7 +34,7 @@ public final class Dapr implements DaprRuntime {
   /**
    * Topics, methods and binding handles.
    */
-  private final Map<String, Function<Message, Mono<byte[]>>> handlers = Collections.synchronizedMap(new HashMap<>());
+  private final Map<String, Function<HandleRequest, Mono<byte[]>>> handlers = Collections.synchronizedMap(new HashMap<>());
 
   /**
    * Private constructor to keep it singleton.
@@ -87,7 +76,7 @@ public final class Dapr implements DaprRuntime {
    */
   @Override
   public void subscribeToTopic(String topic, TopicListener listener) {
-    this.handlers.putIfAbsent(topic, new TopicHandler(listener));
+    this.handlers.putIfAbsent(topic, new TopicHandler(this.serializer, listener));
   }
 
   /**
@@ -103,19 +92,16 @@ public final class Dapr implements DaprRuntime {
    */
   @Override
   public Mono<byte[]> handleInvocation(String name, byte[] payload, Map<String, String> metadata) {
-    Function<Message, Mono<byte[]>> handler = this.handlers.get(name);
+    Function<HandleRequest, Mono<byte[]>> handler = this.handlers.get(name);
 
     if (handler == null) {
       return Mono.error(new DaprException("INVALID_METHOD_OR_TOPIC", "Did not find handler for : " + (name == null ? "" : name)));
     }
 
     try {
-      Message message = this.serializer.deserialize(payload, Message.class);
-      if (message == null) {
-        return EMPTY_BYTES_ASYNC;
-      }
-      message.setMetadata(metadata);
-      return handler.apply(message).switchIfEmpty(EMPTY_BYTES_ASYNC);
+      HandleRequest request = new HandleRequest(name, payload, metadata);
+      Mono<byte[]> response = handler.apply(request);
+      return response;
     } catch (Exception e) {
       // Handling exception in user code by propagating up via Mono.
       return Mono.error(e);
@@ -123,87 +109,42 @@ public final class Dapr implements DaprRuntime {
   }
 
   /**
-   * Internal class to encapsulate a request message.
+   * Class used to pass-through the handler input.
    */
-  public static final class Message {
+  private static final class HandleRequest {
 
     /**
-     * Identifier of the message being processed.
+     * Name of topic/method/binding being handled.
      */
-    private String id;
+    private final String name;
 
     /**
-     * Type of the input payload.
+     * Payload received.
      */
-    private String datacontenttype;
+    private final byte[] payload;
 
     /**
-     * Raw input payload.
+     * Metadata received.
      */
-    private byte[] data;
+    private final Map<String, String> metadata;
 
     /**
-     * Headers (or metadata).
+     * Instantiates a new handle request.
+     * @param name Name of topic/method/binding being handled.
+     * @param payload Payload received.
+     * @param metadata Metadata received.
      */
-    private Map<String, String> metadata;
-
-    /**
-     * Instantiates a new input request (useful for JSON deserialization).
-     */
-    public Message() {
-    }
-
-    /**
-     * Instantiates a new input request.
-     * @param id Identifier of the message being processed.
-     * @param datacontenttype Type of the input payload.
-     * @param data Input body.
-     * @param metadata Headers (or metadata) for the call.
-     */
-    public Message(String id, String datacontenttype, byte[] data, Map<String, String> metadata) {
-      this.id = id;
-      this.datacontenttype = datacontenttype;
-      this.data = data;
+    private HandleRequest(String name, byte[] payload, Map<String, String> metadata) {
+      this.name = name;
+      this.payload = payload;
       this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
-    }
-
-    public String getId() {
-      return id;
-    }
-
-    public void setId(String id) {
-      this.id = id;
-    }
-
-    public byte[] getData() {
-      return data;
-    }
-
-    public void setData(byte[] data) {
-      this.data = data;
-    }
-
-    public String getDatacontenttype() {
-      return datacontenttype;
-    }
-
-    public void setDatacontenttype(String datacontenttype) {
-      this.datacontenttype = datacontenttype;
-    }
-
-    public Map<String, String> getMetadata() {
-      return metadata;
-    }
-
-    public void setMetadata(Map<String, String> metadata) {
-      this.metadata = metadata;
     }
   }
 
   /**
    * Internal class to handle a method call.
    */
-  private static final class MethodHandler implements Function<Message, Mono<byte[]>> {
+  private static final class MethodHandler implements Function<HandleRequest, Mono<byte[]>> {
 
     /**
      * User-provided listener.
@@ -224,15 +165,19 @@ public final class Dapr implements DaprRuntime {
      * @return Raw output payload or empty.
      */
     @Override
-    public Mono<byte[]> apply(Message r) {
-      return listener.process(r.data, r.metadata);
+    public Mono<byte[]> apply(HandleRequest r) {
+      try {
+        return listener.process(r.payload, r.metadata);
+      } catch (Exception e) {
+        return Mono.error(e);
+      }
     }
   }
 
   /**
    * Internal class to handle a topic message delivery.
    */
-  private static final class TopicHandler implements Function<Message, Mono<byte[]>> {
+  private static final class TopicHandler implements Function<HandleRequest, Mono<byte[]>> {
 
     /**
      * User-provided listener.
@@ -240,10 +185,17 @@ public final class Dapr implements DaprRuntime {
     private final TopicListener listener;
 
     /**
+     * Serializer/deserializer.
+     */
+    private final ObjectSerializer serializer;
+
+    /**
      * Instantiates a new topic handler.
+     * @param serializer Useful for object serialization.
      * @param listener Callback to be executed on a given message.
      */
-    private TopicHandler(TopicListener listener) {
+    private TopicHandler(ObjectSerializer serializer, TopicListener listener) {
+      this.serializer = serializer;
       this.listener = listener;
     }
 
@@ -253,8 +205,17 @@ public final class Dapr implements DaprRuntime {
      * @return Always empty response.
      */
     @Override
-    public Mono<byte[]> apply(Message r) {
-      return listener.process(r.id, r.datacontenttype, r.data, r.metadata).then(Mono.empty());
+    public Mono<byte[]> apply(HandleRequest r) {
+      try {
+        CloudEventEnvelope message = this.serializer.deserialize(r.payload, CloudEventEnvelope.class);
+        if (message == null) {
+          return Mono.empty();
+        }
+
+        return listener.process(message, r.metadata).then(Mono.empty());
+      } catch (Exception e) {
+        return Mono.error(e);
+      }
     }
   }
 }
