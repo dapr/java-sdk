@@ -5,6 +5,7 @@
 
 package io.dapr.runtime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -19,7 +20,8 @@ public interface MethodListener {
    * @param data Raw input payload.
    * @param metadata Header (or metadata).
    * @return Raw response or empty.
+   * @throws Exception Any exception from user code.
    */
-  Mono<byte[]> process(byte[] data, Map<String, String> metadata);
+  Mono<byte[]> process(byte[] data, Map<String, String> metadata) throws Exception;
 
 }
