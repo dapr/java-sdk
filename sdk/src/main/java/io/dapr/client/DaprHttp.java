@@ -8,18 +8,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
-import io.dapr.utils.ObjectSerializer;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -89,7 +87,7 @@ class DaprHttp {
    * @return Asynchronous text
    */
   public Mono<String> invokeAPI(String method, String urlString, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, (byte[])null, headers);
+    return this.invokeAPI(method, urlString, (String) null, headers);
   }
 
   /**
@@ -101,7 +99,12 @@ class DaprHttp {
    * @return Asynchronous text
    */
   public Mono<String> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
+    return this.invokeAPI(
+      method,
+      urlString,
+      content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8),
+      headers)
+      .map(s -> new String(s, StandardCharsets.UTF_8));
   }
 
   /**
@@ -112,12 +115,12 @@ class DaprHttp {
    * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public Mono<String> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
+  public Mono<byte[]> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
     return Mono.fromFuture(CompletableFuture.supplyAsync(
         () -> {
           try {
             String requestId = UUID.randomUUID().toString();
-            RequestBody body = REQUEST_BODY_EMPTY_JSON;
+            RequestBody body;
 
             String contentType = headers != null ? headers.get("content-type") : null;
             MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
@@ -148,16 +151,16 @@ class DaprHttp {
             Request request = requestBuilder.build();
 
             try (Response response = this.httpClient.newCall(request).execute()) {
+              byte[] responseBody = response.body().bytes();
               if (!response.isSuccessful()) {
-                DaprError error = parseDaprError(response.body().string());
+                DaprError error = this.parseDaprError(responseBody);
                 if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-                  throw new RuntimeException(new DaprException(error));
+                  throw new DaprException(error);
                 }
 
-                throw new RuntimeException("Unknown error.");
+                throw new IOException("Unknown error.");
               }
-              String result = response.body().string();
-              return result == null ? "" : result;
+              return responseBody == null ? EMPTY_BYTES : responseBody;
             }
           } catch (Exception e) {
             throw new RuntimeException(e);
@@ -171,16 +174,12 @@ class DaprHttp {
    * @param json Response body from Dapr.
    * @return DaprError or null if could not parse.
    */
-  private static DaprError parseDaprError(String json) {
+  private static DaprError parseDaprError(byte[] json) throws IOException {
     if (json == null) {
       return null;
     }
 
-    try {
-      return OBJECT_MAPPER.readValue(json, DaprError.class);
-    } catch (IOException e) {
-      throw new DaprException("500", "Unknown error: could not parse error json.");
-    }
+    return OBJECT_MAPPER.readValue(json, DaprError.class);
   }
 
 }

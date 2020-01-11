@@ -43,6 +43,11 @@
       <artifactId>dapr-sdk</artifactId>
       <version>0.2.0</version>
     </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+      <version>0.2.0</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -7,7 +7,6 @@ package io.dapr.client;
 import io.dapr.client.domain.StateKeyValue;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
-import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
@@ -64,7 +63,7 @@ public class DaprClientHttpAdapter implements DaprClient {
   public <T> Mono<Void> publishEvent(String topic, T event, Map<String, String> metadata) {
     try {
       if (topic == null || topic.trim().isEmpty()) {
-        throw new DaprException("INVALID_TOPIC", "Topic name cannot be null or empty.");
+        throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
 
       byte[] serializedEvent = objectSerializer.serialize(event);
@@ -83,14 +82,14 @@ public class DaprClientHttpAdapter implements DaprClient {
   public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
     try {
       if (verb == null) {
-        throw new DaprException("500", "Verb cannot be null.");
+        throw new IllegalArgumentException("Verb cannot be null.");
       }
       String httMethod = verb.toString();
       if (appId == null || appId.trim().isEmpty()) {
-        throw new DaprException("500", "App Id cannot be null or empty.");
+        throw new IllegalArgumentException("App Id cannot be null or empty.");
       }
       if (method == null || method.trim().isEmpty()) {
-        throw new DaprException("500", "Method name cannot be null or empty.");
+        throw new IllegalArgumentException("Method name cannot be null or empty.");
       }
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
@@ -146,7 +145,7 @@ public class DaprClientHttpAdapter implements DaprClient {
   public <T> Mono<Void> invokeBinding(String name, T request) {
     try {
       if (name == null || name.trim().isEmpty()) {
-        throw new DaprException("500", "Name to bind cannot be null or empty.");
+        throw new IllegalArgumentException("Name to bind cannot be null or empty.");
       }
 
       Map<String, Object> jsonMap = new HashMap<>();
@@ -172,7 +171,7 @@ public class DaprClientHttpAdapter implements DaprClient {
   public <T, K> Mono<T> getState(StateKeyValue<K> state, StateOptions options, Class<T> clazz) {
     try {
       if (state.getKey() == null) {
-        throw new DaprException("500", "Name cannot be null or empty.");
+        throw new IllegalArgumentException("Name cannot be null or empty.");
       }
       Map<String, String> headers = new HashMap<>();
       if (state.getEtag() != null && !state.getEtag().trim().isEmpty()) {
@@ -236,8 +235,11 @@ public class DaprClientHttpAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
     try {
-      if (state.getKey() == null) {
-        throw new DaprException("500", "Name cannot be null or empty.");
+      if (state == null) {
+        throw new IllegalArgumentException("State cannot be null.");
+      }
+      if (state.getKey() == null || state.getKey().trim().isEmpty()) {
+        throw new IllegalArgumentException("Name cannot be null or empty.");
       }
       Map<String, String> headers = new HashMap<>();
       if (state.getEtag() != null && !state.getEtag().trim().isEmpty()) {
