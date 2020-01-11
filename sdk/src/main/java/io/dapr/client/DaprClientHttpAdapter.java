@@ -149,11 +149,10 @@ public class DaprClientHttpAdapter implements DaprClient {
         throw new DaprException("500", "Name to bind cannot be null or empty.");
       }
 
-      String serializedBidingRequestBody = objectSerializer.serializeString(request);
-
-      Map<String, String> jsonMap = new HashMap<>();
-      jsonMap.put("Data", serializedBidingRequestBody);
+      Map<String, Object> jsonMap = new HashMap<>();
+      jsonMap.put("Data", request);
       StringBuilder url = new StringBuilder(Constants.BINDING_PATH).append("/").append(name);
+
       return this.client
           .invokeAPI(
               DaprHttp.HttpMethods.POST.name(),
