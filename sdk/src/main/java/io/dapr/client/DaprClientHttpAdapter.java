@@ -150,7 +150,7 @@ public class DaprClientHttpAdapter implements DaprClient {
       }
 
       Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put("Data", request);
+      jsonMap.put("data", request);
       StringBuilder url = new StringBuilder(Constants.BINDING_PATH).append("/").append(name);
 
       return this.client
