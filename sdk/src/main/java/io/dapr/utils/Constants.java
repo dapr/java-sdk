@@ -87,7 +87,7 @@ public final class Constants {
     /**
      * Invoke Binding Path
      */
-    public static final String BINDING_PATH = API_VERSION + "/binding";
+    public static final String BINDING_PATH = API_VERSION + "/bindings";
 
     /**
      * State Path

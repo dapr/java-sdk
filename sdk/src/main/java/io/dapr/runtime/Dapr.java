@@ -90,6 +90,13 @@ public final class Dapr implements DaprRuntime {
   /**
    * {@inheritDoc}
    */
+  public void registerInputBinding(String name, MethodListener listener) {
+    this.handlers.putIfAbsent(name, new MethodHandler(listener));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<byte[]> handleInvocation(String name, byte[] payload, Map<String, String> metadata) {
     Function<HandleRequest, Mono<byte[]>> handler = this.handlers.get(name);

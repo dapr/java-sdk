@@ -36,6 +36,14 @@ public interface DaprRuntime {
   void registerServiceMethod(String name, MethodListener listener);
 
   /**
+   * Registers a method to be executed for an input binding.
+   * @param name The name of the input binding.
+   * @param listener The method to run when receiving a message on this binding.
+   */
+  void registerInputBinding(String name, MethodListener listener);
+
+
+  /**
    * Handles a given topic message or method API call.
    * @param name Name of topic or method.
    * @param payload Input body.
@@ -43,4 +51,6 @@ public interface DaprRuntime {
    * @return Response payload or empty.
    */
   Mono<byte[]> handleInvocation(String name, byte[] payload, Map<String, String> metadata);
+
+
 }
