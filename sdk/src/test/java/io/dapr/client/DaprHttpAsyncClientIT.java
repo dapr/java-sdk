@@ -2,10 +2,8 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.actors.client;
+package io.dapr.client;
 
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.exceptions.DaprException;
 import org.junit.Assert;
 import org.junit.Test;
