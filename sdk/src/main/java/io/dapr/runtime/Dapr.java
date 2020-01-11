@@ -6,7 +6,6 @@
 package io.dapr.runtime;
 
 import io.dapr.client.domain.CloudEventEnvelope;
-import io.dapr.exceptions.DaprException;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
@@ -99,10 +98,14 @@ public final class Dapr implements DaprRuntime {
    */
   @Override
   public Mono<byte[]> handleInvocation(String name, byte[] payload, Map<String, String> metadata) {
+    if (name == null) {
+      return Mono.error(new IllegalArgumentException("Handler's name cannot be null."));
+    }
+
     Function<HandleRequest, Mono<byte[]>> handler = this.handlers.get(name);
 
     if (handler == null) {
-      return Mono.error(new DaprException("INVALID_METHOD_OR_TOPIC", "Did not find handler for : " + (name == null ? "" : name)));
+      return Mono.error(new IllegalArgumentException("Did not find handler for : " + (name == null ? "" : name)));
     }
 
     try {
