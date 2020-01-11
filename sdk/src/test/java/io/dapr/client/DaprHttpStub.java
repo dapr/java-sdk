@@ -15,6 +15,11 @@ import java.util.Map;
  */
 public class DaprHttpStub extends DaprHttp {
 
+    public static class ResponseStub extends DaprHttp.Response {
+        public ResponseStub(String body, Map<String, String> headers, int statusCode) {
+            super(body, headers, statusCode);
+        }
+    }
     /**
      * Instantiates a stub for DaprHttp
      */
@@ -24,9 +29,10 @@ public class DaprHttpStub extends DaprHttp {
 
     /**
      * {@inheritDoc}
+     * @return
      */
     @Override
-    public Mono<String> invokeAPI(String method, String urlString, Map<String, String> headers) {
+    public Mono<DaprHttp.Response> invokeAPI(String method, String urlString, Map<String, String> headers) {
         return Mono.empty();
     }
 
@@ -34,7 +40,7 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public Mono<String> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
+    public Mono<DaprHttp.Response> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
         return Mono.empty();
     }
 
@@ -42,7 +48,7 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public Mono<byte[]> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
+    public Mono<DaprHttp.Response> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
         return Mono.empty();
     }
 }

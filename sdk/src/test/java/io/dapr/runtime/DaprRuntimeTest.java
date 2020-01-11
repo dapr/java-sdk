@@ -204,7 +204,8 @@ public class DaprRuntimeTest {
               this.daprRuntime.handleInvocation(
               METHOD_NAME,
               message.data,
-              message.metadata));
+              message.metadata)
+          .map(r -> new DaprHttpStub.ResponseStub(new String(r, StandardCharsets.UTF_8), null, 200)));
 
       Mono<byte[]> response = client.invokeService(Verb.POST, APP_ID, METHOD_NAME, message.data, message.metadata);
       Assert.assertEquals(

@@ -6,6 +6,7 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.dapr.utils.DurationUtils;
 import io.dapr.utils.ObjectSerializer;
 
 import java.io.IOException;

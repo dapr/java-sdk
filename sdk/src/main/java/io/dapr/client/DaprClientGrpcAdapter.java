@@ -7,6 +7,7 @@ package io.dapr.client;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Duration;
 import com.google.protobuf.Empty;
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
@@ -97,7 +98,7 @@ class DaprClientGrpcAdapter implements DaprClient {
           client.invokeService(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
         try {
-          return Mono.just(objectSerializer.deserialize(f.get().getData().toByteArray(), clazz));
+          return Mono.just(objectSerializer.deserialize(f.get().getData().getValue().toByteArray(), clazz));
         } catch (Exception ex) {
           return Mono.error(ex);
         }
@@ -174,7 +175,7 @@ class DaprClientGrpcAdapter implements DaprClient {
     try {
       DaprProtos.GetStateEnvelope.Builder builder = DaprProtos.GetStateEnvelope.newBuilder()
           .setKey(key.getKey())
-          .setConsistency(stateOptions.getConsistency());
+          .setConsistency(stateOptions.getConsistency().getValue());
       DaprProtos.GetStateEnvelope envelope = builder.build();
       ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
@@ -195,8 +196,35 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options) {
     try {
-      DaprProtos.StateRequestOptions.Builder optionBuilder = DaprProtos.StateRequestOptions.newBuilder()
-          .setConsistency(options.getConsistency());
+      DaprProtos.StateRequestOptions.Builder optionBuilder = null;
+      if (options != null) {
+        DaprProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
+        if (options.getRetryPolicy() != null) {
+          retryPolicyBuilder = DaprProtos.StateRetryPolicy.newBuilder();
+          StateOptions.RetryPolicy retryPolicy = options.getRetryPolicy();
+          if (options.getRetryPolicy().getInterval() != null) {
+            Duration.Builder durationBuilder = Duration.newBuilder()
+                .setNanos(retryPolicy.getInterval().getNano())
+                .setSeconds(retryPolicy.getInterval().getSeconds());
+            retryPolicyBuilder.setInterval(durationBuilder.build());
+          }
+          retryPolicyBuilder.setThreshold(objectSerializer.deserialize(retryPolicy.getThreshold(), int.class));
+          if (retryPolicy.getPattern() != null) {
+            retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
+          }
+        }
+
+        optionBuilder = DaprProtos.StateRequestOptions.newBuilder();
+        if (options.getConcurrency() != null) {
+          optionBuilder.setConcurrency(options.getConcurrency().getValue());
+        }
+        if (options.getConsistency() != null) {
+          optionBuilder.setConsistency(options.getConsistency().getValue());
+        }
+        if (retryPolicyBuilder != null) {
+          optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
+        }
+      }
       DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
       for (StateKeyValue state : states) {
         byte[] byteState = objectSerializer.serialize(state.getValue());
@@ -205,7 +233,9 @@ class DaprClientGrpcAdapter implements DaprClient {
             .setEtag(state.getEtag())
             .setKey(state.getKey())
             .setValue(data);
-        stateBuilder.setOptions(optionBuilder.build());
+        if(optionBuilder != null) {
+          stateBuilder.setOptions(optionBuilder.build());
+        }
         builder.addRequests(stateBuilder.build());
       }
       DaprProtos.SaveStateEnvelope envelope = builder.build();
@@ -237,12 +267,44 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
     try {
-      DaprProtos.StateOptions.Builder stateOptions = DaprProtos.StateOptions.newBuilder()
-          .setConsistency(options.getConsistency());
+      DaprProtos.StateOptions.Builder optionBuilder =  null;
+
+      if (options != null) {
+        optionBuilder = DaprProtos.StateOptions.newBuilder();
+        DaprProtos.RetryPolicy.Builder retryPolicyBuilder = null;
+        if (options.getRetryPolicy() != null) {
+          retryPolicyBuilder = DaprProtos.RetryPolicy.newBuilder();
+          StateOptions.RetryPolicy retryPolicy = options.getRetryPolicy();
+          if (options.getRetryPolicy().getInterval() != null) {
+            Duration.Builder durationBuilder = Duration.newBuilder()
+                .setNanos(retryPolicy.getInterval().getNano())
+                .setSeconds(retryPolicy.getInterval().getSeconds());
+            retryPolicyBuilder.setInterval(durationBuilder.build());
+          }
+          retryPolicyBuilder.setThreshold(objectSerializer.deserialize(retryPolicy.getThreshold(), int.class));
+          if (retryPolicy.getPattern() != null) {
+            retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
+          }
+        }
+
+        optionBuilder = DaprProtos.StateOptions.newBuilder();
+        if (options.getConcurrency() != null) {
+          optionBuilder.setConcurrency(options.getConcurrency().getValue());
+        }
+        if (options.getConsistency() != null) {
+          optionBuilder.setConsistency(options.getConsistency().getValue());
+        }
+        if (retryPolicyBuilder != null) {
+          optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
+        }
+      }
       DaprProtos.DeleteStateEnvelope.Builder builder = DaprProtos.DeleteStateEnvelope.newBuilder()
-          .setOptions(stateOptions)
           .setEtag(state.getEtag())
           .setKey(state.getKey());
+      if (optionBuilder != null) {
+        builder.setOptions(optionBuilder.build());
+      }
+
       DaprProtos.DeleteStateEnvelope envelope = builder.build();
       ListenableFuture<Empty> futureEmpty = client.deleteState(envelope);
       return Mono.just(futureEmpty).flatMap(f -> {

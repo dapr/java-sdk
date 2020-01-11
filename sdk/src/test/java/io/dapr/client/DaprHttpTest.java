@@ -41,8 +41,8 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<String> mono = daprHttp.invokeAPI("POST","v1.0/state",null);
-        assertEquals(EXPECTED_RESULT,mono.block());
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null);
+        assertEquals(EXPECTED_RESULT,mono.block().getBody());
 
     }
 
@@ -55,8 +55,8 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<String> mono = daprHttp.invokeAPI("DELETE","v1.0/state",null);
-        assertEquals(EXPECTED_RESULT,mono.block());
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("DELETE","v1.0/state",null);
+        assertEquals(EXPECTED_RESULT,mono.block().getBody());
 
     }
 
@@ -69,9 +69,9 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<String> mono = daprHttp.invokeAPI("GET","v1.0/get",null);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",null);
 
-        assertEquals(EXPECTED_RESULT,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block().getBody());
 
     }
 
@@ -87,9 +87,9 @@ public class DaprHttpTest {
                 .respond(EXPECTED_RESULT);
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<String> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
 
-        assertEquals(EXPECTED_RESULT,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block().getBody());
 
     }
 
@@ -107,9 +107,9 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<String> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
 
-        assertEquals(EXPECTED_RESULT,mono.block());
+        assertEquals(EXPECTED_RESULT,mono.block().getBody());
     }
 
 }

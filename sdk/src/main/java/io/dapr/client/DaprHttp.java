@@ -8,16 +8,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
-import okhttp3.*;
+import io.dapr.utils.ObjectSerializer;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +30,30 @@ class DaprHttp {
    * HTTP Methods supported.
    */
   enum HttpMethods { GET, PUT, POST, DELETE; }
+
+  static class Response {
+    private String body;
+    private Map<String, String> headers;
+    private int statusCode;
+
+    public Response(String body, Map<String, String> headers, int statusCode) {
+      this.body = body;
+      this.headers = headers;
+      this.statusCode = statusCode;
+    }
+
+    public String getBody() {
+      return body;
+    }
+
+    public Map<String, String> getHeaders() {
+      return headers;
+    }
+
+    public int getStatusCode() {
+      return statusCode;
+    }
+  }
 
   /**
    * Defines the standard application/json type for HTTP calls in Dapr.
@@ -86,8 +112,8 @@ class DaprHttp {
    * @param urlString url as String.
    * @return Asynchronous text
    */
-  public Mono<String> invokeAPI(String method, String urlString, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, (String) null, headers);
+  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> headers) {
+    return this.invokeAPI(method, urlString, (byte[])null, headers);
   }
 
   /**
@@ -98,13 +124,8 @@ class DaprHttp {
    * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public Mono<String> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
-    return this.invokeAPI(
-      method,
-      urlString,
-      content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8),
-      headers)
-      .map(s -> new String(s, StandardCharsets.UTF_8));
+  public Mono<Response> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
+    return this.invokeAPI(method, urlString, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
   }
 
   /**
@@ -115,12 +136,12 @@ class DaprHttp {
    * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public Mono<byte[]> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
+  public Mono<Response> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
     return Mono.fromFuture(CompletableFuture.supplyAsync(
         () -> {
           try {
             String requestId = UUID.randomUUID().toString();
-            RequestBody body;
+            RequestBody body = REQUEST_BODY_EMPTY_JSON;
 
             String contentType = headers != null ? headers.get("content-type") : null;
             MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
@@ -150,17 +171,22 @@ class DaprHttp {
 
             Request request = requestBuilder.build();
 
-            try (Response response = this.httpClient.newCall(request).execute()) {
-              byte[] responseBody = response.body().bytes();
+            try (okhttp3.Response response = this.httpClient.newCall(request).execute()) {
               if (!response.isSuccessful()) {
-                DaprError error = this.parseDaprError(responseBody);
+                DaprError error = parseDaprError(response.body().string());
                 if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-                  throw new DaprException(error);
+                  throw new RuntimeException(new DaprException(error));
                 }
 
-                throw new IOException("Unknown error.");
+                throw new RuntimeException("Unknown error.");
               }
-              return responseBody == null ? EMPTY_BYTES : responseBody;
+
+              Map<String, String> mapHeaders = new HashMap<>();
+              String result = response.body().string();
+              response.headers().forEach(pair -> {
+                mapHeaders.put(pair.getFirst(), pair.getSecond());
+              });
+              return new Response(result, mapHeaders, response.code());
             }
           } catch (Exception e) {
             throw new RuntimeException(e);
@@ -174,12 +200,16 @@ class DaprHttp {
    * @param json Response body from Dapr.
    * @return DaprError or null if could not parse.
    */
-  private static DaprError parseDaprError(byte[] json) throws IOException {
+  private static DaprError parseDaprError(String json) {
     if (json == null) {
       return null;
     }
 
-    return OBJECT_MAPPER.readValue(json, DaprError.class);
+    try {
+      return OBJECT_MAPPER.readValue(json, DaprError.class);
+    } catch (IOException e) {
+      throw new DaprException("500", "Unknown error: could not parse error json.");
+    }
   }
 
 }

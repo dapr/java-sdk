@@ -93,10 +93,11 @@ public class DaprClientHttpAdapter implements DaprClient {
       }
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-      return this.client.invokeAPI(httMethod, path, serializedRequestBody, metadata)
+      Mono<DaprHttp.Response> response = this.client.invokeAPI(httMethod, path, serializedRequestBody, metadata);
+      return Mono.just(response)
           .flatMap(r -> {
             try {
-              return Mono.just(objectSerializer.deserialize(r, clazz));
+              return Mono.just(objectSerializer.deserialize(r.block().getBody(), clazz));
             } catch (Exception ex) {
               return Mono.error(ex);
             }
@@ -258,7 +259,14 @@ public class DaprClientHttpAdapter implements DaprClient {
   @Override
   public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
     String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.POST.name(), url, jsonPayload, null);
+    Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.POST.name(), url, jsonPayload, null);
+    return Mono.just(responseMono).flatMap(f -> {
+      try {
+        return Mono.just(f.block().getBody());
+      } catch (Exception ex) {
+        return Mono.error(ex);
+      }
+    });
   }
 
   /**
@@ -267,7 +275,14 @@ public class DaprClientHttpAdapter implements DaprClient {
   @Override
   public Mono<String> getActorState(String actorType, String actorId, String keyName) {
     String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.GET.name(), url, "", null);
+    Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.GET.name(), url, "", null);
+    return Mono.just(responseMono).flatMap(f -> {
+      try {
+        return Mono.just(f.block().getBody());
+      } catch (Exception ex) {
+        return Mono.error(ex);
+      }
+    });
   }
 
   /**
