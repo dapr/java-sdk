@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
  * mvn clean install
  * 2. cd to [repo-root]/examples
  * 3. Run :
- * dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java Dexec.mainClass=io.dapr.examples.bindings.http.InputBindingExample -Dexec.args="-p 3000"
+ * dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -Dexec.mainClass=io.dapr.examples.bindings.http.InputBindingExample -Dexec.args="-p 3000"
  */
 @SpringBootApplication
 public class InputBindingExample {
