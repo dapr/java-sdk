@@ -37,7 +37,7 @@ public class InputBindingExample {
 
     final String BINDING_NAME = "sample123";
 
-    // "sample123" is the name of the binding.  It will be received at url /v1.0/bindings/sample
+    // "sample123" is the name of the binding.  It will be received at url /v1.0/bindings/sample123
     Dapr.getInstance().registerInputBinding(BINDING_NAME, (message, metadata) -> Mono
       .fromSupplier(() -> {
         System.out.println("Received message through binding: " + (message == null ? "" : new String(message)));
