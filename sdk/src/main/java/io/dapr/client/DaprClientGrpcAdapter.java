@@ -18,9 +18,7 @@ import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * An adapter for the GRPC Client.
@@ -93,7 +91,7 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
     try {
-      DaprProtos.InvokeServiceEnvelope envelope = getInvodeServceEnvelope(verb.toString(), appId, method, request);
+      DaprProtos.InvokeServiceEnvelope envelope = buildInvokeServiceEnvelope(verb.toString(), appId, method, request);
       ListenableFuture<DaprProtos.InvokeServiceResponseEnvelope> futureResponse =
           client.invokeService(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
@@ -330,37 +328,77 @@ class DaprClientGrpcAdapter implements DaprClient {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   *
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<String> getActorState(String actorType, String actorId, String keyName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   *
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   *
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   *
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   *
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
+  /**
+   * Operation not supported for GRPC
+   *
+   * @throws UnsupportedOperationException every time is called.
+   */
   @Override
   public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
-  private <K> DaprProtos.InvokeServiceEnvelope getInvodeServceEnvelope(
+  /**
+   * Builds the object io.dapr.{@link DaprProtos.InvokeServiceEnvelope} to be send based on the parameters.
+   * @param verb
+   * @param appId
+   * @param method
+   * @param request
+   * @param <K>
+   * @return
+   * @throws IOException
+   */
+  private <K> DaprProtos.InvokeServiceEnvelope buildInvokeServiceEnvelope(
       String verb, String appId, String method, K request) throws IOException {
     byte[] byteRequest = objectSerializer.serialize(request);
     Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
