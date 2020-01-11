@@ -35,9 +35,9 @@ public class Subscriber {
     int port = Integer.parseInt(cmd.getOptionValue("port"));
 
     // Subscribe to topic.
-    Dapr.getInstance().subscribeToTopic("message", (id, dataType, data, metadata) -> Mono
+    Dapr.getInstance().subscribeToTopic("message", (envelope, metadata) -> Mono
         .fromSupplier(() -> {
-          System.out.println("Subscriber got message (" + id + "): " + (data == null ? "" : new String(data)));
+          System.out.println("Subscriber got message: " + (envelope.getData() == null ? "" : new String(envelope.getData())));
           return Boolean.TRUE;
         })
         .then(Mono.empty()));
