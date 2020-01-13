@@ -74,11 +74,13 @@ class DaprHttp {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
-   * The base url used for form urls. This is typically "http://localhost:3500".
+   * Hostname. This is typically "localhost".
    */
-
   private final String host;
 
+  /**
+   * Host port number.
+   */
   private final int port;
 
   /**
@@ -91,6 +93,9 @@ class DaprHttp {
    */
   private final ExecutorService pool;
 
+  /**
+   * A utitlity class for serialize and deserialize the messages sent and retrived by the client.
+   */
   private final ObjectSerializer objectSerializer = new ObjectSerializer();
 
   /**
@@ -101,7 +106,6 @@ class DaprHttp {
    * @param httpClient RestClient used for all API calls in this new instance.
    */
   DaprHttp(String host, int port, OkHttpClient httpClient) {
-    //this.baseUrl = String.format("%s:%d/", baseUrl, port);
     this.host = host;
     this.port = port;
     this.httpClient = httpClient;
