@@ -84,7 +84,7 @@ public class DaprClientBuilder {
             synchronized (DaprClientBuilder.class) {
                 if (this.daprHttClient == null) {
                     OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
-                    DaprHttp daprHtt = new DaprHttp(Constants.DEFAULT_BASE_HTTP_URL, port, okHttpClient);
+                    DaprHttp daprHtt = new DaprHttp(Constants.DEFAULT_HOSTNAME, port, okHttpClient);
                     this.daprHttClient = new DaprClientHttpAdapter(daprHtt);
                 }
 
