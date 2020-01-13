@@ -7,8 +7,10 @@ package io.dapr.client.domain;
 import io.dapr.utils.DurationUtils;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class StateOptions {
   private final Consistency consistency;
@@ -55,7 +57,7 @@ public class StateOptions {
         }
       }
     }
-    return mapOptions;
+    return Collections.unmodifiableMap(Optional.ofNullable(mapOptions).orElse(Collections.EMPTY_MAP));
   }
 
   public static enum Consistency {
