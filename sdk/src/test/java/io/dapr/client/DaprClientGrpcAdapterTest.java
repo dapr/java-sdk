@@ -511,7 +511,7 @@ public class DaprClientGrpcAdapterTest {
   }
 
   private StateOptions buildStateOptions(StateOptions.Consistency consistency, StateOptions.Concurrency concurrency,
-                                         Duration interval, String threshold, StateOptions.RetryPolicy.Pattern pattern) {
+                                         Duration interval, Integer threshold, StateOptions.RetryPolicy.Pattern pattern) {
 
     StateOptions.RetryPolicy retryPolicy = null;
     if (interval != null || threshold != null || pattern != null) {

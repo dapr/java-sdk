@@ -9,11 +9,7 @@ import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -112,8 +108,8 @@ class DaprHttp {
    * @param urlString url as String.
    * @return Asynchronous text
    */
-  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, (byte[]) null, headers);
+  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
+    return this.invokeAPI(method, urlString, urlParameters, (byte[]) null, headers);
   }
 
   /**
@@ -124,8 +120,8 @@ class DaprHttp {
    * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public Mono<Response> invokeAPI(String method, String urlString, String content, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
+  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
+    return this.invokeAPI(method, urlString, urlParameters, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
   }
 
   /**
@@ -136,7 +132,7 @@ class DaprHttp {
    * @param content   payload to be posted.
    * @return Asynchronous text
    */
-  public Mono<Response> invokeAPI(String method, String urlString, byte[] content, Map<String, String> headers) {
+  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
     return Mono.fromFuture(CompletableFuture.supplyAsync(
         () -> {
           try {
@@ -151,9 +147,13 @@ class DaprHttp {
             } else {
               body = RequestBody.Companion.create(content, mediaType);
             }
+            HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
+            urlBuilder.host(this.baseUrl).addPathSegment(urlString);
+            Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
+                .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
 
             Request.Builder requestBuilder = new Request.Builder()
-                .url(new URL(this.baseUrl + urlString))
+                .url(urlBuilder.build())
                 .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
             if (HttpMethods.GET.name().equals(method)) {
               requestBuilder.get();
