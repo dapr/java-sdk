@@ -188,7 +188,7 @@ public class DaprClientHttpAdapter implements DaprClient {
           .flatMap(s -> {
             try {
               return Mono.just(buildStateKeyValue(s, state.getKey(), clazz));
-            } catch (Exception ex) {
+            }catch (Exception ex){
               return Mono.error(ex);
             }
           });

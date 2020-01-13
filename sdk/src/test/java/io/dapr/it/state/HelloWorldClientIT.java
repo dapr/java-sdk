@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 package io.dapr.it.state;
 
 import io.dapr.DaprGrpc;
@@ -6,36 +11,36 @@ import io.dapr.it.DaprIntegrationTestingRunner;
 import io.dapr.it.services.HelloWorldGrpcStateService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.junit.*;
-
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 
 public class HelloWorldClientIT {
 
 
     private static DaprIntegrationTestingRunner daprIntegrationTestingRunner;
+    private static   DaprIntegrationTestingRunner.DaprFreePorts daprFreePorts;
 
     @BeforeClass
-    public static void init() throws IOException, InterruptedException, TimeoutException, ExecutionException {
+    public static void init() throws Exception {
          daprIntegrationTestingRunner =
                 DaprIntegrationTestingRunner.createDaprIntegrationTestingRunner(
                         "BUILD SUCCESS",
                         HelloWorldGrpcStateService.class,
-                        true,
-                        50001,
+                        false,
                         2000
                         );
-        daprIntegrationTestingRunner.initializeDapr();
+        daprFreePorts = daprIntegrationTestingRunner.initializeDapr();
     }
 
     @Test
     public void testHelloWorldState(){
         ManagedChannel channel =
-                ManagedChannelBuilder.forAddress("localhost", 50001).usePlaintext().build();
+                ManagedChannelBuilder.forAddress("localhost", daprFreePorts.getGrpcPort()).usePlaintext().build();
         DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
         String key = "mykey";
@@ -70,11 +75,6 @@ public class HelloWorldClientIT {
             System.out.println("Got: " + value);
             Assert.assertEquals("",value);
         }
-    }
-
-    @Test
-    public void test2(){
-
     }
 
     @AfterClass

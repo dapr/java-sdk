@@ -53,7 +53,11 @@ public class DaprClientBuilder {
      * @throws java.lang.IllegalStateException if any required field is missing
      */
     public DaprClient build() {
-        return buildDaprClientHttp();
+        return buildDaprClientHttp(this.port);
+    }
+
+    public DaprClient build(int port) {
+        return buildDaprClientHttp(port);
     }
 
     /**
@@ -76,7 +80,7 @@ public class DaprClientBuilder {
      *
      * @return
      */
-    private DaprClient buildDaprClientHttp() {
+    private DaprClient buildDaprClientHttp(int port) {
         if (port <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
