@@ -32,17 +32,17 @@ class DaprHttp {
   enum HttpMethods { GET, PUT, POST, DELETE; }
 
   static class Response {
-    private String body;
+    private byte[] body;
     private Map<String, String> headers;
     private int statusCode;
 
-    public Response(String body, Map<String, String> headers, int statusCode) {
+    public Response(byte[] body, Map<String, String> headers, int statusCode) {
       this.body = body;
       this.headers = headers;
       this.statusCode = statusCode;
     }
 
-    public String getBody() {
+    public byte[] getBody() {
       return body;
     }
 
@@ -182,7 +182,7 @@ class DaprHttp {
               }
 
               Map<String, String> mapHeaders = new HashMap<>();
-              String result = response.body().string();
+              byte[] result = response.body().bytes();
               response.headers().forEach(pair -> {
                 mapHeaders.put(pair.getFirst(), pair.getSecond());
               });

@@ -16,7 +16,7 @@ import java.util.Map;
 public class DaprHttpStub extends DaprHttp {
 
     public static class ResponseStub extends DaprHttp.Response {
-        public ResponseStub(String body, Map<String, String> headers, int statusCode) {
+        public ResponseStub(byte[] body, Map<String, String> headers, int statusCode) {
             super(body, headers, statusCode);
         }
     }

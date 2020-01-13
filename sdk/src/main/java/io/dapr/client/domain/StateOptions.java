@@ -7,9 +7,9 @@ package io.dapr.client.domain;
 import java.time.Duration;
 
 public class StateOptions {
-  private Consistency consistency;
-  private Concurrency concurrency;
-  private RetryPolicy retryPolicy;
+  private final Consistency consistency;
+  private final Concurrency concurrency;
+  private final RetryPolicy retryPolicy;
 
   public StateOptions(Consistency consistency, Concurrency concurrency, RetryPolicy retryPolicy) {
     this.consistency = consistency;
@@ -33,7 +33,7 @@ public class StateOptions {
     EVENTUAL("eventual"),
     STRONG("strong");
 
-    private String value;
+    private final String value;
 
     private Consistency(String value) {
       this.value = value;
@@ -48,7 +48,7 @@ public class StateOptions {
     FIRST_WRITE("first-write"),
     LAST_WRITE ("last-write");
 
-    private String value;
+    private final String value;
 
     private Concurrency(String value) {
       this.value = value;
@@ -75,9 +75,9 @@ public class StateOptions {
       }
     }
 
-    private Duration interval;
-    private String threshold;
-    private Pattern pattern;
+    private final Duration interval;
+    private final String threshold;
+    private final Pattern pattern;
 
 
     public RetryPolicy(Duration interval, String threshold, Pattern pattern) {
