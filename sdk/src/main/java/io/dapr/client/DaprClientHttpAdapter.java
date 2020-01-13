@@ -95,10 +95,9 @@ public class DaprClientHttpAdapter implements DaprClient {
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
       Mono<DaprHttp.Response> response = this.client.invokeAPI(httMethod, path, serializedRequestBody, metadata);
-      return Mono.just(response)
-          .flatMap(r -> {
+      return response.flatMap(r -> {
             try {
-              return Mono.just(objectSerializer.deserialize(r.block().getBody(), clazz));
+              return Mono.just(objectSerializer.deserialize(r.getBody(), clazz));
             } catch (Exception ex) {
               return Mono.error(ex);
             }
@@ -261,9 +260,9 @@ public class DaprClientHttpAdapter implements DaprClient {
   public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
     String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
     Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.POST.name(), url, jsonPayload, null);
-    return Mono.just(responseMono).flatMap(f -> {
+    return responseMono.flatMap(f -> {
       try {
-        return Mono.just(objectSerializer.deserialize(f.block().getBody(), String.class));
+        return Mono.just(objectSerializer.deserialize(f.getBody(), String.class));
       } catch (Exception ex) {
         return Mono.error(ex);
       }
@@ -277,9 +276,9 @@ public class DaprClientHttpAdapter implements DaprClient {
   public Mono<String> getActorState(String actorType, String actorId, String keyName) {
     String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
     Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.GET.name(), url, "", null);
-    return Mono.just(responseMono).flatMap(f -> {
+    return responseMono.flatMap(f -> {
       try {
-        return Mono.just(objectSerializer.deserialize(f.block().getBody(), String.class));
+        return Mono.just(objectSerializer.deserialize(f.getBody(), String.class));
       } catch (Exception ex) {
         return Mono.error(ex);
       }

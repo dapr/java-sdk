@@ -29,7 +29,7 @@ class DaprHttp {
   /**
    * HTTP Methods supported.
    */
-  enum HttpMethods { GET, PUT, POST, DELETE; }
+  enum HttpMethods {GET, PUT, POST, DELETE;}
 
   static class Response {
     private byte[] body;
@@ -113,7 +113,7 @@ class DaprHttp {
    * @return Asynchronous text
    */
   public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, (byte[])null, headers);
+    return this.invokeAPI(method, urlString, (byte[]) null, headers);
   }
 
   /**
@@ -149,7 +149,7 @@ class DaprHttp {
               body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON) ?
                   REQUEST_BODY_EMPTY_JSON : RequestBody.Companion.create(new byte[0], mediaType);
             } else {
-              body =  RequestBody.Companion.create(content, mediaType);
+              body = RequestBody.Companion.create(content, mediaType);
             }
 
             Request.Builder requestBuilder = new Request.Builder()
@@ -173,7 +173,7 @@ class DaprHttp {
 
             try (okhttp3.Response response = this.httpClient.newCall(request).execute()) {
               if (!response.isSuccessful()) {
-                DaprError error = parseDaprError(response.body().string());
+                DaprError error = parseDaprError(response.body().bytes());
                 if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
                   throw new RuntimeException(new DaprException(error));
                 }
@@ -200,16 +200,11 @@ class DaprHttp {
    * @param json Response body from Dapr.
    * @return DaprError or null if could not parse.
    */
-  private static DaprError parseDaprError(String json) {
+  private static DaprError parseDaprError(byte[] json) throws IOException {
     if (json == null) {
       return null;
     }
-
-    try {
-      return OBJECT_MAPPER.readValue(json, DaprError.class);
-    } catch (IOException e) {
-      throw new DaprException("500", "Unknown error: could not parse error json.");
-    }
+    return OBJECT_MAPPER.readValue(json, DaprError.class);
   }
 
 }
