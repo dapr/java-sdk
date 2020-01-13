@@ -11,6 +11,7 @@ import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -93,10 +94,10 @@ public class DaprClientHttpAdapter implements DaprClient {
       }
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-      return this.client.invokeAPI(httMethod, path, serializedRequestBody, metadata)
-          .flatMap(r -> {
+      Mono<DaprHttp.Response> response = this.client.invokeAPI(httMethod, path, serializedRequestBody, metadata);
+      return response.flatMap(r -> {
             try {
-              return Mono.just(objectSerializer.deserialize(r, clazz));
+              return Mono.just(objectSerializer.deserialize(r.getBody(), clazz));
             } catch (Exception ex) {
               return Mono.error(ex);
             }
@@ -168,7 +169,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, K> Mono<T> getState(StateKeyValue<K> state, StateOptions options, Class<T> clazz) {
+  public <T> Mono<StateKeyValue<T>> getState(StateKeyValue<T> state, StateOptions stateOptions, Class<T> clazz) {
     try {
       if (state.getKey() == null) {
         throw new IllegalArgumentException("Name cannot be null or empty.");
@@ -181,12 +182,12 @@ public class DaprClientHttpAdapter implements DaprClient {
       StringBuilder url = new StringBuilder(Constants.STATE_PATH)
         .append("/")
         .append(state.getKey())
-        .append(getOptionsAsQueryParameter(options));
+        .append(getOptionsAsQueryParameter(stateOptions));
       return this.client
           .invokeAPI(DaprHttp.HttpMethods.GET.name(), url.toString(), headers)
           .flatMap(s -> {
             try {
-              return Mono.just(objectSerializer.deserialize(s, clazz));
+              return Mono.just(buildStateKeyValue(s, state.getKey(), clazz));
             } catch (Exception ex) {
               return Mono.error(ex);
             }
@@ -258,7 +259,14 @@ public class DaprClientHttpAdapter implements DaprClient {
   @Override
   public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
     String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.POST.name(), url, jsonPayload, null);
+    Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.POST.name(), url, jsonPayload, null);
+    return responseMono.flatMap(f -> {
+      try {
+        return Mono.just(objectSerializer.deserialize(f.getBody(), String.class));
+      } catch (Exception ex) {
+        return Mono.error(ex);
+      }
+    });
   }
 
   /**
@@ -267,7 +275,14 @@ public class DaprClientHttpAdapter implements DaprClient {
   @Override
   public Mono<String> getActorState(String actorType, String actorId, String keyName) {
     String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.GET.name(), url, "", null);
+    Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.GET.name(), url, "", null);
+    return responseMono.flatMap(f -> {
+      try {
+        return Mono.just(objectSerializer.deserialize(f.getBody(), String.class));
+      } catch (Exception ex) {
+        return Mono.error(ex);
+      }
+    });
   }
 
   /**
@@ -359,6 +374,25 @@ public class DaprClientHttpAdapter implements DaprClient {
       }
     }
     return mapOptions;
+  }
+
+  /**
+   * Builds a StateKeyValue object based on the Response
+   * @param resonse      The response of the HTTP Call
+   * @param requestedKey The Key Requested.
+   * @param clazz        The Class of the Value of the state
+   * @param <T>          The Type of the Value of the state
+   * @return             A StateKeyValue instance
+   * @throws IOException If there's a issue deserialzing the response.
+   */
+  private <T> StateKeyValue<T> buildStateKeyValue(DaprHttp.Response resonse, String requestedKey, Class<T> clazz) throws IOException {
+    T value = objectSerializer.deserialize(resonse.getBody(), clazz);
+    String key = requestedKey;
+    String etag = null;
+    if (resonse.getHeaders() != null && resonse.getHeaders().containsKey("ETag")) {
+      etag = objectSerializer.deserialize(resonse.getHeaders().get("ETag"), String.class);
+    }
+    return new StateKeyValue<>(value, key, etag);
   }
 
 }

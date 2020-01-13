@@ -118,13 +118,12 @@ public interface DaprClient {
    * Retrieve a State based on their key.
    *
    * @param state        The key of the State to be retrieved.
-   * @param stateOptions
+   * @param stateOptions The options for the call to use.
    * @param clazz        the Type of State needed as return.
    * @param <T>          the Type of the return.
-   * @param <K>          The Type of the key of the State.
    * @return A Mono Plan for the requested State.
    */
-  <T, K> Mono<T> getState(StateKeyValue<K> state, StateOptions stateOptions, Class<T> clazz);
+  <T> Mono<StateKeyValue<T>> getState(StateKeyValue<T> state, StateOptions stateOptions, Class<T> clazz);
 
   /**
    * Save/Update a list of states.

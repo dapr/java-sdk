@@ -174,13 +174,13 @@ public class ObjectSerializerTest {
   }
 
   @Test
-  public void serializeObjectTest() {
+  public void serializeStringObjectTest() {
     MyObjectTestToSerialize obj = new MyObjectTestToSerialize();
     obj.setStringValue("A String");
     obj.setIntValue(2147483647);
     obj.setBoolValue(true);
     obj.setCharValue('a');
-    obj.setByteValue((byte)65);
+    obj.setByteValue((byte) 65);
     obj.setShortValue((short) 32767);
     obj.setLongValue(9223372036854775807L);
     obj.setFloatValue(1.0f);
@@ -198,12 +198,41 @@ public class ObjectSerializerTest {
   }
 
   @Test
+  public void serializeObjectTest() {
+    MyObjectTestToSerialize obj = new MyObjectTestToSerialize();
+    obj.setStringValue("A String");
+    obj.setIntValue(2147483647);
+    obj.setBoolValue(true);
+    obj.setCharValue('a');
+    obj.setByteValue((byte) 65);
+    obj.setShortValue((short) 32767);
+    obj.setLongValue(9223372036854775807L);
+    obj.setFloatValue(1.0f);
+    obj.setDoubleValue(1000.0);
+    //String expectedResult = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+
+    ObjectSerializer serializer = new ObjectSerializer();
+    byte[] serializedValue;
+    try {
+      serializedValue = serializer.serialize(obj);
+      assertNotNull(serializedValue);
+      MyObjectTestToSerialize deserializedValue = serializer.deserialize(serializedValue, MyObjectTestToSerialize.class);
+      assertEquals(obj, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
   public void serializeNullTest() {
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
+    byte[] byteSerializedValue;
     try {
       serializedValue = serializer.serializeString(null);
-      assertNull("The expected result is null", serializedValue);
+      assertNull(serializedValue);
+      byteSerializedValue = serializer.serialize(null);
+      assertNull(byteSerializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -214,9 +243,14 @@ public class ObjectSerializerTest {
     String valueToSerialize = "A String";
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
+    byte [] byteValue;
     try {
       serializedValue = serializer.serializeString(valueToSerialize);
       assertEquals(valueToSerialize, serializedValue);
+      byteValue = serializer.serialize(valueToSerialize);
+      assertNotNull(byteValue);
+      String deserializedValue = serializer.deserialize(byteValue, String.class);
+      assertEquals(valueToSerialize, deserializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -228,9 +262,109 @@ public class ObjectSerializerTest {
     String expectedResult = valueToSerialize.toString();
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
+    byte [] byteValue;
     try {
       serializedValue = serializer.serializeString(valueToSerialize.intValue());
       assertEquals(expectedResult, serializedValue);
+      byteValue = serializer.serialize(valueToSerialize);
+      assertNotNull(byteValue);
+      Integer deserializedValue = serializer.deserialize(byteValue, Integer.class);
+      assertEquals(valueToSerialize, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void serializeShortTest() {
+    Short valueToSerialize = 1;
+    String expectedResult = valueToSerialize.toString();
+    ObjectSerializer serializer = new ObjectSerializer();
+    String serializedValue;
+    byte [] byteValue;
+    try {
+      serializedValue = serializer.serializeString(valueToSerialize.shortValue());
+      assertEquals(expectedResult, serializedValue);
+      byteValue = serializer.serialize(valueToSerialize);
+      assertNotNull(byteValue);
+      Short deserializedValue = serializer.deserialize(byteValue, Short.class);
+      assertEquals(valueToSerialize, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void serializeLongTest() {
+    Long valueToSerialize = 1L;
+    String expectedResult = valueToSerialize.toString();
+    ObjectSerializer serializer = new ObjectSerializer();
+    String serializedValue;
+    byte [] byteValue;
+    try {
+      serializedValue = serializer.serializeString(valueToSerialize.longValue());
+      assertEquals(expectedResult, serializedValue);
+      byteValue = serializer.serialize(valueToSerialize);
+      assertNotNull(byteValue);
+      Long deserializedValue = serializer.deserialize(byteValue, Long.class);
+      assertEquals(valueToSerialize, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void serializeFloatTest() {
+    Float valueToSerialize = 1.0f;
+    String expectedResult = valueToSerialize.toString();
+    ObjectSerializer serializer = new ObjectSerializer();
+    String serializedValue;
+    byte [] byteValue;
+    try {
+      serializedValue = serializer.serializeString(valueToSerialize.floatValue());
+      assertEquals(expectedResult, serializedValue);
+      byteValue = serializer.serialize(valueToSerialize);
+      assertNotNull(byteValue);
+      Float deserializedValue = serializer.deserialize(byteValue, Float.class);
+      assertEquals(valueToSerialize, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void serializeDoubleTest() {
+    Double valueToSerialize = 1.0;
+    String expectedResult = valueToSerialize.toString();
+    ObjectSerializer serializer = new ObjectSerializer();
+    String serializedValue;
+    byte [] byteValue;
+    try {
+      serializedValue = serializer.serializeString(valueToSerialize.doubleValue());
+      assertEquals(expectedResult, serializedValue);
+      byteValue = serializer.serialize(valueToSerialize);
+      assertNotNull(byteValue);
+      Double deserializedValue = serializer.deserialize(byteValue, Double.class);
+      assertEquals(valueToSerialize, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void serializeBooleanTest() {
+    Boolean valueToSerialize = true;
+    String expectedResult = valueToSerialize.toString();
+    ObjectSerializer serializer = new ObjectSerializer();
+    String serializedValue;
+    byte [] byteValue;
+    try {
+      serializedValue = serializer.serializeString(valueToSerialize.booleanValue());
+      assertEquals(expectedResult, serializedValue);
+      byteValue = serializer.serialize(valueToSerialize);
+      assertNotNull(byteValue);
+      Boolean deserializedValue = serializer.deserialize(byteValue, Boolean.class);
+      assertEquals(valueToSerialize, deserializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -244,7 +378,7 @@ public class ObjectSerializerTest {
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
@@ -259,33 +393,47 @@ public class ObjectSerializerTest {
     }
   }
 
+  @Test
+  public void deserializeBtyesTest() {
+    ObjectSerializer serializer = new ObjectSerializer();
+    try {
+      byte[] resultStr = serializer.deserialize("String", byte[].class);
+      assertNotNull(resultStr);
+      byte[] result = serializer.deserialize("String".getBytes(), byte[].class);
+      assertNotNull(result);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
   public void deserializeNullObjectOrPrimitiveTest() {
     ObjectSerializer serializer = new ObjectSerializer();
     try {
       MyObjectTestToSerialize expectedObj = null;
-     MyObjectTestToSerialize objResult = serializer.deserialize(null, MyObjectTestToSerialize.class);
-     assertEquals(expectedObj, objResult);
-     boolean expectedBoolResutl = false;
-     boolean boolResult = serializer.deserialize(null, boolean.class);
-     assertEquals(expectedBoolResutl, boolResult);
-     byte expectedByteResult = Byte.valueOf((byte) 0);
-     byte byteResult = serializer.deserialize(null, byte.class);
-     assertEquals(expectedByteResult, byteResult);
-     short expectedShortResult = (short) 0;
-     short shortResult = serializer.deserialize(null, short.class);
-     assertEquals(expectedShortResult, shortResult);
-     int expectedIntResult = 0;
-     int intResult = serializer.deserialize(null, int.class);
-     assertEquals(expectedIntResult, intResult);
-     long expectedLongResult = 0L;
-     long longResult = serializer.deserialize(null, long.class);
-     assertEquals(expectedLongResult, longResult);
-     float expectedFloatResult = 0f;
-     float floatResult = serializer.deserialize(null, float.class);
-     assertEquals(expectedFloatResult, floatResult);
-     double expectedDoubleResult = (double) 0;
-     double doubleResult = serializer.deserialize(null, double.class);
-     assertEquals(expectedDoubleResult, doubleResult);
+      MyObjectTestToSerialize objResult = serializer.deserialize(null, MyObjectTestToSerialize.class);
+      assertEquals(expectedObj, objResult);
+      boolean expectedBoolResutl = false;
+      boolean boolResult = serializer.deserialize(null, boolean.class);
+      assertEquals(expectedBoolResutl, boolResult);
+      byte expectedByteResult = Byte.valueOf((byte) 0);
+      byte byteResult = serializer.deserialize(null, byte.class);
+      assertEquals(expectedByteResult, byteResult);
+      short expectedShortResult = (short) 0;
+      short shortResult = serializer.deserialize(null, short.class);
+      assertEquals(expectedShortResult, shortResult);
+      int expectedIntResult = 0;
+      int intResult = serializer.deserialize(null, int.class);
+      assertEquals(expectedIntResult, intResult);
+      long expectedLongResult = 0L;
+      long longResult = serializer.deserialize(null, long.class);
+      assertEquals(expectedLongResult, longResult);
+      float expectedFloatResult = 0f;
+      float floatResult = serializer.deserialize(null, float.class);
+      assertEquals(expectedFloatResult, floatResult, 0.0f);
+      double expectedDoubleResult = (double) 0;
+      double doubleResult = serializer.deserialize(null, double.class);
+      assertEquals(expectedDoubleResult, doubleResult, 0.0);
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -298,7 +446,7 @@ public class ObjectSerializerTest {
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
@@ -320,7 +468,7 @@ public class ObjectSerializerTest {
     expectedResult.setStringValue("A String");
     expectedResult.setBoolValue(true);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
@@ -342,7 +490,7 @@ public class ObjectSerializerTest {
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
@@ -364,7 +512,7 @@ public class ObjectSerializerTest {
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
@@ -409,7 +557,7 @@ public class ObjectSerializerTest {
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
@@ -431,7 +579,7 @@ public class ObjectSerializerTest {
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
@@ -453,7 +601,7 @@ public class ObjectSerializerTest {
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setDoubleValue(1000.0);
@@ -475,7 +623,7 @@ public class ObjectSerializerTest {
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
     expectedResult.setCharValue('a');
-    expectedResult.setByteValue((byte)65);
+    expectedResult.setByteValue((byte) 65);
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
