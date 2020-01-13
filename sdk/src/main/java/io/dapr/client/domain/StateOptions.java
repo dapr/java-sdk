@@ -4,7 +4,11 @@
  */
 package io.dapr.client.domain;
 
+import io.dapr.utils.DurationUtils;
+
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 public class StateOptions {
   private final Consistency consistency;
@@ -27,6 +31,31 @@ public class StateOptions {
 
   public RetryPolicy getRetryPolicy() {
     return retryPolicy;
+  }
+
+  public Map<String, String> getStateOptionsAsMap() {
+    Map<String, String> mapOptions = null;
+    if (this != null) {
+      mapOptions = new HashMap<>();
+      if (this.getConsistency() != null) {
+        mapOptions.put("consistency", this.getConsistency().getValue());
+      }
+      if (this.getConcurrency() != null) {
+        mapOptions.put("concurrency", this.getConcurrency().getValue());
+      }
+      if (this.getRetryPolicy() != null) {
+        if (this.getRetryPolicy().getInterval() != null) {
+          mapOptions.put("retryInterval", DurationUtils.ConvertDurationToDaprFormat(this.getRetryPolicy().getInterval()));
+        }
+        if (this.getRetryPolicy().getThreshold() != null) {
+          mapOptions.put("retryThreshold", this.getRetryPolicy().getThreshold().toString());
+        }
+        if (this.getRetryPolicy().getPattern() != null) {
+          mapOptions.put("retryPattern", this.getRetryPolicy().getPattern().getValue());
+        }
+      }
+    }
+    return mapOptions;
   }
 
   public static enum Consistency {
@@ -76,11 +105,11 @@ public class StateOptions {
     }
 
     private final Duration interval;
-    private final String threshold;
+    private final Integer threshold;
     private final Pattern pattern;
 
 
-    public RetryPolicy(Duration interval, String threshold, Pattern pattern) {
+    public RetryPolicy(Duration interval, Integer threshold, Pattern pattern) {
       this.interval = interval;
       this.threshold = threshold;
       this.pattern = pattern;
@@ -90,12 +119,13 @@ public class StateOptions {
       return interval;
     }
 
-    public String getThreshold() {
+    public Integer getThreshold() {
       return threshold;
     }
 
     public Pattern getPattern() {
       return pattern;
     }
+
   }
 }

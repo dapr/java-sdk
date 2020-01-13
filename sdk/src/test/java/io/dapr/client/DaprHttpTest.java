@@ -44,7 +44,7 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
         assertEquals(EXPECTED_RESULT,body);
@@ -60,7 +60,7 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("DELETE","v1.0/state",null);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("DELETE","v1.0/state", null, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
         assertEquals(EXPECTED_RESULT,body);
@@ -76,7 +76,7 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",null);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",null, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
         assertEquals(EXPECTED_RESULT,body);
@@ -95,7 +95,7 @@ public class DaprHttpTest {
                 .respond(EXPECTED_RESULT);
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",headers, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
         assertEquals(EXPECTED_RESULT,body);
@@ -116,7 +116,7 @@ public class DaprHttpTest {
 
         DaprHttp daprHttp = new DaprHttp("http://localhost",3500,okHttpClient);
 
-        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",headers);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get", headers, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
         assertEquals(EXPECTED_RESULT,body);
