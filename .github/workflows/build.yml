@@ -1,0 +1,38 @@
+name: Build
+
+on: 
+  push:
+    branches:
+      - master
+      - release-*
+    tags:
+      - v*
+    
+  pull_request:
+    branches: 
+    - master
+    - release-*
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up JDK 13
+      uses: actions/setup-java@v1
+      with:
+        java-version: 13
+    - name: Clean up files
+      run: mvn clean
+    - name: Build sdk
+      run: mvn compile
+    - name: Package Jars
+      run: mvn package
+    - name: Unit-test
+      run: mvn test
+    - name: Install jars to local repository
+      run: mvn install
+    - name: Integration-test
+      run: mvn integration-test
