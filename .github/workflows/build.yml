@@ -1,0 +1,44 @@
+name: Build
+
+on: 
+  push:
+    branches:
+      - master
+      - release-*
+      - java_sdk_wip
+    tags:
+      - v*
+    
+  pull_request:
+    branches: 
+    - master
+    - release-*
+    - java_sdk_wip
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      JDK_VER: 13.0.x
+      DAPR_RUNTIME_VER: 0.3.0
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up ${{ env.JDK_VER }}
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ env.JDK_VER }}
+    - name: Set up Dapr CLI
+      run: wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
+    - name: Initialize Dapr runtime as a standalone mode
+      run: |
+        sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
+        echo "Showing dapr version..."
+        dapr --version
+    - name: Clean up files
+      run: mvn clean
+    - name: Build sdk
+      run: mvn compile
+    - name: Unit-test
+      run: mvn test
+    - name: Integration-test
+      run: mvn integration-test
