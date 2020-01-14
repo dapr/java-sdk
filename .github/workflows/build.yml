@@ -42,3 +42,13 @@ jobs:
       run: mvn test
     - name: Integration-test
       run: mvn integration-test
+    - name: Upload test report for sdk
+      uses: actions/upload-artifact@master
+      with:
+        name: report-dapr-java-sdk
+        path: sdk/target/jacoco-report/
+    - name: Upload test report for sdk-actors
+      uses: actions/upload-artifact@master
+      with:
+        name: report-dapr-java-sdk-actors
+        path: sdk-actors/target/jacoco-report/
