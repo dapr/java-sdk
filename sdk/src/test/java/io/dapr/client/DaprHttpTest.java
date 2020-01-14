@@ -39,19 +39,19 @@ public class DaprHttpTest {
     public void invokeMethod() throws IOException {
 
         Map<String, String> headers = new HashMap<>();
-        headers.put("content-type","text/html");
-        headers.put("header1","value1");
+        headers.put("content-type", "text/html");
+        headers.put("header1", "value1");
 
         mockInterceptor.addRule()
                 .post("http://localhost:3500/v1.0/state")
                 .respond(EXPECTED_RESULT);
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST", "v1.0/state", null, (byte[])null, headers);
 
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
     }
 
     @Test
@@ -62,12 +62,12 @@ public class DaprHttpTest {
                 .respond(EXPECTED_RESULT)
                 .addHeader("Header","Value");
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null,"", null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
 
     }
 
@@ -78,12 +78,12 @@ public class DaprHttpTest {
                 .delete("http://localhost:3500/v1.0/state")
                 .respond(EXPECTED_RESULT);
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("DELETE","v1.0/state", null, (String) null,null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
 
     }
 
@@ -94,12 +94,12 @@ public class DaprHttpTest {
                 .get("http://localhost:3500/v1.0/get")
                 .respond(EXPECTED_RESULT);
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",null, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
 
     }
 
@@ -107,18 +107,21 @@ public class DaprHttpTest {
     public void invokeMethodWithHeaders() throws IOException {
 
         Map<String, String> headers = new HashMap<>();
-        headers.put("header","value");
-        headers.put("header1","value1");
+        headers.put("header", "value");
+        headers.put("header1", "value1");
+
+        Map<String, String> urlParameters = new HashMap<>();
+        urlParameters.put("orderId", "41");
 
         mockInterceptor.addRule()
-                .get("http://localhost:3500/v1.0/get")
+                .get("http://localhost:3500/v1.0/state/order?orderId=41")
                 .respond(EXPECTED_RESULT);
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
-        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",null, headers);
+        Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/state/order", urlParameters, headers);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
 
     }
 
@@ -129,12 +132,12 @@ public class DaprHttpTest {
                 .post("http://localhost:3500/v1.0/state")
                 .respond(500);
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
 
     }
 
@@ -146,12 +149,12 @@ public class DaprHttpTest {
                 .respond(500, ResponseBody.create(MediaType.parse("text"),
                         "{\"errorCode\":null,\"message\":null}"));
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
 
     }
 
@@ -168,7 +171,7 @@ public class DaprHttpTest {
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null, null);
         DaprHttp.Response response = mono.block();
         String body = serializer.deserialize(response.getBody(), String.class);
-        assertEquals(EXPECTED_RESULT,body);
+        assertEquals(EXPECTED_RESULT, body);
 
     }
 
@@ -180,7 +183,7 @@ public class DaprHttpTest {
                 .respond(500, ResponseBody.create(MediaType.parse("application/json"),
                         "{\"errorCode\":\"null\",\"message\":\"null\"}"));
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         System.out.println(daprHttp);
 
