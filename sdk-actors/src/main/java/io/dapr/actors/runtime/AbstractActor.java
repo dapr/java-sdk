@@ -51,7 +51,7 @@ public abstract class AbstractActor {
     /**
      * Manager for the states in Actors.
      */
-    protected final ActorStateManager actorStateManager;
+    private final ActorStateManager actorStateManager;
 
     /**
      * Instantiates a new Actor.
@@ -205,11 +205,67 @@ public abstract class AbstractActor {
     }
 
     /**
+     * Adds a new state, saving happens on later when Actor's method ends.
+     *
+     * @param stateName Name of the state to be set.
+     * @param value Value to be set.
+     * @param <T> Type of the value being set.
+     * @return Asynchronous void response.
+     */
+    protected final <T> Mono<Void> addState(String stateName, T value) {
+        return this.actorStateManager.add(stateName, value);
+    }
+
+    /**
+     * Sets the value of a state, saving happens on later when Actor's method ends.
+     *
+     * @param stateName Name of the state to be set.
+     * @param value Value to be set.
+     * @param <T> Type of the value being set.
+     * @return Asynchronous void response.
+     */
+    protected final <T> Mono<Void> setState(String stateName, T value) {
+        return this.actorStateManager.set(stateName, value);
+    }
+
+    /**
+     * Gets the value of a state, uses cached operations first.
+     *
+     * @param stateName Name of the state to be fetched.
+     * @param clazz Type of the value being fetched.
+     * @param <T> Type of the value being fetched.
+     * @return Asynchronous response for value of type T.
+     */
+    protected final <T> Mono<T> getState(String stateName, Class<T> clazz) {
+        return this.actorStateManager.get(stateName, clazz);
+    }
+
+    /**
+     * Removes a state, saving happens on later when Actor's method ends.
+     *
+     * @param stateName Name of the state to be removed.
+     * @return Asynchronous void response.
+     */
+    protected final Mono<Void> removeState(String stateName) {
+        return this.actorStateManager.remove(stateName);
+    }
+
+    /**
+     * Checks if a given state exists in state store or cache.
+     *
+     * @param stateName State being checked.
+     * @return Asynchronous boolean result indicating whether state is present.
+     */
+    protected final Mono<Boolean> containsState(String stateName) {
+        return this.actorStateManager.contains(stateName);
+    }
+
+    /**
      * Saves the state of this Actor.
      *
      * @return Asynchronous void response.
      */
-    protected Mono<Void> saveState() {
+    Mono<Void> saveState() {
         return this.actorStateManager.save();
     }
 

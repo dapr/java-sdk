@@ -260,9 +260,9 @@ class ActorManager<T extends AbstractActor> {
                                 this.runtimeContext.getActorTypeInformation().getName()));
             }
 
-            return actor.onPreActorMethodInternal(context).then(
-                    func.apply(actor).flatMap(result -> actor.onPostActorMethodInternal(context).thenReturn(result))
-            );
+            return actor.onPreActorMethodInternal(context)
+              .then(func.apply(actor).flatMap(result -> actor.onPostActorMethodInternal(context).thenReturn(result)))
+              .doOnError(e -> actor.resetState());
         } catch (Exception e) {
             return Mono.error(e);
         }

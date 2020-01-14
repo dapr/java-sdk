@@ -33,7 +33,7 @@ class ActorProxyImpl implements ActorProxy {
     private final DaprClient daprClient;
 
     /**
-     * Creates a new instance of {@link ActorProxyAsyncClient}.
+     * Creates a new instance of {@link ActorProxyImpl}.
      *
      * @param actorType  actor implementation type of the actor associated with the proxy object.
      * @param actorId    The actorId associated with the proxy
