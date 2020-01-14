@@ -131,6 +131,9 @@ public class ObjectSerializer {
 
         // Not string, not primitive, not byte[], so it is a complex type: we use JSON for that.
         if (value instanceof byte[]) {
+            if (((byte[]) value).length==0) {
+                return null;
+            }
             return OBJECT_MAPPER.readValue((byte[]) value, clazz);
         }
 

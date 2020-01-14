@@ -27,8 +27,7 @@ public class ActorProxyImplTest {
     Assert.assertEquals(actorProxy.getActorType(), "myActorType");
   }
 
-  //@Test()
-  // TODO: review this test.
+  @Test()
   public void invokeActorMethodWithoutDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
@@ -88,8 +87,7 @@ public class ActorProxyImplTest {
 
   }
 
-  //@Test()
-  // TODO: review this test.
+  @Test()
   public void invokeActorMethodSavingDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
@@ -262,7 +260,7 @@ public class ActorProxyImplTest {
       return propertyB;
     }
 
-    public void setPropertyB(String propActorProxyBuilderTestertyB) {
+    public void setPropertyB(String propertyB) {
       this.propertyB = propertyB;
     }
 
