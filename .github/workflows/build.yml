@@ -23,13 +23,13 @@ jobs:
       DAPR_RUNTIME_VER: 0.3.0
     steps:
     - uses: actions/checkout@v1
-    - name: Set up ${{ env.JDK_VER }}
+    - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v1
       with:
         java-version: ${{ env.JDK_VER }}
     - name: Set up Dapr CLI
       run: wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
-    - name: Initialize Dapr runtime as a standalone mode
+    - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
       run: |
         sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
         echo "Showing dapr version..."
@@ -42,3 +42,13 @@ jobs:
       run: mvn test
     - name: Integration-test
       run: mvn integration-test
+    - name: Upload test report for sdk
+      uses: actions/upload-artifact@master
+      with:
+        name: report-dapr-java-sdk
+        path: sdk/target/jacoco-report/
+    - name: Upload test report for sdk-actors
+      uses: actions/upload-artifact@master
+      with:
+        name: report-dapr-java-sdk-actors
+        path: sdk-actors/target/jacoco-report/

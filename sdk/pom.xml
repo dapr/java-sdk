@@ -158,6 +158,9 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <outputDirectory>target/jacoco-report/</outputDirectory>
+            </configuration>
           </execution>
           <execution>
             <id>check</id>
