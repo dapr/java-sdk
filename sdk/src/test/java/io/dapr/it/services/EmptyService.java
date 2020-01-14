@@ -5,7 +5,6 @@
 
 package io.dapr.it.services;
 
-
 /**
  * Use this class in order to run DAPR with any needed services, like states.
  */

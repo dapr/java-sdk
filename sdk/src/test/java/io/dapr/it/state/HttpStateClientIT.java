@@ -20,88 +20,84 @@ import reactor.core.publisher.Mono;
  */
 public class HttpStateClientIT extends BaseIT {
 
-    @BeforeClass
-    public static void init() throws Exception {
-        daprIntegrationTestingRunner =
-                createDaprIntegrationTestingRunner(
-                        "BUILD SUCCESS",
-                        EmptyService.class,
-                        false,
-                        0
-                );
-        daprIntegrationTestingRunner.initializeDapr();
-    }
+  @BeforeClass
+  public static void init() throws Exception {
+    daprIntegrationTestingRunner =
+      createDaprIntegrationTestingRunner(
+        "BUILD SUCCESS",
+        EmptyService.class,
+        false,
+        0
+      );
+    daprIntegrationTestingRunner.initializeDapr();
+  }
 
+  @Test
+  public void saveAndGetState() {
 
+    final String stateKey= "myKey";
 
-    @Test
-    public void saveAndGetState() {
+    DaprClient daprClient= new DaprClientBuilder().build();
+    MyData data= new MyData();
+    data.setPropertyA("data in property A");
+    data.setPropertyB("data in property B");
+    Mono<Void> saveResponse= daprClient.saveState(stateKey,null,data, null);
+    saveResponse.block();
 
-        final String stateKey= "myKey";
+    Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue(null,stateKey,null),null,MyData.class);
+    StateKeyValue<MyData> myDataResponse=response.block();
 
-        DaprClient daprClient= new DaprClientBuilder().build();
-        MyData data= new MyData();
-        data.setPropertyA("data in property A");
-        data.setPropertyB("data in property B");
-        Mono<Void> saveResponse= daprClient.saveState(stateKey,null,data, null);
-        saveResponse.block();
+    Assert.assertEquals("data in property A",myDataResponse.getValue().getPropertyA());
+    Assert.assertEquals("data in property B",myDataResponse.getValue().getPropertyB());
+  }
 
-        Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue(null,stateKey,null),null,MyData.class);
-        StateKeyValue<MyData> myDataResponse=response.block();
+  @Test
+  public void saveUpdateAndGetState() {
+    final String stateKey= "keyToBeUpdated";
 
-        Assert.assertEquals("data in property A",myDataResponse.getValue().getPropertyA());
-        Assert.assertEquals("data in property B",myDataResponse.getValue().getPropertyB());
-    }
+    DaprClient daprClient= new DaprClientBuilder().build();
+    MyData data= new MyData();
+    data.setPropertyA("data in property A");
+    data.setPropertyB("data in property B");
+    Mono<Void> saveResponse= daprClient.saveState(stateKey,null,data, null);
+    saveResponse.block();
 
-    @Test
-    public void saveUpdateAndGetState() {
-        final String stateKey= "keyToBeUpdated";
+    data.setPropertyA("data in property A");
+    data.setPropertyB("data in property B2");
+    saveResponse= daprClient.saveState(stateKey,null,data, null);
+    saveResponse.block();
 
-        DaprClient daprClient= new DaprClientBuilder().build();
-        MyData data= new MyData();
-        data.setPropertyA("data in property A");
-        data.setPropertyB("data in property B");
-        Mono<Void> saveResponse= daprClient.saveState(stateKey,null,data, null);
-        saveResponse.block();
+    Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue<MyData>(null,stateKey,null),null,MyData.class);
+    StateKeyValue<MyData> myDataResponse=response.block();
 
+    Assert.assertEquals("data in property A",myDataResponse.getValue().getPropertyA());
+    Assert.assertEquals("data in property B2",myDataResponse.getValue().getPropertyB());
+  }
 
-        data.setPropertyA("data in property A");
-        data.setPropertyB("data in property B2");
-        saveResponse= daprClient.saveState(stateKey,null,data, null);
-        saveResponse.block();
+  @Test
+  public void saveAndDeleteState() {
+    final String stateKey= "myeKeyToBeDeleted";
 
-        Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue<MyData>(null,stateKey,null),null,MyData.class);
-        StateKeyValue<MyData> myDataResponse=response.block();
+    DaprClient daprClient= new DaprClientBuilder().build();
+    MyData data= new MyData();
+    data.setPropertyA("data in property A");
+    data.setPropertyB("data in property B");
+    Mono<Void> saveResponse= daprClient.saveState(stateKey,null,data, null);
+    saveResponse.block();
 
-        Assert.assertEquals("data in property A",myDataResponse.getValue().getPropertyA());
-        Assert.assertEquals("data in property B2",myDataResponse.getValue().getPropertyB());
-    }
+    Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue<MyData>(null,stateKey,null),null,MyData.class);
+    StateKeyValue<MyData> myDataResponse=response.block();
 
-    @Test
-    public void saveAndDeleteState() {
-        final String stateKey= "myeKeyToBeDeleted";
+    Assert.assertEquals("data in property A",myDataResponse.getValue().getPropertyA());
+    Assert.assertEquals("data in property B",myDataResponse.getValue().getPropertyB());
 
-        DaprClient daprClient= new DaprClientBuilder().build();
-        MyData data= new MyData();
-        data.setPropertyA("data in property A");
-        data.setPropertyB("data in property B");
-        Mono<Void> saveResponse= daprClient.saveState(stateKey,null,data, null);
-        saveResponse.block();
+    Mono<Void> deleteResponse= daprClient.deleteState( new StateKeyValue<MyData>(null,stateKey,null),null);
+    deleteResponse.block();
 
-        Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue<MyData>(null,stateKey,null),null,MyData.class);
-        StateKeyValue<MyData> myDataResponse=response.block();
+    response= daprClient.getState( new StateKeyValue<MyData>(null,stateKey,null),null,MyData.class);
+    myDataResponse=response.block();
 
-        Assert.assertEquals("data in property A",myDataResponse.getValue().getPropertyA());
-        Assert.assertEquals("data in property B",myDataResponse.getValue().getPropertyB());
-
-        Mono<Void> deleteResponse= daprClient.deleteState( new StateKeyValue<MyData>(null,stateKey,null),null);
-        deleteResponse.block();
-
-        response= daprClient.getState( new StateKeyValue<MyData>(null,stateKey,null),null,MyData.class);
-        myDataResponse=response.block();
-
-        Assert.assertNull(myDataResponse.getValue());
-
-    }
+    Assert.assertNull(myDataResponse.getValue());
+  }
 
 }
