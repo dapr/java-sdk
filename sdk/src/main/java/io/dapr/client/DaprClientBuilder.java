@@ -77,6 +77,7 @@ public class DaprClientBuilder {
      * @return
      */
     private DaprClient buildDaprClientHttp() {
+        int port=DaprClientBuilder.getEnvPortOrDefault();
         if (port <= 0) {
             throw new IllegalStateException("Invalid port.");
         }

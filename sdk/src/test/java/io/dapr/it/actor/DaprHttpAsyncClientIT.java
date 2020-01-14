@@ -2,9 +2,12 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.client;
+package io.dapr.it.actor;
 
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
 import io.dapr.exceptions.DaprException;
+import io.dapr.it.BaseIT;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -13,7 +16,7 @@ import org.junit.Test;
  * <p>
  * Requires Dapr running.
  */
-public class DaprHttpAsyncClientIT {
+public class DaprHttpAsyncClientIT extends BaseIT {
 
   /**
    * Checks if the error is correctly parsed when trying to invoke a function on
