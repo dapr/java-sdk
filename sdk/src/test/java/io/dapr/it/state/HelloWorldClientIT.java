@@ -7,40 +7,40 @@ package io.dapr.it.state;
 
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
+import io.dapr.it.BaseIT;
 import io.dapr.it.DaprIntegrationTestingRunner;
 import io.dapr.it.services.HelloWorldGrpcStateService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
+import static io.dapr.it.DaprIntegrationTestingRunner.DAPR_FREEPORTS;
 
 
-public class HelloWorldClientIT {
+public class HelloWorldClientIT extends BaseIT {
 
 
     private static DaprIntegrationTestingRunner daprIntegrationTestingRunner;
-    private static   DaprIntegrationTestingRunner.DaprFreePorts daprFreePorts;
+
 
     @BeforeClass
     public static void init() throws Exception {
          daprIntegrationTestingRunner =
-                DaprIntegrationTestingRunner.createDaprIntegrationTestingRunner(
+                createDaprIntegrationTestingRunner(
                         "BUILD SUCCESS",
                         HelloWorldGrpcStateService.class,
                         false,
                         2000
                         );
-        daprFreePorts = daprIntegrationTestingRunner.initializeDapr();
+        daprIntegrationTestingRunner.initializeDapr();
     }
 
     @Test
     public void testHelloWorldState(){
         ManagedChannel channel =
-                ManagedChannelBuilder.forAddress("localhost", daprFreePorts.getGrpcPort()).usePlaintext().build();
+                ManagedChannelBuilder.forAddress("localhost", DAPR_FREEPORTS.getGrpcPort()).usePlaintext().build();
         DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
         String key = "mykey";
@@ -75,12 +75,6 @@ public class HelloWorldClientIT {
             System.out.println("Got: " + value);
             Assert.assertEquals("",value);
         }
-    }
-
-    @AfterClass
-    public static void cleanUp() throws IOException {
-        daprIntegrationTestingRunner.destroyDapr();
-
     }
 
 }

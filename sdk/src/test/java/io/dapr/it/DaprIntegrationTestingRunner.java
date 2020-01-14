@@ -4,13 +4,23 @@ import org.junit.Assert;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
 
 
 public class DaprIntegrationTestingRunner {
 
-    private DaprFreePorts daprFreePorts= new DaprFreePorts();
+    public static   DaprIntegrationTestingRunner.DaprFreePorts DAPR_FREEPORTS;
+
+    static {
+        try {
+            DAPR_FREEPORTS = new DaprIntegrationTestingRunner.DaprFreePorts().initPorts();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private Runtime rt = Runtime.getRuntime();
     private Process proc;
 
@@ -20,7 +30,7 @@ public class DaprIntegrationTestingRunner {
     private int sleepTime;
     private String appName;
 
-    private DaprIntegrationTestingRunner(String successMessage, Class serviceClass, Boolean useAppPort, int sleepTime) {
+    DaprIntegrationTestingRunner(String successMessage, Class serviceClass, Boolean useAppPort, int sleepTime) {
         this.successMessage = successMessage;
         this.serviceClass = serviceClass;
         this.useAppPort = useAppPort;
@@ -28,13 +38,10 @@ public class DaprIntegrationTestingRunner {
         this.generateAppName();
     }
 
-    public static DaprIntegrationTestingRunner createDaprIntegrationTestingRunner(String successMessage, Class serviceClass, Boolean useAppPort, int sleepTime) {
-        return new DaprIntegrationTestingRunner(successMessage, serviceClass, useAppPort, sleepTime);
-    }
 
 
     public DaprFreePorts initializeDapr() throws Exception {
-        daprFreePorts.initPorts();
+
 
         String daprCommand=this.buildDaprCommand();
         System.out.println(daprCommand);
@@ -67,7 +74,7 @@ public class DaprIntegrationTestingRunner {
         executor.shutdown(); // This does not cancel the already-scheduled task.
         future.get(1, TimeUnit.MINUTES);
         Thread.sleep(sleepTime);
-        return daprFreePorts;
+        return DAPR_FREEPORTS;
     }
 
     private static final String DAPR_RUN = "dapr run --app-id %s ";
@@ -75,23 +82,18 @@ public class DaprIntegrationTestingRunner {
 
     private String buildDaprCommand(){
         StringBuilder stringBuilder= new StringBuilder(String.format(DAPR_RUN, this.appName))
-                .append(this.useAppPort ? "--app-port " + this.daprFreePorts.appPort : "")
+                .append(this.useAppPort ? "--app-port " + this.DAPR_FREEPORTS.appPort : "")
                 .append(" --grpc-port ")
-                .append(this.daprFreePorts.grpcPort)
+                .append(this.DAPR_FREEPORTS.grpcPort)
                 .append(" --port ")
-                .append(this.daprFreePorts.httpPort)
-                .append(String.format(DAPR_COMMAND, this.serviceClass.getCanonicalName(),this.daprFreePorts.appPort, this.daprFreePorts.grpcPort, this.daprFreePorts.httpPort));
+                .append(this.DAPR_FREEPORTS.httpPort)
+                .append(String.format(DAPR_COMMAND, this.serviceClass.getCanonicalName(),this.DAPR_FREEPORTS.appPort, this.DAPR_FREEPORTS.grpcPort, this.DAPR_FREEPORTS.httpPort));
         return stringBuilder.toString();
     }
 
     private void generateAppName(){
 
         this.appName=UUID.randomUUID().toString();
-    }
-
-    public  void destroyDapr() throws IOException {
-        rt.exec("dapr stop --app-id " + this.appName);
-        proc.destroy();
     }
 
     private static Integer findRandomOpenPortOnAllLocalInterfaces() throws Exception {
@@ -103,12 +105,28 @@ public class DaprIntegrationTestingRunner {
         }
     }
 
+    public  void destroyDapr() {
+        Optional.ofNullable(rt).ifPresent( runtime -> {
+            try {
+                runtime.exec("dapr stop --app-id " + this.appName);
+            } catch (IOException e) {
+               throw new RuntimeException(e);
+            }
+        });
+        Optional.ofNullable(proc).ifPresent(process -> process.destroy());
+    }
+
+
+
+
+
     public static class DaprFreePorts
     {
-        public void initPorts() throws Exception {
+        public  DaprFreePorts initPorts() throws Exception {
             this.appPort= findRandomOpenPortOnAllLocalInterfaces();
             this.grpcPort= findRandomOpenPortOnAllLocalInterfaces();
             this.httpPort= findRandomOpenPortOnAllLocalInterfaces();
+            return  this;
         }
 
         private int grpcPort;

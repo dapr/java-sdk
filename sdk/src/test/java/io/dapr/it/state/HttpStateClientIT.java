@@ -8,42 +8,38 @@ package io.dapr.it.state;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.StateKeyValue;
-import io.dapr.it.DaprIntegrationTestingRunner;
+import io.dapr.it.BaseIT;
 import io.dapr.it.services.EmptyService;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-
 /**
  * Test State HTTP DAPR capabilities using a DAPR instance with an empty service running
  */
-public class HttpStateClientIT {
-
-
-    private static DaprIntegrationTestingRunner daprIntegrationTestingRunner;
-    private static   DaprIntegrationTestingRunner.DaprFreePorts daprFreePorts;
+public class HttpStateClientIT extends BaseIT {
 
     @BeforeClass
     public static void init() throws Exception {
         daprIntegrationTestingRunner =
-                DaprIntegrationTestingRunner.createDaprIntegrationTestingRunner(
+                createDaprIntegrationTestingRunner(
                         "BUILD SUCCESS",
                         EmptyService.class,
                         false,
                         0
                 );
-        daprFreePorts = daprIntegrationTestingRunner.initializeDapr();
+        daprIntegrationTestingRunner.initializeDapr();
     }
+
+
 
     @Test
     public void saveAndGetState() {
+
         final String stateKey= "myKey";
 
-        DaprClient daprClient= new DaprClientBuilder().build(daprFreePorts.getHttpPort());
+        DaprClient daprClient= new DaprClientBuilder().build();
         MyData data= new MyData();
         data.setPropertyA("data in property A");
         data.setPropertyB("data in property B");
@@ -61,7 +57,7 @@ public class HttpStateClientIT {
     public void saveUpdateAndGetState() {
         final String stateKey= "keyToBeUpdated";
 
-        DaprClient daprClient= new DaprClientBuilder().build(daprFreePorts.getHttpPort());
+        DaprClient daprClient= new DaprClientBuilder().build();
         MyData data= new MyData();
         data.setPropertyA("data in property A");
         data.setPropertyB("data in property B");
@@ -85,7 +81,7 @@ public class HttpStateClientIT {
     public void saveAndDeleteState() {
         final String stateKey= "myeKeyToBeDeleted";
 
-        DaprClient daprClient= new DaprClientBuilder().build(daprFreePorts.getHttpPort());
+        DaprClient daprClient= new DaprClientBuilder().build();
         MyData data= new MyData();
         data.setPropertyA("data in property A");
         data.setPropertyB("data in property B");
@@ -108,54 +104,4 @@ public class HttpStateClientIT {
 
     }
 
-
-    @AfterClass
-    public static void cleanUp() throws IOException {
-        daprIntegrationTestingRunner.destroyDapr();
-    }
-
-
-    static class MyData {
-
-        /// Gets or sets the value for PropertyA.
-        private String propertyA;
-
-        /// Gets or sets the value for PropertyB.
-        private String propertyB;
-
-        private MyData myData;
-
-
-        public String getPropertyB() {
-            return propertyB;
-        }
-
-        public void setPropertyB(String propertyB) {
-            this.propertyB = propertyB;
-        }
-
-        public String getPropertyA() {
-            return propertyA;
-        }
-
-        public void setPropertyA(String propertyA) {
-            this.propertyA = propertyA;
-        }
-
-        @Override
-        public String toString() {
-            return "MyData{" +
-                    "propertyA='" + propertyA + '\'' +
-                    ", propertyB='" + propertyB + '\'' +
-                    '}';
-        }
-
-        public MyData getMyData() {
-            return myData;
-        }
-
-        public void setMyData(MyData myData) {
-            this.myData = myData;
-        }
-    }
 }
