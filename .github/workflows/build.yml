@@ -15,7 +15,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     env:
       JDK_VER: 13.0.x
@@ -26,11 +25,13 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ env.JDK_VER }}
-    - name: Set up Dapr cli
+    - name: Set up Dapr CLI
       run: wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
     - name: Initialize Dapr runtime as a standalone mode
       run: |
         sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
+        echo "Showing dapr version..."
+        dapr --version
     - name: Clean up files
       run: mvn clean
     - name: Build sdk
