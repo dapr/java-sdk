@@ -74,9 +74,9 @@ class DaprHttp {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
-   * The base url used for form urls. This is typically "http://localhost:3500".
+   * Port used to communicate to Dapr's HTTP endpoint.
    */
-  private final String baseUrl;
+  private final int port;
 
   /**
    * Http client used for all API calls.
@@ -91,12 +91,11 @@ class DaprHttp {
   /**
    * Creates a new instance of {@link DaprHttp}.
    *
-   * @param baseUrl    Base url calling Dapr (e.g. http://localhost)
    * @param port       Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String baseUrl, int port, OkHttpClient httpClient) {
-    this.baseUrl = String.format("%s:%d/", baseUrl, port);
+  DaprHttp(int port, OkHttpClient httpClient) {
+    this.port = port;
     this.httpClient = httpClient;
     this.pool = Executors.newWorkStealingPool();
   }
@@ -148,7 +147,7 @@ class DaprHttp {
               body = RequestBody.Companion.create(content, mediaType);
             }
             HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-            urlBuilder.host(this.baseUrl).addPathSegment(urlString);
+            urlBuilder.scheme("http").host(Constants.DEFAULT_HOSTNAME).port(this.port).addPathSegments(urlString);
             Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
                 .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
 

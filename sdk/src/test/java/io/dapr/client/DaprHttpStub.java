@@ -24,7 +24,7 @@ public class DaprHttpStub extends DaprHttp {
      * Instantiates a stub for DaprHttp
      */
     public DaprHttpStub() {
-        super("http://localhost", 3000, null);
+        super(3000, null);
     }
 
     /**
