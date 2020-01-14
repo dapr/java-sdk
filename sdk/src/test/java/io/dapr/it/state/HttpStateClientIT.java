@@ -46,7 +46,7 @@ public class HttpStateClientIT extends BaseIT {
         Mono<Void> saveResponse= daprClient.saveState(stateKey,null,data, null);
         saveResponse.block();
 
-        Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue<MyData>(null,stateKey,null),null,MyData.class);
+        Mono<StateKeyValue<MyData>> response= daprClient.getState( new StateKeyValue(null,stateKey,null),null,MyData.class);
         StateKeyValue<MyData> myDataResponse=response.block();
 
         Assert.assertEquals("data in property A",myDataResponse.getValue().getPropertyA());

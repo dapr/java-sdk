@@ -13,10 +13,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An adapter for the HTTP Client.
@@ -183,7 +180,7 @@ public class DaprClientHttpAdapter implements DaprClient {
       StringBuilder url = new StringBuilder(Constants.STATE_PATH)
         .append("/")
         .append(state.getKey());
-      Map<String, String> urlParameters = stateOptions.getStateOptionsAsMap();
+      Map<String, String> urlParameters = Optional.ofNullable(stateOptions).map(options -> options.getStateOptionsAsMap() ).orElse( new HashMap<>());;
       return this.client
           .invokeAPI(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers)
           .flatMap(s -> {
@@ -207,14 +204,14 @@ public class DaprClientHttpAdapter implements DaprClient {
       if (states == null || states.isEmpty()) {
         return Mono.empty();
       }
-      Map<String, String> headers = new HashMap<>();
-      String etag = states.stream().filter(state -> null != state.getEtag() && !state.getEtag().trim().isEmpty())
+      final Map<String, String> headers = new HashMap<>();
+      final String etag = states.stream().filter(state -> null != state.getEtag() && !state.getEtag().trim().isEmpty())
           .findFirst().orElse(new StateKeyValue<>(null, null, null)).getEtag();
       if (etag != null && !etag.trim().isEmpty()) {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
-      String url = Constants.STATE_PATH;
-      Map<String, String> urlParameter = options.getStateOptionsAsMap();
+      final String url = Constants.STATE_PATH;
+      Map<String, String> urlParameter = Optional.ofNullable(options).map(stateOptions -> stateOptions.getStateOptionsAsMap() ).orElse( new HashMap<>());
       byte[] serializedStateBody = objectSerializer.serialize(states);
       return this.client.invokeAPI(
         DaprHttp.HttpMethods.POST.name(), url, urlParameter, serializedStateBody, headers).then();
@@ -249,7 +246,7 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
       }
       String url = Constants.STATE_PATH + "/" + state.getKey();
-      Map<String, String> urlParameters = options.getStateOptionsAsMap();
+      Map<String, String> urlParameters = Optional.ofNullable(options).map(stateOptions -> stateOptions.getStateOptionsAsMap() ).orElse( new HashMap<>());;
       return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
