@@ -506,6 +506,376 @@ public class DaprClientGrpcAdapterTest {
     assertEquals(expectedState, result.block());
   }
 
+  @Test
+  public void getStateObjectValueWithOptionsTest() throws IOException {
+    String etag = "ETag1";
+    String key = "key1";
+    MyObject expectedValue = new MyObject(1, "The Value");
+    StateKeyValue<MyObject> expectedState = buildStateKey(expectedValue, key, etag);
+    DaprProtos.GetStateResponseEnvelope responseEnvelope = DaprProtos.GetStateResponseEnvelope.newBuilder()
+        .setData(getAny(expectedValue))
+        .setEtag(etag)
+        .build();
+    StateKeyValue<MyObject> keyRequest = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getState(any(io.dapr.DaprProtos.GetStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    Mono<StateKeyValue<MyObject>> result = adater.getState(keyRequest, options, MyObject.class);
+    settableFuture.set(responseEnvelope);
+    assertEquals(expectedState, result.block());
+  }
+
+  @Test
+  public void getStateObjectValueWithOptionsNoConcurrencyTest() throws IOException {
+    String etag = "ETag1";
+    String key = "key1";
+    MyObject expectedValue = new MyObject(1, "The Value");
+    StateKeyValue<MyObject> expectedState = buildStateKey(expectedValue, key, etag);
+    DaprProtos.GetStateResponseEnvelope responseEnvelope = DaprProtos.GetStateResponseEnvelope.newBuilder()
+        .setData(getAny(expectedValue))
+        .setEtag(etag)
+        .build();
+    StateKeyValue<MyObject> keyRequest = buildStateKey(null, key, etag);
+    StateOptions options = new StateOptions(null, StateOptions.Concurrency.FIRST_WRITE,
+        new StateOptions.RetryPolicy(Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR));
+    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getState(any(io.dapr.DaprProtos.GetStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    Mono<StateKeyValue<MyObject>> result = adater.getState(keyRequest, options, MyObject.class);
+    settableFuture.set(responseEnvelope);
+    assertEquals(expectedState, result.block());
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void deleteStateExceptionThrowTest() {
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class))).thenThrow(RuntimeException.class);
+    StateKeyValue<String> key = buildStateKey(null, "Key1", "ETag1");
+    Mono<Void> result = adater.deleteState(key, null);
+    result.block();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void deleteStateCallbackExcpetionThrownTest() {
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    RuntimeException ex = new RuntimeException("An Exception");
+    MockCallback<Empty> callback =
+        new MockCallback<Empty>(ex);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> key = buildStateKey(null, "Key1", "ETag1");
+    Mono<Void> result = adater.deleteState(key, null);
+    settableFuture.setException(ex);
+    result.block();
+  }
+
+  @Test
+  public void deleteStateNoOptionsTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    Mono<Void> result = adater.deleteState(stateKey, null);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.deleteState(stateKey, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateNoConsistencyTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.deleteState(stateKey, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateNoConcurrencyTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null,
+        Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.deleteState(stateKey, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateNoRetryPolicyTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        null, null, null);
+    Mono<Void> result = adater.deleteState(stateKey, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateRetryPolicyNoDurationTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        null, 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.deleteState(stateKey, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateRetryPolicyNoThresholdTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), null, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.deleteState(stateKey, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateRetryPolicyNoPatternTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
+        .thenReturn(settableFuture);
+    StateKeyValue<String> stateKey = buildStateKey(null, key, etag);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), 1, null);
+    Mono<Void> result = adater.deleteState(stateKey, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void saveStateExceptionThrownTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenThrow(RuntimeException.class);
+    Mono<Void> result = adater.saveState(key, etag, value, null);
+    result.block();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void saveStateCallbackExceptionThrownTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    RuntimeException ex = new RuntimeException("An Exception");
+    MockCallback<Empty> callback = new MockCallback<>(ex);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    Mono<Void> result = adater.saveState(key, etag, value, null);
+    settableFuture.setException(ex);
+    result.block();
+  }
+
+  @Test
+  public void saveStateNoOptionsTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    Mono<Void> result = adater.saveState(key, etag, value, null);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void saveStateTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.saveState(key, etag, value, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void saveStateNoConsistencyTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.saveState(key, etag, value, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void saveStateNoConcurrencyTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null,
+        Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.saveState(key, etag, value, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void saveStateNoRetryPolicyTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        null, null, null);
+    Mono<Void> result = adater.saveState(key, etag, value, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void saveStateRetryPolicyNoDurationTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        null, 1, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.saveState(key, etag, value, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void saveStateRetryPolicyNoThresholdTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), null, StateOptions.RetryPolicy.Pattern.LINEAR);
+    Mono<Void> result = adater.saveState(key, etag, value, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void saveStateRetryPolicyNoPatternTest() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
+        Duration.ofDays(100), 1, null);
+    Mono<Void> result = adater.saveState(key, etag, value, options);
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
   private <T> StateKeyValue<T> buildStateKey(T value, String key, String etag) {
     return new StateKeyValue(value, key, etag);
   }
