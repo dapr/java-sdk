@@ -23,13 +23,13 @@ jobs:
       DAPR_RUNTIME_VER: 0.3.0
     steps:
     - uses: actions/checkout@v1
-    - name: Set up ${{ env.JDK_VER }}
+    - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v1
       with:
         java-version: ${{ env.JDK_VER }}
     - name: Set up Dapr CLI
       run: wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
-    - name: Initialize Dapr runtime as a standalone mode
+    - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
       run: |
         sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
         echo "Showing dapr version..."
