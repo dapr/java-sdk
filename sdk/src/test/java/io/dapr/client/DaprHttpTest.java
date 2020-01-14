@@ -78,7 +78,7 @@ public class DaprHttpTest {
                 .delete("http://localhost:3500/v1.0/state")
                 .respond(EXPECTED_RESULT);
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("DELETE","v1.0/state", null, (String) null,null);
         DaprHttp.Response response = mono.block();
@@ -94,7 +94,7 @@ public class DaprHttpTest {
                 .get("http://localhost:3500/v1.0/get")
                 .respond(EXPECTED_RESULT);
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/get",null, null);
         DaprHttp.Response response = mono.block();
@@ -116,7 +116,7 @@ public class DaprHttpTest {
         mockInterceptor.addRule()
                 .get("http://localhost:3500/v1.0/state/order?orderId=41")
                 .respond(EXPECTED_RESULT);
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("GET","v1.0/state/order", urlParameters, headers);
         DaprHttp.Response response = mono.block();
@@ -149,7 +149,7 @@ public class DaprHttpTest {
                 .respond(500, ResponseBody.create(MediaType.parse("text"),
                         "{\"errorCode\":null,\"message\":null}"));
 
-        DaprHttp daprHttp = new DaprHttp(3500,okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
 
         Mono<DaprHttp.Response> mono = daprHttp.invokeAPI("POST","v1.0/state",null, null);
         DaprHttp.Response response = mono.block();
