@@ -17,22 +17,25 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    env:
+      JDK_VER: 13.0.x
+      DAPR_RUNTIME_VER: 0.3.0
     steps:
     - uses: actions/checkout@v1
-    - name: Set up JDK 13
+    - name: Set up ${{ env.JDK_VER }}
       uses: actions/setup-java@v1
       with:
-        java-version: 13
+        java-version: ${{ env.JDK_VER }}
+    - name: Set up Dapr cli
+      run: wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
+    - name: Initialize Dapr runtime as a standalone mode
+      run: |
+        sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
     - name: Clean up files
       run: mvn clean
     - name: Build sdk
       run: mvn compile
-    - name: Package Jars
-      run: mvn package
     - name: Unit-test
       run: mvn test
-    - name: Install jars to local repository
-      run: mvn install
     - name: Integration-test
       run: mvn integration-test
