@@ -209,7 +209,7 @@ public class DaprHttpTest {
         assertEquals(existingState, serializer.deserialize(response.block().getBody(), String.class));
         Mono<DaprHttp.Response> responseDeleted = daprHttp.invokeAPI("GET", urlDeleteState, null, null);
         Mono<DaprHttp.Response> responseDeleteKey = daprHttp.invokeAPI("DELETE", urlDeleteState, null, null);
-        assertEquals("", serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
+        assertNull(serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
         mockInterceptor.reset();
         mockInterceptor.addRule()
             .get("http://localhost:3500/" +urlDeleteState)
