@@ -7,7 +7,7 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.2.0</version>
+  <version>0.2.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -76,9 +76,9 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/dapr/java-sdk.git</connection>
-    <developerConnection>scm:git:ssh://github.com:dapr/java-sdk.git</developerConnection>
-    <url>http://github.com/dapr/java-sdk</url>
+      <url>https://github.com/dapr/java-sdk</url>
+      <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
+      <tag>HEAD</tag>
   </scm>
 
   <modules>

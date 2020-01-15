@@ -7,13 +7,13 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.0-SNAPSHOT</version>
   </parent>
 
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-examples</artifactId>
   <packaging>jar</packaging>
-  <version>0.2.0</version>
+  <version>0.2.0-SNAPSHOT</version>
   <name>dapr-sdk-examples</name>
 
   <properties>
@@ -84,12 +84,12 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>0.2.0</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>0.2.0</version>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
