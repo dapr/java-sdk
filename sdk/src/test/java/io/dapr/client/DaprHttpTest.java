@@ -4,6 +4,8 @@
  */
 package io.dapr.client;
 
+import io.dapr.exceptions.DaprException;
+import io.dapr.utils.Constants;
 import io.dapr.utils.ObjectSerializer;
 import okhttp3.*;
 import okhttp3.mock.Behavior;
@@ -16,7 +18,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 
 public class DaprHttpTest {
@@ -177,16 +179,48 @@ public class DaprHttpTest {
 
     @Test
     public void getHeadersAndStatus(){
-
         mockInterceptor.addRule()
                 .post("http://localhost:3500/v1.0/state")
                 .respond(500, ResponseBody.create(MediaType.parse("application/json"),
                         "{\"errorCode\":\"null\",\"message\":\"null\"}"));
-
         DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
-
         System.out.println(daprHttp);
+    }
 
+    @Test ()
+    public void testCallbackCalledAtTheExpectedTimeTest() throws IOException {
+        String deletedStateKey = "deletedKey";
+        String existingState = "existingState";
+        String urlDeleteState = Constants.STATE_PATH + "/" + deletedStateKey;
+        String urlExistingState = Constants.STATE_PATH + "/" + existingState;
+        mockInterceptor.addRule()
+            .get("http://localhost:3500/" + urlDeleteState)
+            .respond(200, ResponseBody.create(MediaType.parse("application/json"),
+               deletedStateKey));
+        mockInterceptor.addRule()
+            .delete("http://localhost:3500/" + urlDeleteState)
+            .respond(204);
+        mockInterceptor.addRule()
+            .get("http://localhost:3500/" +urlExistingState)
+            .respond(200, ResponseBody.create(MediaType.parse("application/json"),
+                existingState));
+        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
+        Mono<DaprHttp.Response> response = daprHttp.invokeAPI("GET", urlExistingState, null, null);
+        assertEquals(existingState, serializer.deserialize(response.block().getBody(), String.class));
+        Mono<DaprHttp.Response> responseDeleted = daprHttp.invokeAPI("GET", urlDeleteState, null, null);
+        Mono<DaprHttp.Response> responseDeleteKey = daprHttp.invokeAPI("DELETE", urlDeleteState, null, null);
+        assertEquals("", serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
+        mockInterceptor.reset();
+        mockInterceptor.addRule()
+            .get("http://localhost:3500/" +urlDeleteState)
+            .respond(404, ResponseBody.create(MediaType.parse("application/json"),
+                "{\"errorCode\":\"404\",\"message\":\"State Not Fuund\"}"));
+        try {
+            responseDeleted.block();
+            fail("Expected DaprException");
+        } catch (Exception ex) {
+            assertEquals(DaprException.class, ex.getCause().getCause().getClass());
+        }
     }
 
 }
