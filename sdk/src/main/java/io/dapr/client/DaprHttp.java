@@ -132,7 +132,7 @@ class DaprHttp {
    * @return Asynchronous text
    */
   public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
-    return Mono.fromFuture(CompletableFuture.supplyAsync(
+    return Mono.fromCallable(
         () -> {
           try {
             String requestId = UUID.randomUUID().toString();
@@ -190,7 +190,7 @@ class DaprHttp {
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
-        }, this.pool));
+        });
   }
 
   /**
