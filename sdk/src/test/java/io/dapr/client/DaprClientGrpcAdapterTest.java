@@ -898,15 +898,15 @@ public class DaprClientGrpcAdapterTest {
     String expectedValue1 = "Expected state 1";
     String key2 = "key2";
     String expectedValue2 = "Expected state 2";
-    StateKeyValue<String> expectedState1 = buildStateKey(expectedValue1, key1, etag);
+    StateKeyValue<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, null);
     Map<String, SettableFuture<DaprProtos.GetStateResponseEnvelope>> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
     when(client.getState(argThat(new GetStateEnvelopeKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
-    StateKeyValue<String> keyRequest1 = buildStateKey(null, key1, etag);
+    StateKeyValue<String> keyRequest1 = buildStateKey(null, key1, etag, null);
     Mono<StateKeyValue<String>> resultGet1 = adater.getState(keyRequest1, null, String.class);
     assertEquals(expectedState1, resultGet1.block());
-    StateKeyValue<String> keyRequest2 = buildStateKey(null, key2, etag);
+    StateKeyValue<String> keyRequest2 = buildStateKey(null, key2, etag, null);
     Mono<StateKeyValue<String>> resultGet2 = adater.getState(keyRequest2, null, String.class);
 
     SettableFuture<Empty> settableFutureDelete = SettableFuture.create();
@@ -924,6 +924,17 @@ public class DaprClientGrpcAdapterTest {
     StateKeyValue<String> state2 = resultGet2.block();
     assertNull(state2);
   }
+
+  private <T> SettableFuture<DaprProtos.GetStateResponseEnvelope> buildFutureGetStateEnvelop(T value, String etag) throws IOException {
+    DaprProtos.GetStateResponseEnvelope envelope = buildGetStateResponseEnvelope(value, etag);
+    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(envelope);
+    addCallback(settableFuture, callback, directExecutor());
+    settableFuture.set(envelope);
+
+    return settableFuture;
+  }
+
   private <T> DaprProtos.GetStateResponseEnvelope buildGetStateResponseEnvelope(T value, String etag) throws IOException {
     return DaprProtos.GetStateResponseEnvelope.newBuilder()
         .setData(getAny(value))
