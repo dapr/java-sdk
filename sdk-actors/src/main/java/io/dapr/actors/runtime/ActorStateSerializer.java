@@ -58,20 +58,20 @@ public class ActorStateSerializer extends ObjectSerializer {
     }
 
     /**
-     * Extracts the response object from the Actor's method result.
+     * Extracts the response object from a JSON Payload where data is in "data" attribute.
      *
-     * @param response String returned by API.
+     * @param payload JSON payload containing "data".
      * @param clazz    Expected response class.
      * @param <T>      Expected response type.
      * @return Response object, null or RuntimeException.
      */
-    public <T> T unwrapMethodResponse(final String response, Class<T> clazz) {
-        if (response == null) {
+    public <T> T unwrapData(final String payload, Class<T> clazz) {
+        if (payload == null) {
             return null;
         }
 
         try {
-            JsonNode root = OBJECT_MAPPER.readTree(response);
+            JsonNode root = OBJECT_MAPPER.readTree(payload);
             if (root == null) {
                 return null;
             }
@@ -96,17 +96,16 @@ public class ActorStateSerializer extends ObjectSerializer {
     /**
      * Builds the request to invoke an API for Actors.
      *
-     * @param request Request object for the original Actor's method.
-     * @param <T>     Type for the original Actor's method request.
+     * @param object Object to be serialized and wrapped into the "data" attribute in a JSON object.
      * @return String to be sent to Dapr's API.
      * @throws IOException In case it cannot generate String.
      */
-    public <T> String wrapMethodRequest(final T request) throws IOException {
-        if (request == null) {
+    public String wrapData(final Object object) throws IOException {
+        if (object == null) {
             return null;
         }
 
-        byte[] data = this.serialize(request);
+        byte[] data = this.serialize(object);
 
         try (Writer writer = new StringWriter()) {
             JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
