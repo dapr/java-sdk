@@ -71,14 +71,11 @@ class DaprClientGrpcAdapter implements DaprClient {
 
       DaprProtos.PublishEventEnvelope envelope = DaprProtos.PublishEventEnvelope.newBuilder()
           .setTopic(topic).setData(data).build();
-      ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
-      return Mono.just(futureEmpty).flatMap(f -> {
-        try {
-          f.get();
-        } catch (Exception ex) {
-          return Mono.error(ex);
-        }
-        return Mono.empty();
+
+      return Mono.fromCallable(() -> {
+        ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
+        futureEmpty.get();
+        return null;
       });
     } catch (Exception ex) {
       return Mono.error(ex);
@@ -92,16 +89,11 @@ class DaprClientGrpcAdapter implements DaprClient {
   public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
     try {
       DaprProtos.InvokeServiceEnvelope envelope = buildInvokeServiceEnvelope(verb.toString(), appId, method, request);
-      ListenableFuture<DaprProtos.InvokeServiceResponseEnvelope> futureResponse =
-          client.invokeService(envelope);
-      return Mono.just(futureResponse).flatMap(f -> {
-        try {
-          return Mono.just(objectSerializer.deserialize(f.get().getData().getValue().toByteArray(), clazz));
-        } catch (Exception ex) {
-          return Mono.error(ex);
-        }
+      return Mono.fromCallable(() -> {
+        ListenableFuture<DaprProtos.InvokeServiceResponseEnvelope> futureResponse =
+            client.invokeService(envelope);
+        return objectSerializer.deserialize(futureResponse.get().getData().getValue().toByteArray(), clazz);
       });
-
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -151,14 +143,10 @@ class DaprClientGrpcAdapter implements DaprClient {
           .setName(name)
           .setData(data);
       DaprProtos.InvokeBindingEnvelope envelope = builder.build();
-      ListenableFuture<Empty> futureEmpty = client.invokeBinding(envelope);
-      return Mono.just(futureEmpty).flatMap(f -> {
-        try {
-          f.get();
-        } catch (Exception ex) {
-          return Mono.error(ex);
-        }
-        return Mono.empty();
+      return Mono.fromCallable(() -> {
+        ListenableFuture<Empty> futureEmpty = client.invokeBinding(envelope);
+        futureEmpty.get();
+        return null;
       });
     } catch (Exception ex) {
       return Mono.error(ex);
@@ -167,7 +155,7 @@ class DaprClientGrpcAdapter implements DaprClient {
 
   /**
    * @return Returns an io.dapr.client.domain.StateKeyValue
-   *
+   * <p>
    * {@inheritDoc}
    */
   @Override
@@ -180,22 +168,23 @@ class DaprClientGrpcAdapter implements DaprClient {
       }
 
       DaprProtos.GetStateEnvelope envelope = builder.build();
-      ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
-      return Mono.just(futureResponse).flatMap(f -> {
+      return Mono.fromCallable(() -> {
+        ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
+        DaprProtos.GetStateResponseEnvelope response = null;
         try {
-          return Mono.just(buildStateKeyValue(f.get(), state.getKey(), stateOptions, clazz));
-        } catch (Exception ex) {
-          return Mono.error(ex);
+          response = futureResponse.get();
+        } catch (NullPointerException npe) {
+          return null;
         }
-      });
-    } catch (Exception ex) {
+        return buildStateKeyValue(response, state.getKey(), stateOptions, clazz);
+      });    } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
-  private <T> StateKeyValue<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope resonse, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
-    T value = objectSerializer.deserialize(resonse.getData().getValue().toByteArray(), clazz);
-    String etag = resonse.getEtag();
+  private <T> StateKeyValue<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
+    T value = objectSerializer.deserialize(Optional.ofNullable(response.getData().getValue().toByteArray()).orElse(null), clazz);
+    String etag = response.getEtag();
     String key = requestedKey;
     return new StateKeyValue<>(value, key, etag, stateOptions);
   }
@@ -208,8 +197,7 @@ class DaprClientGrpcAdapter implements DaprClient {
     try {
       DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
       for (StateKeyValue state : states) {
-        builder.addRequests(buildStateRequest(state).build());
-      }
+        builder.addRequests(buildStateRequest(state).build());      }
       DaprProtos.SaveStateEnvelope envelope = builder.build();
 
       ListenableFuture<Empty> futureEmpty = client.saveState(envelope);
@@ -282,7 +270,7 @@ class DaprClientGrpcAdapter implements DaprClient {
   @Override
   public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
     try {
-      DaprProtos.StateOptions.Builder optionBuilder =  null;
+      DaprProtos.StateOptions.Builder optionBuilder = null;
 
       if (options != null) {
         optionBuilder = DaprProtos.StateOptions.newBuilder();
@@ -407,12 +395,13 @@ class DaprClientGrpcAdapter implements DaprClient {
 
   /**
    * Builds the object io.dapr.{@link DaprProtos.InvokeServiceEnvelope} to be send based on the parameters.
-   * @param verb         String that must match HTTP Methods
-   * @param appId        The application id to be invoked
-   * @param method       The application method to be invoked
-   * @param request      The body of the request to be send as part of the invokation
-   * @param <K>          The Type of the Body
-   * @return             The object to be sent as part of the invokation.
+   *
+   * @param verb    String that must match HTTP Methods
+   * @param appId   The application id to be invoked
+   * @param method  The application method to be invoked
+   * @param request The body of the request to be send as part of the invokation
+   * @param <K>     The Type of the Body
+   * @return The object to be sent as part of the invokation.
    * @throws IOException If there's an issue serializing the request.
    */
   private <K> DaprProtos.InvokeServiceEnvelope buildInvokeServiceEnvelope(
