@@ -4,6 +4,7 @@
  */
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.dapr.utils.DurationUtils;
 
 import java.time.Duration;
@@ -70,9 +71,11 @@ public class StateOptions {
       this.value = value;
     }
 
+    @JsonValue
     public String getValue() {
       return this.value;
     }
+
   }
 
   public static enum Concurrency {
@@ -85,9 +88,11 @@ public class StateOptions {
       this.value = value;
     }
 
+    @JsonValue
     public String getValue() {
       return this.value;
     }
+
   }
 
   public static class RetryPolicy {

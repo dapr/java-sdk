@@ -6,7 +6,7 @@ package io.dapr.client.domain;
 
 /**
  * This class reprent what a State is
- * @param <T>
+ * @param <T> The type of the value of the sate
  */
 public class StateKeyValue<T> {
   /**
@@ -24,20 +24,27 @@ public class StateKeyValue<T> {
   private final String etag;
 
   /**
-   * Create an inmutable state
-   * @param value
-   * @param key
-   * @param etag
+   * The options used for saving the state
    */
-  public StateKeyValue(T value, String key, String etag) {
+  private final StateOptions options;
+
+  /**
+   * Create an inmutable state
+   * @param value   - The value of the state
+   * @param key     - The key of the state
+   * @param etag    - The etag of the state - Keep in mind that for some state stores (like reids) only numbers are supported.
+   * @param options - REQUIRED when saving a state.
+   */
+  public StateKeyValue(T value, String key, String etag, StateOptions options) {
     this.value = value;
     this.key = key;
     this.etag = etag;
+    this.options = options;
   }
 
   /**
    * Retrieves the Value of the state
-   * @return
+   * @return The value of the state
    */
   public T getValue() {
     return value;
@@ -45,7 +52,7 @@ public class StateKeyValue<T> {
 
   /**
    * Retrieves the Key of the state
-   * @return
+   * @return The key of the state
    */
   public String getKey() {
     return key;
@@ -53,10 +60,18 @@ public class StateKeyValue<T> {
 
   /**
    * Retrieve the ETag of this state
-   * @return
+   * @return The etag of the state
    */
   public String getEtag() {
     return etag;
+  }
+
+  /**
+   * Retrieve the Options used for saving the state
+   * @return The options to save the state
+   */
+  public StateOptions getOptions() {
+    return options;
   }
 
   @Override
@@ -69,6 +84,7 @@ public class StateKeyValue<T> {
     if (getValue() != null ? !getValue().equals(that.getValue()) : that.getValue() != null) return false;
     if (getKey() != null ? !getKey().equals(that.getKey()) : that.getKey() != null) return false;
     if (getEtag() != null ? !getEtag().equals(that.getEtag()) : that.getEtag() != null) return false;
+    if (getOptions() != null ? !getOptions().equals(that.getOptions()) : that.getOptions() != null) return false;
 
     return true;
   }
@@ -78,6 +94,7 @@ public class StateKeyValue<T> {
     int result = getValue() != null ? getValue().hashCode() : 0;
     result = 31 * result + (getKey() != null ? getKey().hashCode() : 0);
     result = 31 * result + (getEtag() != null ? getEtag().hashCode() : 0);
+    result = 31 * result + (getOptions() != null ? options.hashCode() : 0);
     return result;
   }
 
@@ -85,8 +102,9 @@ public class StateKeyValue<T> {
   public String toString() {
     return "StateKeyValue{" +
         "value=" + value +
-        ", key='" + key + '\'' +
-        ", etag='" + etag + '\'' +
-        '}';
+        ", key='" + key + "'" +
+        ", etag='" + etag + "'" +
+        ", options={'" + options.toString() + "}" +
+        "}";
   }
 }
