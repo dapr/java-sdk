@@ -257,7 +257,6 @@ public abstract class AbstractActor {
         return this.resetState()
                 .then(this.onDeactivate())
                 .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Deactivated"))
-                .then(this.saveState());
     }
 
     /**
