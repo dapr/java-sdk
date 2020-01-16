@@ -7,19 +7,20 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.0-SNAPSHOT</version>
   </parent>
 
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-springboot</artifactId>
   <packaging>jar</packaging>
-  <version>0.2.0</version>
+  <version>0.2.0-SNAPSHOT</version>
   <name>dapr-sdk-springboot</name>
 
   <properties>
     <java.version>8</java.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <dependencies>
@@ -41,12 +42,12 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>0.2.0</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>0.2.0</version>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
