@@ -129,11 +129,10 @@ public interface DaprClient {
    * Save/Update a list of states.
    *
    * @param states  the States to be saved.
-   * @param options the Options to use for each state.
    * @param <T>     the Type of the State.
    * @return a Mono plan of type Void.
    */
-  <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options);
+  <T> Mono<Void> saveStates(List<StateKeyValue<T>> states);
 
   /**
    * Save/Update a state.

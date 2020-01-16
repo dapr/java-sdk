@@ -185,7 +185,7 @@ public class DaprClientHttpAdapter implements DaprClient {
           .invokeAPI(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers)
           .flatMap(s -> {
             try {
-              return Mono.just(buildStateKeyValue(s, state.getKey(), clazz));
+              return Mono.just(buildStateKeyValue(s, state.getKey(), stateOptions, clazz));
             }catch (Exception ex){
               return Mono.error(ex);
             }
@@ -199,22 +199,21 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options) {
+  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states) {
     try {
       if (states == null || states.isEmpty()) {
         return Mono.empty();
       }
       final Map<String, String> headers = new HashMap<>();
       final String etag = states.stream().filter(state -> null != state.getEtag() && !state.getEtag().trim().isEmpty())
-          .findFirst().orElse(new StateKeyValue<>(null, null, null)).getEtag();
+          .findFirst().orElse(new StateKeyValue<>(null, null, null, null)).getEtag();
       if (etag != null && !etag.trim().isEmpty()) {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
       final String url = Constants.STATE_PATH;
-      Map<String, String> urlParameter = Optional.ofNullable(options).map(stateOptions -> stateOptions.getStateOptionsAsMap() ).orElse( new HashMap<>());
       byte[] serializedStateBody = objectSerializer.serialize(states);
       return this.client.invokeAPI(
-        DaprHttp.HttpMethods.POST.name(), url, urlParameter, serializedStateBody, headers).then();
+        DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -225,8 +224,8 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   @Override
   public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
-    StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
-    return saveStates(Arrays.asList(state), options);
+    StateKeyValue<T> state = new StateKeyValue<>(value, key, etag, options);
+    return saveStates(Arrays.asList(state));
   }
 
   /**
@@ -339,14 +338,14 @@ public class DaprClientHttpAdapter implements DaprClient {
    * @return             A StateKeyValue instance
    * @throws IOException If there's a issue deserialzing the response.
    */
-  private <T> StateKeyValue<T> buildStateKeyValue(DaprHttp.Response resonse, String requestedKey, Class<T> clazz) throws IOException {
+  private <T> StateKeyValue<T> buildStateKeyValue(DaprHttp.Response resonse, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
     T value = objectSerializer.deserialize(resonse.getBody(), clazz);
     String key = requestedKey;
     String etag = null;
     if (resonse.getHeaders() != null && resonse.getHeaders().containsKey("ETag")) {
       etag = objectSerializer.deserialize(resonse.getHeaders().get("ETag"), String.class);
     }
-    return new StateKeyValue<>(value, key, etag);
+    return new StateKeyValue<>(value, key, etag, stateOptions);
   }
 
 }
