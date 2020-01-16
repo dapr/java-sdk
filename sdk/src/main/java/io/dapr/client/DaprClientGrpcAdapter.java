@@ -183,7 +183,7 @@ class DaprClientGrpcAdapter implements DaprClient {
       ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
       return Mono.just(futureResponse).flatMap(f -> {
         try {
-          return Mono.just(buildStateKeyValue(f.get(), state.getKey(), clazz));
+          return Mono.just(buildStateKeyValue(f.get(), state.getKey(), stateOptions, clazz));
         } catch (Exception ex) {
           return Mono.error(ex);
         }
@@ -193,61 +193,22 @@ class DaprClientGrpcAdapter implements DaprClient {
     }
   }
 
-  private <T> StateKeyValue<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope resonse, String requestedKey, Class<T> clazz) throws IOException {
+  private <T> StateKeyValue<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope resonse, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
     T value = objectSerializer.deserialize(resonse.getData().getValue().toByteArray(), clazz);
     String etag = resonse.getEtag();
     String key = requestedKey;
-
-    return new StateKeyValue<>(value, key, etag);
+    return new StateKeyValue<>(value, key, etag, stateOptions);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states, StateOptions options) {
+  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states) {
     try {
-      DaprProtos.StateRequestOptions.Builder optionBuilder = null;
-      if (options != null) {
-        DaprProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
-        if (options.getRetryPolicy() != null) {
-          retryPolicyBuilder = DaprProtos.StateRetryPolicy.newBuilder();
-          StateOptions.RetryPolicy retryPolicy = options.getRetryPolicy();
-          if (options.getRetryPolicy().getInterval() != null) {
-            Duration.Builder durationBuilder = Duration.newBuilder()
-                .setNanos(retryPolicy.getInterval().getNano())
-                .setSeconds(retryPolicy.getInterval().getSeconds());
-            retryPolicyBuilder.setInterval(durationBuilder.build());
-          }
-          retryPolicyBuilder.setThreshold(objectSerializer.deserialize(retryPolicy.getThreshold(), int.class));
-          if (retryPolicy.getPattern() != null) {
-            retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
-          }
-        }
-
-        optionBuilder = DaprProtos.StateRequestOptions.newBuilder();
-        if (options.getConcurrency() != null) {
-          optionBuilder.setConcurrency(options.getConcurrency().getValue());
-        }
-        if (options.getConsistency() != null) {
-          optionBuilder.setConsistency(options.getConsistency().getValue());
-        }
-        if (retryPolicyBuilder != null) {
-          optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
-        }
-      }
       DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
       for (StateKeyValue state : states) {
-        byte[] byteState = objectSerializer.serialize(state.getValue());
-        Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteState)).build();
-        DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder()
-            .setEtag(state.getEtag())
-            .setKey(state.getKey())
-            .setValue(data);
-        if(optionBuilder != null) {
-          stateBuilder.setOptions(optionBuilder.build());
-        }
-        builder.addRequests(stateBuilder.build());
+        builder.addRequests(buildStateRequest(state).build());
       }
       DaprProtos.SaveStateEnvelope envelope = builder.build();
 
@@ -265,10 +226,53 @@ class DaprClientGrpcAdapter implements DaprClient {
     }
   }
 
+  private <T> DaprProtos.StateRequest.Builder buildStateRequest(StateKeyValue<T> state) throws IOException {
+    byte[] byteState = objectSerializer.serialize(state.getValue());
+    Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteState)).build();
+    DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder()
+        .setEtag(state.getEtag())
+        .setKey(state.getKey())
+        .setValue(data);
+    DaprProtos.StateRequestOptions.Builder optionBuilder = null;
+    if (state.getOptions() != null) {
+      StateOptions options = state.getOptions();
+      DaprProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
+      if (options.getRetryPolicy() != null) {
+        retryPolicyBuilder = DaprProtos.StateRetryPolicy.newBuilder();
+        StateOptions.RetryPolicy retryPolicy = options.getRetryPolicy();
+        if (options.getRetryPolicy().getInterval() != null) {
+          Duration.Builder durationBuilder = Duration.newBuilder()
+              .setNanos(retryPolicy.getInterval().getNano())
+              .setSeconds(retryPolicy.getInterval().getSeconds());
+          retryPolicyBuilder.setInterval(durationBuilder.build());
+        }
+        retryPolicyBuilder.setThreshold(objectSerializer.deserialize(retryPolicy.getThreshold(), int.class));
+        if (retryPolicy.getPattern() != null) {
+          retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
+        }
+      }
+
+      optionBuilder = DaprProtos.StateRequestOptions.newBuilder();
+      if (options.getConcurrency() != null) {
+        optionBuilder.setConcurrency(options.getConcurrency().getValue());
+      }
+      if (options.getConsistency() != null) {
+        optionBuilder.setConsistency(options.getConsistency().getValue());
+      }
+      if (retryPolicyBuilder != null) {
+        optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
+      }
+    }
+    if(optionBuilder != null) {
+      stateBuilder.setOptions(optionBuilder.build());
+    }
+    return stateBuilder;
+  }
+
   @Override
   public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
-    StateKeyValue<T> state = new StateKeyValue<>(value, key, etag);
-    return saveStates(Arrays.asList(state), options);
+    StateKeyValue<T> state = new StateKeyValue<>(value, key, etag, options);
+    return saveStates(Arrays.asList(state));
   }
 
   /**
