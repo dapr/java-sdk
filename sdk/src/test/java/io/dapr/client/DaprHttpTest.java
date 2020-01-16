@@ -175,18 +175,4 @@ public class DaprHttpTest {
 
     }
 
-    @Test
-    public void getHeadersAndStatus(){
-
-        mockInterceptor.addRule()
-                .post("http://localhost:3500/v1.0/state")
-                .respond(500, ResponseBody.create(MediaType.parse("application/json"),
-                        "{\"errorCode\":\"null\",\"message\":\"null\"}"));
-
-        DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
-
-        System.out.println(daprHttp);
-
-    }
-
 }
