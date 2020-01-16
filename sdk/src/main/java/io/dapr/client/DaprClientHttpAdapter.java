@@ -332,19 +332,19 @@ public class DaprClientHttpAdapter implements DaprClient {
 
   /**
    * Builds a StateKeyValue object based on the Response
-   * @param resonse      The response of the HTTP Call
+   * @param response      The response of the HTTP Call
    * @param requestedKey The Key Requested.
    * @param clazz        The Class of the Value of the state
    * @param <T>          The Type of the Value of the state
    * @return             A StateKeyValue instance
    * @throws IOException If there's a issue deserialzing the response.
    */
-  private <T> StateKeyValue<T> buildStateKeyValue(DaprHttp.Response resonse, String requestedKey, Class<T> clazz) throws IOException {
-    T value = objectSerializer.deserialize(resonse.getBody(), clazz);
+  private <T> StateKeyValue<T> buildStateKeyValue(DaprHttp.Response response, String requestedKey, Class<T> clazz) throws IOException {
+    T value = objectSerializer.deserialize(response.getBody(), clazz);
     String key = requestedKey;
     String etag = null;
-    if (resonse.getHeaders() != null && resonse.getHeaders().containsKey("ETag")) {
-      etag = objectSerializer.deserialize(resonse.getHeaders().get("ETag"), String.class);
+    if (response.getHeaders() != null && response.getHeaders().containsKey("ETag")) {
+      etag = objectSerializer.deserialize(response.getHeaders().get("ETag"), String.class);
     }
     return new StateKeyValue<>(value, key, etag);
   }
