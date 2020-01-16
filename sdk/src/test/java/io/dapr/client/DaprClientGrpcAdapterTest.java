@@ -879,18 +879,26 @@ public class DaprClientGrpcAdapterTest {
   private <T> StateKeyValue<T> buildStateKey(T value, String key, String etag, StateOptions options) {
     return new StateKeyValue(value, key, etag, options);
   }
-  /**   * <p>This test will execute the following flow:</p>
+
+  /**
+   * The purpose of this test is to show that it doesn't matter when the client is called, the actual coll to DAPR
+   * will be done when the output Mono response call the Mono.block method.
+   * Like for instanche if you call getState, withouth blocking for the response, and then call delete for the same state
+   * you just retrived but block for the delete response, when later you block for the response of the getState, you will
+   * not found the state.
+   * <p>This test will execute the following flow:</p>
    * <ol>
    *   <li>Exeucte client getState for Key=key1</li>
-   *   <li>Block result to the the state</li>
+   *   <li>Block for result to the the state</li>
    *   <li>Assert the Returned State is the expected to key1</li>
    *   <li>Execute client getState for Key=key2</li>
    *   <li>Execute client deleteState for Key=key2</li>
-   *   <li>Block deleteState call.</li>
-   *   <li>Block getState for Key=key2 and Assert they 2 was not found.</li>
+   *   <li>Block for deleteState call.</li>
+   *   <li>Block for getState for Key=key2 and Assert they 2 was not found.</li>
    * </ol>
    * @throws Exception
    */
+
   @Test
   public void getStateDeleteStateThenBlockDeleteThenBlockGet() throws Exception {
     String etag = "ETag1";
