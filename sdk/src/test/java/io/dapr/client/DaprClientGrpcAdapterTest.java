@@ -906,30 +906,30 @@ public class DaprClientGrpcAdapterTest {
     String expectedValue1 = "Expected state 1";
     String key2 = "key2";
     String expectedValue2 = "Expected state 2";
-    StateKeyValue<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, null);
+    State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, null);
     Map<String, SettableFuture<DaprProtos.GetStateResponseEnvelope>> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
     when(client.getState(argThat(new GetStateEnvelopeKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
-    StateKeyValue<String> keyRequest1 = buildStateKey(null, key1, etag, null);
-    Mono<StateKeyValue<String>> resultGet1 = adater.getState(keyRequest1, null, String.class);
+    State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
+    Mono<State<String>> resultGet1 = adater.getState(keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
-    StateKeyValue<String> keyRequest2 = buildStateKey(null, key2, etag, null);
-    Mono<StateKeyValue<String>> resultGet2 = adater.getState(keyRequest2, null, String.class);
+    State<String> keyRequest2 = buildStateKey(null, key2, etag, null);
+    Mono<State<String>> resultGet2 = adater.getState(keyRequest2, String.class);
 
     SettableFuture<Empty> settableFutureDelete = SettableFuture.create();
     MockCallback<Empty> callbackDelete = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFutureDelete, callbackDelete, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFutureDelete);
-    Mono<Void> resultDelete = adater.deleteState(keyRequest2, null);
+    Mono<Void> resultDelete = adater.deleteState(keyRequest2);
     settableFutureDelete.set(Empty.newBuilder().build());
     resultDelete.block();
     assertTrue(callbackDelete.wasCalled);
     futuresMap.replace(key2, null);
     when(client.getState(argThat(new GetStateEnvelopeKeyMatcher(key2)))).thenReturn(futuresMap.get(key2));
 
-    StateKeyValue<String> state2 = resultGet2.block();
+    State<String> state2 = resultGet2.block();
     assertNull(state2);
   }
 

@@ -176,7 +176,7 @@ class DaprClientGrpcAdapter implements DaprClient {
         } catch (NullPointerException npe) {
           return null;
         }
-        return buildStateKeyValue(response, state.getKey(), stateOptions, clazz);
+        return buildStateKeyValue(response, state.getKey(), state.getOptions(), clazz);
       });    } catch (Exception ex) {
       return Mono.error(ex);
     }
