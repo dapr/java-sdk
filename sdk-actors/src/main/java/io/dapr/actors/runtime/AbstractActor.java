@@ -279,8 +279,7 @@ public abstract class AbstractActor {
 
     return Mono.fromRunnable(() -> this.resetState())
       .then(this.onDeactivate())
-      .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Deactivated"))
-      .then(this.saveState());
+      .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Deactivated"));
   }
 
   /**
