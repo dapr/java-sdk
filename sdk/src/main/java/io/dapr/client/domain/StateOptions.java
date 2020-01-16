@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -73,13 +72,13 @@ public class StateOptions {
     return Collections.unmodifiableMap(Optional.ofNullable(mapOptions).orElse(Collections.EMPTY_MAP));
   }
 
-  public static enum Consistency {
+  public enum Consistency {
     EVENTUAL("eventual"),
     STRONG("strong");
 
     private final String value;
 
-    private Consistency(String value) {
+    Consistency(String value) {
       this.value = value;
     }
 
@@ -94,13 +93,13 @@ public class StateOptions {
     }
   }
 
-  public static enum Concurrency {
+  public enum Concurrency {
     FIRST_WRITE("first-write"),
     LAST_WRITE ("last-write");
 
     private final String value;
 
-    private Concurrency(String value) {
+    Concurrency(String value) {
       this.value = value;
     }
 
@@ -116,13 +115,13 @@ public class StateOptions {
   }
 
   public static class RetryPolicy {
-    public static enum Pattern {
+    public enum Pattern {
       LINEAR("linear"),
       EXPONENTIAL("exponential");
 
       private String value;
 
-      private Pattern(String value) {
+      Pattern(String value) {
         this.value = value;
       }
 
@@ -164,9 +163,7 @@ public class StateOptions {
   }
 
   public static class StateOptionDurationSerializer extends StdSerializer<Duration> {
-    public StateOptionDurationSerializer() {
-      this(Duration.class);
-    }
+
     public StateOptionDurationSerializer(Class<Duration> t) {
       super(t);
     }
@@ -187,9 +184,8 @@ public class StateOptions {
     }
 
     @Override
-    public Duration deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
-      String durationStr = null;
-      durationStr = jsonParser.readValueAs(String.class);
+    public Duration deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+      String durationStr = jsonParser.readValueAs(String.class);
       Duration duration = null;
       if (durationStr != null && !durationStr.trim().isEmpty()) {
         try {
