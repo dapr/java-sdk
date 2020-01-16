@@ -21,6 +21,10 @@ jobs:
     env:
       JDK_VER: 13.0.x
       DAPR_RUNTIME_VER: 0.3.0
+      OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
+      OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
+      GPG_KEY: ${{ secrets.GPG_KEY }}
+      GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
     - uses: actions/checkout@v1
     - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -52,3 +56,13 @@ jobs:
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
+    - name: Packaging jars
+      run: mvn package
+    - name: Import GPG private key
+      if: github.event_name != 'pull_request_REMOVELATER'
+      run: |
+        echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
+        gpg --import private-key.gpg
+    - name: deploy to OSSRH
+      if: github.event_name != 'pull_request_REMOVELATER'
+      run: mvn -V -B -s settings.xml deploy
