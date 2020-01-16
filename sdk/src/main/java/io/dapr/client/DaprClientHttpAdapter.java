@@ -342,8 +342,8 @@ public class DaprClientHttpAdapter implements DaprClient {
     T value = objectSerializer.deserialize(resonse.getBody(), clazz);
     String key = requestedKey;
     String etag = null;
-    if (resonse.getHeaders() != null && resonse.getHeaders().containsKey("ETag")) {
-      etag = objectSerializer.deserialize(resonse.getHeaders().get("ETag"), String.class);
+    if (resonse.getHeaders() != null && resonse.getHeaders().containsKey("Etag")) {
+      etag = objectSerializer.deserialize(resonse.getHeaders().get("Etag"), String.class);
     }
     return new StateKeyValue<>(value, key, etag, stateOptions);
   }
