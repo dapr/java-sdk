@@ -84,11 +84,6 @@ class DaprHttp {
   private final OkHttpClient httpClient;
 
   /**
-   * Thread-pool for HTTP calls.
-   */
-  private final ExecutorService pool;
-
-  /**
    * Creates a new instance of {@link DaprHttp}.
    *
    * @param port       Port for calling Dapr. (e.g. 3500)
@@ -97,7 +92,6 @@ class DaprHttp {
   DaprHttp(int port, OkHttpClient httpClient) {
     this.port = port;
     this.httpClient = httpClient;
-    this.pool = Executors.newWorkStealingPool();
   }
 
   /**
@@ -132,7 +126,7 @@ class DaprHttp {
    * @return Asynchronous text
    */
   public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
-    return Mono.fromFuture(CompletableFuture.supplyAsync(
+    return Mono.fromCallable(
         () -> {
           try {
             String requestId = UUID.randomUUID().toString();
@@ -185,12 +179,12 @@ class DaprHttp {
               response.headers().forEach(pair -> {
                 mapHeaders.put(pair.getFirst(), pair.getSecond());
               });
-              return new Response(result, mapHeaders, response.code());
+              return new Response(result.length > 0 ? result : null, mapHeaders, response.code());
             }
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
-        }, this.pool));
+        });
   }
 
   /**
