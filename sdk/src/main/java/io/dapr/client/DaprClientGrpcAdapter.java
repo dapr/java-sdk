@@ -170,15 +170,21 @@ class DaprClientGrpcAdapter implements DaprClient {
       DaprProtos.GetStateEnvelope envelope = builder.build();
       return Mono.fromCallable(() -> {
         ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
-        return buildStateKeyValue(futureResponse.get(), state.getKey(), clazz);      });
-    } catch (Exception ex) {
+        DaprProtos.GetStateResponseEnvelope response = null;
+        try {
+          response = futureResponse.get();
+        } catch (NullPointerException npe) {
+          return null;
+        }
+        return buildStateKeyValue(response, state.getKey(), clazz);
+      });    } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
-  private <T> StateKeyValue<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope resonse, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
-    T value = objectSerializer.deserialize(resonse.getData().getValue().toByteArray(), clazz);
-    String etag = resonse.getEtag();
+  private <T> StateKeyValue<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
+    T value = objectSerializer.deserialize(Optional.ofNullable(response.getData().getValue().toByteArray()).orElse(null), clazz);
+    String etag = response.getEtag();
     String key = requestedKey;
     return new StateKeyValue<>(value, key, etag, stateOptions);
   }

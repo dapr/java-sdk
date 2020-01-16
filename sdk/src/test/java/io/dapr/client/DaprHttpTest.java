@@ -187,6 +187,19 @@ public class DaprHttpTest {
         System.out.println(daprHttp);
     }
 
+    /**
+     * <p>This test will execute the following flow:</p>
+     * <ol>
+     *   <li>Exeucte client getState for Key=key1</li>
+     *   <li>Block result to the the state</li>
+     *   <li>Assert the Returned State is the expected to key1</li>
+     *   <li>Execute client getState for Key=key2</li>
+     *   <li>Execute client deleteState for Key=key2</li>
+     *   <li>Block deleteState call.</li>
+     *   <li>Block getState for Key=key2 and Assert they 2 was not found.</li>
+     * </ol>
+     * @throws Exception
+     */
     @Test ()
     public void testCallbackCalledAtTheExpectedTimeTest() throws IOException {
         String deletedStateKey = "deletedKey";
