@@ -11,7 +11,7 @@ import com.google.protobuf.Duration;
 import com.google.protobuf.Empty;
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
-import io.dapr.client.domain.StateKeyValue;
+import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.utils.ObjectSerializer;
@@ -159,12 +159,12 @@ class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<StateKeyValue<T>> getState(StateKeyValue<T> state, StateOptions stateOptions, Class<T> clazz) {
+  public <T> Mono<State<T>> getState(State<T> state, Class<T> clazz) {
     try {
       DaprProtos.GetStateEnvelope.Builder builder = DaprProtos.GetStateEnvelope.newBuilder()
           .setKey(state.getKey());
-      if (stateOptions != null && stateOptions.getConsistency() != null) {
-        builder.setConsistency(stateOptions.getConsistency().getValue());
+      if (state.getOptions() != null && state.getOptions().getConsistency() != null) {
+        builder.setConsistency(state.getOptions().getConsistency().getValue());
       }
 
       DaprProtos.GetStateEnvelope envelope = builder.build();
@@ -182,21 +182,21 @@ class DaprClientGrpcAdapter implements DaprClient {
     }
   }
 
-  private <T> StateKeyValue<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
+  private <T> State<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
     T value = objectSerializer.deserialize(Optional.ofNullable(response.getData().getValue().toByteArray()).orElse(null), clazz);
     String etag = response.getEtag();
     String key = requestedKey;
-    return new StateKeyValue<>(value, key, etag, stateOptions);
+    return new State<>(value, key, etag, stateOptions);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states) {
+  public <T> Mono<Void> saveStates(List<State<T>> states) {
     try {
       DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
-      for (StateKeyValue state : states) {
+      for (State state : states) {
         builder.addRequests(buildStateRequest(state).build());      }
       DaprProtos.SaveStateEnvelope envelope = builder.build();
 
@@ -214,7 +214,7 @@ class DaprClientGrpcAdapter implements DaprClient {
     }
   }
 
-  private <T> DaprProtos.StateRequest.Builder buildStateRequest(StateKeyValue<T> state) throws IOException {
+  private <T> DaprProtos.StateRequest.Builder buildStateRequest(State<T> state) throws IOException {
     byte[] byteState = objectSerializer.serialize(state.getValue());
     Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteState)).build();
     DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder()
@@ -259,19 +259,18 @@ class DaprClientGrpcAdapter implements DaprClient {
 
   @Override
   public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
-    StateKeyValue<T> state = new StateKeyValue<>(value, key, etag, options);
+    State<T> state = new State<>(value, key, etag, options);
     return saveStates(Arrays.asList(state));
   }
 
   /**
-   * if stateOptions param is passed it will overrside state.options.
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
+  public <T> Mono<Void> deleteState(State<T> state) {
     try {
       DaprProtos.StateOptions.Builder optionBuilder = null;
-
+      StateOptions options = state.getOptions();
       if (options != null) {
         optionBuilder = DaprProtos.StateOptions.newBuilder();
         DaprProtos.RetryPolicy.Builder retryPolicyBuilder = null;

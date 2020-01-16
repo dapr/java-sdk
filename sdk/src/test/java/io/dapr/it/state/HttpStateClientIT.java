@@ -7,7 +7,7 @@ package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.StateKeyValue;
+import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.services.EmptyService;
@@ -53,10 +53,10 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
     //create of the deferred call to DAPR to get the state
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue(null, stateKey, null, null), null, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, null), MyData.class);
 
     //retrieve the state
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     //Assert that the response is the correct one
     Assert.assertNotNull(myDataResponse.getEtag());
@@ -93,9 +93,9 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the action
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //execute the retrieve of the state
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     //review that the update was success action
     Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
@@ -120,21 +120,21 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //execute the retrieve of the state
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     //review that the state was saved correctly
     Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //create deferred action to delete the state
-    Mono<Void> deleteResponse = daprClient.deleteState(new StateKeyValue<MyData>(null, stateKey, null, null), null);
+    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, null, null));
     //execute the delete action
     deleteResponse.block();
 
     //Create deferred action to retrieve the state
-    response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //execute the retrieve of the state
     myDataResponse = response.block();
 
@@ -160,9 +160,9 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //execute the action for retrieve the state and the etag
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     //review that the etag is not empty
     Assert.assertNotNull(myDataResponse.getEtag());
@@ -181,7 +181,7 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
 
-    response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //retrive the data wihout any etag
     myDataResponse = response.block();
 
@@ -213,9 +213,9 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //execute the action for retrieve the state and the etag
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     //review that the etag is not empty
     Assert.assertNotNull(myDataResponse.getEtag());
@@ -234,7 +234,7 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
 
-    response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //retrive the data wihout any etag
     myDataResponse = response.block();
 
@@ -263,9 +263,9 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to get the state with the etag
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //execute the get state
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     Assert.assertNotNull(myDataResponse.getEtag());
     Assert.assertNotNull(myDataResponse.getKey());
@@ -274,12 +274,12 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the etag
-    Mono<Void> deleteResponse = daprClient.deleteState(new StateKeyValue<MyData>(null, stateKey, myDataResponse.getEtag(), null), null);
+    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, myDataResponse.getEtag(), null));
     //execute the delete of the state
     deleteResponse.block();
 
     //Create deferred action to get the sate without an etag
-    response = daprClient.getState(new StateKeyValue(null, stateKey, null, null), null, MyData.class);
+    response = daprClient.getState(new State(stateKey, null, null), MyData.class);
     myDataResponse = response.block();
 
     //Review that the response is null, because the state was deleted
@@ -303,9 +303,9 @@ public class HttpStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to get the state with the etag
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue<MyData>(null, stateKey, null, null), null, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
     //execute the get state
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     Assert.assertNotNull(myDataResponse.getEtag());
     Assert.assertNotNull(myDataResponse.getKey());
@@ -314,12 +314,12 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the incorrect etag
-    Mono<Void> deleteResponse = daprClient.deleteState(new StateKeyValue<MyData>(null, stateKey, "99999999999", null), null);
+    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, "99999999999", null));
     //execute the delete of the state, this should trhow an exception
     deleteResponse.block();
 
     //Create deferred action to get the sate without an etag
-    response = daprClient.getState(new StateKeyValue(null, stateKey, null, null), null, MyData.class);
+    response = daprClient.getState(new State(stateKey, null, null), MyData.class);
     myDataResponse = response.block();
 
     //Review that the response is null, because the state was deleted
@@ -347,9 +347,9 @@ public class HttpStateClientIT extends BaseIT {
 
 
     //crate deferred action to retrieve the state
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue(null, stateKey, null, stateOptions), stateOptions, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
     //execute the retrieve of the state using options
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     Assert.assertNotNull(myDataResponse.getEtag());
     Assert.assertNotNull(myDataResponse.getKey());
@@ -373,8 +373,8 @@ public class HttpStateClientIT extends BaseIT {
     //throws an exception, the state was already udpated
     saveResponse.block();
 
-    response = daprClient.getState(new StateKeyValue(null, stateKey, null, null), stateOptions, MyData.class);
-    StateKeyValue<MyData> myLastDataResponse = response.block();
+    response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
+    State<MyData> myLastDataResponse = response.block();
 
     Assert.assertNotNull(myLastDataResponse.getEtag());
     Assert.assertNotNull(myLastDataResponse.getKey());
@@ -405,9 +405,9 @@ public class HttpStateClientIT extends BaseIT {
 
 
     //crate deferred action to retrieve the state
-    Mono<StateKeyValue<MyData>> response = daprClient.getState(new StateKeyValue(null, stateKey, null, stateOptions), stateOptions, MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
     //execute the retrieve of the state using options
-    StateKeyValue<MyData> myDataResponse = response.block();
+    State<MyData> myDataResponse = response.block();
 
     Assert.assertNotNull(myDataResponse.getEtag());
     Assert.assertNotNull(myDataResponse.getKey());
@@ -431,8 +431,8 @@ public class HttpStateClientIT extends BaseIT {
     //update the state without an error
     saveResponse.block();
 
-    response = daprClient.getState(new StateKeyValue(null, stateKey, null, null), stateOptions, MyData.class);
-    StateKeyValue<MyData> myLastDataResponse = response.block();
+    response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
+    State<MyData> myLastDataResponse = response.block();
 
     Assert.assertNotNull(myLastDataResponse.getEtag());
     Assert.assertNotNull(myLastDataResponse.getKey());

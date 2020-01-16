@@ -7,7 +7,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
-import io.dapr.client.domain.StateKeyValue;
+import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.utils.ObjectSerializer;
@@ -468,8 +468,8 @@ public class DaprClientGrpcAdapterTest {
   @Test(expected = RuntimeException.class)
   public void getStateExceptionThrownTest() {
     when(client.getState(any(io.dapr.DaprProtos.GetStateEnvelope.class))).thenThrow(RuntimeException.class);
-    StateKeyValue<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<StateKeyValue<String>> result = adater.getState(key, null, String.class);
+    State<String> key = buildStateKey(null, "Key1", "ETag1", null);
+    Mono<State<String>> result = adater.getState(key, String.class);
     result.block();
   }
 
@@ -482,8 +482,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.getState(any(io.dapr.DaprProtos.GetStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<StateKeyValue<String>> result = adater.getState(key, null, String.class);
+    State<String> key = buildStateKey(null, "Key1", "ETag1", null);
+    Mono<State<String>> result = adater.getState(key, String.class);
     settableFuture.setException(ex);
     result.block();
   }
@@ -493,15 +493,15 @@ public class DaprClientGrpcAdapterTest {
     String etag = "ETag1";
     String key = "key1";
     String expectedValue = "Expected state";
-    StateKeyValue<String> expectedState = buildStateKey(expectedValue, key, etag, null);
+    State<String> expectedState = buildStateKey(expectedValue, key, etag, null);
     DaprProtos.GetStateResponseEnvelope responseEnvelope = buildGetStateResponseEnvelope(expectedValue, etag);
     SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
     MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
     when(client.getState(any(io.dapr.DaprProtos.GetStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> keyRequest = buildStateKey(null, key, etag, null);
-    Mono<StateKeyValue<String>> result = adater.getState(keyRequest, null, String.class);
+    State<String> keyRequest = buildStateKey(null, key, etag, null);
+    Mono<State<String>> result = adater.getState(keyRequest, String.class);
     settableFuture.set(responseEnvelope);
     assertEquals(expectedState, result.block());
   }
@@ -513,18 +513,18 @@ public class DaprClientGrpcAdapterTest {
     MyObject expectedValue = new MyObject(1, "The Value");
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
         Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
-    StateKeyValue<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
     DaprProtos.GetStateResponseEnvelope responseEnvelope = DaprProtos.GetStateResponseEnvelope.newBuilder()
         .setData(getAny(expectedValue))
         .setEtag(etag)
         .build();
-    StateKeyValue<MyObject> keyRequest = buildStateKey(null, key, etag, options);
+    State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
     SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
     MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
     when(client.getState(any(io.dapr.DaprProtos.GetStateEnvelope.class)))
         .thenReturn(settableFuture);
-    Mono<StateKeyValue<MyObject>> result = adater.getState(keyRequest, options, MyObject.class);
+    Mono<State<MyObject>> result = adater.getState(keyRequest, MyObject.class);
     settableFuture.set(responseEnvelope);
     assertEquals(expectedState, result.block());
   }
@@ -536,18 +536,18 @@ public class DaprClientGrpcAdapterTest {
     MyObject expectedValue = new MyObject(1, "The Value");
     StateOptions options = new StateOptions(null, StateOptions.Concurrency.FIRST_WRITE,
         new StateOptions.RetryPolicy(Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR));
-    StateKeyValue<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
     DaprProtos.GetStateResponseEnvelope responseEnvelope = DaprProtos.GetStateResponseEnvelope.newBuilder()
         .setData(getAny(expectedValue))
         .setEtag(etag)
         .build();
-    StateKeyValue<MyObject> keyRequest = buildStateKey(null, key, etag, options);
+    State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
     SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
     MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
     when(client.getState(any(io.dapr.DaprProtos.GetStateEnvelope.class)))
         .thenReturn(settableFuture);
-    Mono<StateKeyValue<MyObject>> result = adater.getState(keyRequest, options, MyObject.class);
+    Mono<State<MyObject>> result = adater.getState(keyRequest, MyObject.class);
     settableFuture.set(responseEnvelope);
     assertEquals(expectedState, result.block());
   }
@@ -555,8 +555,8 @@ public class DaprClientGrpcAdapterTest {
   @Test(expected = RuntimeException.class)
   public void deleteStateExceptionThrowTest() {
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class))).thenThrow(RuntimeException.class);
-    StateKeyValue<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<Void> result = adater.deleteState(key, null);
+    State<String> key = buildStateKey(null, "Key1", "ETag1", null);
+    Mono<Void> result = adater.deleteState(key);
     result.block();
   }
 
@@ -569,8 +569,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<Void> result = adater.deleteState(key, null);
+    State<String> key = buildStateKey(null, "Key1", "ETag1", null);
+    Mono<Void> result = adater.deleteState(key);
     settableFuture.setException(ex);
     result.block();
   }
@@ -584,8 +584,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, null);
-    Mono<Void> result = adater.deleteState(stateKey, null);
+    State<String> stateKey = buildStateKey(null, key, etag, null);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -602,8 +602,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adater.deleteState(stateKey, options);
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -620,8 +620,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adater.deleteState(stateKey, options);
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -638,8 +638,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adater.deleteState(stateKey, options);
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -656,8 +656,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adater.deleteState(stateKey, options);
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -674,8 +674,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adater.deleteState(stateKey, options);
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -692,8 +692,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adater.deleteState(stateKey, options);
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -710,8 +710,8 @@ public class DaprClientGrpcAdapterTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.deleteState(any(io.dapr.DaprProtos.DeleteStateEnvelope.class)))
         .thenReturn(settableFuture);
-    StateKeyValue<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adater.deleteState(stateKey, options);
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    Mono<Void> result = adater.deleteState(stateKey);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -876,8 +876,8 @@ public class DaprClientGrpcAdapterTest {
     assertTrue(callback.wasCalled);
   }
 
-  private <T> StateKeyValue<T> buildStateKey(T value, String key, String etag, StateOptions options) {
-    return new StateKeyValue(value, key, etag, options);
+  private <T> State<T> buildStateKey(T value, String key, String etag, StateOptions options) {
+    return new State(value, key, etag, options);
   }
 
   /**
