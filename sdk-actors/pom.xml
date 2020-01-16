@@ -46,6 +46,7 @@
 
   <properties>
     <skipITs>true</skipITs>
+    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
   <build>
     <plugins>
