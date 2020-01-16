@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for Actor Manager
@@ -66,7 +68,7 @@ public class ActorManagerTest {
         2,
         Duration.ofSeconds(1),
         Duration.ofSeconds(1)
-      );
+      ).block();
     }
 
     @Override
@@ -129,15 +131,15 @@ public class ActorManagerTest {
   @Test
   public void activateThenInvokeReminder() throws Exception {
     ActorId actorId = newActorId();
-    this.manager.activateActor(actorId);
+    this.manager.activateActor(actorId).block();
     this.manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void activateDeactivateThenInvokeReminder() throws Exception {
     ActorId actorId = newActorId();
-    this.manager.activateActor(actorId);
-    this.manager.deactivateActor(actorId);
+    this.manager.activateActor(actorId).block();
+    this.manager.deactivateActor(actorId).block();;
     this.manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
   }
 
@@ -189,12 +191,19 @@ public class ActorManagerTest {
   }
 
   private static <T extends AbstractActor> ActorRuntimeContext createContext(Class<T> clazz) {
+    DaprClient daprClient = mock(DaprClient.class);
+
+    when(daprClient.registerActorTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerActorReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterActorTimer(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterActorReminder(any(), any(), any())).thenReturn(Mono.empty());
+
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
       new ActorStateSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(clazz),
-      mock(DaprClient.class),
+      daprClient,
       mock(DaprStateAsyncProvider.class)
     );
   }

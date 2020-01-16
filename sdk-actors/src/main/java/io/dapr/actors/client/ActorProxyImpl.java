@@ -33,7 +33,7 @@ class ActorProxyImpl implements ActorProxy {
     private final DaprClient daprClient;
 
     /**
-     * Creates a new instance of {@link ActorProxyAsyncClient}.
+     * Creates a new instance of {@link ActorProxyImpl}.
      *
      * @param actorType  actor implementation type of the actor associated with the proxy object.
      * @param actorId    The actorId associated with the proxy
@@ -127,7 +127,7 @@ class ActorProxyImpl implements ActorProxy {
      * @return Response object, null or RuntimeException.
      */
     private <T> T unwrap(final String response, Class<T> clazz) {
-        return this.serializer.unwrapMethodResponse(response, clazz);
+        return this.serializer.unwrapData(response, clazz);
     }
 
     /**
@@ -139,7 +139,7 @@ class ActorProxyImpl implements ActorProxy {
      * @throws IOException In case it cannot generate String.
      */
     private <T> String wrap(final T request) throws IOException {
-        return this.serializer.wrapMethodRequest(request);
+        return this.serializer.wrapData(request);
     }
 
 }
