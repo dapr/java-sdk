@@ -69,7 +69,7 @@ jobs:
       if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
       run: echo "##[set-env name=DEPLOY_OSSRH;]true"
     - name: Publish to ossrh
-      if: env.DEPLOY_OSSRH == "true"
+      if: env.DEPLOY_OSSRH == 'true'
       run: |
         echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
         export GPG_TTY=$(tty)
