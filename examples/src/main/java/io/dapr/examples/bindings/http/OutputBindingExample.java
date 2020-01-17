@@ -35,13 +35,13 @@ public class OutputBindingExample {
     myClass.message = "hello";
 
     System.out.println("sending first message");
-    client.invokeBinding(BINDING_NAME, myClass);
+    client.invokeBinding(BINDING_NAME, myClass).block();
 
     // This is an example of sending a plain string.  The input binding will receive
     //   cat
     final String m = "cat";
     System.out.println("sending " + m);
-    client.invokeBinding(BINDING_NAME, m);
+    client.invokeBinding(BINDING_NAME, m).block();
 
     try {
       Thread.sleep((long) (10000 * Math.random()));
