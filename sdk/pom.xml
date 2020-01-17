@@ -16,6 +16,17 @@
   <name>dapr-sdk</name>
   <description>SDK for Dapr</description>
   
+  <repositories>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>libs-release</name>
+      <url>https://repo.spring.io/libs-release</url>
+    </repository>
+  </repositories>
+
   <properties>
     <skipITs>true</skipITs>
     <maven.deploy.skip>false</maven.deploy.skip>
@@ -76,7 +87,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  
+
   <build>
     <plugins>
       <plugin>
