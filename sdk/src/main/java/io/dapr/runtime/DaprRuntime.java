@@ -7,6 +7,7 @@ package io.dapr.runtime;
 
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -21,6 +22,13 @@ public interface DaprRuntime {
    * @param listener Callback to be executed on a given message.
    */
   void subscribeToTopic(String topic, TopicListener listener);
+
+  /**
+   * Serializes the list of subscribed topics as a String.
+   * @return Serialized list of subscribed topics.
+   * @throws IOException If cannot serialize.
+   */
+  String serializeSubscribedTopicList() throws IOException;
 
   /**
    * Returns the collection of subscribed topics.
