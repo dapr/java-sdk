@@ -608,11 +608,11 @@ public class ActorStatefulTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          context.getActorSerializer().unwrapData(
-            invocationOnMock.getArgument(3, String.class), String.class))
+          toStringOrNull(context.getActorSerializer().unwrapData(
+            invocationOnMock.getArgument(3, String.class))))
           .map(s -> {
             try {
-              return context.getActorSerializer().wrapData(s);
+              return context.getActorSerializer().wrapData(s.getBytes());
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
@@ -630,6 +630,14 @@ public class ActorStatefulTest {
   private String createReminderParams(String data) throws IOException {
     ActorReminderParams params = new ActorReminderParams(data, Duration.ofSeconds(1), Duration.ofSeconds(1));
     return this.context.getActorSerializer().serializeString(params);
+  }
+
+  private static String toStringOrNull(byte[] s) {
+    if (s == null) {
+      return null;
+    }
+
+    return new String(s);
   }
 
   private static ActorId newActorId() {

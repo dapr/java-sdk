@@ -5,32 +5,18 @@
 
 package io.dapr.springboot;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.runtime.Dapr;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
  * SpringBoot Controller to handle callback APIs for Dapr.
- * TODO: use POJOs instead of String when possible.
- * TODO: JavaDocs.
  */
 @RestController
 public class DaprController {
-
-  private static final JsonFactory JSON_FACTORY = new JsonFactory();
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @GetMapping("/")
   public String index() {
@@ -39,35 +25,12 @@ public class DaprController {
 
   @GetMapping("/dapr/config")
   public String daprConfig() throws Exception {
-    try (Writer writer = new StringWriter()) {
-      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
-      generator.writeStartObject();
-      generator.writeArrayFieldStart("entities");
-      for (String actorClass : ActorRuntime.getInstance().getRegisteredActorTypes()) {
-        generator.writeString(actorClass);
-      }
-      generator.writeEndArray();
-      // TODO: handle configuration.
-      generator.writeEndObject();
-      generator.close();
-      writer.flush();
-      return writer.toString();
-    }
+    return ActorRuntime.getInstance().serializeConfig();
   }
 
   @GetMapping("/dapr/subscribe")
   public String daprSubscribe() throws Exception {
-    try (Writer writer = new StringWriter()) {
-      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
-      generator.writeStartArray();
-      for (String topic : Dapr.getInstance().getSubscribedTopics()) {
-        generator.writeString(topic);
-      }
-      generator.writeEndArray();
-      generator.close();
-      writer.flush();
-      return writer.toString();
-    }
+    return Dapr.getInstance().serializeSubscribedTopicList();
   }
 
   @PostMapping(path = "/{name}")
@@ -97,12 +60,7 @@ public class DaprController {
                                         @PathVariable("id") String id,
                                         @PathVariable("method") String method,
                                         @RequestBody(required = false) String body) {
-    try {
-      String data = findMethodData(body);
-      return ActorRuntime.getInstance().invoke(type, id, method, data).map(r -> buildResponse(r));
-    } catch (Exception e) {
-      return Mono.error(e);
-    }
+    return ActorRuntime.getInstance().invoke(type, id, method, body);
   }
 
   @PutMapping(path = "/actors/{type}/{id}/method/timer/{timer}")
@@ -120,40 +78,4 @@ public class DaprController {
     return ActorRuntime.getInstance().invokeReminder(type, id, reminder, body);
   }
 
-  private static String findMethodData(String body) throws IOException {
-    if (body == null) {
-      return null;
-    }
-
-    JsonNode root = OBJECT_MAPPER.readTree(body);
-    if (root == null) {
-      return null;
-    }
-
-    JsonNode dataNode = root.get("data");
-    if (dataNode == null) {
-      return null;
-    }
-
-    return new String(dataNode.binaryValue(), StandardCharsets.UTF_8);
-  }
-
-  private static String buildResponse(String data) throws RuntimeException {
-    try {
-      try (Writer writer = new StringWriter()) {
-        JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
-        generator.writeStartObject();
-        if (data != null) {
-          generator.writeBinaryField("data", data.getBytes());
-        }
-        generator.writeEndObject();
-        generator.close();
-        writer.flush();
-        return writer.toString();
-      }
-    } catch (IOException e) {
-      // Make Mono happy.
-      throw new RuntimeException(e);
-    }
-  }
 }
