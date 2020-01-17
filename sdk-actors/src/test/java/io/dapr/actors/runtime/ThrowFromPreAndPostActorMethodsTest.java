@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ThrowFromPreAndPostActorMethods {
+public class ThrowFromPreAndPostActorMethodsTest {
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
   private final ActorRuntimeContext context = createContext();
