@@ -63,7 +63,7 @@ jobs:
         PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
         echo "##[set-env name=PARENT_VERSION;]$PARENT_VERSION"
     - name: Is SNAPSHOT release ?
-      if: contains(github.ref, "master") && contains(env.PARENT_VERSION, '-SNAPSHOT')
+      if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
       run: echo "##[set-env name=DEPLOY_OSSRH;]true"
     - name: Is Release or RC version ?
       if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
