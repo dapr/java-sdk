@@ -13,8 +13,9 @@
   <artifactId>dapr-sdk-actors</artifactId>
   <packaging>jar</packaging>
   <version>0.2.0-SNAPSHOT</version>
-  <name>dapr-sdk</name>
+  <name>dapr-sdk-actors</name>
   <description>SDK for Actors on Dapr</description>
+
   <repositories>
     <repository>
       <snapshots>
@@ -25,6 +26,11 @@
       <url>https://repo.spring.io/libs-release</url>
     </repository>
   </repositories>
+
+  <properties>
+    <skipITs>true</skipITs>
+    <maven.deploy.skip>false</maven.deploy.skip>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -44,10 +50,6 @@
     </dependency>
   </dependencies>
 
-  <properties>
-    <skipITs>true</skipITs>
-    <maven.deploy.skip>false</maven.deploy.skip>
-  </properties>
   <build>
     <plugins>
       <plugin>

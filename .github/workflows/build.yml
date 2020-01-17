@@ -62,7 +62,10 @@ jobs:
       if: github.event_name != 'pull_request'
       run: |
         echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
-        gpg --import private-key.gpg
+        export GPG_TTY=$(tty)
+        gpg --batch --import private-key.gpg
     - name: deploy to OSSRH
       if: github.event_name != 'pull_request'
-      run: mvn -V -B -s settings.xml deploy
+      run: |
+        export GPG_TTY=$(tty)
+        mvn -V -B -Dgpg.skip=false -s settings.xml deploy
