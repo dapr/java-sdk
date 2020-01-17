@@ -13,7 +13,7 @@
   <artifactId>dapr-sdk-actors</artifactId>
   <packaging>jar</packaging>
   <version>0.2.0-SNAPSHOT</version>
-  <name>dapr-sdk</name>
+  <name>dapr-actors</name>
   <description>SDK for Actors on Dapr</description>
 
   <repositories>
