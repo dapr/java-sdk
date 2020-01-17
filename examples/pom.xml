@@ -84,7 +84,7 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-springboot</artifactId>
+      <artifactId>dapr-sdk-actors</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

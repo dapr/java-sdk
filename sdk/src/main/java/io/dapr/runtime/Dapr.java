@@ -9,6 +9,8 @@ import io.dapr.client.domain.CloudEventEnvelope;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -56,6 +58,14 @@ public final class Dapr implements DaprRuntime {
     }
 
     return instance;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public String serializeSubscribedTopicList() throws IOException {
+    return new String(this.serializer.serialize(this.getSubscribedTopics()), StandardCharsets.UTF_8);
   }
 
   /**

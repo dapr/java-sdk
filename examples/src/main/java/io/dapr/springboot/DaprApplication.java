@@ -8,10 +8,8 @@ package io.dapr.springboot;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.util.Properties;
-
 /**
- * Dapr's callback implementation via SpringBoot.
+ * Dapr's HTTP callback implementation via SpringBoot.
  */
 @SpringBootApplication
 public class DaprApplication {
@@ -22,18 +20,7 @@ public class DaprApplication {
    */
   public static void start(int port) {
     SpringApplication app = new SpringApplication(DaprApplication.class);
-    Properties properties = new Properties();
-    properties.setProperty("server.port", Integer.toString(port));
-    app.setDefaultProperties(properties);
-    app.run();
-  }
-
-  /**
-   * Main for SpringBoot requirements.
-   * @param args Command line arguments.
-   */
-  public static void main(String[] args) {
-    DaprApplication.start(3000);
+    app.run(String.format("--server.port=%d", port));
   }
 
 }
