@@ -184,11 +184,11 @@ public class ActorNoStateTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          context.getActorSerializer().unwrapData(
-            invocationOnMock.getArgument(3, String.class), String.class))
+          Utilities.toStringOrNull(context.getActorSerializer().unwrapData(
+            invocationOnMock.getArgument(3, String.class))))
           .map(s -> {
             try {
-              return context.getActorSerializer().wrapData(s);
+              return context.getActorSerializer().wrapData(s.getBytes());
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
