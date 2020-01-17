@@ -34,7 +34,7 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Actor, Re
       "clock",
       "ping!",
       Duration.ofSeconds(2),
-      Duration.ofSeconds(1));
+      Duration.ofSeconds(1)).block();
   }
 
   @Override
