@@ -133,11 +133,11 @@ public class DaprClientHttpAdapterTest {
   public void invokeService() {
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
-      .respond(EXPECTED_RESULT);
+      .respond("\"hello world\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     Mono<String> mono = daprClientHttpAdapter.invokeService(Verb.GET, "41", "neworder", null, null, String.class);
-    assertEquals(mono.block(), EXPECTED_RESULT);
+    assertEquals("hello world", mono.block());
   }
 
   @Test
@@ -148,8 +148,8 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<String> mono = daprClientHttpAdapter.invokeService(Verb.GET, "41", "neworder", null, String.class);
-    assertEquals(mono.block(), EXPECTED_RESULT);
+    Mono<byte[]> mono = daprClientHttpAdapter.invokeService(Verb.GET, "41", "neworder", null, byte[].class);
+    assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
   @Test
@@ -221,7 +221,7 @@ public class DaprClientHttpAdapterTest {
     State<String> stateKeyNull = new State("value", null, "etag", stateOptions);
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/state/key")
-      .respond(EXPECTED_RESULT);
+      .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     assertThrows(IllegalArgumentException.class, () -> {
@@ -236,7 +236,7 @@ public class DaprClientHttpAdapterTest {
     State<String> stateEmptyEtag = new State("value", "key", "", null);
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/state/key")
-      .respond(EXPECTED_RESULT);
+      .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     Mono<State<String>> monoEmptyEtag = daprClientHttpAdapter.getState(stateEmptyEtag, String.class);
@@ -248,7 +248,7 @@ public class DaprClientHttpAdapterTest {
     State<String> stateNullEtag = new State("value", "key", null, null);
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/state/key")
-      .respond(EXPECTED_RESULT);
+      .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     Mono<State<String>> monoNullEtag = daprClientHttpAdapter.getState(stateNullEtag, String.class);

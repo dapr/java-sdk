@@ -5,7 +5,7 @@
 
 package io.dapr.runtime;
 
-import io.dapr.client.domain.CloudEventEnvelope;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
@@ -227,7 +227,7 @@ public final class Dapr implements DaprRuntime {
     @Override
     public Mono<byte[]> apply(HandleRequest r) {
       try {
-        CloudEventEnvelope message = this.serializer.deserialize(r.payload, CloudEventEnvelope.class);
+        CloudEvent message = this.serializer.deserialize(r.payload, CloudEvent.class);
         if (message == null) {
           return Mono.empty();
         }

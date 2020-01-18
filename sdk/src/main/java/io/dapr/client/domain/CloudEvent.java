@@ -5,13 +5,25 @@
 
 package io.dapr.client.domain;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
 import java.util.Objects;
 
 /**
  * A cloud event in Dapr.
  */
-public final class CloudEventEnvelope {
+public final class CloudEvent {
+
+  /**
+   * Shared Json serializer/deserializer as per Jackson's documentation.
+   */
+  protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   /**
    * Identifier of the message being processed.
@@ -39,9 +51,9 @@ public final class CloudEventEnvelope {
   private final String datacontenttype;
 
   /**
-   * Raw input payload.
+   * Cloud event specs says data can be a JSON object or string.
    */
-  private final byte[] data;
+  private final String data;
 
   /**
    * Instantiates a new input request.
@@ -52,13 +64,13 @@ public final class CloudEventEnvelope {
    * @param datacontenttype Type of the payload.
    * @param data Payload.
    */
-  public CloudEventEnvelope(
+  public CloudEvent(
     String id,
     String source,
     String type,
     String specversion,
     String datacontenttype,
-    byte[] data) {
+    String data) {
     this.id = id;
     this.source = source;
     this.type = type;
@@ -111,7 +123,7 @@ public final class CloudEventEnvelope {
    * Gets the payload
    * @return Payload
    */
-  public byte[] getData() {
+  public String getData() {
     return data;
   }
 
@@ -119,19 +131,72 @@ public final class CloudEventEnvelope {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    CloudEventEnvelope that = (CloudEventEnvelope) o;
+    CloudEvent that = (CloudEvent) o;
     return Objects.equals(id, that.id) &&
       Objects.equals(source, that.source) &&
       Objects.equals(type, that.type) &&
       Objects.equals(specversion, that.specversion) &&
       Objects.equals(datacontenttype, that.datacontenttype) &&
-      Arrays.equals(data, that.data);
+      Objects.equals(data, that.data);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(id, source, type, specversion, datacontenttype);
-    result = 31 * result + Arrays.hashCode(data);
-    return result;
+    return Objects.hash(id, source, type, specversion, datacontenttype, data);
+  }
+
+  /**
+   * Deserialized a message topic from Dapr.
+   * @param payload Payload sent from Dapr.
+   * @return Message (can be null if input is null)
+   * @throws IOException If cannot parse.
+   */
+  public static CloudEvent deserialize(byte[] payload) throws IOException {
+    if (payload == null) {
+      return null;
+    }
+
+    JsonNode node = OBJECT_MAPPER.readTree(payload);
+
+    if (node== null) {
+      return null;
+    }
+
+    String id = null;
+    if (node.has("id") && !node.get("id").isNull()) {
+      id = node.get("id").asText();
+    }
+
+    String source = null;
+    if (node.has("source") && !node.get("source").isNull()) {
+      source = node.get("source").asText();
+    }
+
+    String type = null;
+    if (node.has("type") && !node.get("type").isNull()) {
+      type = node.get("type").asText();
+    }
+
+    String specversion = null;
+    if (node.has("specversion") && !node.get("specversion").isNull()) {
+      specversion = node.get("specversion").asText();
+    }
+
+    String datacontenttype = null;
+    if (node.has("datacontenttype") && !node.get("datacontenttype").isNull()) {
+      datacontenttype = node.get("datacontenttype").asText();
+    }
+
+    String data = null;
+    if (node.has("data") && !node.get("data").isNull()) {
+      JsonNode dataNode = node.get("data");
+      if (dataNode.isTextual()) {
+        data = dataNode.textValue();
+      } else {
+        data = node.get("data").toString();
+      }
+    }
+
+    return new CloudEvent(id, source, type, specversion, datacontenttype, data);
   }
 }

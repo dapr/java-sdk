@@ -98,7 +98,12 @@ public class DaprClientHttpAdapter implements DaprClient {
       Mono<DaprHttp.Response> response = this.client.invokeAPI(httMethod, path, null, serializedRequestBody, metadata);
       return response.flatMap(r -> {
             try {
-              return Mono.just(objectSerializer.deserialize(r.getBody(), clazz));
+              T object = objectSerializer.deserialize(r.getBody(), clazz);
+              if (object == null) {
+                return Mono.empty();
+              }
+
+              return Mono.just(object);
             } catch (Exception ex) {
               return Mono.error(ex);
             }

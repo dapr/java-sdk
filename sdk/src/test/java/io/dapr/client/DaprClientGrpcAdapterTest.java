@@ -273,18 +273,19 @@ public class DaprClientGrpcAdapterTest {
 
   @Test
   public void invokeServiceObjectTest() throws Exception {
-    MyObject resultObj = new MyObject(1, "Value");
+    MyObject object = new MyObject(1, "Value");
     SettableFuture<DaprProtos.InvokeServiceResponseEnvelope> settableFuture = SettableFuture.create();
     MockCallback<DaprProtos.InvokeServiceResponseEnvelope> callback =
         new MockCallback<DaprProtos.InvokeServiceResponseEnvelope>(DaprProtos.InvokeServiceResponseEnvelope.newBuilder()
-            .setData(getAny(resultObj)).build());
+            .setData(getAny(object)).build());
     addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(DaprProtos.InvokeServiceResponseEnvelope.newBuilder().setData(getAny(resultObj)).build());
+    settableFuture.set(DaprProtos.InvokeServiceResponseEnvelope.newBuilder().setData(getAny(object)).build());
     when(client.invokeService(any(DaprProtos.InvokeServiceEnvelope.class)))
         .thenReturn(settableFuture);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", "request", null, String.class);
-    String strOutput = result.block();
-    assertEquals(new String(serializer.serialize(resultObj)), strOutput);
+    Mono<MyObject> result = adapter.invokeService(Verb.GET, "appId", "method", "request", null, MyObject.class);
+    MyObject resultObject = result.block();
+    assertEquals(object.id, resultObject.id);
+    assertEquals(object.value, resultObject.value);
   }
 
   @Test(expected = RuntimeException.class)
@@ -328,19 +329,20 @@ public class DaprClientGrpcAdapterTest {
 
   @Test
   public void invokeServiceNoRequestBodyObjectTest() throws Exception {
-    MyObject resultObj = new MyObject(1, "Value");
+    MyObject object = new MyObject(1, "Value");
     SettableFuture<DaprProtos.InvokeServiceResponseEnvelope> settableFuture = SettableFuture.create();
 
     MockCallback<DaprProtos.InvokeServiceResponseEnvelope> callback =
         new MockCallback<DaprProtos.InvokeServiceResponseEnvelope>(DaprProtos.InvokeServiceResponseEnvelope.newBuilder()
-            .setData(getAny(resultObj)).build());
+            .setData(getAny(object)).build());
     addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(DaprProtos.InvokeServiceResponseEnvelope.newBuilder().setData(getAny(resultObj)).build());
+    settableFuture.set(DaprProtos.InvokeServiceResponseEnvelope.newBuilder().setData(getAny(object)).build());
     when(client.invokeService(any(DaprProtos.InvokeServiceEnvelope.class)))
         .thenReturn(settableFuture);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", null, String.class);
-    String strOutput = result.block();
-    assertEquals(new String(serializer.serialize(resultObj)), strOutput);
+    Mono<MyObject> result = adapter.invokeService(Verb.GET, "appId", "method", null, MyObject.class);
+    MyObject resultObject = result.block();
+    assertEquals(object.id, resultObject.id);
+    assertEquals(object.value, resultObject.value);
   }
 
   @Test(expected = RuntimeException.class)

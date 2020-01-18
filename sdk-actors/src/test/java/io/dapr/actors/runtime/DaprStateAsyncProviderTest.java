@@ -14,6 +14,7 @@ import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -106,13 +107,13 @@ public class DaprStateAsyncProviderTest {
               String key = operation.get("request").get("key").asText();
               JsonNode valueNode = operation.get("request").get("value");
 
-              String value = (valueNode == null) ? null : new String(valueNode.binaryValue());
+              byte[] value = (valueNode == null) ? null : valueNode.binaryValue();
               foundInsertName |= "upsert".equals(opName) &&
                 "name".equals(key) &&
-                "Jon Doe".equals(value);
+                Arrays.equals(SERIALIZER.serialize("Jon Doe"), value);
               foundUpdateZipcode |= "upsert".equals(opName) &&
                 "zipcode".equals(key) &&
-                "98011".equals(value);
+                Arrays.equals(SERIALIZER.serialize(98011), value);
               foundDeleteFlag |= "delete".equals(opName) &&
                 "flag".equals(key) &&
                 (value == null);
@@ -130,7 +131,7 @@ public class DaprStateAsyncProviderTest {
     provider.apply("MyActor",
       new ActorId("123"),
       createInsertChange("name", "Jon Doe"),
-      createUpdateChange("zipcode", "98011"),
+      createUpdateChange("zipcode", 98011),
       createDeleteChange("flag"))
       .block();
 
@@ -138,23 +139,23 @@ public class DaprStateAsyncProviderTest {
   }
 
   @Test
-  public void happyCaseLoad() {
+  public void happyCaseLoad() throws Exception {
     DaprClient daprClient = mock(DaprClient.class);
     when(daprClient
       .getActorState(any(), any(), eq("name")))
-      .thenReturn(Mono.just("Jon Doe".getBytes()));
+      .thenReturn(Mono.just(SERIALIZER.serialize("Jon Doe")));
     when(daprClient
       .getActorState(any(), any(), eq("zipcode")))
-      .thenReturn(Mono.just("98021".getBytes()));
+      .thenReturn(Mono.just(SERIALIZER.serialize(98021)));
     when(daprClient
       .getActorState(any(), any(), eq("goals")))
-      .thenReturn(Mono.just("98".getBytes()));
+      .thenReturn(Mono.just(SERIALIZER.serialize(98)));
     when(daprClient
       .getActorState(any(), any(), eq("balance")))
-      .thenReturn(Mono.just("46.55".getBytes()));
+      .thenReturn(Mono.just(SERIALIZER.serialize(46.55)));
     when(daprClient
       .getActorState(any(), any(), eq("active")))
-      .thenReturn(Mono.just("true".getBytes()));
+      .thenReturn(Mono.just(SERIALIZER.serialize(true)));
     when(daprClient
       .getActorState(any(), any(), eq("customer")))
       .thenReturn(Mono.just("{ \"id\": 1000, \"name\": \"Roxane\"}".getBytes()));
@@ -169,8 +170,8 @@ public class DaprStateAsyncProviderTest {
 
     Assert.assertEquals("Jon Doe",
       provider.load("MyActor", new ActorId("123"), "name", String.class).block());
-    Assert.assertEquals("98021",
-      provider.load("MyActor", new ActorId("123"), "zipcode", String.class).block());
+    Assert.assertEquals(98021,
+      (int)provider.load("MyActor", new ActorId("123"), "zipcode", int.class).block());
     Assert.assertEquals(98,
       (int) provider.load("MyActor", new ActorId("123"), "goals", int.class).block());
     Assert.assertEquals(98,

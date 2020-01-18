@@ -10,9 +10,10 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientTestBuilder;
 import io.dapr.client.DaprHttpStub;
-import io.dapr.client.domain.CloudEventEnvelope;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.Verb;
 import io.dapr.utils.Constants;
+import io.dapr.utils.ObjectSerializer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,7 +22,6 @@ import reactor.core.publisher.Mono;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -72,7 +72,7 @@ public class DaprRuntimeTest {
         new Message(
             generateMessageId(),
             TYPE_PLAIN_TEXT,
-            new byte[0],
+            "",
             generateSingleMetadata()),
         new Message(
             generateMessageId(),
@@ -108,13 +108,14 @@ public class DaprRuntimeTest {
 
     DaprHttpStub daprHttp = mock(DaprHttpStub.class);
     DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
+    ObjectSerializer serializer = new ObjectSerializer();
 
     for (Message message : messages) {
       when(daprHttp.invokeAPI(
           eq("POST"),
           eq(Constants.PUBLISH_PATH + "/" + TOPIC_NAME),
           eq(null),
-          eq(message.data),
+          eq(serializer.serialize(message.data)),
           eq(null)))
           .thenAnswer(invocationOnMock -> this.daprRuntime.handleInvocation(
               TOPIC_NAME,
@@ -123,7 +124,7 @@ public class DaprRuntimeTest {
 
       client.publishEvent(TOPIC_NAME, message.data).block();
 
-      CloudEventEnvelope envelope = new CloudEventEnvelope(
+      CloudEvent envelope = new CloudEvent(
         message.id,
         null,
         null,
@@ -154,7 +155,7 @@ public class DaprRuntimeTest {
         new Message(
             generateMessageId(),
             TYPE_PLAIN_TEXT,
-            new byte[0],
+            "",
             generateSingleMetadata()),
         new Message(
             generateMessageId(),
@@ -191,31 +192,30 @@ public class DaprRuntimeTest {
     DaprHttpStub daprHttp = mock(DaprHttpStub.class);
     DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
 
+    ObjectSerializer serializer = new ObjectSerializer();
     for (Message message : messages) {
-      byte[] expectedResponse = message.id == null ? new byte[0] : message.id.getBytes(StandardCharsets.UTF_8);
-      when(listener.process(eq(message.data), eq(message.metadata)))
-          .then(x -> Mono.just(expectedResponse));
+      byte[] expectedResponse = serializer.serialize(message.id);
+      when(listener.process(eq(serializer.serialize(message.data)), eq(message.metadata)))
+          .then(x -> expectedResponse == null ? Mono.empty() : Mono.just(expectedResponse));
 
       when(daprHttp.invokeAPI(
           eq("POST"),
           eq(Constants.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
           eq(null),
-          eq(message.data),
+          eq(serializer.serialize(message.data)),
           any()))
           .thenAnswer(x ->
               this.daprRuntime.handleInvocation(
               METHOD_NAME,
-              message.data,
+              serializer.serialize(message.data),
               message.metadata)
           .map(r -> new DaprHttpStub.ResponseStub(r, null, 200)));
 
-      Mono<byte[]> response = client.invokeService(Verb.POST, APP_ID, METHOD_NAME, message.data, message.metadata);
-      Assert.assertEquals(
-          new String(expectedResponse, StandardCharsets.UTF_8),
-          new String(response.block(), StandardCharsets.UTF_8));
+      Mono<byte[]> response = client.invokeService(Verb.POST, APP_ID, METHOD_NAME, message.data, message.metadata, byte[].class);
+      Assert.assertEquals(expectedResponse, response.block());
 
       verify(listener, times(1))
-          .process(eq(message.data), eq(message.metadata));
+          .process(eq(serializer.serialize(message.data)), eq(message.metadata));
     }
 
     verify(listener, times(messages.length)).process(any(), any());
@@ -241,7 +241,7 @@ public class DaprRuntimeTest {
     Mono<byte[]> result = this.daprRuntime
             .handleInvocation(TOPIC_NAME, this.serialize(message), message.metadata);
 
-    CloudEventEnvelope envelope = new CloudEventEnvelope(
+    CloudEvent envelope = new CloudEvent(
       message.id,
       null,
       null,
@@ -280,8 +280,8 @@ public class DaprRuntimeTest {
     return UUID.randomUUID().toString();
   }
 
-  private static final byte[] generatePayload() {
-    return UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8);
+  private static final String generatePayload() {
+    return UUID.randomUUID().toString();
   }
 
   private static final Map<String, String> generateSingleMetadata() {
@@ -294,11 +294,11 @@ public class DaprRuntimeTest {
 
     private final String datacontenttype;
 
-    private final byte[] data;
+    private final String data;
 
     private final Map<String, String> metadata;
 
-    private Message(String id, String datacontenttype, byte[] data, Map<String, String> metadata) {
+    private Message(String id, String datacontenttype, String data, Map<String, String> metadata) {
       this.id = id;
       this.datacontenttype = datacontenttype;
       this.data = data;
@@ -321,7 +321,7 @@ public class DaprRuntimeTest {
         generator.writeStringField("datacontenttype", message.datacontenttype);
       }
       if (message.data != null) {
-        generator.writeBinaryField("data", message.data);
+        generator.writeStringField("data", message.data);
       }
       generator.writeEndObject();
       generator.close();

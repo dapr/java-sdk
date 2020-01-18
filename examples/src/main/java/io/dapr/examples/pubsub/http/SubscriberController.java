@@ -5,7 +5,7 @@
 
 package io.dapr.examples.pubsub.http;
 
-import io.dapr.client.domain.CloudEventEnvelope;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.ObjectSerializer;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -34,7 +34,7 @@ public class SubscriberController {
     return Mono.fromRunnable(() -> {
       try {
         // Dapr's event is compliant to CloudEvent.
-        CloudEventEnvelope envelope = SERIALIZER.deserialize(body, CloudEventEnvelope.class);
+        CloudEvent envelope = SERIALIZER.deserialize(body, CloudEvent.class);
 
         String message = envelope.getData() == null ? "" : new String(envelope.getData());
         System.out.println("Subscriber got message: " + message);

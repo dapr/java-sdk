@@ -4,6 +4,7 @@
  */
 package io.dapr.actors.runtime;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.utils.DurationUtils;
@@ -17,6 +18,11 @@ import java.time.Duration;
  * Serializes and deserializes an object.
  */
 public class ActorStateSerializer extends ObjectSerializer {
+
+  /**
+   * Shared Json Factory as per Jackson's documentation.
+   */
+  private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
   /**
    * {@inheritDoc}
@@ -50,14 +56,14 @@ public class ActorStateSerializer extends ObjectSerializer {
    * {@inheritDoc}
    */
   @Override
-  public <T> T deserialize(byte[] value, Class<T> clazz) throws IOException {
+  public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
     if (clazz == ActorReminderParams.class) {
       // Special serializer for this internal classes.
-      return (T) deserializeActorReminder(value);
+      return (T) deserializeActorReminder(content);
     }
 
     // Is not one of the special cases.
-    return super.deserialize(value, clazz);
+    return super.deserialize(content, clazz);
   }
 
   /**

@@ -5,10 +5,15 @@
 
 package io.dapr.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.CloudEvent;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Base64;
+import java.util.function.Function;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -243,7 +248,7 @@ public class ObjectSerializerTest {
     byte [] byteValue;
     try {
       serializedValue = new String(serializer.serialize(valueToSerialize));
-      assertEquals(valueToSerialize, serializedValue);
+      assertEquals("\"" + valueToSerialize + "\"", serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
       String deserializedValue = serializer.deserialize(byteValue, String.class);
@@ -293,7 +298,7 @@ public class ObjectSerializerTest {
 
   @Test
   public void serializeLongTest() {
-    Long valueToSerialize = 1L;
+    Long valueToSerialize = Long.MAX_VALUE;
     String expectedResult = valueToSerialize.toString();
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
@@ -312,7 +317,7 @@ public class ObjectSerializerTest {
 
   @Test
   public void serializeFloatTest() {
-    Float valueToSerialize = 1.0f;
+    Float valueToSerialize = -1.23456f;
     String expectedResult = valueToSerialize.toString();
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
@@ -323,7 +328,7 @@ public class ObjectSerializerTest {
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
       Float deserializedValue = serializer.deserialize(byteValue, Float.class);
-      assertEquals(valueToSerialize, deserializedValue);
+      assertEquals(valueToSerialize, deserializedValue, 0.00000000001);
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -394,10 +399,9 @@ public class ObjectSerializerTest {
   public void deserializeBytesTest() {
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      byte[] resultStr = serializer.deserialize("String".getBytes(), byte[].class);
-      assertNotNull(resultStr);
       byte[] result = serializer.deserialize("String".getBytes(), byte[].class);
       assertNotNull(result);
+      assertEquals("String", new String(result));
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -666,5 +670,123 @@ public class ObjectSerializerTest {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775808,\"floatValue\":1.0,\"doubleValue\":1000.0}";
     ObjectSerializer serializer = new ObjectSerializer();
     MyObjectTestToSerialize result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+  }
+
+  @Test
+  public void deserializeNullToPrimitives() throws Exception {
+    ObjectSerializer serializer = new ObjectSerializer();
+    assertEquals(0, (char)serializer.deserialize(null, char.class));
+    assertEquals(0, (int)serializer.deserialize(null, int.class));
+    assertEquals(0, (long)serializer.deserialize(null, long.class));
+    assertEquals(0, (byte)serializer.deserialize(null, byte.class));
+    assertEquals(0, serializer.deserialize(null, double.class), 0);
+    assertEquals(0, serializer.deserialize(null, float.class), 0);
+    assertEquals(false, serializer.deserialize(null, boolean.class));
+
+    assertNull(serializer.deserialize(null, Character.class));
+    assertNull(serializer.deserialize(null, Integer.class));
+    assertNull(serializer.deserialize(null, Long.class));
+    assertNull(serializer.deserialize(null, Byte.class));
+    assertNull(serializer.deserialize(null, Double.class));
+    assertNull(serializer.deserialize(null, Float.class));
+    assertNull(serializer.deserialize(null, Boolean.class));
+  }
+
+  @Test
+  public void deserializeEmptyByteArrayToPrimitives() throws Exception {
+    ObjectSerializer serializer = new ObjectSerializer();
+    assertEquals(0, (char)serializer.deserialize(new byte[0], char.class));
+    assertEquals(0, (int)serializer.deserialize(new byte[0], int.class));
+    assertEquals(0, (long)serializer.deserialize(new byte[0], long.class));
+    assertEquals(0, (byte)serializer.deserialize(new byte[0], byte.class));
+    assertEquals(0, serializer.deserialize(new byte[0], double.class), 0);
+    assertEquals(0, serializer.deserialize(new byte[0], float.class), 0);
+    assertEquals(false, serializer.deserialize(new byte[0], boolean.class));
+
+    assertNull(serializer.deserialize(new byte[0], Character.class));
+    assertNull(serializer.deserialize(new byte[0], Integer.class));
+    assertNull(serializer.deserialize(new byte[0], Long.class));
+    assertNull(serializer.deserialize(new byte[0], Byte.class));
+    assertNull(serializer.deserialize(new byte[0], Double.class));
+    assertNull(serializer.deserialize(new byte[0], Float.class));
+    assertNull(serializer.deserialize(new byte[0], Boolean.class));
+  }
+
+  @Test
+  public void serializeDeserializeCloudEventEnvelope() throws Exception {
+    ObjectSerializer serializer = new ObjectSerializer();
+
+    Function<CloudEvent, Boolean> check = (e -> {
+      try {
+        if (e == null) {
+          return CloudEvent.deserialize(serializer.serialize(e)) == null;
+        }
+
+        return e.equals(CloudEvent.deserialize(serializer.serialize(e)));
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
+    });
+
+    Assert.assertTrue(check.apply(null));
+    Assert.assertTrue(check.apply(
+      new CloudEvent(
+        "1",
+        "mysource",
+        "text",
+        "v2",
+        "XML",
+        "<root></root>")));
+    Assert.assertTrue(check.apply(
+      new CloudEvent(
+        "1234-65432",
+        "myother",
+        "image",
+        "v2",
+        "byte",
+        Base64.getEncoder().encodeToString(new byte[] {0, 2, 99}))));
+  }
+
+  @Test
+  public void deserializeCloudEventEnvelopeData() throws Exception {
+    ObjectSerializer serializer = new ObjectSerializer();
+
+    Function<String, String> deserializeData = (jsonData -> {
+      try {
+        String payload = String.format("{\"data\": %s}", jsonData);
+        return CloudEvent.deserialize(payload.getBytes()).getData();
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
+    });
+
+    assertEquals("123",
+      deserializeData.apply("123"));
+    assertEquals("true",
+      deserializeData.apply("true"));
+    assertEquals("123.45",
+      deserializeData.apply("123.45"));
+    assertEquals("AAEI",
+      deserializeData.apply(quote(Base64.getEncoder().encodeToString(new byte[] { 0, 1, 8}))));
+    assertEquals("hello world",
+      deserializeData.apply(quote("hello world")));
+    assertEquals("\"hello world\"",
+      deserializeData.apply(quote("\\\"hello world\\\"")));
+    assertEquals("\"hello world\"",
+      deserializeData.apply(new ObjectMapper().writeValueAsString("\"hello world\"")));
+    assertEquals("hello world",
+      deserializeData.apply(new ObjectMapper().writeValueAsString("hello world")));
+    assertEquals("{\"id\":\"123:\",\"name\":\"Jon Doe\"}",
+      deserializeData.apply("{\"id\": \"123:\", \"name\": \"Jon Doe\"}"));
+    assertEquals("{\"id\": \"123:\", \"name\": \"Jon Doe\"}",
+      deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123:\", \"name\": \"Jon Doe\"}")));
+  }
+
+  private static String quote(String content) {
+    if (content == null) {
+      return null;
+    }
+
+    return "\"" + content + "\"";
   }
 }

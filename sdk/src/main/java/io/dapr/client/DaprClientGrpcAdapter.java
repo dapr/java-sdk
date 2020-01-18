@@ -120,7 +120,7 @@ class DaprClientGrpcAdapter implements DaprClient {
    */
   @Override
   public Mono<Void> invokeService(Verb verb, String appId, String method, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, null, metadata, byte[].class).then();
+    return this.invokeService(verb, appId, method, null, metadata, Void.class).then();
   }
 
   /**

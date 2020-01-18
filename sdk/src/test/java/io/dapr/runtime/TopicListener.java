@@ -5,7 +5,7 @@
 
 package io.dapr.runtime;
 
-import io.dapr.client.domain.CloudEventEnvelope;
+import io.dapr.client.domain.CloudEvent;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -22,6 +22,6 @@ public interface TopicListener {
    * @return Empty response.
    * @throws Exception Any exception from user code.
    */
-  Mono<Void> process(CloudEventEnvelope message, Map<String, String> metadata) throws Exception;
+  Mono<Void> process(CloudEvent message, Map<String, String> metadata) throws Exception;
 
 }

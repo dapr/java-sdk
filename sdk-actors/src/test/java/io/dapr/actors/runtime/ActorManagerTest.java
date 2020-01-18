@@ -94,24 +94,28 @@ public class ActorManagerTest {
   }
 
   @Test
-  public void activateThenInvoke() {
+  public void activateThenInvoke() throws Exception {
     ActorId actorId = newActorId();
-    String message = "something";
+    byte[] message = this.context.getActorSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
-    byte[] response = this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
-    Assert.assertEquals(executeSayMethod(message), new String(response));
+    byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
+    Assert.assertEquals(executeSayMethod(
+      this.context.getActorSerializer().deserialize(message, String.class)),
+      this.context.getActorSerializer().deserialize(response, String.class));
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void activateInvokeDeactivateThenInvoke() {
+  public void activateInvokeDeactivateThenInvoke() throws Exception {
     ActorId actorId = newActorId();
-    String message = "something";
+    byte[] message = this.context.getActorSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
-    byte[] response = this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
-    Assert.assertEquals(executeSayMethod(message), new String(response));
+    byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
+    Assert.assertEquals(executeSayMethod(
+      this.context.getActorSerializer().deserialize(message, String.class)),
+      this.context.getActorSerializer().deserialize(response, String.class));
 
     this.manager.deactivateActor(actorId).block();
-    this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
+    this.manager.invokeMethod(actorId, "say", message).block();
   }
 
   @Test
@@ -178,7 +182,8 @@ public class ActorManagerTest {
   }
 
   private byte[] createReminderParams(String data) throws IOException {
-    ActorReminderParams params = new ActorReminderParams(data.getBytes(), Duration.ofSeconds(1), Duration.ofSeconds(1));
+    byte[] serializedData = this.context.getActorSerializer().serialize(data);
+    ActorReminderParams params = new ActorReminderParams(serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
     return this.context.getActorSerializer().serialize(params);
   }
 

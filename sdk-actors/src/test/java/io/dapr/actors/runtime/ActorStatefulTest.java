@@ -628,7 +628,8 @@ public class ActorStatefulTest {
   }
 
   private byte[] createReminderParams(String data) throws IOException {
-    ActorReminderParams params = new ActorReminderParams(data.getBytes(), Duration.ofSeconds(1), Duration.ofSeconds(1));
+    byte[] serialized = this.context.getActorSerializer().serialize(data);
+    ActorReminderParams params = new ActorReminderParams(serialized, Duration.ofSeconds(1), Duration.ofSeconds(1));
     return this.context.getActorSerializer().serialize(params);
   }
 
