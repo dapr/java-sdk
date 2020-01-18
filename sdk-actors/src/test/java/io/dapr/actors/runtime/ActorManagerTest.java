@@ -90,7 +90,7 @@ public class ActorManagerTest {
   public void invokeBeforeActivate() throws Exception {
     ActorId actorId = newActorId();
     String message = "something";
-    this.manager.invokeMethod(actorId, "say", message).block();
+    this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
   }
 
   @Test
@@ -98,8 +98,8 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     String message = "something";
     this.manager.activateActor(actorId).block();
-    String response = this.manager.invokeMethod(actorId, "say", message).block();
-    Assert.assertEquals(executeSayMethod(message), response);
+    byte[] response = this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
+    Assert.assertEquals(executeSayMethod(message), new String(response));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -107,11 +107,11 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     String message = "something";
     this.manager.activateActor(actorId).block();
-    String response = this.manager.invokeMethod(actorId, "say", message).block();
-    Assert.assertEquals(executeSayMethod(message), response);
+    byte[] response = this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
+    Assert.assertEquals(executeSayMethod(message), new String(response));
 
     this.manager.deactivateActor(actorId).block();
-    this.manager.invokeMethod(actorId, "say", message).block();
+    this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
   }
 
   @Test
@@ -161,8 +161,8 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count").block();
-    String response = this.manager.invokeMethod(actorId, "getCount", null).block();
-    Assert.assertEquals("2", response);
+    byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
+    Assert.assertEquals("2", new String(response));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -170,16 +170,16 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count").block();
-    String response = this.manager.invokeMethod(actorId, "getCount", null).block();
-    Assert.assertEquals("2", response);
+    byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
+    Assert.assertEquals("2", new String(response));
 
     this.manager.deactivateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count").block();
   }
 
-  private String createReminderParams(String data) throws IOException {
-    ActorReminderParams params = new ActorReminderParams(data, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return this.context.getActorSerializer().serializeString(params);
+  private byte[] createReminderParams(String data) throws IOException {
+    ActorReminderParams params = new ActorReminderParams(data.getBytes(), Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return this.context.getActorSerializer().serialize(params);
   }
 
   private static ActorId newActorId() {

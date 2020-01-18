@@ -54,6 +54,11 @@ public abstract class AbstractActor {
   private final ActorStateManager actorStateManager;
 
   /**
+   * Internal control to assert method invocation on start and finish in this SDK.
+   */
+  private boolean started;
+
+  /**
    * Instantiates a new Actor.
    *
    * @param runtimeContext Context for the runtime.
@@ -68,6 +73,7 @@ public abstract class AbstractActor {
       id);
     this.actorTrace = runtimeContext.getActorTrace();
     this.timers = Collections.synchronizedMap(new HashMap<>());
+    this.started = false;
   }
 
   /**
@@ -104,9 +110,9 @@ public abstract class AbstractActor {
     Duration dueTime,
     Duration period) {
     try {
-      String data = this.actorRuntimeContext.getActorSerializer().serializeString(state);
+      byte[] data = this.actorRuntimeContext.getActorSerializer().serialize(state);
       ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
-      String serialized = this.actorRuntimeContext.getActorSerializer().serializeString(params);
+      byte[] serialized = this.actorRuntimeContext.getActorSerializer().serialize(params);
       return this.actorRuntimeContext.getDaprClient().registerActorReminder(
         this.actorRuntimeContext.getActorTypeInformation().getName(),
         this.id.toString(),
@@ -156,7 +162,7 @@ public abstract class AbstractActor {
           this.actorRuntimeContext.getActorTypeInformation().getName(),
           this.id.toString(),
           actorTimer.getName(),
-          this.actorRuntimeContext.getActorSerializer().serializeString(actorTimer));
+          this.actorRuntimeContext.getActorSerializer().serialize(actorTimer));
       } catch (Exception e) {
         return Mono.error(e);
       }
@@ -241,6 +247,18 @@ public abstract class AbstractActor {
   /**
    * Resets the cached state of this Actor.
    */
+  void rollback() {
+    if (!this.started) {
+      throw new IllegalStateException("Cannot reset state before starting call.");
+    }
+
+    this.resetState();
+    this.started = false;
+  }
+
+  /**
+   * Resets the cached state of this Actor.
+   */
   void resetState() {
     this.actorStateManager.clear();
   }
@@ -289,7 +307,13 @@ public abstract class AbstractActor {
    * @return Asynchronous void response.
    */
   Mono<Void> onPreActorMethodInternal(ActorMethodContext actorMethodContext) {
-    return this.onPreActorMethod(actorMethodContext);
+    return Mono.fromRunnable(() -> {
+      if (this.started) {
+        throw new IllegalStateException("Cannot invoke a method before completing previous call.");
+      }
+
+      this.started = true;
+    }).then(this.onPreActorMethod(actorMethodContext));
   }
 
   /**
@@ -299,7 +323,15 @@ public abstract class AbstractActor {
    * @return Asynchronous void response.
    */
   Mono<Void> onPostActorMethodInternal(ActorMethodContext actorMethodContext) {
-    return this.onPostActorMethod(actorMethodContext).then(this.saveState());
+    return Mono.fromRunnable(() -> {
+      if (!this.started) {
+        throw new IllegalStateException("Cannot complete a method before starting a call.");
+      }
+    }).then(this.onPostActorMethod(actorMethodContext))
+      .then(this.saveState())
+      .then(Mono.fromRunnable(() -> {
+        this.started = false;
+      }));
   }
 
   /**

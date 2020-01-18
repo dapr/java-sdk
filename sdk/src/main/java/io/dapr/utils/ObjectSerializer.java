@@ -35,11 +35,6 @@ public class ObjectSerializer {
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
     /**
-     * Constant result for empty maps.
-     */
-    private static final Map<String, Object> EMPTY_MAP = Collections.unmodifiableMap(new HashMap<>());
-
-    /**
      * Serializes a given state object into byte array.
      *
      * @param state State object to be serialized.
@@ -69,31 +64,6 @@ public class ObjectSerializer {
     }
 
     /**
-     * Serializes a given state object into String.
-     *
-     * @param state State object to be serialized.
-     * @param <T>   Type of the state object.
-     * @return Array of bytes[] with the serialized content.
-     * @throws IOException In case state cannot be serialized.
-     */
-    public <T> String serializeString(T state) throws IOException {
-        if (state == null) {
-            return null;
-        }
-
-        if (state.getClass() == String.class) {
-            return (String) state;
-        }
-
-        if (isPrimitiveOrEquivalent(state.getClass())) {
-            return state.toString();
-        }
-
-        // Not string, not primitive, so it is a complex type: we use JSON for that.
-        return OBJECT_MAPPER.writeValueAsString(state);
-    }
-
-    /**
      * Deserializes the byte array into the original object.
      *
      * @param value Content to be parsed.
@@ -102,7 +72,7 @@ public class ObjectSerializer {
      * @return Object of type T.
      * @throws IOException In case value cannot be deserialized.
      */
-    public <T> T deserialize(Object value, Class<T> clazz) throws IOException {
+    public <T> T deserialize(byte[] value, Class<T> clazz) throws IOException {
         if (isPrimitiveOrEquivalent(clazz)) {
             return parse(value, clazz);
         }
@@ -121,12 +91,7 @@ public class ObjectSerializer {
         }
 
         if (clazz == byte[].class) {
-            if (value instanceof String) {
-                return (T) value.toString().getBytes(StandardCharsets.UTF_8);
-            }
-
-            return (value instanceof byte[])
-                ? (T) value : null;
+            return (T) value;
         }
 
         // Not string, not primitive, not byte[], so it is a complex type: we use JSON for that.

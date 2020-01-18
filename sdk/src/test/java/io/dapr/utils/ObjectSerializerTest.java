@@ -190,8 +190,8 @@ public class ObjectSerializerTest {
     ObjectSerializer serializer = new ObjectSerializer();
     String serializedValue;
     try {
-      serializedValue = serializer.serializeString(obj);
-      assertEquals("FOUND:[[" + serializedValue + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, serializedValue);
+      serializedValue = new String(serializer.serialize(obj));
+      assertEquals("FOUND:[[" + serializedValue + "]] \n but was EXPECTING: [[" + expectedResult + "]]", expectedResult, serializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -226,11 +226,8 @@ public class ObjectSerializerTest {
   @Test
   public void serializeNullTest() {
     ObjectSerializer serializer = new ObjectSerializer();
-    String serializedValue;
     byte[] byteSerializedValue;
     try {
-      serializedValue = serializer.serializeString(null);
-      assertNull(serializedValue);
       byteSerializedValue = serializer.serialize(null);
       assertNull(byteSerializedValue);
     } catch (IOException exception) {
@@ -245,7 +242,7 @@ public class ObjectSerializerTest {
     String serializedValue;
     byte [] byteValue;
     try {
-      serializedValue = serializer.serializeString(valueToSerialize);
+      serializedValue = new String(serializer.serialize(valueToSerialize));
       assertEquals(valueToSerialize, serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
@@ -264,7 +261,7 @@ public class ObjectSerializerTest {
     String serializedValue;
     byte [] byteValue;
     try {
-      serializedValue = serializer.serializeString(valueToSerialize.intValue());
+      serializedValue = new String(serializer.serialize(valueToSerialize.intValue()));
       assertEquals(expectedResult, serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
@@ -283,7 +280,7 @@ public class ObjectSerializerTest {
     String serializedValue;
     byte [] byteValue;
     try {
-      serializedValue = serializer.serializeString(valueToSerialize.shortValue());
+      serializedValue = new String(serializer.serialize(valueToSerialize.shortValue()));
       assertEquals(expectedResult, serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
@@ -302,7 +299,7 @@ public class ObjectSerializerTest {
     String serializedValue;
     byte [] byteValue;
     try {
-      serializedValue = serializer.serializeString(valueToSerialize.longValue());
+      serializedValue = new String(serializer.serialize(valueToSerialize.longValue()));
       assertEquals(expectedResult, serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
@@ -321,7 +318,7 @@ public class ObjectSerializerTest {
     String serializedValue;
     byte [] byteValue;
     try {
-      serializedValue = serializer.serializeString(valueToSerialize.floatValue());
+      serializedValue = new String(serializer.serialize(valueToSerialize.floatValue()));
       assertEquals(expectedResult, serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
@@ -340,7 +337,7 @@ public class ObjectSerializerTest {
     String serializedValue;
     byte [] byteValue;
     try {
-      serializedValue = serializer.serializeString(valueToSerialize.doubleValue());
+      serializedValue = new String(serializer.serialize(valueToSerialize.doubleValue()));
       assertEquals(expectedResult, serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
@@ -359,7 +356,7 @@ public class ObjectSerializerTest {
     String serializedValue;
     byte [] byteValue;
     try {
-      serializedValue = serializer.serializeString(valueToSerialize.booleanValue());
+      serializedValue = new String(serializer.serialize(valueToSerialize.booleanValue()));
       assertEquals(expectedResult, serializedValue);
       byteValue = serializer.serialize(valueToSerialize);
       assertNotNull(byteValue);
@@ -386,7 +383,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("The expected value is different than the actual result", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -394,10 +391,10 @@ public class ObjectSerializerTest {
   }
 
   @Test
-  public void deserializeBtyesTest() {
+  public void deserializeBytesTest() {
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      byte[] resultStr = serializer.deserialize("String", byte[].class);
+      byte[] resultStr = serializer.deserialize("String".getBytes(), byte[].class);
       assertNotNull(resultStr);
       byte[] result = serializer.deserialize("String".getBytes(), byte[].class);
       assertNotNull(result);
@@ -454,7 +451,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -476,7 +473,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -498,7 +495,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -520,7 +517,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -542,7 +539,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -564,7 +561,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -586,7 +583,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -608,7 +605,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -630,7 +627,7 @@ public class ObjectSerializerTest {
     MyObjectTestToSerialize result;
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -641,7 +638,7 @@ public class ObjectSerializerTest {
   public void deserializeObjectIntExceedMaximunValueTest() throws Exception {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483648,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
     ObjectSerializer serializer = new ObjectSerializer();
-    serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+    serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
   }
 
   @Test(expected = IOException.class)
@@ -649,7 +646,7 @@ public class ObjectSerializerTest {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"Not A Char\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
     ObjectSerializer serializer = new ObjectSerializer();
     try {
-      serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+      serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
     } catch (IOException ioEx) {
       throw ioEx;
     } catch (Exception ex) {
@@ -661,13 +658,13 @@ public class ObjectSerializerTest {
   public void deserializeObjectShortExceededMaximunValueTest() throws Exception {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32768,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
     ObjectSerializer serializer = new ObjectSerializer();
-    serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+    serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
   }
 
   @Test(expected = IOException.class)
   public void deserializeObjectLongExceededMaximumValueTest() throws Exception {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775808,\"floatValue\":1.0,\"doubleValue\":1000.0}";
     ObjectSerializer serializer = new ObjectSerializer();
-    MyObjectTestToSerialize result = serializer.deserialize(jsonToDeserialize, MyObjectTestToSerialize.class);
+    MyObjectTestToSerialize result = serializer.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
   }
 }

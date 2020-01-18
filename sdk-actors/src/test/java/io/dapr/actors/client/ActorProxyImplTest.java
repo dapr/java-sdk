@@ -30,10 +30,11 @@ public class ActorProxyImplTest {
   @Test()
   public void invokeActorMethodWithoutDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
+    Mono<byte[]> daprResponse =
+      Mono.just("{\n\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n}"
+        .getBytes());
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
-        .thenReturn(Mono.just("{\n" +
-            "\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n" +
-            "}"));
+        .thenReturn(daprResponse);
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
@@ -52,7 +53,7 @@ public class ActorProxyImplTest {
   public void invokeActorMethodWithoutDataWithEmptyReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
-        .thenReturn(Mono.just(""));
+        .thenReturn(Mono.just("".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
@@ -69,7 +70,7 @@ public class ActorProxyImplTest {
   public void invokeActorMethodWithIncorrectReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
-        .thenReturn(Mono.just("{test}"));
+        .thenReturn(Mono.just("{test}".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
@@ -91,9 +92,9 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just("{\n" +
-            "\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n" +
-            "}"));
+        .thenReturn(
+          Mono.just("{\n\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n}"
+            .getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
@@ -117,7 +118,7 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithIncorrectReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just("{test}"));
+        .thenReturn(Mono.just("{test}".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
@@ -141,7 +142,7 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithEmptyReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just(""));
+        .thenReturn(Mono.just("".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
@@ -163,7 +164,7 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithIncorrectInputType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just("{test}"));
+        .thenReturn(Mono.just("{test}".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",

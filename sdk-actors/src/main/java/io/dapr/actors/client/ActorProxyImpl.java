@@ -67,7 +67,7 @@ class ActorProxyImpl implements ActorProxy {
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.wrap(data))
-      .filter(s -> (s != null) && (!s.isEmpty()))
+      .filter(s -> s.length > 0)
       .map(s -> unwrap(s, clazz));
   }
 
@@ -77,7 +77,7 @@ class ActorProxyImpl implements ActorProxy {
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
-      .filter(s -> (s != null) && (!s.isEmpty()))
+      .filter(s -> s.length > 0)
       .map(s -> unwrap(s, clazz));
   }
 
@@ -100,13 +100,13 @@ class ActorProxyImpl implements ActorProxy {
   /**
    * Extracts the response object from the Actor's method result.
    *
-   * @param response String returned by API.
+   * @param response response returned by API.
    * @param clazz    Expected response class.
    * @param <T>      Expected response type.
    * @return Response object or null.
    * @throws RuntimeException In case it cannot generate Object.
    */
-  private <T> T unwrap(final String response, Class<T> clazz) {
+  private <T> T unwrap(final byte[] response, Class<T> clazz) {
     try {
       return this.serializer.deserialize(this.serializer.unwrapData(response), clazz);
     } catch (IOException e) {
@@ -118,11 +118,10 @@ class ActorProxyImpl implements ActorProxy {
    * Builds the request to invoke an API for Actors.
    *
    * @param request Request object for the original Actor's method.
-   * @param <T>     Type for the original Actor's method request.
-   * @return String to be sent to Dapr's API.
-   * @throws RuntimeException In case it cannot generate String.
+   * @return Payload to be sent to Dapr's API.
+   * @throws RuntimeException In case it cannot generate payload.
    */
-  private <T> String wrap(final T request) {
+  private byte[] wrap(final Object request) {
     try {
       return this.serializer.wrapData(this.serializer.serialize(request));
     } catch (IOException e) {

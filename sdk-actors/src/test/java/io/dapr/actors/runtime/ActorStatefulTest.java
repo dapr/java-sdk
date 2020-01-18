@@ -477,7 +477,7 @@ public class ActorStatefulTest {
   public void invokeReminder() throws Exception {
     ActorProxy proxy = newActorProxy();
 
-    String params = createReminderParams("anything");
+    byte[] params = createReminderParams("anything");
 
     this.manager.invokeReminder(proxy.getActorId(), "myreminder", params).block();
 
@@ -498,7 +498,7 @@ public class ActorStatefulTest {
 
     this.manager.deactivateActor(proxy.getActorId()).block();
 
-    String params = createReminderParams("anything");
+    byte[] params = createReminderParams("anything");
 
     this.manager.invokeReminder(proxy.getActorId(), "myreminder", params).block();
   }
@@ -608,11 +608,11 @@ public class ActorStatefulTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          Utilities.toStringOrNull(context.getActorSerializer().unwrapData(
-            invocationOnMock.getArgument(3, String.class))))
+          context.getActorSerializer().unwrapData(
+            invocationOnMock.getArgument(3, byte[].class)))
           .map(s -> {
             try {
-              return context.getActorSerializer().wrapData(s.getBytes());
+              return context.getActorSerializer().wrapData(s);
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
@@ -627,9 +627,9 @@ public class ActorStatefulTest {
       daprClient);
   }
 
-  private String createReminderParams(String data) throws IOException {
-    ActorReminderParams params = new ActorReminderParams(data, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return this.context.getActorSerializer().serializeString(params);
+  private byte[] createReminderParams(String data) throws IOException {
+    ActorReminderParams params = new ActorReminderParams(data.getBytes(), Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return this.context.getActorSerializer().serialize(params);
   }
 
   private static ActorId newActorId() {

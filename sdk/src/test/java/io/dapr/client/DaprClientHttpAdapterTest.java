@@ -387,8 +387,9 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<String> mono = daprClientHttpAdapter.invokeActorMethod("DemoActor", "1", "Payment", "");
-    assertEquals(mono.block(), EXPECTED_RESULT);
+    Mono<byte[]> mono =
+      daprClientHttpAdapter.invokeActorMethod("DemoActor", "1", "Payment", "".getBytes());
+    assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
 
@@ -399,8 +400,8 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<String> mono = daprClientHttpAdapter.getActorState("DemoActor", "1", "order");
-    assertEquals(mono.block(), EXPECTED_RESULT);
+    Mono<byte[]> mono = daprClientHttpAdapter.getActorState("DemoActor", "1", "order");
+    assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
 
@@ -411,7 +412,8 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.saveActorStateTransactionally("DemoActor", "1", "");
+    Mono<Void> mono =
+      daprClientHttpAdapter.saveActorStateTransactionally("DemoActor", "1", "".getBytes());
     assertNull(mono.block());
   }
 
@@ -422,7 +424,8 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.registerActorReminder("DemoActor", "1", "reminder", "");
+    Mono<Void> mono =
+      daprClientHttpAdapter.registerActorReminder("DemoActor", "1", "reminder", "".getBytes());
     assertNull(mono.block());
   }
 
@@ -444,7 +447,8 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.registerActorTimer("DemoActor", "1", "timer", "");
+    Mono<Void> mono =
+      daprClientHttpAdapter.registerActorTimer("DemoActor", "1", "timer", "".getBytes());
     assertNull(mono.block());
   }
 

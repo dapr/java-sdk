@@ -11,6 +11,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.client.DaprClient;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -35,25 +36,25 @@ class DaprStateAsyncProvider {
     }
 
     <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
-        Mono<String> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
+        Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
 
-        return result
-                .filter(s -> (s != null) && (!s.isEmpty()))
-                .map(s -> {
+        return result.flatMap(s -> {
                     try {
-                        return this.serializer.deserialize(s, clazz);
+                        T response = this.serializer.deserialize(s, clazz);
+                        if (response == null) {
+                            return Mono.empty();
+                        }
+
+                        return Mono.just(response);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        return Mono.error(new RuntimeException(e));
                     }
                 });
     }
 
     Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
-        Mono<String> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
-
-        return result.map(s -> {
-            return (s != null) && (s.length() > 0);
-        });
+        Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
+        return result.map(s -> true).defaultIfEmpty(false);
     }
 
     /**
@@ -86,8 +87,8 @@ class DaprStateAsyncProvider {
 
         int count = 0;
         // Constructing the JSON via a stream API to avoid creating transient objects to be instantiated.
-        String payload = null;
-        try (Writer writer = new StringWriter()) {
+        byte[] payload = null;
+        try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
             JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
             // Start array
             generator.writeStartArray();
@@ -112,7 +113,7 @@ class DaprStateAsyncProvider {
                 generator.writeObjectFieldStart("request");
                 generator.writeStringField("key", stateChange.getStateName());
                 if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE) || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
-                    generator.writeStringField("value", this.serializer.serializeString(stateChange.getValue()));
+                    generator.writeBinaryField("value", this.serializer.serialize(stateChange.getValue()));
                 }
                 // End request object.
                 generator.writeEndObject();
@@ -126,7 +127,7 @@ class DaprStateAsyncProvider {
 
             generator.close();
             writer.flush();
-            payload = writer.toString();
+            payload = writer.toByteArray();
         } catch (IOException e) {
             e.printStackTrace();
             return Mono.error(e);

@@ -118,7 +118,7 @@ public class ActorStateManager {
       this.stateProvider.load(this.actorTypeName, this.actorId, stateName, clazz)
         .switchIfEmpty(Mono.error(new NoSuchElementException("State not found: " + stateName)))
         .map(v -> {
-          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, v));
+          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.NONE, v));
           return (T) v;
         }));
   }

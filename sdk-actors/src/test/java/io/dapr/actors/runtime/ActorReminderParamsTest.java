@@ -30,7 +30,7 @@ public class ActorReminderParamsTest {
     ActorReminderParams original = new ActorReminderParams(null, Duration.ZERO.plusMinutes(2), Duration.ZERO.plusMinutes((5)));
     ActorReminderParams recreated = null;
     try {
-      String serialized = SERIALIZER.serializeString(original);
+      byte[] serialized = SERIALIZER.serialize(original);
       recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
     }
     catch(Exception e) {
@@ -38,17 +38,17 @@ public class ActorReminderParamsTest {
       Assert.fail();
     }
 
-    Assert.assertEquals(original.getData(), recreated.getData());
+    Assert.assertArrayEquals(original.getData(), recreated.getData());
     Assert.assertEquals(original.getDueTime(), recreated.getDueTime());
     Assert.assertEquals(original.getPeriod(), recreated.getPeriod());
   }
 
   @Test
   public void withState() {
-    ActorReminderParams original = new ActorReminderParams("maru", Duration.ZERO.plusMinutes(2), Duration.ZERO.plusMinutes((5)));
+    ActorReminderParams original = new ActorReminderParams("maru".getBytes(), Duration.ZERO.plusMinutes(2), Duration.ZERO.plusMinutes((5)));
     ActorReminderParams recreated = null;
     try {
-      String serialized = SERIALIZER.serializeString(original);
+      byte[] serialized = SERIALIZER.serialize(original);
       recreated = SERIALIZER.deserialize(serialized, ActorReminderParams.class);
     }
     catch(Exception e) {
@@ -56,7 +56,7 @@ public class ActorReminderParamsTest {
       Assert.fail();
     }
 
-    Assert.assertEquals(original.getData(), recreated.getData());
+    Assert.assertArrayEquals(original.getData(), recreated.getData());
     Assert.assertEquals(original.getDueTime(), recreated.getDueTime());
     Assert.assertEquals(original.getPeriod(), recreated.getPeriod());
   }

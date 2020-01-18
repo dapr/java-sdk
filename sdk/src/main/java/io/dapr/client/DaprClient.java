@@ -160,7 +160,7 @@ public interface DaprClient {
    * @param jsonPayload Serialized body.
    * @return Asynchronous result with the Actor's response.
    */
-  Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload);
+  Mono<byte[]> invokeActorMethod(String actorType, String actorId, String methodName, byte[] jsonPayload);
 
   /**
    * Gets a state from Dapr's Actor.
@@ -170,7 +170,7 @@ public interface DaprClient {
    * @param keyName   State name.
    * @return Asynchronous result with current state value.
    */
-  Mono<String> getActorState(String actorType, String actorId, String keyName);
+  Mono<byte[]> getActorState(String actorType, String actorId, String keyName);
 
   /**
    * Saves state batch to Dapr.
@@ -180,7 +180,7 @@ public interface DaprClient {
    * @param data      State to be saved.
    * @return Asynchronous void result.
    */
-  Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data);
+  Mono<Void> saveActorStateTransactionally(String actorType, String actorId, byte[] data);
 
   /**
    * Register a reminder.
@@ -191,7 +191,7 @@ public interface DaprClient {
    * @param data         JSON reminder data as per Dapr's spec.
    * @return Asynchronous void result.
    */
-  Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data);
+  Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, byte[] data);
 
   /**
    * Unregisters a reminder.
@@ -212,7 +212,7 @@ public interface DaprClient {
    * @param data      JSON reminder data as per Dapr's spec.
    * @return Asynchronous void result.
    */
-  Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data);
+  Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, byte[] data);
 
   /**
    * Unregisters a timer.

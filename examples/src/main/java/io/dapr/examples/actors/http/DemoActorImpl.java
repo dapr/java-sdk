@@ -61,6 +61,14 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Actor, Re
   }
 
   @Override
+  public Mono<Integer> incrementAndGet(int delta) {
+    return super.getActorStateManager().contains("counter")
+      .flatMap(exists -> exists ? super.getActorStateManager().get("counter", int.class) : Mono.just(0))
+      .map(c -> c + delta)
+      .flatMap(c -> super.getActorStateManager().set("counter", c).thenReturn(c));
+  }
+
+  @Override
   public void clock(String message) {
     Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
     String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());

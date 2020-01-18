@@ -234,7 +234,9 @@ class DaprClientGrpcAdapter implements DaprClient {
               .setSeconds(retryPolicy.getInterval().getSeconds());
           retryPolicyBuilder.setInterval(durationBuilder.build());
         }
-        retryPolicyBuilder.setThreshold(objectSerializer.deserialize(retryPolicy.getThreshold(), int.class));
+        if (retryPolicy.getThreshold() != null) {
+          retryPolicyBuilder.setThreshold(retryPolicy.getThreshold());
+        }
         if (retryPolicy.getPattern() != null) {
           retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
         }
@@ -283,7 +285,9 @@ class DaprClientGrpcAdapter implements DaprClient {
                 .setSeconds(retryPolicy.getInterval().getSeconds());
             retryPolicyBuilder.setInterval(durationBuilder.build());
           }
-          retryPolicyBuilder.setThreshold(objectSerializer.deserialize(retryPolicy.getThreshold(), int.class));
+          if (retryPolicy.getThreshold() != null) {
+            retryPolicyBuilder.setThreshold(retryPolicy.getThreshold());
+          }
           if (retryPolicy.getPattern() != null) {
             retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
           }
@@ -328,7 +332,7 @@ class DaprClientGrpcAdapter implements DaprClient {
    * @throws UnsupportedOperationException every time is called.
    */
   @Override
-  public Mono<String> invokeActorMethod(String actorType, String actorId, String methodName, String jsonPayload) {
+  public Mono<byte[]> invokeActorMethod(String actorType, String actorId, String methodName, byte[] jsonPayload) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
@@ -338,7 +342,7 @@ class DaprClientGrpcAdapter implements DaprClient {
    * @throws UnsupportedOperationException every time is called.
    */
   @Override
-  public Mono<String> getActorState(String actorType, String actorId, String keyName) {
+  public Mono<byte[]> getActorState(String actorType, String actorId, String keyName) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
@@ -348,7 +352,7 @@ class DaprClientGrpcAdapter implements DaprClient {
    * @throws UnsupportedOperationException every time is called.
    */
   @Override
-  public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, String data) {
+  public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, byte[] data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
@@ -358,7 +362,7 @@ class DaprClientGrpcAdapter implements DaprClient {
    * @throws UnsupportedOperationException every time is called.
    */
   @Override
-  public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, String data) {
+  public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, byte[] data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
@@ -378,7 +382,7 @@ class DaprClientGrpcAdapter implements DaprClient {
    * @throws UnsupportedOperationException every time is called.
    */
   @Override
-  public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, String data) {
+  public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, byte[] data) {
     return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 

@@ -68,7 +68,7 @@ public class ActorRuntimeTest {
   @Test
   public void registerActor() throws Exception {
     this.runtime.registerActor(MyActorImpl.class);
-    Assert.assertTrue(this.runtime.serializeConfig().contains(ACTOR_NAME));
+    Assert.assertTrue(new String(this.runtime.serializeConfig()).contains(ACTOR_NAME));
   }
 
   @Test
@@ -84,7 +84,7 @@ public class ActorRuntimeTest {
     this.runtime.registerActor(MyActorImpl.class);
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
-    String response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
+    byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
     String message = ACTOR_STATE_SERIALIZER.deserialize(ACTOR_STATE_SERIALIZER.unwrapData(response), String.class);
     Assert.assertEquals("Nothing to say.", message);
   }
@@ -113,7 +113,7 @@ public class ActorRuntimeTest {
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
       .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
       .doOnSuccess(s -> Assert.fail())
-      .onErrorReturn("")
+      .onErrorReturn("".getBytes())
       .block();
   }
 
@@ -132,7 +132,7 @@ public class ActorRuntimeTest {
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
       .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
       .doOnSuccess(s -> Assert.fail())
-      .onErrorReturn("")
+      .onErrorReturn("".getBytes())
       .block();
   }
 
@@ -141,7 +141,7 @@ public class ActorRuntimeTest {
     String actorId = UUID.randomUUID().toString();
     this.runtime.registerActor(MyActorImpl.class);
 
-    Mono<String> invokeCall = this.runtime.invoke(ACTOR_NAME, actorId, "say", null);
+    Mono<byte[]> invokeCall = this.runtime.invoke(ACTOR_NAME, actorId, "say", null);
 
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
