@@ -5,18 +5,22 @@
 
 package io.dapr.springboot;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.runtime.ActorRuntime;
-import io.dapr.runtime.Dapr;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-
-import java.util.Map;
 
 /**
  * SpringBoot Controller to handle callback APIs for Dapr.
  */
 @RestController
 public class DaprController {
+
+  @Autowired
+  private ObjectMapper objectMapper;
+
+  private String topics;
 
   @GetMapping("/")
   public String index() {
@@ -26,21 +30,6 @@ public class DaprController {
   @GetMapping("/dapr/config")
   public String daprConfig() throws Exception {
     return ActorRuntime.getInstance().serializeConfig();
-  }
-
-  @GetMapping("/dapr/subscribe")
-  public String daprSubscribe() throws Exception {
-    return Dapr.getInstance().serializeSubscribedTopicList();
-  }
-
-  @PostMapping(path = "/{name}")
-  @PutMapping(path = "/{name}")
-  @DeleteMapping(path = "/{name}")
-  @GetMapping(path = "/{name}")
-  public Mono<byte[]> invokeMethodOrTopic(@PathVariable("name") String name,
-                                          @RequestBody(required = false) byte[] body,
-                                          @RequestHeader Map<String, String> header) {
-    return Dapr.getInstance().handleInvocation(name, body, header);
   }
 
   @PostMapping(path = "/actors/{type}/{id}")

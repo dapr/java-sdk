@@ -13,6 +13,8 @@ import java.util.Map;
 
 /**
  * Common interface to configure and process callback API.
+ *
+ * Used for Integration Tests only, for now.
  */
 public interface DaprRuntime {
 
