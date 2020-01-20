@@ -33,11 +33,10 @@ public class ObjectSerializer {
      * Serializes a given state object into byte array.
      *
      * @param state State object to be serialized.
-     * @param <T>   Type of the state object.
      * @return Array of bytes[] with the serialized content.
      * @throws IOException In case state cannot be serialized.
      */
-    public <T> byte[] serialize(T state) throws IOException {
+    public byte[] serialize(Object state) throws IOException {
         if (state == null) {
             return null;
         }

@@ -27,7 +27,7 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
    * {@inheritDoc}
    */
   @Override
-  public <T> byte[] serialize(T state) throws IOException {
+  public byte[] serialize(Object state) throws IOException {
     if (state == null) {
       return null;
     }
