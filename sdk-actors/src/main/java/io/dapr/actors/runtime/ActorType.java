@@ -7,7 +7,7 @@ package io.dapr.actors.runtime;
 import java.lang.annotation.*;
 
 /**
- * Annotation to override default behavior of Actor class.
+ * Annotation to define Actor class.
  */
 @Documented
 @Target(ElementType.TYPE_USE)
@@ -19,6 +19,6 @@ public @interface ActorType {
      *
      * @return Actor's name.
      */
-    String Name();
+    String name();
 
 }

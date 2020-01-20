@@ -30,8 +30,8 @@ public class ThrowFromPreAndPostActorMethodsTest {
     Mono<Boolean> stringInBooleanOut(String input);
   }
 
-  @ActorType(Name = "MyActor")
-  public static class ActorParent extends AbstractActor implements MyActor, Actor {
+  @ActorType(name = "MyActor")
+  public static class ActorParent extends AbstractActor implements MyActor {
     private final ActorId id;
     private boolean activated;
     private boolean methodReturningVoidInvoked;
@@ -61,7 +61,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
     }
   }
 
-  public static class ActorChild extends ActorParent implements MyActor, Actor {
+  public static class ActorChild extends ActorParent implements MyActor {
     private final ActorId id;
     private boolean activated;
 

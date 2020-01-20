@@ -33,14 +33,14 @@ public class ActorManagerTest {
     void incrementCount(int delta);
   }
 
-  public static class NotRemindableActor extends AbstractActor implements Actor {
+  public static class NotRemindableActor extends AbstractActor {
     public NotRemindableActor(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
     }
   }
 
-  @ActorType(Name = "MyActor")
-  public static class MyActorImpl extends AbstractActor implements Actor, MyActor, Remindable<String> {
+  @ActorType(name = "MyActor")
+  public static class MyActorImpl extends AbstractActor implements MyActor, Remindable<String> {
 
     private int timeCount = 0;
 

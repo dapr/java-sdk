@@ -35,8 +35,8 @@ public class ActorNoStateTest {
     Mono<MyData> classInClassOut(MyData input);
   }
 
-  @ActorType(Name = "MyActor")
-  public static class ActorImpl extends AbstractActor implements MyActor, Actor {
+  @ActorType(name = "MyActor")
+  public static class ActorImpl extends AbstractActor implements MyActor {
     private final ActorId id;
     private boolean activated;
     private boolean methodReturningVoidInvoked;

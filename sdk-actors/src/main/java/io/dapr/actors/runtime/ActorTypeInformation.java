@@ -79,8 +79,7 @@ final class ActorTypeInformation<T> {
     }
 
     /**
-     * Gets the actor interfaces which derive from {@link Actor} and implemented
-     * by actor class.
+     * Gets the actor interfaces that are implemented by actor class.
      *
      * @return Collection of actor interfaces.
      */
@@ -133,31 +132,18 @@ final class ActorTypeInformation<T> {
         if (!ActorTypeUtilities.isActor(actorClass)) {
             throw new IllegalArgumentException(
                     String.format(
-                            "The type '%s' is not an Actor. An actor type must derive from '%s'.",
+                            "The type '%s' is not an Actor. An actor class must inherit from '%s'.",
                             actorClass == null ? "" : actorClass.getCanonicalName(),
-                            Actor.class.getCanonicalName()));
+                            AbstractActor.class.getCanonicalName()));
         }
 
         // get all actor interfaces
         Class<?>[] actorInterfaces = actorClass.getInterfaces();
 
         boolean isAbstract = Modifier.isAbstract(actorClass.getModifiers());
-        // ensure that the if the actor type is not abstract it implements at least one actor interface
-        if ((actorInterfaces.length == 0) && !isAbstract) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "The actor type '%s' does not implement any actor interfaces or one of the "
-                                    + "interfaces implemented is not an actor interface. "
-                                    + "All interfaces(including its parent interface) implemented by actor type must "
-                                    + "be actor interface. An actor interface is the one that ultimately derives "
-                                    + "from '%s' type.",
-                            actorClass == null ? "" : actorClass.getCanonicalName(),
-                            Actor.class.getCanonicalName()));
-        }
-
         boolean isRemindable = ActorTypeUtilities.isRemindableActor(actorClass);
-        ActorType actorTypeAnnotation = (ActorType) actorClass.getAnnotation(ActorType.class);
-        String typeName = actorTypeAnnotation != null ? actorTypeAnnotation.Name() : actorClass.getSimpleName();
+        ActorType actorTypeAnnotation = actorClass.getAnnotation(ActorType.class);
+        String typeName = actorTypeAnnotation != null ? actorTypeAnnotation.name() : actorClass.getSimpleName();
 
         return new ActorTypeInformation(typeName, actorClass, Arrays.asList(actorInterfaces), isAbstract, isRemindable);
     }

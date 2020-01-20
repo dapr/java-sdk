@@ -72,8 +72,8 @@ public class ActorStatefulTest {
     String getIdString();
   }
 
-  @ActorType(Name = "MyActor")
-  public static class MyActorImpl extends AbstractActor implements MyActor, Actor, Remindable<String> {
+  @ActorType(name = "MyActor")
+  public static class MyActorImpl extends AbstractActor implements MyActor, Remindable<String> {
 
     private final ActorId id;
 

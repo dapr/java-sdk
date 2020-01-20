@@ -26,8 +26,8 @@ public class ActorRuntimeTest {
     String say();
   }
 
-  @ActorType(Name = ACTOR_NAME)
-  public static class MyActorImpl extends AbstractActor implements Actor, MyActor {
+  @ActorType(name = ACTOR_NAME)
+  public static class MyActorImpl extends AbstractActor implements MyActor {
 
     public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);

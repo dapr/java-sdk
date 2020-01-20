@@ -19,7 +19,7 @@ public class ActorTypeInformationTest {
   /**
    * Actor interfaced used in this test only.
    */
-  private interface MyActor extends Actor {
+  private interface MyActor {
   }
 
   /**
@@ -82,7 +82,7 @@ public class ActorTypeInformationTest {
    */
   @Test
   public void renamedWithAnnotation() {
-    @ActorType(Name = "B")
+    @ActorType(name = "B")
     class A extends AbstractActor implements MyActor {
       A() {
         super(null, null);
@@ -104,10 +104,7 @@ public class ActorTypeInformationTest {
    */
   @Test
   public void nonActorParentClass() {
-    abstract class MyAbstractClass extends AbstractActor implements MyActor {
-      MyAbstractClass() {
-        super(null, null);
-      }
+    abstract class MyAbstractClass implements MyActor {
     }
 
     class A extends MyAbstractClass {

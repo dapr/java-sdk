@@ -19,7 +19,7 @@ public class DefaultActorFactoryTest {
   /**
    * A compliant implementation of Actor to be used in the tests below.
    */
-  static class MyActor extends AbstractActor implements Actor {
+  static class MyActor extends AbstractActor {
 
     ActorRuntimeContext<MyActor> context;
 
@@ -35,7 +35,7 @@ public class DefaultActorFactoryTest {
   /**
    * A non-compliant implementation of Actor to be used in the tests below.
    */
-  static class InvalidActor extends AbstractActor implements Actor {
+  static class InvalidActor extends AbstractActor {
     InvalidActor() {
       super(null, null);
     }
