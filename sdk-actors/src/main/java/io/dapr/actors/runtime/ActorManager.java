@@ -325,10 +325,8 @@ class ActorManager<T extends AbstractActor> {
             this.runtimeContext.getActorTypeInformation().getName()));
       }
 
-      Mono<Object> result = actor.onPreActorMethodInternal(context)
-        .then((Mono<Object>)func.apply(actor));
-
-      return result
+      return actor.onPreActorMethodInternal(context)
+        .then((Mono<Object>)func.apply(actor))
         .switchIfEmpty(
           actor.onPostActorMethodInternal(context))
         .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
