@@ -2,10 +2,8 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.SignalType;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,6 +14,11 @@ import java.util.function.Function;
  * Manages actors of a specific type.
  */
 class ActorManager<T extends AbstractActor> {
+
+  /**
+   * Serializer for internal Dapr objects.
+   */
+  private static final ObjectSerializer OBJECT_SERIALIZER = new ObjectSerializer();
 
   /**
    * Context for the Actor runtime.
@@ -91,10 +94,7 @@ class ActorManager<T extends AbstractActor> {
       }
 
       try {
-        return this
-          .runtimeContext
-          .getActorSerializer()
-          .deserialize(params, ActorReminderParams.class);
+        return OBJECT_SERIALIZER.deserialize(params, ActorReminderParams.class);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -176,7 +176,7 @@ class ActorManager<T extends AbstractActor> {
       return true;
     }).flatMap(x -> {
       try {
-        Object data = this.runtimeContext.getActorSerializer().deserialize(
+        Object data = this.runtimeContext.getObjectSerializer().deserialize(
           reminderParams.getData(),
           actor.getStateType());
         return actor.receiveReminder(
@@ -244,7 +244,7 @@ class ActorManager<T extends AbstractActor> {
         if (method.getParameterCount() == 1) {
           // Actor methods must have a one or no parameter, which is guaranteed at this point.
           Class<?> inputClass = method.getParameterTypes()[0];
-          input = this.runtimeContext.getActorSerializer().deserialize(request, inputClass);
+          input = this.runtimeContext.getObjectSerializer().deserialize(request, inputClass);
         }
 
         if (method.getReturnType().equals(Mono.class)) {
@@ -257,7 +257,7 @@ class ActorManager<T extends AbstractActor> {
       }
     }).map(r -> {
       try {
-        return this.runtimeContext.getActorSerializer().serialize(r);
+        return this.runtimeContext.getObjectSerializer().serialize(r);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

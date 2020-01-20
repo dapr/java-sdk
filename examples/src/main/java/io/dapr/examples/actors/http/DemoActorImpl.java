@@ -59,6 +59,8 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
       super.getId() + ": " +
       (something == null ? "" : something + " @ " + utcNowAsString));
 
+    super.getActorStateManager().set("lastmessage", something).block();
+
     // Now respond with current timestamp.
     return utcNowAsString;
   }

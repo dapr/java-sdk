@@ -10,7 +10,6 @@ import io.dapr.DaprProtos;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
-import io.dapr.utils.ObjectSerializer;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +37,7 @@ public class DaprClientGrpcAdapterTest {
   @Before
   public void setup() {
     client = mock(DaprGrpc.DaprFutureStub.class);
-    adapter = new DaprClientGrpcAdapter(client);
+    adapter = new DaprClientGrpcAdapter(client, new DefaultObjectSerializer());
     serializer = new ObjectSerializer();
   }
 

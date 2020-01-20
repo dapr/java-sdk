@@ -7,13 +7,10 @@ package io.dapr.runtime;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientTestBuilder;
-import io.dapr.client.DaprHttpStub;
+import io.dapr.client.*;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.Verb;
 import io.dapr.utils.Constants;
-import io.dapr.utils.ObjectSerializer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -108,7 +105,7 @@ public class DaprRuntimeTest {
 
     DaprHttpStub daprHttp = mock(DaprHttpStub.class);
     DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
-    ObjectSerializer serializer = new ObjectSerializer();
+    DaprObjectSerializer serializer = new DefaultObjectSerializer();
 
     for (Message message : messages) {
       when(daprHttp.invokeAPI(
@@ -192,7 +189,7 @@ public class DaprRuntimeTest {
     DaprHttpStub daprHttp = mock(DaprHttpStub.class);
     DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
 
-    ObjectSerializer serializer = new ObjectSerializer();
+    DaprObjectSerializer serializer = new DefaultObjectSerializer();
     for (Message message : messages) {
       byte[] expectedResponse = serializer.serialize(message.id);
       when(listener.process(eq(serializer.serialize(message.data)), eq(message.metadata)))

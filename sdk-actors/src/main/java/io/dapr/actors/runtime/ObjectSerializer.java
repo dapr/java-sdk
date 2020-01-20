@@ -8,16 +8,15 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.utils.DurationUtils;
-import io.dapr.utils.ObjectSerializer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 
 /**
- * Serializes and deserializes an object.
+ * Serializes and deserializes internal objects.
  */
-public class ActorStateSerializer extends ObjectSerializer {
+public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
 
   /**
    * Shared Json Factory as per Jackson's documentation.

@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -22,6 +23,8 @@ import static org.mockito.Mockito.when;
  * Unit tests for Actor Manager
  */
 public class ActorManagerTest {
+
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
@@ -95,23 +98,23 @@ public class ActorManagerTest {
   @Test
   public void activateThenInvoke() throws Exception {
     ActorId actorId = newActorId();
-    byte[] message = this.context.getActorSerializer().serialize("something");
+    byte[] message = this.context.getObjectSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
     byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
     Assert.assertEquals(executeSayMethod(
-      this.context.getActorSerializer().deserialize(message, String.class)),
-      this.context.getActorSerializer().deserialize(response, String.class));
+      this.context.getObjectSerializer().deserialize(message, String.class)),
+      this.context.getObjectSerializer().deserialize(response, String.class));
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void activateInvokeDeactivateThenInvoke() throws Exception {
     ActorId actorId = newActorId();
-    byte[] message = this.context.getActorSerializer().serialize("something");
+    byte[] message = this.context.getObjectSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
     byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
     Assert.assertEquals(executeSayMethod(
-      this.context.getActorSerializer().deserialize(message, String.class)),
-      this.context.getActorSerializer().deserialize(response, String.class));
+      this.context.getObjectSerializer().deserialize(message, String.class)),
+      this.context.getObjectSerializer().deserialize(response, String.class));
 
     this.manager.deactivateActor(actorId).block();
     this.manager.invokeMethod(actorId, "say", message).block();
@@ -181,9 +184,9 @@ public class ActorManagerTest {
   }
 
   private byte[] createReminderParams(String data) throws IOException {
-    byte[] serializedData = this.context.getActorSerializer().serialize(data);
+    byte[] serializedData = this.context.getObjectSerializer().serialize(data);
     ActorReminderParams params = new ActorReminderParams(serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return this.context.getActorSerializer().serialize(params);
+    return INTERNAL_SERIALIZER.serialize(params);
   }
 
   private static ActorId newActorId() {
@@ -204,7 +207,7 @@ public class ActorManagerTest {
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(clazz),
       daprClient,

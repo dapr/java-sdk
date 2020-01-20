@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.client.DaprObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -71,7 +72,7 @@ public class DefaultActorFactoryTest {
   private static <T extends AbstractActor> ActorRuntimeContext<T> createActorRuntimeContext(Class<T> clazz) {
     return new ActorRuntimeContext(
         mock(ActorRuntime.class),
-        mock(ActorStateSerializer.class),
+        mock(DaprObjectSerializer.class),
         mock(ActorFactory.class),
         ActorTypeInformation.create(clazz),
         mock(DaprClient.class),

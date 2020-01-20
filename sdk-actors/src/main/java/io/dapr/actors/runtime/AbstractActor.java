@@ -17,11 +17,12 @@ import java.util.Map;
 /**
  * Represents the base class for actors.
  * <p>
- * The base type for actors, that provides the common functionality
- * for actors that derive from {@link Actor}.
+ * The base type for actors, that provides the common functionality for actors.
  * The state is preserved across actor garbage collections and fail-overs.
  */
 public abstract class AbstractActor {
+
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
    * Type of tracing messages.
@@ -110,9 +111,9 @@ public abstract class AbstractActor {
     Duration dueTime,
     Duration period) {
     try {
-      byte[] data = this.actorRuntimeContext.getActorSerializer().serialize(state);
+      byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
       ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
-      byte[] serialized = this.actorRuntimeContext.getActorSerializer().serialize(params);
+      byte[] serialized = INTERNAL_SERIALIZER.serialize(params);
       return this.actorRuntimeContext.getDaprClient().registerActorReminder(
         this.actorRuntimeContext.getActorTypeInformation().getName(),
         this.id.toString(),
@@ -162,7 +163,7 @@ public abstract class AbstractActor {
           this.actorRuntimeContext.getActorTypeInformation().getName(),
           this.id.toString(),
           actorTimer.getName(),
-          this.actorRuntimeContext.getActorSerializer().serialize(actorTimer));
+          this.actorRuntimeContext.getObjectSerializer().serialize(actorTimer));
       } catch (Exception e) {
         return Mono.error(e);
       }

@@ -8,7 +8,6 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.utils.Constants;
-import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -30,19 +29,30 @@ public class DaprClientHttpAdapter implements DaprClient {
   private final DaprHttp client;
 
   /**
-   * A utitlity class for serialize and deserialize the messages sent and retrived by the client.
+   * A utility class for serialize and deserialize customer's objects.
    */
-  private final ObjectSerializer objectSerializer;
+  private final DaprObjectSerializer objectSerializer;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
    * @param client Dapr's http client.
+   * @param serializer Dapr's object serializer.
+   * @see io.dapr.client.DaprClientBuilder
+   */
+  DaprClientHttpAdapter(DaprHttp client, DaprObjectSerializer serializer) {
+    this.client = client;
+    this.objectSerializer = serializer;
+  }
+
+  /**
+   * Constructor useful for tests.
+   *
+   * @param client Dapr's http client.
    * @see io.dapr.client.DaprClientBuilder
    */
   DaprClientHttpAdapter(DaprHttp client) {
-    this.client = client;
-    this.objectSerializer = new ObjectSerializer();
+    this(client, new DefaultObjectSerializer());
   }
 
   /**
@@ -215,6 +225,7 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
       final String url = Constants.STATE_PATH;
+      // TODO: Use internal serializer for internal objects.
       byte[] serializedStateBody = objectSerializer.serialize(states);
       return this.client.invokeAPI(
         DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers).then();
@@ -268,6 +279,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   private <T> State<T> buildStateKeyValue(
     DaprHttp.Response response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
+    // TODO: Use internal serializer for internal objects.
     T value = objectSerializer.deserialize(response.getBody(), clazz);
     String key = requestedKey;
     String etag = null;

@@ -37,7 +37,7 @@ public class DaprHttpBuilder {
     private static int getEnvPortOrDefault() {
         String envPort = System.getenv(Constants.ENV_DAPR_HTTP_PORT);
         if (envPort == null || envPort.trim().isEmpty()) {
-            return Constants.DEFAULT_PORT;
+            return Constants.DEFAULT_HTTP_PORT;
         }
 
         try {
@@ -46,7 +46,7 @@ public class DaprHttpBuilder {
             e.printStackTrace();
         }
 
-        return Constants.DEFAULT_PORT;
+        return Constants.DEFAULT_HTTP_PORT;
     }
 
     /**

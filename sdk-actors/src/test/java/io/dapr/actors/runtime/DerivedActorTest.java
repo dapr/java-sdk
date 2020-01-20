@@ -9,6 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
 import io.dapr.actors.client.DaprClientStub;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -21,9 +22,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class DerivedActorTest {
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
   private final ActorRuntimeContext context = createContext();
+
   private ActorManager<ActorChild> manager = new ActorManager<>(context);
 
   public interface MyActor {
@@ -331,11 +335,11 @@ public class DerivedActorTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          context.getActorSerializer().unwrapData(
+          INTERNAL_SERIALIZER.unwrapData(
             invocationOnMock.getArgument(3, byte[].class)))
           .map(s -> {
             try {
-              return context.getActorSerializer().wrapData(s);
+              return INTERNAL_SERIALIZER.wrapData(s);
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
@@ -346,7 +350,7 @@ public class DerivedActorTest {
     return new ActorProxyForTestsImpl(
       context.getActorTypeInformation().getName(),
       actorId,
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       daprClient);
   }
 
@@ -360,7 +364,7 @@ public class DerivedActorTest {
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(ActorChild.class),
       daprClient,

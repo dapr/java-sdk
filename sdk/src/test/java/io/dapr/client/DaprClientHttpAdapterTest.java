@@ -7,7 +7,6 @@ package io.dapr.client;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
-import io.dapr.utils.ObjectSerializer;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
@@ -15,7 +14,6 @@ import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;

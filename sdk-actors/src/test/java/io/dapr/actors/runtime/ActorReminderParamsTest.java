@@ -7,7 +7,7 @@ import java.time.Duration;
 
 public class ActorReminderParamsTest {
 
-  private static final ActorStateSerializer SERIALIZER = new ActorStateSerializer();
+  private static final ObjectSerializer SERIALIZER = new ObjectSerializer();
 
   @Test(expected = IllegalArgumentException.class)
   public void outOfRangeDueTime() {

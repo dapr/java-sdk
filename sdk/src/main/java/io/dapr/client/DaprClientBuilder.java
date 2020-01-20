@@ -20,24 +20,38 @@ import java.time.temporal.TemporalUnit;
 public class DaprClientBuilder {
 
     /**
-     * Default port for Dapr after checking environment variable.
+     * HTTP port for Dapr after checking environment variable.
      */
-    private static final int port = DaprClientBuilder.getEnvPortOrDefault();
+    private static final int HTTP_PORT = DaprClientBuilder.getEnvHttpPortOrDefault(
+      Constants.ENV_DAPR_HTTP_PORT, Constants.DEFAULT_HTTP_PORT);
 
     /**
-     * Unique instance of httpClient to be shared.
+     * GRPC port for Dapr after checking environment variable.
      */
-    private static volatile DaprClientHttpAdapter daprHttClient;
+    private static final int GRPC_PORT = DaprClientBuilder.getEnvHttpPortOrDefault(
+      Constants.ENV_DAPR_GRPC_PORT, Constants.DEFAULT_GRPC_PORT);
 
     /**
-     * Tries to get a valid port from environment variable or returns default.
+     * Default serializer.
+     */
+    private static final DaprObjectSerializer DEFAULT_SERIALIZER = new DefaultObjectSerializer();
+
+    /**
+     * Serializer used for objects in DaprClient.
+     */
+    private final DaprObjectSerializer serializer;
+
+    /**
+     * Finds the port defined by env variable or sticks to default.
+     * @param envName Name of env variable with the port.
+     * @param defaultPort Default port if cannot find a valid port.
      *
-     * @return Port defined in env variable or default.
+     * @return Port from env variable or default.
      */
-    private static int getEnvPortOrDefault() {
-        String envPort = System.getenv(Constants.ENV_DAPR_HTTP_PORT);
+    private static int getEnvHttpPortOrDefault(String envName, int defaultPort) {
+        String envPort = System.getenv(envName);
         if (envPort == null || envPort.trim().isEmpty()) {
-            return Constants.DEFAULT_PORT;
+            return defaultPort;
         }
 
         try {
@@ -46,7 +60,16 @@ public class DaprClientBuilder {
             e.printStackTrace();
         }
 
-        return Constants.DEFAULT_PORT;
+        return defaultPort;
+    }
+
+    /**
+     * Creates a constructor for DaprClient.
+     *
+     * @param serializer Serializer for objects to be sent and received from Dapr.
+     */
+    public DaprClientBuilder(DaprObjectSerializer serializer) {
+        this.serializer = serializer == null ? DEFAULT_SERIALIZER : serializer;
     }
 
     /**
@@ -66,35 +89,24 @@ public class DaprClientBuilder {
      * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
      */
     private DaprClient buildDaprClientGrpc() {
-        if (port <= 0) {
+        if (GRPC_PORT <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, port).usePlaintext().build();
-        return new DaprClientGrpcAdapter(DaprGrpc.newFutureStub(channel));
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, GRPC_PORT).usePlaintext().build();
+        return new DaprClientGrpcAdapter(DaprGrpc.newFutureStub(channel), new DefaultObjectSerializer());
     }
 
     /**
-     * Creates and instance of the HTTP CLient.
-     * If an okhttp3.OkHttpClient.Builder has not been provided, a defult builder will be used.
+     * Creates and instance of DaprClient over HTTP.
      *
-     * @return
+     * @return DaprClient over HTTP.
      */
     private DaprClient buildDaprClientHttp() {
-        int port=DaprClientBuilder.getEnvPortOrDefault();
-        if (port <= 0) {
+        if (HTTP_PORT <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
-        if (this.daprHttClient == null) {
-            synchronized (DaprClientBuilder.class) {
-                if (this.daprHttClient == null) {
-                    OkHttpClient okHttpClient = new OkHttpClient.Builder().callTimeout(Duration.ofSeconds(60))
-                    .build();
-                    DaprHttp daprHtt = new DaprHttp(port, okHttpClient);
-                    this.daprHttClient = new DaprClientHttpAdapter(daprHtt);
-                }
-
-            }
-        }
-        return this.daprHttClient;
+        OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+        DaprHttp daprHttp = new DaprHttp(HTTP_PORT, okHttpClient);
+        return new DaprClientHttpAdapter(daprHttp, this.serializer);
     }
 }

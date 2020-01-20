@@ -14,7 +14,6 @@ import io.dapr.DaprProtos;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
-import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -39,9 +38,9 @@ class DaprClientGrpcAdapter implements DaprClient {
   private DaprGrpc.DaprFutureStub client;
 
   /**
-   * A utitlity class for serialize and deserialize the messages sent and retrived by the client.
+   * A utitlity class for serialize and deserialize the messages sent and retrieved by the client.
    */
-  private ObjectSerializer objectSerializer;
+  private DaprObjectSerializer objectSerializer;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -49,9 +48,9 @@ class DaprClientGrpcAdapter implements DaprClient {
    * @param futureClient
    * @see io.dapr.client.DaprClientBuilder
    */
-  DaprClientGrpcAdapter(DaprGrpc.DaprFutureStub futureClient) {
+  DaprClientGrpcAdapter(DaprGrpc.DaprFutureStub futureClient, DaprObjectSerializer serializer) {
     client = futureClient;
-    objectSerializer = new ObjectSerializer();
+    objectSerializer = serializer;
   }
 
   /**

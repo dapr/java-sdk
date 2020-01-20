@@ -28,7 +28,7 @@ public class ActorTimerTest {
       null,
       dueTime,
       period);
-    byte[] s = new ActorStateSerializer().serialize(timer);
+    byte[] s = new ObjectSerializer().serialize(timer);
 
     String expected = "{\"period\":\"1h0m3s0ms\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
     // Deep comparison via JsonNode.equals method.
@@ -53,7 +53,7 @@ public class ActorTimerTest {
       null,
       dueTime,
       period);
-    byte[] s = new ActorStateSerializer().serialize(timer);
+    byte[] s = new ObjectSerializer().serialize(timer);
 
     // A negative period will be serialized to an empty string which is interpreted by Dapr to mean fire once only.
     String expected = "{\"period\":\"\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";

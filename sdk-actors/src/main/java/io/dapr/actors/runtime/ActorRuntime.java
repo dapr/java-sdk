@@ -6,7 +6,9 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
+import io.dapr.client.DefaultObjectSerializer;
 import io.dapr.client.DaprHttpBuilder;
+import io.dapr.client.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -19,6 +21,11 @@ import java.util.Map;
  * runtime to create instances of the actor.
  */
 public class ActorRuntime {
+
+  /**
+   * Serializer for internal Dapr objects.
+   */
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
    * A trace type used when logging.
@@ -44,16 +51,6 @@ public class ActorRuntime {
    * A client used to communicate from the actor to the Dapr runtime.
    */
   private final DaprClient daprClient;
-
-  /**
-   * State provider for Dapr.
-   */
-  private final DaprStateAsyncProvider daprStateProvider;
-
-  /**
-   * Serializes/deserializes objects for Actors.
-   */
-  private final ActorStateSerializer actorSerializer;
 
   /**
    * Map of ActorType --> ActorManager.
@@ -83,8 +80,6 @@ public class ActorRuntime {
     this.config = new ActorRuntimeConfig();
     this.actorManagers = Collections.synchronizedMap(new HashMap<>());
     this.daprClient = daprClient;
-    this.actorSerializer = new ActorStateSerializer();
-    this.daprStateProvider = new DaprStateAsyncProvider(this.daprClient, this.actorSerializer);
   }
 
   /**
@@ -111,7 +106,7 @@ public class ActorRuntime {
    * @throws IOException If cannot serialize config.
    */
   public byte[] serializeConfig() throws IOException {
-    return this.actorSerializer.serialize(this.config);
+    return this.INTERNAL_SERIALIZER.serialize(this.config);
   }
 
   /**
@@ -121,29 +116,53 @@ public class ActorRuntime {
    * @param <T>   Actor class type.
    */
   public <T extends AbstractActor> void registerActor(Class<T> clazz) {
-    registerActor(clazz, null);
+    registerActor(clazz, null, null);
   }
 
   /**
    * Registers an actor with the runtime.
    *
    * @param clazz        The type of actor.
-   * @param actorFactory An optional factory to create actors.
+   * @param actorFactory An optional factory to create actors. This can be used for dependency injection.
    * @param <T>          Actor class type.
-   *                     This can be used for dependency injection into actors.
    */
   public <T extends AbstractActor> void registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
+    this.registerActor(clazz, actorFactory, null);
+  }
+
+  /**
+   * Registers an actor with the runtime.
+   *
+   * @param clazz                The type of actor.
+   * @param objectSerializer Serializer for Actor's state and transient objects.
+   * @param <T>                  Actor class type.
+   */
+  public <T extends AbstractActor> void registerActor(Class<T> clazz, DaprObjectSerializer objectSerializer) {
+    registerActor(clazz, null, objectSerializer);
+  }
+
+  /**
+   * Registers an actor with the runtime.
+   *
+   * @param clazz                The type of actor.
+   * @param actorFactory         An optional factory to create actors. This can be used for dependency injection.
+   * @param objectSerializer Serializer for Actor's state and transient objects.
+   * @param <T>                  Actor class type.
+   */
+  public <T extends AbstractActor> void registerActor(
+    Class<T> clazz, ActorFactory<T> actorFactory, DaprObjectSerializer objectSerializer) {
     ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
     ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
+    DaprObjectSerializer actualSerializer = objectSerializer != null ? objectSerializer : new DefaultObjectSerializer();
 
     ActorRuntimeContext<T> context = new ActorRuntimeContext<T>(
       this,
-      this.actorSerializer,
+      actualSerializer,
       actualActorFactory,
       actorTypeInfo,
       this.daprClient,
-      this.daprStateProvider);
+      new DaprStateAsyncProvider(this.daprClient, actualSerializer));
 
     // Create ActorManagers, override existing entry if registered again.
     this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
@@ -187,7 +206,7 @@ public class ActorRuntime {
   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
       .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, unwrap(payload)))
-      .map(response -> wrap((byte[])response));
+      .map(response -> wrap((byte[]) response));
   }
 
   /**
@@ -245,7 +264,7 @@ public class ActorRuntime {
    */
   private byte[] unwrap(final byte[] payload) {
     try {
-      return this.actorSerializer.unwrapData(payload);
+      return INTERNAL_SERIALIZER.unwrapData(payload);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -260,7 +279,7 @@ public class ActorRuntime {
    */
   private byte[] wrap(final byte[] data) {
     try {
-      return this.actorSerializer.wrapData(data);
+      return INTERNAL_SERIALIZER.wrapData(data);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

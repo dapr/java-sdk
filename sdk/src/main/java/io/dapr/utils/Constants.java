@@ -25,14 +25,24 @@ public final class Constants {
     public static final String DEFAULT_BASE_HTTP_URL = "http://" + DEFAULT_HOSTNAME;
 
     /**
-     * Dapr's default port.
+     * Dapr's default HTTP port.
      */
-    public static final int DEFAULT_PORT = 3500;
+    public static final int DEFAULT_HTTP_PORT = 3500;
 
     /**
-     * Environment variable used to set Dapr's port.
+     * Dapr's default GRPC port.
+     */
+    public static final int DEFAULT_GRPC_PORT = 50051;
+
+    /**
+     * Environment variable used to set Dapr's HTTP port.
      */
     public static final String ENV_DAPR_HTTP_PORT = "DAPR_HTTP_PORT";
+
+    /**
+     * Environment variable used to set Dapr's GRPC port.
+     */
+    public static final String ENV_DAPR_GRPC_PORT = "DAPR_GRPC_PORT";
 
     /**
      * Header used for request id in Dapr.

@@ -27,7 +27,7 @@ public class InvokeClient {
    * @param args Messages to be sent as request for the invoke API.
    */
   public static void main(String[] args) {
-    DaprClient client = (new DaprClientBuilder()).build();
+    DaprClient client = (new DaprClientBuilder(null)).build();
     for (String message : args) {
       client.invokeService(Verb.POST, SERVICE_APP_ID, "say", message, null, String.class).block();
     }

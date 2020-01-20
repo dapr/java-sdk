@@ -9,6 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
 import io.dapr.actors.client.DaprClientStub;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -27,6 +28,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ActorStatefulTest {
+
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
@@ -608,11 +611,11 @@ public class ActorStatefulTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          context.getActorSerializer().unwrapData(
+          INTERNAL_SERIALIZER.unwrapData(
             invocationOnMock.getArgument(3, byte[].class)))
           .map(s -> {
             try {
-              return context.getActorSerializer().wrapData(s);
+              return INTERNAL_SERIALIZER.wrapData(s);
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
@@ -623,14 +626,14 @@ public class ActorStatefulTest {
     return new ActorProxyForTestsImpl(
       context.getActorTypeInformation().getName(),
       actorId,
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       daprClient);
   }
 
   private byte[] createReminderParams(String data) throws IOException {
-    byte[] serialized = this.context.getActorSerializer().serialize(data);
+    byte[] serialized = this.context.getObjectSerializer().serialize(data);
     ActorReminderParams params = new ActorReminderParams(serialized, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return this.context.getActorSerializer().serialize(params);
+    return INTERNAL_SERIALIZER.serialize(params);
   }
 
   private static ActorId newActorId() {
@@ -651,11 +654,11 @@ public class ActorStatefulTest {
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(MyActorImpl.class),
       daprClient,
-      new DaprInMemoryStateProvider(new ActorStateSerializer())
+      new DaprInMemoryStateProvider(new ObjectSerializer())
     );
   }
 }

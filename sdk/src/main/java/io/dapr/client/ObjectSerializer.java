@@ -2,7 +2,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
-package io.dapr.utils;
+package io.dapr.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -12,7 +12,7 @@ import io.dapr.client.domain.CloudEvent;
 import java.io.IOException;
 
 /**
- * Serializes and deserializes an object.
+ * Serializes and deserializes an internal object.
  */
 public class ObjectSerializer {
 
@@ -22,6 +22,12 @@ public class ObjectSerializer {
     protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+    /**
+     * Default constructor to avoid class from being instantiated outside package but still inherited.
+     */
+    protected ObjectSerializer() {
+    }
 
     /**
      * Serializes a given state object into byte array.

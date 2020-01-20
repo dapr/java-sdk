@@ -6,11 +6,11 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.ActorStateSerializer;
+import io.dapr.client.DaprObjectSerializer;
 
 public class ActorProxyForTestsImpl extends ActorProxyImpl {
 
-  public ActorProxyForTestsImpl(String actorType, ActorId actorId, ActorStateSerializer serializer, DaprClient daprClient) {
+  public ActorProxyForTestsImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, DaprClient daprClient) {
     super(actorType, actorId, serializer, daprClient);
   }
 }

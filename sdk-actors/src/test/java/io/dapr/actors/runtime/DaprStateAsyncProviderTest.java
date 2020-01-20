@@ -8,6 +8,8 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
+import io.dapr.client.DaprObjectSerializer;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -24,7 +26,7 @@ import static org.mockito.Mockito.*;
  */
 public class DaprStateAsyncProviderTest {
 
-  private static final ActorStateSerializer SERIALIZER = new ActorStateSerializer();
+  private static final DaprObjectSerializer SERIALIZER = new DefaultObjectSerializer();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

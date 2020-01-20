@@ -38,7 +38,7 @@ public class ActorRuntimeTest {
     }
   }
 
-  private static final ActorStateSerializer ACTOR_STATE_SERIALIZER = new ActorStateSerializer();
+  private static final ObjectSerializer ACTOR_STATE_SERIALIZER = new ObjectSerializer();
 
   private static Constructor<ActorRuntime> constructor;
 

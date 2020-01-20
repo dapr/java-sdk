@@ -1,7 +1,8 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.ActorStateSerializer;
+import io.dapr.actors.runtime.ObjectSerializer;
+import io.dapr.client.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -10,6 +11,11 @@ import java.io.IOException;
  * Implements a proxy client for an Actor's instance.
  */
 class ActorProxyImpl implements ActorProxy {
+
+  /**
+   * Serializer used for internal objects.
+   */
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
    * Actor's identifier for this Actor instance.
@@ -24,7 +30,7 @@ class ActorProxyImpl implements ActorProxy {
   /**
    * Serializer/deserialzier to exchange message for Actors.
    */
-  private final ActorStateSerializer serializer;
+  private final DaprObjectSerializer serializer;
 
   /**
    * Client to talk to the Dapr's API.
@@ -39,7 +45,7 @@ class ActorProxyImpl implements ActorProxy {
    * @param serializer Serializer and deserializer for method calls.
    * @param daprClient Dapr client.
    */
-  ActorProxyImpl(String actorType, ActorId actorId, ActorStateSerializer serializer, DaprClient daprClient) {
+  ActorProxyImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, DaprClient daprClient) {
     this.actorType = actorType;
     this.actorId = actorId;
     this.daprClient = daprClient;
@@ -107,7 +113,7 @@ class ActorProxyImpl implements ActorProxy {
    */
   private <T> T unwrap(final byte[] response, Class<T> clazz) {
     try {
-      return this.serializer.deserialize(this.serializer.unwrapData(response), clazz);
+      return this.serializer.deserialize(INTERNAL_SERIALIZER.unwrapData(response), clazz);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -122,7 +128,7 @@ class ActorProxyImpl implements ActorProxy {
    */
   private byte[] wrap(final Object request) {
     try {
-      return this.serializer.wrapData(this.serializer.serialize(request));
+      return INTERNAL_SERIALIZER.wrapData(this.serializer.serialize(request));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

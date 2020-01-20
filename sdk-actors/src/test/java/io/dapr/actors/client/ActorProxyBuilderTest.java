@@ -10,28 +10,28 @@ public class ActorProxyBuilderTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorId() {
-    new ActorProxyBuilder("test")
+    new ActorProxyBuilder("test", null)
         .build(null);
 
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithEmptyActorType() {
-    new ActorProxyBuilder("")
+    new ActorProxyBuilder("", null)
         .build(new ActorId("100"));
 
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorType() {
-    new ActorProxyBuilder(null)
+    new ActorProxyBuilder(null, null)
         .build(new ActorId("100"));
 
   }
 
   @Test()
   public void build() {
-    ActorProxyBuilder builder = new ActorProxyBuilder("test");
+    ActorProxyBuilder builder = new ActorProxyBuilder("test", null);
     ActorProxy actorProxy = builder.build(new ActorId("100"));
 
     Assert.assertNotNull(actorProxy);

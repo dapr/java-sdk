@@ -6,7 +6,6 @@ package io.dapr.client;
 
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
-import io.dapr.utils.ObjectSerializer;
 import okhttp3.*;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
