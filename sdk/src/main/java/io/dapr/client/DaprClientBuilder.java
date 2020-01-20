@@ -10,6 +10,9 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import okhttp3.OkHttpClient;
 
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
+
 /**
  * A builder for the DaprClient,
  * Currently only and HTTP Client will be supported.
@@ -84,7 +87,8 @@ public class DaprClientBuilder {
         if (this.daprHttClient == null) {
             synchronized (DaprClientBuilder.class) {
                 if (this.daprHttClient == null) {
-                    OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+                    OkHttpClient okHttpClient = new OkHttpClient.Builder().callTimeout(Duration.ofSeconds(60))
+                    .build();
                     DaprHttp daprHtt = new DaprHttp(port, okHttpClient);
                     this.daprHttClient = new DaprClientHttpAdapter(daprHtt);
                 }
