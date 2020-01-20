@@ -4,7 +4,7 @@
  */
 package io.dapr.client;
 
-import io.dapr.client.domain.StateKeyValue;
+import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.utils.Constants;
@@ -12,7 +12,6 @@ import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -167,7 +166,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<StateKeyValue<T>> getState(StateKeyValue<T> state, StateOptions stateOptions, Class<T> clazz) {
+  public <T> Mono<State<T>> getState(State<T> state, Class<T> clazz) {
     try {
       if (state.getKey() == null) {
         throw new IllegalArgumentException("Name cannot be null or empty.");
@@ -180,12 +179,12 @@ public class DaprClientHttpAdapter implements DaprClient {
       StringBuilder url = new StringBuilder(Constants.STATE_PATH)
         .append("/")
         .append(state.getKey());
-      Map<String, String> urlParameters = Optional.ofNullable(stateOptions).map(options -> options.getStateOptionsAsMap() ).orElse( new HashMap<>());;
+      Map<String, String> urlParameters = Optional.ofNullable(state.getOptions()).map(options -> options.getStateOptionsAsMap() ).orElse( new HashMap<>());;
       return this.client
           .invokeAPI(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers)
           .flatMap(s -> {
             try {
-              return Mono.just(buildStateKeyValue(s, state.getKey(), stateOptions, clazz));
+              return Mono.just(buildStateKeyValue(s, state.getKey(), state.getOptions(), clazz));
             }catch (Exception ex){
               return Mono.error(ex);
             }
@@ -199,14 +198,14 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<StateKeyValue<T>> states) {
+  public <T> Mono<Void> saveStates(List<State<T>> states) {
     try {
       if (states == null || states.isEmpty()) {
         return Mono.empty();
       }
       final Map<String, String> headers = new HashMap<>();
       final String etag = states.stream().filter(state -> null != state.getEtag() && !state.getEtag().trim().isEmpty())
-          .findFirst().orElse(new StateKeyValue<>(null, null, null, null)).getEtag();
+          .findFirst().orElse(new State<>(null, null, null, null)).getEtag();
       if (etag != null && !etag.trim().isEmpty()) {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
@@ -224,7 +223,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   @Override
   public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
-    StateKeyValue<T> state = new StateKeyValue<>(value, key, etag, options);
+    State<T> state = new State<>(value, key, etag, options);
     return saveStates(Arrays.asList(state));
   }
 
@@ -232,7 +231,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options) {
+  public <T> Mono<Void> deleteState(State<T> state) {
     try {
       if (state == null) {
         throw new IllegalArgumentException("State cannot be null.");
@@ -245,7 +244,7 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
       }
       String url = Constants.STATE_PATH + "/" + state.getKey();
-      Map<String, String> urlParameters = Optional.ofNullable(options).map(stateOptions -> stateOptions.getStateOptionsAsMap() ).orElse( new HashMap<>());;
+      Map<String, String> urlParameters = Optional.ofNullable(state.getOptions()).map(stateOptions -> stateOptions.getStateOptionsAsMap()).orElse( new HashMap<>());;
       return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
@@ -338,14 +337,14 @@ public class DaprClientHttpAdapter implements DaprClient {
    * @return             A StateKeyValue instance
    * @throws IOException If there's a issue deserialzing the response.
    */
-  private <T> StateKeyValue<T> buildStateKeyValue(DaprHttp.Response response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
+  private <T> State<T> buildStateKeyValue(DaprHttp.Response response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
     T value = objectSerializer.deserialize(response.getBody(), clazz);
     String key = requestedKey;
     String etag = null;
     if (response.getHeaders() != null && response.getHeaders().containsKey("Etag")) {
       etag = objectSerializer.deserialize(response.getHeaders().get("Etag"), String.class);
     }
-    return new StateKeyValue<>(value, key, etag, stateOptions);
+    return new State<>(value, key, etag, stateOptions);
   }
 
 }

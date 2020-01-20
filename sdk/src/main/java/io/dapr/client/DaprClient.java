@@ -4,7 +4,7 @@
  */
 package io.dapr.client;
 
-import io.dapr.client.domain.StateKeyValue;
+import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import reactor.core.publisher.Mono;
@@ -116,27 +116,23 @@ public interface DaprClient {
 
   /**
    * Retrieve a State based on their key.
-   *
    * @param state        The key of the State to be retrieved.
-   * @param stateOptions The options for the call to use.
    * @param clazz        the Type of State needed as return.
    * @param <T>          the Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<StateKeyValue<T>> getState(StateKeyValue<T> state, StateOptions stateOptions, Class<T> clazz);
+  <T> Mono<State<T>> getState(State<T> state, Class<T> clazz);
 
   /**
    * Save/Update a list of states.
-   *
    * @param states  the States to be saved.
    * @param <T>     the Type of the State.
    * @return a Mono plan of type Void.
    */
-  <T> Mono<Void> saveStates(List<StateKeyValue<T>> states);
+  <T> Mono<Void> saveStates(List<State<T>> states);
 
   /**
    * Save/Update a state.
-   *
    * @param key     the key of the state.
    * @param etag    the etag to be used.
    * @param value   the value of the state.
@@ -150,11 +146,10 @@ public interface DaprClient {
    * Delete a state.
    *
    * @param state   The key of the State to be removed.
-   * @param options The options of the state.
    * @param <T>     The Type of the key of the State.
    * @return a Mono plan of type Void.
    */
-  <T> Mono<Void> deleteState(StateKeyValue<T> state, StateOptions options);
+  <T> Mono<Void> deleteState(State<T> state);
 
   /**
    * Invokes an Actor method on Dapr.

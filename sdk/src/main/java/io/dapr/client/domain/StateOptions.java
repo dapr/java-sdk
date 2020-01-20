@@ -4,9 +4,20 @@
  */
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.dapr.utils.DurationUtils;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,13 +72,13 @@ public class StateOptions {
     return Collections.unmodifiableMap(Optional.ofNullable(mapOptions).orElse(Collections.EMPTY_MAP));
   }
 
-  public static enum Consistency {
+  public enum Consistency {
     EVENTUAL("eventual"),
     STRONG("strong");
 
     private final String value;
 
-    private Consistency(String value) {
+    Consistency(String value) {
       this.value = value;
     }
 
@@ -76,15 +87,19 @@ public class StateOptions {
       return this.value;
     }
 
+    @JsonCreator
+    public static Consistency fromValue(String value) {
+      return Consistency.valueOf(value);
+    }
   }
 
-  public static enum Concurrency {
+  public enum Concurrency {
     FIRST_WRITE("first-write"),
     LAST_WRITE ("last-write");
 
     private final String value;
 
-    private Concurrency(String value) {
+    Concurrency(String value) {
       this.value = value;
     }
 
@@ -93,24 +108,36 @@ public class StateOptions {
       return this.value;
     }
 
+    @JsonCreator
+    public static Concurrency fromValue(String value) {
+      return Concurrency.valueOf(value);
+    }
   }
 
   public static class RetryPolicy {
-    public static enum Pattern {
+    public enum Pattern {
       LINEAR("linear"),
       EXPONENTIAL("exponential");
 
       private String value;
 
-      private Pattern(String value) {
+      Pattern(String value) {
         this.value = value;
       }
 
+      @JsonValue
       public String getValue() {
         return this.value;
       }
+
+      @JsonCreator
+      public static Pattern fromValue(String value) {
+        return Pattern.valueOf(value);
+      }
     }
 
+    @JsonSerialize(using = StateOptionDurationSerializer.class)
+    @JsonDeserialize(using = StateOptionDurationDeserializer.class)
     private final Duration interval;
     private final Integer threshold;
     private final Pattern pattern;
@@ -133,6 +160,41 @@ public class StateOptions {
     public Pattern getPattern() {
       return pattern;
     }
+  }
 
+  public static class StateOptionDurationSerializer extends StdSerializer<Duration> {
+
+    public StateOptionDurationSerializer(Class<Duration> t) {
+      super(t);
+    }
+
+    @Override
+    public void serialize(Duration duration, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+      String value = "";
+      if (duration != null && !duration.isZero() && !duration.isNegative()) {
+        value = DurationUtils.ConvertDurationToDaprFormat(duration);
+      }
+      jsonGenerator.writeString(value);
+    }
+  }
+
+  public static class StateOptionDurationDeserializer extends StdDeserializer<Duration> {
+    public StateOptionDurationDeserializer(Class<?> vc) {
+      super(vc);
+    }
+
+    @Override
+    public Duration deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+      String durationStr = jsonParser.readValueAs(String.class);
+      Duration duration = null;
+      if (durationStr != null && !durationStr.trim().isEmpty()) {
+        try {
+          duration = DurationUtils.ConvertDurationFromDaprFormat(durationStr);
+        } catch (Exception ex) {
+          throw InvalidFormatException.from(jsonParser, "Unable to parse duration.", ex);
+        }
+      }
+      return duration;
+    }
   }
 }

@@ -8,7 +8,7 @@ package io.dapr.client.domain;
  * This class reprent what a State is
  * @param <T> The type of the value of the sate
  */
-public class StateKeyValue<T> {
+public class State<T> {
   /**
    * The value of the state
    */
@@ -30,12 +30,27 @@ public class StateKeyValue<T> {
 
   /**
    * Create an inmutable state
+   * This Constructor MUST be used anytime you need to retrieve or delete a State.
+   * @param key     - The key of the state
+   * @param etag    - The etag of the state - Keep in mind that for some state stores (like reids) only numbers are supported.
+   * @param options - REQUIRED when saving a state.
+   */
+  public State(String key, String etag, StateOptions options) {
+    this.value = null;
+    this.key = key;
+    this.etag = etag;
+    this.options = options;
+  }
+
+  /**
+   * Create an inmutable state
+   * This Constructor MUST be used anytime you want the state to be send for a Save operation.
    * @param value   - The value of the state
    * @param key     - The key of the state
    * @param etag    - The etag of the state - Keep in mind that for some state stores (like reids) only numbers are supported.
    * @param options - REQUIRED when saving a state.
    */
-  public StateKeyValue(T value, String key, String etag, StateOptions options) {
+  public State(T value, String key, String etag, StateOptions options) {
     this.value = value;
     this.key = key;
     this.etag = etag;
@@ -77,9 +92,9 @@ public class StateKeyValue<T> {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof StateKeyValue)) return false;
+    if (!(o instanceof State)) return false;
 
-    StateKeyValue<?> that = (StateKeyValue<?>) o;
+    State<?> that = (State<?>) o;
 
     if (getValue() != null ? !getValue().equals(that.getValue()) : that.getValue() != null) return false;
     if (getKey() != null ? !getKey().equals(that.getKey()) : that.getKey() != null) return false;
