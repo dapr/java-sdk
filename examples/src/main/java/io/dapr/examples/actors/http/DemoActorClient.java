@@ -34,12 +34,12 @@ public class DemoActorClient {
   private static final ExecutorService POOL = Executors.newFixedThreadPool(NUM_ACTORS);
 
   public static void main(String[] args) throws Exception {
-    ActorProxyBuilder builder = new ActorProxyBuilder();
+    ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor");
 
     List<CompletableFuture<Void>> futures = new ArrayList<>(NUM_ACTORS);
 
     for (int i = 0; i < NUM_ACTORS; i++) {
-      ActorProxy actor = builder.withActorType("DemoActor").withActorId(ActorId.createRandom()).build();
+      ActorProxy actor = builder.build(ActorId.createRandom());
       futures.add(callActorNTimes(actor));
     }
 

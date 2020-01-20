@@ -6,7 +6,6 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorTrace;
-import io.dapr.client.DaprClient;
 
 /**
  * Provides the context for the Actor's runtime.

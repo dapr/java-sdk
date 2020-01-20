@@ -18,7 +18,6 @@ import org.mockito.ArgumentMatcher;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -41,44 +40,6 @@ public class DaprClientGrpcAdapterTest {
     client = mock(DaprGrpc.DaprFutureStub.class);
     adapter = new DaprClientGrpcAdapter(client);
     serializer = new ObjectSerializer();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void unregisterActorTimerTest() {
-    adapter.unregisterActorTimer("actorType", "actorId", "timerName").block();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void registerActorTimerTest() {
-    adapter.registerActorTimer(
-      "actorType", "actorId", "timerName", "DATA".getBytes()).block();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void unregisterActorReminderTest() {
-    adapter.unregisterActorReminder("actorType", "actorId", "reminderName").block();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void registerActorReminderTest() {
-    adapter.registerActorReminder(
-      "actorType", "actorId", "reminderName", "DATA".getBytes()).block();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void saveActorStateTransactionallyTest() {
-    adapter.saveActorStateTransactionally("actorType", "actorId", "DATA".getBytes()).block();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void getActorStateTest() {
-    adapter.getActorState("actorType", "actorId", "keyName").block();
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void invokeActorMethodTest() {
-    adapter.invokeActorMethod(
-      "actorType", "actorId", "methodName", "jsonPlayload".getBytes()).block();
   }
 
   @Test(expected = RuntimeException.class)

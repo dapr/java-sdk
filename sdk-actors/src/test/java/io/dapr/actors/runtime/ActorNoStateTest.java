@@ -8,18 +8,11 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
-import io.dapr.client.DaprClient;
+import io.dapr.actors.client.DaprClientStub;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.nio.charset.IllegalCharsetNameException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -173,7 +166,7 @@ public class ActorNoStateTest {
     ActorId actorId = newActorId();
 
     // Mock daprClient for ActorProxy only, not for runtime.
-    DaprClient daprClient = mock(DaprClient.class);
+    DaprClientStub daprClient = mock(DaprClientStub.class);
 
     when(daprClient.invokeActorMethod(
       eq(context.getActorTypeInformation().getName()),

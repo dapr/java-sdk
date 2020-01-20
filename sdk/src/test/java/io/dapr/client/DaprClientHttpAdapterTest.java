@@ -32,10 +32,7 @@ public class DaprClientHttpAdapterTest {
 
   private MockInterceptor mockInterceptor;
 
-  private ObjectSerializer serializer = new ObjectSerializer();
-
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
-
 
   @Before
   public void setUp() throws Exception {
@@ -378,89 +375,4 @@ public class DaprClientHttpAdapterTest {
       daprClientHttpAdapter.deleteState(stateKeyValueEmpty).block();
     });
   }
-
-  @Test
-  public void invokeActorMethod() throws IOException {
-    DaprHttp daprHttpMock = mock(DaprHttp.class);
-    mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/actors/DemoActor/1/method/Payment")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<byte[]> mono =
-      daprClientHttpAdapter.invokeActorMethod("DemoActor", "1", "Payment", "".getBytes());
-    assertEquals(new String(mono.block()), EXPECTED_RESULT);
-  }
-
-
-  @Test
-  public void getActorState() {
-    mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/actors/DemoActor/1/state/order")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<byte[]> mono = daprClientHttpAdapter.getActorState("DemoActor", "1", "order");
-    assertEquals(new String(mono.block()), EXPECTED_RESULT);
-  }
-
-
-  @Test
-  public void saveActorStateTransactionally() {
-    mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/state")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono =
-      daprClientHttpAdapter.saveActorStateTransactionally("DemoActor", "1", "".getBytes());
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void registerActorReminder() {
-    mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/reminders/reminder")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono =
-      daprClientHttpAdapter.registerActorReminder("DemoActor", "1", "reminder", "".getBytes());
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void unregisterActorReminder() {
-    mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/actors/DemoActor/1/reminders/reminder")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.unregisterActorReminder("DemoActor", "1", "reminder");
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void registerActorTimer() {
-    mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/timers/timer")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono =
-      daprClientHttpAdapter.registerActorTimer("DemoActor", "1", "timer", "".getBytes());
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void unregisterActorTimer() {
-    mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/actors/DemoActor/1/timers/timer")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.unregisterActorTimer("DemoActor", "1", "timer");
-    assertNull(mono.block());
-  }
-
 }

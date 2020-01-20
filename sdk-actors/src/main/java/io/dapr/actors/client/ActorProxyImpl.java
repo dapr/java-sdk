@@ -2,7 +2,6 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.ActorStateSerializer;
-import io.dapr.client.DaprClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;

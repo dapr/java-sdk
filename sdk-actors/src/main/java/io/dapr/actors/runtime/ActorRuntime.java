@@ -6,8 +6,7 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprHttpBuilder;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -67,7 +66,7 @@ public class ActorRuntime {
    * @throws IllegalStateException
    */
   private ActorRuntime() throws IllegalStateException {
-    this(new DaprClientBuilder().build());
+    this(new DaprHttpClient(new DaprHttpBuilder().build()));
   }
 
   /**

@@ -18,7 +18,10 @@ import io.dapr.utils.ObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * An adapter for the GRPC Client.
@@ -324,76 +327,6 @@ class DaprClientGrpcAdapter implements DaprClient {
     } catch (Exception ex) {
       return Mono.error(ex);
     }
-  }
-
-  /**
-   * Operation not supported for GRPC
-   *
-   * @throws UnsupportedOperationException every time is called.
-   */
-  @Override
-  public Mono<byte[]> invokeActorMethod(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
-  }
-
-  /**
-   * Operation not supported for GRPC
-   *
-   * @throws UnsupportedOperationException every time is called.
-   */
-  @Override
-  public Mono<byte[]> getActorState(String actorType, String actorId, String keyName) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
-  }
-
-  /**
-   * Operation not supported for GRPC
-   *
-   * @throws UnsupportedOperationException every time is called.
-   */
-  @Override
-  public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, byte[] data) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
-  }
-
-  /**
-   * Operation not supported for GRPC
-   *
-   * @throws UnsupportedOperationException every time is called.
-   */
-  @Override
-  public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, byte[] data) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
-  }
-
-  /**
-   * Operation not supported for GRPC
-   *
-   * @throws UnsupportedOperationException every time is called.
-   */
-  @Override
-  public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
-  }
-
-  /**
-   * Operation not supported for GRPC
-   *
-   * @throws UnsupportedOperationException every time is called.
-   */
-  @Override
-  public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, byte[] data) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
-  }
-
-  /**
-   * Operation not supported for GRPC
-   *
-   * @throws UnsupportedOperationException every time is called.
-   */
-  @Override
-  public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
-    return Mono.error(new UnsupportedOperationException("Operation not supported for GRPC"));
   }
 
   /**

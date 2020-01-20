@@ -8,7 +8,6 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprClient;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;

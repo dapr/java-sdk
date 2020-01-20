@@ -23,11 +23,6 @@ import java.util.*;
 public class DaprClientHttpAdapter implements DaprClient {
 
   /**
-   * Empty response.
-   */
-  private static final byte[] EMPTY_RAW_RESPONSE = new byte[0];
-
-  /**
    * The HTTP client to be used
    *
    * @see io.dapr.client.DaprHttp
@@ -262,72 +257,8 @@ public class DaprClientHttpAdapter implements DaprClient {
   }
 
   /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<byte[]> invokeActorMethod(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    String url = String.format(Constants.ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
-    Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.POST.name(), url, null, jsonPayload, null);
-    return responseMono.map(r -> emptyIfNull(r.getBody()));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<byte[]> getActorState(String actorType, String actorId, String keyName) {
-    String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
-    Mono<DaprHttp.Response> responseMono = this.client.invokeAPI(DaprHttp.HttpMethods.GET.name(), url, null, "", null);
-    return responseMono.map(r -> emptyIfNull(r.getBody()));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, byte[] data) {
-    String url = String.format(Constants.ACTOR_STATE_RELATIVE_URL_FORMAT, actorType, actorId);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url, null, data, null).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, byte[] data) {
-    String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url, null, data, null).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
-    String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, null, null).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, byte[] data) {
-    String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url,null, data, null).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
-    String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, null, null).then();
-  }
-
-  /**
-   * Builds a StateValue object based on the Response
+   * Builds a State object based on the Response
+   *
    * @param response      The response of the HTTP Call
    * @param requestedKey The Key Requested.
    * @param clazz        The Class of the Value of the state
@@ -344,20 +275,6 @@ public class DaprClientHttpAdapter implements DaprClient {
       etag = response.getHeaders().get("Etag");
     }
     return new State<>(value, key, etag, stateOptions);
-  }
-
-  /**
-   * Returns an empty byte[] if payload is null.
-   *
-   * @param payload payload to be checked.
-   * @return Non-null response with payload or empty array.
-   */
-  private static byte[] emptyIfNull(byte[] payload) {
-    if (payload == null) {
-      return EMPTY_RAW_RESPONSE;
-    }
-
-    return payload;
   }
 
 }

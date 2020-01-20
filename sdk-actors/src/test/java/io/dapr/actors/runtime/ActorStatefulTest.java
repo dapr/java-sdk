@@ -8,7 +8,7 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
-import io.dapr.client.DaprClient;
+import io.dapr.actors.client.DaprClientStub;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -597,7 +597,7 @@ public class ActorStatefulTest {
     ActorId actorId = newActorId();
 
     // Mock daprClient for ActorProxy only, not for runtime.
-    DaprClient daprClient = mock(DaprClient.class);
+    DaprClientStub daprClient = mock(DaprClientStub.class);
 
     when(daprClient.invokeActorMethod(
       eq(context.getActorTypeInformation().getName()),

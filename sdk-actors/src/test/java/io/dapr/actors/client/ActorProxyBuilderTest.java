@@ -10,37 +10,29 @@ public class ActorProxyBuilderTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorId() {
-    new ActorProxyBuilder()
-        .withActorId(null)
-        .withActorType("test")
-        .build();
+    new ActorProxyBuilder("test")
+        .build(null);
 
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithEmptyActorType() {
-    new ActorProxyBuilder()
-        .withActorId(new ActorId("100"))
-        .withActorType("")
-        .build();
+    new ActorProxyBuilder("")
+        .build(new ActorId("100"));
 
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorType() {
-    new ActorProxyBuilder()
-        .withActorId(new ActorId("100"))
-        .withActorType(null)
-        .build();
+    new ActorProxyBuilder(null)
+        .build(new ActorId("100"));
 
   }
 
   @Test()
   public void build() {
-    ActorProxyBuilder builder = new ActorProxyBuilder();
-    builder.withActorId(new ActorId("100"));
-    builder.withActorType("test");
-    ActorProxy actorProxy = builder.build();
+    ActorProxyBuilder builder = new ActorProxyBuilder("test");
+    ActorProxy actorProxy = builder.build(new ActorId("100"));
 
     Assert.assertNotNull(actorProxy);
     Assert.assertEquals("test", actorProxy.getActorType());

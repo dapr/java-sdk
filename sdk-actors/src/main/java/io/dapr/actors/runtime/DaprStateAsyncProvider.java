@@ -8,13 +8,10 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprClient;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.

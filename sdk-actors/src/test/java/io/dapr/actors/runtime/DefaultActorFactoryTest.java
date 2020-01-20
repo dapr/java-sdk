@@ -6,7 +6,6 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprClient;
 import org.junit.Assert;
 import org.junit.Test;
 
