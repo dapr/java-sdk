@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
 
 import java.io.IOException;
+import java.util.Base64;
 
 /**
  * Serializes and deserializes an internal object.
@@ -43,7 +44,7 @@ public class ObjectSerializer {
 
         // Have this check here to be consistent with deserialization (see deserialize() method below).
         if (state instanceof byte[]) {
-            return (byte[]) state;
+            return (byte[])state;
         }
 
         // Not string, not primitive, so it is a complex type: we use JSON for that.

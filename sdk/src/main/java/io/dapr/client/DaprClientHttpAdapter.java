@@ -22,6 +22,11 @@ import java.util.*;
 public class DaprClientHttpAdapter implements DaprClient {
 
   /**
+   * Serializer for internal objects.
+   */
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+
+  /**
    * The HTTP client to be used
    *
    * @see io.dapr.client.DaprHttp
@@ -182,25 +187,41 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(State<T> state, Class<T> clazz) {
+    return this.getState(state.getKey(), state.getEtag(), state.getOptions(), clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<State<T>> getState(String key, Class<T> clazz) {
+    return this.getState(key, null, null, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<State<T>> getState(String key, String etag, StateOptions options, Class<T> clazz) {
     try {
-      if (state.getKey() == null) {
+      if (key == null) {
         throw new IllegalArgumentException("Name cannot be null or empty.");
       }
       Map<String, String> headers = new HashMap<>();
-      if (state.getEtag() != null && !state.getEtag().trim().isEmpty()) {
-        headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
+      if (etag != null && !etag.trim().isEmpty()) {
+        headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
 
       StringBuilder url = new StringBuilder(Constants.STATE_PATH)
         .append("/")
-        .append(state.getKey());
-      Map<String, String> urlParameters = Optional.ofNullable(state.getOptions()).map(options -> options.getStateOptionsAsMap() ).orElse( new HashMap<>());;
+        .append(key);
+      Map<String, String> urlParameters = Optional.ofNullable(options).map(o -> o.getStateOptionsAsMap() ).orElse(new HashMap<>());;
       return this.client
           .invokeAPI(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers)
           .flatMap(s -> {
             try {
-              return Mono.just(buildStateKeyValue(s, state.getKey(), state.getOptions(), clazz));
-            }catch (Exception ex){
+              return Mono.just(buildStateKeyValue(s, key, options, clazz));
+            } catch (Exception ex) {
               return Mono.error(ex);
             }
           });
@@ -213,7 +234,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<State<T>> states) {
+  public Mono<Void> saveStates(List<State<?>> states) {
     try {
       if (states == null || states.isEmpty()) {
         return Mono.empty();
@@ -225,8 +246,15 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
       final String url = Constants.STATE_PATH;
-      // TODO: Use internal serializer for internal objects.
-      byte[] serializedStateBody = objectSerializer.serialize(states);
+      List<State<byte[]>> internalStateObjects = new ArrayList<>(states.size());
+      for (State state : states) {
+        if (state == null) {
+          continue;
+        }
+        byte[] data = this.objectSerializer.serialize(state.getValue());
+        internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getOptions()));
+      }
+      byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(states);
       return this.client.invokeAPI(
         DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers).then();
     } catch (Exception ex) {
@@ -238,29 +266,42 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
-    State<T> state = new State<>(value, key, etag, options);
-    return saveStates(Arrays.asList(state));
+  public Mono<Void> saveState(String key, Object value) {
+    return this.saveState(key, null, value, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> deleteState(State<T> state) {
+  public Mono<Void> saveState(String key, String etag, Object value, StateOptions options) {
+    return Mono.fromSupplier(() -> new State<Object>(value, key, etag, options))
+      .flatMap(state -> saveStates(Arrays.asList(state)));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteState(String key) {
+    return this.deleteState(key);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteState(String key, String etag, StateOptions options) {
     try {
-      if (state == null) {
-        throw new IllegalArgumentException("State cannot be null.");
-      }
-      if (state.getKey() == null || state.getKey().trim().isEmpty()) {
+      if (key == null || key.trim().isEmpty()) {
         throw new IllegalArgumentException("Name cannot be null or empty.");
       }
       Map<String, String> headers = new HashMap<>();
-      if (state.getEtag() != null && !state.getEtag().trim().isEmpty()) {
-        headers.put(Constants.HEADER_HTTP_ETAG_ID, state.getEtag());
+      if (etag != null && !etag.trim().isEmpty()) {
+        headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
-      String url = Constants.STATE_PATH + "/" + state.getKey();
-      Map<String, String> urlParameters = Optional.ofNullable(state.getOptions()).map(stateOptions -> stateOptions.getStateOptionsAsMap()).orElse( new HashMap<>());;
+      String url = Constants.STATE_PATH + "/" + key;
+      Map<String, String> urlParameters = Optional.ofNullable(options).map(stateOptions -> stateOptions.getStateOptionsAsMap()).orElse( new HashMap<>());;
       return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
@@ -279,7 +320,6 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   private <T> State<T> buildStateKeyValue(
     DaprHttp.Response response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
-    // TODO: Use internal serializer for internal objects.
     T value = objectSerializer.deserialize(response.getBody(), clazz);
     String key = requestedKey;
     String etag = null;

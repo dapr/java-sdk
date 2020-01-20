@@ -17,10 +17,7 @@ import io.dapr.client.domain.Verb;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * An adapter for the GRPC Client.
@@ -29,6 +26,11 @@ import java.util.Optional;
  * @see io.dapr.client.DaprClient
  */
 class DaprClientGrpcAdapter implements DaprClient {
+
+  /**
+   * Serializer for internal objects.
+   */
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
    * The GRPC client to be used
@@ -156,17 +158,31 @@ class DaprClientGrpcAdapter implements DaprClient {
   }
 
   /**
-   * @return Returns an io.dapr.client.domain.StateKeyValue
-   * <p>
    * {@inheritDoc}
    */
   @Override
   public <T> Mono<State<T>> getState(State<T> state, Class<T> clazz) {
+    return this.getState(state.getKey(), state.getEtag(), state.getOptions(), clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<State<T>> getState(String key, Class<T> clazz) {
+    return this.getState(key, null, null, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<State<T>> getState(String key, String etag, StateOptions options, Class<T> clazz) {
     try {
       DaprProtos.GetStateEnvelope.Builder builder = DaprProtos.GetStateEnvelope.newBuilder()
-          .setKey(state.getKey());
-      if (state.getOptions() != null && state.getOptions().getConsistency() != null) {
-        builder.setConsistency(state.getOptions().getConsistency().getValue());
+          .setKey(key);
+      if (options != null && options.getConsistency() != null) {
+        builder.setConsistency(options.getConsistency().getValue());
       }
 
       DaprProtos.GetStateEnvelope envelope = builder.build();
@@ -178,14 +194,20 @@ class DaprClientGrpcAdapter implements DaprClient {
         } catch (NullPointerException npe) {
           return null;
         }
-        return buildStateKeyValue(response, state.getKey(), state.getOptions(), clazz);
+        return buildStateKeyValue(response, key, options, clazz);
       });    } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
-  private <T> State<T> buildStateKeyValue(DaprProtos.GetStateResponseEnvelope response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
-    T value = objectSerializer.deserialize(Optional.ofNullable(response.getData().getValue().toByteArray()).orElse(null), clazz);
+  private <T> State<T> buildStateKeyValue(
+    DaprProtos.GetStateResponseEnvelope response,
+    String requestedKey,
+    StateOptions stateOptions,
+    Class<T> clazz) throws IOException {
+    ByteString payload = response.getData().getValue();
+    byte[] data = payload == null ? null : payload.toByteArray();
+    T value = objectSerializer.deserialize(data, clazz);
     String etag = response.getEtag();
     String key = requestedKey;
     return new State<>(value, key, etag, stateOptions);
@@ -195,11 +217,12 @@ class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> saveStates(List<State<T>> states) {
+  public Mono<Void> saveStates(List<State<?>> states) {
     try {
       DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
       for (State state : states) {
-        builder.addRequests(buildStateRequest(state).build());      }
+        builder.addRequests(buildStateRequest(state).build());
+      }
       DaprProtos.SaveStateEnvelope envelope = builder.build();
 
       ListenableFuture<Empty> futureEmpty = client.saveState(envelope);
@@ -217,12 +240,16 @@ class DaprClientGrpcAdapter implements DaprClient {
   }
 
   private <T> DaprProtos.StateRequest.Builder buildStateRequest(State<T> state) throws IOException {
-    byte[] byteState = objectSerializer.serialize(state.getValue());
-    Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteState)).build();
-    DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder()
-        .setEtag(state.getEtag())
-        .setKey(state.getKey())
-        .setValue(data);
+    byte[] bytes = objectSerializer.serialize(state.getValue());
+    Any data = Any.newBuilder().setValue(ByteString.copyFrom(bytes)).build();
+    DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder();
+    if (state.getEtag() != null) {
+      stateBuilder.setEtag(state.getEtag());
+    }
+    if (data != null) {
+      stateBuilder.setValue(data);
+    }
+    stateBuilder.setKey(state.getKey());
     DaprProtos.StateRequestOptions.Builder optionBuilder = null;
     if (state.getOptions() != null) {
       StateOptions options = state.getOptions();
@@ -261,20 +288,38 @@ class DaprClientGrpcAdapter implements DaprClient {
     return stateBuilder;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
-  public <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options) {
-    State<T> state = new State<>(value, key, etag, options);
-    return saveStates(Arrays.asList(state));
+  public Mono<Void> saveState(String key, Object value) {
+    return this.saveState(key, null, value, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> deleteState(State<T> state) {
+  public Mono<Void> saveState(String key, String etag, Object value, StateOptions options) {
+    State<?> state = new State<>(value, key, etag, options);
+    return this.saveStates(Arrays.asList(state));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteState(String key) {
+    return this.deleteState(key, null, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> deleteState(String key, String etag, StateOptions options) {
     try {
       DaprProtos.StateOptions.Builder optionBuilder = null;
-      StateOptions options = state.getOptions();
       if (options != null) {
         optionBuilder = DaprProtos.StateOptions.newBuilder();
         DaprProtos.RetryPolicy.Builder retryPolicyBuilder = null;
@@ -307,8 +352,8 @@ class DaprClientGrpcAdapter implements DaprClient {
         }
       }
       DaprProtos.DeleteStateEnvelope.Builder builder = DaprProtos.DeleteStateEnvelope.newBuilder()
-          .setEtag(state.getEtag())
-          .setKey(state.getKey());
+          .setEtag(etag)
+          .setKey(key);
       if (optionBuilder != null) {
         builder.setOptions(optionBuilder.build());
       }

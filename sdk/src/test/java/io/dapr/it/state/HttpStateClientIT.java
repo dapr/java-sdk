@@ -132,7 +132,7 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //create deferred action to delete the state
-    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, null, null));
+    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, null, null);
     //execute the delete action
     deleteResponse.block();
 
@@ -277,7 +277,7 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the etag
-    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, myDataResponse.getEtag(), null));
+    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, myDataResponse.getEtag(), null);
     //execute the delete of the state
     deleteResponse.block();
 
@@ -317,7 +317,7 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the incorrect etag
-    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, "99999999999", null));
+    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, "99999999999", null);
     //execute the delete of the state, this should trhow an exception
     deleteResponse.block();
 
@@ -476,7 +476,7 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
 
-    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, "99999999", stateOptions));
+    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, "99999999", stateOptions);
 
     long start = System.currentTimeMillis();
     try {

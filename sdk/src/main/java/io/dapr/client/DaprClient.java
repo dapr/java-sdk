@@ -116,38 +116,79 @@ public interface DaprClient {
 
   /**
    * Retrieve a State based on their key.
-   * @param state        The key of the State to be retrieved.
-   * @param clazz        the Type of State needed as return.
-   * @param <T>          the Type of the return.
+   *
+   * @param state   State to be re-retrieved.
+   * @param clazz   The Type of State needed as return.
+   * @param <T>     The Type of the return.
    * @return A Mono Plan for the requested State.
    */
   <T> Mono<State<T>> getState(State<T> state, Class<T> clazz);
 
   /**
+   * Retrieve a State based on their key.
+   *
+   * @param key     The key of the State to be retrieved.
+   * @param clazz   The Type of State needed as return.
+   * @param <T>     The Type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<State<T>> getState(String key, Class<T> clazz);
+
+  /**
+   * Retrieve a State based on their key.
+   *
+   * @param key     The key of the State to be retrieved.
+   * @param etag    Optional etag for conditional get
+   * @param options Optional settings for retrieve operation.
+   * @param clazz   The Type of State needed as return.
+   * @param <T>     The Type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<State<T>> getState(String key, String etag, StateOptions options, Class<T> clazz);
+
+  /**
    * Save/Update a list of states.
+   *
    * @param states  the States to be saved.
-   * @param <T>     the Type of the State.
    * @return a Mono plan of type Void.
    */
-  <T> Mono<Void> saveStates(List<State<T>> states);
+  Mono<Void> saveStates(List<State<?>> states);
 
   /**
    * Save/Update a state.
+   *
+   * @param key     the key of the state.
+   * @param value   the value of the state.
+   * @return a Mono plan of type Void.
+   */
+  Mono<Void> saveState(String key, Object value);
+
+  /**
+   * Save/Update a state.
+   *
    * @param key     the key of the state.
    * @param etag    the etag to be used.
    * @param value   the value of the state.
    * @param options the Options to use for each state.
-   * @param <T>     the Type of the State.
    * @return a Mono plan of type Void.
    */
-  <T> Mono<Void> saveState(String key, String etag, T value, StateOptions options);
+  Mono<Void> saveState(String key, String etag, Object value, StateOptions options);
 
   /**
    * Delete a state.
    *
-   * @param state   The key of the State to be removed.
-   * @param <T>     The Type of the key of the State.
+   * @param key     The key of the State to be removed.
    * @return a Mono plan of type Void.
    */
-  <T> Mono<Void> deleteState(State<T> state);
+  Mono<Void>  deleteState(String key);
+
+  /**
+   * Delete a state.
+   *
+   * @param key     The key of the State to be removed.
+   * @param etag    Optional etag for conditional delete.
+   * @param options Optional settings for state operation.
+   * @return a Mono plan of type Void.
+   */
+  Mono<Void>  deleteState(String key, String etag, StateOptions options);
 }
