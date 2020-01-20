@@ -5,6 +5,7 @@
 package io.dapr.client.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -19,6 +20,7 @@ import io.dapr.utils.DurationUtils;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +49,7 @@ public class StateOptions {
     return retryPolicy;
   }
 
+  @JsonIgnore
   public Map<String, String> getStateOptionsAsMap() {
     Map<String, String> mapOptions = null;
     if (this != null) {
@@ -59,7 +62,7 @@ public class StateOptions {
       }
       if (this.getRetryPolicy() != null) {
         if (this.getRetryPolicy().getInterval() != null) {
-          mapOptions.put("retryInterval", DurationUtils.ConvertDurationToDaprFormat(this.getRetryPolicy().getInterval()));
+          mapOptions.put("retryInterval", String.valueOf(this.getRetryPolicy().getInterval().toMillis()));
         }
         if (this.getRetryPolicy().getThreshold() != null) {
           mapOptions.put("retryThreshold", this.getRetryPolicy().getThreshold().toString());
@@ -164,17 +167,17 @@ public class StateOptions {
 
   public static class StateOptionDurationSerializer extends StdSerializer<Duration> {
 
+    public StateOptionDurationSerializer() {
+
+      super(Duration.class);
+    }
     public StateOptionDurationSerializer(Class<Duration> t) {
       super(t);
     }
 
     @Override
     public void serialize(Duration duration, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-      String value = "";
-      if (duration != null && !duration.isZero() && !duration.isNegative()) {
-        value = DurationUtils.ConvertDurationToDaprFormat(duration);
-      }
-      jsonGenerator.writeString(value);
+      jsonGenerator.writeNumber(duration.toMillis());
     }
   }
 

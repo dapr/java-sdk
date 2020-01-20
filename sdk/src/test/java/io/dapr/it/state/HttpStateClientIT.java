@@ -13,8 +13,11 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.services.EmptyService;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 
 /**
  * Test State HTTP DAPR capabilities using a DAPR instance with an empty service running
@@ -440,6 +443,102 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertNotNull(myDataResponse.getEtag(), myLastDataResponse.getEtag());
     Assert.assertEquals("last write", myLastDataResponse.getValue().getPropertyA());
     Assert.assertEquals("data in property B2", myLastDataResponse.getValue().getPropertyB());
+  }
+
+  @Test(timeout=13000)
+  public void saveDeleteWithRetry() {
+    final String stateKey = "keyToBeDeleteWithWrongEtagAndRetry";
+    StateOptions.RetryPolicy retryPolicy= new StateOptions.RetryPolicy(Duration.ofSeconds(3),3, StateOptions.RetryPolicy.Pattern.LINEAR);
+    StateOptions stateOptions = new StateOptions(null, null, retryPolicy);
+
+    //create DAPR client
+    DaprClient daprClient = new DaprClientBuilder().build();
+    //Create dummy data to be store
+    MyData data = new MyData();
+    data.setPropertyA("data in property A");
+    data.setPropertyB("data in property B");
+
+    //Create deferred action to save the sate
+    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    //execute the save state action
+    saveResponse.block();
+
+    //Create deferred action to retrieve the state
+    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, null), MyData.class);
+    //execute the action for retrieve the state and the etag
+    State<MyData> myDataResponse = response.block();
+
+    //review that the etag is not empty
+    Assert.assertNotNull(myDataResponse.getEtag());
+    Assert.assertNotNull(myDataResponse.getKey());
+    Assert.assertNotNull(myDataResponse.getValue());
+    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+
+
+    Mono<Void> deleteResponse = daprClient.deleteState(new State<MyData>(stateKey, "99999999", stateOptions));
+
+    long start = System.currentTimeMillis();
+    try {
+      //delete action
+      deleteResponse.block();
+    }catch(RuntimeException ex){
+      Assert.assertTrue(ex.getMessage().contains("failed to set value after 3 retries"));
+    }
+    long end = System.currentTimeMillis();
+    System.out.println("DEBUG: Logic A took " + (end - start) + " MilliSeconds");
+    long elapsedTime = end -start;
+    Assert.assertTrue(elapsedTime>9000 && elapsedTime<9200);
+
+  }
+
+  @Ignore("Ignored as an issue on DAPR")
+  @Test(timeout=13000)
+  public void saveUpdateWithRetry() {
+    final String stateKey = "keyToBeDeleteWithWrongEtagAndRetry";
+    StateOptions.RetryPolicy retryPolicy= new StateOptions.RetryPolicy(Duration.ofSeconds(4),3, StateOptions.RetryPolicy.Pattern.EXPONENTIAL);
+    StateOptions stateOptions = new StateOptions(null, null, retryPolicy);
+
+    //create DAPR client
+    DaprClient daprClient = new DaprClientBuilder().build();
+    //Create dummy data to be store
+    MyData data = new MyData();
+    data.setPropertyA("data in property A");
+    data.setPropertyB("data in property B");
+
+    //Create deferred action to save the sate
+    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    //execute the save state action
+    saveResponse.block();
+
+    //Create deferred action to retrieve the state
+    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, null), MyData.class);
+    //execute the action for retrieve the state and the etag
+    State<MyData> myDataResponse = response.block();
+
+    //review that the etag is not empty
+    Assert.assertNotNull(myDataResponse.getEtag());
+    Assert.assertNotNull(myDataResponse.getKey());
+    Assert.assertNotNull(myDataResponse.getValue());
+    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+
+    //Create deferred action to save the sate
+    saveResponse = daprClient.saveState(stateKey, "9999999", data, stateOptions);
+    //execute the save state action
+    long start = System.currentTimeMillis();
+
+
+    try {
+      saveResponse.block();
+    }catch(RuntimeException ex){
+      Assert.assertTrue(ex.getMessage().contains("failed to set value after 3 retries"));
+    }
+    long end = System.currentTimeMillis();
+    System.out.println("DEBUG: Logic A took " + (end - start) + " MilliSeconds");
+    long elapsedTime = end -start;
+    Assert.assertTrue(elapsedTime>9000 && elapsedTime<9200);
+
   }
 
 }
