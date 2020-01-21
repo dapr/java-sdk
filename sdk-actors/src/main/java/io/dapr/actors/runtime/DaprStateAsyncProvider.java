@@ -8,7 +8,8 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.StringContentType;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
@@ -24,13 +25,30 @@ class DaprStateAsyncProvider {
      */
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
+    /**
+     * Dapr's client for Actor runtime.
+     */
     private final DaprClient daprClient;
 
-    private final DaprObjectSerializer serializer;
+    /**
+     * Serializer for state objects.
+     */
+    private final DaprObjectSerializer stateSerializer;
 
-    DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer serializer) {
+    /**
+     * Flag determining if serializer's input and output contains a valid String.
+     */
+    private final boolean isStateString;
+
+    /**
+     * Instantiates a new Actor's state provider.
+     * @param daprClient Dapr client for Actor runtime.
+     * @param stateSerializer Serializer for state objects.
+     */
+    DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
         this.daprClient = daprClient;
-        this.serializer = serializer;
+        this.stateSerializer = stateSerializer;
+        this.isStateString = stateSerializer.getClass().getAnnotation(StringContentType.class) != null;
     }
 
     <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
@@ -38,7 +56,7 @@ class DaprStateAsyncProvider {
 
         return result.flatMap(s -> {
                     try {
-                        T response = this.serializer.deserialize(s, clazz);
+                        T response = this.stateSerializer.deserialize(s, clazz);
                         if (response == null) {
                             return Mono.empty();
                         }
@@ -110,8 +128,16 @@ class DaprStateAsyncProvider {
                 // Start request object.
                 generator.writeObjectFieldStart("request");
                 generator.writeStringField("key", stateChange.getStateName());
-                if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE) || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
-                    generator.writeBinaryField("value", this.serializer.serialize(stateChange.getValue()));
+                if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE) ||
+                  (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
+                    byte[] data = this.stateSerializer.serialize(stateChange.getValue());
+                    if (data != null) {
+                        if (this.isStateString) {
+                            generator.writeStringField("value", new String(data));
+                        } else {
+                            generator.writeBinaryField("value", data);
+                        }
+                    }
                 }
                 // End request object.
                 generator.writeEndObject();

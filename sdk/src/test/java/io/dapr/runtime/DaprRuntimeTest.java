@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.client.*;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.Verb;
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
 import org.junit.Assert;
 import org.junit.Before;

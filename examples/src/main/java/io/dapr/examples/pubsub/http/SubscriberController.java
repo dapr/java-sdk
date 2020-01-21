@@ -5,7 +5,7 @@
 
 package io.dapr.examples.pubsub.http;
 
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.client.domain.CloudEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;

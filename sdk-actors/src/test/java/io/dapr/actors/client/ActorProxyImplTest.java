@@ -1,8 +1,8 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DefaultObjectSerializer;
-import io.dapr.client.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
