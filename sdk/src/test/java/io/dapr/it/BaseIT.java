@@ -8,12 +8,14 @@ package io.dapr.it;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import java.util.Optional;
 
 import static io.dapr.it.DaprIntegrationTestingRunner.DAPR_FREEPORTS;
 
+@Ignore
 public class BaseIT {
 
   protected static DaprIntegrationTestingRunner daprIntegrationTestingRunner;
