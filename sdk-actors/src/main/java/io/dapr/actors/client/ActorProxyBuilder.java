@@ -1,7 +1,6 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DefaultObjectSerializer;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.client.DaprObjectSerializer;
 
@@ -9,11 +8,6 @@ import io.dapr.client.DaprObjectSerializer;
  * Builder to generate an ActorProxy instance. Builder can be reused for multiple instances.
  */
 public class ActorProxyBuilder {
-
-    /**
-     * Default serializer for content to be sent back and forth between actors.
-     */
-    private static final DaprObjectSerializer DEFAULT_SERIALIZER = new DefaultObjectSerializer();
 
     /**
      * Builder for Dapr's raw http client.
@@ -37,8 +31,15 @@ public class ActorProxyBuilder {
      * @param serializer Serializer for objects sent/received. Use null for default (not recommended).
      */
     public ActorProxyBuilder(String actorType, DaprObjectSerializer serializer) {
+        if ((actorType == null) || actorType.isEmpty()) {
+            throw new IllegalArgumentException("ActorType is required.");
+        }
+        if (serializer == null) {
+            throw new IllegalArgumentException("Serializer is required.");
+        }
+
         this.actorType = actorType;
-        this.serializer = serializer == null ? DEFAULT_SERIALIZER : serializer;
+        this.serializer = serializer;
     }
 
     /**
@@ -48,10 +49,6 @@ public class ActorProxyBuilder {
      * @return New instance of ActorProxy.
      */
     public ActorProxy build(ActorId actorId) {
-        if ((this.actorType == null) || this.actorType.isEmpty()) {
-            throw new IllegalArgumentException("Cannot instantiate an Actor without type.");
-        }
-
         if (actorId == null) {
             throw new IllegalArgumentException("Cannot instantiate an Actor without Id.");
         }

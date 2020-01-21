@@ -8,6 +8,7 @@ package io.dapr.examples.actors.http;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.client.DefaultObjectSerializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class DemoActorClient {
   private static final ExecutorService POOL = Executors.newFixedThreadPool(NUM_ACTORS);
 
   public static void main(String[] args) throws Exception {
-    ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor", null);
+    ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor", new DefaultObjectSerializer());
 
     List<CompletableFuture<Void>> futures = new ArrayList<>(NUM_ACTORS);
 

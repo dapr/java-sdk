@@ -6,6 +6,7 @@
 package io.dapr.examples.actors.http;
 
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.client.DefaultObjectSerializer;
 import io.dapr.springboot.DaprApplication;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -35,7 +36,7 @@ public class DemoActorService {
     int port = Integer.parseInt(cmd.getOptionValue("port"));
 
     // Register the Actor class.
-    ActorRuntime.getInstance().registerActor(DemoActorImpl.class);
+    ActorRuntime.getInstance().registerActor(DemoActorImpl.class, new DefaultObjectSerializer());
 
     // Start Dapr's callback endpoint.
     DaprApplication.start(port);

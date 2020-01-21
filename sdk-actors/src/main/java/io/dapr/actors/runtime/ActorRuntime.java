@@ -6,7 +6,6 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
-import io.dapr.client.DefaultObjectSerializer;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.client.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
@@ -112,30 +111,9 @@ public class ActorRuntime {
   /**
    * Registers an actor with the runtime.
    *
-   * @param clazz The type of actor.
-   * @param <T>   Actor class type.
-   */
-  public <T extends AbstractActor> void registerActor(Class<T> clazz) {
-    registerActor(clazz, null, null);
-  }
-
-  /**
-   * Registers an actor with the runtime.
-   *
-   * @param clazz        The type of actor.
-   * @param actorFactory An optional factory to create actors. This can be used for dependency injection.
-   * @param <T>          Actor class type.
-   */
-  public <T extends AbstractActor> void registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
-    this.registerActor(clazz, actorFactory, null);
-  }
-
-  /**
-   * Registers an actor with the runtime.
-   *
-   * @param clazz                The type of actor.
+   * @param clazz            The type of actor.
    * @param objectSerializer Serializer for Actor's state and transient objects.
-   * @param <T>                  Actor class type.
+   * @param <T>              Actor class type.
    */
   public <T extends AbstractActor> void registerActor(Class<T> clazz, DaprObjectSerializer objectSerializer) {
     registerActor(clazz, null, objectSerializer);
@@ -144,25 +122,31 @@ public class ActorRuntime {
   /**
    * Registers an actor with the runtime.
    *
-   * @param clazz                The type of actor.
-   * @param actorFactory         An optional factory to create actors. This can be used for dependency injection.
-   * @param objectSerializer Serializer for Actor's state and transient objects.
-   * @param <T>                  Actor class type.
+   * @param clazz            The type of actor.
+   * @param actorFactory     An optional factory to create actors. This can be used for dependency injection.
+   * @param serializer       Serializer for Actor's state and transient objects.
+   * @param <T>              Actor class type.
    */
   public <T extends AbstractActor> void registerActor(
-    Class<T> clazz, ActorFactory<T> actorFactory, DaprObjectSerializer objectSerializer) {
+    Class<T> clazz, ActorFactory<T> actorFactory, DaprObjectSerializer serializer) {
+    if (clazz == null) {
+      throw new IllegalArgumentException("Class is required.");
+    }
+    if (serializer == null) {
+      throw new IllegalArgumentException("Serializer is required.");
+    }
+
     ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
     ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
-    DaprObjectSerializer actualSerializer = objectSerializer != null ? objectSerializer : new DefaultObjectSerializer();
 
-    ActorRuntimeContext<T> context = new ActorRuntimeContext<T>(
+    ActorRuntimeContext<T> context = new ActorRuntimeContext<>(
       this,
-      actualSerializer,
+      serializer,
       actualActorFactory,
       actorTypeInfo,
       this.daprClient,
-      new DaprStateAsyncProvider(this.daprClient, actualSerializer));
+      new DaprStateAsyncProvider(this.daprClient, serializer));
 
     // Create ActorManagers, override existing entry if registered again.
     this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));

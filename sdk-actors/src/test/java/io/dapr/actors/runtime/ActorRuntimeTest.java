@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -66,21 +67,21 @@ public class ActorRuntimeTest {
 
   @Test
   public void registerActor() throws Exception {
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     Assert.assertTrue(new String(this.runtime.serializeConfig()).contains(ACTOR_NAME));
   }
 
   @Test
   public void activateActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
   }
 
   @Test
   public void invokeActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
     byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
@@ -91,7 +92,7 @@ public class ActorRuntimeTest {
   @Test
   public void activateThendeactivateActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
     this.runtime.deactivate(ACTOR_NAME, actorId).block();
   }
@@ -99,14 +100,14 @@ public class ActorRuntimeTest {
   @Test
   public void deactivateActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.deactivate(ACTOR_NAME, actorId).block();
   }
 
   @Test
   public void lazyActivate() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
@@ -119,7 +120,7 @@ public class ActorRuntimeTest {
   @Test
   public void lazyDeactivate() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
     Mono<Void> deacticateCall = this.runtime.deactivate(ACTOR_NAME, actorId);
@@ -138,7 +139,7 @@ public class ActorRuntimeTest {
   @Test
   public void lazyInvoke() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
 
     Mono<byte[]> invokeCall = this.runtime.invoke(ACTOR_NAME, actorId, "say", null);
 

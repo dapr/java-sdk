@@ -7,6 +7,7 @@ package io.dapr.examples.invoke.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DefaultObjectSerializer;
 import io.dapr.client.domain.Verb;
 
 /**
@@ -27,7 +28,7 @@ public class InvokeClient {
    * @param args Messages to be sent as request for the invoke API.
    */
   public static void main(String[] args) {
-    DaprClient client = (new DaprClientBuilder(null)).build();
+    DaprClient client = (new DaprClientBuilder(new DefaultObjectSerializer())).build();
     for (String message : args) {
       client.invokeService(Verb.POST, SERVICE_APP_ID, "say", message, null, String.class).block();
     }

@@ -7,6 +7,7 @@ package io.dapr.examples.pubsub.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DefaultObjectSerializer;
 
 import java.util.Collections;
 
@@ -24,7 +25,7 @@ public class Publisher {
   private static final String TOPIC_NAME = "message";
 
   public static void main(String[] args) throws Exception {
-    DaprClient client = new DaprClientBuilder(null).build();
+    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     for (int i = 0; i < NUM_MESSAGES; i++) {
       String message = String.format("This is message #%d", i);
       client.publishEvent(TOPIC_NAME, message).block();

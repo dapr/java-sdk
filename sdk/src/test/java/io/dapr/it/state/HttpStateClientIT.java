@@ -7,6 +7,7 @@ package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DefaultObjectSerializer;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
@@ -43,7 +44,7 @@ public class HttpStateClientIT extends BaseIT {
     final String stateKey = "myKey";
 
     //create the http client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
 
     //creation of a dummy data
     MyData data = new MyData();
@@ -76,7 +77,7 @@ public class HttpStateClientIT extends BaseIT {
     final String stateKey = "keyToBeUpdated";
 
     //create http DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //Create dummy data to be store
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -111,7 +112,7 @@ public class HttpStateClientIT extends BaseIT {
     final String stateKey = "myeKeyToBeDeleted";
 
     //create DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
 
     //Create dummy data to be store
     MyData data = new MyData();
@@ -151,7 +152,7 @@ public class HttpStateClientIT extends BaseIT {
     //The key use to store the state and be updated using etags
     final String stateKey = "keyToBeUpdatedWithEtag";
     //create DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //Create dummy data to be store
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -204,7 +205,7 @@ public class HttpStateClientIT extends BaseIT {
     final String stateKey = "keyToBeUpdatedWithWrongEtag";
 
     //create DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //Create dummy data to be store
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -255,7 +256,7 @@ public class HttpStateClientIT extends BaseIT {
   public void saveAndDeleteStateWithEtag() {
     final String stateKey = "myeKeyToBeDeletedWithEtag";
     //create DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //Create dummy data to be store
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -295,7 +296,7 @@ public class HttpStateClientIT extends BaseIT {
     final String stateKey = "myeKeyToBeDeletedWithWrongEtag";
 
     //create DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //Create dummy data to be store
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -337,7 +338,7 @@ public class HttpStateClientIT extends BaseIT {
     StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE, null);
 
     //create dapr client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //create Dummy data
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -395,7 +396,7 @@ public class HttpStateClientIT extends BaseIT {
     StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.LAST_WRITE, null);
 
     //create dapr client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //create Dummy data
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -452,7 +453,7 @@ public class HttpStateClientIT extends BaseIT {
     StateOptions stateOptions = new StateOptions(null, null, retryPolicy);
 
     //create DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //Create dummy data to be store
     MyData data = new MyData();
     data.setPropertyA("data in property A");
@@ -500,7 +501,7 @@ public class HttpStateClientIT extends BaseIT {
     StateOptions stateOptions = new StateOptions(null, null, retryPolicy);
 
     //create DAPR client
-    DaprClient daprClient = new DaprClientBuilder(null).build();
+    DaprClient daprClient = new DaprClientBuilder(new DefaultObjectSerializer()).build();
     //Create dummy data to be store
     MyData data = new MyData();
     data.setPropertyA("data in property A");

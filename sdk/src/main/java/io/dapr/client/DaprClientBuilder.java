@@ -69,7 +69,11 @@ public class DaprClientBuilder {
      * @param serializer Serializer for objects to be sent and received from Dapr.
      */
     public DaprClientBuilder(DaprObjectSerializer serializer) {
-        this.serializer = serializer == null ? DEFAULT_SERIALIZER : serializer;
+        if (serializer == null) {
+            throw new IllegalArgumentException("Serializer is required");
+        }
+
+        this.serializer = serializer;
     }
 
     /**
