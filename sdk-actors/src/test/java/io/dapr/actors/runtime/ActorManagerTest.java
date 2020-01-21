@@ -6,7 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprClient;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
  */
 public class ActorManagerTest {
 
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
   interface MyActor {
@@ -34,14 +36,14 @@ public class ActorManagerTest {
     void incrementCount(int delta);
   }
 
-  public static class NotRemindableActor extends AbstractActor implements Actor {
+  public static class NotRemindableActor extends AbstractActor {
     public NotRemindableActor(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
     }
   }
 
-  @ActorType(Name = "MyActor")
-  public static class MyActorImpl extends AbstractActor implements Actor, MyActor, Remindable<String> {
+  @ActorType(name = "MyActor")
+  public static class MyActorImpl extends AbstractActor implements MyActor, Remindable<String> {
 
     private int timeCount = 0;
 
@@ -90,25 +92,29 @@ public class ActorManagerTest {
   public void invokeBeforeActivate() throws Exception {
     ActorId actorId = newActorId();
     String message = "something";
-    this.manager.invokeMethod(actorId, "say", message).block();
+    this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
   }
 
   @Test
-  public void activateThenInvoke() {
+  public void activateThenInvoke() throws Exception {
     ActorId actorId = newActorId();
-    String message = "something";
+    byte[] message = this.context.getObjectSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
-    String response = this.manager.invokeMethod(actorId, "say", message).block();
-    Assert.assertEquals(executeSayMethod(message), response);
+    byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
+    Assert.assertEquals(executeSayMethod(
+      this.context.getObjectSerializer().deserialize(message, String.class)),
+      this.context.getObjectSerializer().deserialize(response, String.class));
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void activateInvokeDeactivateThenInvoke() {
+  public void activateInvokeDeactivateThenInvoke() throws Exception {
     ActorId actorId = newActorId();
-    String message = "something";
+    byte[] message = this.context.getObjectSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
-    String response = this.manager.invokeMethod(actorId, "say", message).block();
-    Assert.assertEquals(executeSayMethod(message), response);
+    byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
+    Assert.assertEquals(executeSayMethod(
+      this.context.getObjectSerializer().deserialize(message, String.class)),
+      this.context.getObjectSerializer().deserialize(response, String.class));
 
     this.manager.deactivateActor(actorId).block();
     this.manager.invokeMethod(actorId, "say", message).block();
@@ -161,8 +167,8 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count").block();
-    String response = this.manager.invokeMethod(actorId, "getCount", null).block();
-    Assert.assertEquals("2", response);
+    byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
+    Assert.assertEquals("2", new String(response));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -170,16 +176,17 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count").block();
-    String response = this.manager.invokeMethod(actorId, "getCount", null).block();
-    Assert.assertEquals("2", response);
+    byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
+    Assert.assertEquals("2", new String(response));
 
     this.manager.deactivateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count").block();
   }
 
-  private String createReminderParams(String data) throws IOException {
-    ActorReminderParams params = new ActorReminderParams(data, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return this.context.getActorSerializer().serializeString(params);
+  private byte[] createReminderParams(String data) throws IOException {
+    byte[] serializedData = this.context.getObjectSerializer().serialize(data);
+    ActorReminderParams params = new ActorReminderParams(serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return INTERNAL_SERIALIZER.serialize(params);
   }
 
   private static ActorId newActorId() {
@@ -200,7 +207,7 @@ public class ActorManagerTest {
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(clazz),
       daprClient,

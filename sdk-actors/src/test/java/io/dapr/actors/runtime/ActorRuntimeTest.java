@@ -6,7 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprClient;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,8 +27,8 @@ public class ActorRuntimeTest {
     String say();
   }
 
-  @ActorType(Name = ACTOR_NAME)
-  public static class MyActorImpl extends AbstractActor implements Actor, MyActor {
+  @ActorType(name = ACTOR_NAME)
+  public static class MyActorImpl extends AbstractActor implements MyActor {
 
     public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
@@ -39,7 +39,7 @@ public class ActorRuntimeTest {
     }
   }
 
-  private static final ActorStateSerializer ACTOR_STATE_SERIALIZER = new ActorStateSerializer();
+  private static final ObjectSerializer ACTOR_STATE_SERIALIZER = new ObjectSerializer();
 
   private static Constructor<ActorRuntime> constructor;
 
@@ -67,24 +67,24 @@ public class ActorRuntimeTest {
 
   @Test
   public void registerActor() throws Exception {
-    this.runtime.registerActor(MyActorImpl.class);
-    Assert.assertTrue(this.runtime.serializeConfig().contains(ACTOR_NAME));
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
+    Assert.assertTrue(new String(this.runtime.serializeConfig()).contains(ACTOR_NAME));
   }
 
   @Test
   public void activateActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
   }
 
   @Test
   public void invokeActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
-    String response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
+    byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
     String message = ACTOR_STATE_SERIALIZER.deserialize(ACTOR_STATE_SERIALIZER.unwrapData(response), String.class);
     Assert.assertEquals("Nothing to say.", message);
   }
@@ -92,7 +92,7 @@ public class ActorRuntimeTest {
   @Test
   public void activateThendeactivateActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
     this.runtime.deactivate(ACTOR_NAME, actorId).block();
   }
@@ -100,27 +100,27 @@ public class ActorRuntimeTest {
   @Test
   public void deactivateActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.deactivate(ACTOR_NAME, actorId).block();
   }
 
   @Test
   public void lazyActivate() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
       .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
       .doOnSuccess(s -> Assert.fail())
-      .onErrorReturn("")
+      .onErrorReturn("".getBytes())
       .block();
   }
 
   @Test
   public void lazyDeactivate() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
     Mono<Void> deacticateCall = this.runtime.deactivate(ACTOR_NAME, actorId);
@@ -132,16 +132,16 @@ public class ActorRuntimeTest {
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
       .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
       .doOnSuccess(s -> Assert.fail())
-      .onErrorReturn("")
+      .onErrorReturn("".getBytes())
       .block();
   }
 
   @Test
   public void lazyInvoke() throws Exception {
     String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultObjectSerializer());
 
-    Mono<String> invokeCall = this.runtime.invoke(ACTOR_NAME, actorId, "say", null);
+    Mono<byte[]> invokeCall = this.runtime.invoke(ACTOR_NAME, actorId, "say", null);
 
     this.runtime.activate(ACTOR_NAME, actorId).block();
 

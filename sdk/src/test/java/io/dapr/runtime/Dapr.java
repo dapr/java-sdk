@@ -5,12 +5,11 @@
 
 package io.dapr.runtime;
 
-import io.dapr.client.domain.CloudEventEnvelope;
-import io.dapr.utils.ObjectSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.CloudEvent;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -23,14 +22,14 @@ import java.util.stream.Collectors;
 public final class Dapr implements DaprRuntime {
 
   /**
+   * Serializes and deserializes internal objects.
+   */
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  /**
    * Singleton instance for this class.
    */
   private static volatile DaprRuntime instance;
-
-  /**
-   * Serializes and deserializes internal objects.
-   */
-  private final ObjectSerializer serializer = new ObjectSerializer();
 
   /**
    * Topics, methods and binding handles.
@@ -65,7 +64,7 @@ public final class Dapr implements DaprRuntime {
    */
   @Override
   public String serializeSubscribedTopicList() throws IOException {
-    return new String(this.serializer.serialize(this.getSubscribedTopics()), StandardCharsets.UTF_8);
+    return OBJECT_MAPPER.writeValueAsString(this.getSubscribedTopics());
   }
 
   /**
@@ -85,7 +84,7 @@ public final class Dapr implements DaprRuntime {
    */
   @Override
   public void subscribeToTopic(String topic, TopicListener listener) {
-    this.handlers.putIfAbsent(topic, new TopicHandler(this.serializer, listener));
+    this.handlers.putIfAbsent(topic, new TopicHandler(listener));
   }
 
   /**
@@ -205,17 +204,10 @@ public final class Dapr implements DaprRuntime {
     private final TopicListener listener;
 
     /**
-     * Serializer/deserializer.
-     */
-    private final ObjectSerializer serializer;
-
-    /**
      * Instantiates a new topic handler.
-     * @param serializer Useful for object serialization.
      * @param listener Callback to be executed on a given message.
      */
-    private TopicHandler(ObjectSerializer serializer, TopicListener listener) {
-      this.serializer = serializer;
+    private TopicHandler(TopicListener listener) {
       this.listener = listener;
     }
 
@@ -227,7 +219,7 @@ public final class Dapr implements DaprRuntime {
     @Override
     public Mono<byte[]> apply(HandleRequest r) {
       try {
-        CloudEventEnvelope message = this.serializer.deserialize(r.payload, CloudEventEnvelope.class);
+        CloudEvent message = CloudEvent.deserialize(r.payload);
         if (message == null) {
           return Mono.empty();
         }

@@ -1,6 +1,5 @@
 package io.dapr.utils;
 
-import io.dapr.utils.DurationUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -6,7 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprClient;
+import io.dapr.client.DaprObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ public class DefaultActorFactoryTest {
   /**
    * A compliant implementation of Actor to be used in the tests below.
    */
-  static class MyActor extends AbstractActor implements Actor {
+  static class MyActor extends AbstractActor {
 
     ActorRuntimeContext<MyActor> context;
 
@@ -36,7 +36,7 @@ public class DefaultActorFactoryTest {
   /**
    * A non-compliant implementation of Actor to be used in the tests below.
    */
-  static class InvalidActor extends AbstractActor implements Actor {
+  static class InvalidActor extends AbstractActor {
     InvalidActor() {
       super(null, null);
     }
@@ -72,7 +72,7 @@ public class DefaultActorFactoryTest {
   private static <T extends AbstractActor> ActorRuntimeContext<T> createActorRuntimeContext(Class<T> clazz) {
     return new ActorRuntimeContext(
         mock(ActorRuntime.class),
-        mock(ActorStateSerializer.class),
+        mock(DaprObjectSerializer.class),
         mock(ActorFactory.class),
         ActorTypeInformation.create(clazz),
         mock(DaprClient.class),

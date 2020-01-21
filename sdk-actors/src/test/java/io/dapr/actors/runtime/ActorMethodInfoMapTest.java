@@ -47,7 +47,7 @@ public class ActorMethodInfoMapTest {
   /**
    * Only used for this test.
    */
-  public interface TestActor extends Actor {
+  public interface TestActor {
     String getData(String key);
   }
 }

@@ -8,12 +8,14 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprClient;
+import io.dapr.client.DaprObjectSerializer;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -24,7 +26,7 @@ import static org.mockito.Mockito.*;
  */
 public class DaprStateAsyncProviderTest {
 
-  private static final ActorStateSerializer SERIALIZER = new ActorStateSerializer();
+  private static final DaprObjectSerializer SERIALIZER = new DefaultObjectSerializer();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -106,15 +108,16 @@ public class DaprStateAsyncProviderTest {
               String key = operation.get("request").get("key").asText();
               JsonNode valueNode = operation.get("request").get("value");
 
+              byte[] value = (valueNode == null) ? null : valueNode.binaryValue();
               foundInsertName |= "upsert".equals(opName) &&
                 "name".equals(key) &&
-                "Jon Doe".equals(valueNode.asText());
+                Arrays.equals(SERIALIZER.serialize("Jon Doe"), value);
               foundUpdateZipcode |= "upsert".equals(opName) &&
                 "zipcode".equals(key) &&
-                "98011".equals(valueNode.asText());
+                Arrays.equals(SERIALIZER.serialize(98011), value);
               foundDeleteFlag |= "delete".equals(opName) &&
                 "flag".equals(key) &&
-                (valueNode == null);
+                (value == null);
             }
 
             return foundInsertName && foundUpdateZipcode && foundDeleteFlag;
@@ -129,7 +132,7 @@ public class DaprStateAsyncProviderTest {
     provider.apply("MyActor",
       new ActorId("123"),
       createInsertChange("name", "Jon Doe"),
-      createUpdateChange("zipcode", "98011"),
+      createUpdateChange("zipcode", 98011),
       createDeleteChange("flag"))
       .block();
 
@@ -137,39 +140,39 @@ public class DaprStateAsyncProviderTest {
   }
 
   @Test
-  public void happyCaseLoad() {
+  public void happyCaseLoad() throws Exception {
     DaprClient daprClient = mock(DaprClient.class);
     when(daprClient
       .getActorState(any(), any(), eq("name")))
-      .thenReturn(Mono.just("Jon Doe"));
+      .thenReturn(Mono.just(SERIALIZER.serialize("Jon Doe")));
     when(daprClient
       .getActorState(any(), any(), eq("zipcode")))
-      .thenReturn(Mono.just("98021"));
+      .thenReturn(Mono.just(SERIALIZER.serialize(98021)));
     when(daprClient
       .getActorState(any(), any(), eq("goals")))
-      .thenReturn(Mono.just("98"));
+      .thenReturn(Mono.just(SERIALIZER.serialize(98)));
     when(daprClient
       .getActorState(any(), any(), eq("balance")))
-      .thenReturn(Mono.just("46.55"));
+      .thenReturn(Mono.just(SERIALIZER.serialize(46.55)));
     when(daprClient
       .getActorState(any(), any(), eq("active")))
-      .thenReturn(Mono.just("true"));
+      .thenReturn(Mono.just(SERIALIZER.serialize(true)));
     when(daprClient
       .getActorState(any(), any(), eq("customer")))
-      .thenReturn(Mono.just("{ \"id\": 1000, \"name\": \"Roxane\"}"));
+      .thenReturn(Mono.just("{ \"id\": 1000, \"name\": \"Roxane\"}".getBytes()));
     when(daprClient
       .getActorState(any(), any(), eq("anotherCustomer")))
-      .thenReturn(Mono.just("{ \"id\": 2000, \"name\": \"Max\"}"));
+      .thenReturn(Mono.just("{ \"id\": 2000, \"name\": \"Max\"}".getBytes()));
     when(daprClient
       .getActorState(any(), any(), eq("nullCustomer")))
-      .thenReturn(Mono.just(""));
+      .thenReturn(Mono.empty());
 
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 
     Assert.assertEquals("Jon Doe",
       provider.load("MyActor", new ActorId("123"), "name", String.class).block());
-    Assert.assertEquals("98021",
-      provider.load("MyActor", new ActorId("123"), "zipcode", String.class).block());
+    Assert.assertEquals(98021,
+      (int)provider.load("MyActor", new ActorId("123"), "zipcode", int.class).block());
     Assert.assertEquals(98,
       (int) provider.load("MyActor", new ActorId("123"), "goals", int.class).block());
     Assert.assertEquals(98,
@@ -193,33 +196,33 @@ public class DaprStateAsyncProviderTest {
     // Keys that exists.
     when(daprClient
       .getActorState(any(), any(), eq("name")))
-      .thenReturn(Mono.just("Jon Doe"));
+      .thenReturn(Mono.just("Jon Doe".getBytes()));
     when(daprClient
       .getActorState(any(), any(), eq("zipcode")))
-      .thenReturn(Mono.just("98021"));
+      .thenReturn(Mono.just("98021".getBytes()));
     when(daprClient
       .getActorState(any(), any(), eq("goals")))
-      .thenReturn(Mono.just("98"));
+      .thenReturn(Mono.just("98".getBytes()));
     when(daprClient
       .getActorState(any(), any(), eq("balance")))
-      .thenReturn(Mono.just("46.55"));
+      .thenReturn(Mono.just("46.55".getBytes()));
     when(daprClient
       .getActorState(any(), any(), eq("active")))
-      .thenReturn(Mono.just("true"));
+      .thenReturn(Mono.just("true".getBytes()));
     when(daprClient
       .getActorState(any(), any(), eq("customer")))
-      .thenReturn(Mono.just("{ \"id\": \"3000\", \"name\": \"Ely\" }"));
+      .thenReturn(Mono.just("{ \"id\": \"3000\", \"name\": \"Ely\" }".getBytes()));
 
     // Keys that do not exist.
     when(daprClient
       .getActorState(any(), any(), eq("Does not exist")))
-      .thenReturn(Mono.just(""));
+      .thenReturn(Mono.empty());
     when(daprClient
       .getActorState(any(), any(), eq("NAME")))
-      .thenReturn(Mono.just(""));
+      .thenReturn(Mono.empty());
     when(daprClient
       .getActorState(any(), any(), eq(null)))
-      .thenReturn(Mono.just(""));
+      .thenReturn(Mono.empty());
 
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 

@@ -1,8 +1,8 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.ActorStateSerializer;
-import io.dapr.client.DaprClient;
+import io.dapr.actors.runtime.ObjectSerializer;
+import io.dapr.client.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -11,6 +11,11 @@ import java.io.IOException;
  * Implements a proxy client for an Actor's instance.
  */
 class ActorProxyImpl implements ActorProxy {
+
+  /**
+   * Serializer used for internal objects.
+   */
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
    * Actor's identifier for this Actor instance.
@@ -25,7 +30,7 @@ class ActorProxyImpl implements ActorProxy {
   /**
    * Serializer/deserialzier to exchange message for Actors.
    */
-  private final ActorStateSerializer serializer;
+  private final DaprObjectSerializer serializer;
 
   /**
    * Client to talk to the Dapr's API.
@@ -40,7 +45,7 @@ class ActorProxyImpl implements ActorProxy {
    * @param serializer Serializer and deserializer for method calls.
    * @param daprClient Dapr client.
    */
-  ActorProxyImpl(String actorType, ActorId actorId, ActorStateSerializer serializer, DaprClient daprClient) {
+  ActorProxyImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, DaprClient daprClient) {
     this.actorType = actorType;
     this.actorId = actorId;
     this.daprClient = daprClient;
@@ -67,7 +72,7 @@ class ActorProxyImpl implements ActorProxy {
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.wrap(data))
-      .filter(s -> (s != null) && (!s.isEmpty()))
+      .filter(s -> s.length > 0)
       .map(s -> unwrap(s, clazz));
   }
 
@@ -77,7 +82,7 @@ class ActorProxyImpl implements ActorProxy {
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
-      .filter(s -> (s != null) && (!s.isEmpty()))
+      .filter(s -> s.length > 0)
       .map(s -> unwrap(s, clazz));
   }
 
@@ -100,15 +105,15 @@ class ActorProxyImpl implements ActorProxy {
   /**
    * Extracts the response object from the Actor's method result.
    *
-   * @param response String returned by API.
+   * @param response response returned by API.
    * @param clazz    Expected response class.
    * @param <T>      Expected response type.
    * @return Response object or null.
    * @throws RuntimeException In case it cannot generate Object.
    */
-  private <T> T unwrap(final String response, Class<T> clazz) {
+  private <T> T unwrap(final byte[] response, Class<T> clazz) {
     try {
-      return this.serializer.deserialize(this.serializer.unwrapData(response), clazz);
+      return this.serializer.deserialize(INTERNAL_SERIALIZER.unwrapData(response), clazz);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -118,13 +123,12 @@ class ActorProxyImpl implements ActorProxy {
    * Builds the request to invoke an API for Actors.
    *
    * @param request Request object for the original Actor's method.
-   * @param <T>     Type for the original Actor's method request.
-   * @return String to be sent to Dapr's API.
-   * @throws RuntimeException In case it cannot generate String.
+   * @return Payload to be sent to Dapr's API.
+   * @throws RuntimeException In case it cannot generate payload.
    */
-  private <T> String wrap(final T request) {
+  private byte[] wrap(final Object request) {
     try {
-      return this.serializer.wrapData(this.serializer.serialize(request));
+      return INTERNAL_SERIALIZER.wrapData(this.serializer.serialize(request));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

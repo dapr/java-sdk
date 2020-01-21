@@ -7,7 +7,6 @@ package io.dapr.client;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
-import io.dapr.utils.ObjectSerializer;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
@@ -15,7 +14,6 @@ import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -32,10 +30,7 @@ public class DaprClientHttpAdapterTest {
 
   private MockInterceptor mockInterceptor;
 
-  private ObjectSerializer serializer = new ObjectSerializer();
-
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
-
 
   @Before
   public void setUp() throws Exception {
@@ -133,11 +128,11 @@ public class DaprClientHttpAdapterTest {
   public void invokeService() {
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
-      .respond(EXPECTED_RESULT);
+      .respond("\"hello world\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     Mono<String> mono = daprClientHttpAdapter.invokeService(Verb.GET, "41", "neworder", null, null, String.class);
-    assertEquals(mono.block(), EXPECTED_RESULT);
+    assertEquals("hello world", mono.block());
   }
 
   @Test
@@ -148,8 +143,8 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<String> mono = daprClientHttpAdapter.invokeService(Verb.GET, "41", "neworder", null, String.class);
-    assertEquals(mono.block(), EXPECTED_RESULT);
+    Mono<byte[]> mono = daprClientHttpAdapter.invokeService(Verb.GET, "41", "neworder", null, byte[].class);
+    assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
   @Test
@@ -221,7 +216,7 @@ public class DaprClientHttpAdapterTest {
     State<String> stateKeyNull = new State("value", null, "etag", stateOptions);
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/state/key")
-      .respond(EXPECTED_RESULT);
+      .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     assertThrows(IllegalArgumentException.class, () -> {
@@ -236,7 +231,7 @@ public class DaprClientHttpAdapterTest {
     State<String> stateEmptyEtag = new State("value", "key", "", null);
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/state/key")
-      .respond(EXPECTED_RESULT);
+      .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     Mono<State<String>> monoEmptyEtag = daprClientHttpAdapter.getState(stateEmptyEtag, String.class);
@@ -248,7 +243,7 @@ public class DaprClientHttpAdapterTest {
     State<String> stateNullEtag = new State("value", "key", null, null);
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/state/key")
-      .respond(EXPECTED_RESULT);
+      .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     Mono<State<String>> monoNullEtag = daprClientHttpAdapter.getState(stateNullEtag, String.class);
@@ -258,7 +253,7 @@ public class DaprClientHttpAdapterTest {
   @Test
   public void saveStates() {
     State<String> stateKeyValue = new State("value", "key", "etag", null);
-    List<State<String>> stateKeyValueList = Arrays.asList(stateKeyValue);
+    List<State<?>> stateKeyValueList = Arrays.asList(stateKeyValue);
     mockInterceptor.addRule()
       .post("http://localhost:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
@@ -271,7 +266,7 @@ public class DaprClientHttpAdapterTest {
   @Test
   public void saveStatesNull() {
     State<String> stateKeyValue = new State("value", "key", "", null);
-    List<State<String>> stateKeyValueList = new ArrayList();
+    List<State<?>> stateKeyValueList = new ArrayList();
     mockInterceptor.addRule()
       .post("http://localhost:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
@@ -286,7 +281,7 @@ public class DaprClientHttpAdapterTest {
   @Test
   public void saveStatesEtagNull() {
     State<String> stateKeyValue = new State("value", "key", null, null);
-    List<State<String>> stateKeyValueList = Arrays.asList(stateKeyValue);
+    List<State<?>> stateKeyValueList = Arrays.asList(stateKeyValue);
     mockInterceptor.addRule()
       .post("http://localhost:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
@@ -299,7 +294,7 @@ public class DaprClientHttpAdapterTest {
   @Test
   public void saveStatesEtagEmpty() {
     State<String> stateKeyValue = new State("value", "key", "", null);
-    List<State<String>> stateKeyValueList = Arrays.asList(stateKeyValue);
+    List<State<?>> stateKeyValueList = Arrays.asList(stateKeyValue);
     mockInterceptor.addRule()
       .post("http://localhost:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
@@ -331,7 +326,7 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.deleteState(stateKeyValue);
+    Mono<Void> mono = daprClientHttpAdapter.deleteState(stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
     assertNull(mono.block());
   }
 
@@ -343,7 +338,7 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.deleteState(stateKeyValue);
+    Mono<Void> mono = daprClientHttpAdapter.deleteState(stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
     assertNull(mono.block());
   }
 
@@ -355,7 +350,7 @@ public class DaprClientHttpAdapterTest {
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.deleteState(stateKeyValue);
+    Mono<Void> mono = daprClientHttpAdapter.deleteState(stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
     assertNull(mono.block());
   }
 
@@ -369,94 +364,13 @@ public class DaprClientHttpAdapterTest {
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttpAdapter.deleteState(null).block();
+      daprClientHttpAdapter.deleteState(null, null, null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttpAdapter.deleteState(stateKeyValueNull).block();
+      daprClientHttpAdapter.deleteState("", null, null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttpAdapter.deleteState(stateKeyValueEmpty).block();
+      daprClientHttpAdapter.deleteState(" ", null, null).block();
     });
   }
-
-  @Test
-  public void invokeActorMethod() throws IOException {
-    DaprHttp daprHttpMock = mock(DaprHttp.class);
-    mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/actors/DemoActor/1/method/Payment")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<String> mono = daprClientHttpAdapter.invokeActorMethod("DemoActor", "1", "Payment", "");
-    assertEquals(mono.block(), EXPECTED_RESULT);
-  }
-
-
-  @Test
-  public void getActorState() {
-    mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/actors/DemoActor/1/state/order")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<String> mono = daprClientHttpAdapter.getActorState("DemoActor", "1", "order");
-    assertEquals(mono.block(), EXPECTED_RESULT);
-  }
-
-
-  @Test
-  public void saveActorStateTransactionally() {
-    mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/state")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.saveActorStateTransactionally("DemoActor", "1", "");
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void registerActorReminder() {
-    mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/reminders/reminder")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.registerActorReminder("DemoActor", "1", "reminder", "");
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void unregisterActorReminder() {
-    mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/actors/DemoActor/1/reminders/reminder")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.unregisterActorReminder("DemoActor", "1", "reminder");
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void registerActorTimer() {
-    mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/timers/timer")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.registerActorTimer("DemoActor", "1", "timer", "");
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void unregisterActorTimer() {
-    mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/actors/DemoActor/1/timers/timer")
-      .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttp(3000, okHttpClient);
-    daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
-    Mono<Void> mono = daprClientHttpAdapter.unregisterActorTimer("DemoActor", "1", "timer");
-    assertNull(mono.block());
-  }
-
 }

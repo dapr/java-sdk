@@ -1,8 +1,8 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.ActorStateSerializer;
-import io.dapr.client.DaprClient;
+import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.client.DaprObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -17,7 +17,7 @@ public class ActorProxyImplTest {
   @Test()
   public void constructorActorProxyTest() {
     final DaprClient daprClient = mock(DaprClient.class);
-    final ActorStateSerializer serializer = mock(ActorStateSerializer.class);
+    final DaprObjectSerializer serializer = mock(DaprObjectSerializer.class);
     final ActorProxyImpl actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
@@ -30,15 +30,16 @@ public class ActorProxyImplTest {
   @Test()
   public void invokeActorMethodWithoutDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
+    Mono<byte[]> daprResponse =
+      Mono.just("{\n\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n}"
+        .getBytes());
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
-        .thenReturn(Mono.just("{\n" +
-            "\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n" +
-            "}"));
+        .thenReturn(daprResponse);
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     Mono<MyData> result = actorProxy.invokeActorMethod("getData", MyData.class);
@@ -52,12 +53,12 @@ public class ActorProxyImplTest {
   public void invokeActorMethodWithoutDataWithEmptyReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
-        .thenReturn(Mono.just(""));
+        .thenReturn(Mono.just("".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     Mono<MyData> result = actorProxy.invokeActorMethod("getData", MyData.class);
@@ -69,12 +70,12 @@ public class ActorProxyImplTest {
   public void invokeActorMethodWithIncorrectReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
-        .thenReturn(Mono.just("{test}"));
+        .thenReturn(Mono.just("{test}".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     Mono<MyData> result = actorProxy.invokeActorMethod("getData", MyData.class);
@@ -91,14 +92,14 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just("{\n" +
-            "\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n" +
-            "}"));
+        .thenReturn(
+          Mono.just("{\n\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n}"
+            .getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     MyData saveData = new MyData();
@@ -117,12 +118,12 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithIncorrectReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just("{test}"));
+        .thenReturn(Mono.just("{test}".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     MyData saveData = new MyData();
@@ -141,12 +142,12 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithEmptyReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just(""));
+        .thenReturn(Mono.just("".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     MyData saveData = new MyData();
@@ -163,12 +164,12 @@ public class ActorProxyImplTest {
   public void invokeActorMethodSavingDataWithIncorrectInputType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
-        .thenReturn(Mono.just("{test}"));
+        .thenReturn(Mono.just("{test}".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     MyData saveData = new MyData();
@@ -197,7 +198,7 @@ public class ActorProxyImplTest {
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     Mono<Void> result = actorProxy.invokeActorMethod("getData", saveData);
@@ -220,7 +221,7 @@ public class ActorProxyImplTest {
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     Mono<Void> result = actorProxy.invokeActorMethod("getData", saveData);
@@ -237,7 +238,7 @@ public class ActorProxyImplTest {
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
         new ActorId("100"),
-        new ActorStateSerializer(),
+        new DefaultObjectSerializer(),
         daprClient);
 
     Mono<Void> result = actorProxy.invokeActorMethod("getData");

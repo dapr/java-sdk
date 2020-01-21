@@ -2,10 +2,8 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.SignalType;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,6 +14,11 @@ import java.util.function.Function;
  * Manages actors of a specific type.
  */
 class ActorManager<T extends AbstractActor> {
+
+  /**
+   * Serializer for internal Dapr objects.
+   */
+  private static final ObjectSerializer OBJECT_SERIALIZER = new ObjectSerializer();
 
   /**
    * Context for the Actor runtime.
@@ -50,9 +53,8 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous void response.
    */
   Mono<Void> activateActor(ActorId actorId) {
-    T actor = this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId);
-
-    return actor.onActivateInternal().then(this.onActivatedActor(actorId, actor));
+    return Mono.fromSupplier(() -> this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId))
+      .flatMap(actor -> actor.onActivateInternal().then(this.onActivatedActor(actorId, actor)));
   }
 
   /**
@@ -62,12 +64,7 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous void response.
    */
   Mono<Void> deactivateActor(ActorId actorId) {
-    T actor = this.activeActors.remove(actorId);
-    if (actor != null) {
-      return actor.onDeactivateInternal();
-    }
-
-    return Mono.empty();
+    return Mono.fromSupplier(() -> this.activeActors.remove(actorId)).flatMap(actor -> actor.onDeactivateInternal());
   }
 
   /**
@@ -78,7 +75,7 @@ class ActorManager<T extends AbstractActor> {
    * @param request    Input object for the method being invoked.
    * @return Asynchronous void response.
    */
-  Mono<String> invokeMethod(ActorId actorId, String methodName, String request) {
+  Mono<byte[]> invokeMethod(ActorId actorId, String methodName, byte[] request) {
     return invokeMethod(actorId, null, methodName, request);
   }
 
@@ -90,24 +87,22 @@ class ActorManager<T extends AbstractActor> {
    * @param params      Parameters for the reminder.
    * @return Asynchronous void response.
    */
-  Mono<Void> invokeReminder(ActorId actorId, String reminderName, String params) {
-    if (!this.runtimeContext.getActorTypeInformation().isRemindable()) {
-      return Mono.empty();
-    }
+  Mono<Void> invokeReminder(ActorId actorId, String reminderName, byte[] params) {
+    return Mono.fromSupplier(() -> {
+      if (!this.runtimeContext.getActorTypeInformation().isRemindable()) {
+        return null;
+      }
 
-    try {
-      ActorReminderParams paramsObject = this
-        .runtimeContext
-        .getActorSerializer()
-        .deserialize(params, ActorReminderParams.class);
-      return invoke(
+      try {
+        return OBJECT_SERIALIZER.deserialize(params, ActorReminderParams.class);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }).flatMap(p -> invoke(
         actorId,
         ActorMethodContext.CreateForReminder(reminderName),
-        actor -> doReminderInvokation((Remindable) actor, reminderName, paramsObject))
-        .then();
-    } catch (Exception e) {
-      return Mono.error(e);
-    }
+        actor -> doReminderInvokation((Remindable) actor, reminderName, p)))
+    .then();
   }
 
   /**
@@ -181,7 +176,7 @@ class ActorManager<T extends AbstractActor> {
       return true;
     }).flatMap(x -> {
       try {
-        Object data = this.runtimeContext.getActorSerializer().deserialize(
+        Object data = this.runtimeContext.getObjectSerializer().deserialize(
           reminderParams.getData(),
           actor.getStateType());
         return actor.receiveReminder(
@@ -196,15 +191,15 @@ class ActorManager<T extends AbstractActor> {
   }
 
   /**
-   * Internal method to actually invoke Actor's method.
+   * Internal method to actually invoke Actor's timer method.
    *
    * @param actorId    Identifier for the Actor.
    * @param context    Method context to be invoked.
    * @param methodName Method name to be invoked.
-   * @param request    Input object to be passed in to the invoked method.
+   * @param input      Input object to be passed in to the invoked method.
    * @return Asynchronous void response.
    */
-  private Mono<String> invokeMethod(ActorId actorId, ActorMethodContext context, String methodName, Object request) {
+  private Mono<Object> invokeMethod(ActorId actorId, ActorMethodContext context, String methodName, Object input) {
     ActorMethodContext actorMethodContext = context;
     if (actorMethodContext == null) {
       actorMethodContext = ActorMethodContext.CreateForActor(methodName);
@@ -216,60 +211,99 @@ class ActorManager<T extends AbstractActor> {
         Method method = this.actorMethods.get(methodName);
 
         if (method.getReturnType().equals(Mono.class)) {
-          Mono<Object> mono = (Mono<Object>) invokeMethod(actor, method, request);
-          if (mono == null) {
-            return Mono.just(new Object());
-          }
-
-          return mono.defaultIfEmpty("").map(r -> {
-            try {
-              return (Object) this.runtimeContext.getActorSerializer().serializeString(r);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          });
+          return invokeMonoMethod(actor, method, input);
         }
-
-        return Mono.fromSupplier(() -> {
-          try {
-            Object response = invokeMethod(actor, method, request);
-
-            if (response == null) {
-              return new Object();
-            }
-
-            // Method was not Mono, so we serialize response.
-            return this.runtimeContext.getActorSerializer().serializeString(response);
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        });
+        return invokeMethod(actor, method, input);
       } catch (Exception e) {
         return Mono.error(e);
       }
-    }).map(r -> r.toString());
+    });
   }
 
-  private Object invokeMethod(AbstractActor actor, Method method, Object request)
-    throws IllegalAccessException, InvocationTargetException, IOException {
-    Object response;
-    if (method.getParameterCount() == 0) {
-      response = method.invoke(actor);
-    } else {
-      // Actor methods must have a one or no parameter, which is guaranteed at this point.
-      Class<?> inputClass = method.getParameterTypes()[0];
-
-      if ((request != null) && !inputClass.isInstance(request)) {
-        // If request object is String, we deserialize it.
-        response = method.invoke(
-          actor,
-          this.runtimeContext.getActorSerializer().deserialize(request, inputClass));
-      } else {
-        // If input already of the right type, so we just cast it.
-        response = method.invoke(actor, inputClass.cast(request));
-      }
+  /**
+   * Internal method to actually invoke Actor's method.
+   *
+   * @param actorId    Identifier for the Actor.
+   * @param context    Method context to be invoked.
+   * @param methodName Method name to be invoked.
+   * @param request    Input object to be passed in to the invoked method.
+   * @return Asynchronous serialized response.
+   */
+  private Mono<byte[]> invokeMethod(ActorId actorId, ActorMethodContext context, String methodName, byte[] request) {
+    ActorMethodContext actorMethodContext = context;
+    if (actorMethodContext == null) {
+      actorMethodContext = ActorMethodContext.CreateForActor(methodName);
     }
-    return response;
+
+    return this.invoke(actorId, actorMethodContext, actor -> {
+      try {
+        // Finds the actor method with the given name and 1 or no parameter.
+        Method method = this.actorMethods.get(methodName);
+
+        Object input = null;
+        if (method.getParameterCount() == 1) {
+          // Actor methods must have a one or no parameter, which is guaranteed at this point.
+          Class<?> inputClass = method.getParameterTypes()[0];
+          input = this.runtimeContext.getObjectSerializer().deserialize(request, inputClass);
+        }
+
+        if (method.getReturnType().equals(Mono.class)) {
+          return invokeMonoMethod(actor, method, input);
+        }
+
+        return invokeMethod(actor, method, input);
+      } catch (Exception e) {
+        return Mono.error(e);
+      }
+    }).map(r -> {
+      try {
+        return this.runtimeContext.getObjectSerializer().serialize(r);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  /**
+   * Invokes a method that returns Mono.
+   * @param actor Actor to be invoked.
+   * @param method Method to be invoked.
+   * @param input Input object for the method (or null).
+   * @return Asynchronous object response.
+   */
+  private Mono<Object> invokeMonoMethod(AbstractActor actor, Method method, Object input) {
+    try {
+      if (method.getParameterCount() == 0) {
+        return (Mono<Object>) method.invoke(actor);
+      } else {
+        // Actor methods must have a one or no parameter, which is guaranteed at this point.
+        return (Mono<Object>) method.invoke(actor, input);
+      }
+    } catch (Exception e) {
+      return Mono.error(e);
+    }
+  }
+
+  /**
+   * Invokes a method that returns a plain object (not Mono).
+   * @param actor  Actor to be invoked.
+   * @param method Method to be invoked.
+   * @param input  Input object for the method (or null).
+   * @return Asynchronous object response.
+   */
+  private Mono<Object> invokeMethod(AbstractActor actor, Method method, Object input) {
+    return Mono.fromSupplier(() -> {
+      try {
+        if (method.getParameterCount() == 0) {
+          return method.invoke(actor);
+        } else {
+          // Actor methods must have a one or no parameter, which is guaranteed at this point.
+          return method.invoke(actor, input);
+        }
+      } catch (Exception e) {
+        return Mono.error(e);
+      }
+    });
   }
 
   /**
@@ -292,12 +326,15 @@ class ActorManager<T extends AbstractActor> {
       }
 
       return actor.onPreActorMethodInternal(context)
-        .then(func.apply(actor))
-        .flatMap(result -> actor.onPostActorMethodInternal(context).thenReturn(result))
+        .then((Mono<Object>)func.apply(actor))
+        .switchIfEmpty(
+          actor.onPostActorMethodInternal(context))
+        .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
         .onErrorMap(throwable -> {
-          actor.resetState();
+          actor.rollback();
           return throwable;
-        });
+        })
+        .map(o -> (T) o);
     } catch (Exception e) {
       return Mono.error(e);
     }

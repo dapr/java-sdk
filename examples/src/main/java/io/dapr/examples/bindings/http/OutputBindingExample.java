@@ -7,7 +7,7 @@ package io.dapr.examples.bindings.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.utils.ObjectSerializer;
+import io.dapr.client.DefaultObjectSerializer;
 
 /**
  * Service for output binding example.
@@ -25,7 +25,7 @@ public class OutputBindingExample {
   }
 
   public static void main(String[] args) throws Exception {
-    DaprClient client = new DaprClientBuilder().build();
+    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer()).build();
 
     final String BINDING_NAME = "sample123";
 

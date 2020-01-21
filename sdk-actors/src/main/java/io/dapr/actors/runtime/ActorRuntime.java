@@ -6,8 +6,8 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprHttpBuilder;
+import io.dapr.client.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -20,6 +20,11 @@ import java.util.Map;
  * runtime to create instances of the actor.
  */
 public class ActorRuntime {
+
+  /**
+   * Serializer for internal Dapr objects.
+   */
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
    * A trace type used when logging.
@@ -47,16 +52,6 @@ public class ActorRuntime {
   private final DaprClient daprClient;
 
   /**
-   * State provider for Dapr.
-   */
-  private final DaprStateAsyncProvider daprStateProvider;
-
-  /**
-   * Serializes/deserializes objects for Actors.
-   */
-  private final ActorStateSerializer actorSerializer;
-
-  /**
    * Map of ActorType --> ActorManager.
    */
   private final Map<String, ActorManager> actorManagers;
@@ -67,7 +62,7 @@ public class ActorRuntime {
    * @throws IllegalStateException
    */
   private ActorRuntime() throws IllegalStateException {
-    this(new DaprClientBuilder().build());
+    this(new DaprHttpClient(new DaprHttpBuilder().build()));
   }
 
   /**
@@ -84,8 +79,6 @@ public class ActorRuntime {
     this.config = new ActorRuntimeConfig();
     this.actorManagers = Collections.synchronizedMap(new HashMap<>());
     this.daprClient = daprClient;
-    this.actorSerializer = new ActorStateSerializer();
-    this.daprStateProvider = new DaprStateAsyncProvider(this.daprClient, this.actorSerializer);
   }
 
   /**
@@ -108,43 +101,52 @@ public class ActorRuntime {
   /**
    * Gets the Actor configuration for this runtime.
    *
-   * @return Actor configuration serialized in a String.
+   * @return Actor configuration serialized.
    * @throws IOException If cannot serialize config.
    */
-  public String serializeConfig() throws IOException {
-    return this.actorSerializer.serializeString(this.config);
+  public byte[] serializeConfig() throws IOException {
+    return this.INTERNAL_SERIALIZER.serialize(this.config);
   }
 
   /**
    * Registers an actor with the runtime.
    *
-   * @param clazz The type of actor.
-   * @param <T>   Actor class type.
+   * @param clazz            The type of actor.
+   * @param objectSerializer Serializer for Actor's state and transient objects.
+   * @param <T>              Actor class type.
    */
-  public <T extends AbstractActor> void registerActor(Class<T> clazz) {
-    registerActor(clazz, null);
+  public <T extends AbstractActor> void registerActor(Class<T> clazz, DaprObjectSerializer objectSerializer) {
+    registerActor(clazz, null, objectSerializer);
   }
 
   /**
    * Registers an actor with the runtime.
    *
-   * @param clazz        The type of actor.
-   * @param actorFactory An optional factory to create actors.
-   * @param <T>          Actor class type.
-   *                     This can be used for dependency injection into actors.
+   * @param clazz            The type of actor.
+   * @param actorFactory     An optional factory to create actors. This can be used for dependency injection.
+   * @param serializer       Serializer for Actor's state and transient objects.
+   * @param <T>              Actor class type.
    */
-  public <T extends AbstractActor> void registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
+  public <T extends AbstractActor> void registerActor(
+    Class<T> clazz, ActorFactory<T> actorFactory, DaprObjectSerializer serializer) {
+    if (clazz == null) {
+      throw new IllegalArgumentException("Class is required.");
+    }
+    if (serializer == null) {
+      throw new IllegalArgumentException("Serializer is required.");
+    }
+
     ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
     ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
 
-    ActorRuntimeContext<T> context = new ActorRuntimeContext<T>(
+    ActorRuntimeContext<T> context = new ActorRuntimeContext<>(
       this,
-      this.actorSerializer,
+      serializer,
       actualActorFactory,
       actorTypeInfo,
       this.daprClient,
-      this.daprStateProvider);
+      new DaprStateAsyncProvider(this.daprClient, serializer));
 
     // Create ActorManagers, override existing entry if registered again.
     this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
@@ -159,7 +161,8 @@ public class ActorRuntime {
    * @return Async void task.
    */
   public Mono<Void> activate(String actorTypeName, String actorId) {
-    return Mono.defer(() -> this.getActorManager(actorTypeName).activateActor(new ActorId(actorId)));
+    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+      .flatMap(m -> m.activateActor(new ActorId(actorId)));
   }
 
   /**
@@ -170,7 +173,8 @@ public class ActorRuntime {
    * @return Async void task.
    */
   public Mono<Void> deactivate(String actorTypeName, String actorId) {
-    return Mono.defer(() -> this.getActorManager(actorTypeName).deactivateActor(new ActorId(actorId)));
+    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+      .flatMap(m -> m.deactivateActor(new ActorId(actorId)));
   }
 
   /**
@@ -183,10 +187,10 @@ public class ActorRuntime {
    * @param payload         RAW payload for the actor method.
    * @return Response for the actor method.
    */
-  public Mono<String> invoke(String actorTypeName, String actorId, String actorMethodName, String payload) {
-    return Mono.defer(() ->
-      this.getActorManager(actorTypeName).invokeMethod(new ActorId(actorId), actorMethodName, unwrap(payload)))
-      .map(response -> wrap(response.toString()));
+  public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
+    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+      .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, unwrap(payload)))
+      .map(response -> wrap((byte[]) response));
   }
 
   /**
@@ -198,9 +202,9 @@ public class ActorRuntime {
    * @param params        Params for the reminder.
    * @return Async void task.
    */
-  public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, String params) {
-    return Mono.defer(() ->
-      this.getActorManager(actorTypeName).invokeReminder(new ActorId(actorId), reminderName, params));
+  public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, byte[] params) {
+    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+      .flatMap(m -> m.invokeReminder(new ActorId(actorId), reminderName, params));
   }
 
   /**
@@ -212,7 +216,8 @@ public class ActorRuntime {
    * @return Async void task.
    */
   public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
-    return Mono.defer(() -> this.getActorManager(actorTypeName).invokeTimer(new ActorId(actorId), timerName));
+    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+      .flatMap(m -> m.invokeTimer(new ActorId(actorId), timerName));
   }
 
   /**
@@ -238,17 +243,12 @@ public class ActorRuntime {
    * Extracts the data as String from the Actor's method result.
    *
    * @param payload String returned by API.
-   * @return String or null.
-   * @throws RuntimeException In case it cannot generate String.
+   * @return data or null.
+   * @throws RuntimeException In case it cannot extract data.
    */
-  private String unwrap(final String payload) {
+  private byte[] unwrap(final byte[] payload) {
     try {
-      byte[] data = this.actorSerializer.unwrapData(payload);
-      if (data == null) {
-        return null;
-      }
-
-      return new String(data);
+      return INTERNAL_SERIALIZER.unwrapData(payload);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -257,17 +257,13 @@ public class ActorRuntime {
   /**
    * Builds the request to invoke an API for Actors.
    *
-   * @param payload String to be wrapped in the request.
-   * @return String to be sent to Dapr's API.
-   * @throws RuntimeException In case it cannot generate String.
+   * @param data Data to be wrapped in the request.
+   * @return Payload to be sent to Dapr's API.
+   * @throws RuntimeException In case it cannot generate payload.
    */
-  private String wrap(final String payload) {
+  private byte[] wrap(final byte[] data) {
     try {
-      byte[] data = null;
-      if (payload != null) {
-        data = payload.getBytes();
-      }
-      return this.actorSerializer.wrapData(data);
+      return INTERNAL_SERIALIZER.wrapData(data);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

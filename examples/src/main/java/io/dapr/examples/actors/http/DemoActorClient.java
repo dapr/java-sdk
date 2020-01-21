@@ -8,6 +8,7 @@ package io.dapr.examples.actors.http;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.client.DefaultObjectSerializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,12 +35,12 @@ public class DemoActorClient {
   private static final ExecutorService POOL = Executors.newFixedThreadPool(NUM_ACTORS);
 
   public static void main(String[] args) throws Exception {
-    ActorProxyBuilder builder = new ActorProxyBuilder();
+    ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor", new DefaultObjectSerializer());
 
     List<CompletableFuture<Void>> futures = new ArrayList<>(NUM_ACTORS);
 
     for (int i = 0; i < NUM_ACTORS; i++) {
-      ActorProxy actor = builder.withActorType("DemoActor").withActorId(ActorId.createRandom()).build();
+      ActorProxy actor = builder.build(ActorId.createRandom());
       futures.add(callActorNTimes(actor));
     }
 
@@ -54,6 +55,7 @@ public class DemoActorClient {
     return CompletableFuture.runAsync(() -> {
       actor.invokeActorMethod("registerReminder").block();
       for (int i = 0; i < NUM_MESSAGES_PER_ACTOR; i++) {
+        actor.invokeActorMethod("incrementAndGet", 1).block();
         String result = actor.invokeActorMethod(METHOD_NAME,
           String.format("Actor %s said message #%d", actor.getActorId().toString(), i), String.class).block();
         System.out.println(String.format("Actor %s got a reply: %s", actor.getActorId().toString(), result));
@@ -65,6 +67,9 @@ public class DemoActorClient {
           return;
         }
       }
+
+      System.out.println(
+        "Messages sent: " + actor.invokeActorMethod("incrementAndGet", 0, int.class).block());
     }, POOL);
   }
 }

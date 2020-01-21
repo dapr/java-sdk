@@ -5,6 +5,8 @@
 
 package io.dapr.examples.actors.http;
 
+import reactor.core.publisher.Mono;
+
 /**
  * Example of implementation of an Actor.
  */
@@ -15,4 +17,6 @@ public interface DemoActor {
   String say(String something);
 
   void clock(String message);
+
+  Mono<Integer> incrementAndGet(int delta);
 }

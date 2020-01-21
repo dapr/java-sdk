@@ -8,18 +8,12 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
-import io.dapr.client.DaprClient;
+import io.dapr.actors.client.DaprClientStub;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.nio.charset.IllegalCharsetNameException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -28,9 +22,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class DerivedActorTest {
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
   private final ActorRuntimeContext context = createContext();
+
   private ActorManager<ActorChild> manager = new ActorManager<>(context);
 
   public interface MyActor {
@@ -54,8 +51,8 @@ public class DerivedActorTest {
     Mono<MyData> classInClassOut(MyData input);
   }
 
-  @ActorType(Name = "MyActor")
-  public static class ActorParent extends AbstractActor implements MyActor, Actor {
+  @ActorType(name = "MyActor")
+  public static class ActorParent extends AbstractActor implements MyActor {
     private final ActorId id;
     private boolean activated;
     private boolean methodReturningVoidInvoked;
@@ -156,7 +153,7 @@ public class DerivedActorTest {
     }
   }
 
-  public static class ActorChild extends ActorParent implements MyActor, Actor {
+  public static class ActorChild extends ActorParent implements MyActor {
     private final ActorId id;
     private boolean activated;
 
@@ -327,7 +324,7 @@ public class DerivedActorTest {
     ActorId actorId = newActorId();
 
     // Mock daprClient for ActorProxy only, not for runtime.
-    DaprClient daprClient = mock(DaprClient.class);
+    DaprClientStub daprClient = mock(DaprClientStub.class);
 
     when(daprClient.invokeActorMethod(
       eq(context.getActorTypeInformation().getName()),
@@ -338,11 +335,11 @@ public class DerivedActorTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          Utilities.toStringOrNull(context.getActorSerializer().unwrapData(
-            invocationOnMock.getArgument(3, String.class))))
+          INTERNAL_SERIALIZER.unwrapData(
+            invocationOnMock.getArgument(3, byte[].class)))
           .map(s -> {
             try {
-              return context.getActorSerializer().wrapData(s.getBytes());
+              return INTERNAL_SERIALIZER.wrapData(s);
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
@@ -353,7 +350,7 @@ public class DerivedActorTest {
     return new ActorProxyForTestsImpl(
       context.getActorTypeInformation().getName(),
       actorId,
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       daprClient);
   }
 
@@ -367,7 +364,7 @@ public class DerivedActorTest {
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(ActorChild.class),
       daprClient,

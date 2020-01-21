@@ -6,15 +6,21 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorTrace;
 
 import java.lang.reflect.Constructor;
 
 /**
- * Instantiates actors by calling their constructor with {@link ActorService} and {@link ActorId}.
+ * Instantiates actors by calling their constructor with {@link ActorRuntimeContext} and {@link ActorId}.
  *
  * @param <T> Actor Type to be created.
  */
 class DefaultActorFactory<T extends AbstractActor> implements ActorFactory<T> {
+
+    /**
+     * Tracing errors, warnings and info logs.
+     */
+    private static final ActorTrace ACTOR_TRACE = new ActorTrace();
 
     /**
      * {@inheritDoc}
@@ -32,8 +38,10 @@ class DefaultActorFactory<T extends AbstractActor> implements ActorFactory<T> {
                     .getConstructor(ActorRuntimeContext.class, ActorId.class);
             return constructor.newInstance(actorRuntimeContext, actorId);
         } catch (Exception e) {
-            //TODO: Use ActorTrace.
-            e.printStackTrace();
+            ACTOR_TRACE.writeError(
+              actorRuntimeContext.getActorTypeInformation().getName(),
+              actorId.toString(),
+              "Failed to create actor instance.");
         }
         return null;
     }

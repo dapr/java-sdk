@@ -8,7 +8,8 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
-import io.dapr.client.DaprClient;
+import io.dapr.actors.client.DaprClientStub;
+import io.dapr.client.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -27,6 +28,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ActorStatefulTest {
+
+  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
@@ -72,8 +75,8 @@ public class ActorStatefulTest {
     String getIdString();
   }
 
-  @ActorType(Name = "MyActor")
-  public static class MyActorImpl extends AbstractActor implements MyActor, Actor, Remindable<String> {
+  @ActorType(name = "MyActor")
+  public static class MyActorImpl extends AbstractActor implements MyActor, Remindable<String> {
 
     private final ActorId id;
 
@@ -477,7 +480,7 @@ public class ActorStatefulTest {
   public void invokeReminder() throws Exception {
     ActorProxy proxy = newActorProxy();
 
-    String params = createReminderParams("anything");
+    byte[] params = createReminderParams("anything");
 
     this.manager.invokeReminder(proxy.getActorId(), "myreminder", params).block();
 
@@ -498,7 +501,7 @@ public class ActorStatefulTest {
 
     this.manager.deactivateActor(proxy.getActorId()).block();
 
-    String params = createReminderParams("anything");
+    byte[] params = createReminderParams("anything");
 
     this.manager.invokeReminder(proxy.getActorId(), "myreminder", params).block();
   }
@@ -597,7 +600,7 @@ public class ActorStatefulTest {
     ActorId actorId = newActorId();
 
     // Mock daprClient for ActorProxy only, not for runtime.
-    DaprClient daprClient = mock(DaprClient.class);
+    DaprClientStub daprClient = mock(DaprClientStub.class);
 
     when(daprClient.invokeActorMethod(
       eq(context.getActorTypeInformation().getName()),
@@ -608,11 +611,11 @@ public class ActorStatefulTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          Utilities.toStringOrNull(context.getActorSerializer().unwrapData(
-            invocationOnMock.getArgument(3, String.class))))
+          INTERNAL_SERIALIZER.unwrapData(
+            invocationOnMock.getArgument(3, byte[].class)))
           .map(s -> {
             try {
-              return context.getActorSerializer().wrapData(s.getBytes());
+              return INTERNAL_SERIALIZER.wrapData(s);
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
@@ -623,13 +626,14 @@ public class ActorStatefulTest {
     return new ActorProxyForTestsImpl(
       context.getActorTypeInformation().getName(),
       actorId,
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       daprClient);
   }
 
-  private String createReminderParams(String data) throws IOException {
-    ActorReminderParams params = new ActorReminderParams(data, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return this.context.getActorSerializer().serializeString(params);
+  private byte[] createReminderParams(String data) throws IOException {
+    byte[] serialized = this.context.getObjectSerializer().serialize(data);
+    ActorReminderParams params = new ActorReminderParams(serialized, Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return INTERNAL_SERIALIZER.serialize(params);
   }
 
   private static ActorId newActorId() {
@@ -650,11 +654,11 @@ public class ActorStatefulTest {
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
-      new ActorStateSerializer(),
+      new DefaultObjectSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(MyActorImpl.class),
       daprClient,
-      new DaprInMemoryStateProvider(new ActorStateSerializer())
+      new DaprInMemoryStateProvider(new ObjectSerializer())
     );
   }
 }

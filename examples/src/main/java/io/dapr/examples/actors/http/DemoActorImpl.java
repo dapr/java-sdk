@@ -6,7 +6,10 @@
 package io.dapr.examples.actors.http;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.*;
+import io.dapr.actors.runtime.AbstractActor;
+import io.dapr.actors.runtime.ActorRuntimeContext;
+import io.dapr.actors.runtime.ActorType;
+import io.dapr.actors.runtime.Remindable;
 import reactor.core.publisher.Mono;
 
 import java.text.DateFormat;
@@ -18,8 +21,8 @@ import java.util.TimeZone;
 /**
  * Implementation of the DemoActor for the server side.
  */
-@ActorType(Name = "DemoActor")
-public class DemoActorImpl extends AbstractActor implements DemoActor, Actor, Remindable<Integer> {
+@ActorType(name = "DemoActor")
+public class DemoActorImpl extends AbstractActor implements DemoActor, Remindable<Integer> {
 
   /**
    * Format to output date and time.
@@ -56,8 +59,18 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Actor, Re
       super.getId() + ": " +
       (something == null ? "" : something + " @ " + utcNowAsString));
 
+    super.getActorStateManager().set("lastmessage", something).block();
+
     // Now respond with current timestamp.
     return utcNowAsString;
+  }
+
+  @Override
+  public Mono<Integer> incrementAndGet(int delta) {
+    return super.getActorStateManager().contains("counter")
+      .flatMap(exists -> exists ? super.getActorStateManager().get("counter", int.class) : Mono.just(0))
+      .map(c -> c + delta)
+      .flatMap(c -> super.getActorStateManager().set("counter", c).thenReturn(c));
   }
 
   @Override

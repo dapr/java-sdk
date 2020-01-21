@@ -8,26 +8,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
-import io.dapr.utils.ObjectSerializer;
 import okhttp3.*;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-class DaprHttp {
+public class DaprHttp {
 
   /**
    * HTTP Methods supported.
    */
-  enum HttpMethods {GET, PUT, POST, DELETE;}
+  public enum HttpMethods {GET, PUT, POST, DELETE;}
 
-  static class Response {
+  public static class Response {
     private byte[] body;
     private Map<String, String> headers;
     private int statusCode;
@@ -99,6 +94,8 @@ class DaprHttp {
    *
    * @param method    HTTP method.
    * @param urlString url as String.
+   * @param urlParameters URL parameters
+   * @param headers HTTP headers.
    * @return Asynchronous text
    */
   public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
@@ -110,8 +107,10 @@ class DaprHttp {
    *
    * @param method    HTTP method.
    * @param urlString url as String.
+   * @param urlParameters Parameters in the URL
    * @param content   payload to be posted.
-   * @return Asynchronous text
+   * @param headers HTTP headers.
+   * @return Asynchronous response
    */
   public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
     return this.invokeAPI(method, urlString, urlParameters, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
@@ -122,8 +121,10 @@ class DaprHttp {
    *
    * @param method    HTTP method.
    * @param urlString url as String.
+   * @param urlParameters Parameters in the URL
    * @param content   payload to be posted.
-   * @return Asynchronous text
+   * @param headers HTTP headers.
+   * @return Asynchronous response
    */
   public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
     return Mono.fromCallable(
@@ -179,7 +180,7 @@ class DaprHttp {
               response.headers().forEach(pair -> {
                 mapHeaders.put(pair.getFirst(), pair.getSecond());
               });
-              return new Response(result.length > 0 ? result : null, mapHeaders, response.code());
+              return new Response(result == null ? EMPTY_BYTES : result, mapHeaders, response.code());
             }
           } catch (Exception e) {
             throw new RuntimeException(e);

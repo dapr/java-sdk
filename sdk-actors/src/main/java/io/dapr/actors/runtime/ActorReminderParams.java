@@ -20,7 +20,7 @@ final class ActorReminderParams {
     /**
      * Data to be passed in as part of the reminder trigger.
      */
-    private final String data;
+    private final byte[] data;
 
     /**
      * Time the reminder is due for the 1st time.
@@ -39,7 +39,7 @@ final class ActorReminderParams {
      * @param dueTime Time the reminder is due for the 1st time.
      * @param period  Interval between triggers.
      */
-    ActorReminderParams(String data, Duration dueTime, Duration period) {
+    ActorReminderParams(byte[] data, Duration dueTime, Duration period) {
         ValidateDueTime("DueTime", dueTime);
         ValidatePeriod("Period", period);
         this.data = data;
@@ -70,7 +70,7 @@ final class ActorReminderParams {
      *
      * @return Data to be passed in as part of the reminder trigger.
      */
-    String getData() {
+    byte[] getData() {
         return data;
     }
 

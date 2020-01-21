@@ -23,7 +23,7 @@ final class ActorTypeUtilities {
         }
 
         return Arrays.stream(clazz.getInterfaces())
-                .filter(t -> Actor.class.isAssignableFrom(t))
+                .filter(t -> AbstractActor.class.isAssignableFrom(t))
                 .filter(t -> getNonActorParentClass(t) == null)
                 .toArray(Class[]::new);
     }
@@ -74,7 +74,9 @@ final class ActorTypeUtilities {
             return null;
         }
 
-        Class[] items = Arrays.stream(clazz.getInterfaces()).filter(t -> !t.equals(Actor.class)).toArray(Class[]::new);
+        Class[] items = Arrays.stream(clazz.getInterfaces())
+          .filter(t -> !t.equals(AbstractActor.class))
+          .toArray(Class[]::new);
         if (items.length == 0) {
             return clazz;
         }
