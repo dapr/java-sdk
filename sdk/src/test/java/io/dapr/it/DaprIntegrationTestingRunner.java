@@ -78,16 +78,14 @@ public class DaprIntegrationTestingRunner {
   }
 
   private static final String DAPR_RUN = "dapr run --app-id %s ";
-  private static final String DAPR_COMMAND = " -- mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=\"test\" -Dexec.args=\"-p %d -grpcPort %d -httpPort %d\"";
+
+  // the arg in -Dexec.args is the app's port
+  private static final String DAPR_COMMAND = " -- mvn exec:java -Dexec.mainClass=%s -Dexec.classpathScope=test -Dexec.args=\"%d\"";
 
   private String buildDaprCommand(){
     StringBuilder stringBuilder= new StringBuilder(String.format(DAPR_RUN, this.appName))
       .append(this.useAppPort ? "--app-port " + this.DAPR_FREEPORTS.appPort : "")
-      .append(" --grpc-port ")
-      .append(this.DAPR_FREEPORTS.grpcPort)
-      .append(" --port ")
-      .append(this.DAPR_FREEPORTS.httpPort)
-      .append(String.format(DAPR_COMMAND, this.serviceClass.getCanonicalName(),this.DAPR_FREEPORTS.appPort, this.DAPR_FREEPORTS.grpcPort, this.DAPR_FREEPORTS.httpPort));
+      .append(String.format(DAPR_COMMAND, this.serviceClass.getCanonicalName(),this.DAPR_FREEPORTS.appPort));
     return stringBuilder.toString();
   }
 
