@@ -28,7 +28,7 @@
   </repositories>
 
   <properties>
-    <skipITs>true</skipITs>
+    <skipITs>false</skipITs>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
@@ -121,34 +121,6 @@
               <goal>jar</goal>
             </goals>
           </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.22.2</version>
-        <configuration>
-          <skipITs>${skipITs}</skipITs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>verify</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>integration-test</id>
-            <phase>integration-test</phase>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-
         </executions>
       </plugin>
       <plugin>
