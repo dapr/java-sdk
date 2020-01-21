@@ -17,24 +17,19 @@ import org.apache.commons.cli.*;
 
 
 /**
- * Simple example, to run:
- * mvn clean install
- * dapr run --grpc-port 50001 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.Example
+ * Simple example.
+ * To run manually, from repo root:
+ * 1. mvn clean install
+ * 2. dapr run --grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.it.services.HelloWorldGrpcStateService -Dexec.classpathScope="test"  -pl=sdk
  */
 public class HelloWorldGrpcStateService {
 
     public static void main(String[] args) throws ParseException {
-        Options options = new Options();
-        options.addRequiredOption("grpcPort", "grpcPort", true, "Dapr GRPC.");
-        options.addRequiredOption("httpPort", "httpPort", true, "Dapr HTTP port.");
-        options.addRequiredOption("p", "port", true, "Port Dapr will listen to.");
-
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options, args);
+        String grpcPort = System.getenv("DAPR_GRPC_PORT");
 
         // If port string is not valid, it will throw an exception.
-        int port = Integer.parseInt(cmd.getOptionValue("grpcPort"));
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", port).usePlaintext().build();
+        int grpcPortInt = Integer.parseInt(grpcPort);
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", grpcPortInt).usePlaintext().build();
         DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
         String key = "mykey";
