@@ -163,7 +163,7 @@ public abstract class AbstractActor {
           this.actorRuntimeContext.getActorTypeInformation().getName(),
           this.id.toString(),
           actorTimer.getName(),
-          this.actorRuntimeContext.getObjectSerializer().serialize(actorTimer));
+          INTERNAL_SERIALIZER.serialize(actorTimer));
       } catch (Exception e) {
         return Mono.error(e);
       }
