@@ -46,7 +46,7 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
       "myremind",
       (int)(Integer.MAX_VALUE * Math.random()),
       Duration.ofSeconds(5),
-      Duration.ofSeconds(2));
+      Duration.ofSeconds(2)).block();
   }
 
   @Override
