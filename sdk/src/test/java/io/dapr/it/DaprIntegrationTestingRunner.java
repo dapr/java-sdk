@@ -85,6 +85,10 @@ public class DaprIntegrationTestingRunner {
   private String buildDaprCommand(){
     StringBuilder stringBuilder= new StringBuilder(String.format(DAPR_RUN, this.appName))
       .append(this.useAppPort ? "--app-port " + this.DAPR_FREEPORTS.appPort : "")
+            .append(" --grpc-port ")
+            .append(this.DAPR_FREEPORTS.grpcPort)
+            .append(" --port ")
+            .append(this.DAPR_FREEPORTS.httpPort)
       .append(String.format(DAPR_COMMAND, this.serviceClass.getCanonicalName(),this.DAPR_FREEPORTS.appPort));
     return stringBuilder.toString();
   }

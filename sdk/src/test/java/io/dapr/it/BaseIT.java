@@ -27,6 +27,7 @@ public class BaseIT {
   @BeforeClass
   public static void setEnvironmentVariables(){
     environmentVariables.set("DAPR_HTTP_PORT", String.valueOf(DAPR_FREEPORTS.getHttpPort()));
+    environmentVariables.set("DAPR_GRPC_PORT", String.valueOf(DAPR_FREEPORTS.getGrpcPort()));
   }
 
   public static DaprIntegrationTestingRunner createDaprIntegrationTestingRunner(String successMessage, Class serviceClass, Boolean useAppPort, int sleepTime) {

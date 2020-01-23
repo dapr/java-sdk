@@ -361,8 +361,11 @@ class DaprClientGrpcAdapter implements DaprClient {
         }
       }
       DaprProtos.DeleteStateEnvelope.Builder builder = DaprProtos.DeleteStateEnvelope.newBuilder()
-          .setEtag(etag)
-          .setKey(key);
+              .setKey(key);
+      if(etag != null) {
+          builder.setEtag(etag);
+      }
+
       if (optionBuilder != null) {
         builder.setOptions(optionBuilder.build());
       }
