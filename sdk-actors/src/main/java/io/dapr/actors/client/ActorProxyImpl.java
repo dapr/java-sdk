@@ -2,7 +2,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.ObjectSerializer;
-import io.dapr.client.DaprObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;

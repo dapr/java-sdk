@@ -5,13 +5,12 @@
 package io.dapr.client;
 
 import io.dapr.DaprGrpc;
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import okhttp3.OkHttpClient;
-
-import java.time.Duration;
-import java.time.temporal.TemporalUnit;
 
 /**
  * A builder for the DaprClient,
@@ -32,14 +31,14 @@ public class DaprClientBuilder {
       Constants.ENV_DAPR_GRPC_PORT, Constants.DEFAULT_GRPC_PORT);
 
     /**
-     * Default serializer.
+     * Serializer used for request and response objects in DaprClient.
      */
-    private static final DaprObjectSerializer DEFAULT_SERIALIZER = new DefaultObjectSerializer();
+    private final DaprObjectSerializer objectSerializer;
 
     /**
-     * Serializer used for objects in DaprClient.
+     * Serializer used for state objects in DaprClient.
      */
-    private final DaprObjectSerializer serializer;
+    private final DaprObjectSerializer stateSerializer;
 
     /**
      * Finds the port defined by env variable or sticks to default.
@@ -66,14 +65,21 @@ public class DaprClientBuilder {
     /**
      * Creates a constructor for DaprClient.
      *
-     * @param serializer Serializer for objects to be sent and received from Dapr.
+     * See {@link DefaultObjectSerializer} as possible serializer for non-production scenarios.
+     *
+     * @param objectSerializer Serializer for objects to be sent and received from Dapr.
+     * @param stateSerializer Serializer for objects to be persisted.
      */
-    public DaprClientBuilder(DaprObjectSerializer serializer) {
-        if (serializer == null) {
+    public DaprClientBuilder(DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
+        if (objectSerializer == null) {
             throw new IllegalArgumentException("Serializer is required");
         }
+        if (stateSerializer == null) {
+            throw new IllegalArgumentException("State serializer is required");
+        }
 
-        this.serializer = serializer;
+        this.objectSerializer = objectSerializer;
+        this.stateSerializer = stateSerializer;
     }
 
     /**
@@ -97,7 +103,7 @@ public class DaprClientBuilder {
             throw new IllegalStateException("Invalid port.");
         }
         ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, GRPC_PORT).usePlaintext().build();
-        return new DaprClientGrpcAdapter(DaprGrpc.newFutureStub(channel), new DefaultObjectSerializer());
+        return new DaprClientGrpcAdapter(DaprGrpc.newFutureStub(channel), this.objectSerializer, this.stateSerializer);
     }
 
     /**
@@ -111,6 +117,6 @@ public class DaprClientBuilder {
         }
         OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
         DaprHttp daprHttp = new DaprHttp(HTTP_PORT, okHttpClient);
-        return new DaprClientHttpAdapter(daprHttp, this.serializer);
+        return new DaprClientHttpAdapter(daprHttp, this.objectSerializer, this.stateSerializer);
     }
 }

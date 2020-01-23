@@ -14,10 +14,13 @@ import io.dapr.DaprProtos;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
+import io.dapr.serializer.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An adapter for the GRPC Client.
@@ -28,11 +31,6 @@ import java.util.*;
 class DaprClientGrpcAdapter implements DaprClient {
 
   /**
-   * Serializer for internal objects.
-   */
-  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
-
-  /**
    * The GRPC client to be used
    *
    * @see io.dapr.DaprGrpc.DaprFutureStub
@@ -40,19 +38,30 @@ class DaprClientGrpcAdapter implements DaprClient {
   private DaprGrpc.DaprFutureStub client;
 
   /**
-   * A utitlity class for serialize and deserialize the messages sent and retrieved by the client.
+   * A utitlity class for serialize and deserialize the transient objects.
    */
   private DaprObjectSerializer objectSerializer;
 
   /**
+   * A utitlity class for serialize and deserialize state objects.
+   */
+  private DaprObjectSerializer stateSerializer;
+
+  /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
-   * @param futureClient
-   * @see io.dapr.client.DaprClientBuilder
+   * @param futureClient     GRPC client
+   * @param objectSerializer Serializer for transient request/response objects.
+   * @param stateSerializer  Serializer for state objects.
+   * @see DaprClientBuilder
    */
-  DaprClientGrpcAdapter(DaprGrpc.DaprFutureStub futureClient, DaprObjectSerializer serializer) {
-    client = futureClient;
-    objectSerializer = serializer;
+  DaprClientGrpcAdapter(
+    DaprGrpc.DaprFutureStub futureClient,
+    DaprObjectSerializer objectSerializer,
+    DaprObjectSerializer stateSerializer) {
+    this.client = futureClient;
+    this.objectSerializer = objectSerializer;
+    this.stateSerializer = stateSerializer;
   }
 
   /**
@@ -207,7 +216,7 @@ class DaprClientGrpcAdapter implements DaprClient {
     Class<T> clazz) throws IOException {
     ByteString payload = response.getData().getValue();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = objectSerializer.deserialize(data, clazz);
+    T value = stateSerializer.deserialize(data, clazz);
     String etag = response.getEtag();
     String key = requestedKey;
     return new State<>(value, key, etag, stateOptions);
@@ -240,7 +249,7 @@ class DaprClientGrpcAdapter implements DaprClient {
   }
 
   private <T> DaprProtos.StateRequest.Builder buildStateRequest(State<T> state) throws IOException {
-    byte[] bytes = objectSerializer.serialize(state.getValue());
+    byte[] bytes = stateSerializer.serialize(state.getValue());
     Any data = Any.newBuilder().setValue(ByteString.copyFrom(bytes)).build();
     DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder();
     if (state.getEtag() != null) {

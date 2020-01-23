@@ -2,6 +2,9 @@ package io.dapr.examples.state.http;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -43,35 +46,27 @@ import static java.lang.System.out;
  */
 public class OrderManager {
 
-  static HttpClient httpClient;
-
   public static void main(String[] args) throws IOException {
-    int httpPort = 3000;
-    String daprPort = Optional.ofNullable(System.getenv("DAPR_HTTP_PORT")).orElse("3500");
-    String stateUrl = String.format("http://localhost:%s/v1.0/state", daprPort);
+    int httpPort = 3001;
     HttpServer httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
 
-    httpClient = HttpClient.newBuilder().version(Version.HTTP_1_1).followRedirects(Redirect.NORMAL)
-      .connectTimeout(Duration.ofSeconds(2)).build();
+    DaprClient daprClient =
+      (new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer())).build();
 
     httpServer.createContext("/order").setHandler(e -> {
       out.println("Fetching order!");
-      fetch(stateUrl + "/order").thenAccept(response -> {
-        int resCode = response.statusCode() == 200 ? 200 : 500;
-        String body = (response.statusCode() == 200) || (response.statusCode() == 201) ? response.body() : "Could not get state.";
-
         try {
-          e.sendResponseHeaders(resCode, body.getBytes().length);
-          OutputStream os = e.getResponseBody();
-          try {
-            os.write(body.getBytes());
-          } finally {
-            os.close();
-          }
+          byte[] data = daprClient.getState("order", String.class).block().getValue().getBytes();
+          e.getResponseHeaders().set("content-type", "application/json");
+          e.sendResponseHeaders(200, data.length);
+          e.getResponseBody().write(data);
+          e.getResponseBody().close();
         } catch (IOException ioerror) {
           out.println(ioerror);
+          e.sendResponseHeaders(500, ioerror.getMessage().getBytes().length);
+          e.getResponseBody().write(ioerror.getMessage().getBytes());
+          e.getResponseBody().close();
         }
-      });
     });
 
     httpServer.createContext("/neworder").setHandler(e -> {
@@ -83,47 +78,22 @@ public class OrderManager {
         String orderId = data.getString("orderId");
         out.printf("Got a new order! Order ID: %s\n", orderId);
 
-        JSONObject item = new JSONObject();
-        item.put("key", "order");
-        item.put("value", data);
-        JSONArray state = new JSONArray();
-        state.put(item);
-        out.printf("Writing to state: %s\n", state.toString());
+        daprClient.saveState("order", data.toString()).block();
 
-        post(stateUrl, state.toString()).thenAccept(response -> {
-          int resCode = (response.statusCode() == 200) || (response.statusCode() == 201) ? 201 : 500;
-          String body = response.body();
-          try {
-            e.sendResponseHeaders(resCode, body.getBytes().length);
-            OutputStream os = e.getResponseBody();
-            try {
-              os.write(body.getBytes());
-            } finally {
-              os.close();
-            }
-          } catch (IOException ioerror) {
-            out.println(ioerror);
-          }
-        });
+        out.printf("Saved state: %s\n", data.toString());
+        e.sendResponseHeaders(200, 0);
+        e.getResponseBody().write(new byte[0]);
+        e.getResponseBody().close();
       } catch (IOException ioerror) {
         out.println(ioerror);
+        e.sendResponseHeaders(500, ioerror.getMessage().getBytes().length);
+        e.getResponseBody().write(ioerror.getMessage().getBytes());
+        e.getResponseBody().close();
       }
     });
 
     httpServer.start();
     out.printf("Java App listening on port %s.", httpPort);
-  }
-
-  private static CompletableFuture<HttpResponse<String>> fetch(String url) {
-    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
-    return httpClient.sendAsync(request, BodyHandlers.ofString());
-  }
-
-  private static CompletableFuture<HttpResponse<String>> post(String url, String body) {
-    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
-      .header("Content-Type", "application/json; charset=UTF-8").POST(BodyPublishers.ofString(body)).build();
-
-    return httpClient.sendAsync(request, BodyHandlers.ofString());
   }
 
   private static String readBody(HttpExchange t) throws IOException {

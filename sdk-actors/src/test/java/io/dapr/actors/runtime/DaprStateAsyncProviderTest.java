@@ -8,8 +8,8 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprObjectSerializer;
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -108,7 +108,7 @@ public class DaprStateAsyncProviderTest {
               String key = operation.get("request").get("key").asText();
               JsonNode valueNode = operation.get("request").get("value");
 
-              byte[] value = (valueNode == null) ? null : valueNode.binaryValue();
+              byte[] value = (valueNode == null) ? null : valueNode.textValue().getBytes();
               foundInsertName |= "upsert".equals(opName) &&
                 "name".equals(key) &&
                 Arrays.equals(SERIALIZER.serialize("Jon Doe"), value);

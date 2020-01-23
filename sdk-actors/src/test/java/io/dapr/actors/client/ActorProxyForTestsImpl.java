@@ -6,7 +6,7 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DaprObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
 
 public class ActorProxyForTestsImpl extends ActorProxyImpl {
 
