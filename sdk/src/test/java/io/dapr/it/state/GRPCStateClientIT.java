@@ -330,7 +330,7 @@ public class GRPCStateClientIT extends BaseIT {
     assertNull(myDataResponse.getValue());
   }
 
-  @Ignore
+  @Ignore("This test case is  ignored because it seems that DAPR using GRPC is ignoring the state options for consistency and concurrency.")
   @Test(expected = RuntimeException.class)
   public void saveUpdateAndGetStateWithEtagAndStateOptionsFirstWrite() {
     final String stateKey = "keyToBeUpdatedWithEtagAndOptions";
