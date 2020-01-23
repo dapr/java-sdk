@@ -200,7 +200,7 @@ public class GRPCStateClientIT extends BaseIT {
     assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
 
-  @Ignore
+  @Ignore("This test case is ignored because DAPR  ignore the ETag is wrong when is sent from GRPC protocol, the execution continues and the state is updated.")
   @Test(expected = RuntimeException.class)
   public void saveUpdateAndGetStateWithWrongEtag() {
     final String stateKey = "keyToBeUpdatedWithWrongEtag";
@@ -290,7 +290,7 @@ public class GRPCStateClientIT extends BaseIT {
     assertNull(myDataResponse.getValue());
   }
 
-  @Ignore
+  @Ignore("This test case is ignored because DAPR  ignore if the ETag is wrong when is sent from GRPC protocol, the execution continues and the state is deleted.")
   @Test(expected = RuntimeException.class)
   public void saveAndDeleteStateWithWrongEtag() {
     final String stateKey = "myeKeyToBeDeletedWithWrongEtag";
