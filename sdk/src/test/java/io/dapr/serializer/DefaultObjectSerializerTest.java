@@ -3,10 +3,10 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.utils;
+package io.dapr.serializer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.client.domain.CloudEvent;
 import org.junit.Assert;
 import org.junit.Test;
@@ -250,7 +250,7 @@ public class DefaultObjectSerializerTest {
     byte [] byteValue;
     try {
       serializedValue = new String(SERIALIZER.serialize(valueToSerialize));
-      assertEquals("\"" + valueToSerialize + "\"", serializedValue);
+      assertEquals(valueToSerialize, serializedValue);
       byteValue = SERIALIZER.serialize(valueToSerialize);
       assertNotNull(byteValue);
       String deserializedValue = SERIALIZER.deserialize(byteValue, String.class);
@@ -730,8 +730,8 @@ public class DefaultObjectSerializerTest {
       }
     });
 
-    Assert.assertTrue(check.apply(null));
-    Assert.assertTrue(check.apply(
+    assertTrue(check.apply(null));
+    assertTrue(check.apply(
       new CloudEvent(
         "1",
         "mysource",
@@ -739,7 +739,7 @@ public class DefaultObjectSerializerTest {
         "v2",
         "XML",
         "<root></root>")));
-    Assert.assertTrue(check.apply(
+    assertTrue(check.apply(
       new CloudEvent(
         "1234-65432",
         "myother",

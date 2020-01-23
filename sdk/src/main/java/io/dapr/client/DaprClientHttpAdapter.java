@@ -7,6 +7,9 @@ package io.dapr.client;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.serializer.StringContentType;
 import io.dapr.utils.Constants;
 import reactor.core.publisher.Mono;
 
@@ -34,20 +37,34 @@ public class DaprClientHttpAdapter implements DaprClient {
   private final DaprHttp client;
 
   /**
-   * A utility class for serialize and deserialize customer's objects.
+   * A utility class for serialize and deserialize customer's transient objects.
    */
   private final DaprObjectSerializer objectSerializer;
 
   /**
+   * A utility class for serialize and deserialize customer's state objects.
+   */
+  private final DaprObjectSerializer stateSerializer;
+
+  /**
+   * Flag determining if serializer's input and output contains a valid String.
+   */
+  private final boolean isStateString;
+
+  /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
-   * @param client Dapr's http client.
-   * @param serializer Dapr's object serializer.
-   * @see io.dapr.client.DaprClientBuilder
+   * @param client           Dapr's http client.
+   * @param objectSerializer Dapr's serializer for transient request/response objects.
+   * @param stateSerializer  Dapr's serializer for state objects.
+   * @see DaprClientBuilder
+   * @see DefaultObjectSerializer
    */
-  DaprClientHttpAdapter(DaprHttp client, DaprObjectSerializer serializer) {
+  DaprClientHttpAdapter(DaprHttp client, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
     this.client = client;
-    this.objectSerializer = serializer;
+    this.objectSerializer = objectSerializer;
+    this.stateSerializer = stateSerializer;
+    this.isStateString = stateSerializer.getClass().getAnnotation(StringContentType.class) != null;
   }
 
   /**
@@ -55,9 +72,10 @@ public class DaprClientHttpAdapter implements DaprClient {
    *
    * @param client Dapr's http client.
    * @see io.dapr.client.DaprClientBuilder
+   * @see DefaultObjectSerializer
    */
   DaprClientHttpAdapter(DaprHttp client) {
-    this(client, new DefaultObjectSerializer());
+    this(client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
   }
 
   /**
@@ -246,13 +264,18 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
       final String url = Constants.STATE_PATH;
-      List<State<byte[]>> internalStateObjects = new ArrayList<>(states.size());
+      List<State<Object>> internalStateObjects = new ArrayList<>(states.size());
       for (State state : states) {
         if (state == null) {
           continue;
         }
-        byte[] data = this.objectSerializer.serialize(state.getValue());
-        internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getOptions()));
+        byte[] data = this.stateSerializer.serialize(state.getValue());
+        if (this.isStateString) {
+          internalStateObjects.add(
+            new State<>(data == null ? null : new String(data), state.getKey(), state.getEtag(), state.getOptions()));
+        } else {
+          internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getOptions()));
+        }
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(states);
       return this.client.invokeAPI(
@@ -275,7 +298,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   @Override
   public Mono<Void> saveState(String key, String etag, Object value, StateOptions options) {
-    return Mono.fromSupplier(() -> new State<Object>(value, key, etag, options))
+    return Mono.fromSupplier(() -> new State<>(value, key, etag, options))
       .flatMap(state -> saveStates(Arrays.asList(state)));
   }
 
@@ -320,7 +343,8 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   private <T> State<T> buildStateKeyValue(
     DaprHttp.Response response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
-    T value = objectSerializer.deserialize(response.getBody(), clazz);
+    // The state is in the body directly, so we use the state serializer here.
+    T value = stateSerializer.deserialize(response.getBody(), clazz);
     String key = requestedKey;
     String etag = null;
     if (response.getHeaders() != null && response.getHeaders().containsKey("Etag")) {

@@ -5,7 +5,7 @@
 
 package io.dapr.actors.runtime;
 
-import io.dapr.client.DaprObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.actors.ActorTrace;
 
 /**
@@ -21,7 +21,7 @@ public class ActorRuntimeContext<T extends AbstractActor> {
   private final ActorRuntime actorRuntime;
 
   /**
-   * Serializer.
+   * Serializer for transient objects.
    */
   private final DaprObjectSerializer objectSerializer;
 
@@ -54,7 +54,7 @@ public class ActorRuntimeContext<T extends AbstractActor> {
    * Instantiates a new runtime context for the Actor type.
    *
    * @param actorRuntime          Runtime.
-   * @param objectSerializer Serializer.
+   * @param objectSerializer      Serializer for transient objects.
    * @param actorFactory          Factory for Actors.
    * @param actorTypeInformation  Information for Actor's type.
    * @param daprClient            Client to communicate to Dapr.
@@ -85,9 +85,9 @@ public class ActorRuntimeContext<T extends AbstractActor> {
   }
 
   /**
-   * Gets the Actor's serializer.
+   * Gets the Actor's serializer for transient objects.
    *
-   * @return Actor's serializer.
+   * @return Actor's serializer for transient objects.
    */
   DaprObjectSerializer getObjectSerializer() {
     return this.objectSerializer;

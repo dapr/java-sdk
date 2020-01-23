@@ -9,12 +9,13 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
 import io.dapr.actors.client.DaprClientStub;
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.IllegalCharsetNameException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -257,7 +258,7 @@ public class ActorStatefulTest {
   }
 
   // Class used to validate serialization/deserialization
-  public static class MyMethodContext {
+  public static class MyMethodContext implements Serializable {
 
     private String type;
 
@@ -658,7 +659,7 @@ public class ActorStatefulTest {
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(MyActorImpl.class),
       daprClient,
-      new DaprInMemoryStateProvider(new ObjectSerializer())
+      new DaprInMemoryStateProvider(new JavaSerializer())
     );
   }
 }

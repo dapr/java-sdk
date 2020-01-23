@@ -2,7 +2,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.client.DaprHttpBuilder;
-import io.dapr.client.DaprObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
 
 /**
  * Builder to generate an ActorProxy instance. Builder can be reused for multiple instances.
@@ -22,24 +22,24 @@ public class ActorProxyBuilder {
     /**
      * Dapr's object serializer.
      */
-    private final DaprObjectSerializer serializer;
+    private final DaprObjectSerializer objectSerializer;
 
     /**
      * Instantiates a new builder for a given Actor type.
      *
-     * @param actorType Actor's type.
-     * @param serializer Serializer for objects sent/received. Use null for default (not recommended).
+     * @param actorType        Actor's type.
+     * @param objectSerializer Serializer for objects sent/received.
      */
-    public ActorProxyBuilder(String actorType, DaprObjectSerializer serializer) {
+    public ActorProxyBuilder(String actorType, DaprObjectSerializer objectSerializer) {
         if ((actorType == null) || actorType.isEmpty()) {
             throw new IllegalArgumentException("ActorType is required.");
         }
-        if (serializer == null) {
+        if (objectSerializer == null) {
             throw new IllegalArgumentException("Serializer is required.");
         }
 
         this.actorType = actorType;
-        this.serializer = serializer;
+        this.objectSerializer = objectSerializer;
     }
 
     /**
@@ -56,7 +56,7 @@ public class ActorProxyBuilder {
         return new ActorProxyImpl(
                 this.actorType,
                 actorId,
-                this.serializer,
+                this.objectSerializer,
                 new DaprHttpClient(this.daprHttpBuilder.build()));
     }
 

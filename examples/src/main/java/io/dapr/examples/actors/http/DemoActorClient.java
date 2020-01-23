@@ -8,7 +8,7 @@ package io.dapr.examples.actors.http;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 
 import java.util.ArrayList;
 import java.util.List;

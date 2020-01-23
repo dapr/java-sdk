@@ -1,11 +1,9 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class ActorProxyBuilderTest {
 

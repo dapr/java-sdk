@@ -128,7 +128,7 @@ public class DaprClientHttpAdapterTest {
   public void invokeService() {
     mockInterceptor.addRule()
       .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
-      .respond("\"hello world\"");
+      .respond("hello world");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttpAdapter = new DaprClientHttpAdapter(daprHttp);
     Mono<String> mono = daprClientHttpAdapter.invokeService(Verb.GET, "41", "neworder", null, null, String.class);

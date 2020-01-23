@@ -42,9 +42,18 @@ public class ObjectSerializer {
             return null;
         }
 
+        if (state.getClass() == Void.class) {
+            return null;
+        }
+
         // Have this check here to be consistent with deserialization (see deserialize() method below).
         if (state instanceof byte[]) {
             return (byte[])state;
+        }
+
+        // This avoids string to be quoted in the state store.
+        if (state instanceof String) {
+            return ((String) state).getBytes();
         }
 
         // Not string, not primitive, so it is a complex type: we use JSON for that.
@@ -61,7 +70,7 @@ public class ObjectSerializer {
      * @throws IOException In case content cannot be deserialized.
      */
     public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
-        if (clazz == null) {
+        if ((clazz == null) || (clazz == Void.class)) {
             return null;
         }
 
@@ -69,13 +78,21 @@ public class ObjectSerializer {
             return deserializePrimitives(content, clazz);
         }
 
-        if ((content == null) || (content.length == 0)) {
+        if (content == null) {
             return (T) null;
+        }
+
+        if (clazz == String.class) {
+            return (T) new String(content);
         }
 
         // Deserialization of GRPC response fails without this check since it does not come as base64 encoded byte[].
         if (clazz == byte[].class) {
             return (T) content;
+        }
+
+        if (content.length == 0) {
+            return (T) null;
         }
 
         if (clazz == CloudEvent.class) {

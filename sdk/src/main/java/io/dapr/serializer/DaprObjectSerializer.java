@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.client;
+package io.dapr.serializer;
 
 import java.io.IOException;
 

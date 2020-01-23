@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.serializer.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -19,10 +20,10 @@ public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
 
   private static final Map<String, byte[]> stateStore = new HashMap<>();
 
-  private final ObjectSerializer serializer;
+  private final DaprObjectSerializer serializer;
 
-  DaprInMemoryStateProvider(ObjectSerializer serializer) {
-    super(null, null);
+  DaprInMemoryStateProvider(DaprObjectSerializer serializer) {
+    super(null, serializer /* just to avoid NPE */);
     this.serializer = serializer;
   }
 
