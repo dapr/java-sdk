@@ -87,7 +87,10 @@ public class DaprIntegrationTestingRunner {
 
   private static final String DAPR_RUN = "dapr run --app-id %s ";
 
-  // the arg in -Dexec.args is the app's port
+  /**
+   * The args in -Dexec.args are the App name, and if needed the app's port.
+   * The args are passed as a CSV due to conflict of parsing a space separated list in different OS
+   */
   private static final String DAPR_COMMAND = " -- mvn exec:java -Dexec.mainClass=%s -Dexec.classpathScope=test -Dexec.args=\"%s,%s\"";
 
   private String buildDaprCommand(){

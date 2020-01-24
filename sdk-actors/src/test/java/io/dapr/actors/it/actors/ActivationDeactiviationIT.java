@@ -82,18 +82,22 @@ public class ActivationDeactiviationIT extends BaseIT {
     ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     logger.debug("Building proxy");
     ActorProxy proxy = proxyBuilder.build(actorId1);
+
     logger.debug("Invoking Say from Proxy");
     String sayResponse = proxy.invokeActorMethod("say", "message", String.class).block();
     logger.debug("asserting not null response: [" + sayResponse + "]");
     assertNotNull(sayResponse);
+
     logger.debug("Retrieving active Actors");
     List<String> activeActors = proxy.invokeActorMethod("retrieveActiveActors", null, List.class).block();
     logger.debug("Active actors: [" + activeActors.toString() + "]");
     assertTrue("Expecting actorId:[" + actorId1.toString() + "]", activeActors.contains(actorId1.toString()));
-    ActorId actorId2 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
-    ActorProxy proxy2 = proxyBuilder.build(actorId2);
+
     logger.debug("Waitng for 15 seconds so actor deactives itself");
     Thread.sleep(15000);
+
+    ActorId actorId2 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
+    ActorProxy proxy2 = proxyBuilder.build(actorId2);
     List<String> activeActorsSecondtry = proxy2.invokeActorMethod("retrieveActiveActors", null, List.class).block();
     logger.debug("Active actors: [" + activeActorsSecondtry.toString() + "]");
     assertFalse("NOT Expecting actorId:[" + actorId1.toString() + "]", activeActorsSecondtry.contains(actorId1.toString()));

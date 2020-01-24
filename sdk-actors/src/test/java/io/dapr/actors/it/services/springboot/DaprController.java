@@ -3,7 +3,6 @@ package io.dapr.actors.it.services.springboot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.runtime.ActorManagerTest;
 import io.dapr.actors.runtime.ActorRuntime;
-import io.dapr.actors.runtime.ActorRuntimeConfigIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -22,11 +21,6 @@ import java.util.TimeZone;
 @RestController
 public class DaprController {
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  private String topics;
-
   @GetMapping("/")
   public String index() {
     return "Greetings from Dapr!";
@@ -35,15 +29,6 @@ public class DaprController {
   @GetMapping("/dapr/config")
   public String daprConfig() throws Exception {
     return "{\"actorIdleTimeout\":\"5s\",\"actorScanInterval\":\"2s\",\"drainOngoingCallTimeout\":\"1s\",\"drainBalancedActors\":true,\"entities\":[\"DemoActorTest\"]}";
-    /*ActorRuntimeConfigIT config = new ActorRuntimeConfigIT("5s", "1s", null, null);
-    config.addRegisteredActorType("DemoActor");
-    return config.serializedConfig();*/
-  }
-
-  @GetMapping("/actor/DemoActor/actives")
-  public String getDemoActorActives() throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
-    return mapper.writeValueAsString(DemoActorImpl.ACTIVE_ACTOR);
   }
 
   @PostMapping(path = "/actors/{type}/{id}")
