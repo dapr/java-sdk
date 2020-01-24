@@ -7,17 +7,22 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>0.3.0-alpha</version>
+    <version>0.2.0-SNAPSHOT</version>
   </parent>
 
+  <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-examples</artifactId>
   <packaging>jar</packaging>
-  <version>0.3.0-alpha</version>
+  <version>0.2.0-SNAPSHOT</version>
   <name>dapr-sdk-examples</name>
 
   <properties>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
-    <protobuf.input.directory>${project.parent.basedir}/proto</protobuf.input.directory>
+    <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
+    <java.version>11</java.version>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <dependencies>
@@ -34,18 +39,27 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-protobuf</artifactId>
+      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-stub</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>javax.annotation</groupId>
       <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-testing</artifactId>
+      <version>${grpc.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -59,9 +73,24 @@
       <version>3.10.1</version>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <version>2.2.2.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+      <version>2.2.2.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>0.3.0-alpha</version>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
@@ -83,7 +112,7 @@
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>
               <inputDirectories>
-                <include>${protobuf.input.directory}/examples</include>
+                <include>${protobuf.input.directory}</include>
               </inputDirectories>
               <outputTargets>
                 <outputTarget>
@@ -99,6 +128,14 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
+        <configuration>
+          <release>11</release>
+        </configuration>
       </plugin>
     </plugins>
   </build>
