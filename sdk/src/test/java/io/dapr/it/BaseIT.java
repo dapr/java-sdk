@@ -15,7 +15,6 @@ import java.util.Optional;
 
 import static io.dapr.it.DaprIntegrationTestingRunner.DAPR_FREEPORTS;
 
-@Ignore
 public abstract class BaseIT {
 
   protected static DaprIntegrationTestingRunner daprIntegrationTestingRunner;
