@@ -5,8 +5,8 @@
 
 package io.dapr.examples.pubsub.http;
 
-import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -21,16 +21,16 @@ public class SubscriberController {
   /**
    * Dapr's default serializer/deserializer.
    */
-  private static final DefaultObjectSerializer SERIALIZER = new DefaultObjectSerializer();
+  private static final DefaultObjectSerializer SERIALIZER = new DefaultObjectSerializer ();
 
   @GetMapping("/dapr/subscribe")
   public byte[] daprConfig() throws Exception {
-    return SERIALIZER.serialize(new String[] { "message" });
+    return SERIALIZER.serialize(new String[] { "testingtopic" });
   }
 
-  @PostMapping(path = "/message")
+  @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
-                                   @RequestHeader Map<String, String> headers) {
+                                  @RequestHeader Map<String, String> headers) {
     return Mono.fromRunnable(() -> {
       try {
         // Dapr's event is compliant to CloudEvent.
