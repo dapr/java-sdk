@@ -2,7 +2,7 @@ package io.dapr.actors.it.services.springboot;
 
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.runtime.ActorRuntime;
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -19,7 +19,7 @@ public class ActorService {
 
     // If port string is not valid, it will throw an exception.
     long port = Long.parseLong(args[0].split(",")[1]);
-    ActorRuntime.getInstance().registerActor(DemoActorImpl.class, new DefaultObjectSerializer());
+    ActorRuntime.getInstance().registerActor(DemoActorImpl.class, new DefaultObjectSerializer(), new DefaultObjectSerializer());
 
     DaprApplication.start(port);
   }
