@@ -49,11 +49,7 @@ public class DaprIntegrationTestingRunner {
     this.generateAppName();
     try {
       DAPR_FREEPORTS = new DaprIntegrationTestingRunner.DaprFreePorts().initPorts();
-      if (this.isClient) {
-        environmentVariables.set("DAPR_HTTP_PORT", "NaN");
-      } else {
-        environmentVariables.set("DAPR_HTTP_PORT", String.valueOf(DAPR_FREEPORTS.getHttpPort()));
-      }
+      environmentVariables.set("DAPR_HTTP_PORT", String.valueOf(DAPR_FREEPORTS.getHttpPort()));
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -92,7 +88,7 @@ public class DaprIntegrationTestingRunner {
   private static final String DAPR_RUN = "dapr run --app-id %s ";
 
   // the arg in -Dexec.args is the app's port
-  private static final String DAPR_COMMAND = " -- mvn exec:java -Dexec.mainClass=%s -Dexec.classpathScope=test -Dexec.args=\"%s%s\"";
+  private static final String DAPR_COMMAND = " -- mvn exec:java -Dexec.mainClass=%s -Dexec.classpathScope=test -Dexec.args=\"%s,%s\"";
 
   private String buildDaprCommand(){
     StringBuilder stringBuilder= new StringBuilder(String.format(DAPR_RUN, this.appName))
@@ -106,13 +102,7 @@ public class DaprIntegrationTestingRunner {
   private String buildPortsParamCommands() {
     StringBuilder ports = new StringBuilder();
     if (this.useAppPort) {
-      ports.append(" ").append(this.DAPR_FREEPORTS.appPort);
-    }
-    if (this.useGrpcPort) {
-      ports.append(" ").append(this.DAPR_FREEPORTS.grpcPort);
-    }
-    if (this.useHttpPort) {
-      ports.append(" ").append(this.DAPR_FREEPORTS.httpPort);
+      ports.append(this.DAPR_FREEPORTS.appPort);
     }
     return ports.toString();
   }

@@ -18,7 +18,7 @@ public class ActorService {
   public static void main(String[] args) throws Exception {
 
     // If port string is not valid, it will throw an exception.
-    long port = Long.parseLong(args[1]);
+    long port = Long.parseLong(args[0].split(",")[1]);
     ActorRuntime.getInstance().registerActor(DemoActorImpl.class, new DefaultObjectSerializer());
 
     DaprApplication.start(port);

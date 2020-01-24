@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
-//@Ignore
 public class ActivationDeactiviationIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActivationDeactiviationIT.class);
@@ -59,13 +58,13 @@ public class ActivationDeactiviationIT extends BaseIT {
   }
 
   @Test
-  public void actorActivationAppTest2() throws Exception {
+  public void testThatWhenInvokingMethodActorActivatesItselfAndDeactivesIteselfAfterElepsedTime() throws Exception {
     Thread.sleep(20000);
     assertTrue("Service App did not started sucessfully", daprIntegrationTestingRunner.isAppRanOK());
     clientDaprIntegrationTestingRunner =
         createDaprIntegrationTestingRunner(
             "BUILD SUCCESS",
-            ActorActivationClient.class,
+            EmptyService.class,
             false,
             false,
             true,
@@ -73,38 +72,30 @@ public class ActivationDeactiviationIT extends BaseIT {
             true
         );
     clientDaprIntegrationTestingRunner.initializeDapr();
-    Thread.sleep(120000);
-    boolean clientOK = clientDaprIntegrationTestingRunner.isAppRanOK();
-    assertTrue("Client app did complete sucessfully.", clientOK);
-  }
-
-  //@Test
-  public void getConfigTest() throws InterruptedException {
-    String actorType = "DemoActor";
-    Thread.sleep(5000);
-    ActorId actorId = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
-    ActorProxy proxy = new ActorProxyBuilder(actorType, this.serializer).build(actorId);
-    DaprClient client = new DaprClientBuilder(this.serializer).build();
-
-    byte[] daprConfig = client.invokeService(Verb.GET, daprIntegrationTestingRunner.getAppName(), "dapr/config", null, null, byte[].class).block();
-    assertNotNull(daprConfig);
-    logger.debug("daprConfig: [" + new String (daprConfig) + "]");
+    environmentVariables.set("DAPR_HTTP_PORT", String.valueOf(clientDaprIntegrationTestingRunner.DAPR_FREEPORTS.getHttpPort()));
+    final AtomicInteger atomicInteger = new AtomicInteger(1);
+    String actorType = "DemoActorTest";
+    DefaultObjectSerializer serializer = new DefaultObjectSerializer();
+    logger.debug("Creating proxy builder");
+    ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType, serializer);
+    logger.debug("Creating actorId");
+    ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
+    logger.debug("Building proxy");
+    ActorProxy proxy = proxyBuilder.build(actorId1);
+    logger.debug("Invoking Say from Proxy");
     String sayResponse = proxy.invokeActorMethod("say", "message", String.class).block();
+    logger.debug("asserting not null response: [" + sayResponse + "]");
     assertNotNull(sayResponse);
-    logger.debug("sayResponse: [" + sayResponse + "]");
-    String activationService = String.format(BASE_URL, actorType, actorId.toString());
-    String retriveActiveActorsMethod = "actor/DemoActor/actives";
-    logger.debug("Activating actor: [" + activationService + "]");
-//    client.invokeService(Verb.POST, daprIntegrationTestingRunner.getAppName(), activationService, null).block();
-    List<String> activeActors = client.invokeService(Verb.GET, daprIntegrationTestingRunner.getAppName(), retriveActiveActorsMethod, null, null, List.class).block();
-    assertTrue(activeActors.contains(actorId.toString()));
-    int sleepTime = 8000;
-    logger.debug("Sleep for " + sleepTime + " milliseconds" );
-    Thread.sleep(sleepTime);
-    logger.debug("Deactivating actor: [" + activationService + "]");
-//    client.invokeService(Verb.DELETE, daprIntegrationTestingRunner.getAppName(), activationService, null).block();
-    activeActors = client.invokeService(Verb.GET, daprIntegrationTestingRunner.getAppName(), retriveActiveActorsMethod, null, null, List.class).block();
-    assertFalse(activeActors.contains(actorId.toString()));
-
+    logger.debug("Retrieving active Actors");
+    List<String> activeActors = proxy.invokeActorMethod("retrieveActiveActors", null, List.class).block();
+    logger.debug("Active actors: [" + activeActors.toString() + "]");
+    assertTrue("Expecting actorId:[" + actorId1.toString() + "]", activeActors.contains(actorId1.toString()));
+    ActorId actorId2 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
+    ActorProxy proxy2 = proxyBuilder.build(actorId2);
+    logger.debug("Waitng for 15 seconds so actor deactives itself");
+    Thread.sleep(15000);
+    List<String> activeActorsSecondtry = proxy2.invokeActorMethod("retrieveActiveActors", null, List.class).block();
+    logger.debug("Active actors: [" + activeActorsSecondtry.toString() + "]");
+    assertFalse("NOT Expecting actorId:[" + actorId1.toString() + "]", activeActorsSecondtry.contains(actorId1.toString()));
   }
 }
