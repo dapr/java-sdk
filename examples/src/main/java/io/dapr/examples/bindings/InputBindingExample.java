@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.examples.invoke.http;
+package io.dapr.examples.bindings;
 
 import io.dapr.springboot.DaprApplication;
 import org.apache.commons.cli.CommandLine;
@@ -12,21 +12,18 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 
 /**
- * 1. Build and install jars:
+ * Service for input binding example.
+ * 1. From your repo root, build and install jars:
  * mvn clean install
- * 2. Run in server mode:
- * dapr run --app-id invokedemo --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.http.DemoService -D exec.args="-p 3000"
+ * 2. cd to [repo-root]/examples
+ * 3. Run :
+ * dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.InputBindingExample -D exec.args="-p 3000"
  */
-public class DemoService {
+public class InputBindingExample {
 
-  /**
-   * Starts the service.
-   * @param args Expects the port: -p PORT
-   * @throws Exception If cannot start service.
-   */
   public static void main(String[] args) throws Exception {
     Options options = new Options();
-    options.addRequiredOption("p", "port", true, "Port to listen to.");
+    options.addRequiredOption("p", "port", true, "Port Dapr will listen to.");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);
@@ -34,6 +31,7 @@ public class DemoService {
     // If port string is not valid, it will throw an exception.
     int port = Integer.parseInt(cmd.getOptionValue("port"));
 
+    // Start Dapr's callback endpoint.
     DaprApplication.start(port);
   }
 }
