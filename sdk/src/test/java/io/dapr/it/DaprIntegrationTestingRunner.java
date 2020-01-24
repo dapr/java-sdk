@@ -83,7 +83,7 @@ public class DaprIntegrationTestingRunner {
   private static final String DAPR_COMMAND = " -- mvn exec:java -Dexec.mainClass=%s -Dexec.classpathScope=test -Dexec.args=\"%d\"";
 
   private String buildDaprCommand(){
-    StringBuilder stringBuilder= new StringBuilder(String.format(DAPR_RUN, this.appName))
+    StringBuilder stringBuilder= new StringBuilder(String.format(DAPR_RUN, this.getAppName()))
       .append(this.useAppPort ? "--app-port " + this.DAPR_FREEPORTS.appPort : "")
             .append(" --grpc-port ")
             .append(this.DAPR_FREEPORTS.grpcPort)
@@ -110,12 +110,22 @@ public class DaprIntegrationTestingRunner {
   public  void destroyDapr() {
     Optional.ofNullable(rt).ifPresent( runtime -> {
       try {
-        runtime.exec("dapr stop --app-id " + this.appName);
+        System.out.println("Start dapr Stop");
+        runtime.exec("dapr stop --app-id " + this.getAppName());
+        System.out.println("End Dapr Stop");
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     });
-    Optional.ofNullable(proc).ifPresent(process -> process.destroy());
+    Optional.ofNullable(proc).ifPresent(process -> {
+      System.out.println("Start process Stop");
+      process.destroyForcibly();
+      System.out.println("End process Stop");
+    });
+  }
+
+  public String getAppName() {
+    return appName;
   }
 
   public static class DaprFreePorts
