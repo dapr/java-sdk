@@ -9,55 +9,55 @@ import io.dapr.serializer.DaprObjectSerializer;
  */
 public class ActorProxyBuilder {
 
-    /**
-     * Builder for Dapr's raw http client.
-     */
-    private final DaprHttpBuilder daprHttpBuilder = new DaprHttpBuilder();
+  /**
+   * Builder for Dapr's raw http client.
+   */
+  private final DaprHttpBuilder daprHttpBuilder = new DaprHttpBuilder();
 
-    /**
-     * Actor's type.
-     */
-    private final String actorType;
+  /**
+   * Actor's type.
+   */
+  private final String actorType;
 
-    /**
-     * Dapr's object serializer.
-     */
-    private final DaprObjectSerializer objectSerializer;
+  /**
+   * Dapr's object serializer.
+   */
+  private final DaprObjectSerializer objectSerializer;
 
-    /**
-     * Instantiates a new builder for a given Actor type.
-     *
-     * @param actorType        Actor's type.
-     * @param objectSerializer Serializer for objects sent/received.
-     */
-    public ActorProxyBuilder(String actorType, DaprObjectSerializer objectSerializer) {
-        if ((actorType == null) || actorType.isEmpty()) {
-            throw new IllegalArgumentException("ActorType is required.");
-        }
-        if (objectSerializer == null) {
-            throw new IllegalArgumentException("Serializer is required.");
-        }
-
-        this.actorType = actorType;
-        this.objectSerializer = objectSerializer;
+  /**
+   * Instantiates a new builder for a given Actor type.
+   *
+   * @param actorType        Actor's type.
+   * @param objectSerializer Serializer for objects sent/received.
+   */
+  public ActorProxyBuilder(String actorType, DaprObjectSerializer objectSerializer) {
+    if ((actorType == null) || actorType.isEmpty()) {
+      throw new IllegalArgumentException("ActorType is required.");
+    }
+    if (objectSerializer == null) {
+      throw new IllegalArgumentException("Serializer is required.");
     }
 
-    /**
-     * Instantiates a new ActorProxy.
-     *
-     * @param actorId Actor's identifier.
-     * @return New instance of ActorProxy.
-     */
-    public ActorProxy build(ActorId actorId) {
-        if (actorId == null) {
-            throw new IllegalArgumentException("Cannot instantiate an Actor without Id.");
-        }
+    this.actorType = actorType;
+    this.objectSerializer = objectSerializer;
+  }
 
-        return new ActorProxyImpl(
-                this.actorType,
-                actorId,
-                this.objectSerializer,
-                new DaprHttpClient(this.daprHttpBuilder.build()));
+  /**
+   * Instantiates a new ActorProxy.
+   *
+   * @param actorId Actor's identifier.
+   * @return New instance of ActorProxy.
+   */
+  public ActorProxy build(ActorId actorId) {
+    if (actorId == null) {
+      throw new IllegalArgumentException("Cannot instantiate an Actor without Id.");
     }
+
+    return new ActorProxyImpl(
+          this.actorType,
+          actorId,
+          this.objectSerializer,
+          new DaprHttpClient(this.daprHttpBuilder.build()));
+  }
 
 }

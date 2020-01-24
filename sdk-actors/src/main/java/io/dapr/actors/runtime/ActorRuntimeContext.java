@@ -5,8 +5,8 @@
 
 package io.dapr.actors.runtime;
 
-import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.actors.ActorTrace;
+import io.dapr.serializer.DaprObjectSerializer;
 
 /**
  * Provides the context for the Actor's runtime.
@@ -53,12 +53,12 @@ public class ActorRuntimeContext<T extends AbstractActor> {
   /**
    * Instantiates a new runtime context for the Actor type.
    *
-   * @param actorRuntime          Runtime.
-   * @param objectSerializer      Serializer for transient objects.
-   * @param actorFactory          Factory for Actors.
-   * @param actorTypeInformation  Information for Actor's type.
-   * @param daprClient            Client to communicate to Dapr.
-   * @param stateProvider         State provider for given Actor's type.
+   * @param actorRuntime         Runtime.
+   * @param objectSerializer     Serializer for transient objects.
+   * @param actorFactory         Factory for Actors.
+   * @param actorTypeInformation Information for Actor's type.
+   * @param daprClient           Client to communicate to Dapr.
+   * @param stateProvider        State provider for given Actor's type.
    */
   ActorRuntimeContext(ActorRuntime actorRuntime,
                       DaprObjectSerializer objectSerializer,
