@@ -6,7 +6,7 @@ import org.junit.ClassRule;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import java.util.Optional;
 
-public class BaseIT {
+public abstract class BaseIT {
 
   protected static DaprIntegrationTestingRunner daprIntegrationTestingRunner;
 

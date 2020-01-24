@@ -28,7 +28,6 @@
   </repositories>
 
   <properties>
-    <skipITs>false</skipITs>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
