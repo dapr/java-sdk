@@ -3,9 +3,8 @@ package io.dapr.actors.client;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.ObjectSerializer;
 import io.dapr.serializer.DaprObjectSerializer;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
+import reactor.core.publisher.Mono;
 
 /**
  * Implements a proxy client for an Actor's instance.
@@ -72,8 +71,8 @@ class ActorProxyImpl implements ActorProxy {
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.wrap(data))
-      .filter(s -> s.length > 0)
-      .map(s -> unwrap(s, clazz));
+          .filter(s -> s.length > 0)
+          .map(s -> unwrap(s, clazz));
   }
 
   /**
@@ -82,8 +81,8 @@ class ActorProxyImpl implements ActorProxy {
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
-      .filter(s -> s.length > 0)
-      .map(s -> unwrap(s, clazz));
+          .filter(s -> s.length > 0)
+          .map(s -> unwrap(s, clazz));
   }
 
   /**

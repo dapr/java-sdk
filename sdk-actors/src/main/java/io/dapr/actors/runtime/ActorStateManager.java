@@ -6,13 +6,15 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import reactor.core.publisher.Mono;
-
-import java.util.*;
 
 /**
  * Manages state changes of a given Actor instance.
- * <p>
  * All changes are cached in-memory until save() is called.
  */
 public class ActorStateManager {
@@ -67,26 +69,26 @@ public class ActorStateManager {
 
       return null;
     }).then(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName)
-      .map(exists -> {
-        if (this.stateChangeTracker.containsKey(stateName)) {
-          StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
+        .map(exists -> {
+          if (this.stateChangeTracker.containsKey(stateName)) {
+            StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
 
-          if (metadata.kind == ActorStateChangeKind.REMOVE) {
-            this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.UPDATE, value));
-            return true;
+            if (metadata.kind == ActorStateChangeKind.REMOVE) {
+              this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.UPDATE, value));
+              return true;
+            }
+
+            throw new IllegalStateException("Duplicate cached state: " + stateName);
           }
 
-          throw new IllegalStateException("Duplicate cached state: " + stateName);
-        }
+          if (exists) {
+            throw new IllegalStateException("Duplicate state: " + stateName);
+          }
 
-        if (exists) {
-          throw new IllegalStateException("Duplicate state: " + stateName);
-        }
-
-        this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.ADD, value));
-        return true;
-      }))
-      .then();
+          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.ADD, value));
+          return true;
+        }))
+        .then();
   }
 
   /**
@@ -115,12 +117,12 @@ public class ActorStateManager {
 
       return (T) null;
     }).switchIfEmpty(
-      this.stateProvider.load(this.actorTypeName, this.actorId, stateName, clazz)
-        .switchIfEmpty(Mono.error(new NoSuchElementException("State not found: " + stateName)))
-        .map(v -> {
-          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.NONE, v));
-          return (T) v;
-        }));
+        this.stateProvider.load(this.actorTypeName, this.actorId, stateName, clazz)
+            .switchIfEmpty(Mono.error(new NoSuchElementException("State not found: " + stateName)))
+            .map(v -> {
+              this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.NONE, v));
+              return (T) v;
+            }));
   }
 
   /**
@@ -151,13 +153,13 @@ public class ActorStateManager {
 
       return false;
     }).filter(x -> x)
-      .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName)
-        .map(exists -> {
-          this.stateChangeTracker.put(stateName,
-            new StateChangeMetadata(exists ? ActorStateChangeKind.UPDATE : ActorStateChangeKind.ADD, value));
-          return exists;
-        }))
-      .then();
+        .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName)
+            .map(exists -> {
+              this.stateChangeTracker.put(stateName,
+                  new StateChangeMetadata(exists ? ActorStateChangeKind.UPDATE : ActorStateChangeKind.ADD, value));
+              return exists;
+            }))
+        .then();
   }
 
   /**
@@ -190,14 +192,14 @@ public class ActorStateManager {
 
       return false;
     })
-      .filter(x -> x)
-      .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName))
-      .filter(exists -> exists)
-      .map(exists -> {
-        this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null));
-        return exists;
-      })
-      .then();
+        .filter(x -> x)
+        .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName))
+        .filter(exists -> exists)
+        .map(exists -> {
+          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null));
+          return exists;
+        })
+        .then();
   }
 
   /**
@@ -208,22 +210,22 @@ public class ActorStateManager {
    */
   public Mono<Boolean> contains(String stateName) {
     return Mono.fromSupplier(() -> {
-        if (stateName == null) {
-          throw new IllegalArgumentException("State's name cannot be null.");
-        }
-
-        if (this.stateChangeTracker.containsKey(stateName)) {
-          StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
-
-          if (metadata.kind == ActorStateChangeKind.REMOVE) {
-            return Boolean.FALSE;
+          if (stateName == null) {
+            throw new IllegalArgumentException("State's name cannot be null.");
           }
 
-          return Boolean.TRUE;
-        }
+          if (this.stateChangeTracker.containsKey(stateName)) {
+            StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
 
-        return null;
-      }
+            if (metadata.kind == ActorStateChangeKind.REMOVE) {
+              return Boolean.FALSE;
+            }
+
+            return Boolean.TRUE;
+          }
+
+          return null;
+        }
 
     ).switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName));
   }
@@ -255,7 +257,7 @@ public class ActorStateManager {
 
       return changes.toArray(new ActorStateChange[0]);
     }).flatMap(changes -> this.stateProvider.apply(this.actorTypeName, this.actorId, changes))
-      .then(Mono.fromRunnable(() -> this.flush()));
+        .then(Mono.fromRunnable(() -> this.flush()));
   }
 
   /**

@@ -2,21 +2,20 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import reactor.core.publisher.Mono;
 
 /**
  * Represents the base class for actors.
- * <p>
  * The base type for actors, that provides the common functionality for actors.
  * The state is preserved across actor garbage collections and fail-overs.
  */
@@ -69,9 +68,9 @@ public abstract class AbstractActor {
     this.actorRuntimeContext = runtimeContext;
     this.id = id;
     this.actorStateManager = new ActorStateManager(
-      runtimeContext.getStateProvider(),
-      runtimeContext.getActorTypeInformation().getName(),
-      id);
+          runtimeContext.getStateProvider(),
+          runtimeContext.getActorTypeInformation().getName(),
+          id);
     this.actorTrace = runtimeContext.getActorTrace();
     this.timers = Collections.synchronizedMap(new HashMap<>());
     this.started = false;
@@ -106,19 +105,19 @@ public abstract class AbstractActor {
    * @return Asynchronous void response.
    */
   protected <T> Mono<Void> registerReminder(
-    String reminderName,
-    T state,
-    Duration dueTime,
-    Duration period) {
+        String reminderName,
+        T state,
+        Duration dueTime,
+        Duration period) {
     try {
       byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
       ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
       byte[] serialized = INTERNAL_SERIALIZER.serialize(params);
       return this.actorRuntimeContext.getDaprClient().registerActorReminder(
-        this.actorRuntimeContext.getActorTypeInformation().getName(),
-        this.id.toString(),
-        reminderName,
-        serialized);
+            this.actorRuntimeContext.getActorTypeInformation().getName(),
+            this.id.toString(),
+            reminderName,
+            serialized);
     } catch (IOException e) {
       return Mono.error(e);
     }
@@ -139,11 +138,11 @@ public abstract class AbstractActor {
    * @return Asynchronous result.
    */
   protected <T> Mono<Void> registerActorTimer(
-    String timerName,
-    String callback,
-    T state,
-    Duration dueTime,
-    Duration period) {
+        String timerName,
+        String callback,
+        T state,
+        Duration dueTime,
+        Duration period) {
     return Mono.fromSupplier(() -> {
       if ((callback == null) || callback.isEmpty()) {
         throw new IllegalArgumentException("Timer requires a callback function.");
@@ -160,10 +159,10 @@ public abstract class AbstractActor {
     }).flatMap(actorTimer -> {
       try {
         return this.actorRuntimeContext.getDaprClient().registerActorTimer(
-          this.actorRuntimeContext.getActorTypeInformation().getName(),
-          this.id.toString(),
-          actorTimer.getName(),
-          INTERNAL_SERIALIZER.serialize(actorTimer));
+              this.actorRuntimeContext.getActorTypeInformation().getName(),
+              this.id.toString(),
+              actorTimer.getName(),
+              INTERNAL_SERIALIZER.serialize(actorTimer));
       } catch (Exception e) {
         return Mono.error(e);
       }
@@ -178,11 +177,11 @@ public abstract class AbstractActor {
    */
   protected Mono<Void> unregisterTimer(String timerName) {
     return Mono.fromSupplier(() -> getActorTimer(timerName))
-    .flatMap(actorTimer -> this.actorRuntimeContext.getDaprClient().unregisterActorTimer(
-      this.actorRuntimeContext.getActorTypeInformation().getName(),
-      this.id.toString(),
-      timerName))
-    .then(Mono.fromRunnable(() -> this.timers.remove(timerName)));
+          .flatMap(actorTimer -> this.actorRuntimeContext.getDaprClient().unregisterActorTimer(
+                this.actorRuntimeContext.getActorTypeInformation().getName(),
+                this.id.toString(),
+                timerName))
+          .then(Mono.fromRunnable(() -> this.timers.remove(timerName)));
   }
 
   /**
@@ -193,9 +192,9 @@ public abstract class AbstractActor {
    */
   protected Mono<Void> unregisterReminder(String reminderName) {
     return this.actorRuntimeContext.getDaprClient().unregisterActorReminder(
-      this.actorRuntimeContext.getActorTypeInformation().getName(),
-      this.id.toString(),
-      reminderName);
+          this.actorRuntimeContext.getActorTypeInformation().getName(),
+          this.id.toString(),
+          reminderName);
   }
 
   /**
@@ -284,8 +283,8 @@ public abstract class AbstractActor {
       this.actorTrace.writeInfo(TRACE_TYPE, this.id.toString(), "Activating ...");
       this.resetState();
     }).then(this.onActivate())
-      .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Activated"))
-      .then(this.saveState());
+          .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Activated"))
+          .then(this.saveState());
   }
 
   /**
@@ -297,8 +296,8 @@ public abstract class AbstractActor {
     this.actorTrace.writeInfo(TRACE_TYPE, this.id.toString(), "Deactivating ...");
 
     return Mono.fromRunnable(() -> this.resetState())
-      .then(this.onDeactivate())
-      .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Deactivated"));
+          .then(this.onDeactivate())
+          .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Deactivated"));
   }
 
   /**
@@ -329,10 +328,10 @@ public abstract class AbstractActor {
         throw new IllegalStateException("Cannot complete a method before starting a call.");
       }
     }).then(this.onPostActorMethod(actorMethodContext))
-      .then(this.saveState())
-      .then(Mono.fromRunnable(() -> {
-        this.started = false;
-      }));
+          .then(this.saveState())
+          .then(Mono.fromRunnable(() -> {
+            this.started = false;
+          }));
   }
 
   /**
