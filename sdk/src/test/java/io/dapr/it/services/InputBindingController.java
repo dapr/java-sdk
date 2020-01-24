@@ -24,9 +24,11 @@ public class InputBindingController {
 
   @PostMapping(path = "/sample123")
   public Mono<Void> handleInputBinding(@RequestBody(required = false) byte[] body) {
-    messagesReceived.add(body);
-    return Mono.fromRunnable(() ->
-      System.out.println("Received message through binding: " + (body == null ? "" : new String(body))));
+
+    return Mono.fromRunnable(() -> {
+      messagesReceived.add(body);
+      System.out.println("Received message through binding: " + (body == null ? "" : new String(body)));
+    });
   }
 
   @GetMapping(path = "/messages")

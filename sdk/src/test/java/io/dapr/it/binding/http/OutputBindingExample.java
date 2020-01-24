@@ -23,11 +23,6 @@ import static org.junit.Assert.fail;
 
 /**
  * Service for output binding example.
- * 1. From your repo root, build and install jars:
- *  mvn clean install
- * 2. cd to [repo-root]/examples
- * 3. Run the program:
- * dapr run --app-id outputbinding --port 3006 -- mvn exec:java -Dexec.mainClass=io.dapr.examples.bindings.http.OutputBindingExample
  */
 public class OutputBindingExample extends BaseIT {
 
