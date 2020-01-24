@@ -8,11 +8,10 @@ package io.dapr.it.binding.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DefaultObjectSerializer;
 import io.dapr.client.domain.Verb;
 import io.dapr.it.BaseIT;
-import io.dapr.it.DaprIntegrationTestingRunner;
 import io.dapr.it.services.InputBindingExample;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,7 +43,7 @@ public class OutputBindingExample extends BaseIT {
                     19000
             );
     daprIntegrationTestingRunner.initializeDapr();
-    client = new DaprClientBuilder(new DefaultObjectSerializer()).build();
+    client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
   }
 
   public static class MyClass {
