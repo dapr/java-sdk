@@ -9,11 +9,12 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
 import io.dapr.actors.client.DaprClientStub;
-import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.serializer.DaprObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -21,8 +22,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ActorNoStateTest {
+public class ActorCustomSerializerTest {
+
   private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+
+  private static final DaprObjectSerializer CUSTOM_SERIALIZER = new JavaSerializer();
 
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 
@@ -31,67 +35,41 @@ public class ActorNoStateTest {
   private ActorManager<ActorImpl> manager = new ActorManager<>(context);
 
   public interface MyActor {
-    // The test will only call the versions of this in a derived class to the user code base class.
-    // The user code base class version will throw.
+    Mono<Integer> intInIntOut(int input);
+
     Mono<String> stringInStringOut(String input);
-    Mono<Boolean> stringInBooleanOut(String input);
-    Mono<Void> stringInVoidOutIntentionallyThrows(String input);
+
     Mono<MyData> classInClassOut(MyData input);
   }
 
   @ActorType(name = "MyActor")
   public static class ActorImpl extends AbstractActor implements MyActor {
-    private final ActorId id;
-    private boolean activated;
-    private boolean methodReturningVoidInvoked;
 
     //public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
     public ActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
-      this.id = id;
-      this.activated = true;
-      this.methodReturningVoidInvoked = false;
     }
 
     @Override
-    public Mono<String> stringInStringOut(String s) {
-      return Mono.fromSupplier(() -> {
-          return s + s;
-        }
-      );
+    public Mono<Integer> intInIntOut(int input) {
+      return Mono.fromSupplier(() -> input + input);
     }
 
     @Override
-    public Mono<Boolean> stringInBooleanOut(String s) {
-      return Mono.fromSupplier(() -> {
-        if (s.equals("true")) {
-          return true;
-        } else {
-          return false;
-        }
-      });
-    }
-
-    @Override
-    public Mono<Void> stringInVoidOutIntentionallyThrows(String input) {
-      return Mono.fromRunnable(() -> {
-        // IllegalMonitorStateException is being thrown only because it's un unusual exception so it's unlikely
-        // to collide with something else.
-        throw new IllegalMonitorStateException("IntentionalException");
-      });
+    public Mono<String> stringInStringOut(String input) {
+      return Mono.fromSupplier(() -> input + input);
     }
 
     @Override
     public Mono<MyData> classInClassOut(MyData input) {
-      return Mono.fromSupplier(() -> {
-        return new MyData(
+      return Mono.fromSupplier(() -> new MyData(
           input.getName() + input.getName(),
-          input.getNum() + input.getNum());
-      });
+          input.getNum() + input.getNum())
+      );
     }
   }
 
-  static class MyData {
+  static class MyData implements Serializable {
     private String name;
     private int num;
 
@@ -115,51 +93,30 @@ public class ActorNoStateTest {
   }
 
   @Test
-  public void stringInStringOut() {
-    ActorProxy proxy = createActorProxy();
-
-    // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
-      "abcabc",
-      proxy.invokeActorMethod("stringInStringOut", "abc", String.class).block());
-  }
-
-  @Test
-  public void stringInBooleanOut() {
-    ActorProxy proxy = createActorProxy();
-
-    // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
-      false,
-      proxy.invokeActorMethod("stringInBooleanOut", "hello world", Boolean.class).block());
-
-    Assert.assertEquals(
-      true,
-      proxy.invokeActorMethod("stringInBooleanOut", "true", Boolean.class).block());
-  }
-
-  @Test(expected = IllegalMonitorStateException.class)
-  public void stringInVoidOutIntentionallyThrows() {
-    ActorProxy actorProxy = createActorProxy();
-
-    // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    actorProxy.invokeActorMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
-  }
-
-  @Test
   public void classInClassOut() {
     ActorProxy actorProxy = createActorProxy();
     MyData d = new MyData("hi", 3);
 
-    // this should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     MyData response = actorProxy.invokeActorMethod("classInClassOut", d, MyData.class).block();
 
-    Assert.assertEquals(
-      "hihi",
-      response.getName());
-    Assert.assertEquals(
-      6,
-      response.getNum());
+    Assert.assertEquals("hihi", response.getName());
+    Assert.assertEquals(6, response.getNum());
+  }
+
+  @Test
+  public void stringInStringOut() {
+    ActorProxy actorProxy = createActorProxy();
+    String response = actorProxy.invokeActorMethod("stringInStringOut", "oi", String.class).block();
+
+    Assert.assertEquals("oioi", response);
+  }
+
+  @Test
+  public void intInIntOut() {
+    ActorProxy actorProxy = createActorProxy();
+    int response = actorProxy.invokeActorMethod("intInIntOut", 2, int.class).block();
+
+    Assert.assertEquals(4, response);
   }
 
   private static ActorId newActorId() {
@@ -195,7 +152,7 @@ public class ActorNoStateTest {
     return new ActorProxyForTestsImpl(
       context.getActorTypeInformation().getName(),
       actorId,
-      new DefaultObjectSerializer(),
+      CUSTOM_SERIALIZER,
       daprClient);
   }
 
@@ -209,7 +166,7 @@ public class ActorNoStateTest {
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),
-      new DefaultObjectSerializer(),
+      CUSTOM_SERIALIZER,
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(ActorImpl.class),
       daprClient,

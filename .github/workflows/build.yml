@@ -38,6 +38,10 @@ jobs:
         sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
         echo "Showing dapr version..."
         dapr --version
+    - name: Install Local kafka using docker-compose
+      run: |
+        docker-compose -f ./sdk/src/test/java/io/dapr/it/deploy/local-test-kafka.yml up -d
+        docker ps
     - name: Clean up files
       run: mvn clean
     - name: Build sdk

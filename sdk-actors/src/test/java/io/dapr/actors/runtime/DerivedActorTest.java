@@ -9,7 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
 import io.dapr.actors.client.DaprClientStub;
-import io.dapr.client.DefaultObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
