@@ -15,12 +15,12 @@ import io.dapr.actors.ActorId;
 @FunctionalInterface
 public interface ActorFactory<T extends AbstractActor> {
 
-    /**
-     * Creates an Actor.
-     *
-     * @param actorRuntimeContext Actor type's context in the runtime.
-     * @param actorId             Actor Id.
-     * @return Actor or null it failed.
-     */
-    T createActor(ActorRuntimeContext<T> actorRuntimeContext, ActorId actorId);
+  /**
+   * Creates an Actor.
+   *
+   * @param actorRuntimeContext Actor type's context in the runtime.
+   * @param actorId             Actor Id.
+   * @return Actor or null it failed.
+   */
+  T createActor(ActorRuntimeContext<T> actorRuntimeContext, ActorId actorId);
 }

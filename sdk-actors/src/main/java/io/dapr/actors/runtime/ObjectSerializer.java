@@ -2,13 +2,13 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.utils.DurationUtils;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
@@ -51,65 +51,6 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
     return super.serialize(state);
   }
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
-    if (clazz == ActorReminderParams.class) {
-      // Special serializer for this internal classes.
-      return (T) deserializeActorReminder(content);
-    }
-
-    // Is not one of the special cases.
-    return super.deserialize(content, clazz);
-  }
-
-  /**
-   * Extracts the response data from a JSON Payload where data is in "data" attribute.
-   *
-   * @param payload JSON payload containing "data".
-   * @return byte[] instance, null.
-   * @throws IOException In case it cannot generate String.
-   */
-  public byte[] unwrapData(final byte[] payload) throws IOException {
-    if (payload == null) {
-      return null;
-    }
-
-    JsonNode root = OBJECT_MAPPER.readTree(payload);
-    if (root == null) {
-      return null;
-    }
-
-    JsonNode dataNode = root.get("data");
-    if (dataNode == null) {
-      return null;
-    }
-
-    return dataNode.binaryValue();
-  }
-
-  /**
-   * Wraps data in the "data" attribute in a JSON object.
-   *
-   * @param data bytes to be wrapped into the "data" attribute in a JSON object.
-   * @return String to be sent to Dapr's API.
-   * @throws RuntimeException In case it cannot generate String.
-   */
-  public byte[] wrapData(final byte[] data) throws IOException {
-    try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-      JsonGenerator generator = JSON_FACTORY.createGenerator(output);
-      generator.writeStartObject();
-      if (data != null) {
-        generator.writeBinaryField("data", data);
-      }
-      generator.writeEndObject();
-      generator.close();
-      output.flush();
-      return output.toByteArray();
-    }
-  }
 
   /**
    * Faster serialization for params of Actor's timer.
@@ -183,6 +124,66 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
       generator.close();
       writer.flush();
       return writer.toByteArray();
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
+    if (clazz == ActorReminderParams.class) {
+      // Special serializer for this internal classes.
+      return (T) deserializeActorReminder(content);
+    }
+
+    // Is not one of the special cases.
+    return super.deserialize(content, clazz);
+  }
+
+  /**
+   * Extracts the response data from a JSON Payload where data is in "data" attribute.
+   *
+   * @param payload JSON payload containing "data".
+   * @return byte[] instance, null.
+   * @throws IOException In case it cannot generate String.
+   */
+  public byte[] unwrapData(final byte[] payload) throws IOException {
+    if (payload == null) {
+      return null;
+    }
+
+    JsonNode root = OBJECT_MAPPER.readTree(payload);
+    if (root == null) {
+      return null;
+    }
+
+    JsonNode dataNode = root.get("data");
+    if (dataNode == null) {
+      return null;
+    }
+
+    return dataNode.binaryValue();
+  }
+
+  /**
+   * Wraps data in the "data" attribute in a JSON object.
+   *
+   * @param data bytes to be wrapped into the "data" attribute in a JSON object.
+   * @return String to be sent to Dapr's API.
+   * @throws RuntimeException In case it cannot generate String.
+   */
+  public byte[] wrapData(final byte[] data) throws IOException {
+    try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+      JsonGenerator generator = JSON_FACTORY.createGenerator(output);
+      generator.writeStartObject();
+      if (data != null) {
+        generator.writeBinaryField("data", data);
+      }
+      generator.writeEndObject();
+      generator.close();
+      output.flush();
+      return output.toByteArray();
     }
   }
 
