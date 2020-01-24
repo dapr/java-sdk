@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.actors.runtime;
 
 import io.dapr.client.DaprHttp;
@@ -14,7 +15,7 @@ import reactor.core.publisher.Mono;
 class DaprHttpClient implements DaprClient {
 
   /**
-   * The HTTP client to be used
+   * The HTTP client to be used.
    *
    * @see DaprHttp
    */
@@ -72,7 +73,7 @@ class DaprHttpClient implements DaprClient {
   @Override
   public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, byte[] data) {
     String url = String.format(Constants.ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url,null, data, null).then();
+    return this.client.invokeAPI(DaprHttp.HttpMethods.PUT.name(), url, null, data, null).then();
   }
 
   /**

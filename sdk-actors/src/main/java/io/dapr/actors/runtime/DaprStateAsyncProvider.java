@@ -10,158 +10,158 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.StringContentType;
-import reactor.core.publisher.Mono;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import reactor.core.publisher.Mono;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
  */
 class DaprStateAsyncProvider {
 
-    /**
-     * Shared Json Factory as per Jackson's documentation, used only for this class.
-     */
-    private static final JsonFactory JSON_FACTORY = new JsonFactory();
+  /**
+   * Shared Json Factory as per Jackson's documentation, used only for this class.
+   */
+  private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
-    /**
-     * Dapr's client for Actor runtime.
-     */
-    private final DaprClient daprClient;
+  /**
+   * Dapr's client for Actor runtime.
+   */
+  private final DaprClient daprClient;
 
-    /**
-     * Serializer for state objects.
-     */
-    private final DaprObjectSerializer stateSerializer;
+  /**
+   * Serializer for state objects.
+   */
+  private final DaprObjectSerializer stateSerializer;
 
-    /**
-     * Flag determining if serializer's input and output contains a valid String.
-     */
-    private final boolean isStateString;
+  /**
+   * Flag determining if serializer's input and output contains a valid String.
+   */
+  private final boolean isStateString;
 
-    /**
-     * Instantiates a new Actor's state provider.
-     * @param daprClient Dapr client for Actor runtime.
-     * @param stateSerializer Serializer for state objects.
-     */
-    DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
-        this.daprClient = daprClient;
-        this.stateSerializer = stateSerializer;
-        this.isStateString = stateSerializer.getClass().getAnnotation(StringContentType.class) != null;
-    }
+  /**
+   * Instantiates a new Actor's state provider.
+   *
+   * @param daprClient      Dapr client for Actor runtime.
+   * @param stateSerializer Serializer for state objects.
+   */
+  DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
+    this.daprClient = daprClient;
+    this.stateSerializer = stateSerializer;
+    this.isStateString = stateSerializer.getClass().getAnnotation(StringContentType.class) != null;
+  }
 
-    <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
-        Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
+  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
+    Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
 
-        return result.flatMap(s -> {
-                    try {
-                        T response = this.stateSerializer.deserialize(s, clazz);
-                        if (response == null) {
-                            return Mono.empty();
-                        }
-
-                        return Mono.just(response);
-                    } catch (IOException e) {
-                        return Mono.error(new RuntimeException(e));
-                    }
-                });
-    }
-
-    Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
-        Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
-        return result.map(s -> true).defaultIfEmpty(false);
-    }
-
-    /**
-     * Saves state changes transactionally.
-     * [
-     * {
-     * "operation": "upsert",
-     * "request": {
-     * "key": "key1",
-     * "value": "myData"
-     * }
-     * },
-     * {
-     * "operation": "delete",
-     * "request": {
-     * "key": "key2"
-     * }
-     * }
-     * ]
-     *
-     * @param actorType    Name of the actor being changed.
-     * @param actorId      Identifier of the actor being changed.
-     * @param stateChanges Collection of changes to be performed transactionally.
-     * @return Void.
-     */
-    Mono<Void> apply(String actorType, ActorId actorId, ActorStateChange... stateChanges) {
-        if ((stateChanges == null) || stateChanges.length == 0) {
-            return Mono.empty();
+    return result.flatMap(s -> {
+      try {
+        T response = this.stateSerializer.deserialize(s, clazz);
+        if (response == null) {
+          return Mono.empty();
         }
 
-        int count = 0;
-        // Constructing the JSON via a stream API to avoid creating transient objects to be instantiated.
-        byte[] payload = null;
-        try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
-            JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
-            // Start array
-            generator.writeStartArray();
+        return Mono.just(response);
+      } catch (IOException e) {
+        return Mono.error(new RuntimeException(e));
+      }
+    });
+  }
 
-            for (ActorStateChange stateChange : stateChanges) {
-                if ((stateChange == null) || (stateChange.getChangeKind() == null)) {
-                    continue;
-                }
+  Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
+    Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
+    return result.map(s -> true).defaultIfEmpty(false);
+  }
 
-                String operationName = stateChange.getChangeKind().getDaprStateChangeOperation();
-                if ((operationName == null) || (operationName.length() == 0)) {
-                    continue;
-                }
+  /**
+   * Saves state changes transactionally.
+   * [
+   * {
+   * "operation": "upsert",
+   * "request": {
+   * "key": "key1",
+   * "value": "myData"
+   * }
+   * },
+   * {
+   * "operation": "delete",
+   * "request": {
+   * "key": "key2"
+   * }
+   * }
+   * ]
+   *
+   * @param actorType    Name of the actor being changed.
+   * @param actorId      Identifier of the actor being changed.
+   * @param stateChanges Collection of changes to be performed transactionally.
+   * @return Void.
+   */
+  Mono<Void> apply(String actorType, ActorId actorId, ActorStateChange... stateChanges) {
+    if ((stateChanges == null) || stateChanges.length == 0) {
+      return Mono.empty();
+    }
 
-                count++;
+    int count = 0;
+    // Constructing the JSON via a stream API to avoid creating transient objects to be instantiated.
+    byte[] payload = null;
+    try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
+      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+      // Start array
+      generator.writeStartArray();
 
-                // Start operation object.
-                generator.writeStartObject();
-                generator.writeStringField("operation", operationName);
+      for (ActorStateChange stateChange : stateChanges) {
+        if ((stateChange == null) || (stateChange.getChangeKind() == null)) {
+          continue;
+        }
 
-                // Start request object.
-                generator.writeObjectFieldStart("request");
-                generator.writeStringField("key", stateChange.getStateName());
-                if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE) ||
-                  (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
-                    byte[] data = this.stateSerializer.serialize(stateChange.getValue());
-                    if (data != null) {
-                        if (this.isStateString) {
-                            generator.writeStringField("value", new String(data));
-                        } else {
-                            generator.writeBinaryField("value", data);
-                        }
-                    }
-                }
-                // End request object.
-                generator.writeEndObject();
+        String operationName = stateChange.getChangeKind().getDaprStateChangeOperation();
+        if ((operationName == null) || (operationName.length() == 0)) {
+          continue;
+        }
 
-                // End operation object.
-                generator.writeEndObject();
+        count++;
+
+        // Start operation object.
+        generator.writeStartObject();
+        generator.writeStringField("operation", operationName);
+
+        // Start request object.
+        generator.writeObjectFieldStart("request");
+        generator.writeStringField("key", stateChange.getStateName());
+        if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE)
+            || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
+          byte[] data = this.stateSerializer.serialize(stateChange.getValue());
+          if (data != null) {
+            if (this.isStateString) {
+              generator.writeStringField("value", new String(data));
+            } else {
+              generator.writeBinaryField("value", data);
             }
-
-            // End array
-            generator.writeEndArray();
-
-            generator.close();
-            writer.flush();
-            payload = writer.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return Mono.error(e);
+          }
         }
+        // End request object.
+        generator.writeEndObject();
 
-        if (count == 0) {
-            // No-op since there is no operation to be performed.
-            Mono.empty();
-        }
+        // End operation object.
+        generator.writeEndObject();
+      }
 
-        return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), payload);
+      // End array
+      generator.writeEndArray();
+
+      generator.close();
+      writer.flush();
+      payload = writer.toByteArray();
+    } catch (IOException e) {
+      e.printStackTrace();
+      return Mono.error(e);
     }
+
+    if (count == 0) {
+      // No-op since there is no operation to be performed.
+      Mono.empty();
+    }
+
+    return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), payload);
+  }
 }

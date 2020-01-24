@@ -2,18 +2,18 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.serializer.DaprObjectSerializer;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import reactor.core.publisher.Mono;
 
 /**
  * Contains methods to register actor types. Registering the types allows the
@@ -59,7 +59,7 @@ public class ActorRuntime {
   /**
    * The default constructor. This should not be called directly.
    *
-   * @throws IllegalStateException
+   * @throws IllegalStateException If cannot instantiate Runtime.
    */
   private ActorRuntime() throws IllegalStateException {
     this(new DaprHttpClient(new DaprHttpBuilder().build()));
@@ -69,7 +69,7 @@ public class ActorRuntime {
    * Constructor with dependency injection, useful for testing. This should not be called directly.
    *
    * @param daprClient Client to communicate with Dapr.
-   * @throws IllegalStateException
+   * @throws IllegalStateException If class has one instance already.
    */
   private ActorRuntime(DaprClient daprClient) throws IllegalStateException {
     if (instance != null) {
@@ -117,7 +117,7 @@ public class ActorRuntime {
    * @param <T>              Actor class type.
    */
   public <T extends AbstractActor> void registerActor(
-    Class<T> clazz, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
+        Class<T> clazz, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
     registerActor(clazz, null, objectSerializer, stateSerializer);
   }
 
@@ -131,9 +131,9 @@ public class ActorRuntime {
    * @param <T>              Actor class type.
    */
   public <T extends AbstractActor> void registerActor(
-    Class<T> clazz, ActorFactory<T> actorFactory,
-    DaprObjectSerializer objectSerializer,
-    DaprObjectSerializer stateSerializer) {
+        Class<T> clazz, ActorFactory<T> actorFactory,
+        DaprObjectSerializer objectSerializer,
+        DaprObjectSerializer stateSerializer) {
     if (clazz == null) {
       throw new IllegalArgumentException("Class is required.");
     }
@@ -149,12 +149,12 @@ public class ActorRuntime {
     ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
 
     ActorRuntimeContext<T> context = new ActorRuntimeContext<>(
-      this,
-      objectSerializer,
-      actualActorFactory,
-      actorTypeInfo,
-      this.daprClient,
-      new DaprStateAsyncProvider(this.daprClient, stateSerializer));
+          this,
+          objectSerializer,
+          actualActorFactory,
+          actorTypeInfo,
+          this.daprClient,
+          new DaprStateAsyncProvider(this.daprClient, stateSerializer));
 
     // Create ActorManagers, override existing entry if registered again.
     this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
@@ -170,7 +170,7 @@ public class ActorRuntime {
    */
   public Mono<Void> activate(String actorTypeName, String actorId) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-      .flatMap(m -> m.activateActor(new ActorId(actorId)));
+          .flatMap(m -> m.activateActor(new ActorId(actorId)));
   }
 
   /**
@@ -182,7 +182,7 @@ public class ActorRuntime {
    */
   public Mono<Void> deactivate(String actorTypeName, String actorId) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-      .flatMap(m -> m.deactivateActor(new ActorId(actorId)));
+          .flatMap(m -> m.deactivateActor(new ActorId(actorId)));
   }
 
   /**
@@ -197,8 +197,8 @@ public class ActorRuntime {
    */
   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-      .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, unwrap(payload)))
-      .map(response -> wrap((byte[]) response));
+          .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, unwrap(payload)))
+          .map(response -> wrap((byte[]) response));
   }
 
   /**
@@ -212,7 +212,7 @@ public class ActorRuntime {
    */
   public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, byte[] params) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-      .flatMap(m -> m.invokeReminder(new ActorId(actorId), reminderName, params));
+          .flatMap(m -> m.invokeReminder(new ActorId(actorId), reminderName, params));
   }
 
   /**
@@ -225,7 +225,7 @@ public class ActorRuntime {
    */
   public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-      .flatMap(m -> m.invokeTimer(new ActorId(actorId), timerName));
+          .flatMap(m -> m.invokeTimer(new ActorId(actorId), timerName));
   }
 
   /**
