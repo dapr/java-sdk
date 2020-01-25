@@ -3,12 +3,12 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.it.services;
+package io.dapr.it.binding.http;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {"io.dapr.it.services"})
+@SpringBootApplication(scanBasePackages = {"io.dapr.it.binding.http"})
 public class InputBindingExample {
 
   public static void main(String[] args) throws Exception {

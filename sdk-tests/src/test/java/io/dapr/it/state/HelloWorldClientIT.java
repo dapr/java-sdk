@@ -8,7 +8,7 @@ package io.dapr.it.state;
 import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
 import io.dapr.it.BaseIT;
-import io.dapr.it.DaprIntegrationTestingRunner;
+import io.dapr.it.DaprRun;
 import io.dapr.it.services.HelloWorldGrpcStateService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -16,28 +16,27 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.dapr.it.DaprIntegrationTestingRunner.DAPR_FREEPORTS;
-
 public class HelloWorldClientIT extends BaseIT {
 
-  private static DaprIntegrationTestingRunner daprIntegrationTestingRunner;
+  private static DaprRun daprRun;
 
   @BeforeClass
   public static void init() throws Exception {
-    daprIntegrationTestingRunner =
-      createDaprIntegrationTestingRunner(
+    daprRun =
+      createDaprApp(
         "BUILD SUCCESS",
         HelloWorldGrpcStateService.class,
         false,
         2000
       );
-    daprIntegrationTestingRunner.initializeDapr();
+    daprRun.start();
+    setAppEnvironmentVariables(daprRun);
   }
 
   @Test
   public void testHelloWorldState(){
     ManagedChannel channel =
-      ManagedChannelBuilder.forAddress("localhost", DAPR_FREEPORTS.getGrpcPort()).usePlaintext().build();
+      ManagedChannelBuilder.forAddress("localhost", daprRun.getGrpcPort()).usePlaintext().build();
     DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
     String key = "mykey";

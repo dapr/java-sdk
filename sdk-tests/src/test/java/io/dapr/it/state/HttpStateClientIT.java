@@ -7,6 +7,7 @@ package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.it.DaprRun;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -25,16 +26,19 @@ import java.time.Duration;
  */
 public class HttpStateClientIT extends BaseIT {
 
+  private static DaprRun daprRun;
+
   @BeforeClass
   public static void init() throws Exception {
-    daprIntegrationTestingRunner =
-      createDaprIntegrationTestingRunner(
+    daprRun =
+      createDaprApp(
         "BUILD SUCCESS",
         EmptyService.class,
         false,
         0
       );
-    daprIntegrationTestingRunner.initializeDapr();
+    daprRun.start();
+    setAppEnvironmentVariables(daprRun);
   }
 
   @Test

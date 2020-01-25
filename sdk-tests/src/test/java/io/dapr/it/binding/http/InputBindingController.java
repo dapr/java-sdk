@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.it.services;
+package io.dapr.it.binding.http;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

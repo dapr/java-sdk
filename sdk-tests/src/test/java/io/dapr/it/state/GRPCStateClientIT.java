@@ -10,6 +10,7 @@ import io.dapr.client.DaprClientTestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
+import io.dapr.it.DaprRun;
 import io.dapr.it.services.EmptyService;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -25,18 +26,21 @@ import static org.junit.Assert.*;
  */
 public class GRPCStateClientIT extends BaseIT {
 
-  private static  DaprClient daprClient;
+  private static DaprRun daprRun;
+
+  private static DaprClient daprClient;
 
   @BeforeClass
   public static void init() throws Exception {
-    daprIntegrationTestingRunner =
-      createDaprIntegrationTestingRunner(
+    daprRun =
+      createDaprApp(
         "BUILD SUCCESS",
         EmptyService.class,
         false,
         0
       );
-    daprIntegrationTestingRunner.initializeDapr();
+    daprRun.start();
+    setAppEnvironmentVariables(daprRun);
     daprClient = DaprClientTestBuilder.buildGrpcClient();
   }
 
