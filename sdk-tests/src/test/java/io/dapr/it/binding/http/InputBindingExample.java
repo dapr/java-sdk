@@ -14,6 +14,8 @@ public class InputBindingExample {
   public static void main(String[] args) throws Exception {
     // If port string is not valid, it will throw an exception.
     int port = Integer.parseInt(args[0]);
+
+    System.out.printf("Service starting on port %d ...\n", port);
     // Start Dapr's callback endpoint.
     InputBindingExample.start(port);
   }

@@ -48,8 +48,8 @@ jobs:
       run: mvn compile -q
     - name: Unit tests
       run: mvn test -q
-    - name: Packaging jars
-      run: mvn package -q
+    - name: Install jars
+      run: mvn install -DskipITs=true -q
     - name: Verify
       run: mvn verify -q
     - name: Upload test report for sdk

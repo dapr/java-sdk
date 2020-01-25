@@ -101,6 +101,7 @@ public class DaprRun {
   public void use() {
     System.getProperties().setProperty("dapr.http.port", String.valueOf(this.ports.getHttpPort()));
     System.getProperties().setProperty("dapr.grpc.port", String.valueOf(this.ports.getGrpcPort()));
+    System.getProperties().setProperty("dapr.grpc.enabled", Boolean.FALSE.toString());
   }
 
   public void switchToGRPC() {

@@ -56,7 +56,7 @@ public class ActivationDeactivationIT extends BaseIT {
         String sayResponse = proxy.invokeActorMethod("say", "message", String.class).block();
         logger.debug("asserting not null response: [" + sayResponse + "]");
         assertNotNull(sayResponse);
-      }, 5000);
+      }, 60000);
 
     logger.debug("Retrieving active Actors");
     List<String> activeActors = proxy.invokeActorMethod("retrieveActiveActors", null, List.class).block();

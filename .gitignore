@@ -34,4 +34,5 @@
 hs_err_pid*
 
 # Some other generated folders/files
-components/
+**/components/redis.yaml
+**/components/redis_messagebus.yaml

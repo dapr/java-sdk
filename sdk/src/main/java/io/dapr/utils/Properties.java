@@ -95,7 +95,7 @@ public class Properties {
     }
 
     try {
-      return parser.apply(propValue);
+      return parser.apply(envValue);
     } catch (Exception e) {
       e.printStackTrace();
       // OK, we tried. Falling back to default.

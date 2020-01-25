@@ -36,5 +36,10 @@ public class InputBindingController {
     return Mono.just(messagesReceived);
   }
 
+  @GetMapping(path = "/")
+  public String hello() {
+    return "Hello from " + this.getClass().getName();
+  }
+
 
 }

@@ -49,6 +49,14 @@ public class BindingIT extends BaseIT {
 
   @Test
   public void inputOutputBinding() throws Exception {
+    System.out.println("Working Directory = " +
+        System.getProperty("user.dir"));
+
+    callWithRetry(() -> {
+      final List<String> messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages", null, List.class).block();
+      assertEquals(0, messages.size());
+    }, 60000);
+
     final String BINDING_NAME = "sample123";
 
     // This is an example of sending data in a user-defined object.  The input binding will receive:
