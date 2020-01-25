@@ -7,11 +7,12 @@ package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprClientGrpcAdapter;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.actors.services.EmptyService;
+import io.dapr.it.services.EmptyService;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -41,6 +42,8 @@ public class GRPCStateClientIT extends BaseIT {
     );
     daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+
+    assertTrue(daprClient instanceof DaprClientGrpcAdapter);
   }
 
 

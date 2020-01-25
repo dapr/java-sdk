@@ -6,47 +6,40 @@
 package io.dapr.it;
 
 import org.junit.AfterClass;
-import reactor.core.publisher.Mono;
+import org.junit.BeforeClass;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.function.Supplier;
+import java.util.logging.LogManager;
 
 public abstract class BaseIT {
 
   private static final Collection<DaprRun> DAPR_RUNS = new ArrayList<>();
 
   protected static DaprRun startDaprApp(
-    String successMessage, Class serviceClass, Boolean useAppPort, int maxWaitMilliseconds) throws Exception {
-    DaprRun run = new DaprRun(DaprPorts.build(), successMessage, serviceClass, useAppPort, maxWaitMilliseconds);
+      String successMessage, Class serviceClass, Boolean useAppPort, int maxWaitMilliseconds) throws Exception {
+    return startDaprApp(successMessage, serviceClass, useAppPort, true, maxWaitMilliseconds);
+  }
+
+  protected static DaprRun startDaprApp(
+      String successMessage, Class serviceClass, Boolean useAppPort, Boolean useDaprPorts, int maxWaitMilliseconds) throws Exception {
+    DaprRun run = new DaprRun(
+        DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
+        successMessage,
+        serviceClass,
+        maxWaitMilliseconds);
     run.start();
     run.use();
     return run;
   }
 
-  protected static void callWithRetry(Runnable function, long retryTimeoutMilliseconds) throws InterruptedException {
-    long started = System.currentTimeMillis();
-    while (true) {
-      Throwable exception;
-      try {
-        function.run();
-        return;
-      } catch (Exception e) {
-        exception = e;
-      } catch (AssertionError e) {
-        exception = e;
-      }
-
-      if (System.currentTimeMillis() - started >= retryTimeoutMilliseconds) {
-        throw new RuntimeException(exception);
-      }
-      Thread.sleep(1000);
-    }
+  @BeforeClass
+  public static void setup() {
+    LogManager.getLogManager().reset();
   }
 
   @AfterClass
-  public static void cleanUp() throws IOException {
+  public static void cleanUp() throws Exception {
     for (DaprRun app : DAPR_RUNS) {
       app.stop();
     }

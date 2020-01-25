@@ -11,7 +11,7 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.actors.services.EmptyService;
+import io.dapr.it.services.EmptyService;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.BeforeClass;

@@ -182,7 +182,6 @@
     <module>sdk-autogen</module>
     <module>sdk</module>
     <module>sdk-actors</module>
-    <module>sdk-tests</module>
     <module>examples</module>
   </modules>
 

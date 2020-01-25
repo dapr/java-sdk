@@ -5,102 +5,89 @@
 
 package io.dapr.it;
 
-import org.junit.Assert;
-
-import java.io.*;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.*;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static io.dapr.it.Retry.callWithRetry;
 
 
 public class DaprRun {
 
+  private static final AtomicInteger NEXT_APP_ID = new AtomicInteger(0);
+
   private static final String DAPR_RUN = "dapr run --app-id %s ";
 
   // the arg in -Dexec.args is the app's port
-  private static final String DAPR_COMMAND = " -- mvn exec:java -Dexec.mainClass=%s -Dexec.classpathScope=test -Dexec.args=\"%d\"";
+  private static final String DAPR_COMMAND =
+      " -- mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\"";
 
   private final DaprPorts ports;
 
   private final String appName;
 
-  private final String successMessage;
-
-  private final Class serviceClass;
-
-  private final Boolean useAppPort;
-
   private final int maxWaitMilliseconds;
 
-  private volatile AtomicBoolean started;
+  private final AtomicBoolean started;
 
-  private Process proc;
+  private final Command command;
 
   DaprRun(
-    DaprPorts ports, String successMessage, Class serviceClass, Boolean useAppPort, int maxWaitMilliseconds) {
+      DaprPorts ports, String successMessage, Class serviceClass, int maxWaitMilliseconds) {
+    this.appName = String.format("%s%d", serviceClass.getSimpleName(), NEXT_APP_ID.getAndIncrement());
+    this.command =
+      new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports));
     this.ports = ports;
-    this.appName = UUID.randomUUID().toString().replaceAll("-", "");
-    this.successMessage = successMessage;
-    this.serviceClass = serviceClass;
-    this.useAppPort = useAppPort;
     this.maxWaitMilliseconds = maxWaitMilliseconds;
     this.started = new AtomicBoolean(false);
   }
 
-  public void start() throws Exception {
-    final Semaphore success = new Semaphore(0);
+  public void start() throws InterruptedException, IOException {
+    long start = System.currentTimeMillis();
+    this.command.run();
+    this.started.set(true);
 
-    String daprCommand = this.buildDaprCommand();
-    System.out.println(daprCommand);
-    proc = Runtime.getRuntime().exec(daprCommand);
+    long timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
+    if (this.ports.getAppPort() != null) {
+      callWithRetry(() -> {
+        System.out.println("Checking if app is listening on port ...");
+        assertListeningOnPort(this.ports.getAppPort());
+      }, timeLeft);
+    }
 
-    final Runnable stuffToDo = new Thread(() -> {
-      try {
-        try (InputStream stdin = proc.getInputStream()) {
-          try (InputStreamReader isr = new InputStreamReader(stdin)) {
-            try (BufferedReader br = new BufferedReader(isr)) {
-              String line;
-              while ((line = br.readLine()) != null) {
-                System.out.println(line);
-                if (line.contains(successMessage)) {
-                  this.started.set(true);
-                  success.release();
-                  break;
-                }
-              }
-            }
-          }
-        }
-      } catch (IOException ex) {
-        Assert.fail(ex.getMessage());
-      }
-    });
+    if (this.ports.getHttpPort() != null) {
+      timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
+      callWithRetry(() -> {
+        System.out.println("Checking if Dapr is listening on HTTP port ...");
+        assertListeningOnPort(this.ports.getHttpPort());
+      }, timeLeft);
+    }
 
-    final ExecutorService executor = Executors.newSingleThreadExecutor();
-    final Future future = executor.submit(stuffToDo);
-    executor.shutdown(); // This does not cancel the already-scheduled task.
-    future.get(1, TimeUnit.MINUTES);
-    success.tryAcquire(this.maxWaitMilliseconds, TimeUnit.MILLISECONDS);
+    if (this.ports.getGrpcPort() != null) {
+      timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
+      callWithRetry(() -> {
+        System.out.println("Checking if Dapr is listening on GRPC port ...");
+        assertListeningOnPort(this.ports.getGrpcPort());
+      }, timeLeft);
+    }
   }
 
-  public boolean hasStarted() {
-    return this.started.get();
-  }
-
-  public void stop() throws IOException {
+  public void stop() throws InterruptedException, IOException {
     System.out.println("Stopping dapr application ...");
-    Runtime.getRuntime().exec("dapr stop --app-id " + this.appName);
+    Command stopCommand = new Command(
+      "app stopped successfully",
+      "dapr stop --app-id " + this.appName);
+    stopCommand.run();
     System.out.println("Dapr application stopped.");
-
-    System.out.println("Stopping dapr cli ...");
-    Optional.ofNullable(this.proc).ifPresent(p -> p.destroy());
-    System.out.println("Stopped dapr cli.");
   }
 
   public void use() {
-    System.getProperties().setProperty("dapr.http.port", String.valueOf(this.ports.getHttpPort()));
-    System.getProperties().setProperty("dapr.grpc.port", String.valueOf(this.ports.getGrpcPort()));
+    if (this.ports.getHttpPort() != null) {
+      System.getProperties().setProperty("dapr.http.port", String.valueOf(this.ports.getHttpPort()));
+    }
+    if (this.ports.getGrpcPort() != null) {
+      System.getProperties().setProperty("dapr.grpc.port", String.valueOf(this.ports.getGrpcPort()));
+    }
     System.getProperties().setProperty("dapr.grpc.enabled", Boolean.FALSE.toString());
   }
 
@@ -124,15 +111,26 @@ public class DaprRun {
     return appName;
   }
 
-  private String buildDaprCommand() {
-    StringBuilder stringBuilder = new StringBuilder(String.format(DAPR_RUN, this.appName))
-      .append(this.useAppPort ? "--app-port " + this.ports.getAppPort() : "")
-      .append(" --grpc-port ")
-      .append(this.ports.getGrpcPort())
-      .append(" --port ")
-      .append(this.ports.getHttpPort())
-      .append(String.format(DAPR_COMMAND, this.serviceClass.getCanonicalName(), this.ports.getAppPort()));
+  private static String buildDaprCommand(String appName, Class serviceClass, DaprPorts ports) {
+    StringBuilder stringBuilder = new StringBuilder(String.format(DAPR_RUN, appName))
+        .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
+        .append(ports.getHttpPort() != null ? " --port " + ports.getHttpPort() : "")
+        .append(ports.getGrpcPort() != null ? " --grpc-port " + ports.getGrpcPort() : "")
+        .append(String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
+            ports.getAppPort() != null ? ports.getAppPort().toString() : ""));
     return stringBuilder.toString();
   }
 
+  private static void assertListeningOnPort(int port) {
+    System.out.printf("Checking port %d ...\n", port);
+
+    java.net.SocketAddress socketAddress = new java.net.InetSocketAddress(io.dapr.utils.Constants.DEFAULT_HOSTNAME, port);
+    try (java.net.Socket socket = new java.net.Socket()) {
+      socket.connect(socketAddress, 1000);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    System.out.printf("Confirmed listening on port %d.\n", port);
+  }
 }

@@ -9,7 +9,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(scanBasePackages = {"io.dapr.it.binding.http"})
-public class InputBindingExample {
+public class InputBindingService {
 
   public static void main(String[] args) throws Exception {
     // If port string is not valid, it will throw an exception.
@@ -17,7 +17,7 @@ public class InputBindingExample {
 
     System.out.printf("Service starting on port %d ...\n", port);
     // Start Dapr's callback endpoint.
-    InputBindingExample.start(port);
+    start(port);
   }
 
   /**
@@ -25,8 +25,8 @@ public class InputBindingExample {
    *
    * @param port Port to listen to.
    */
-  public static void start(int port) {
-    SpringApplication app = new SpringApplication(InputBindingExample.class);
+  private static void start(int port) {
+    SpringApplication app = new SpringApplication(InputBindingService.class);
     app.run(String.format("--server.port=%d", port));
   }
 

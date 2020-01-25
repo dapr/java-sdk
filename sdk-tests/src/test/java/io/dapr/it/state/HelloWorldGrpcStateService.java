@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.it.actors.services;
+package io.dapr.it.state;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
@@ -19,7 +19,7 @@ import io.grpc.ManagedChannelBuilder;
  * Simple example.
  * To run manually, from repo root:
  * 1. mvn clean install
- * 2. dapr run --grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.it.services.HelloWorldGrpcStateService -Dexec.classpathScope="test"  -pl=sdk
+ * 2. dapr run --grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.it.state.HelloWorldGrpcStateService -Dexec.classpathScope="test"  -pl=sdk
  */
 public class HelloWorldGrpcStateService {
 

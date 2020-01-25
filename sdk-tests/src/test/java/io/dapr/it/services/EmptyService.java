@@ -3,7 +3,9 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.it.actors.services;
+package io.dapr.it.services;
+
+import java.io.IOException;
 
 /**
  * Use this class in order to run DAPR with any needed services, like states.
@@ -13,7 +15,9 @@ package io.dapr.it.actors.services;
  * 2. dapr run --grpc-port 41707 --port 32851 -- mvn exec:java -Dexec.mainClass=io.dapr.it.services.EmptyService -Dexec.classpathScope="test" -Dexec.args="-p 44511 -grpcPort 41707 -httpPort 32851" -pl=sdk
  */
 public class EmptyService {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     System.out.println("Hello from EmptyService");
+    // Blocking command.
+    System.in.read();
   }
 }

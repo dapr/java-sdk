@@ -9,7 +9,6 @@ import io.dapr.DaprGrpc;
 import io.dapr.DaprProtos;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.actors.services.HelloWorldGrpcStateService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.junit.Assert;

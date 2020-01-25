@@ -7,46 +7,59 @@ package io.dapr.it;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DaprPorts {
-  private final int grpcPort;
 
-  private final int httpPort;
+  private final Integer grpcPort;
 
-  private final int appPort;
+  private final Integer httpPort;
 
-  private DaprPorts(int grpcPort, int httpPort, int appPort) {
+  private final Integer appPort;
+
+  private DaprPorts(Integer appPort, Integer httpPort, Integer grpcPort) {
     this.grpcPort = grpcPort;
     this.httpPort = httpPort;
     this.appPort = appPort;
   }
 
-  public static DaprPorts build() throws IOException {
+  public static DaprPorts build(boolean appPort, boolean httpPort, boolean grpcPort) throws IOException {
+    List<Integer> freePorts = findFreePorts(3);
     return new DaprPorts(
-      findRandomOpenPortOnAllLocalInterfaces(),
-      findRandomOpenPortOnAllLocalInterfaces(),
-      findRandomOpenPortOnAllLocalInterfaces()
-    );
+        appPort ? freePorts.get(0) : null,
+        httpPort ? freePorts.get(1) : null,
+        grpcPort ? freePorts.get(2) : null);
   }
 
-  public int getGrpcPort() {
+  public static DaprPorts build() throws IOException {
+    return build(true, true, true);
+  }
+
+  public Integer getGrpcPort() {
     return grpcPort;
   }
 
-  public int getHttpPort() {
+  public Integer getHttpPort() {
     return httpPort;
   }
 
-  public int getAppPort() {
+  public Integer getAppPort() {
     return appPort;
   }
 
-  private static Integer findRandomOpenPortOnAllLocalInterfaces() throws IOException {
+  private static List<Integer> findFreePorts(int n) throws IOException {
+    if (n <= 0) {
+      return new ArrayList<>();
+    }
     try (
       ServerSocket socket = new ServerSocket(0)
     ) {
-      return socket.getLocalPort();
-
+      socket.setReuseAddress(true);
+      int port = socket.getLocalPort();
+      List<Integer> output = findFreePorts(n - 1);
+      output.add(port);
+      return output;
     }
   }
 }

@@ -49,9 +49,9 @@ jobs:
     - name: Unit tests
       run: mvn test -q
     - name: Install jars
-      run: mvn install -DskipITs=true -q
-    - name: Verify
-      run: mvn verify -q
+      run: mvn install -q
+    - name: Integration tests
+      run: mvn -f sdk-tests/pom.xml verify -q
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
