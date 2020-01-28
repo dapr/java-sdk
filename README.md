@@ -1,5 +1,9 @@
 ## Dapr SDK for Java
 
+[![Build Status](https://github.com/dapr/java-sdk/workflows/Build/badge.svg?event=push&branch=master)](https://github.com/dapr/java-sdk/actions?workflow=Build)
+[![Gitter](https://badges.gitter.im/Dapr/java-sdk.svg)](https://gitter.im/Dapr/java-sdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 This is the Dapr SDK for Java, including the following features:
 
 * PubSub
