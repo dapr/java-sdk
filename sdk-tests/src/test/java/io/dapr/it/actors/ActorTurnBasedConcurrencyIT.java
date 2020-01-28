@@ -44,8 +44,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
   private final DefaultObjectSerializer serializer = new DefaultObjectSerializer();
 
- // private DaprIntegrationTestingRunner clientDaprIntegrationTestingRunner;
-
   private final String ACTOR_TYPE = "MyActorTest";
   private final String REMINDER_NAME = UUID.randomUUID().toString();
   private final String ACTOR_ID = "1";
@@ -98,7 +96,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logger.debug("Creating proxy builder");
     ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType, serializer);
     logger.debug("Creating actorId");
-    //ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     ActorId actorId1 = new ActorId(ACTOR_ID);
     logger.debug("Building proxy");
     ActorProxy proxy = proxyBuilder.build(actorId1);
