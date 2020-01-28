@@ -14,8 +14,6 @@ import static io.dapr.it.Retry.callWithRetry;
 
 public class DaprRun {
 
-  private static final AtomicInteger NEXT_APP_ID = new AtomicInteger(0);
-
   private static final String DAPR_RUN = "dapr run --app-id %s ";
 
   // the arg in -Dexec.args is the app's port
@@ -30,13 +28,19 @@ public class DaprRun {
 
   private final AtomicBoolean started;
 
-  private final Command command;
+  private final Command startCommand;
+
+  private final Command stopCommand;
 
   DaprRun(
-      DaprPorts ports, String successMessage, Class serviceClass, int maxWaitMilliseconds) {
-    this.appName = String.format("%s%d", serviceClass.getSimpleName(), NEXT_APP_ID.getAndIncrement());
-    this.command =
+      String testName, DaprPorts ports, String successMessage, Class serviceClass, int maxWaitMilliseconds) {
+    // The app name needs to be deterministic since we depend on it to kill previous runs.
+    this.appName = String.format("%s_%s", testName, serviceClass.getSimpleName());
+    this.startCommand =
       new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports));
+    this.stopCommand = new Command(
+        "app stopped successfully",
+        "dapr stop --app-id " + this.appName);
     this.ports = ports;
     this.maxWaitMilliseconds = maxWaitMilliseconds;
     this.started = new AtomicBoolean(false);
@@ -44,7 +48,10 @@ public class DaprRun {
 
   public void start() throws InterruptedException, IOException {
     long start = System.currentTimeMillis();
-    this.command.run();
+    // First, try to stop previous run (if left running).
+    this.stop();
+    System.out.println("Starting dapr application ...");
+    this.startCommand.run();
     this.started.set(true);
 
     long timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
@@ -70,14 +77,17 @@ public class DaprRun {
         assertListeningOnPort(this.ports.getGrpcPort());
       }, timeLeft);
     }
+    System.out.println("Dapr application started.");
   }
 
   public void stop() throws InterruptedException, IOException {
     System.out.println("Stopping dapr application ...");
-    Command stopCommand = new Command(
-      "app stopped successfully",
-      "dapr stop --app-id " + this.appName);
-    stopCommand.run();
+    try {
+      this.stopCommand.run();
+    } catch (RuntimeException e) {
+      System.out.println("Could not stop app: " + this.appName);
+    }
+
     System.out.println("Dapr application stopped.");
   }
 

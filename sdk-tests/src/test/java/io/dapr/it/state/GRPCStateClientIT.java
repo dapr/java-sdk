@@ -35,10 +35,11 @@ public class GRPCStateClientIT extends BaseIT {
   @BeforeClass
   public static void init() throws Exception {
     daprRun = startDaprApp(
-      "BUILD SUCCESS",
-      EmptyService.class,
-      false,
-      5000
+        GRPCStateClientIT.class.getSimpleName(),
+        EmptyService.SUCCESS_MESSAGE,
+        EmptyService.class,
+        false,
+        5000
     );
     daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();

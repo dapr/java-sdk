@@ -11,8 +11,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Command {
+
+  private static final int SUCCESS_WAIT_TIMEOUT_MINUTES = 5;
 
   private final String successMessage;
 
@@ -26,7 +30,8 @@ public class Command {
   }
 
   public void run() throws InterruptedException, IOException {
-    final Semaphore success = new Semaphore(0);
+    final AtomicBoolean success = new AtomicBoolean(false);
+    final Semaphore finished = new Semaphore(0);
     this.process = Runtime.getRuntime().exec(command);
 
     final Thread stdoutReader = new Thread(() -> {
@@ -38,11 +43,16 @@ public class Command {
               while ((line = br.readLine()) != null) {
                 System.out.println(line);
                 if (line.contains(successMessage)) {
-                  success.release();
+                  success.set(true);
+                  finished.release();
+                  // Keep running
                 }
               }
             }
           }
+        }
+        if (!success.get()) {
+          finished.release();
         }
       } catch (IOException ex) {
         throw new RuntimeException(ex);
@@ -51,6 +61,9 @@ public class Command {
 
     stdoutReader.start();
     // Waits for success to happen within 1 minute.
-    success.tryAcquire(1, TimeUnit.MINUTES);
+    finished.tryAcquire(SUCCESS_WAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+    if (!success.get()) {
+      throw new RuntimeException("Could find success criteria for command: " + command);
+    }
   }
 }

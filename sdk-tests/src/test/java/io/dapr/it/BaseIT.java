@@ -5,37 +5,40 @@
 
 package io.dapr.it;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.logging.LogManager;
+import org.junit.AfterClass;
 
 public abstract class BaseIT {
 
   private static final Collection<DaprRun> DAPR_RUNS = new ArrayList<>();
 
   protected static DaprRun startDaprApp(
-      String successMessage, Class serviceClass, Boolean useAppPort, int maxWaitMilliseconds) throws Exception {
-    return startDaprApp(successMessage, serviceClass, useAppPort, true, maxWaitMilliseconds);
+      String testName,
+      String successMessage,
+      Class serviceClass,
+      Boolean useAppPort,
+      int maxWaitMilliseconds) throws Exception {
+    return startDaprApp(testName, successMessage, serviceClass, useAppPort, true, maxWaitMilliseconds);
   }
 
   protected static DaprRun startDaprApp(
-      String successMessage, Class serviceClass, Boolean useAppPort, Boolean useDaprPorts, int maxWaitMilliseconds) throws Exception {
+      String testName,
+      String successMessage,
+      Class serviceClass,
+      Boolean useAppPort,
+      Boolean useDaprPorts,
+      int maxWaitMilliseconds) throws Exception {
     DaprRun run = new DaprRun(
+        testName,
         DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
         successMessage,
         serviceClass,
         maxWaitMilliseconds);
+    DAPR_RUNS.add(run);
     run.start();
     run.use();
     return run;
-  }
-
-  @BeforeClass
-  public static void setup() {
-    LogManager.getLogManager().reset();
   }
 
   @AfterClass

@@ -26,7 +26,6 @@ import static org.junit.Assert.fail;
 /**
  * Service for input and output binding example.
  */
-@Ignore("This IT does not work since Dapr does not listen to the http port.")
 public class BindingIT extends BaseIT {
 
   public static class MyClass {
@@ -41,10 +40,15 @@ public class BindingIT extends BaseIT {
     System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
     DaprRun daprRunInputBinding = startDaprApp(
-        "dapr initialized. Status: Running. Init Elapsed",
+        this.getClass().getSimpleName(),
+        InputBindingService.SUCCESS_MESSAGE,
         InputBindingService.class,
         true,
         60000);
+    // At this point, it is guaranteed that the service aboce is running and all ports being listened to.
+    // TODO: figure out why this wait is needed for this scenario to work end-to-end. Kafka not up yet?
+    Thread.sleep(120000);
+
     DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
 
     final String BINDING_NAME = "sample123";
@@ -69,14 +73,14 @@ public class BindingIT extends BaseIT {
       assertEquals(2, messages.size());
       MyClass resultClass = null;
       try {
-        resultClass = new ObjectMapper().readValue(new String(Base64.getDecoder().decode(messages.get(0))), MyClass.class);
+        resultClass = new ObjectMapper().readValue(messages.get(0), MyClass.class);
       } catch (Exception ex) {
         ex.printStackTrace();
         fail("Error on decode message 1");
       }
 
       try {
-        assertEquals("cat", new ObjectMapper().readValue(new String(Base64.getDecoder().decode(messages.get(1))), String.class));
+        assertEquals("cat", new ObjectMapper().readValue(messages.get(1), String.class));
       } catch (Exception ex) {
         ex.printStackTrace();
         fail("Error on decode message 2");

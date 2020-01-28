@@ -11,6 +11,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = {"io.dapr.it.binding.http"})
 public class InputBindingService {
 
+  public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running. Init Elapsed";
+
   public static void main(String[] args) throws Exception {
     // If port string is not valid, it will throw an exception.
     int port = Integer.parseInt(args[0]);

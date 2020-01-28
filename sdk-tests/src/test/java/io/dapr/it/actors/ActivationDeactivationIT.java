@@ -9,22 +9,21 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
-import io.dapr.it.services.EmptyService;
 import io.dapr.it.actors.services.springboot.ActorService;
+import io.dapr.it.services.EmptyService;
 import io.dapr.serializer.DefaultObjectSerializer;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-@Ignore("Flaky. Sometimes it fails because cannot find actor type when invoking.")
 public class ActivationDeactivationIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActivationDeactivationIT.class);
@@ -33,16 +32,24 @@ public class ActivationDeactivationIT extends BaseIT {
   public static void init() throws Exception {
     // The call below will fail if service cannot start successfully.
     startDaprApp(
-      "actors: established connection to placement service at localhost",
-      ActorService.class,
-      true,
-      60000);
+        ActivationDeactivationIT.class.getSimpleName(),
+        ActorService.SUCCESS_MESSAGE,
+        ActorService.class,
+        true,
+        60000);
   }
 
   @Test
   public void activateInvokeDeactivate() throws Exception {
     // The call below will fail if service cannot start successfully.
-    startDaprApp("BUILD SUCCESS", EmptyService.class, false, 20000);
+    startDaprApp(
+        this.getClass().getSimpleName(),
+        EmptyService.SUCCESS_MESSAGE,
+        EmptyService.class,
+        false,
+        20000);
+    // TODO: Figure out why this wait is needed to make the actor calls work. Where is the delay coming from?
+    Thread.sleep(120000);
 
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     String actorType = "DemoActorTest";
@@ -55,11 +62,11 @@ public class ActivationDeactivationIT extends BaseIT {
     ActorProxy proxy = proxyBuilder.build(actorId1);
 
     callWithRetry(() -> {
-        logger.debug("Invoking Say from Proxy");
-        String sayResponse = proxy.invokeActorMethod("say", "message", String.class).block();
-        logger.debug("asserting not null response: [" + sayResponse + "]");
-        assertNotNull(sayResponse);
-      }, 60000);
+      logger.debug("Invoking Say from Proxy");
+      String sayResponse = proxy.invokeActorMethod("say", "message", String.class).block();
+      logger.debug("asserting not null response: [" + sayResponse + "]");
+      assertNotNull(sayResponse);
+    }, 60000);
 
     logger.debug("Retrieving active Actors");
     List<String> activeActors = proxy.invokeActorMethod("retrieveActiveActors", null, List.class).block();

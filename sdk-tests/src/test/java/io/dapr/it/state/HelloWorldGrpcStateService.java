@@ -23,6 +23,8 @@ import io.grpc.ManagedChannelBuilder;
  */
 public class HelloWorldGrpcStateService {
 
+  public static final String SUCCESS_MESSAGE = "Hello from " + HelloWorldGrpcStateService.class.getSimpleName();
+
   public static void main(String[] args) {
     String grpcPort = System.getenv("DAPR_GRPC_PORT");
 
@@ -46,5 +48,7 @@ public class HelloWorldGrpcStateService {
     client.saveState(state);
     System.out.println("Saved!");
     channel.shutdown();
+
+    System.out.println(SUCCESS_MESSAGE);
   }
 }

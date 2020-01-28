@@ -10,6 +10,8 @@ import io.dapr.serializer.DefaultObjectSerializer;
 
 public class ActorService {
 
+  public static final String SUCCESS_MESSAGE = "actors: established connection to placement service at localhost";
+
   /**
    * Starts the service.
    *

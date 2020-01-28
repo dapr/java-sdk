@@ -12,25 +12,19 @@ import io.dapr.it.DaprRun;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class HelloWorldClientIT extends BaseIT {
 
-  private static DaprRun daprRun;
-
-  @BeforeClass
-  public static void init() throws Exception {
-    daprRun = startDaprApp(
-      "BUILD SUCCESS",
-      HelloWorldGrpcStateService.class,
-      false,
-      2000
-    );
-  }
-
   @Test
-  public void testHelloWorldState() {
+  public void testHelloWorldState() throws Exception {
+    DaprRun daprRun = startDaprApp(
+        HelloWorldClientIT.class.getSimpleName(),
+        HelloWorldGrpcStateService.SUCCESS_MESSAGE,
+        HelloWorldGrpcStateService.class,
+        false,
+        2000
+    );
     ManagedChannel channel =
       ManagedChannelBuilder.forAddress("localhost", daprRun.getGrpcPort()).usePlaintext().build();
     DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);

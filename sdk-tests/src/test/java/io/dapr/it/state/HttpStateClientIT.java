@@ -31,10 +31,11 @@ public class HttpStateClientIT extends BaseIT {
   @BeforeClass
   public static void init() throws Exception {
     daprRun = startDaprApp(
-      "BUILD SUCCESS",
-      EmptyService.class,
-      false,
-      1000
+        HttpStateClientIT.class.getSimpleName(),
+        EmptyService.SUCCESS_MESSAGE,
+        EmptyService.class,
+        false,
+        1000
     );
   }
 
