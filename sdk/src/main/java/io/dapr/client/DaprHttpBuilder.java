@@ -4,7 +4,7 @@
  */
 package io.dapr.client;
 
-import io.dapr.utils.Constants;
+import io.dapr.utils.Properties;
 import okhttp3.OkHttpClient;
 
 import java.time.Duration;
@@ -15,11 +15,6 @@ import java.time.Duration;
 public class DaprHttpBuilder {
 
     /**
-     * Default port for Dapr after checking environment variable.
-     */
-    private static final int PORT = DaprHttpBuilder.getEnvPortOrDefault();
-
-    /**
      * Read timeout for http calls.
      */
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(60);
@@ -28,26 +23,6 @@ public class DaprHttpBuilder {
      * Read timeout used to build object.
      */
     private Duration readTimeout = DEFAULT_READ_TIMEOUT;
-
-    /**
-     * Tries to get a valid port from environment variable or returns default.
-     *
-     * @return Port defined in env variable or default.
-     */
-    private static int getEnvPortOrDefault() {
-        String envPort = System.getenv(Constants.ENV_DAPR_HTTP_PORT);
-        if (envPort == null || envPort.trim().isEmpty()) {
-            return Constants.DEFAULT_HTTP_PORT;
-        }
-
-        try {
-            return Integer.parseInt(envPort.trim());
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-        }
-
-        return Constants.DEFAULT_HTTP_PORT;
-    }
 
     /**
      * Sets the read timeout duration for the instance to be built.
@@ -79,6 +54,6 @@ public class DaprHttpBuilder {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         builder.readTimeout(DEFAULT_READ_TIMEOUT);
         OkHttpClient okHttpClient = builder.build();
-        return new DaprHttp(PORT, okHttpClient);
+        return new DaprHttp(Properties.HTTP_PORT.get(), okHttpClient);
     }
 }

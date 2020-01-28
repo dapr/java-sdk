@@ -28,7 +28,7 @@ import java.util.Map;
  * @see io.dapr.DaprGrpc
  * @see io.dapr.client.DaprClient
  */
-class DaprClientGrpcAdapter implements DaprClient {
+public class DaprClientGrpcAdapter implements DaprClient {
 
   /**
    * The GRPC client to be used

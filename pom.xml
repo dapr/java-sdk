@@ -119,6 +119,7 @@
               <goal>verify</goal>
             </goals>
             <configuration>
+              <!--suppress UnresolvedMavenProperty -->
               <skip>${skipITs}</skip>
             </configuration>
           </execution>

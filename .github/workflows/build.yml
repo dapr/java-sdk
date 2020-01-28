@@ -40,16 +40,18 @@ jobs:
         dapr --version
     - name: Install Local kafka using docker-compose
       run: |
-        docker-compose -f ./sdk/src/test/java/io/dapr/it/deploy/local-test-kafka.yml up -d
+        docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
         docker ps
     - name: Clean up files
       run: mvn clean
     - name: Build sdk
-      run: mvn compile
-    - name: Unit-test
-      run: mvn test
-    - name: Integration-test
-      run: mvn integration-test
+      run: mvn compile -q
+    - name: Unit tests
+      run: mvn test -q
+    - name: Install jars
+      run: mvn install -q
+    - name: Integration tests
+      run: mvn -f sdk-tests/pom.xml verify -q
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
@@ -60,8 +62,6 @@ jobs:
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
-    - name: Packaging jars
-      run: mvn package
     - name: Get pom parent version
       run: |
         PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)

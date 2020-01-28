@@ -8,6 +8,7 @@ import io.dapr.DaprGrpc;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
+import io.dapr.utils.Properties;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import okhttp3.OkHttpClient;
@@ -17,18 +18,6 @@ import okhttp3.OkHttpClient;
  * Currently only and HTTP Client will be supported.
  */
 public class DaprClientBuilder {
-
-    /**
-     * HTTP port for Dapr after checking environment variable.
-     */
-    private static final int HTTP_PORT = DaprClientBuilder.getEnvHttpPortOrDefault(
-      Constants.ENV_DAPR_HTTP_PORT, Constants.DEFAULT_HTTP_PORT);
-
-    /**
-     * GRPC port for Dapr after checking environment variable.
-     */
-    private static final int GRPC_PORT = DaprClientBuilder.getEnvHttpPortOrDefault(
-      Constants.ENV_DAPR_GRPC_PORT, Constants.DEFAULT_GRPC_PORT);
 
     /**
      * Serializer used for request and response objects in DaprClient.
@@ -41,26 +30,9 @@ public class DaprClientBuilder {
     private final DaprObjectSerializer stateSerializer;
 
     /**
-     * Finds the port defined by env variable or sticks to default.
-     * @param envName Name of env variable with the port.
-     * @param defaultPort Default port if cannot find a valid port.
-     *
-     * @return Port from env variable or default.
+     * Determine if this builder will create GRPC clients instead of HTTP clients.
      */
-    private static int getEnvHttpPortOrDefault(String envName, int defaultPort) {
-        String envPort = System.getenv(envName);
-        if (envPort == null || envPort.trim().isEmpty()) {
-            return defaultPort;
-        }
-
-        try {
-            return Integer.parseInt(envPort.trim());
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-        }
-
-        return defaultPort;
-    }
+    private final boolean useGRPC;
 
     /**
      * Creates a constructor for DaprClient.
@@ -80,6 +52,7 @@ public class DaprClientBuilder {
 
         this.objectSerializer = objectSerializer;
         this.stateSerializer = stateSerializer;
+        this.useGRPC = Properties.USE_GRPC.get();
     }
 
     /**
@@ -89,6 +62,10 @@ public class DaprClientBuilder {
      * @throws java.lang.IllegalStateException if any required field is missing
      */
     public DaprClient build() {
+        if (this.useGRPC) {
+            return buildDaprClientGrpc();
+        }
+
         return buildDaprClientHttp();
     }
 
@@ -99,10 +76,11 @@ public class DaprClientBuilder {
      * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
      */
     private DaprClient buildDaprClientGrpc() {
-        if (GRPC_PORT <= 0) {
+        int port = Properties.GRPC_PORT.get();
+        if (port <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, GRPC_PORT).usePlaintext().build();
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, port).usePlaintext().build();
         return new DaprClientGrpcAdapter(DaprGrpc.newFutureStub(channel), this.objectSerializer, this.stateSerializer);
     }
 
@@ -112,11 +90,12 @@ public class DaprClientBuilder {
      * @return DaprClient over HTTP.
      */
     private DaprClient buildDaprClientHttp() {
-        if (HTTP_PORT <= 0) {
+        int port = Properties.HTTP_PORT.get();
+        if (port <= 0) {
             throw new IllegalStateException("Invalid port.");
         }
         OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
-        DaprHttp daprHttp = new DaprHttp(HTTP_PORT, okHttpClient);
+        DaprHttp daprHttp = new DaprHttp(port, okHttpClient);
         return new DaprClientHttpAdapter(daprHttp, this.objectSerializer, this.stateSerializer);
     }
 }
