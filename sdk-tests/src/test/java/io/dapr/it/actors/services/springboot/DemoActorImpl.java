@@ -50,6 +50,20 @@ public class DemoActorImpl extends AbstractActor implements DemoActor {
   }
 
   @Override
+  public void writeMessage(String something) {
+    super.getActorStateManager().set("message", something).block();
+  }
+
+  @Override
+  public String readMessage() {
+    if (super.getActorStateManager().contains("message").block()) {
+      return super.getActorStateManager().get("message", String.class).block();
+    }
+
+    return null;
+  }
+
+  @Override
   protected Mono<Void> onActivate() {
     return Mono.fromRunnable(() -> ACTIVE_ACTOR.add(super.getId().toString())).then(super.onActivate());
   }
