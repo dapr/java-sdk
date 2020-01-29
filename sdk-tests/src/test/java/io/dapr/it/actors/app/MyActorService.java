@@ -6,7 +6,6 @@
 package io.dapr.it.actors.app;
 
 import io.dapr.actors.runtime.ActorRuntime;
-import io.dapr.serializer.DefaultObjectSerializer;
 
 public class MyActorService {
   public static final String SUCCESS_MESSAGE = "actors: established connection to placement service at localhost";
@@ -20,7 +19,7 @@ public class MyActorService {
     System.out.println("Hello from main() MyActorService");
 
     long port = Long.parseLong(args[0]);
-    ActorRuntime.getInstance().registerActor(MyActorImpl.class, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    ActorRuntime.getInstance().registerActor(MyActorImpl.class);
 
     TestApplication.start(port);
   }
