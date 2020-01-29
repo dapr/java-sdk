@@ -39,7 +39,7 @@ public class OrderManager {
     HttpServer httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
 
     DaprClient daprClient =
-      (new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer())).build();
+      (new DaprClientBuilder()).build();
 
     httpServer.createContext("/order").setHandler(e -> {
       out.println("Fetching order!");

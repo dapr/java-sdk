@@ -35,7 +35,7 @@ public class DemoActorClient {
   private static final ExecutorService POOL = Executors.newFixedThreadPool(NUM_ACTORS);
 
   public static void main(String[] args) throws Exception {
-    ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor", new DefaultObjectSerializer());
+    ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor");
 
     List<CompletableFuture<Void>> futures = new ArrayList<>(NUM_ACTORS);
 

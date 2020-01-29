@@ -3,6 +3,7 @@ package io.dapr.actors.client;
 import io.dapr.actors.ActorId;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 
 /**
  * Builder to generate an ActorProxy instance. Builder can be reused for multiple instances.
@@ -22,24 +23,37 @@ public class ActorProxyBuilder {
   /**
    * Dapr's object serializer.
    */
-  private final DaprObjectSerializer objectSerializer;
+  private DaprObjectSerializer objectSerializer;
 
   /**
-   * Instantiates a new builder for a given Actor type.
+   * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer} by default.
+   *
+   * {@link DefaultObjectSerializer} is not recommended for production scenarios.
    *
    * @param actorType        Actor's type.
-   * @param objectSerializer Serializer for objects sent/received.
    */
-  public ActorProxyBuilder(String actorType, DaprObjectSerializer objectSerializer) {
+  public ActorProxyBuilder(String actorType) {
     if ((actorType == null) || actorType.isEmpty()) {
       throw new IllegalArgumentException("ActorType is required.");
     }
+
+    this.actorType = actorType;
+    this.objectSerializer = new DefaultObjectSerializer();
+  }
+
+  /**
+   * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer}.
+   *
+   * @param objectSerializer Serializer for objects sent/received.
+   * @return This instance.
+   */
+  public ActorProxyBuilder withObjectSerializer(DaprObjectSerializer objectSerializer) {
     if (objectSerializer == null) {
       throw new IllegalArgumentException("Serializer is required.");
     }
 
-    this.actorType = actorType;
     this.objectSerializer = objectSerializer;
+    return this;
   }
 
   /**

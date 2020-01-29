@@ -30,7 +30,7 @@ This example implements a service listening on port 3000, while using Dapr's sta
 
 ```
     DaprClient daprClient =
-      (new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer())).build();
+      (new DaprClientBuilder()).build();
 
     httpServer.createContext("/order").setHandler(e -> {
       out.println("Fetching order!");
