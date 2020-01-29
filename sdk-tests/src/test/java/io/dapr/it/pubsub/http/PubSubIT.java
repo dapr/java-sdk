@@ -40,7 +40,7 @@ public class PubSubIT extends BaseIT {
                 60000);
         // At this point, it is guaranteed that the service above is running and all ports being listened to.
 
-        DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+        DaprClient client = new DaprClientBuilder().build();
         for (int i = 0; i < NUM_MESSAGES; i++) {
             String message = String.format("This is message #%d", i);
             //Publishing messages
