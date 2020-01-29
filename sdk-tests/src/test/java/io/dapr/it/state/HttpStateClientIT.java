@@ -545,7 +545,7 @@ public class HttpStateClientIT extends BaseIT {
   }
 
   private static DaprClient buildDaprClient() {
-    return new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    return new DaprClientBuilder().build();
   }
 
 }

@@ -106,7 +106,7 @@ public class InvokeClient {
 private static final String SERVICE_APP_ID = "invokedemo";
 ///...
   public static void main(String[] args) {
-    DaprClient client = (new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer())).build();
+    DaprClient client = (new DaprClientBuilder()).build();
     for (String message : args) {
       client.invokeService(Verb.POST, SERVICE_APP_ID, "say", message, null, String.class).block();
     }

@@ -27,7 +27,7 @@ public class Publisher {
 
   public static void main(String[] args) throws Exception {
     //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
-    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    DaprClient client = new DaprClientBuilder().build();
     for (int i = 0; i < NUM_MESSAGES; i++) {
       String message = String.format("This is message #%d", i);
       //Publishing messages
