@@ -8,15 +8,13 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-
-import io.dapr.it.actors.app.MyActorService;
-import io.dapr.it.BaseIT;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpBuilder;
+import io.dapr.it.BaseIT;
+import io.dapr.it.actors.app.MyActorService;
 import io.dapr.utils.Constants;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -85,7 +82,8 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     Thread.sleep(2000);
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
-    ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType, serializer);
+
+    ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType);
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(ACTOR_ID);
     logger.debug("Building proxy");
@@ -147,6 +145,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logs = getAppMethodCallLogs(proxy);
     validateEventNotObserved(logs, "stopTimer", "clock");
     validateEventNotObserved(logs, "stopReminder", "receiveReminder");
+
   }
 
   ArrayList<MethodEntryTracker> getAppMethodCallLogs(ActorProxy proxy) {
