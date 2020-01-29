@@ -13,7 +13,6 @@ import io.dapr.it.actors.app.MyActorService;
 import io.dapr.it.BaseIT;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpBuilder;
-import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
 import org.junit.After;
 import org.junit.Assert;
@@ -41,8 +40,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   private static final AtomicInteger atomicInteger = new AtomicInteger(1);
 
   private final String BASE_URL = "actors/%s/%s";
-
-  private final DefaultObjectSerializer serializer = new DefaultObjectSerializer();
 
   private final String ACTOR_TYPE = "MyActorTest";
   private final String REMINDER_NAME = UUID.randomUUID().toString();
@@ -87,7 +84,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
     Thread.sleep(2000);
     String actorType="MyActorTest";
-    DefaultObjectSerializer serializer = new DefaultObjectSerializer();
     logger.debug("Creating proxy builder");
     ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType, serializer);
     logger.debug("Creating actorId");
