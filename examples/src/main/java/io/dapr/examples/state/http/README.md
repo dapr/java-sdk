@@ -29,66 +29,51 @@ mvn install
 This example implements a service listening on port 3000, while using Dapr's state store via port 3500. Its API also offers two methods: `/order` and `/neworder`. Calls to '/order' will fetch the state from Dapr's state store:
 
 ```
-        String stateUrl = String.format("http://localhost:%s/v1.0/state", daprPort);
-        /// ...
-        httpServer.createContext("/order").setHandler(e -> {
-            out.println("Fetching order!");
-            fetch(stateUrl + "/order").thenAccept(response -> {
-                int resCode = response.statusCode() == 200 ? 200 : 500;
-                String body = response.statusCode() == 200 ? response.body() : "Could not get state.";
+    DaprClient daprClient =
+      (new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer())).build();
 
-                try {
-                    e.sendResponseHeaders(resCode, body.getBytes().length);
-                    OutputStream os = e.getResponseBody();
-                    try {
-                        os.write(body.getBytes());
-                    } finally {
-                        os.close();
-                    }
-                } catch (IOException ioerror) {
-                    out.println(ioerror);
-                }
-            });
-        });
+    httpServer.createContext("/order").setHandler(e -> {
+      out.println("Fetching order!");
+        try {
+          byte[] data = daprClient.getState("order", String.class).block().getValue().getBytes();
+          e.getResponseHeaders().set("content-type", "application/json");
+          e.sendResponseHeaders(200, data.length);
+          e.getResponseBody().write(data);
+          e.getResponseBody().close();
+        } catch (IOException ioerror) {
+          out.println(ioerror);
+          e.sendResponseHeaders(500, ioerror.getMessage().getBytes().length);
+          e.getResponseBody().write(ioerror.getMessage().getBytes());
+          e.getResponseBody().close();
+        }
+    });
 ```
 
 Calls to `/neworder` will persist a new state do Dapr's state store:
 ```
-        httpServer.createContext("/neworder").setHandler(e -> {
-            try {
-                out.println("Received new order ...");
-                String json = readBody(e);
-                JSONObject jsonObject = new JSONObject(json);
-                JSONObject data = jsonObject.getJSONObject("data");
-                String orderId = data.getString("orderId");
-                out.printf("Got a new order! Order ID: %s\n", orderId);
+    httpServer.createContext("/neworder").setHandler(e -> {
+      try {
+        out.println("Received new order ...");
+        String json = readBody(e);
 
-                JSONObject item = new JSONObject();
-                item.put("key", "order");
-                item.put("value", data);
-                JSONArray state = new JSONArray();
-                state.put(item);
-                out.printf("Writing to state: %s\n", state.toString());
+        JsonNode jsonObject = OBJECT_MAPPER.readTree(json);
+        JsonNode data = jsonObject.get("data");
+        String orderId = data.get("orderId").asText();
+        out.printf("Got a new order! Order ID: %s\n", orderId);
 
-                post(stateUrl, state.toString()).thenAccept(response -> {
-                    int resCode = response.statusCode() == 200 ? 200 : 500;
-                    String body = response.body();
-                    try {
-                        e.sendResponseHeaders(resCode, body.getBytes().length);
-                        OutputStream os = e.getResponseBody();
-                        try {
-                            os.write(body.getBytes());
-                        } finally {
-                            os.close();
-                        }
-                    } catch (IOException ioerror) {
-                        out.println(ioerror);
-                    }
-                });
-            } catch (IOException ioerror) {
-                out.println(ioerror);
-            }
-        });
+        daprClient.saveState("order", data.toString()).block();
+
+        out.printf("Saved state: %s\n", data.toString());
+        e.sendResponseHeaders(200, 0);
+        e.getResponseBody().write(new byte[0]);
+        e.getResponseBody().close();
+      } catch (IOException ioerror) {
+        out.println(ioerror);
+        e.sendResponseHeaders(500, ioerror.getMessage().getBytes().length);
+        e.getResponseBody().write(ioerror.getMessage().getBytes());
+        e.getResponseBody().close();
+      }
+    });
 ```
 
 ### Running the example

@@ -307,7 +307,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    */
   @Override
   public Mono<Void> deleteState(String key) {
-    return this.deleteState(key);
+    return this.deleteState(key, null, null);
   }
 
   /**
