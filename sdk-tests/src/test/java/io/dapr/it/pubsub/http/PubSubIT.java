@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 package io.dapr.it.pubsub.http;
 
 import io.dapr.client.DaprClient;
@@ -19,12 +24,12 @@ public class PubSubIT extends BaseIT {
 
     //Number of messages to be sent: 10
     private static final int NUM_MESSAGES = 10;
+    
     //The title of the topic to be used for publishing
     private static final String TOPIC_NAME = "testingtopic";
 
     @Test
     public void testPubSub() throws Exception {
-
         System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
         final DaprRun daprRun = startDaprApp(
@@ -35,7 +40,6 @@ public class PubSubIT extends BaseIT {
                 60000);
         // At this point, it is guaranteed that the service above is running and all ports being listened to.
 
-
         DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
         for (int i = 0; i < NUM_MESSAGES; i++) {
             String message = String.format("This is message #%d", i);
@@ -43,27 +47,17 @@ public class PubSubIT extends BaseIT {
             client.publishEvent(TOPIC_NAME, message).block();
             System.out.println("Published message: " + message);
 
-            try {
-                Thread.sleep((long)(1000 * Math.random()));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                return;
-            }
+            Thread.sleep((long)(1000 * Math.random()));
         }
 
-        //Publishing a single bite: Example of non-string based content published
+        //Publishing a single byte: Example of non-string based content published
         client.publishEvent(
                 TOPIC_NAME,
                 new byte[] { 1 },
                 Collections.singletonMap("content-type", "application/octet-stream")).block();
         System.out.println("Published one byte.");
 
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return;
-        }
+        Thread.sleep(3000);
 
         callWithRetry(() -> {
             System.out.println("Checking results ...");
@@ -72,12 +66,12 @@ public class PubSubIT extends BaseIT {
 
             for (int i = 0; i < NUM_MESSAGES; i++) {
 
-                    assertTrue( messages.get(i).startsWith("This is message "));
+                    assertTrue(messages.get(i).startsWith("This is message "));
 
             }
             byte[] result=new byte[] { 1 };
-            assertEquals( result.length,messages.get(10).getBytes().length);
-            assertEquals(result[0],messages.get(10).getBytes()[0]);
+            assertEquals(result.length, messages.get(10).getBytes().length);
+            assertEquals(result[0], messages.get(10).getBytes()[0]);
 
         }, 2000);
     }
