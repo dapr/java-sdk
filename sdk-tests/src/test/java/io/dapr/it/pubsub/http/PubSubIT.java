@@ -46,8 +46,6 @@ public class PubSubIT extends BaseIT {
             //Publishing messages
             client.publishEvent(TOPIC_NAME, message).block();
             System.out.println("Published message: " + message);
-
-            Thread.sleep((long)(1000 * Math.random()));
         }
 
         //Publishing a single byte: Example of non-string based content published
