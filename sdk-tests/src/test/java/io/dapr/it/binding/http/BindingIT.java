@@ -49,7 +49,7 @@ public class BindingIT extends BaseIT {
     // TODO: figure out why this wait is needed for this scenario to work end-to-end. Kafka not up yet?
     Thread.sleep(120000);
 
-    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    DaprClient client = new DaprClientBuilder().build();
 
     final String BINDING_NAME = "sample123";
 

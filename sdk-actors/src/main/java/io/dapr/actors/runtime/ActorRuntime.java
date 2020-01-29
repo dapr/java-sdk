@@ -9,6 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -109,6 +110,31 @@ public class ActorRuntime {
   }
 
   /**
+   * Registers an actor with the runtime, using {@link DefaultObjectSerializer} and {@link DefaultActorFactory}.
+   *
+   * {@link DefaultObjectSerializer} is not recommended for production scenarios.
+   *
+   * @param clazz            The type of actor.
+   * @param <T>              Actor class type.
+   */
+  public <T extends AbstractActor> void registerActor(Class<T> clazz) {
+    registerActor(clazz, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+  }
+
+  /**
+   * Registers an actor with the runtime, using {@link DefaultObjectSerializer}.
+   *
+   * {@link DefaultObjectSerializer} is not recommended for production scenarios.
+   *
+   * @param clazz            The type of actor.
+   * @param actorFactory     An optional factory to create actors. This can be used for dependency injection.
+   * @param <T>              Actor class type.
+   */
+  public <T extends AbstractActor> void registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
+    registerActor(clazz, actorFactory, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+  }
+
+  /**
    * Registers an actor with the runtime.
    *
    * @param clazz            The type of actor.
@@ -118,7 +144,7 @@ public class ActorRuntime {
    */
   public <T extends AbstractActor> void registerActor(
         Class<T> clazz, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
-    registerActor(clazz, null, objectSerializer, stateSerializer);
+    registerActor(clazz,  new DefaultActorFactory<T>(), objectSerializer, stateSerializer);
   }
 
   /**
@@ -137,21 +163,22 @@ public class ActorRuntime {
     if (clazz == null) {
       throw new IllegalArgumentException("Class is required.");
     }
+    if (actorFactory == null) {
+      throw new IllegalArgumentException("Actor factory is required.");
+    }
     if (objectSerializer == null) {
-      throw new IllegalArgumentException("Serializer is required.");
+      throw new IllegalArgumentException("Object serializer is required.");
     }
     if (stateSerializer == null) {
-      throw new IllegalArgumentException("State objectSerializer is required.");
+      throw new IllegalArgumentException("State serializer is required.");
     }
 
     ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
-    ActorFactory<T> actualActorFactory = actorFactory != null ? actorFactory : new DefaultActorFactory<T>();
-
     ActorRuntimeContext<T> context = new ActorRuntimeContext<>(
           this,
           objectSerializer,
-          actualActorFactory,
+          actorFactory,
           actorTypeInfo,
           this.daprClient,
           new DaprStateAsyncProvider(this.daprClient, stateSerializer));

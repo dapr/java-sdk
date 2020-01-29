@@ -88,7 +88,7 @@ public class Publisher {
     private static final String TOPIC_NAME = "testingtopic";
 ///...
   public static void main(String[] args) throws Exception {
-    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    DaprClient client = new DaprClientBuilder().build();
     for (int i = 0; i < NUM_MESSAGES; i++) {
       String message = String.format("This is message #%d", i);
       client.publishEvent(TOPIC_NAME, message).block();

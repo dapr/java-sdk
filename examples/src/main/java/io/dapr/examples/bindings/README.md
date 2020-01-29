@@ -101,7 +101,7 @@ In the `OutputBindingExample.java` file, you will find the `OutputBindingExample
 public class OutputBindingExample {
 ///...
   public static void main(String[] args) throws Exception {
-    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    DaprClient client = new DaprClientBuilder().build();
     final String BINDING_NAME = "bindingSample";
     ///...
     MyClass myClass = new MyClass();

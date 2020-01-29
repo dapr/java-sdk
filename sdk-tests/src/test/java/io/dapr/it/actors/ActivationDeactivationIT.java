@@ -53,9 +53,8 @@ public class ActivationDeactivationIT extends BaseIT {
 
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     String actorType = "DemoActorTest";
-    DefaultObjectSerializer serializer = new DefaultObjectSerializer();
     logger.debug("Creating proxy builder");
-    ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType, serializer);
+    ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType);
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     logger.debug("Building proxy");

@@ -25,7 +25,7 @@ public class OutputBindingExample {
   }
 
   public static void main(String[] args) {
-    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    DaprClient client = new DaprClientBuilder().build();
 
     final String BINDING_NAME = "bindingSample";
 

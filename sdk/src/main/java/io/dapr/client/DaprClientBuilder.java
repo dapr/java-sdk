@@ -20,39 +20,64 @@ import okhttp3.OkHttpClient;
 public class DaprClientBuilder {
 
     /**
-     * Serializer used for request and response objects in DaprClient.
-     */
-    private final DaprObjectSerializer objectSerializer;
-
-    /**
-     * Serializer used for state objects in DaprClient.
-     */
-    private final DaprObjectSerializer stateSerializer;
-
-    /**
      * Determine if this builder will create GRPC clients instead of HTTP clients.
      */
     private final boolean useGRPC;
 
     /**
+     * Serializer used for request and response objects in DaprClient.
+     */
+    private DaprObjectSerializer objectSerializer;
+
+    /**
+     * Serializer used for state objects in DaprClient.
+     */
+    private DaprObjectSerializer stateSerializer;
+
+    /**
      * Creates a constructor for DaprClient.
+     *
+     * {@link DefaultObjectSerializer} is used for object and state serializers by defaul but is not recommended
+     * for production scenarios.
+     */
+    public DaprClientBuilder() {
+        this.objectSerializer = new DefaultObjectSerializer();
+        this.stateSerializer = new DefaultObjectSerializer();
+        this.useGRPC = Properties.USE_GRPC.get();
+    }
+
+    /**
+     * Sets the serializer for objects to be sent and received from Dapr.
      *
      * See {@link DefaultObjectSerializer} as possible serializer for non-production scenarios.
      *
      * @param objectSerializer Serializer for objects to be sent and received from Dapr.
-     * @param stateSerializer Serializer for objects to be persisted.
+     * @return This instance.
      */
-    public DaprClientBuilder(DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
+    public DaprClientBuilder withObjectSerializer(DaprObjectSerializer objectSerializer) {
         if (objectSerializer == null) {
-            throw new IllegalArgumentException("Serializer is required");
+            throw new IllegalArgumentException("Object serializer is required");
         }
+
+        this.objectSerializer = objectSerializer;
+        return this;
+    }
+
+    /**
+     * Sets the serializer for objects to be persisted.
+     *
+     * See {@link DefaultObjectSerializer} as possible serializer for non-production scenarios.
+     *
+     * @param stateSerializer Serializer for objects to be persisted.
+     * @return This instance.
+     */
+    public DaprClientBuilder withStateSerializer(DaprObjectSerializer stateSerializer) {
         if (stateSerializer == null) {
             throw new IllegalArgumentException("State serializer is required");
         }
 
-        this.objectSerializer = objectSerializer;
         this.stateSerializer = stateSerializer;
-        this.useGRPC = Properties.USE_GRPC.get();
+        return this;
     }
 
     /**
