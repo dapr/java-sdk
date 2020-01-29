@@ -1,32 +1,18 @@
 package io.dapr.examples.state.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpClient.Version;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.Charset;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static java.lang.System.out;
 
@@ -45,6 +31,8 @@ import static java.lang.System.out;
  * mvn compile
  */
 public class OrderManager {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   public static void main(String[] args) throws IOException {
     int httpPort = 3001;
@@ -73,9 +61,10 @@ public class OrderManager {
       try {
         out.println("Received new order ...");
         String json = readBody(e);
-        JSONObject jsonObject = new JSONObject(json);
-        JSONObject data = jsonObject.getJSONObject("data");
-        String orderId = data.getString("orderId");
+
+        JsonNode jsonObject = OBJECT_MAPPER.readTree(json);
+        JsonNode data = jsonObject.get("data");
+        String orderId = data.get("orderId").asText();
         out.printf("Got a new order! Order ID: %s\n", orderId);
 
         daprClient.saveState("order", data.toString()).block();

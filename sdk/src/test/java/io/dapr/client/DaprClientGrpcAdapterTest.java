@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -929,9 +928,7 @@ public class DaprClientGrpcAdapterTest {
   }
 
   private final class MockCallback<T> implements FutureCallback<T> {
-    @Nullable
     private T value = null;
-    @Nullable
     private Throwable failure = null;
     private boolean wasCalled = false;
 
