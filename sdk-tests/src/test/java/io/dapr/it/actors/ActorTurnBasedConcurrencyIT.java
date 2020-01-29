@@ -65,11 +65,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
   }
 
-  @BeforeClass
-  public static void init() throws Exception {
-  }
-
-
   /**
    * Create an actor, register a timer and a reminder, then invoke additional actor method calls.
    * Validate turn-based concurrency by getting logs from the actor through an actor method, and asserting that:
@@ -160,7 +155,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
   ArrayList<MethodEntryTracker> getAppMethodCallLogs(ActorProxy proxy) {
     ArrayList<String> logs = proxy.invokeActorMethod("getCallLog", ArrayList.class).block();
-    System.out.println("here");
     ArrayList<MethodEntryTracker> trackers = new ArrayList<MethodEntryTracker>();
     for(String t : logs) {
       String[] toks = t.split("\\|");
@@ -197,7 +191,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     boolean flag = true;
     for (MethodEntryTracker s : logs) {
       if (s.getIsEnter() == flag) {
-        ; // correct, flip it
         flag = !flag;
       } else {
         String msg = "Error - Enter and Exit should alternate.  Incorrect entry: " + s.toString();
