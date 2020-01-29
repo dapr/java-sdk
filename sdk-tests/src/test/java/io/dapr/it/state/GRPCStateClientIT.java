@@ -42,7 +42,7 @@ public class GRPCStateClientIT extends BaseIT {
         5000
     );
     daprRun.switchToGRPC();
-    daprClient = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    daprClient = new DaprClientBuilder().build();
 
     assertTrue(daprClient instanceof DaprClientGrpcAdapter);
   }
