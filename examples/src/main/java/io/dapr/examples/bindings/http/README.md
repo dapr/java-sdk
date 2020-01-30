@@ -40,7 +40,7 @@ mvn install
 
 Before getting into the application code, follow these steps in order to setup a local instance of Kafka. This is needed for the local instances. Steps are:
 
-1. navigate to the [repo-root]/examples/src/main/java/io/dapr/examples/bindings
+1. navigate to the [repo-root]/examples/src/main/java/io/dapr/examples/bindings/http
 2. Run `docker-compose -f ./docker-compose-single-kafka.yml up -d` to run the container locally
 3. Run `docker ps` to see the container running locally: 
 
@@ -89,7 +89,7 @@ public class InputBindingController {
  Execute the follow script in order to run the Input Binding example:
 ```sh
 cd to [repo-root]/examples
-dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.InputBindingExample -D exec.args="-p 3000"
+dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.InputBindingExample -D exec.args="-p 3000"
 ```
 
 ### Running the Output binding sample
@@ -124,19 +124,19 @@ Use the follow command to execute the Output Binding example:
 
 ```sh
 cd to [repo-root]/examples
-dapr run --app-id outputbinding --port 3006 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.OutputBindingExample
+dapr run --app-id outputbinding --port 3006 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.OutputBindingExample
 ```
 
 Once running, the OutputBindingExample should print the output as follows:
 
-![publisheroutput](../../../../../resources/img/outputbinding.png)
+![publisheroutput](../../../../../../resources/img/outputbinding.png)
 
 Events have been sent.
 
 Once running, the InputBindingExample should print the output as follows:
 
-![publisheroutput](../../../../../resources/img/inputbinding.png)
+![publisherinput](../../../../../../resources/img/inputbinding.png)
 
 Events have been retrieved from the binding.
 
-For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../springboot/DaprApplication.java)  Application implementation.
+For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java)  Application implementation.

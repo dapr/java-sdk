@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.examples.bindings;
+package io.dapr.examples.bindings.http;
 
 import io.dapr.springboot.DaprApplication;
 import org.apache.commons.cli.CommandLine;

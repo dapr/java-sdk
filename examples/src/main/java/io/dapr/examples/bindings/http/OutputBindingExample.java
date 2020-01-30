@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.examples.bindings;
+package io.dapr.examples.bindings.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
