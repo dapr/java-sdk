@@ -6,10 +6,10 @@ Visit [this](https://github.com/dapr/docs/blob/master/concepts/actor/actor_overv
 
 This example contains the follow classes:
 
-* DemoActor: The interface for the actor. Exposes the different actor features
-* DemoActorImpl: The implementation for the DemoActor interface. Handles the logic behind the different actor features
-* DemoActorService: A Spring Boot application service that registers the actor into the Dapr actor runtime
-* DemoActorClient: This class will create and execute actors and its capabilities by using Dapr
+* DemoActor: The interface for the actor. Exposes the different actor features.
+* DemoActorImpl: The implementation for the DemoActor interface. Handles the logic behind the different actor features.
+* DemoActorService: A Spring Boot application service that registers the actor into the Dapr actor runtime.
+* DemoActorClient: This class will create and execute actors and its capabilities by using Dapr.
  
 ## Pre-requisites
 
@@ -56,10 +56,10 @@ public class DemoActorService {
 }
 ```
 
-This application uses `ActorRuntime.getInstance().registerActor` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted.
+This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Notice that this call passes in two serializer implementations: one is for Dapr's sent and received object and the other is for objects to be persisted.
  
 
-`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar feature is the one that performs the actual call to the controller. At the end of the main method, this class uses `SpringApplication.run` to boostrapping itself a an Spring application. 
+`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller. At the end of the main method, this class uses `SpringApplication.run()` to boostrap itself a an Spring application. 
 
 Execute the follow script in order to run the DemoActorService:
 ```sh
@@ -109,10 +109,9 @@ public class DemoActorClient {
 }
 ```
 
-First, The client defines how many actors it is going to create, as well as how many invocation calls it will perform per actor. Then the main method declares a `ActorProxyBuilder` for our `DemoActor` class for creating `ActorProxy` instances, which are the actor representation provided by the SDK. The code executes the `callActorNTimes` private method ten times per actor. This method executes functionality for the DemoActor implementation using `actor.invokeActorMethod` in the follow order: `registerReminder` which sets the due time and period for the reminder, `incrementAndGet` which increments a counter and will send it back as response, and finally `say` method wich will print a message containing the recieved string along with the formatted server time. See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of these methods. 
+First, The client defines how many actors it is going to create, as well as how many invocation calls it will perform per actor. Then the main method declares a `ActorProxyBuilder` for the `DemoActor` class for creating `ActorProxy` instances, which are the actor representation provided by the SDK. The code executes the `callActorNTimes` private method once per actor. This method executes functionality for the DemoActor implementation using `actor.invokeActorMethod()` in the follow order: `registerReminder()` which sets the due time and period for the reminder, `incrementAndGet()` which increments a counter, persists it and sends it back as response, and finally `say` method wich will print a message containing the received string along with the formatted server time. See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of these methods. 
 
-
-Use the follow command to execute the DemoActorClient
+Use the follow command to execute the DemoActorClient:
 
 ```sh
 cd to [repo-root]
@@ -129,8 +128,8 @@ Then we can see the `registerReminder` in action. `DemoActorClient` console disp
 After invoking `incrementAndGet`, the code invokes `say` method (you'll see these messages 10 times per each of the 3 actors):
 ![actordemo2](../../../../../../resources/img/demo-actor-client3.png)
 
-In the other hand, the console for `DemoActorService` is also responding to the remote invocations:
+On the other hand, the console for `DemoActorService` is also responding to the remote invocations:
 ![actordemo2](../../../../../../resources/img/demo-actor-service.png)
 
 
-For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../springboot/DaprApplication.java)  Application implementation.
+For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../springboot/DaprApplication.java)  Application implementation.
