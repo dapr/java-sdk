@@ -105,7 +105,7 @@ public class DaprClientBuilder {
       throw new IllegalStateException("Invalid port.");
     }
     ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, port).usePlaintext().build();
-    return new DaprClientGrpcAdapter(DaprGrpc.newFutureStub(channel), this.objectSerializer, this.stateSerializer);
+    return new DaprClientGrpc(DaprGrpc.newFutureStub(channel), this.objectSerializer, this.stateSerializer);
   }
 
   /**
@@ -120,6 +120,6 @@ public class DaprClientBuilder {
     }
     OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
     DaprHttp daprHttp = new DaprHttp(port, okHttpClient);
-    return new DaprClientHttpAdapter(daprHttp, this.objectSerializer, this.stateSerializer);
+    return new DaprClientHttp(daprHttp, this.objectSerializer, this.stateSerializer);
   }
 }
