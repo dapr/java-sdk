@@ -28,16 +28,16 @@ import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class DaprClientGrpcAdapterTest {
+public class DaprClientGrpcTest {
 
   private DaprGrpc.DaprFutureStub client;
-  private DaprClientGrpcAdapter adapter;
+  private DaprClientGrpc adapter;
   private ObjectSerializer serializer;
 
   @Before
   public void setup() {
     client = mock(DaprGrpc.DaprFutureStub.class);
-    adapter = new DaprClientGrpcAdapter(client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    adapter = new DaprClientGrpc(client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     serializer = new ObjectSerializer();
   }
 

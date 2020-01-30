@@ -30,7 +30,7 @@ import reactor.core.publisher.Mono;
  * @see io.dapr.DaprGrpc
  * @see io.dapr.client.DaprClient
  */
-public class DaprClientGrpcAdapter implements DaprClient {
+public class DaprClientGrpc implements DaprClient {
 
   /**
    * The GRPC client to be used.
@@ -57,7 +57,7 @@ public class DaprClientGrpcAdapter implements DaprClient {
    * @param stateSerializer  Serializer for state objects.
    * @see DaprClientBuilder
    */
-  DaprClientGrpcAdapter(
+  DaprClientGrpc(
       DaprGrpc.DaprFutureStub futureClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
