@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.examples.bindings;
+package io.dapr.examples.bindings.http;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
