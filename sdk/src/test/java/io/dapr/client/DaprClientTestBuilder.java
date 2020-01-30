@@ -16,6 +16,6 @@ public class DaprClientTestBuilder {
      * @return New instance of DaprClient.
      */
     public static DaprClient buildHttpClient(DaprHttp client) {
-        return new DaprClientHttpAdapter(client);
+        return new DaprClientHttp(client);
     }
 }

@@ -29,7 +29,7 @@ import reactor.core.publisher.Mono;
  * @see io.dapr.client.DaprHttp
  * @see io.dapr.client.DaprClient
  */
-public class DaprClientHttpAdapter implements DaprClient {
+public class DaprClientHttp implements DaprClient {
 
   /**
    * Serializer for internal objects.
@@ -67,7 +67,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    * @see DaprClientBuilder
    * @see DefaultObjectSerializer
    */
-  DaprClientHttpAdapter(DaprHttp client, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
+  DaprClientHttp(DaprHttp client, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
     this.client = client;
     this.objectSerializer = objectSerializer;
     this.stateSerializer = stateSerializer;
@@ -81,7 +81,7 @@ public class DaprClientHttpAdapter implements DaprClient {
    * @see io.dapr.client.DaprClientBuilder
    * @see DefaultObjectSerializer
    */
-  DaprClientHttpAdapter(DaprHttp client) {
+  DaprClientHttp(DaprHttp client) {
     this(client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
   }
 
