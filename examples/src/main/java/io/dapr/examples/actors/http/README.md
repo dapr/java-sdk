@@ -44,24 +44,65 @@ public class DemoActorService {
   public static void main(String[] args) throws Exception {
 	///...
     // Register the Actor class.
-    ActorRuntime.getInstance().registerActor(
-      DemoActorImpl.class, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    ActorRuntime.getInstance().registerActor(DemoActorImpl.class);
 
     // Start Dapr's callback endpoint.
     DaprApplication.start(port);
-
-    // Start application's endpoint.
-    SpringApplication.run(DemoActorService.class);
   }
 }
 ```
 
-This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Notice that this call passes in two serializer implementations: one is for Dapr's sent and received object and the other is for objects to be persisted.
+This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
  
 
-`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller. At the end of the main method, this class uses `SpringApplication.run()` to boostrap itself a an Spring application. 
+`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
 
-Execute the follow script in order to run the DemoActorService:
+See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of an actor:
+```java
+@ActorType(name = "DemoActor")
+public class DemoActorImpl extends AbstractActor implements DemoActor, Remindable<Integer> {
+  //...
+
+  public DemoActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+    super(runtimeContext, id);
+    //...
+  }
+
+  @Override
+  public void registerReminder() {
+    //...
+  }
+
+  @Override
+  public String say(String something) {
+    //...
+  }
+
+  @Override
+  public Mono<Integer> incrementAndGet(int delta) {
+    //...
+  }
+
+  @Override
+  public void clock(String message) {
+    //...
+  }
+
+  @Override
+  public Class<Integer> getStateType() {
+    return Integer.class;
+  }
+
+  @Override
+  public Mono<Void> receiveReminder(String reminderName, Integer state, Duration dueTime, Duration period) {
+    //...
+  }
+}
+```
+An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`.
+
+
+Now, execute the following script in order to run DemoActorService:
 ```sh
 cd to [repo-root]
 dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.actors.http.DemoActorService -D exec.args="-p 3000"
@@ -77,39 +118,47 @@ The `DemoActorClient.java` file contains the `DemoActorClient` class. See the co
 public class DemoActorClient {
 
   private static final int NUM_ACTORS = 3;
-  private static final int NUM_MESSAGES_PER_ACTOR = 10;
 
-  private static final ExecutorService POOL = Executors.newFixedThreadPool(NUM_ACTORS);
-
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws InterruptedException {
     ///...
     for (int i = 0; i < NUM_ACTORS; i++) {
       ActorProxy actor = builder.build(ActorId.createRandom());
-      futures.add(callActorNTimes(actor));
+
+      // Start a thread per actor.
+      Thread thread = new Thread(() -> callActorForever(actor));
+      thread.start();
+      threads.add(thread);
     }
     ///...
-
-  private static final CompletableFuture<Void> callActorNTimes(ActorProxy actor) {
-    return CompletableFuture.runAsync(() -> {
-      actor.invokeActorMethod("registerReminder").block();
-      for (int i = 0; i < NUM_MESSAGES_PER_ACTOR; i++) {
-        //Invoking the "incrementAndGet" method:
-        actor.invokeActorMethod("incrementAndGet", 1).block();
-        //Invoking "say" method
-        String result = actor.invokeActorMethod("say",
-                String.format("Actor %s said message #%d", actor.getActorId().toString(), i), String.class).block();
-        System.out.println(String.format("Actor %s got a reply: %s", actor.getActorId().toString(), result));
-        ///...
-      }
-      System.out.println(
-              "Messages sent: " + actor.invokeActorMethod("incrementAndGet", 0, int.class).block());
-    }, POOL);
   }
+
+  private static final void callActorForever(ActorProxy actor) {
+    // First, register reminder.
+    actor.invokeActorMethod("registerReminder").block();
+ 
+    // Now, we run until thread is interrupted.
+    while (!Thread.currentThread().isInterrupted()) {
+      // Invoke actor method to increment counter by 1, then build message.
+      int messageNumber = actor.invokeActorMethod("incrementAndGet", 1, int.class).block();
+      String message = String.format("Actor %s said message #%d", actor.getActorId().toString(), messageNumber);
+   
+      // Invoke the 'say' method in actor.
+      String result = actor.invokeActorMethod("say", message, String.class).block();
+      System.out.println(String.format("Actor %s got a reply: %s", actor.getActorId().toString(), result));
+    
+      try {
+        // Waits for up to 1 second.
+        Thread.sleep((long) Math.rint(1000));
+      } catch (InterruptedException e) {
+        // We have been interrupted, so we set the interrupted flag to exit gracefully.
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 }
 ```
 
-First, The client defines how many actors it is going to create, as well as how many invocation calls it will perform per actor. Then the main method declares a `ActorProxyBuilder` for the `DemoActor` class for creating `ActorProxy` instances, which are the actor representation provided by the SDK. The code executes the `callActorNTimes` private method once per actor. This method executes functionality for the DemoActor implementation using `actor.invokeActorMethod()` in the follow order: `registerReminder()` which sets the due time and period for the reminder, `incrementAndGet()` which increments a counter, persists it and sends it back as response, and finally `say` method wich will print a message containing the received string along with the formatted server time. See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of these methods. 
+First, the client defines how many actors it is going to create. Then the main method declares a `ActorProxyBuilder` for the `DemoActor` class to create `ActorProxy` instances, which are the actor representation provided by the SDK. The code executes the `callActorForever` private method once per actor. This method triggers the DemoActor's implementation by using `actor.invokeActorMethod()`. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
 
 Use the follow command to execute the DemoActorClient:
 
