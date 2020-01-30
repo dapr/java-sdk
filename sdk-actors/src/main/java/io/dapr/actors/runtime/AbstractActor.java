@@ -72,7 +72,7 @@ public abstract class AbstractActor {
           runtimeContext.getActorTypeInformation().getName(),
           id);
     this.actorTrace = runtimeContext.getActorTrace();
-    this.timers = Collections.synchronizedMap(new HashMap<>());
+    this.timers = new HashMap<>();
     this.started = false;
   }
 
