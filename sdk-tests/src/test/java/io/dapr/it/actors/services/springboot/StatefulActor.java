@@ -5,14 +5,17 @@
 
 package io.dapr.it.actors.services.springboot;
 
-import java.util.List;
-
-public interface DemoActor {
-  String say(String something);
-
-  List<String> retrieveActiveActors();
+public interface StatefulActor {
 
   void writeMessage(String something);
 
   String readMessage();
+
+  void writeData(MyData something);
+
+  MyData readData();
+
+  class MyData {
+    public String value;
+  }
 }

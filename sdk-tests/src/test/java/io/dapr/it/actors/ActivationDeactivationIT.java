@@ -9,7 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
-import io.dapr.it.actors.services.springboot.ActorService;
+import io.dapr.it.actors.services.springboot.DemoActorService;
 import io.dapr.it.services.EmptyService;
 import io.dapr.serializer.DefaultObjectSerializer;
 import java.util.List;
@@ -33,8 +33,8 @@ public class ActivationDeactivationIT extends BaseIT {
     // The call below will fail if service cannot start successfully.
     startDaprApp(
         ActivationDeactivationIT.class.getSimpleName(),
-        ActorService.SUCCESS_MESSAGE,
-        ActorService.class,
+        DemoActorService.SUCCESS_MESSAGE,
+        DemoActorService.class,
         true,
         60000);
   }
