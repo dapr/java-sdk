@@ -30,8 +30,8 @@ import org.apache.commons.cli.Options;
  * mvn clean install
  * 2. Run in server mode:
  * dapr run --app-id hellogrpc --app-port 5000 --protocol grpc \
- *   -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService \
- *   -Dexec.args="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5009"
+ *   -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService \
+ *   -D exec.args="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5009"
  */
 public class HelloWorldService {
 
@@ -97,14 +97,11 @@ public class HelloWorldService {
     public void onInvoke(DaprClientProtos.InvokeEnvelope request, StreamObserver<Any> responseObserver) {
       try {
         if ("say".equals(request.getMethod())) {
-          // IMPORTANT: do not use Any.unpack(), use Type.ParseFrom() instead.
-          SayRequest sayRequest = SayRequest.parseFrom(request.getData().getValue());
+          SayRequest sayRequest =
+              SayRequest.newBuilder().setMessage(request.getData().getValue().toStringUtf8()).build();
           SayResponse sayResponse = this.say(sayRequest);
           responseObserver.onNext(Any.pack(sayResponse));
         }
-      } catch (InvalidProtocolBufferException e) {
-        e.printStackTrace();
-        responseObserver.onError(e);
       } finally {
         responseObserver.onCompleted();
       }

@@ -70,61 +70,49 @@ In the `GrpcHelloWorldDaprService` class, the `onInvoke` method is the most impo
 Now run the service code:
 
 ```sh
-dapr run --app-id hellogrpc --app-port 5000 --protocol grpc -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService -Dexec.args="-p 5000"
+dapr run --app-id hellogrpc --app-port 5000 --protocol grpc -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService -D exec.args="-p 5000"
 ```
 
-The `app-id` argument is used to identify this service in Dapr's runtime. The `app-port` determines which port Dapr's runtime should call into this service.  The `protocol` argument informs Dapr which protocol it should use: `grpc` or `http`(default).
+The `app-id` argument is used to identify this service in Dapr's runtime. The `app-port` determines which port Dapr's runtime should call into this service.  The `protocol` argument informs Dapr which protocol it should use to invoke the application: `grpc` or `http`(default).
 
 ### Running the example's client
 
-The other component is the client. It will take in the messages via command line arguments and send each one to the service via Dapr's invoke API over Grpc. Open the `HelloWorldClient.java` file, it contains the `HelloWorldClient` class with the main method and also the `GrpcHelloWorldDaprClient` class. The `GrpcHelloWorldDaprClient` encapsulates an instance of the `DaprFutureStub` class because it is calling Dapr's API. Creating a client to call `HelloWorldService` directly can be an exercise for the reader. In the `GrpcHelloWorldDaprClient` class, the most important method is `sendMessages`. See the code snippet below:
+The other component is the client. It will send one message per second to the service via Dapr's invoke API using Dapr's SDK. Open the `HelloWorldClient.java` file, it uses the Dapr's Java SDK to invoke the `say` method on the service above:
 
 ```java
-private static class GrpcHelloWorldDaprClient {
+private static class HelloWorldClient {
 ///...
-        private void sendMessages(String... messages) throws ExecutionException, InterruptedException, InvalidProtocolBufferException {
-            List<ListenableFuture<InvokeServiceResponseEnvelope>> futureResponses = new ArrayList<>();
-            for (String message : messages)
-            {
-                SayRequest request = SayRequest
-                        .newBuilder()
-                        .setMessage(message)
-                        .build();
+  public static void main(String[] args) {
+    DaprClient client = new DaprClientBuilder().build();
 
-                // Now, wrap the request with Dapr's envelope.
-                InvokeServiceEnvelope requestEnvelope = InvokeServiceEnvelope
-                        .newBuilder()
-                        .setId("hellogrpc")  // Service's identifier.
-                        .setData(Any.pack(request))
-                        .setMethod("say")  // The service's method to be invoked by Dapr.
-                        .build();
+    String serviceAppId = "hellogrpc";
+    String method = "say";
 
-                futureResponses.add(client.invokeService(requestEnvelope));
-                System.out.println("Client: sent => " + message);
-                Thread.sleep(TimeUnit.SECONDS.toMillis(10));
-            }
+    int count = 0;
+    while (true) {
+      String message = "Message #" + (count++);
+      System.out.println("Sending message: " + message);
+      client.invokeService(Verb.POST, serviceAppId, method, message).block();
+      System.out.println("Message sent: " + message);
 
-            for (ListenableFuture<InvokeServiceResponseEnvelope> future : futureResponses) {
-                Any data = future.get().getData();  // Blocks waiting for response.
-                // IMPORTANT: do not use Any.unpack(), use Type.ParseFrom() instead.
-                SayResponse response = SayResponse.parseFrom(data.getValue());
-                System.out.println("Client: got response => " + response.getTimestamp());
-            }
-        }
+      Thread.sleep(1000);
+    }
+  }
+  }
 ///...
 }
 ```
 
-First, it goes through each message and creates a corresponding `SayRequest` object as if it would call the `HelloWorld` service directly. Then, the request object is wrapped into an instance of `InvokeServiceEnvelope`. As expected, the enveloped request is sent to Dapr's `invokeService` method. Once all responses are completed, they are unwrapped into `SayResponse` objects.
+First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient is transparent to the application. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar.
 
-Finally, open a new command line terminal and run the client code to send some messages. Feel free to play with the command line to send different messages:
+Finally, it will go through in an infinite loop and invoke the `say` method every second. Notice the use of `block()` on the return from `invokeService` - it is required to actually make the service invocation via a [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) object.
+
+Finally, open a new command line terminal and run the client code to send some messages.
 
 ```sh
-dapr run --protocol grpc --grpc-port 50001 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldClient -Dexec.args="-p 50001 'message one' 'message two'"
+dapr run -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldClient
 ```
 
 Once the messages are sent, use `CTRL+C` to exit Dapr.
-
-The `protocol` argument tells Dapr which protocol to use. In this command, `grpc-port` is specified so Dapr does not pick a random port and uses the requested port instead. The same port is passed in the client executable via the `p` argument. The last arguments into the Java's main method are the messages to be sent.
 
 Thanks for playing.

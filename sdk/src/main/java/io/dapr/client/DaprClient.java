@@ -57,6 +57,20 @@ public interface DaprClient {
       Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz);
 
   /**
+   * Invoke a service without metadata, using serialization.
+   *
+   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
+   * @param appId   The Application ID where the service is.
+   * @param method  The actual Method to be call in the application.
+   * @param request The request to be sent to invoke the service.
+   * @param clazz   the Type needed as return for the call.
+   * @param <T>     the Type of the return, use byte[] to skip serialization.
+   * @param <R>     The Type of the request, use byte[] to skip serialization.
+   * @return A Mono Plan of type clazz.
+   */
+  <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Class<T> clazz);
+
+  /**
    * Invoke a service without input, using serialization for response.
    *
    * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
@@ -81,6 +95,18 @@ public interface DaprClient {
    * @return A Mono plan for Void.
    */
   <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata);
+
+  /**
+   * Invoke a service with void response, no metadata and using serialization.
+   *
+   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
+   * @param appId   The Application ID where the service is.
+   * @param method  The actual Method to be call in the application.
+   * @param request The request to be sent to invoke the service.
+   * @param <R>     The Type of the request, use byte[] to skip serialization.
+   * @return A Mono plan for Void.
+   */
+  <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request);
 
   /**
    * Invoke a service without input and void response.
