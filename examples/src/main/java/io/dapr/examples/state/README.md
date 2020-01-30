@@ -33,10 +33,10 @@ public class StateClient {
   private static final String KEY_NAME = "mykey";
   ///...
   public static void main(String[] args) {
-    DaprClient client = new DaprClientBuilder(new DefaultObjectSerializer(), new DefaultObjectSerializer()).build();
+    DaprClient client = new DaprClientBuilder().build();
     String message = args.length == 0 ? " " : args[0];
 
-    OutputBindingExample.MyClass myClass = new OutputBindingExample.MyClass();
+    MyClass myClass = new MyClass();
     myClass.message = message;
 
     client.saveState(KEY_NAME, myClass).block();
@@ -54,7 +54,7 @@ public class StateClient {
   }
 }
 ```
-The code uses the `DaprClient` created by the `DaprClientBuilder`. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client performs three operations: `client.saveState(...)` for persisting an instance of  `MyClass`, then uses the `client.getState(...)` operation in order to retrieve back the persisted state using the same key. `client.deleteState(...)` operation is used to remove the persisted state. Finally, the code tries  to retrieve the deleted state, which should not be found.   
+The code uses the `DaprClient` created by the `DaprClientBuilder`. Notice that this builder uses default settings. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and recieved objects, and `stateSerializer` is for objects to be persisted. This client performs three operations: `client.saveState(...)` for persisting an instance of  `MyClass`, then uses the `client.getState(...)` operation in order to retrieve back the persisted state using the same key. `client.deleteState(...)` operation is used to remove the persisted state. Finally, the code tries  to retrieve the deleted state, which should not be found.   
 
 ### Running the example
 
