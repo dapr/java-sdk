@@ -1,4 +1,12 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 package io.dapr.examples.invoke.grpc;
+
+import static io.dapr.examples.DaprExamplesProtos.SayRequest;
+import static io.dapr.examples.DaprExamplesProtos.SayResponse;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
@@ -8,24 +16,23 @@ import io.dapr.DaprProtos.InvokeServiceEnvelope;
 import io.dapr.DaprProtos.InvokeServiceResponseEnvelope;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import static io.dapr.examples.DaprExamplesProtos.SayRequest;
-import static io.dapr.examples.DaprExamplesProtos.SayResponse;
 
 /**
  * 1. Build and install jars:
  * mvn clean install
  * 2. Send messages to the server:
- * dapr run --protocol grpc --grpc-port 50001 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldClient -Dexec.args="-p 50001 'message one' 'message two'"
+ * dapr run --protocol grpc --grpc-port 50001 -- mvn exec:java -pl=examples \
+ * -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldClient \
+ * -Dexec.args="-p 50001 'message one' 'message two'"
  */
 public class HelloWorldClient {
 
@@ -35,7 +42,7 @@ public class HelloWorldClient {
   private static class GrpcHelloWorldDaprClient {
 
     /**
-     * Client communication channel: host, port and tls(on/off)
+     * Client communication channel: host, port and tls(on/off).
      */
     private final ManagedChannel channel;
 
@@ -52,15 +59,15 @@ public class HelloWorldClient {
      */
     public GrpcHelloWorldDaprClient(String host, int port) {
       this(ManagedChannelBuilder
-        .forAddress("localhost", port)
-        .usePlaintext()  // SSL/TLS is default, we turn it off just because this is a sample and not prod.
-        .build());
+          .forAddress("localhost", port)
+          .usePlaintext()  // SSL/TLS is default, we turn it off just because this is a sample and not prod.
+          .build());
     }
 
     /**
      * Helper constructor to build client from channel.
      *
-     * @param channel
+     * @param channel The ManagedChannel.
      */
     private GrpcHelloWorldDaprClient(ManagedChannel channel) {
       this.channel = channel;
@@ -70,23 +77,24 @@ public class HelloWorldClient {
     /**
      * Client mode: sends messages, one per second.
      *
-     * @param messages
+     * @param messages The messages to send.
      */
-    private void sendMessages(String... messages) throws ExecutionException, InterruptedException, InvalidProtocolBufferException {
+    private void sendMessages(String... messages)
+        throws ExecutionException, InterruptedException, InvalidProtocolBufferException {
       List<ListenableFuture<InvokeServiceResponseEnvelope>> futureResponses = new ArrayList<>();
       for (String message : messages) {
         SayRequest request = SayRequest
-          .newBuilder()
-          .setMessage(message)
-          .build();
+            .newBuilder()
+            .setMessage(message)
+            .build();
 
         // Now, wrap the request with Dapr's envelope.
         InvokeServiceEnvelope requestEnvelope = InvokeServiceEnvelope
-          .newBuilder()
-          .setId("hellogrpc")  // Service's identifier.
-          .setData(Any.pack(request))
-          .setMethod("say")  // The service's method to be invoked by Dapr.
-          .build();
+            .newBuilder()
+            .setId("hellogrpc")  // Service's identifier.
+            .setData(Any.pack(request))
+            .setMethod("say")  // The service's method to be invoked by Dapr.
+            .build();
 
         futureResponses.add(client.invokeService(requestEnvelope));
         System.out.println("Client: sent => " + message);
@@ -113,6 +121,12 @@ public class HelloWorldClient {
 
   }
 
+  /**
+   * The main method of this app.
+   *
+   * @param args Args representing the port the app will listen on.
+   * @throws Exception An Exception.
+   */
   public static void main(String[] args) throws Exception {
     Options options = new Options();
     options.addRequiredOption("p", "port", true, "Port to listen or send event to.");

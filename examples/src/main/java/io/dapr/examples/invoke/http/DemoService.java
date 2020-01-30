@@ -15,7 +15,8 @@ import org.apache.commons.cli.Options;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run in server mode:
- * dapr run --app-id invokedemo --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.http.DemoService -D exec.args="-p 3000"
+ * dapr run --app-id invokedemo --app-port 3000 --port 3005 \
+ *   -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.http.DemoService -D exec.args="-p 3000"
  */
 public class DemoService {
 

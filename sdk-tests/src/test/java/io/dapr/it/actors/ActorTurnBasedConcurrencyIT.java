@@ -51,7 +51,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
     System.out.println("Invoking during cleanup");
     try {
-      client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, null, null).block();
+      client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), url, null, null).block();
     } catch(Exception e) {
       // informational only
       System.out.println("Caught " + e.toString());

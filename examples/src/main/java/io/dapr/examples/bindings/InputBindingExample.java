@@ -17,13 +17,19 @@ import org.apache.commons.cli.Options;
  * mvn clean install
  * 2. cd to [repo-root]/examples
  * 3. Run :
- * dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.InputBindingExample -D exec.args="-p 3000"
+ * dapr run --app-id inputbinding --app-port 3000 --port 3005  \
+ *   -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.InputBindingExample -D exec.args="-p 3000"
  */
 public class InputBindingExample {
 
+  /**
+   * The entry point of this app.
+   * @param args The port this app will listen on.
+   * @throws Exception The Exception.
+   */
   public static void main(String[] args) throws Exception {
     Options options = new Options();
-    options.addRequiredOption("p", "port", true, "Port Dapr will listen to.");
+    options.addRequiredOption("p", "port", true, "The port this app will listen on.");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);

@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.client;
 
 import io.dapr.client.domain.State;
@@ -11,10 +12,16 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.serializer.StringContentType;
 import io.dapr.utils.Constants;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import reactor.core.publisher.Mono;
 
 /**
  * An adapter for the HTTP Client.
@@ -30,7 +37,7 @@ public class DaprClientHttpAdapter implements DaprClient {
   private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
-   * The HTTP client to be used
+   * The HTTP client to be used.
    *
    * @see io.dapr.client.DaprHttp
    */
@@ -98,7 +105,7 @@ public class DaprClientHttpAdapter implements DaprClient {
 
       byte[] serializedEvent = objectSerializer.serialize(event);
       StringBuilder url = new StringBuilder(Constants.PUBLISH_PATH).append("/").append(topic);
-      return this.client.invokeAPI(
+      return this.client.invokeApi(
           DaprHttp.HttpMethods.POST.name(), url.toString(), null, serializedEvent, metadata).then();
     } catch (Exception ex) {
       return Mono.error(ex);
@@ -109,7 +116,8 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
+  public <T, R> Mono<T> invokeService(
+      Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
     try {
       if (verb == null) {
         throw new IllegalArgumentException("Verb cannot be null.");
@@ -123,19 +131,19 @@ public class DaprClientHttpAdapter implements DaprClient {
       }
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-      Mono<DaprHttp.Response> response = this.client.invokeAPI(httMethod, path, null, serializedRequestBody, metadata);
+      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path, null, serializedRequestBody, metadata);
       return response.flatMap(r -> {
-            try {
-              T object = objectSerializer.deserialize(r.getBody(), clazz);
-              if (object == null) {
-                return Mono.empty();
-              }
+        try {
+          T object = objectSerializer.deserialize(r.getBody(), clazz);
+          if (object == null) {
+            return Mono.empty();
+          }
 
-              return Mono.just(object);
-            } catch (Exception ex) {
-              return Mono.error(ex);
-            }
-          });
+          return Mono.just(object);
+        } catch (Exception ex) {
+          return Mono.error(ex);
+        }
+      });
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -145,7 +153,8 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
+  public <T> Mono<T> invokeService(
+      Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
     return this.invokeService(verb, appId, method, null, null, clazz);
   }
 
@@ -153,7 +162,8 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata) {
+  public <R> Mono<Void> invokeService(
+      Verb verb, String appId, String method, R request, Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
   }
 
@@ -161,7 +171,8 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(Verb verb, String appId, String method, Map<String, String> metadata) {
+  public Mono<Void> invokeService(
+      Verb verb, String appId, String method, Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, null, metadata, byte[].class).then();
   }
 
@@ -169,7 +180,8 @@ public class DaprClientHttpAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> invokeService(Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
+  public Mono<byte[]> invokeService(
+      Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class);
   }
 
@@ -188,7 +200,7 @@ public class DaprClientHttpAdapter implements DaprClient {
       StringBuilder url = new StringBuilder(Constants.BINDING_PATH).append("/").append(name);
 
       return this.client
-          .invokeAPI(
+          .invokeApi(
               DaprHttp.HttpMethods.POST.name(),
               url.toString(),
               null,
@@ -231,11 +243,14 @@ public class DaprClientHttpAdapter implements DaprClient {
       }
 
       StringBuilder url = new StringBuilder(Constants.STATE_PATH)
-        .append("/")
-        .append(key);
-      Map<String, String> urlParameters = Optional.ofNullable(options).map(o -> o.getStateOptionsAsMap() ).orElse(new HashMap<>());;
+          .append("/")
+          .append(key);
+      Map<String, String> urlParameters = Optional.ofNullable(options)
+          .map(o -> o.getStateOptionsAsMap())
+          .orElse(new HashMap<>());
+
       return this.client
-          .invokeAPI(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers)
+          .invokeApi(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers)
           .flatMap(s -> {
             try {
               return Mono.just(buildStateKeyValue(s, key, options, clazz));
@@ -272,14 +287,14 @@ public class DaprClientHttpAdapter implements DaprClient {
         byte[] data = this.stateSerializer.serialize(state.getValue());
         if (this.isStateString) {
           internalStateObjects.add(
-            new State<>(data == null ? null : new String(data), state.getKey(), state.getEtag(), state.getOptions()));
+              new State<>(data == null ? null : new String(data), state.getKey(), state.getEtag(), state.getOptions()));
         } else {
           internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getOptions()));
         }
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(states);
-      return this.client.invokeAPI(
-        DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers).then();
+      return this.client.invokeApi(
+          DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -299,7 +314,7 @@ public class DaprClientHttpAdapter implements DaprClient {
   @Override
   public Mono<Void> saveState(String key, String etag, Object value, StateOptions options) {
     return Mono.fromSupplier(() -> new State<>(value, key, etag, options))
-      .flatMap(state -> saveStates(Arrays.asList(state)));
+        .flatMap(state -> saveStates(Arrays.asList(state)));
   }
 
   /**
@@ -324,25 +339,28 @@ public class DaprClientHttpAdapter implements DaprClient {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
       String url = Constants.STATE_PATH + "/" + key;
-      Map<String, String> urlParameters = Optional.ofNullable(options).map(stateOptions -> stateOptions.getStateOptionsAsMap()).orElse( new HashMap<>());;
-      return this.client.invokeAPI(DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers).then();
+      Map<String, String> urlParameters = Optional.ofNullable(options)
+          .map(stateOptions -> stateOptions.getStateOptionsAsMap())
+          .orElse(new HashMap<>());
+
+      return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers).then();
     } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
   /**
-   * Builds a State object based on the Response
+   * Builds a State object based on the Response.
    *
-   * @param response      The response of the HTTP Call
+   * @param response     The response of the HTTP Call
    * @param requestedKey The Key Requested.
    * @param clazz        The Class of the Value of the state
    * @param <T>          The Type of the Value of the state
-   * @return             A StateKeyValue instance
+   * @return A StateKeyValue instance
    * @throws IOException If there's a issue deserialzing the response.
    */
   private <T> State<T> buildStateKeyValue(
-    DaprHttp.Response response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
+      DaprHttp.Response response, String requestedKey, StateOptions stateOptions, Class<T> clazz) throws IOException {
     // The state is in the body directly, so we use the state serializer here.
     T value = stateSerializer.deserialize(response.getBody(), clazz);
     String key = requestedKey;

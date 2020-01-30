@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -15,12 +16,13 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DaprObjectSerializer;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import reactor.core.publisher.Mono;
 
 /**
  * An adapter for the GRPC Client.
@@ -31,7 +33,7 @@ import java.util.Map;
 public class DaprClientGrpcAdapter implements DaprClient {
 
   /**
-   * The GRPC client to be used
+   * The GRPC client to be used.
    *
    * @see io.dapr.DaprGrpc.DaprFutureStub
    */
@@ -56,9 +58,9 @@ public class DaprClientGrpcAdapter implements DaprClient {
    * @see DaprClientBuilder
    */
   DaprClientGrpcAdapter(
-    DaprGrpc.DaprFutureStub futureClient,
-    DaprObjectSerializer objectSerializer,
-    DaprObjectSerializer stateSerializer) {
+      DaprGrpc.DaprFutureStub futureClient,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer) {
     this.client = futureClient;
     this.objectSerializer = objectSerializer;
     this.stateSerializer = stateSerializer;
@@ -99,7 +101,13 @@ public class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
+  public <T, R> Mono<T> invokeService(
+      Verb verb,
+      String appId,
+      String method,
+      R request,
+      Map<String, String> metadata,
+      Class<T> clazz) {
     try {
       DaprProtos.InvokeServiceEnvelope envelope = buildInvokeServiceEnvelope(verb.toString(), appId, method, request);
       return Mono.fromCallable(() -> {
@@ -116,7 +124,12 @@ public class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
+  public <T> Mono<T> invokeService(
+      Verb verb,
+      String appId,
+      String method,
+      Map<String, String> metadata,
+      Class<T> clazz) {
     return this.invokeService(verb, appId, method, null, null, clazz);
   }
 
@@ -124,7 +137,12 @@ public class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata) {
+  public <R> Mono<Void> invokeService(
+      Verb verb,
+      String appId,
+      String method,
+      R request,
+      Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
   }
 
@@ -140,7 +158,12 @@ public class DaprClientGrpcAdapter implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> invokeService(Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
+  public Mono<byte[]> invokeService(
+      Verb verb,
+      String appId,
+      String method,
+      byte[] request,
+      Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class);
   }
 
@@ -204,16 +227,17 @@ public class DaprClientGrpcAdapter implements DaprClient {
           return null;
         }
         return buildStateKeyValue(response, key, options, clazz);
-      });    } catch (Exception ex) {
+      });
+    } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
   private <T> State<T> buildStateKeyValue(
-    DaprProtos.GetStateResponseEnvelope response,
-    String requestedKey,
-    StateOptions stateOptions,
-    Class<T> clazz) throws IOException {
+      DaprProtos.GetStateResponseEnvelope response,
+      String requestedKey,
+      StateOptions stateOptions,
+      Class<T> clazz) throws IOException {
     ByteString payload = response.getData().getValue();
     byte[] data = payload == null ? null : payload.toByteArray();
     T value = stateSerializer.deserialize(data, clazz);
@@ -291,7 +315,7 @@ public class DaprClientGrpcAdapter implements DaprClient {
         optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
       }
     }
-    if(optionBuilder != null) {
+    if (optionBuilder != null) {
       stateBuilder.setOptions(optionBuilder.build());
     }
     return stateBuilder;
@@ -361,9 +385,9 @@ public class DaprClientGrpcAdapter implements DaprClient {
         }
       }
       DaprProtos.DeleteStateEnvelope.Builder builder = DaprProtos.DeleteStateEnvelope.newBuilder()
-              .setKey(key);
-      if(etag != null) {
-          builder.setEtag(etag);
+          .setKey(key);
+      if (etag != null) {
+        builder.setEtag(etag);
       }
 
       if (optionBuilder != null) {

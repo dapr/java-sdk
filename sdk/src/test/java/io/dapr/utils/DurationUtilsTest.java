@@ -10,9 +10,9 @@ public class DurationUtilsTest {
   @Test
   public void convertTimeBothWays() {
     String s = "4h15m50s60ms";
-    Duration d1 = DurationUtils.ConvertDurationFromDaprFormat(s);
+    Duration d1 = DurationUtils.convertDurationFromDaprFormat(s);
 
-    String t = DurationUtils.ConvertDurationToDaprFormat(d1);
+    String t = DurationUtils.convertDurationToDaprFormat(d1);
     Assert.assertEquals(s, t);
   }
 
@@ -20,16 +20,16 @@ public class DurationUtilsTest {
   public void largeHours() {
     // hours part is larger than 24
     String s = "31h15m50s60ms";
-    Duration d1 = DurationUtils.ConvertDurationFromDaprFormat(s);
+    Duration d1 = DurationUtils.convertDurationFromDaprFormat(s);
 
-    String t = DurationUtils.ConvertDurationToDaprFormat(d1);
+    String t = DurationUtils.convertDurationToDaprFormat(d1);
     Assert.assertEquals(s, t);
   }
 
   @Test
   public void negativeDuration() {
     Duration d = Duration.ofSeconds(-99);
-    String t = DurationUtils.ConvertDurationToDaprFormat(d);
+    String t = DurationUtils.convertDurationToDaprFormat(d);
     Assert.assertEquals("", t);
   }
 

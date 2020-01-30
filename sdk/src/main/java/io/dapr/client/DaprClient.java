@@ -2,15 +2,15 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.client;
 
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
-import reactor.core.publisher.Mono;
-
 import java.util.List;
 import java.util.Map;
+import reactor.core.publisher.Mono;
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
@@ -53,7 +53,8 @@ public interface DaprClient {
    * @param <R>     The Type of the request, use byte[] to skip serialization.
    * @return A Mono Plan of type clazz.
    */
-  <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz);
+  <T, R> Mono<T> invokeService(
+      Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz);
 
   /**
    * Invoke a service without input, using serialization for response.

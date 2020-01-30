@@ -16,13 +16,19 @@ import org.apache.commons.cli.Options;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run the server:
- * dapr run --app-id subscriber --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Subscriber -Dexec.args="-p 3000"
+ * dapr run --app-id subscriber --app-port 3000 --port 3005 -- \
+ *   mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Subscriber -Dexec.args="-p 3000"
  */
 public class Subscriber {
 
+  /**
+   * This is the entry point for this example app, which subscribes to a topic.
+   * @param args The port this app will listen on.
+   * @throws Exception An Exception on startup.
+   */
   public static void main(String[] args) throws Exception {
     Options options = new Options();
-    options.addRequiredOption("p", "port", true, "Port Dapr will listen to.");
+    options.addRequiredOption("p", "port", true, "The port this app will listen on");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);

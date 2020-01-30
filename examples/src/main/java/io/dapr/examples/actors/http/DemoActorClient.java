@@ -8,7 +8,6 @@ package io.dapr.examples.actors.http;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.serializer.DefaultObjectSerializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +21,8 @@ import java.util.concurrent.TimeUnit;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run the client:
- * dapr run --app-id demoactorclient --port 3006 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorClient
+ * dapr run --app-id demoactorclient --port 3006 -- mvn exec:java \
+ *   -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorClient
  */
 public class DemoActorClient {
 
@@ -34,6 +34,11 @@ public class DemoActorClient {
 
   private static final ExecutorService POOL = Executors.newFixedThreadPool(NUM_ACTORS);
 
+  /**
+   * The main method.
+   * @param args Unused.
+   * @throws Exception An Exception.
+   */
   public static void main(String[] args) throws Exception {
     ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor");
 
@@ -57,10 +62,10 @@ public class DemoActorClient {
       for (int i = 0; i < NUM_MESSAGES_PER_ACTOR; i++) {
         actor.invokeActorMethod("incrementAndGet", 1).block();
         String result = actor.invokeActorMethod(METHOD_NAME,
-          String.format("Actor %s said message #%d", actor.getActorId().toString(), i), String.class).block();
+            String.format("Actor %s said message #%d", actor.getActorId().toString(), i), String.class).block();
         System.out.println(String.format("Actor %s got a reply: %s", actor.getActorId().toString(), result));
         try {
-          Thread.sleep((long)(1000 * Math.random()));
+          Thread.sleep((long) (1000 * Math.random()));
         } catch (InterruptedException e) {
           e.printStackTrace();
           Thread.currentThread().interrupt();
@@ -69,7 +74,7 @@ public class DemoActorClient {
       }
 
       System.out.println(
-        "Messages sent: " + actor.invokeActorMethod("incrementAndGet", 0, int.class).block());
+          "Messages sent: " + actor.invokeActorMethod("incrementAndGet", 0, int.class).block());
     }, POOL);
   }
 }

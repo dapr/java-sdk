@@ -32,7 +32,7 @@ public class DaprHttpStub extends DaprHttp {
      * @return
      */
     @Override
-    public Mono<DaprHttp.Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
+    public Mono<DaprHttp.Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
         return Mono.empty();
     }
 
@@ -40,7 +40,7 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public Mono<DaprHttp.Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
+    public Mono<DaprHttp.Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
         return Mono.empty();
     }
 
@@ -48,7 +48,7 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public Mono<DaprHttp.Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
+    public Mono<DaprHttp.Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
         return Mono.empty();
     }
 }
