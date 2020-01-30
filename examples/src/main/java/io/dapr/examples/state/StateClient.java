@@ -3,7 +3,6 @@ package io.dapr.examples.state;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
-import io.dapr.examples.bindings.http.OutputBindingExample;
 import io.dapr.serializer.DefaultObjectSerializer;
 import reactor.core.publisher.Mono;
 
@@ -30,7 +29,7 @@ public class StateClient {
     DaprClient client = new DaprClientBuilder().build();
     String message = args.length == 0 ? " " : args[0];
 
-    OutputBindingExample.MyClass myClass = new OutputBindingExample.MyClass();
+    MyClass myClass = new MyClass();
     myClass.message = message;
 
     client.saveState(KEY_NAME, myClass).block();
