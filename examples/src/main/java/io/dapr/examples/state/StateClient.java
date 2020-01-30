@@ -3,7 +3,6 @@ package io.dapr.examples.state;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
-import io.dapr.serializer.DefaultObjectSerializer;
 import reactor.core.publisher.Mono;
 
 /**
