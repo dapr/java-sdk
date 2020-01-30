@@ -125,12 +125,24 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeService(
-      Verb verb,
-      String appId,
-      String method,
-      Map<String, String> metadata,
-      Class<T> clazz) {
-    return this.invokeService(verb, appId, method, null, null, clazz);
+      Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
+    return this.invokeService(verb, appId, method, null, metadata, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Class<T> clazz) {
+    return this.invokeService(verb, appId, method, request, null, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request) {
+    return this.invokeService(verb, appId, method, request, null, byte[].class).then();
   }
 
   /**
@@ -138,11 +150,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <R> Mono<Void> invokeService(
-      Verb verb,
-      String appId,
-      String method,
-      R request,
-      Map<String, String> metadata) {
+      Verb verb, String appId, String method, R request, Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
   }
 
@@ -150,8 +158,9 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(Verb verb, String appId, String method, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, null, metadata, Void.class).then();
+  public Mono<Void> invokeService(
+      Verb verb, String appId, String method, Map<String, String> metadata) {
+    return this.invokeService(verb, appId, method, null, metadata, byte[].class).then();
   }
 
   /**
@@ -159,11 +168,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public Mono<byte[]> invokeService(
-      Verb verb,
-      String appId,
-      String method,
-      byte[] request,
-      Map<String, String> metadata) {
+      Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class);
   }
 

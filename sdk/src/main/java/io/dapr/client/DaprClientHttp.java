@@ -155,7 +155,23 @@ public class DaprClientHttp implements DaprClient {
   @Override
   public <T> Mono<T> invokeService(
       Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeService(verb, appId, method, null, null, clazz);
+    return this.invokeService(verb, appId, method, null, metadata, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Class<T> clazz) {
+    return this.invokeService(verb, appId, method, request, null, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request) {
+    return this.invokeService(verb, appId, method, request, null, byte[].class).then();
   }
 
   /**
