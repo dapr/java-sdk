@@ -1,4 +1,12 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
 package io.dapr.examples.invoke.grpc;
+
+import static io.dapr.examples.DaprExamplesProtos.SayRequest;
+import static io.dapr.examples.DaprExamplesProtos.SayResponse;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -7,25 +15,23 @@ import io.dapr.DaprClientProtos;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
-
-import static io.dapr.examples.DaprExamplesProtos.SayRequest;
-import static io.dapr.examples.DaprExamplesProtos.SayResponse;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
 
 /**
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run in server mode:
- * dapr run --app-id hellogrpc --app-port 5000 --protocol grpc -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService -Dexec.args="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5009"
+ * dapr run --app-id hellogrpc --app-port 5000 --protocol grpc \
+ *   -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService \
+ *   -Dexec.args="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5009"
  */
 public class HelloWorldService {
 
@@ -52,10 +58,10 @@ public class HelloWorldService {
      */
     private void start(int port) throws IOException {
       this.server = ServerBuilder
-        .forPort(port)
-        .addService(this)
-        .build()
-        .start();
+          .forPort(port)
+          .addService(this)
+          .build()
+          .start();
       System.out.printf("Server: started listening on port %d\n", port);
 
       // Now we handle ctrl+c (or any other JVM shutdown)
@@ -123,6 +129,11 @@ public class HelloWorldService {
     }
   }
 
+  /**
+   * This is the main method of this app.
+   * @param args The port to listen on.
+   * @throws Exception An Exception.
+   */
   public static void main(String[] args) throws Exception {
     Options options = new Options();
     options.addRequiredOption("p", "port", true, "Port to listen to.");

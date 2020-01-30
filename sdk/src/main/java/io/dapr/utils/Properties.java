@@ -32,19 +32,22 @@ public class Properties {
    * HTTP port for Dapr after checking system property and environment variable.
    */
   public static final Supplier<Integer> HTTP_PORT = () -> getIntOrDefault(
-    "dapr.http.port", "DAPR_HTTP_PORT", DEFAULT_HTTP_PORT);
+      "dapr.http.port",
+      "DAPR_HTTP_PORT", DEFAULT_HTTP_PORT);
 
   /**
    * GRPC port for Dapr after checking system property and environment variable.
    */
   public static final Supplier<Integer> GRPC_PORT = () -> getIntOrDefault(
-    "dapr.grpc.port", "DAPR_GRPC_PORT", DEFAULT_GRPC_PORT);
+      "dapr.grpc.port",
+      "DAPR_GRPC_PORT", DEFAULT_GRPC_PORT);
 
   /**
    * Determines if Dapr client will use GRPC to talk to Dapr's side car.
    */
   public static final Supplier<Boolean> USE_GRPC = () -> getBooleanOrDefault(
-    "dapr.grpc.enabled", "DAPR_GRPC_ENABLED", DEFAULT_GRPC_ENABLED);
+      "dapr.grpc.enabled",
+      "DAPR_GRPC_ENABLED", DEFAULT_GRPC_ENABLED);
 
   /**
    * Finds an integer defined by system property first, then env variable or sticks to default.

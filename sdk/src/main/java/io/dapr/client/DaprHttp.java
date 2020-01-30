@@ -2,31 +2,52 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
-import okhttp3.*;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+
+import reactor.core.publisher.Mono;
 
 public class DaprHttp {
 
   /**
    * HTTP Methods supported.
    */
-  public enum HttpMethods {GET, PUT, POST, DELETE;}
+  public enum HttpMethods {
+    GET,
+    PUT,
+    POST,
+    DELETE
+  }
 
   public static class Response {
     private byte[] body;
     private Map<String, String> headers;
     private int statusCode;
 
+    /**
+     * Represents an http response.
+     * @param body The body of the http response.
+     * @param headers The headers of the http response.
+     * @param statusCode The status code of the http response.
+     */
     public Response(byte[] body, Map<String, String> headers, int statusCode) {
       this.body = body;
       this.headers = headers;
@@ -92,52 +113,60 @@ public class DaprHttp {
   /**
    * Invokes an API asynchronously without payload that returns a text payload.
    *
-   * @param method    HTTP method.
-   * @param urlString url as String.
+   * @param method        HTTP method.
+   * @param urlString     url as String.
    * @param urlParameters URL parameters
-   * @param headers HTTP headers.
+   * @param headers       HTTP headers.
    * @return Asynchronous text
    */
-  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, urlParameters, (byte[]) null, headers);
+  public Mono<Response> invokeApi(
+      String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
+    return this.invokeApi(method, urlString, urlParameters, (byte[]) null, headers);
   }
 
   /**
    * Invokes an API asynchronously that returns a text payload.
    *
-   * @param method    HTTP method.
-   * @param urlString url as String.
+   * @param method        HTTP method.
+   * @param urlString     url as String.
    * @param urlParameters Parameters in the URL
-   * @param content   payload to be posted.
-   * @param headers HTTP headers.
+   * @param content       payload to be posted.
+   * @param headers       HTTP headers.
    * @return Asynchronous response
    */
-  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
-    return this.invokeAPI(method, urlString, urlParameters, content == null ? EMPTY_BYTES : content.getBytes(StandardCharsets.UTF_8), headers);
+  public Mono<Response> invokeApi(
+      String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
+
+    return this.invokeApi(
+        method, urlString, urlParameters, content == null
+            ? EMPTY_BYTES
+            : content.getBytes(StandardCharsets.UTF_8), headers);
   }
 
   /**
    * Invokes an API asynchronously that returns a text payload.
    *
-   * @param method    HTTP method.
-   * @param urlString url as String.
+   * @param method        HTTP method.
+   * @param urlString     url as String.
    * @param urlParameters Parameters in the URL
-   * @param content   payload to be posted.
-   * @param headers HTTP headers.
+   * @param content       payload to be posted.
+   * @param headers       HTTP headers.
    * @return Asynchronous response
    */
-  public Mono<Response> invokeAPI(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
+  public Mono<Response> invokeApi(
+      String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
     return Mono.fromCallable(
         () -> {
           try {
-            String requestId = UUID.randomUUID().toString();
+            final String requestId = UUID.randomUUID().toString();
             RequestBody body = REQUEST_BODY_EMPTY_JSON;
 
             String contentType = headers != null ? headers.get("content-type") : null;
             MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
             if (content == null) {
-              body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON) ?
-                  REQUEST_BODY_EMPTY_JSON : RequestBody.Companion.create(new byte[0], mediaType);
+              body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON)
+                  ? REQUEST_BODY_EMPTY_JSON
+                  : RequestBody.Companion.create(new byte[0], mediaType);
             } else {
               body = RequestBody.Companion.create(content, mediaType);
             }
