@@ -15,27 +15,27 @@ public class DurationUtils {
    * @param valueString A String representing time in the Dapr runtime's format (e.g. 4h15m50s60ms).
    * @return A Duration
    */
-  public static Duration ConvertDurationFromDaprFormat(String valueString) {
+  public static Duration convertDurationFromDaprFormat(String valueString) {
     // Convert the format returned by the Dapr runtime into Duration
     // An example of the format is: 4h15m50s60ms. It does not include days.
-    int hIndex = valueString.indexOf('h');
-    int mIndex = valueString.indexOf('m');
-    int sIndex = valueString.indexOf('s');
-    int msIndex = valueString.indexOf("ms");
+    int hourIndex = valueString.indexOf('h');
+    int minuteIndex = valueString.indexOf('m');
+    int secondIndex = valueString.indexOf('s');
+    int milliIndex = valueString.indexOf("ms");
 
-    String hoursSpan = valueString.substring(0, hIndex);
+    String hoursSpan = valueString.substring(0, hourIndex);
 
     int hours = Integer.parseInt(hoursSpan);
     int days = hours / 24;
     hours = hours % 24;
 
-    String minutesSpan = valueString.substring(hIndex + 1, mIndex);
+    String minutesSpan = valueString.substring(hourIndex + 1, minuteIndex);
     int minutes = Integer.parseInt(minutesSpan);
 
-    String secondsSpan = valueString.substring(mIndex + 1, sIndex);
+    String secondsSpan = valueString.substring(minuteIndex + 1, secondIndex);
     int seconds = Integer.parseInt(secondsSpan);
 
-    String millisecondsSpan = valueString.substring(sIndex + 1, msIndex);
+    String millisecondsSpan = valueString.substring(secondIndex + 1, milliIndex);
     int milliseconds = Integer.parseInt(millisecondsSpan);
 
     return Duration.ZERO
@@ -52,13 +52,13 @@ public class DurationUtils {
    * @param value Duration
    * @return The Duration formatted as a String in the format the Dapr runtime uses (e.g. 4h15m50s60ms)
    */
-  public static String ConvertDurationToDaprFormat(Duration value) {
+  public static String convertDurationToDaprFormat(Duration value) {
     String stringValue = "";
 
     // return empty string for anything negative, it'll only happen for reminder "periods", not dueTimes.  A
     // negative "period" means fire once only.
-    if (value == Duration.ZERO ||
-        (value.compareTo(Duration.ZERO) == 1)) {
+    if (value == Duration.ZERO
+        || (value.compareTo(Duration.ZERO) == 1)) {
       long hours = getDaysPart(value) * 24 + getHoursPart(value);
 
       StringBuilder sb = new StringBuilder();
@@ -93,7 +93,8 @@ public class DurationUtils {
   }
 
   /**
-   * Helper to get the "hours" part of the Duration.  For example if the duration is 26 hours, this is 1 day, 2 hours, so this returns 2.
+   * Helper to get the "hours" part of the Duration.
+   * For example if the duration is 26 hours, this is 1 day, 2 hours, so this returns 2.
    *
    * @param d The duration to parse
    * @return the hour part of the duration

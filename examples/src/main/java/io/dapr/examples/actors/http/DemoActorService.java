@@ -20,14 +20,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run the server:
- * dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorService -Dexec.args="-p 3000"
+ * dapr run --app-id demoactorservice --app-port 3000 --port 3005 \
+ *   -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorService -Dexec.args="-p 3000"
  */
 @SpringBootApplication
 public class DemoActorService {
 
+  /**
+   * The main method of this app.
+   * @param args The port the app will listen on.
+   * @throws Exception An Exception.
+   */
   public static void main(String[] args) throws Exception {
     Options options = new Options();
-    options.addRequiredOption("p", "port", true, "Port Dapr will listen to.");
+    options.addRequiredOption("p", "port", true, "Port the will listen to.");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);
@@ -37,7 +43,7 @@ public class DemoActorService {
 
     // Register the Actor class.
     ActorRuntime.getInstance().registerActor(
-      DemoActorImpl.class, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+        DemoActorImpl.class, new DefaultObjectSerializer(), new DefaultObjectSerializer());
 
     // Start Dapr's callback endpoint.
     DaprApplication.start(port);

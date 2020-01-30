@@ -22,8 +22,8 @@ public final class CloudEvent {
    * Shared Json serializer/deserializer as per Jackson's documentation.
    */
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   /**
    * Identifier of the message being processed.
@@ -57,20 +57,21 @@ public final class CloudEvent {
 
   /**
    * Instantiates a new input request.
-   * @param id Identifier of the message being processed.
-   * @param source Source for this event.
-   * @param type Type of event.
-   * @param specversion Version of the event spec.
+   *
+   * @param id              Identifier of the message being processed.
+   * @param source          Source for this event.
+   * @param type            Type of event.
+   * @param specversion     Version of the event spec.
    * @param datacontenttype Type of the payload.
-   * @param data Payload.
+   * @param data            Payload.
    */
   public CloudEvent(
-    String id,
-    String source,
-    String type,
-    String specversion,
-    String datacontenttype,
-    String data) {
+      String id,
+      String source,
+      String type,
+      String specversion,
+      String datacontenttype,
+      String data) {
     this.id = id;
     this.source = source;
     this.type = type;
@@ -81,6 +82,7 @@ public final class CloudEvent {
 
   /**
    * Gets the identifier of the message being processed.
+   *
    * @return Identifier of the message being processed.
    */
   public String getId() {
@@ -89,6 +91,7 @@ public final class CloudEvent {
 
   /**
    * Gets the source for this event.
+   *
    * @return Source for this event.
    */
   public String getSource() {
@@ -97,6 +100,7 @@ public final class CloudEvent {
 
   /**
    * Gets the type of event.
+   *
    * @return Type of event.
    */
   public String getType() {
@@ -105,6 +109,7 @@ public final class CloudEvent {
 
   /**
    * Gets the version of the event spec.
+   *
    * @return Version of the event spec.
    */
   public String getSpecversion() {
@@ -113,6 +118,7 @@ public final class CloudEvent {
 
   /**
    * Gets the type of the payload.
+   *
    * @return Type of the payload.
    */
   public String getDatacontenttype() {
@@ -120,7 +126,8 @@ public final class CloudEvent {
   }
 
   /**
-   * Gets the payload
+   * Gets the payload.
+   *
    * @return Payload
    */
   public String getData() {
@@ -129,15 +136,21 @@ public final class CloudEvent {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
     CloudEvent that = (CloudEvent) o;
-    return Objects.equals(id, that.id) &&
-      Objects.equals(source, that.source) &&
-      Objects.equals(type, that.type) &&
-      Objects.equals(specversion, that.specversion) &&
-      Objects.equals(datacontenttype, that.datacontenttype) &&
-      Objects.equals(data, that.data);
+    return Objects.equals(id, that.id)
+        && Objects.equals(source, that.source)
+        && Objects.equals(type, that.type)
+        && Objects.equals(specversion, that.specversion)
+        && Objects.equals(datacontenttype, that.datacontenttype)
+        && Objects.equals(data, that.data);
   }
 
   @Override
@@ -147,6 +160,7 @@ public final class CloudEvent {
 
   /**
    * Deserialized a message topic from Dapr.
+   *
    * @param payload Payload sent from Dapr.
    * @return Message (can be null if input is null)
    * @throws IOException If cannot parse.
@@ -158,7 +172,7 @@ public final class CloudEvent {
 
     JsonNode node = OBJECT_MAPPER.readTree(payload);
 
-    if (node== null) {
+    if (node == null) {
       return null;
     }
 

@@ -16,7 +16,8 @@ import java.util.Collections;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run the program:
- * dapr run --app-id publisher --port 3006 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.pubsub.http.Publisher
+ * dapr run --app-id publisher --port 3006 -- \
+ *   mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.pubsub.http.Publisher
  */
 public class Publisher {
 
@@ -25,6 +26,11 @@ public class Publisher {
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
 
+  /**
+   * This is the entry point of the publisher app example.
+   * @param args Args, unused.
+   * @throws Exception A startup Exception.
+   */
   public static void main(String[] args) throws Exception {
     //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
     DaprClient client = new DaprClientBuilder().build();

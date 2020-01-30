@@ -110,7 +110,7 @@ public class DaprRuntimeTest {
     DaprObjectSerializer serializer = new DefaultObjectSerializer();
 
     for (Message message : messages) {
-      when(daprHttp.invokeAPI(
+      when(daprHttp.invokeApi(
           eq("POST"),
           eq(Constants.PUBLISH_PATH + "/" + TOPIC_NAME),
           eq(null),
@@ -197,7 +197,7 @@ public class DaprRuntimeTest {
       when(listener.process(eq(serializer.serialize(message.data)), eq(message.metadata)))
           .then(x -> expectedResponse == null ? Mono.empty() : Mono.just(expectedResponse));
 
-      when(daprHttp.invokeAPI(
+      when(daprHttp.invokeApi(
           eq("POST"),
           eq(Constants.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
           eq(null),

@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
  */
+
 package io.dapr.client.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -20,7 +21,6 @@ import io.dapr.utils.DurationUtils;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.temporal.TemporalUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +31,12 @@ public class StateOptions {
   private final Concurrency concurrency;
   private final RetryPolicy retryPolicy;
 
+  /**
+   * Represents options for a Dapr state API call.
+   * @param consistency The consistency mode.
+   * @param concurrency The concurrency mode.
+   * @param retryPolicy The retry policy.
+   */
   public StateOptions(Consistency consistency, Concurrency concurrency, RetryPolicy retryPolicy) {
     this.consistency = consistency;
     this.concurrency = concurrency;
@@ -49,6 +55,10 @@ public class StateOptions {
     return retryPolicy;
   }
 
+  /**
+   * Returns state options as a Map of option name to value.
+   * @return A map of state options.
+   */
   @JsonIgnore
   public Map<String, String> getStateOptionsAsMap() {
     Map<String, String> mapOptions = null;
@@ -98,7 +108,7 @@ public class StateOptions {
 
   public enum Concurrency {
     FIRST_WRITE("first-write"),
-    LAST_WRITE ("last-write");
+    LAST_WRITE("last-write");
 
     private final String value;
 
@@ -146,6 +156,12 @@ public class StateOptions {
     private final Pattern pattern;
 
 
+    /**
+     * Represents retry policies on a state operation.
+     * @param interval The delay between retries.
+     * @param threshold The total number of retries.
+     * @param pattern The way to retry: linear or exponential.
+     */
     public RetryPolicy(Duration interval, Integer threshold, Pattern pattern) {
       this.interval = interval;
       this.threshold = threshold;
@@ -171,12 +187,16 @@ public class StateOptions {
 
       super(Duration.class);
     }
+
     public StateOptionDurationSerializer(Class<Duration> t) {
       super(t);
     }
 
     @Override
-    public void serialize(Duration duration, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(
+        Duration duration,
+        JsonGenerator jsonGenerator,
+        SerializerProvider serializerProvider) throws IOException {
       jsonGenerator.writeNumber(duration.toMillis());
     }
   }
@@ -187,12 +207,14 @@ public class StateOptions {
     }
 
     @Override
-    public Duration deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+    public Duration deserialize(
+        JsonParser jsonParser,
+        DeserializationContext deserializationContext) throws IOException {
       String durationStr = jsonParser.readValueAs(String.class);
       Duration duration = null;
       if (durationStr != null && !durationStr.trim().isEmpty()) {
         try {
-          duration = DurationUtils.ConvertDurationFromDaprFormat(durationStr);
+          duration = DurationUtils.convertDurationFromDaprFormat(durationStr);
         } catch (Exception ex) {
           throw InvalidFormatException.from(jsonParser, "Unable to parse duration.", ex);
         }

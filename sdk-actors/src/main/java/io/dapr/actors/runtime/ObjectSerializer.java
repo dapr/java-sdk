@@ -67,8 +67,8 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
     try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
-      generator.writeStringField("dueTime", DurationUtils.ConvertDurationToDaprFormat(timer.getDueTime()));
-      generator.writeStringField("period", DurationUtils.ConvertDurationToDaprFormat(timer.getPeriod()));
+      generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(timer.getDueTime()));
+      generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(timer.getPeriod()));
       generator.writeStringField("callback", timer.getCallback());
       if (timer.getState() != null) {
         generator.writeBinaryField("data", this.serialize(timer.getState()));
@@ -91,8 +91,8 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
     try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
-      generator.writeStringField("dueTime", DurationUtils.ConvertDurationToDaprFormat(reminder.getDueTime()));
-      generator.writeStringField("period", DurationUtils.ConvertDurationToDaprFormat(reminder.getPeriod()));
+      generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(reminder.getDueTime()));
+      generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(reminder.getPeriod()));
       if (reminder.getData() != null) {
         generator.writeBinaryField("data", reminder.getData());
       }
@@ -121,15 +121,15 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
       generator.writeEndArray();
       if (config.getActorIdleTimeout() != null) {
         generator.writeStringField("actorIdleTimeout",
-          DurationUtils.ConvertDurationToDaprFormat(config.getActorIdleTimeout()));
+            DurationUtils.convertDurationToDaprFormat(config.getActorIdleTimeout()));
       }
       if (config.getActorScanInterval() != null) {
         generator.writeStringField("actorScanInterval",
-          DurationUtils.ConvertDurationToDaprFormat(config.getActorScanInterval()));
+            DurationUtils.convertDurationToDaprFormat(config.getActorScanInterval()));
       }
       if (config.getDrainOngoingCallTimeout() != null) {
         generator.writeStringField("drainOngoingCallTimeout",
-          DurationUtils.ConvertDurationToDaprFormat(config.getDrainOngoingCallTimeout()));
+            DurationUtils.convertDurationToDaprFormat(config.getDrainOngoingCallTimeout()));
       }
       if (config.getDrainBalancedActors() != null) {
         generator.writeBooleanField("drainBalancedActors", config.getDrainBalancedActors());
@@ -214,8 +214,8 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
     }
 
     JsonNode node = OBJECT_MAPPER.readTree(value);
-    Duration dueTime = DurationUtils.ConvertDurationFromDaprFormat(node.get("dueTime").asText());
-    Duration period = DurationUtils.ConvertDurationFromDaprFormat(node.get("period").asText());
+    Duration dueTime = DurationUtils.convertDurationFromDaprFormat(node.get("dueTime").asText());
+    Duration period = DurationUtils.convertDurationFromDaprFormat(node.get("period").asText());
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
     return new ActorReminderParams(data, dueTime, period);

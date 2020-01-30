@@ -1,60 +1,65 @@
 package io.dapr.examples.state.http;
 
+import static java.lang.System.out;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.serializer.DefaultObjectSerializer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
-
-import static java.lang.System.out;
+import java.nio.charset.StandardCharsets;
 
 /**
  * OrderManager web app.
- * <p>
- * Based on the helloworld Node.js example in https://github.com/dapr/samples/blob/master/1.hello-world/app.js
- * <p>
- * To install jars into your local maven repo:
+ *
+ * <p>Based on the helloworld Node.js example in https://github.com/dapr/samples/blob/master/1.hello-world/app.js
+ *
+ * <p>To install jars into your local maven repo:
  * mvn clean install
- * <p>
- * To run (after step above):
- * dapr run --app-id orderapp --app-port 3000 --port 3500 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.state.http.OrderManager
- * <p>
- * If this class changes, run this before running it again:
+ *
+ * <p>To run (after step above):
+ * dapr run --app-id orderapp --app-port 3000 --port 3500 -- mvn exec:java -pl=examples \
+ *   -Dexec.mainClass=io.dapr.examples.state.http.OrderManager
+ *
+ * <p>If this class changes, run this before running it again:
  * mvn compile
  */
 public class OrderManager {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+  /**
+   * The main method of this app.
+   * @param args Unused.
+   * @throws IOException An exception.
+   */
   public static void main(String[] args) throws IOException {
     int httpPort = 3001;
     HttpServer httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
 
     DaprClient daprClient =
-      (new DaprClientBuilder()).build();
+        (new DaprClientBuilder()).build();
 
     httpServer.createContext("/order").setHandler(e -> {
       out.println("Fetching order!");
-        try {
-          byte[] data = daprClient.getState("order", String.class).block().getValue().getBytes();
-          e.getResponseHeaders().set("content-type", "application/json");
-          e.sendResponseHeaders(200, data.length);
-          e.getResponseBody().write(data);
-          e.getResponseBody().close();
-        } catch (IOException ioerror) {
-          out.println(ioerror);
-          e.sendResponseHeaders(500, ioerror.getMessage().getBytes().length);
-          e.getResponseBody().write(ioerror.getMessage().getBytes());
-          e.getResponseBody().close();
-        }
+      try {
+        byte[] data = daprClient.getState("order", String.class).block().getValue().getBytes();
+        e.getResponseHeaders().set("content-type", "application/json");
+        e.sendResponseHeaders(200, data.length);
+        e.getResponseBody().write(data);
+        e.getResponseBody().close();
+      } catch (IOException ioerror) {
+        out.println(ioerror);
+        e.sendResponseHeaders(500, ioerror.getMessage().getBytes().length);
+        e.getResponseBody().write(ioerror.getMessage().getBytes());
+        e.getResponseBody().close();
+      }
     });
 
     httpServer.createContext("/neworder").setHandler(e -> {
@@ -92,13 +97,14 @@ public class OrderManager {
     byte[] buffer = new byte[1024];
     int len;
     try {
-      while ((len = is.read(buffer)) > 0)
+      while ((len = is.read(buffer)) > 0) {
         bos.write(buffer, 0, len);
+      }
     } catch (IOException e) {
       e.printStackTrace();
     } finally {
       bos.close();
     }
-    return new String(bos.toByteArray(), Charset.forName("UTF-8"));
+    return new String(bos.toByteArray(), StandardCharsets.UTF_8);
   }
 }
