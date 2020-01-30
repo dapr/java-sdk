@@ -121,15 +121,15 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
       generator.writeEndArray();
       if (config.getActorIdleTimeout() != null) {
         generator.writeStringField("actorIdleTimeout",
-          DurationUtils.ConvertDurationToDaprFormat(config.getActorIdleTimeout()));
+            DurationUtils.convertDurationToDaprFormat(config.getActorIdleTimeout()));
       }
       if (config.getActorScanInterval() != null) {
         generator.writeStringField("actorScanInterval",
-          DurationUtils.ConvertDurationToDaprFormat(config.getActorScanInterval()));
+            DurationUtils.convertDurationToDaprFormat(config.getActorScanInterval()));
       }
       if (config.getDrainOngoingCallTimeout() != null) {
         generator.writeStringField("drainOngoingCallTimeout",
-          DurationUtils.ConvertDurationToDaprFormat(config.getDrainOngoingCallTimeout()));
+            DurationUtils.convertDurationToDaprFormat(config.getDrainOngoingCallTimeout()));
       }
       if (config.getDrainBalancedActors() != null) {
         generator.writeBooleanField("drainBalancedActors", config.getDrainBalancedActors());
