@@ -102,6 +102,15 @@ public class ActorRuntime {
   /**
    * Gets the Actor configuration for this runtime.
    *
+   * @return Actor configuration.
+   */
+  public ActorRuntimeConfig getConfig() {
+    return this.config;
+  }
+
+  /**
+   * Gets the Actor configuration for this runtime.
+   *
    * @return Actor configuration serialized.
    * @throws IOException If cannot serialize config.
    */

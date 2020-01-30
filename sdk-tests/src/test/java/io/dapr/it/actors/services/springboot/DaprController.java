@@ -21,8 +21,8 @@ public class DaprController {
   }
 
   @GetMapping("/dapr/config")
-  public String daprConfig() throws Exception {
-    return "{\"actorIdleTimeout\":\"5s\",\"actorScanInterval\":\"2s\",\"drainOngoingCallTimeout\":\"1s\",\"drainBalancedActors\":true,\"entities\":[\"DemoActorTest\"]}";
+  public byte[] daprConfig() throws Exception {
+    return ActorRuntime.getInstance().serializeConfig();
   }
 
   @PostMapping(path = "/actors/{type}/{id}")
