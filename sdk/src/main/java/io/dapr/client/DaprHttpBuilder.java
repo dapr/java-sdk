@@ -52,7 +52,7 @@ public class DaprHttpBuilder {
    */
   private DaprHttp buildDaprHttp() {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
-    builder.readTimeout(DEFAULT_READ_TIMEOUT);
+    builder.readTimeout(this.readTimeout);
     OkHttpClient okHttpClient = builder.build();
     return new DaprHttp(Properties.HTTP_PORT.get(), okHttpClient);
   }
