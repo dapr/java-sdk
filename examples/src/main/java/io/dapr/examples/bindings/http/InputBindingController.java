@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 @RestController
 public class InputBindingController {
 
-  @PostMapping(path = "/bindingSample")
+  @PostMapping(path = "/sample123")
   public Mono<Void> handleInputBinding(@RequestBody(required = false) byte[] body) {
     return Mono.fromRunnable(() ->
             System.out.println("Received message through binding: " + (body == null ? "" : new String(body))));
