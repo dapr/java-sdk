@@ -131,7 +131,7 @@ public class DaprClientHttp implements DaprClient {
       }
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path, null, serializedRequestBody, metadata);
+      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path, metadata, serializedRequestBody, null);
       return response.flatMap(r -> {
         try {
           T object = objectSerializer.deserialize(r.getBody(), clazz);
