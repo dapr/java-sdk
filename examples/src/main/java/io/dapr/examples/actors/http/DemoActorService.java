@@ -23,7 +23,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * dapr run --app-id demoactorservice --app-port 3000 --port 3005 \
  *   -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorService -Dexec.args="-p 3000"
  */
-@SpringBootApplication
 public class DemoActorService {
 
   /**
@@ -42,13 +41,9 @@ public class DemoActorService {
     int port = Integer.parseInt(cmd.getOptionValue("port"));
 
     // Register the Actor class.
-    ActorRuntime.getInstance().registerActor(
-        DemoActorImpl.class, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    ActorRuntime.getInstance().registerActor(DemoActorImpl.class);
 
     // Start Dapr's callback endpoint.
     DaprApplication.start(port);
-
-    // Start application's endpoint.
-    SpringApplication.run(DemoActorService.class);
   }
 }
