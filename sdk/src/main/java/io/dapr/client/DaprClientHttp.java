@@ -89,7 +89,7 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> publishEvent(String topic, T event) {
+  public Mono<Void> publishEvent(String topic, Object event) {
     return this.publishEvent(topic, event, null);
   }
 
@@ -97,7 +97,7 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> publishEvent(String topic, T event, Map<String, String> metadata) {
+  public Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata) {
     try {
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
@@ -116,8 +116,8 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, R> Mono<T> invokeService(
-      Verb verb, String appId, String method, R request, Map<String, String> metadata, Class<T> clazz) {
+  public <T> Mono<T> invokeService(
+      Verb verb, String appId, String method, Object request, Map<String, String> metadata, Class<T> clazz) {
     try {
       if (verb == null) {
         throw new IllegalArgumentException("Verb cannot be null.");
@@ -162,7 +162,7 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Class<T> clazz) {
+  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, Class<T> clazz) {
     return this.invokeService(verb, appId, method, request, null, clazz);
   }
 
@@ -170,7 +170,7 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request) {
+  public Mono<Void> invokeService(Verb verb, String appId, String method, Object request) {
     return this.invokeService(verb, appId, method, request, null, byte[].class).then();
   }
 
@@ -178,8 +178,8 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <R> Mono<Void> invokeService(
-      Verb verb, String appId, String method, R request, Map<String, String> metadata) {
+  public Mono<Void> invokeService(
+      Verb verb, String appId, String method, Object request, Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
   }
 
@@ -205,7 +205,7 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> invokeBinding(String name, T request) {
+  public Mono<Void> invokeBinding(String name, Object request) {
     try {
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Name to bind cannot be null or empty.");
