@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
 
 import java.io.IOException;
-import java.util.Base64;
 
 /**
  * Serializes and deserializes an internal object.
