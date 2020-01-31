@@ -16,13 +16,12 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DaprObjectSerializer;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import reactor.core.publisher.Mono;
 
 /**
  * An adapter for the GRPC Client.
