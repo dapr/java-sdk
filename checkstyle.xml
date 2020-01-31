@@ -198,11 +198,6 @@
     </module>
     <module name="OverloadMethodsDeclarationOrder"/>
     <module name="VariableDeclarationUsageDistance"/>
-    <module name="CustomImportOrder">
-      <property name="sortImportsInGroupAlphabetically" value="true"/>
-      <property name="separateLineBetweenGroups" value="true"/>
-      <property name="customImportOrderRules" value="STATIC###THIRD_PARTY_PACKAGE"/>
-    </module>
     <module name="MethodParamPad"/>
     <module name="NoWhitespaceBefore">
       <property name="tokens"
@@ -241,11 +236,7 @@
     </module>
     <module name="JavadocMethod">
       <property name="scope" value="public"/>
-      <property name="allowMissingParamTags" value="true"/>
-      <property name="allowMissingThrowsTags" value="true"/>
-      <property name="allowMissingReturnTag" value="true"/>
       <property name="allowedAnnotations" value="Override, Test"/>
-      <property name="allowThrowsTagsForSubclasses" value="true"/>
     </module>
     <module name="MissingJavadocMethod">
       <property name="scope" value="public"/>
@@ -264,5 +255,17 @@
       <property name="exceptionVariableName" value="expected"/>
     </module>
     <module name="CommentsIndentation"/>
+
+    <module name="ImportOrder">
+      <property name="groups" value="*,javax,java"/>
+      <property name="ordered" value="true"/>
+      <property name="separated" value="true"/>
+      <property name="option" value="bottom"/>
+      <property name="sortStaticImportsAlphabetically" value="true"/>
+    </module>
+    <module name="SuppressionXpathSingleFilter">
+      <property name="checks" value="ImportOrder"/>
+      <property name="message" value="^'java\..*'.*"/>
+    </module>
   </module>
 </module>

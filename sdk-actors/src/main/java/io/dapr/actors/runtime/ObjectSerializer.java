@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.utils.DurationUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
@@ -185,7 +186,7 @@ public class ObjectSerializer extends io.dapr.client.ObjectSerializer {
    *
    * @param data bytes to be wrapped into the "data" attribute in a JSON object.
    * @return String to be sent to Dapr's API.
-   * @throws RuntimeException In case it cannot generate String.
+   * @throws IOException In case it cannot generate String.
    */
   public byte[] wrapData(final byte[] data) throws IOException {
     try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {

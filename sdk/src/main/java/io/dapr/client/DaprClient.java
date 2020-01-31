@@ -8,9 +8,10 @@ package io.dapr.client;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 import java.util.Map;
-import reactor.core.publisher.Mono;
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
