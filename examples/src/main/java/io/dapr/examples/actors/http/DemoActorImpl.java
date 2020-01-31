@@ -31,9 +31,9 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
   /**
-   * This is the constructor of an actor implementation.
+   * This is the constructor of an actor implementation, while also registering a timer.
    * @param runtimeContext The runtime context object which contains objects such as the state provider.
-   * @param id The id of this actor.
+   * @param id             The id of this actor.
    */
   public DemoActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
     super(runtimeContext, id);
@@ -46,6 +46,9 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
         Duration.ofSeconds(1)).block();
   }
 
+  /**
+   * Registers a reminder.
+   */
   @Override
   public void registerReminder() {
     super.registerReminder(
@@ -55,6 +58,11 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
         Duration.ofSeconds(2)).block();
   }
 
+  /**
+   * Prints a message and appends the timestamp.
+   * @param something Something to be said.
+   * @return What was said appended with timestamp.
+   */
   @Override
   public String say(String something) {
     Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -71,6 +79,23 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
     return utcNowAsString;
   }
 
+  /**
+   * Increments a persistent counter, saves and returns its updated value.
+   * Example of method implemented with Reactor's Mono class.
+   * This method could be rewritten with blocking calls in Mono, using block() method:
+   *
+   * <p>public int incrementAndGet(int delta) {
+   *   int counter = 0;
+   *   if (super.getActorStateManager().contains("counter").block()) {
+   *     counter = super.getActorStateManager().get("counter", int.class).block();
+   *   }
+   *   counter = counter + 1;
+   *   super.getActorStateManager().set("counter", counter).block();
+   *   return counter;
+   * }</p>
+   * @param delta Amount to be added to counter.
+   * @return Mono response for the incremented value.
+   */
   @Override
   public Mono<Integer> incrementAndGet(int delta) {
     return super.getActorStateManager().contains("counter")
@@ -79,6 +104,10 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
         .flatMap(c -> super.getActorStateManager().set("counter", c).thenReturn(c));
   }
 
+  /**
+   * Method invoked by timer.
+   * @param message Message to be printed.
+   */
   @Override
   public void clock(String message) {
     Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -90,20 +119,34 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
         + (message == null ? "" : message + " @ " + utcNowAsString));
   }
 
+  /**
+   * Method used to determine reminder's state type.
+   * @return Class for reminder's state.
+   */
   @Override
   public Class<Integer> getStateType() {
     return Integer.class;
   }
 
+  /**
+   * Method used be invoked for a reminder.
+   * @param reminderName The name of reminder provided during registration.
+   * @param state        The user state provided during registration.
+   * @param dueTime      The invocation due time provided during registration.
+   * @param period       The invocation period provided during registration.
+   * @return Mono result.
+   */
   @Override
   public Mono<Void> receiveReminder(String reminderName, Integer state, Duration dueTime, Duration period) {
-    Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-    String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
+    return Mono.fromRunnable(() -> {
+      Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+      String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
 
-    // Handles the request by printing message.
-    System.out.println(String.format(
-        "Server reminded actor %s of: %s for %d @ %s",
-        this.getId(), reminderName, state, utcNowAsString));
-    return Mono.empty();
+      String message = String.format("Server reminded actor %s of: %s for %d @ %s",
+          this.getId(), reminderName, state, utcNowAsString);
+
+      // Handles the request by printing message.
+      System.out.println(message);
+    });
   }
 }
