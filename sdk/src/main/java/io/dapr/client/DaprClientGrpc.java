@@ -69,7 +69,7 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> publishEvent(String topic, T event) {
+  public Mono<Void> publishEvent(String topic, Object event) {
     return this.publishEvent(topic, event, null);
   }
 
@@ -77,7 +77,7 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> publishEvent(String topic, T event, Map<String, String> metadata) {
+  public Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata) {
     try {
       byte[] byteEvent = objectSerializer.serialize(event);
       Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteEvent)).build();
@@ -100,11 +100,11 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, R> Mono<T> invokeService(
+  public <T> Mono<T> invokeService(
       Verb verb,
       String appId,
       String method,
-      R request,
+      Object request,
       Map<String, String> metadata,
       Class<T> clazz) {
     try {
@@ -132,7 +132,7 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T, R> Mono<T> invokeService(Verb verb, String appId, String method, R request, Class<T> clazz) {
+  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, Class<T> clazz) {
     return this.invokeService(verb, appId, method, request, null, clazz);
   }
 
@@ -140,7 +140,7 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <R> Mono<Void> invokeService(Verb verb, String appId, String method, R request) {
+  public Mono<Void> invokeService(Verb verb, String appId, String method, Object request) {
     return this.invokeService(verb, appId, method, request, null, byte[].class).then();
   }
 
@@ -148,8 +148,8 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <R> Mono<Void> invokeService(
-      Verb verb, String appId, String method, R request, Map<String, String> metadata) {
+  public Mono<Void> invokeService(
+      Verb verb, String appId, String method, Object request, Map<String, String> metadata) {
     return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
   }
 
@@ -175,7 +175,7 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> invokeBinding(String name, T request) {
+  public Mono<Void> invokeBinding(String name, Object request) {
     return this.invokeBinding(name, request, null);
   }
 
@@ -183,7 +183,7 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Void> invokeBinding(String name, T request, Map<String, String> metadata) {
+  public Mono<Void> invokeBinding(String name, Object request, Map<String, String> metadata) {
     try {
       byte[] byteRequest = objectSerializer.serialize(request);
       DaprProtos.InvokeBindingEnvelope.Builder builder = DaprProtos.InvokeBindingEnvelope.newBuilder()
