@@ -113,7 +113,7 @@ public class DaprRuntimeTest {
       when(daprHttp.invokeApi(
           eq("POST"),
           eq(Constants.PUBLISH_PATH + "/" + TOPIC_NAME),
-          eq(null),
+          any(),
           eq(serializer.serialize(message.data)),
           eq(null)))
           .thenAnswer(invocationOnMock -> this.daprRuntime.handleInvocation(
@@ -200,9 +200,9 @@ public class DaprRuntimeTest {
       when(daprHttp.invokeApi(
           eq("POST"),
           eq(Constants.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
-          eq(null),
+          any(),
           eq(serializer.serialize(message.data)),
-          any()))
+          eq(null)))
           .thenAnswer(x ->
               this.daprRuntime.handleInvocation(
               METHOD_NAME,
