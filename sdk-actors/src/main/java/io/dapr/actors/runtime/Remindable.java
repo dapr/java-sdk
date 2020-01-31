@@ -5,8 +5,9 @@
 
 package io.dapr.actors.runtime;
 
-import java.time.Duration;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 
 /**
  * Interface that actors must implement to consume reminders registered using RegisterReminderAsync.
