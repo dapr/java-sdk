@@ -177,12 +177,25 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<Void> invokeBinding(String name, T request) {
+    return this.invokeBinding(name, request, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<Void> invokeBinding(String name, T request, Map<String, String> metadata) {
     try {
       byte[] byteRequest = objectSerializer.serialize(request);
-      Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
       DaprProtos.InvokeBindingEnvelope.Builder builder = DaprProtos.InvokeBindingEnvelope.newBuilder()
-          .setName(name)
-          .setData(data);
+          .setName(name);
+      if (byteRequest != null) {
+        Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
+        builder.setData(data);
+      }
+      if (metadata != null) {
+        builder.getMetadataMap().putAll(metadata);
+      }
       DaprProtos.InvokeBindingEnvelope envelope = builder.build();
       return Mono.fromCallable(() -> {
         ListenableFuture<Empty> futureEmpty = client.invokeBinding(envelope);

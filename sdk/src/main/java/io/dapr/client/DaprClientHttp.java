@@ -54,7 +54,12 @@ public class DaprClientHttp implements DaprClient {
   private final DaprObjectSerializer stateSerializer;
 
   /**
-   * Flag determining if serializer's input and output contains a valid String.
+   * Flag determining if object serializer's input and output is Dapr's default.
+   */
+  private final boolean isDefaultObjectSerializer;
+
+  /**
+   * Flag determining if state serializer's input and output contains a valid String.
    */
   private final boolean isStateString;
 
@@ -71,6 +76,7 @@ public class DaprClientHttp implements DaprClient {
     this.client = client;
     this.objectSerializer = objectSerializer;
     this.stateSerializer = stateSerializer;
+    this.isDefaultObjectSerializer = objectSerializer instanceof DefaultObjectSerializer;
     this.isStateString = stateSerializer.getClass().getAnnotation(StringContentType.class) != null;
   }
 
@@ -206,13 +212,44 @@ public class DaprClientHttp implements DaprClient {
    */
   @Override
   public <T> Mono<Void> invokeBinding(String name, T request) {
+    return this.invokeBinding(name, request, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<Void> invokeBinding(String name, T request, Map<String, String> metadata) {
     try {
       if (name == null || name.trim().isEmpty()) {
-        throw new IllegalArgumentException("Name to bind cannot be null or empty.");
+        throw new IllegalArgumentException("Binding name cannot be null or empty.");
       }
 
       Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put("data", request);
+      if (metadata != null) {
+        jsonMap.put("metadata", metadata);
+      }
+
+      if (request != null) {
+        if (this.isDefaultObjectSerializer) {
+          // If we are using Dapr's default serializer, we pass the object directly and skip objectSerializer.
+          // This allows binding to receive JSON directly without having to extract it from a quoted string.
+          // Example of output binding vs body in the input binding:
+          //   This logic DOES this:
+          //     Output Binding: { "data" : { "mykey": "myvalue" } }
+          //     Input Binding: { "mykey": "myvalue" }
+          //   This logic AVOIDS this:
+          //     Output Binding: { "data" : "{ \"mykey\": \"myvalue\" }" }
+          //     Input Binding: "{ \"mykey\": \"myvalue\" }"
+          jsonMap.put("data", request);
+        } else {
+          // When customer provides a custom serializer, he will get a Base64 encoded String back - always.
+          // Example of body in the input binding resulting from this logic:
+          //   { "data" : "eyJrZXkiOiAidmFsdWUifQ==" }
+          jsonMap.put("data", objectSerializer.serialize(request));
+        }
+      }
+
       StringBuilder url = new StringBuilder(Constants.BINDING_PATH).append("/").append(name);
 
       return this.client
@@ -220,7 +257,7 @@ public class DaprClientHttp implements DaprClient {
               DaprHttp.HttpMethods.POST.name(),
               url.toString(),
               null,
-              objectSerializer.serialize(jsonMap),
+              INTERNAL_SERIALIZER.serialize(jsonMap),
               null)
           .then();
     } catch (Exception ex) {

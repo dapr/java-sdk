@@ -132,7 +132,7 @@ public interface DaprClient {
   Mono<byte[]> invokeService(Verb verb, String appId, String method, byte[] request, Map<String, String> metadata);
 
   /**
-   * Creating a Binding.
+   * Invokes a Binding.
    *
    * @param name    The name of the biding to call.
    * @param request The request needed for the binding.
@@ -140,6 +140,17 @@ public interface DaprClient {
    * @return a Mono plan of type Void
    */
   <T> Mono<Void> invokeBinding(String name, T request);
+
+  /**
+   * Invokes a Binding with metadata.
+   *
+   * @param name     The name of the biding to call.
+   * @param request  The request needed for the binding.
+   * @param metadata The metadata map.
+   * @param <T>      The type of the request.
+   * @return a Mono plan of type Void
+   */
+  <T> Mono<Void> invokeBinding(String name, T request, Map<String, String> metadata);
 
   /**
    * Retrieve a State based on their key.
