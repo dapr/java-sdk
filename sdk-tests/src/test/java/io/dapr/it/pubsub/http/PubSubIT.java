@@ -10,7 +10,6 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Verb;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Test;
 
 import java.util.Collections;
