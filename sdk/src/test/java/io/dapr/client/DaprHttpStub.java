@@ -29,7 +29,6 @@ public class DaprHttpStub extends DaprHttp {
 
     /**
      * {@inheritDoc}
-     * @return
      */
     @Override
     public Mono<DaprHttp.Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
