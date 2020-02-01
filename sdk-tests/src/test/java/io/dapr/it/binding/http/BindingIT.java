@@ -17,6 +17,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 
 import static io.dapr.it.Retry.callWithRetry;
@@ -45,7 +46,7 @@ public class BindingIT extends BaseIT {
         InputBindingService.class,
         true,
         60000);
-    // At this point, it is guaranteed that the service aboce is running and all ports being listened to.
+    // At this point, it is guaranteed that the service above is running and all ports being listened to.
     // TODO: figure out why this wait is needed for this scenario to work end-to-end. Kafka not up yet?
     Thread.sleep(120000);
 
@@ -59,18 +60,26 @@ public class BindingIT extends BaseIT {
     myClass.message = "hello";
 
     System.out.println("sending first message");
-    client.invokeBinding(BINDING_NAME, myClass).block();
+    client.invokeBinding(BINDING_NAME, myClass, Collections.singletonMap("MyMetadata", "MyValue")).block();
 
     // This is an example of sending a plain string.  The input binding will receive
     //   cat
     final String m = "cat";
     System.out.println("sending " + m);
-    client.invokeBinding(BINDING_NAME, m).block();
+    client.invokeBinding(BINDING_NAME, m, Collections.singletonMap("MyMetadata", "MyValue")).block();
 
+    // Metadata is not used by Kafka component, so it is not possible to validate.
     callWithRetry(() -> {
       System.out.println("Checking results ...");
-      final List<String> messages = client.invokeService(Verb.GET, daprRunInputBinding.getAppName(), "messages", null, List.class).block();
+      final List<String> messages =
+          client.invokeService(
+              Verb.GET,
+              daprRunInputBinding.getAppName(),
+              "messages",
+              null,
+              List.class).block();
       assertEquals(2, messages.size());
+
       MyClass resultClass = null;
       try {
         resultClass = new ObjectMapper().readValue(messages.get(0), MyClass.class);

@@ -11,11 +11,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.StringContentType;
+import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import reactor.core.publisher.Mono;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.

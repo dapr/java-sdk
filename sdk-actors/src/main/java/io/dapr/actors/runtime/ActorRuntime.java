@@ -10,11 +10,12 @@ import io.dapr.actors.ActorTrace;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import reactor.core.publisher.Mono;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import reactor.core.publisher.Mono;
 
 /**
  * Contains methods to register actor types. Registering the types allows the

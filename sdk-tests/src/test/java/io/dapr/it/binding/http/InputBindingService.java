@@ -8,7 +8,7 @@ package io.dapr.it.binding.http;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {"io.dapr.it.binding.http"})
+@SpringBootApplication
 public class InputBindingService {
 
   public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running. Init Elapsed";

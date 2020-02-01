@@ -6,14 +6,11 @@
 package io.dapr.examples.actors.http;
 
 import io.dapr.actors.runtime.ActorRuntime;
-import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.springboot.DaprApplication;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * Service for Actor runtime.
