@@ -233,8 +233,7 @@ public class ActorRuntime {
    */
   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, unwrap(payload)))
-          .map(response -> wrap((byte[]) response));
+          .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, payload));
   }
 
   /**
