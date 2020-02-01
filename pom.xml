@@ -32,6 +32,10 @@
       <id>ossrh</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
+    <site>
+      <id>localDocsDirecty</id>
+      <url>file:${maven.multiModuleProjectDirectory}/docs/</url>
+    </site>
     <!-- Use default repository -->
     <!-- <repository>
       <id>ossrh</id>
@@ -175,6 +179,11 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.8.2</version>
       </plugin>
     </plugins>
   </build>
