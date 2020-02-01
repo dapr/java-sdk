@@ -148,7 +148,7 @@ public class DemoActorClient {
     
       try {
         // Waits for up to 1 second.
-        Thread.sleep((long) Math.rint(1000));
+        Thread.sleep((long) (1000 * Math.random()));
       } catch (InterruptedException e) {
         // We have been interrupted, so we set the interrupted flag to exit gracefully.
         Thread.currentThread().interrupt();

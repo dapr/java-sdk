@@ -24,7 +24,7 @@ public class InputBindingController {
 
   @GetMapping("/dapr/config")
   public String daprConfig() throws Exception {
-    return "{\"actorIdleTimeout\":\"5s\",\"actorScanInterval\":\"2s\",\"drainOngoingCallTimeout\":\"1s\",\"drainBalancedActors\":true,\"entities\":[]}";
+    return "{}";
   }
 
   @PostMapping(path = "/sample123")

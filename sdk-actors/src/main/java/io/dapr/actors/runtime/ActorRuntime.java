@@ -10,11 +10,12 @@ import io.dapr.actors.ActorTrace;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import reactor.core.publisher.Mono;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import reactor.core.publisher.Mono;
 
 /**
  * Contains methods to register actor types. Registering the types allows the
@@ -233,8 +234,7 @@ public class ActorRuntime {
    */
   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, unwrap(payload)))
-          .map(response -> wrap((byte[]) response));
+          .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, payload));
   }
 
   /**
@@ -281,35 +281,5 @@ public class ActorRuntime {
     }
 
     return actorManager;
-  }
-
-  /**
-   * Extracts the data as String from the Actor's method result.
-   *
-   * @param payload String returned by API.
-   * @return data or null.
-   * @throws RuntimeException In case it cannot extract data.
-   */
-  private byte[] unwrap(final byte[] payload) {
-    try {
-      return INTERNAL_SERIALIZER.unwrapData(payload);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Builds the request to invoke an API for Actors.
-   *
-   * @param data Data to be wrapped in the request.
-   * @return Payload to be sent to Dapr's API.
-   * @throws RuntimeException In case it cannot generate payload.
-   */
-  private byte[] wrap(final byte[] data) {
-    try {
-      return INTERNAL_SERIALIZER.wrapData(data);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

@@ -5,25 +5,25 @@
 
 package io.dapr.examples.invoke.grpc;
 
-import static io.dapr.examples.DaprExamplesProtos.SayRequest;
-import static io.dapr.examples.DaprExamplesProtos.SayResponse;
-
 import com.google.protobuf.Any;
-import com.google.protobuf.InvalidProtocolBufferException;
 import io.dapr.DaprClientGrpc;
 import io.dapr.DaprClientProtos;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+
+import static io.dapr.examples.DaprExamplesProtos.SayRequest;
+import static io.dapr.examples.DaprExamplesProtos.SayResponse;
 
 /**
  * 1. Build and install jars:
