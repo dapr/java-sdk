@@ -60,13 +60,13 @@ For a Maven project, add the following to your `pom.xml` file:
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk</artifactId>
-          <version>0.2.0-SNAPSHOT</version>
+          <version>0.2.0-beta-1</version>
         </dependency>
         <!-- Dapr's SDK for Actors (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk</artifactId>
-          <version>0.2.0-SNAPSHOT</version>
+          <version>0.2.0-beta-1</version>
         </dependency>
         ...
       </dependencies>
