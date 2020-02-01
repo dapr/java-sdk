@@ -1,0 +1,17 @@
+io.dapr
+io.dapr.actors
+io.dapr.actors.client
+io.dapr.actors.runtime
+io.dapr.client
+io.dapr.client.domain
+io.dapr.examples
+io.dapr.examples.actors.http
+io.dapr.examples.bindings.http
+io.dapr.examples.invoke.grpc
+io.dapr.examples.invoke.http
+io.dapr.examples.pubsub.http
+io.dapr.examples.state
+io.dapr.exceptions
+io.dapr.serializer
+io.dapr.springboot
+io.dapr.utils

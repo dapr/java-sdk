@@ -148,19 +148,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.1.1</version>
-        <configuration>
-          <failOnWarnings>false</failOnWarnings>
-          <failOnError>true</failOnError>
-          <goal>site</goal>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
 </project>

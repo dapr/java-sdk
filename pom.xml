@@ -188,6 +188,35 @@
     </plugins>
   </build>
 
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.1.1</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>javadoc</report>
+            </reports>
+          </reportSet>
+          <reportSet>
+            <id>aggregate</id>
+            <inherited>false</inherited>
+            <reports>
+              <report>aggregate</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+        <configuration>
+          <failOnWarnings>false</failOnWarnings>
+          <failOnError>true</failOnError>
+          <goal>site</goal>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
   <licenses>
     <license>
       <name>MIT License</name>
