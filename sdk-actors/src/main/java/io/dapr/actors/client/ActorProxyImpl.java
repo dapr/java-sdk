@@ -71,9 +71,9 @@ class ActorProxyImpl implements ActorProxy {
    */
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.wrap(data))
+    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.serialize(data))
           .filter(s -> s.length > 0)
-          .map(s -> unwrap(s, clazz));
+          .map(s -> deserialize(s, clazz));
   }
 
   /**
@@ -83,7 +83,7 @@ class ActorProxyImpl implements ActorProxy {
   public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
           .filter(s -> s.length > 0)
-          .map(s -> unwrap(s, clazz));
+          .map(s -> deserialize(s, clazz));
   }
 
   /**
@@ -99,7 +99,7 @@ class ActorProxyImpl implements ActorProxy {
    */
   @Override
   public Mono<Void> invokeActorMethod(String methodName, Object data) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.wrap(data)).then();
+    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.serialize(data)).then();
   }
 
   /**
@@ -111,9 +111,9 @@ class ActorProxyImpl implements ActorProxy {
    * @return Response object or null.
    * @throws RuntimeException In case it cannot generate Object.
    */
-  private <T> T unwrap(final byte[] response, Class<T> clazz) {
+  private <T> T deserialize(final byte[] response, Class<T> clazz) {
     try {
-      return this.serializer.deserialize(INTERNAL_SERIALIZER.unwrapData(response), clazz);
+      return this.serializer.deserialize(response, clazz);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -126,9 +126,9 @@ class ActorProxyImpl implements ActorProxy {
    * @return Payload to be sent to Dapr's API.
    * @throws RuntimeException In case it cannot generate payload.
    */
-  private byte[] wrap(final Object request) {
+  private byte[] serialize(final Object request) {
     try {
-      return INTERNAL_SERIALIZER.wrapData(this.serializer.serialize(request));
+      return this.serializer.serialize(request);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

@@ -30,9 +30,9 @@ public class ActorProxyImplTest {
   @Test()
   public void invokeActorMethodWithoutDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
-    Mono<byte[]> daprResponse =
-      Mono.just("{\n\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n}"
-        .getBytes());
+    Mono<byte[]> daprResponse = Mono.just(
+      "{\n\t\t\"propertyA\": \"valueA\",\n\t\t\"propertyB\": \"valueB\"\n\t}".getBytes());
+
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
         .thenReturn(daprResponse);
 
@@ -93,8 +93,7 @@ public class ActorProxyImplTest {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
         .thenReturn(
-          Mono.just("{\n\t\"data\": \"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"\n}"
-            .getBytes()));
+          Mono.just("{\n\t\t\"propertyA\": \"valueA\",\n\t\t\"propertyB\": \"valueB\"\n\t}".getBytes()));
 
     final ActorProxy actorProxy = new ActorProxyImpl(
         "myActorType",
