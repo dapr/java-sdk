@@ -6,8 +6,9 @@
 package io.dapr.client;
 
 import io.dapr.utils.Properties;
-import java.time.Duration;
 import okhttp3.OkHttpClient;
+
+import java.time.Duration;
 
 /**
  * A builder for the DaprHttp.

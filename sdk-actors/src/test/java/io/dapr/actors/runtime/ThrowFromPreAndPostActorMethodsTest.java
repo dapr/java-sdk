@@ -154,15 +154,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
         this.manager.invokeMethod(
           new ActorId(invocationOnMock.getArgument(1, String.class)),
           invocationOnMock.getArgument(2, String.class),
-          INTERNAL_SERIALIZER.unwrapData(
-            invocationOnMock.getArgument(3, byte[].class)))
-          .map(s -> {
-            try {
-              return INTERNAL_SERIALIZER.wrapData(s);
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-          }));
+            invocationOnMock.getArgument(3, byte[].class)));
 
     this.manager.activateActor(actorId).block();
 

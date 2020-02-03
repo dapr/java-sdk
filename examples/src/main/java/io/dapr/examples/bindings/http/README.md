@@ -105,14 +105,13 @@ public class OutputBindingExample {
     final String BINDING_NAME = "bindingSample";
     ///...
     MyClass myClass = new MyClass();
-    myClass.message = "hello";
+    myClass.message = message;
 
     System.out.println("sending an object instance with message: " + myClass.message);
     client.invokeBinding(BINDING_NAME, myClass); //Binding a data object
-    ///..
-    final String m = "cat";
+    ///...
     System.out.println("sending a plain string: " + m);
-    client.invokeBinding(BINDING_NAME, m); //Binding a plain string text
+    client.invokeBinding(BINDING_NAME, message); //Binding a plain string text
     }
 ///...
 }

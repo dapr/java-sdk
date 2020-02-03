@@ -15,7 +15,7 @@ import io.dapr.client.DaprClientBuilder;
  * 2. cd to [repo-root]/examples
  * 3. Run the program:
  * dapr run --app-id outputbinding --port 3006 \
- *   -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.OutputBindingExample
+ *   -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.OutputBindingExample
  */
 public class OutputBindingExample {
 
@@ -26,7 +26,7 @@ public class OutputBindingExample {
     public String message;
   }
 
-  static final String BINDING_NAME = "bindingSample";
+  static final String BINDING_NAME = "sample123";
 
   /**
    * The main method of this app.
@@ -37,26 +37,30 @@ public class OutputBindingExample {
   public static void main(String[] args) {
     DaprClient client = new DaprClientBuilder().build();
 
-    // This is an example of sending data in a user-defined object.  The input binding will receive:
-    //   {"message":"hello"}
-    MyClass myClass = new MyClass();
-    myClass.message = "hello";
+    int count = 0;
+    while (!Thread.currentThread().isInterrupted()) {
+      String message = "Message #" + (count++);
 
-    System.out.println("sending a class with message: " + myClass.message);
-    client.invokeBinding(BINDING_NAME, myClass).block();
+      // Randomly decides between a class type or string type to be sent.
+      if (Math.random() >= 0.5) {
+        // This is an example of sending data in a user-defined object.  The input binding will receive:
+        //   {"message":"hello"}
+        MyClass myClass = new MyClass();
+        myClass.message = message;
 
-    // This is an example of sending a plain string.  The input binding will receive:
-    //   "cat"
-    final String m = "cat";
-    System.out.println("sending a plain string: " + m);
-    client.invokeBinding(BINDING_NAME, m).block();
+        System.out.println("sending a class with message: " + myClass.message);
+        client.invokeBinding(BINDING_NAME, myClass).block();
+      } else {
+        System.out.println("sending a plain string: " + message);
+        client.invokeBinding(BINDING_NAME, message).block();
+      }
 
-    try {
-      Thread.sleep((long) (10000 * Math.random()));
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-      Thread.currentThread().interrupt();
-      return;
+      try {
+        Thread.sleep((long) (10000 * Math.random()));
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
     }
 
     System.out.println("Done.");

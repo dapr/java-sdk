@@ -85,7 +85,7 @@ public class ActorRuntimeTest {
     this.runtime.activate(ACTOR_NAME, actorId).block();
 
     byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
-    String message = ACTOR_STATE_SERIALIZER.deserialize(ACTOR_STATE_SERIALIZER.unwrapData(response), String.class);
+    String message = ACTOR_STATE_SERIALIZER.deserialize(response, String.class);
     Assert.assertEquals("Nothing to say.", message);
   }
 

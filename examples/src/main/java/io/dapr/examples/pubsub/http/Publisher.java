@@ -7,7 +7,6 @@ package io.dapr.examples.pubsub.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.serializer.DefaultObjectSerializer;
 
 import java.util.Collections;
 
