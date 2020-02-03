@@ -81,13 +81,13 @@ repositories {
 	...
 	// Dapr repositories
     maven { 
-		url "https://oss.sonatype.org/content/repositories/snapshots"
-		mavenContent {
-			snapshotsOnly()
-		}
+      url "https://oss.sonatype.org/content/repositories/snapshots"
+	  mavenContent {
+	    snapshotsOnly()
+	  }
 	}
     maven { 
-		url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+	  url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 	}
 }
 ...
