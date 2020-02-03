@@ -37,9 +37,6 @@ public class MethodInvokeController {
         return messagesReceived;
     }
 
-
-
-
     @PostMapping("/persons")
     public void postPerson(@RequestBody Person person){
         System.out.println("Controller get person: " + person);
@@ -72,5 +69,4 @@ public class MethodInvokeController {
     public List<Person> getPersons() {
         return persons;
     }
-
 }

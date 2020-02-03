@@ -1,6 +1,5 @@
 package io.dapr.it.methodinvoke.http;
 
-import com.github.javafaker.Faker;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Verb;
@@ -9,10 +8,7 @@ import io.dapr.it.DaprRun;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -61,21 +57,15 @@ public class MethodInvokeIT extends BaseIT {
 
     }
 
-
     @Test
     public void testInvokeWithObjects()  {
-
-        // At this point, it is guaranteed that the service above is running and all ports being listened to.
-
         DaprClient client = new DaprClientBuilder().build();
-
-        Faker faker = new Faker();
 
         for (int i = 0; i < NUM_MESSAGES; i++) {
             Person person= new Person();
-            person.setName(faker.name().name());
-            person.setLastName(faker.name().lastName());
-            person.setBirthDate(faker.date().birthday());
+            person.setName(String.format("Name %d", i));
+            person.setLastName(String.format("Last Name %d", i));
+            person.setBirthDate(new Date());
             //Publishing messages
             client.invokeService(Verb.POST, daprRun.getAppName(), "persons", person).block();
             System.out.println("Invoke method persons with parameter : " + person);
@@ -100,7 +90,5 @@ public class MethodInvokeIT extends BaseIT {
         Person resultPerson= persons.get(1);
         assertEquals("John", resultPerson.getName());
         assertEquals("Smith", resultPerson.getLastName());
-
     }
-
 }
