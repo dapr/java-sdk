@@ -78,25 +78,25 @@ For a Gradle project, add the following to your `build.gradle` file:
 
 ```
 repositories {
-	...
-	// Dapr repositories
+    ...
+    // Dapr repositories
     maven { 
       url "https://oss.sonatype.org/content/repositories/snapshots"
 	  mavenContent {
 	    snapshotsOnly()
 	  }
-	}
+    }
     maven { 
 	  url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-	}
+    }
 }
 ...
 dependencies {
 ...
-	// Dapr's core SDK with all features, except Actors.
-	compile('io.dapr:dapr-sdk:0.2.0-SNAPSHOT')
-	// Dapr's SDK for Actors (optional).
-	compile('io.dapr:dapr-sdk-actors:0.2.0-SNAPSHOT')
+    // Dapr's core SDK with all features, except Actors.
+    compile('io.dapr:dapr-sdk:0.2.0-SNAPSHOT')
+    // Dapr's SDK for Actors (optional).
+    compile('io.dapr:dapr-sdk-actors:0.2.0-SNAPSHOT')
 }
 ```
 
