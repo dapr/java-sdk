@@ -54,12 +54,12 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //create of the deferred call to DAPR to store the state
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save action
     saveResponse.block();
 
     //create of the deferred call to DAPR to get the state
-    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, null), MyData.class);
 
     //retrieve the state
     State<MyData> myDataResponse = response.block();
@@ -86,7 +86,7 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute save action to DAPR
     saveResponse.block();
 
@@ -94,12 +94,13 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A");
     data.setPropertyB("data in property B2");
     //create deferred action to update the sate without any etag or options
-    saveResponse = daprClient.saveState(stateKey, null, data, null);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the update action to DAPR
     saveResponse.block();
 
     //Create deferred action to retrieve the action
-    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+        MyData.class);
     //execute the retrieve of the state
     State<MyData> myDataResponse = response.block();
 
@@ -121,12 +122,13 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A");
     data.setPropertyB("data in property B");
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+        MyData.class);
     //execute the retrieve of the state
     State<MyData> myDataResponse = response.block();
 
@@ -135,12 +137,12 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //create deferred action to delete the state
-    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, null, null);
+    Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, null, null);
     //execute the delete action
     deleteResponse.block();
 
     //Create deferred action to retrieve the state
-    response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null), MyData.class);
     //execute the retrieve of the state
     myDataResponse = response.block();
 
@@ -161,12 +163,13 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+        MyData.class);
     //execute the action for retrieve the state and the etag
     State<MyData> myDataResponse = response.block();
 
@@ -183,11 +186,11 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A2");
     data.setPropertyB("data in property B2");
     //Create deferred action to update the data using the correct etag
-    saveResponse = daprClient.saveState(stateKey, myDataResponse.getEtag(), data, null);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), data, null);
     saveResponse.block();
 
 
-    response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null), MyData.class);
     //retrive the data wihout any etag
     myDataResponse = response.block();
 
@@ -214,12 +217,13 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+        MyData.class);
     //execute the action for retrieve the state and the etag
     State<MyData> myDataResponse = response.block();
 
@@ -236,11 +240,11 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A2");
     data.setPropertyB("data in property B2");
     //Create deferred action to update the data using the incorrect etag
-    saveResponse = daprClient.saveState(stateKey, "99999999999999", data, null);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, "99999999999999", data, null);
     saveResponse.block();
 
 
-    response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null), MyData.class);
     //retrive the data wihout any etag
     myDataResponse = response.block();
 
@@ -264,12 +268,13 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A");
     data.setPropertyB("data in property B");
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
 
     //Create deferred action to get the state with the etag
-    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+        MyData.class);
     //execute the get state
     State<MyData> myDataResponse = response.block();
 
@@ -280,12 +285,12 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the etag
-    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, myDataResponse.getEtag(), null);
+    Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), null);
     //execute the delete of the state
     deleteResponse.block();
 
     //Create deferred action to get the sate without an etag
-    response = daprClient.getState(new State(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, null), MyData.class);
     myDataResponse = response.block();
 
     //Review that the response is null, because the state was deleted
@@ -304,12 +309,13 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A");
     data.setPropertyB("data in property B");
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
 
     //Create deferred action to get the state with the etag
-    Mono<State<MyData>> response = daprClient.getState(new State<MyData>(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+        MyData.class);
     //execute the get state
     State<MyData> myDataResponse = response.block();
 
@@ -320,12 +326,12 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the incorrect etag
-    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, "99999999999", null);
+    Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, "99999999999", null);
     //execute the delete of the state, this should trhow an exception
     deleteResponse.block();
 
     //Create deferred action to get the sate without an etag
-    response = daprClient.getState(new State(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, null), MyData.class);
     myDataResponse = response.block();
 
     //Review that the response is null, because the state was deleted
@@ -337,7 +343,8 @@ public class HttpStateClientIT extends BaseIT {
     final String stateKey = "keyToBeUpdatedWithEtagAndOptions";
 
     //create option with concurrency with first writte and consistency of strong
-    StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE, null);
+    StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG,
+        StateOptions.Concurrency.FIRST_WRITE, null);
 
     //create dapr client
     DaprClient daprClient = buildDaprClient();
@@ -347,13 +354,14 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //create state using stateOptions
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, stateOptions);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, stateOptions);
     //execute the save state
     saveResponse.block();
 
 
     //crate deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions),
+        MyData.class);
     //execute the retrieve of the state using options
     State<MyData> myDataResponse = response.block();
 
@@ -367,7 +375,7 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A2");
     data.setPropertyB("data in property B2");
     //create deferred action to update the action with options
-    saveResponse = daprClient.saveState(stateKey, myDataResponse.getEtag(), data, stateOptions);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), data, stateOptions);
     //update the state
     saveResponse.block();
 
@@ -375,11 +383,11 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("last write");
     data.setPropertyB("data in property B2");
     //create deferred action to update the action with the same etag
-    saveResponse = daprClient.saveState(stateKey, myDataResponse.getEtag(), data, stateOptions);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), data, stateOptions);
     //throws an exception, the state was already udpated
     saveResponse.block();
 
-    response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions), MyData.class);
     State<MyData> myLastDataResponse = response.block();
 
     Assert.assertNotNull(myLastDataResponse.getEtag());
@@ -395,7 +403,8 @@ public class HttpStateClientIT extends BaseIT {
     final String stateKey = "keyToBeUpdatedWithEtagAndOptions";
 
     //create option with concurrency with first writte and consistency of strong
-    StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.LAST_WRITE, null);
+    StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.LAST_WRITE
+        , null);
 
     //create dapr client
     DaprClient daprClient = buildDaprClient();
@@ -405,13 +414,14 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //create state using stateOptions
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, stateOptions);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, stateOptions);
     //execute the save state
     saveResponse.block();
 
 
     //crate deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions),
+        MyData.class);
     //execute the retrieve of the state using options
     State<MyData> myDataResponse = response.block();
 
@@ -425,7 +435,7 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("data in property A2");
     data.setPropertyB("data in property B2");
     //create deferred action to update the action with options
-    saveResponse = daprClient.saveState(stateKey, myDataResponse.getEtag(), data, stateOptions);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), data, stateOptions);
     //update the state
     saveResponse.block();
 
@@ -433,11 +443,11 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyA("last write");
     data.setPropertyB("data in property B2");
     //create deferred action to update the action with the same etag
-    saveResponse = daprClient.saveState(stateKey, myDataResponse.getEtag(), data, stateOptions);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), data, stateOptions);
     //update the state without an error
     saveResponse.block();
 
-    response = daprClient.getState(new State(stateKey, null, stateOptions), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions), MyData.class);
     State<MyData> myLastDataResponse = response.block();
 
     Assert.assertNotNull(myLastDataResponse.getEtag());
@@ -451,7 +461,8 @@ public class HttpStateClientIT extends BaseIT {
   @Test(timeout = 13000)
   public void saveDeleteWithRetry() {
     final String stateKey = "keyToBeDeleteWithWrongEtagAndRetry";
-    StateOptions.RetryPolicy retryPolicy = new StateOptions.RetryPolicy(Duration.ofSeconds(3), 3, StateOptions.RetryPolicy.Pattern.LINEAR);
+    StateOptions.RetryPolicy retryPolicy = new StateOptions.RetryPolicy(Duration.ofSeconds(3), 3,
+        StateOptions.RetryPolicy.Pattern.LINEAR);
     StateOptions stateOptions = new StateOptions(null, null, retryPolicy);
 
     //create DAPR client
@@ -462,12 +473,12 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, null), MyData.class);
     //execute the action for retrieve the state and the etag
     State<MyData> myDataResponse = response.block();
 
@@ -479,7 +490,7 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
 
-    Mono<Void> deleteResponse = daprClient.deleteState(stateKey, "99999999", stateOptions);
+    Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, "99999999", stateOptions);
 
     long start = System.currentTimeMillis();
     try {
@@ -499,7 +510,8 @@ public class HttpStateClientIT extends BaseIT {
   @Test(timeout = 13000)
   public void saveUpdateWithRetry() {
     final String stateKey = "keyToBeDeleteWithWrongEtagAndRetry";
-    StateOptions.RetryPolicy retryPolicy = new StateOptions.RetryPolicy(Duration.ofSeconds(4), 3, StateOptions.RetryPolicy.Pattern.EXPONENTIAL);
+    StateOptions.RetryPolicy retryPolicy = new StateOptions.RetryPolicy(Duration.ofSeconds(4), 3,
+        StateOptions.RetryPolicy.Pattern.EXPONENTIAL);
     StateOptions stateOptions = new StateOptions(null, null, retryPolicy);
 
     //create DAPR client
@@ -510,12 +522,12 @@ public class HttpStateClientIT extends BaseIT {
     data.setPropertyB("data in property B");
 
     //Create deferred action to save the sate
-    Mono<Void> saveResponse = daprClient.saveState(stateKey, null, data, null);
+    Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(new State(stateKey, null, null), MyData.class);
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, null), MyData.class);
     //execute the action for retrieve the state and the etag
     State<MyData> myDataResponse = response.block();
 
@@ -527,7 +539,7 @@ public class HttpStateClientIT extends BaseIT {
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to save the sate
-    saveResponse = daprClient.saveState(stateKey, "9999999", data, stateOptions);
+    saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, "9999999", data, stateOptions);
     //execute the save state action
     long start = System.currentTimeMillis();
 

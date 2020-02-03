@@ -210,25 +210,33 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(State<T> state, Class<T> clazz) {
-    return this.getState(state.getKey(), state.getEtag(), state.getOptions(), clazz);
+  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, Class<T> clazz) {
+    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), clazz);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String key, Class<T> clazz) {
-    return this.getState(key, null, null, clazz);
+  public <T> Mono<State<T>> getState(String stateStoreName, String key, Class<T> clazz) {
+    return this.getState(stateStoreName, key, null, null, clazz);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String key, String etag, StateOptions options, Class<T> clazz) {
+  public <T> Mono<State<T>> getState(
+      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
     try {
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if ((key == null) || (key.trim().isEmpty())) {
+        throw new IllegalArgumentException("Key cannot be null or empty.");
+      }
       DaprProtos.GetStateEnvelope.Builder builder = DaprProtos.GetStateEnvelope.newBuilder()
+          .setStoreName(stateStoreName)
           .setKey(key);
       if (options != null && options.getConsistency() != null) {
         builder.setConsistency(options.getConsistency().getValue());
@@ -267,9 +275,13 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveStates(List<State<?>> states) {
+  public Mono<Void> saveStates(String stateStoreName, List<State<?>> states) {
     try {
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
       DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
+      builder.setStoreName(stateStoreName);
       for (State state : states) {
         builder.addRequests(buildStateRequest(state).build());
       }
@@ -342,33 +354,40 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String key, Object value) {
-    return this.saveState(key, null, value, null);
+  public Mono<Void> saveState(String stateStoreName, String key, Object value) {
+    return this.saveState(stateStoreName, key, null, value, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String key, String etag, Object value, StateOptions options) {
+  public Mono<Void> saveState(String stateStoreName, String key, String etag, Object value, StateOptions options) {
     State<?> state = new State<>(value, key, etag, options);
-    return this.saveStates(Arrays.asList(state));
+    return this.saveStates(stateStoreName, Arrays.asList(state));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> deleteState(String key) {
-    return this.deleteState(key, null, null);
+  public Mono<Void> deleteState(String stateStoreName, String key) {
+    return this.deleteState(stateStoreName, key, null, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> deleteState(String key, String etag, StateOptions options) {
+  public Mono<Void> deleteState(String stateStoreName, String key, String etag, StateOptions options) {
     try {
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if ((key == null) || (key.trim().isEmpty())) {
+        throw new IllegalArgumentException("Key cannot be null or empty.");
+      }
+
       DaprProtos.StateOptions.Builder optionBuilder = null;
       if (options != null) {
         optionBuilder = DaprProtos.StateOptions.newBuilder();
@@ -402,6 +421,7 @@ public class DaprClientGrpc implements DaprClient {
         }
       }
       DaprProtos.DeleteStateEnvelope.Builder builder = DaprProtos.DeleteStateEnvelope.newBuilder()
+          .setStoreName(stateStoreName)
           .setKey(key);
       if (etag != null) {
         builder.setEtag(etag);
