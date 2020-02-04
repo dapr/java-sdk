@@ -197,7 +197,6 @@
         <reportSets>
           <reportSet>
             <reports>
-              <!--report>license</report-->
             </reports>
           </reportSet>
         </reportSets>
@@ -208,22 +207,18 @@
         <version>3.1.1</version>
         <reportSets>
           <reportSet>
-            <reports>
-              <report>javadoc</report>
-            </reports>
-          </reportSet>
-          <reportSet>
             <id>aggregate</id>
-            <inherited>false</inherited>
             <reports>
               <report>aggregate</report>
             </reports>
           </reportSet>
         </reportSets>
         <configuration>
+          <destDir>/</destDir>
           <failOnWarnings>false</failOnWarnings>
           <failOnError>true</failOnError>
           <goal>site</goal>
+          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*</excludePackageNames>
         </configuration>
       </plugin>
     </plugins>
