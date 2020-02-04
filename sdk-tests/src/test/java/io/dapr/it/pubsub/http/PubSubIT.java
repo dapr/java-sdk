@@ -62,13 +62,16 @@ public class PubSubIT extends BaseIT {
             assertEquals(11, messages.size());
 
             for (int i = 0; i < NUM_MESSAGES; i++) {
-
-                    assertTrue(messages.get(i).startsWith("This is message "));
-
+                    assertTrue(messages.contains(String.format("This is message #%d", i)));
             }
-            byte[] result=new byte[] { 1 };
-            assertEquals(result.length, messages.get(10).getBytes().length);
-            assertEquals(result[0], messages.get(10).getBytes()[0]);
+
+            boolean foundByte = false;
+            for (String message : messages) {
+                if ((message.getBytes().length == 1) && (message.getBytes()[0] == 1)) {
+                    foundByte = true;
+                }
+            }
+            assertTrue(foundByte);
 
         }, 2000);
     }
