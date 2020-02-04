@@ -43,3 +43,6 @@ hs_err_pid*
 **/components/redis_messagebus.yaml
 **/components/statestore.yaml
 **/components/messagebus.yaml
+/docs/dapr-sdk-actors
+/docs/dapr-sdk-autogen
+/docs/dapr-sdk
