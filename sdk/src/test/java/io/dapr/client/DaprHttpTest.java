@@ -160,7 +160,7 @@ public class DaprHttpTest {
    *   <li>Block for getState for Key=key2 and Assert they 2 was not found.</li>
    * </ol>
    *
-   * @throws Exception
+   * @throws IOException - Test will fail if any unexpected exception is being thrown
    */
   @Test()
   public void testCallbackCalledAtTheExpectedTimeTest() throws IOException {

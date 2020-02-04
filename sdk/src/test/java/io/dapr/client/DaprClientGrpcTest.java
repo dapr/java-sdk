@@ -861,7 +861,7 @@ public class DaprClientGrpcTest {
    *   <li>Block for deleteState call.</li>
    *   <li>Block for getState for Key=key2 and Assert they 2 was not found.</li>
    * </ol>
-   * @throws Exception
+   * @throws Exception - Test will fail if any unexpected exception is being thrown
    */
 
   @Test
