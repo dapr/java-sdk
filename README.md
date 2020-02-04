@@ -65,7 +65,7 @@ For a Maven project, add the following to your `pom.xml` file:
         <!-- Dapr's SDK for Actors (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
-          <artifactId>dapr-sdk</artifactId>
+          <artifactId>dapr-sdk-actors</artifactId>
           <version>0.2.0-SNAPSHOT</version>
         </dependency>
         ...
@@ -74,6 +74,31 @@ For a Maven project, add the following to your `pom.xml` file:
 </project>
 ```
 
+For a Gradle project, add the following to your `build.gradle` file:
+
+```
+repositories {
+    ...
+    // Dapr repositories
+    maven { 
+      url "https://oss.sonatype.org/content/repositories/snapshots"
+	  mavenContent {
+	    snapshotsOnly()
+	  }
+    }
+    maven { 
+	  url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+    }
+}
+...
+dependencies {
+...
+    // Dapr's core SDK with all features, except Actors.
+    compile('io.dapr:dapr-sdk:0.2.0-SNAPSHOT')
+    // Dapr's SDK for Actors (optional).
+    compile('io.dapr:dapr-sdk-actors:0.2.0-SNAPSHOT')
+}
+```
 
 #### Running the examples
 Clone this repository including the submodules:
