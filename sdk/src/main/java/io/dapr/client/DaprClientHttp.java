@@ -268,26 +268,30 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(State<T> state, Class<T> clazz) {
-    return this.getState(state.getKey(), state.getEtag(), state.getOptions(), clazz);
+  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, Class<T> clazz) {
+    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), clazz);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String key, Class<T> clazz) {
-    return this.getState(key, null, null, clazz);
+  public <T> Mono<State<T>> getState(String stateStoreName, String key, Class<T> clazz) {
+    return this.getState(stateStoreName, key, null, null, clazz);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String key, String etag, StateOptions options, Class<T> clazz) {
+  public <T> Mono<State<T>> getState(
+      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
     try {
-      if (key == null) {
-        throw new IllegalArgumentException("Name cannot be null or empty.");
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if ((key == null) || (key.trim().isEmpty())) {
+        throw new IllegalArgumentException("Key cannot be null or empty.");
       }
       Map<String, String> headers = new HashMap<>();
       if (etag != null && !etag.trim().isEmpty()) {
@@ -295,6 +299,8 @@ public class DaprClientHttp implements DaprClient {
       }
 
       StringBuilder url = new StringBuilder(Constants.STATE_PATH)
+          .append("/")
+          .append(stateStoreName)
           .append("/")
           .append(key);
       Map<String, String> urlParameters = Optional.ofNullable(options)
@@ -319,8 +325,11 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveStates(List<State<?>> states) {
+  public Mono<Void> saveStates(String stateStoreName, List<State<?>> states) {
     try {
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
       if (states == null || states.isEmpty()) {
         return Mono.empty();
       }
@@ -330,7 +339,7 @@ public class DaprClientHttp implements DaprClient {
       if (etag != null && !etag.trim().isEmpty()) {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
-      final String url = Constants.STATE_PATH;
+      final String url = Constants.STATE_PATH + "/" + stateStoreName;
       List<State<Object>> internalStateObjects = new ArrayList<>(states.size());
       for (State state : states) {
         if (state == null) {
@@ -356,41 +365,44 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String key, Object value) {
-    return this.saveState(key, null, value, null);
+  public Mono<Void> saveState(String stateStoreName, String key, Object value) {
+    return this.saveState(stateStoreName, key, null, value, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String key, String etag, Object value, StateOptions options) {
+  public Mono<Void> saveState(String stateStoreName, String key, String etag, Object value, StateOptions options) {
     return Mono.fromSupplier(() -> new State<>(value, key, etag, options))
-        .flatMap(state -> saveStates(Arrays.asList(state)));
+        .flatMap(state -> saveStates(stateStoreName, Arrays.asList(state)));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> deleteState(String key) {
-    return this.deleteState(key, null, null);
+  public Mono<Void> deleteState(String stateStoreName, String key) {
+    return this.deleteState(stateStoreName, key, null, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> deleteState(String key, String etag, StateOptions options) {
+  public Mono<Void> deleteState(String stateStoreName, String key, String etag, StateOptions options) {
     try {
-      if (key == null || key.trim().isEmpty()) {
-        throw new IllegalArgumentException("Name cannot be null or empty.");
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if ((key == null) || (key.trim().isEmpty())) {
+        throw new IllegalArgumentException("Key cannot be null or empty.");
       }
       Map<String, String> headers = new HashMap<>();
       if (etag != null && !etag.trim().isEmpty()) {
         headers.put(Constants.HEADER_HTTP_ETAG_ID, etag);
       }
-      String url = Constants.STATE_PATH + "/" + key;
+      String url = Constants.STATE_PATH + "/" + stateStoreName + "/" + key;
       Map<String, String> urlParameters = Optional.ofNullable(options)
           .map(stateOptions -> stateOptions.getStateOptionsAsMap())
           .orElse(new HashMap<>());

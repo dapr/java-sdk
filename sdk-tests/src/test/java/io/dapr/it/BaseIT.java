@@ -11,6 +11,8 @@ import org.junit.AfterClass;
 
 public abstract class BaseIT {
 
+  protected static final String STATE_STORE_NAME = "statestore";
+
   private static final Collection<DaprRun> DAPR_RUNS = new ArrayList<>();
 
   protected static DaprRun startDaprApp(

@@ -33,6 +33,7 @@ public class HelloWorldClientIT extends BaseIT {
     {
       DaprProtos.GetStateEnvelope req = DaprProtos.GetStateEnvelope
         .newBuilder()
+        .setStoreName(STATE_STORE_NAME)
         .setKey(key)
         .build();
       DaprProtos.GetStateResponseEnvelope response = client.getState(req);
@@ -45,6 +46,7 @@ public class HelloWorldClientIT extends BaseIT {
     {
       DaprProtos.DeleteStateEnvelope req = DaprProtos.DeleteStateEnvelope
         .newBuilder()
+        .setStoreName(STATE_STORE_NAME)
         .setKey(key)
         .build();
       client.deleteState(req);
@@ -54,6 +56,7 @@ public class HelloWorldClientIT extends BaseIT {
     {
       DaprProtos.GetStateEnvelope req = DaprProtos.GetStateEnvelope
         .newBuilder()
+        .setStoreName(STATE_STORE_NAME)
         .setKey(key)
         .build();
       DaprProtos.GetStateResponseEnvelope response = client.getState(req);

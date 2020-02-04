@@ -38,13 +38,14 @@ public class HelloWorldGrpcStateService {
 
     String value = "Hello World";
     StateRequest req = StateRequest
-      .newBuilder()
-      .setKey(key)
-      .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8(value)).build())
-      .build();
+        .newBuilder()
+        .setKey(key)
+        .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8(value)).build())
+        .build();
     SaveStateEnvelope state = SaveStateEnvelope.newBuilder()
-      .addRequests(req)
-      .build();
+        .setStoreName("statestore")
+        .addRequests(req)
+        .build();
     client.saveState(state);
     System.out.println("Saved!");
     channel.shutdown();

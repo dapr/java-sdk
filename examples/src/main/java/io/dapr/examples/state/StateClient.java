@@ -23,6 +23,8 @@ public class StateClient {
     public String message;
   }
 
+  private static final String STATE_STORE_NAME = "statestore";
+
   private static final String KEY_NAME = "myKey";
 
   /**
@@ -36,17 +38,17 @@ public class StateClient {
     MyClass myClass = new MyClass();
     myClass.message = message;
 
-    client.saveState(KEY_NAME, myClass).block();
+    client.saveState(STATE_STORE_NAME, KEY_NAME, myClass).block();
     System.out.println("Saving class with message: " + message);
 
-    Mono<State<MyClass>> retrievedMessageMono = client.getState(KEY_NAME, MyClass.class);
+    Mono<State<MyClass>> retrievedMessageMono = client.getState(STATE_STORE_NAME, KEY_NAME, MyClass.class);
     System.out.println("Retrieved class message from state: " + (retrievedMessageMono.block().getValue()).message);
 
     System.out.println("Deleting state...");
-    Mono<Void> mono = client.deleteState(KEY_NAME);
+    Mono<Void> mono = client.deleteState(STATE_STORE_NAME, KEY_NAME);
     mono.block();
 
-    Mono<State<MyClass>> retrievedDeletedMessageMono = client.getState(KEY_NAME, MyClass.class);
+    Mono<State<MyClass>> retrievedDeletedMessageMono = client.getState(STATE_STORE_NAME, KEY_NAME, MyClass.class);
     System.out.println("Trying to retrieve deleted state: " + retrievedDeletedMessageMono.block().getValue());
   }
 

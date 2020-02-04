@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - release-*
-      - java_sdk_wip
     tags:
       - v*
     
@@ -13,31 +12,70 @@ on:
     branches: 
     - master
     - release-*
-    - java_sdk_wip
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      GOVER: 1.13.7
+      GOOS: linux
+      GOARCH: amd64
+      GOPROXY: https://proxy.golang.org
       JDK_VER: 13.0.x
       DAPR_RUNTIME_VER: 0.3.0
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/f84566fb2bf5a599252ab9d6bd82fc78faf94dba/install/install.sh
+      DAPR_CLI_REF: f84566fb2bf5a599252ab9d6bd82fc78faf94dba
+      DAPR_REF: e540a7166aeaf115773ccc4c7a1056ae7eed073b
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
       GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v1
       with:
         java-version: ${{ env.JDK_VER }}
     - name: Set up Dapr CLI
-      run: wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
+      run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash
+    - name: Set up Go ${{ env.GOVER }}
+      if: env.DAPR_REF != '' || env.DAPR_CLI_REF != ''
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ env.GOVER }}
+    - name: Checkout Dapr CLI repo to override dapr command.
+      uses: actions/checkout@v2
+      if: env.DAPR_CLI_REF != ''
+      with:
+        repository: dapr/cli
+        ref: ${{ env.DAPR_CLI_REF }}
+        path: cli
+    - name: Checkout Dapr repo to override daprd.
+      uses: actions/checkout@v2
+      if: env.DAPR_REF != ''
+      with:
+        repository: dapr/dapr
+        ref: ${{ env.DAPR_REF }}
+        path: dapr
+    - name: Build and override dapr cli with referenced commit.
+      if: env.DAPR_CLI_REF != ''
+      run: |
+        cd cli
+        make
+        sudo cp dist/linux_amd64/release/dapr /usr/local/bin/dapr
+        cd ..
     - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
       run: |
         sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
         echo "Showing dapr version..."
         dapr --version
+    - name: Build and override daprd with referenced commit.
+      if: env.DAPR_REF != ''
+      run: |
+        cd dapr
+        make
+        sudo cp dist/linux_amd64/release/daprd /usr/local/bin/daprd
+        cd ..
     - name: Install Local kafka using docker-compose
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
