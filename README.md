@@ -65,7 +65,7 @@ For a Maven project, add the following to your `pom.xml` file:
         <!-- Dapr's SDK for Actors (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
-          <artifactId>dapr-sdk</artifactId>
+          <artifactId>dapr-sdk-actors</artifactId>
           <version>0.2.0-beta-1</version>
         </dependency>
         ...
