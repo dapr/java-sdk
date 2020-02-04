@@ -122,6 +122,10 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [Binding with input over Http](./examples/src/main/java/io/dapr/examples/bindings/http)
 * [Actors over Http](./examples/src/main/java/io/dapr/examples/actors/http)
 
+#### API Documentation
+
+Please, refer to our [Javadoc](https://dapr.github.io/java-sdk/) website.
+
 #### Debug Java application or Dapr's Java SDK
 
 If you have a Java application or an issue on this SDK that needs to be debugged, run Dapr using a dummy command and start the application from your IDE (IntelliJ, for example).
