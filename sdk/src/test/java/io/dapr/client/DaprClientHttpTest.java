@@ -41,7 +41,7 @@ public class DaprClientHttpTest {
   @Test
   public void publishEventInvokation() {
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
@@ -53,7 +53,7 @@ public class DaprClientHttpTest {
   @Test
   public void publishEvent() {
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
@@ -65,7 +65,7 @@ public class DaprClientHttpTest {
   @Test(expected = IllegalArgumentException.class)
   public void publishEventIfTopicIsNull() {
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
@@ -77,7 +77,7 @@ public class DaprClientHttpTest {
   @Test(expected = IllegalArgumentException.class)
   public void invokeServiceVerbNull() {
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
@@ -89,7 +89,7 @@ public class DaprClientHttpTest {
   @Test
   public void invokeServiceIllegalArgumentException() {
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
@@ -115,7 +115,7 @@ public class DaprClientHttpTest {
   @Test(expected = IllegalArgumentException.class)
   public void invokeServiceMethodNull() {
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
@@ -127,7 +127,7 @@ public class DaprClientHttpTest {
   @Test
   public void invokeService() {
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
+      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond("hello world");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -139,7 +139,7 @@ public class DaprClientHttpTest {
   public void simpleInvokeService() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
+      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -151,7 +151,7 @@ public class DaprClientHttpTest {
   public void invokeServiceWithMaps() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
+      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -164,7 +164,7 @@ public class DaprClientHttpTest {
   public void invokeServiceWithOutRequest() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
+      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -176,7 +176,7 @@ public class DaprClientHttpTest {
   public void invokeServiceWithRequest() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/invoke/41/method/neworder")
+      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -188,7 +188,7 @@ public class DaprClientHttpTest {
   public void invokeBinding() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/bindings/sample-topic")
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -200,7 +200,7 @@ public class DaprClientHttpTest {
   public void invokeBindingNullName() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/bindings/sample-topic")
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -215,7 +215,7 @@ public class DaprClientHttpTest {
     State<String> stateKeyValue = new State("value", "key", "etag", stateOptions);
     State<String> stateKeyNull = new State("value", null, "etag", stateOptions);
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/state/key")
+      .get("http://127.0.0.1:3000/v1.0/state/key")
       .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -230,7 +230,7 @@ public class DaprClientHttpTest {
   public void getStatesEmptyEtag() {
     State<String> stateEmptyEtag = new State("value", "key", "", null);
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/state/key")
+      .get("http://127.0.0.1:3000/v1.0/state/key")
       .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -242,7 +242,7 @@ public class DaprClientHttpTest {
   public void getStatesNullEtag() {
     State<String> stateNullEtag = new State("value", "key", null, null);
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/state/key")
+      .get("http://127.0.0.1:3000/v1.0/state/key")
       .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -255,7 +255,7 @@ public class DaprClientHttpTest {
     State<String> stateKeyValue = new State("value", "key", "etag", null);
     List<State<?>> stateKeyValueList = Arrays.asList(stateKeyValue);
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/state")
+      .post("http://127.0.0.1:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -268,7 +268,7 @@ public class DaprClientHttpTest {
     State<String> stateKeyValue = new State("value", "key", "", null);
     List<State<?>> stateKeyValueList = new ArrayList();
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/state")
+      .post("http://127.0.0.1:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -283,7 +283,7 @@ public class DaprClientHttpTest {
     State<String> stateKeyValue = new State("value", "key", null, null);
     List<State<?>> stateKeyValueList = Arrays.asList(stateKeyValue);
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/state")
+      .post("http://127.0.0.1:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -296,7 +296,7 @@ public class DaprClientHttpTest {
     State<String> stateKeyValue = new State("value", "key", "", null);
     List<State<?>> stateKeyValueList = Arrays.asList(stateKeyValue);
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/state")
+      .post("http://127.0.0.1:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -307,7 +307,7 @@ public class DaprClientHttpTest {
   @Test
   public void simpleSaveStates() {
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/state")
+      .post("http://127.0.0.1:3000/v1.0/state")
       .respond(EXPECTED_RESULT);
     StateOptions stateOptions = mock(StateOptions.class);
     daprHttp = new DaprHttp(3000, okHttpClient);
@@ -322,7 +322,7 @@ public class DaprClientHttpTest {
     StateOptions stateOptions = mock(StateOptions.class);
     State<String> stateKeyValue = new State("value", "key", "etag", stateOptions);
     mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/state/key")
+      .delete("http://127.0.0.1:3000/v1.0/state/key")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -334,7 +334,7 @@ public class DaprClientHttpTest {
   public void deleteStateNullEtag() {
     State<String> stateKeyValue = new State("value", "key", null, null);
     mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/state/key")
+      .delete("http://127.0.0.1:3000/v1.0/state/key")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -346,7 +346,7 @@ public class DaprClientHttpTest {
   public void deleteStateEmptyEtag() {
     State<String> stateKeyValue = new State("value", "key", "", null);
     mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/state/key")
+      .delete("http://127.0.0.1:3000/v1.0/state/key")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -359,7 +359,7 @@ public class DaprClientHttpTest {
     State<String> stateKeyValueNull = new State("value", null, "etag", null);
     State<String> stateKeyValueEmpty = new State("value", "", "etag", null);
     mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/state/key")
+      .delete("http://127.0.0.1:3000/v1.0/state/key")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);

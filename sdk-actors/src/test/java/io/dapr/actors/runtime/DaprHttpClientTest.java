@@ -35,7 +35,7 @@ public class DaprHttpClientTest {
   @Test
   public void getActorState() {
     mockInterceptor.addRule()
-      .get("http://localhost:3000/v1.0/actors/DemoActor/1/state/order")
+      .get("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/state/order")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -47,7 +47,7 @@ public class DaprHttpClientTest {
   @Test
   public void saveActorStateTransactionally() {
     mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/state")
+      .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/state")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -59,7 +59,7 @@ public class DaprHttpClientTest {
   @Test
   public void registerActorReminder() {
     mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/reminders/reminder")
+      .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/reminders/reminder")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -71,7 +71,7 @@ public class DaprHttpClientTest {
   @Test
   public void unregisterActorReminder() {
     mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/actors/DemoActor/1/reminders/reminder")
+      .delete("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/reminders/reminder")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -82,7 +82,7 @@ public class DaprHttpClientTest {
   @Test
   public void registerActorTimer() {
     mockInterceptor.addRule()
-      .put("http://localhost:3000/v1.0/actors/DemoActor/1/timers/timer")
+      .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/timers/timer")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -94,7 +94,7 @@ public class DaprHttpClientTest {
   @Test
   public void unregisterActorTimer() {
     mockInterceptor.addRule()
-      .delete("http://localhost:3000/v1.0/actors/DemoActor/1/timers/timer")
+      .delete("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/timers/timer")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
