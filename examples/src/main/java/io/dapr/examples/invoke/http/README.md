@@ -38,7 +38,7 @@ mvn install
 
 The Demo service application is meant to expose a method that can be remotely invoked. In this example, the service code has two parts:
 
-In the `DemoService.java` file, you will find the `DemoService` class, containing the main method. The main method uses the Spring Boot´s DaprApplication class for initializing the `ExposerServiceController`. See the code snippet below:
+In the `DemoService.java` file, you will find the `DemoService` class, containing the main method. The main method uses the Spring Boot´s DaprApplication class for initializing the `DemoServiceController`. See the code snippet below:
 
 ```java
 public class DemoService {
@@ -92,8 +92,31 @@ Use the follow command to execute the demo service example:
 dapr run --app-id invokedemo --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.http.DemoService -D exec.args="-p 3000"
 ```
 
-Once running, the ExposerService is now ready to be invoked by Dapr.
+Once running, the DemoService is now ready to be invoked by Dapr.
 
+### Debugging the Demo service sample
+
+If you want to debug the `DemoService`, you have to make sure to provide the port as an argument.
+
+For VSCode you can find a sample launch.json which includes:
+```json
+...
+{
+    "type": "java",
+    "name": "Debug (Launch)-DemoService<dapr-sdk-examples>",
+    "request": "launch",
+    "mainClass": "io.dapr.examples.invoke.http.DemoService",
+    "projectName": "dapr-sdk-examples",
+    "args": "-p 3000"
+},
+...
+```
+
+Use the following command to run the Dapr sidecar:
+
+```sh
+dapr run --app-id invokedemo --app-port 3000 --port 3005 --grpc-port 5001 -- waitfor FOREVER
+```
 
 ### Running the InvokeClient sample
 

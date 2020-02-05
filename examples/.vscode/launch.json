@@ -1,0 +1,92 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Debug (Launch) - Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-DemoActorClient<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.actors.http.DemoActorClient",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-DemoActorService<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.actors.http.DemoActorService",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-InputBindingExample<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.bindings.http.InputBindingExample",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-OutputBindingExample<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.bindings.http.OutputBindingExample",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-HelloWorldClient<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.invoke.grpc.HelloWorldClient",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-HelloWorldService<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.invoke.grpc.HelloWorldService",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-DemoService<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.invoke.http.DemoService",
+            "projectName": "dapr-sdk-examples",
+            "args": "-p 3000"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-InvokeClient<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.invoke.http.InvokeClient",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-Publisher<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.pubsub.http.Publisher",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-Subscriber<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.pubsub.http.Subscriber",
+            "projectName": "dapr-sdk-examples"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-StateClient<dapr-sdk-examples>",
+            "request": "launch",
+            "mainClass": "io.dapr.examples.state.StateClient",
+            "projectName": "dapr-sdk-examples"
+        }
+    ]
+}
