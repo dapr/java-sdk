@@ -27,7 +27,7 @@ mvn install
 ### Running the StateClient
 This example uses the Java SDK Dapr client in order to save, retrieve and delete a state, in this case, an instance of a class. See the code snippet bellow: 
 
-```
+```java
 public class StateClient {
   ///...
   private static final String KEY_NAME = "mykey";
