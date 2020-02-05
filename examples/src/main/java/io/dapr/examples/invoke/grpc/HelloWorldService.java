@@ -31,7 +31,7 @@ import static io.dapr.examples.DaprExamplesProtos.SayResponse;
  * 2. Run in server mode:
  * dapr run --app-id hellogrpc --app-port 5000 --protocol grpc \
  *   -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService \
- *   -D exec.args="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5009"
+ *   -D exec.args="-p 5000"
  */
 public class HelloWorldService {
 
