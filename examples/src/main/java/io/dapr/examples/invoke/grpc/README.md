@@ -85,7 +85,7 @@ For VSCode you can find a sample launch.json which includes:
     "request": "launch",
     "mainClass": "io.dapr.examples.invoke.grpc.HelloWorldService",
     "projectName": "dapr-sdk-examples",
-    "args": "-p 5000"
+    "args": "-port=5000"
 },
 ...
 ```

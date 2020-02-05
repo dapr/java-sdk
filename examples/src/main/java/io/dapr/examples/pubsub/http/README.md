@@ -52,16 +52,16 @@ public class SubscriberController {
   ///...
   @GetMapping("/dapr/subscribe")
   public byte[] daprConfig() throws Exception {
-    return SERIALIZER.serialize(new String[] { "message" });
+    return SERIALIZER.serialize(new String[] { "testingtopic" });
   }
 
-  @PostMapping(path = "/message")
+  @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                    @RequestHeader Map<String, String> headers) {
     return Mono.fromRunnable(() -> {
       try {
         // Dapr's event is compliant to CloudEvent.
-        CloudEventEnvelope envelope = SERIALIZER.deserialize(body, CloudEventEnvelope.class);
+        CloudEvent envelope = CloudEvent.deserialize(body);
 
         String message = envelope.getData() == null ? "" : new String(envelope.getData());
         System.out.println("Subscriber got message: " + message);
@@ -75,6 +75,30 @@ public class SubscriberController {
 Execute the follow script in order to run the Subscriber example:
 ```sh
 dapr run --app-id subscriber --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.pubsub.http.Subscriber -D exec.args="-p 3000"
+```
+
+### Debugging the subscriber
+
+If you want to debug the `Subscriber`, you have to make sure to provide the port as an argument.
+
+For VSCode you can find a sample launch.json which includes:
+```json
+...
+{
+    "type": "java",
+    "name": "Debug (Launch)-Subscriber<dapr-sdk-examples>",
+    "request": "launch",
+    "mainClass": "io.dapr.examples.pubsub.http.Subscriber",
+    "projectName": "dapr-sdk-examples",
+    "args": "-port=3000"
+},
+...
+```
+
+Use the following command to run the Dapr sidecar:
+
+```sh
+dapr run --app-id subscriber --app-port 3000 --port 3005 --grpc-port 5001 -- waitfor FOREVER
 ```
 
 ### Running the publisher

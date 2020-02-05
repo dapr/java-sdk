@@ -107,7 +107,7 @@ For VSCode you can find a sample launch.json which includes:
     "request": "launch",
     "mainClass": "io.dapr.examples.invoke.http.DemoService",
     "projectName": "dapr-sdk-examples",
-    "args": "-p 3000"
+    "args": "-port=3000"
 },
 ...
 ```
