@@ -111,7 +111,7 @@ Then head over to build the [Maven](https://maven.apache.org/install.html) (Apac
 
 ```sh
 # make sure you are in the `java-sdk` directory.
-mvn install
+mvn clean install
 ```
 
 Try the following examples to learn more about Dapr's Java SDK:
