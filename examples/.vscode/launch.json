@@ -29,7 +29,8 @@
             "name": "Debug (Launch)-InputBindingExample<dapr-sdk-examples>",
             "request": "launch",
             "mainClass": "io.dapr.examples.bindings.http.InputBindingExample",
-            "projectName": "dapr-sdk-examples"
+            "projectName": "dapr-sdk-examples",
+            "args": "-port=3000"
         },
         {
             "type": "java",
