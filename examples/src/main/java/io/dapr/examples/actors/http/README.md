@@ -55,7 +55,7 @@ public class DemoActorService {
 This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
  
 
-`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
+`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
 
 See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of an actor:
 ```java
@@ -106,6 +106,30 @@ Now, execute the following script in order to run DemoActorService:
 ```sh
 cd to [repo-root]
 dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.actors.http.DemoActorService -D exec.args="-p 3000"
+```
+
+### Debugging the Demo actor service
+
+If you want to debug the `Subscriber`, you have to make sure to provide the port as an argument.
+
+For VSCode you can find a sample launch.json which includes:
+```json
+...
+{
+    "type": "java",
+    "name": "Debug (Launch)-DemoActorService<dapr-sdk-examples>",
+    "request": "launch",
+    "mainClass": "io.dapr.examples.actors.http.DemoActorService",
+    "projectName": "dapr-sdk-examples",
+    "args": "-port=3000"
+},
+...
+```
+
+Use the following command to run the Dapr sidecar:
+
+```sh
+dapr run --app-id demoactorservice --app-port 3000 --port 3005 --grpc-port 5001 -- waitfor FOREVER
 ```
 
 ### Running the Actor client

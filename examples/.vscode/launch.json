@@ -22,7 +22,8 @@
             "name": "Debug (Launch)-DemoActorService<dapr-sdk-examples>",
             "request": "launch",
             "mainClass": "io.dapr.examples.actors.http.DemoActorService",
-            "projectName": "dapr-sdk-examples"
+            "projectName": "dapr-sdk-examples",
+            "args": "-port=3000"
         },
         {
             "type": "java",
