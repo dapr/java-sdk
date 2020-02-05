@@ -26,7 +26,7 @@ mvn install
 
 ### Running the example's service
 
-The first component is the service. It has a simple API with the `Say` method. This method will print out each message received from the client. The proto file below contains the description of the HelloWorld service found in the `./proto/examples/helloworld.proto` file:
+The first component is the service. It has a simple API with the `Say` method. This method will print out each message received from the client. The proto file below contains the description of the HelloWorld service found in the `./examples/proto/helloworld.proto` file:
 
 ```text
  service HelloWorld {
@@ -48,19 +48,16 @@ private static class GrpcHelloWorldDaprService extends DaprClientGrpc.DaprClient
 ///...
         @Override
         public void onInvoke(DaprClientProtos.InvokeEnvelope request, StreamObserver<Any> responseObserver) {
-            try {
-                if ("say".equals(request.getMethod())) {
-                    // IMPORTANT: do not use Any.unpack(), use Type.ParseFrom() instead.
-                    SayRequest sayRequest = SayRequest.parseFrom(request.getData().getValue());
-                    SayResponse sayResponse = this.say(sayRequest);
-                    responseObserver.onNext(Any.pack(sayResponse));
-                }
-            } catch (InvalidProtocolBufferException e) {
-                e.printStackTrace();
-                responseObserver.onError(e);
-            } finally {
-                responseObserver.onCompleted();
+          try {
+            if ("say".equals(request.getMethod())) {
+              SayRequest sayRequest =
+                  SayRequest.newBuilder().setMessage(request.getData().getValue().toStringUtf8()).build();
+              SayResponse sayResponse = this.say(sayRequest);
+              responseObserver.onNext(Any.pack(sayResponse));
             }
+          } finally {
+            responseObserver.onCompleted();
+          }
         }
 ///...
 }
@@ -74,6 +71,30 @@ dapr run --app-id hellogrpc --app-port 5000 --protocol grpc -- mvn exec:java -pl
 ```
 
 The `app-id` argument is used to identify this service in Dapr's runtime. The `app-port` determines which port Dapr's runtime should call into this service.  The `protocol` argument informs Dapr which protocol it should use to invoke the application: `grpc` or `http`(default).
+
+### Debugging the example's service
+
+If you want to debug the `HelloWorldService`, you have to make sure to provide the port as an argument.
+
+For VSCode you can find a sample launch.json which includes:
+```json
+...
+{
+    "type": "java",
+    "name": "Debug (Launch)-HelloWorldService<dapr-sdk-examples>",
+    "request": "launch",
+    "mainClass": "io.dapr.examples.invoke.grpc.HelloWorldService",
+    "projectName": "dapr-sdk-examples",
+    "args": "-p 5000"
+},
+...
+```
+
+Use the following command to run the Dapr sidecar:
+
+```sh
+dapr run --app-id hellogrpc --app-port 5000 --protocol grpc --port 3005 --grpc-port 5001 -- waitfor FOREVER
+```
 
 ### Running the example's client
 
@@ -103,7 +124,7 @@ private static class HelloWorldClient {
 }
 ```
 
-First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient is transparent to the application. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar.
+First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient can be set with the JVM's system property `dapr.grpc.enabled` or environment variable `DAPR_GRPC_ENABLED`. If both are not set, the default is to use HTTP. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar.
 
 Finally, it will go through in an infinite loop and invoke the `say` method every second. Notice the use of `block()` on the return from `invokeService` - it is required to actually make the service invocation via a [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) object.
 
