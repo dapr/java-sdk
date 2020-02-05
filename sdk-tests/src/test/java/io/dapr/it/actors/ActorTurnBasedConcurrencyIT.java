@@ -45,7 +45,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   @After
   public void cleanUpTestCase() {
     // Delete the reminder in case the test failed, otherwise it may interfere with future tests since it is persisted.
-    // It'll have this structure with different values: http://localhost:33997/v1.0/actors/MyActorTest/1/reminders/588e4adc-f902-4596-b12e-3d2955db68b6
+    // It'll have this structure with different values: http://127.0.0.1:33997/v1.0/actors/MyActorTest/1/reminders/588e4adc-f902-4596-b12e-3d2955db68b6
     DaprHttp client = new DaprHttpBuilder().build();
     String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
 
