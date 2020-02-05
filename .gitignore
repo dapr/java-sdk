@@ -46,3 +46,5 @@ hs_err_pid*
 /docs/dapr-sdk-actors
 /docs/dapr-sdk-autogen
 /docs/dapr-sdk
+/proto/dapr
+/proto/daprclient
