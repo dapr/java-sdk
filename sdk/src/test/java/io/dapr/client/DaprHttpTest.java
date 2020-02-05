@@ -42,7 +42,7 @@ public class DaprHttpTest {
     headers.put("content-type", "text/html");
     headers.put("header1", "value1");
     mockInterceptor.addRule()
-      .post("http://localhost:3500/v1.0/state")
+      .post("http://127.0.0.1:3500/v1.0/state")
       .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state", null, (byte[]) null, headers);
@@ -54,7 +54,7 @@ public class DaprHttpTest {
   @Test
   public void invokePostMethod() throws IOException {
     mockInterceptor.addRule()
-      .post("http://localhost:3500/v1.0/state")
+      .post("http://127.0.0.1:3500/v1.0/state")
       .respond(serializer.serialize(EXPECTED_RESULT))
       .addHeader("Header", "Value");
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
@@ -67,7 +67,7 @@ public class DaprHttpTest {
   @Test
   public void invokeDeleteMethod() throws IOException {
     mockInterceptor.addRule()
-      .delete("http://localhost:3500/v1.0/state")
+      .delete("http://127.0.0.1:3500/v1.0/state")
       .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("DELETE", "v1.0/state", null, (String) null, null);
@@ -79,7 +79,7 @@ public class DaprHttpTest {
   @Test
   public void invokeGetMethod() throws IOException {
     mockInterceptor.addRule()
-      .get("http://localhost:3500/v1.0/get")
+      .get("http://127.0.0.1:3500/v1.0/get")
       .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("GET", "v1.0/get", null, null);
@@ -96,7 +96,7 @@ public class DaprHttpTest {
     Map<String, String> urlParameters = new HashMap<>();
     urlParameters.put("orderId", "41");
     mockInterceptor.addRule()
-      .get("http://localhost:3500/v1.0/state/order?orderId=41")
+      .get("http://127.0.0.1:3500/v1.0/state/order?orderId=41")
       .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("GET", "v1.0/state/order", urlParameters, headers);
@@ -108,7 +108,7 @@ public class DaprHttpTest {
   @Test(expected = RuntimeException.class)
   public void invokePostMethodRuntime() throws IOException {
     mockInterceptor.addRule()
-      .post("http://localhost:3500/v1.0/state")
+      .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500);
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state", null, null);
@@ -120,7 +120,7 @@ public class DaprHttpTest {
   @Test(expected = RuntimeException.class)
   public void invokePostDaprError() throws IOException {
     mockInterceptor.addRule()
-      .post("http://localhost:3500/v1.0/state")
+      .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("text"),
         "{\"errorCode\":null,\"message\":null}"));
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
@@ -133,7 +133,7 @@ public class DaprHttpTest {
   @Test(expected = RuntimeException.class)
   public void invokePostMethodUnknownError() throws IOException {
     mockInterceptor.addRule()
-      .post("http://localhost:3500/v1.0/state")
+      .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("application/json"),
         "{\"errorCode\":\"null\",\"message\":\"null\"}"));
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
@@ -169,14 +169,14 @@ public class DaprHttpTest {
     String urlDeleteState = Constants.STATE_PATH + "/" + deletedStateKey;
     String urlExistingState = Constants.STATE_PATH + "/" + existingState;
     mockInterceptor.addRule()
-      .get("http://localhost:3500/" + urlDeleteState)
+      .get("http://127.0.0.1:3500/" + urlDeleteState)
       .respond(200, ResponseBody.create(MediaType.parse("application/json"),
         deletedStateKey));
     mockInterceptor.addRule()
-      .delete("http://localhost:3500/" + urlDeleteState)
+      .delete("http://127.0.0.1:3500/" + urlDeleteState)
       .respond(204);
     mockInterceptor.addRule()
-      .get("http://localhost:3500/" + urlExistingState)
+      .get("http://127.0.0.1:3500/" + urlExistingState)
       .respond(200, ResponseBody.create(MediaType.parse("application/json"),
         serializer.serialize(existingState)));
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
@@ -187,7 +187,7 @@ public class DaprHttpTest {
     assertEquals("", serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
     mockInterceptor.reset();
     mockInterceptor.addRule()
-      .get("http://localhost:3500/" + urlDeleteState)
+      .get("http://127.0.0.1:3500/" + urlDeleteState)
       .respond(404, ResponseBody.create(MediaType.parse("application/json"),
         "{\"errorCode\":\"404\",\"message\":\"State Not Fuund\"}"));
     try {

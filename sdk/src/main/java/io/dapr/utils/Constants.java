@@ -18,7 +18,7 @@ public final class Constants {
   /**
    * Dapr's default hostname.
    */
-  public static final String DEFAULT_HOSTNAME = "localhost";
+  public static final String DEFAULT_HOSTNAME = "127.0.0.1";
 
   /**
    * Header used for request id in Dapr.

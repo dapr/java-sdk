@@ -36,7 +36,7 @@ public class DaprHttpClientTest {
   public void invokeActorMethod() {
     DaprHttp daprHttpMock = mock(DaprHttp.class);
     mockInterceptor.addRule()
-      .post("http://localhost:3000/v1.0/actors/DemoActor/1/method/Payment")
+      .post("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/method/Payment")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
