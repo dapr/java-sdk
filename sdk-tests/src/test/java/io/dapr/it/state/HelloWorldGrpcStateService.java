@@ -30,7 +30,7 @@ public class HelloWorldGrpcStateService {
 
     // If port string is not valid, it will throw an exception.
     int grpcPortInt = Integer.parseInt(grpcPort);
-    ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", grpcPortInt).usePlaintext().build();
+    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", grpcPortInt).usePlaintext().build();
     DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
     String key = "mykey";
