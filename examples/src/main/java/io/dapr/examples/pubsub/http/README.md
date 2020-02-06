@@ -74,7 +74,7 @@ public class SubscriberController {
 ```
 Execute the follow script in order to run the Subscriber example:
 ```sh
-dapr run --app-id subscriber --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.pubsub.http.Subscriber -D exec.args="-p 3000"
+dapr run --app-id subscriber --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Subscriber -Dexec.args="-p 3000"
 ```
 
 ### Debugging the subscriber
@@ -146,7 +146,7 @@ public class Publisher {
 Use the follow command to execute the Publisher example:
 
 ```sh
-dapr run --app-id publisher --port 3006 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.pubsub.http.Publisher
+dapr run --app-id publisher --port 3006 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Publisher
 ```
 
 Once running, the Publisher should print the output as follows:

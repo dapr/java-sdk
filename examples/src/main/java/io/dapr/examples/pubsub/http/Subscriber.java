@@ -17,7 +17,7 @@ import org.apache.commons.cli.Options;
  * mvn clean install
  * 2. Run the server:
  * dapr run --app-id subscriber --app-port 3000 --port 3005 -- \
- *   mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Subscriber -D exec.args="-p 3000"
+ *   mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Subscriber -Dexec.args="-p 3000"
  */
 public class Subscriber {
 
