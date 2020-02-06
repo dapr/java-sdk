@@ -90,8 +90,14 @@ For VSCode you can find a sample launch.json which includes:
 ...
 ```
 
-Use the following command to run the Dapr sidecar:
+Use the following commands to run the Dapr sidecar.
 
+For Linux and MacOS:
+```sh
+dapr run --app-id hellogrpc --app-port 5000 --protocol grpc --port 3005 --grpc-port 5001 -- cat
+```
+
+For Windows:
 ```sh
 dapr run --app-id hellogrpc --app-port 5000 --protocol grpc --port 3005 --grpc-port 5001 -- waitfor FOREVER
 ```
