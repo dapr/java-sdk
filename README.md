@@ -60,13 +60,13 @@ For a Maven project, add the following to your `pom.xml` file:
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk</artifactId>
-          <version>0.2.0-beta-1</version>
+          <version>0.2.0-beta-2</version>
         </dependency>
         <!-- Dapr's SDK for Actors (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk-actors</artifactId>
-          <version>0.2.0-beta-1</version>
+          <version>0.2.0-beta-2</version>
         </dependency>
         ...
       </dependencies>
@@ -119,7 +119,7 @@ DAPR_GRPC_PORT=5001
 
 Now you can go to your IDE (like IntelliJ, for example) and debug your Java application, using port `3500` to call Dapr while also listening to port `3000` to expose Dapr's callback endpoint.
 
-Calls to Dapr's APIs on `http://localhost:3500/*` should work now and trigger breakpoints in your code.
+Calls to Dapr's APIs on `http://127.0.0.1:3500/*` should work now and trigger breakpoints in your code.
 
 **If your application needs to subscribe to topics or register Actors in Dapr, for example, then start debugging your app first and run dapr with dummy command last.**
 
