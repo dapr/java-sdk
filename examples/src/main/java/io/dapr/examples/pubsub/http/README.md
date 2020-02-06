@@ -1,6 +1,6 @@
 # Dapr Pub-Sub Sample
 
-In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subcribe pattern. The publisher will generate messages of a specific topic, while subscriber will listen for messages of specific topic. See [Why Pub-Sub](#why-pub-sub) to understand when this pattern might be a good choice for your software architecture.
+In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subcribe pattern. The publisher will generate messages of a specific topic, while subscriber will listen for messages of specific topic. See [Why Pub-Sub](https://github.com/dapr/samples/tree/master/4.pub-sub#why-pub-sub) to understand when this pattern might be a good choice for your software architecture.
 
 Visit [this](https://github.com/dapr/docs/tree/master/concepts/publish-subscribe-messaging) link for more information about Dapr and Pub-Sub.
  
@@ -52,16 +52,16 @@ public class SubscriberController {
   ///...
   @GetMapping("/dapr/subscribe")
   public byte[] daprConfig() throws Exception {
-    return SERIALIZER.serialize(new String[] { "message" });
+    return SERIALIZER.serialize(new String[] { "testingtopic" });
   }
 
-  @PostMapping(path = "/message")
+  @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                    @RequestHeader Map<String, String> headers) {
     return Mono.fromRunnable(() -> {
       try {
         // Dapr's event is compliant to CloudEvent.
-        CloudEventEnvelope envelope = SERIALIZER.deserialize(body, CloudEventEnvelope.class);
+        CloudEvent envelope = CloudEvent.deserialize(body);
 
         String message = envelope.getData() == null ? "" : new String(envelope.getData());
         System.out.println("Subscriber got message: " + message);
@@ -74,7 +74,37 @@ public class SubscriberController {
 ```
 Execute the follow script in order to run the Subscriber example:
 ```sh
-dapr run --app-id subscriber --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.pubsub.http.Subscriber -D exec.args="-p 3000"
+dapr run --app-id subscriber --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Subscriber -Dexec.args="-p 3000"
+```
+
+### Debugging the subscriber
+
+If you want to debug the `Subscriber`, you have to make sure to provide the port as an argument.
+
+For VSCode you can find a sample launch.json which includes:
+```json
+...
+{
+    "type": "java",
+    "name": "Debug (Launch)-Subscriber<dapr-sdk-examples>",
+    "request": "launch",
+    "mainClass": "io.dapr.examples.pubsub.http.Subscriber",
+    "projectName": "dapr-sdk-examples",
+    "args": "-port=3000"
+},
+...
+```
+
+Use the following commands to run the Dapr sidecar.
+
+For Linux and MacOS
+```sh
+dapr run --app-id subscriber --app-port 3000 --port 3005 --grpc-port 5001 -- cat
+```
+
+For Windows:
+```sh
+dapr run --app-id subscriber --app-port 3000 --port 3005 --grpc-port 5001 -- waitfor FOREVER
 ```
 
 ### Running the publisher
@@ -122,7 +152,7 @@ public class Publisher {
 Use the follow command to execute the Publisher example:
 
 ```sh
-dapr run --app-id publisher --port 3006 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.pubsub.http.Publisher
+dapr run --app-id publisher --port 3006 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.pubsub.http.Publisher
 ```
 
 Once running, the Publisher should print the output as follows:

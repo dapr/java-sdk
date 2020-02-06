@@ -18,7 +18,7 @@ public class DaprRun {
 
   // the arg in -Dexec.args is the app's port
   private static final String DAPR_COMMAND =
-      " -- mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\"";
+      " -- mvn exec:java -Dexec.mainClass=%s -Dexec.classpathScope=test -Dexec.args=\"%s\"";
 
   private final DaprPorts ports;
 

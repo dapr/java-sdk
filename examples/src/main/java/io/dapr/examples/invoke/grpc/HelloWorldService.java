@@ -30,8 +30,8 @@ import static io.dapr.examples.DaprExamplesProtos.SayResponse;
  * mvn clean install
  * 2. Run in server mode:
  * dapr run --app-id hellogrpc --app-port 5000 --protocol grpc \
- *   -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService \
- *   -D exec.args="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5009"
+ *   -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.invoke.grpc.HelloWorldService \
+ *   -Dexec.args="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5009"
  */
 public class HelloWorldService {
 

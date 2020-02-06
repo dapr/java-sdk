@@ -55,7 +55,7 @@ public class DemoActorService {
 This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
  
 
-`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
+`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
 
 See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of an actor:
 ```java
@@ -105,7 +105,37 @@ An actor inherits from `AbstractActor` and implements the constructor to pass th
 Now, execute the following script in order to run DemoActorService:
 ```sh
 cd to [repo-root]
-dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.actors.http.DemoActorService -D exec.args="-p 3000"
+dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorService -Dexec.args="-p 3000"
+```
+
+### Debugging the Demo actor service
+
+If you want to debug the actor service, you have to make sure to provide the port as an argument.
+
+For VSCode you can find a sample launch.json which includes:
+```json
+...
+{
+    "type": "java",
+    "name": "Debug (Launch)-DemoActorService<dapr-sdk-examples>",
+    "request": "launch",
+    "mainClass": "io.dapr.examples.actors.http.DemoActorService",
+    "projectName": "dapr-sdk-examples",
+    "args": "-port=3000"
+},
+...
+```
+
+Use the following commands to run the Dapr sidecar.
+
+For Linux and MacOS:
+```sh
+dapr run --app-id demoactorservice --app-port 3000 --port 3005 --grpc-port 5001 -- cat
+```
+
+For Windows:
+```sh
+dapr run --app-id demoactorservice --app-port 3000 --port 3005 --grpc-port 5001 -- waitfor FOREVER
 ```
 
 ### Running the Actor client
@@ -164,7 +194,7 @@ Use the follow command to execute the DemoActorClient:
 
 ```sh
 cd to [repo-root]
-dapr run --app-id demoactorclient --port 3006 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.actors.http.DemoActorClient
+dapr run --app-id demoactorclient --port 3006 -- mvn exec:java -pl=examples -Dexec.mainClass=io.dapr.examples.actors.http.DemoActorClient
 ```
 
 Once running, the `DemoActorClient` logs will start displaying the different steps: 

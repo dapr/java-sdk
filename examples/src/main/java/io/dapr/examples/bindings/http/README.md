@@ -89,7 +89,37 @@ public class InputBindingController {
  Execute the follow script in order to run the Input Binding example:
 ```sh
 cd to [repo-root]/examples
-dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.InputBindingExample -D exec.args="-p 3000"
+dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -Dexec.mainClass=io.dapr.examples.bindings.http.InputBindingExample -Dexec.args="-p 3000"
+```
+
+### Debugging the Input binding sample
+
+If you want to debug the `InputBindingExample`, you have to make sure to provide the port as an argument.
+
+For VSCode you can find a sample launch.json which includes:
+```json
+...
+{
+    "type": "java",
+    "name": "Debug (Launch)-InputBindingExample<dapr-sdk-examples>",
+    "request": "launch",
+    "mainClass": "io.dapr.examples.bindings.http.InputBindingExample",
+    "projectName": "dapr-sdk-examples",
+    "args": "-port=3000"
+},
+...
+```
+
+Use the following commands to run the Dapr sidecar.
+
+For Linux and MacOS:
+```sh
+dapr run --app-id inputbinding --app-port 3000 --port 3005 --grpc-port 5001 -- cat
+```
+
+For Windows:
+```sh
+dapr run --app-id inputbinding --app-port 3000 --port 3005 --grpc-port 5001 -- waitfor FOREVER
 ```
 
 ### Running the Output binding sample
@@ -123,7 +153,7 @@ Use the follow command to execute the Output Binding example:
 
 ```sh
 cd to [repo-root]/examples
-dapr run --app-id outputbinding --port 3006 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.OutputBindingExample
+dapr run --app-id outputbinding --port 3006 -- mvn exec:java -Dexec.mainClass=io.dapr.examples.bindings.http.OutputBindingExample
 ```
 
 Once running, the OutputBindingExample should print the output as follows:
