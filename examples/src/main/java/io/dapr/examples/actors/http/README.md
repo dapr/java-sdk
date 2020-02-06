@@ -110,7 +110,7 @@ dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- mvn exec:java 
 
 ### Debugging the Demo actor service
 
-If you want to debug the `Subscriber`, you have to make sure to provide the port as an argument.
+If you want to debug the actor service, you have to make sure to provide the port as an argument.
 
 For VSCode you can find a sample launch.json which includes:
 ```json

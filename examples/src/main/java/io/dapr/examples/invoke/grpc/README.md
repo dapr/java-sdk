@@ -26,7 +26,7 @@ mvn install
 
 ### Running the example's service
 
-The first component is the service. It has a simple API with the `Say` method. This method will print out each message received from the client. The proto file below contains the description of the HelloWorld service found in the `./examples/proto/helloworld.proto` file:
+The first component is the service. It has a simple API with the `say` method. This method will print out each message received from the client. The proto file below contains the description of the HelloWorld service found in the `./examples/proto/helloworld.proto` file:
 
 ```text
  service HelloWorld {
@@ -130,7 +130,7 @@ private static class HelloWorldClient {
 }
 ```
 
-First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient can be set with the JVM's system property `dapr.grpc.enabled` or environment variable `DAPR_GRPC_ENABLED`. If both are not set, the default is to use HTTP. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar.
+First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient can be set with the JVM's system property `dapr.grpc.enabled` or environment variable `DAPR_GRPC_ENABLED`. If both are not set, the default is to use HTTP. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables to the app: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar.
 
 Finally, it will go through in an infinite loop and invoke the `say` method every second. Notice the use of `block()` on the return from `invokeService` - it is required to actually make the service invocation via a [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) object.
 
