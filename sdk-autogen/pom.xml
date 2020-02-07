@@ -18,7 +18,7 @@
 
   <properties>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
-    <protobuf.input.directory>${project.parent.basedir}/proto</protobuf.input.directory>
+    <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
