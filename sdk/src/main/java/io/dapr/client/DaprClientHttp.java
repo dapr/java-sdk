@@ -10,7 +10,6 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.serializer.StringContentType;
 import io.dapr.utils.Constants;
 import reactor.core.publisher.Mono;
 
@@ -53,14 +52,14 @@ public class DaprClientHttp implements DaprClient {
   private final DaprObjectSerializer stateSerializer;
 
   /**
-   * Flag determining if object serializer's input and output is Dapr's default.
+   * Flag determining if object serializer's input and output is Dapr's default instead of user provided.
    */
-  private final boolean isDefaultObjectSerializer;
+  private final boolean isObjectSerializerDefault;
 
   /**
-   * Flag determining if state serializer's input and output contains a valid String.
+   * Flag determining if state serializer is the default serializer instead of user provided.
    */
-  private final boolean isStateString;
+  private final boolean isStateSerializerDefault;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -75,8 +74,8 @@ public class DaprClientHttp implements DaprClient {
     this.client = client;
     this.objectSerializer = objectSerializer;
     this.stateSerializer = stateSerializer;
-    this.isDefaultObjectSerializer = objectSerializer instanceof DefaultObjectSerializer;
-    this.isStateString = stateSerializer.getClass().getAnnotation(StringContentType.class) != null;
+    this.isObjectSerializerDefault = objectSerializer.getClass() == DefaultObjectSerializer.class;
+    this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
   }
 
   /**
@@ -230,7 +229,7 @@ public class DaprClientHttp implements DaprClient {
       }
 
       if (request != null) {
-        if (this.isDefaultObjectSerializer) {
+        if (this.isObjectSerializerDefault) {
           // If we are using Dapr's default serializer, we pass the object directly and skip objectSerializer.
           // This allows binding to receive JSON directly without having to extract it from a quoted string.
           // Example of output binding vs body in the input binding:
@@ -345,15 +344,20 @@ public class DaprClientHttp implements DaprClient {
         if (state == null) {
           continue;
         }
-        byte[] data = this.stateSerializer.serialize(state.getValue());
-        if (this.isStateString) {
-          internalStateObjects.add(
-              new State<>(data == null ? null : new String(data), state.getKey(), state.getEtag(), state.getOptions()));
-        } else {
-          internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getOptions()));
+        if (this.isStateSerializerDefault) {
+          // If default serializer is being used, we just pass the object through to be serialized directly.
+          // This avoids a JSON object from being quoted inside a string.
+          // We WANT this: { "value" : { "myField" : 123 } }
+          // We DON't WANT this: { "value" : "{ \"myField\" : 123 }" }
+          internalStateObjects.add(state);
+          continue;
         }
+
+        byte[] data = this.stateSerializer.serialize(state.getValue());
+        // Custom serializer, so everything is byte[].
+        internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getOptions()));
       }
-      byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(states);
+      byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
       return this.client.invokeApi(
           DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers).then();
     } catch (Exception ex) {
