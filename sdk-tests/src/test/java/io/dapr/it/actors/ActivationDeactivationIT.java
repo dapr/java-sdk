@@ -28,8 +28,8 @@ public class ActivationDeactivationIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActivationDeactivationIT.class);
 
-  @BeforeClass
-  public static void init() throws Exception {
+  @Test
+  public void activateInvokeDeactivate() throws Exception {
     // The call below will fail if service cannot start successfully.
     startDaprApp(
         ActivationDeactivationIT.class.getSimpleName(),
@@ -37,19 +37,6 @@ public class ActivationDeactivationIT extends BaseIT {
         DemoActorService.class,
         true,
         60000);
-  }
-
-  @Test
-  public void activateInvokeDeactivate() throws Exception {
-    // The call below will fail if service cannot start successfully.
-    startDaprApp(
-        this.getClass().getSimpleName(),
-        EmptyService.SUCCESS_MESSAGE,
-        EmptyService.class,
-        false,
-        20000);
-    // TODO: Figure out why this wait is needed to make the actor calls work. Where is the delay coming from?
-    Thread.sleep(120000);
 
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     String actorType = "DemoActorTest";

@@ -51,11 +51,6 @@ public class ObjectSerializer {
       return (byte[]) state;
     }
 
-    // This avoids string to be quoted in the state store.
-    if (state instanceof String) {
-      return ((String) state).getBytes();
-    }
-
     // Not string, not primitive, so it is a complex type: we use JSON for that.
     return OBJECT_MAPPER.writeValueAsBytes(state);
   }
@@ -80,10 +75,6 @@ public class ObjectSerializer {
 
     if (content == null) {
       return (T) null;
-    }
-
-    if (clazz == String.class) {
-      return (T) new String(content);
     }
 
     // Deserialization of GRPC response fails without this check since it does not come as base64 encoded byte[].
