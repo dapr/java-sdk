@@ -126,6 +126,21 @@ Try the following examples to learn more about Dapr's Java SDK:
 
 Please, refer to our [Javadoc](https://dapr.github.io/java-sdk/) website.
 
+#### Reactor API
+
+The Java SDK for Dapr is built using [Project Reactor](https://projectreactor.io/). It provides an asynchronous API for Java. When consuming a result is consumed synchronously, as in the examples above, the `block()` method is used.
+
+The code below does not make any API call, it simply returns the [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) publisher object:
+
+```java
+daprClient.publishEvent("mytopic", "my message");
+```
+
+To make an API call and invoke the result element (`void` becomes an empty result) synchronously, use the code below instead:
+```java
+daprClient.publishEvent("mytopic", "my message").block();
+```
+
 #### Debug Java application or Dapr's Java SDK
 
 If you have a Java application or an issue on this SDK that needs to be debugged, run Dapr using a dummy command and start the application from your IDE (IntelliJ, for example).
