@@ -12,7 +12,6 @@ import java.io.IOException;
 /**
  * Default serializer/deserializer for request/response objects and for state objects too.
  */
-@StringContentType
 public class DefaultObjectSerializer extends ObjectSerializer implements DaprObjectSerializer {
 
   /**

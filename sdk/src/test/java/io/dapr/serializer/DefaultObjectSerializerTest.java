@@ -245,12 +245,13 @@ public class DefaultObjectSerializerTest {
   @Test
   public void serializeStringTest() {
     String valueToSerialize = "A String";
+    String expectedSerializedValue = "\"A String\"";
     
     String serializedValue;
     byte [] byteValue;
     try {
       serializedValue = new String(SERIALIZER.serialize(valueToSerialize));
-      assertEquals(valueToSerialize, serializedValue);
+      assertEquals(expectedSerializedValue, serializedValue);
       byteValue = SERIALIZER.serialize(valueToSerialize);
       assertNotNull(byteValue);
       String deserializedValue = SERIALIZER.deserialize(byteValue, String.class);
