@@ -141,6 +141,34 @@ To make an API call and invoke the result element (`void` becomes an empty resul
 daprClient.publishEvent("mytopic", "my message").block();
 ```
 
+#### Serialization
+
+This SDK provides a basic serialization for request/response objects but also for state objects. Applications should provide their own serialization for production scenarios.
+
+1. Implement the [DaprObjectSerializer](https://dapr.github.io/java-sdk/io/dapr/serializer/DaprObjectSerializer.html) interface. See [this class](sdk-actors/src/test/java/io/dapr/actors/runtime/JavaSerializer.java) as example.
+2. Use your serializer class in the following scenarios:
+    * When building a new instance of [DaprClient](https://dapr.github.io/java-sdk/io/dapr/client/DaprClient.html):
+    ```java
+    DaprClient client = (new DaprClientBuilder())
+        .withObjectSerializer(new MySerializer()) // for request/response objects.
+        .withStateSerializer(new MySerializer()) // for state objects.
+        .build();
+    ```
+    * When registering an Actor Type:
+    ```java
+    ActorRuntime.getInstance().registerActor(
+      DemoActorImpl.class,
+      new MySerializer(), // for request/response objects.
+      new MySerializer()); // for state objects.
+    ```
+    * When building a new instance of [ActorProxy](https://dapr.github.io/java-sdk/io/dapr/actors/client/ActorProxy.html) to invoke an Actor instance:
+    ```java
+    ActorProxy actor = (new ActorProxyBuilder("DemoActor"))
+        .withObjectSerializer(new MySerializer()) // for request/response objects.
+        .build();
+    ```
+
+
 #### Debug Java application or Dapr's Java SDK
 
 If you have a Java application or an issue on this SDK that needs to be debugged, run Dapr using a dummy command and start the application from your IDE (IntelliJ, for example).
