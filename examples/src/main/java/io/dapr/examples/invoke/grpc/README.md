@@ -48,24 +48,21 @@ private static class GrpcHelloWorldDaprService extends DaprClientGrpc.DaprClient
 ///...
         @Override
         public void onInvoke(DaprClientProtos.InvokeEnvelope request, StreamObserver<Any> responseObserver) {
-            try {
-                if ("say".equals(request.getMethod())) {
-                    // IMPORTANT: do not use Any.unpack(), use Type.ParseFrom() instead.
-                    SayRequest sayRequest = SayRequest.parseFrom(request.getData().getValue());
-                    SayResponse sayResponse = this.say(sayRequest);
-                    responseObserver.onNext(Any.pack(sayResponse));
-                }
-            } catch (InvalidProtocolBufferException e) {
-                e.printStackTrace();
-                responseObserver.onError(e);
-            } finally {
-                responseObserver.onCompleted();
+          try {
+            if ("say".equals(request.getMethod())) {
+              SayRequest sayRequest =
+                  SayRequest.newBuilder().setMessage(request.getData().getValue().toStringUtf8()).build();
+              SayResponse sayResponse = this.say(sayRequest);
+              responseObserver.onNext(Any.pack(sayResponse));
             }
+          } finally {
+            responseObserver.onCompleted();
+          }
         }
 ///...
 }
 ```
-In the `GrpcHelloWorldDaprService` class, the `onInvoke` method is the most important. It is called by Dapr's runtime containing information that this code needs to redirect the request to the correct underlying method. In this case, the only method supported is the `say` method. So, it checks for the method requested and extracts the `SayRequest` object from Dapr's envelope request. Once a `SayResponse` instance is ready, it serializes it into Dapr's envelope response object and returns.
+In the `GrpcHelloWorldDaprService` class, the `onInvoke` method is the most important. It is called by Dapr's runtime containing information that this code needs to redirect the request to the correct underlying method. In this case, the only method supported is the `say` method. So, it checks for the method requested and builds the `SayRequest` object from Dapr's envelope request. Once a `SayResponse` instance is ready, it serializes it into Dapr's envelope response object and returns.
 
 Now run the service code:
 
@@ -97,7 +94,6 @@ private static class HelloWorldClient {
 
       Thread.sleep(1000);
     }
-  }
   }
 ///...
 }
