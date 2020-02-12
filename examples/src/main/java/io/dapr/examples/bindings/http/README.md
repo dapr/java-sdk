@@ -89,7 +89,7 @@ public class InputBindingController {
  Execute the follow script in order to run the Input Binding example:
 ```sh
 cd to [repo-root]/examples
-dapr run --app-id inputbinding --app-port 3000 --port 3005 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.InputBindingExample -D exec.args="-p 3000"
+dapr run --app-id inputbinding --app-port 3000 --port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
 ```
 
 ### Running the Output binding sample
@@ -123,7 +123,7 @@ Use the follow command to execute the Output Binding example:
 
 ```sh
 cd to [repo-root]/examples
-dapr run --app-id outputbinding --port 3006 -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.OutputBindingExample
+dapr run --app-id outputbinding --port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
 ```
 
 Once running, the OutputBindingExample should print the output as follows:

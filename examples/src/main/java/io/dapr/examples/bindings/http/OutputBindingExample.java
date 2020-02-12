@@ -15,7 +15,7 @@ import io.dapr.client.DaprClientBuilder;
  * 2. cd to [repo-root]/examples
  * 3. Run the program:
  * dapr run --app-id outputbinding --port 3006 \
- *   -- mvn exec:java -D exec.mainClass=io.dapr.examples.bindings.http.OutputBindingExample
+ *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
  */
 public class OutputBindingExample {
 

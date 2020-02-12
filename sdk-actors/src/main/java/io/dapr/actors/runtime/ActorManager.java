@@ -23,7 +23,7 @@ class ActorManager<T extends AbstractActor> {
   /**
    * Serializer for internal Dapr objects.
    */
-  private static final ObjectSerializer OBJECT_SERIALIZER = new ObjectSerializer();
+  private static final ActorObjectSerializer OBJECT_SERIALIZER = new ActorObjectSerializer();
 
   /**
    * Context for the Actor runtime.

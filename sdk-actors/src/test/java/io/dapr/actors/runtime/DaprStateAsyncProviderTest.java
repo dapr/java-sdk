@@ -108,13 +108,13 @@ public class DaprStateAsyncProviderTest {
               String key = operation.get("request").get("key").asText();
               JsonNode valueNode = operation.get("request").get("value");
 
-              byte[] value = (valueNode == null) ? null : valueNode.textValue().getBytes();
+              String value = (valueNode == null) ? null : valueNode.asText();
               foundInsertName |= "upsert".equals(opName) &&
                 "name".equals(key) &&
-                Arrays.equals(SERIALIZER.serialize("Jon Doe"), value);
+                "Jon Doe".equals(value);
               foundUpdateZipcode |= "upsert".equals(opName) &&
                 "zipcode".equals(key) &&
-                Arrays.equals(SERIALIZER.serialize(98011), value);
+                "98011".equals(value);
               foundDeleteFlag |= "delete".equals(opName) &&
                 "flag".equals(key) &&
                 (value == null);

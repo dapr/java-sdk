@@ -39,7 +39,7 @@ public class MethodInvokeIT extends BaseIT {
         for (int i = 0; i < NUM_MESSAGES; i++) {
             String message = String.format("This is message #%d", i);
             //Publishing messages
-            client.invokeService(Verb.POST, daprRun.getAppName(), "messages", message).block();
+            client.invokeService(Verb.POST, daprRun.getAppName(), "messages", message.getBytes()).block();
             System.out.println("Invoke method messages : " + message);
         }
 
@@ -51,7 +51,7 @@ public class MethodInvokeIT extends BaseIT {
         messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages", null, Map.class).block();
         assertEquals(9, messages.size());
 
-        client.invokeService(Verb.PUT, daprRun.getAppName(), "messages/2", "updated message").block();
+        client.invokeService(Verb.PUT, daprRun.getAppName(), "messages/2", "updated message".getBytes()).block();
         messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages", null, Map.class).block();
         assertEquals("updated message", messages.get("2"));
 

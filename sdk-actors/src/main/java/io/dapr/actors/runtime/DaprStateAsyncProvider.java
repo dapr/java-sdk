@@ -7,14 +7,15 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.serializer.StringContentType;
+import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.Properties;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
@@ -22,9 +23,9 @@ import java.io.IOException;
 class DaprStateAsyncProvider {
 
   /**
-   * Used to fix problem from Dapr's state response.
+   * Dapr's charset.
    */
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final Charset CHARSET = Properties.STRING_CHARSET.get();
 
   /**
    * Shared Json Factory as per Jackson's documentation, used only for this class.
@@ -42,9 +43,9 @@ class DaprStateAsyncProvider {
   private final DaprObjectSerializer stateSerializer;
 
   /**
-   * Flag determining if serializer's input and output contains a valid String.
+   * Flag determining if state serializer is the default serializer instead of user provided.
    */
-  private final boolean isStateString;
+  private final boolean isStateSerializerDefault;
 
   /**
    * Instantiates a new Actor's state provider.
@@ -55,7 +56,7 @@ class DaprStateAsyncProvider {
   DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
     this.daprClient = daprClient;
     this.stateSerializer = stateSerializer;
-    this.isStateString = stateSerializer.getClass().getAnnotation(StringContentType.class) != null;
+    this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
   }
 
   <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
@@ -63,7 +64,7 @@ class DaprStateAsyncProvider {
 
     return result.flatMap(s -> {
       try {
-        T response = this.stateSerializer.deserialize(fixDaprStateResponse(s), clazz);
+        T response = this.stateSerializer.deserialize(s, clazz);
         if (response == null) {
           return Mono.empty();
         }
@@ -139,9 +140,12 @@ class DaprStateAsyncProvider {
             || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
           byte[] data = this.stateSerializer.serialize(stateChange.getValue());
           if (data != null) {
-            if (this.isStateString) {
-              generator.writeStringField("value", new String(data));
+            if (this.isStateSerializerDefault) {
+              // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
+              generator.writeFieldName("value");
+              generator.writeRawValue(new String(data, CHARSET));
             } else {
+              // Custom serializer uses byte[].
               generator.writeBinaryField("value", data);
             }
           }
@@ -170,30 +174,6 @@ class DaprStateAsyncProvider {
     }
 
     return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), payload);
-  }
-
-  /**
-   * Workaround for a bug in Dapr's runtime where actor state is saved as a JSON string and
-   * returned as-is without deserializing first.
-   *
-   * @param raw Bytes received from Dapr.
-   * @return Corrected byte[].
-   */
-  private byte[] fixDaprStateResponse(byte[] raw) {
-    if (raw == null) {
-      return raw;
-    }
-
-    if (raw.length == 0) {
-      return raw;
-    }
-
-    try {
-      return OBJECT_MAPPER.readValue(raw, String.class).getBytes();
-    } catch (IOException e) {
-      // We could not fix it, so iit goes as-is.
-      return raw;
-    }
   }
 
 }

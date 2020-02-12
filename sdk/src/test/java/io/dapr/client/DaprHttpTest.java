@@ -184,7 +184,7 @@ public class DaprHttpTest {
     assertEquals(existingState, serializer.deserialize(response.block().getBody(), String.class));
     Mono<DaprHttp.Response> responseDeleted = daprHttp.invokeApi("GET", urlDeleteState, null, null);
     Mono<DaprHttp.Response> responseDeleteKey = daprHttp.invokeApi("DELETE", urlDeleteState, null, null);
-    assertEquals("", serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
+    assertNull(serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
     mockInterceptor.reset();
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3500/" + urlDeleteState)
@@ -194,7 +194,7 @@ public class DaprHttpTest {
       responseDeleted.block();
       fail("Expected DaprException");
     } catch (Exception ex) {
-      assertEquals(DaprException.class, ex.getCause().getCause().getClass());
+      assertEquals(DaprException.class, ex.getClass());
     }
   }
 

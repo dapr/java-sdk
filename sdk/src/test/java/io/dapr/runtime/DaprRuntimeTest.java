@@ -211,7 +211,7 @@ public class DaprRuntimeTest {
           .map(r -> new DaprHttpStub.ResponseStub(r, null, 200)));
 
       Mono<byte[]> response = client.invokeService(Verb.POST, APP_ID, METHOD_NAME, message.data, message.metadata, byte[].class);
-      Assert.assertEquals(expectedResponse, response.block());
+      Assert.assertArrayEquals(expectedResponse, response.block());
 
       verify(listener, times(1))
           .process(eq(serializer.serialize(message.data)), eq(message.metadata));

@@ -126,6 +126,50 @@ Try the following examples to learn more about Dapr's Java SDK:
 
 Please, refer to our [Javadoc](https://dapr.github.io/java-sdk/) website.
 
+#### Reactor API
+
+The Java SDK for Dapr is built using [Project Reactor](https://projectreactor.io/). It provides an asynchronous API for Java. When consuming a result is consumed synchronously, as in the examples referenced above, the `block()` method is used.
+
+The code below does not make any API call, it simply returns the [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) publisher object. Nothing happens until the application subscribes or blocks on the result:
+
+```java
+Mono<Void> result = daprClient.publishEvent("mytopic", "my message");
+```
+
+To start execution and receive the result object synchronously(`void` or `Void` becomes an empty result), use `block()`. The code below shows how to execute the call and consume an empty response:
+```java
+Mono<Void> result = daprClient.publishEvent("mytopic", "my message");
+result.block();
+```
+
+#### How to use a custom serializer
+
+This SDK provides a basic serialization for request/response objects but also for state objects. Applications should provide their own serialization for production scenarios.
+
+1. Implement the [DaprObjectSerializer](https://dapr.github.io/java-sdk/io/dapr/serializer/DaprObjectSerializer.html) interface. See [this class](sdk-actors/src/test/java/io/dapr/actors/runtime/JavaSerializer.java) as example.
+2. Use your serializer class in the following scenarios:
+    * When building a new instance of [DaprClient](https://dapr.github.io/java-sdk/io/dapr/client/DaprClient.html):
+    ```java
+    DaprClient client = (new DaprClientBuilder())
+        .withObjectSerializer(new MyObjectSerializer()) // for request/response objects.
+        .withStateSerializer(new MyStateSerializer()) // for state objects.
+        .build();
+    ```
+    * When registering an Actor Type:
+    ```java
+    ActorRuntime.getInstance().registerActor(
+      DemoActorImpl.class,
+      new MyObjectSerializer(), // for request/response objects.
+      new MyStateSerializer()); // for state objects.
+    ```
+    * When building a new instance of [ActorProxy](https://dapr.github.io/java-sdk/io/dapr/actors/client/ActorProxy.html) to invoke an Actor instance, use the same serializer as when registering the Actor Type:
+    ```java
+    ActorProxy actor = (new ActorProxyBuilder("DemoActor"))
+        .withObjectSerializer(new MyObjectSerializer()) // for request/response objects.
+        .build();
+    ```
+
+
 #### Debug Java application or Dapr's Java SDK
 
 If you have a Java application or an issue on this SDK that needs to be debugged, run Dapr using a dummy command and start the application from your IDE (IntelliJ, for example).
