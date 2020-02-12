@@ -172,6 +172,10 @@ This SDK provides a basic serialization for request/response objects but also fo
 
 #### Debug Java application or Dapr's Java SDK
 
+**In IntelliJ Community Edition, consider [debugging in IntelliJ](https://github.com/dapr/docs/tree/master/howto/intellij-debugging-daprd).**
+
+**In Visual Studio Code, consider [debugging in Visual Studio Code](https://github.com/dapr/docs/tree/master/howto/vscode-debugging-daprd).**
+
 If you have a Java application or an issue on this SDK that needs to be debugged, run Dapr using a dummy command and start the application from your IDE (IntelliJ, for example).
 For Linux and MacOS:
 
@@ -190,13 +194,9 @@ DAPR_HTTP_PORT=3500
 DAPR_GRPC_PORT=5001
 ```
 
-Now you can go to your IDE (like IntelliJ, for example) and debug your Java application, using port `3500` to call Dapr while also listening to port `3000` to expose Dapr's callback endpoint.
+Now you can go to your IDE (like Eclipse, for example) and debug your Java application, using port `3500` to call Dapr while also listening to port `3000` to expose Dapr's callback endpoint.
 
 Calls to Dapr's APIs on `http://127.0.0.1:3500/*` should work now and trigger breakpoints in your code.
-
-**If your application needs to subscribe to topics or register Actors in Dapr, for example, then start debugging your app first and run dapr with dummy command last.**
-
-**If using Visual Studio Code, also consider [this solution as well](https://github.com/dapr/docs/tree/master/howto/vscode-debugging-daprd).**
 
 #### Creating and publishing the artifacts to Nexus Repository
 In case you need to publish Dapr's SDK to a private Nexus repo, run the command below from the project's root directory:
@@ -206,7 +206,7 @@ mvn package
 mvn deploy:deploy-file -DgeneratePom=false -DrepositoryId=nexus -Durl=http://localhost:8081/repository/maven-releases -DpomFile=pom.xml -Dfile=target/dapr-sdk-0.2.0.jar
 ```
 
-For more documentation reference :
+For more documentation reference:
 
 https://maven.apache.org/plugins/maven-deploy-plugin
 
