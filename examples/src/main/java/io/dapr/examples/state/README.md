@@ -62,7 +62,7 @@ The code uses the `DaprClient` created by the `DaprClientBuilder`. Notice that t
 
 Run this example with the following command:
 ```sh
-dapr run --port 3006 -- mvn exec:java -pl=examples -D exec.mainClass=io.dapr.examples.state.StateClient -D exec.args="'my message'"
+dapr run --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
 Once running, the OutputBindingExample should print the output as follows:
 
