@@ -37,6 +37,10 @@ public class HelloWorldClient {
       System.out.println("Message sent: " + message);
 
       Thread.sleep(1000);
+      
+      // This is an example, so for simplicity we are just exiting here.  
+      // Normally a dapr app would be a web service and not exit main.
+      System.out.println("Done");
     }
   }
 }
