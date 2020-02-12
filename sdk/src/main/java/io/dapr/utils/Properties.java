@@ -5,6 +5,8 @@
 
 package io.dapr.utils;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -29,6 +31,11 @@ public class Properties {
   private static final Boolean DEFAULT_GRPC_ENABLED = false;
 
   /**
+   * Dapr's default String encoding: UTF-8.
+   */
+  private static final String DEFAULT_STRING_CHARSET = StandardCharsets.UTF_8.name();
+
+  /**
    * HTTP port for Dapr after checking system property and environment variable.
    */
   public static final Supplier<Integer> HTTP_PORT = () -> getIntOrDefault(
@@ -48,6 +55,12 @@ public class Properties {
   public static final Supplier<Boolean> USE_GRPC = () -> getBooleanOrDefault(
       "dapr.grpc.enabled",
       "DAPR_GRPC_ENABLED", DEFAULT_GRPC_ENABLED);
+
+  /**
+   * Determines which string encoding is used in Dapr's Java SDK.
+   */
+  public static final Supplier<Charset> STRING_CHARSET = () -> Charset.forName(
+      getStringOrDefault("dapr.string.charset", "DAPR_STRING_CHARSET", DEFAULT_STRING_CHARSET));
 
   /**
    * Finds an integer defined by system property first, then env variable or sticks to default.
@@ -71,6 +84,18 @@ public class Properties {
    */
   public static Boolean getBooleanOrDefault(String propName, String envName, Boolean defaultValue) {
     return getValueOrDefault(propName, envName, defaultValue, s -> Boolean.valueOf(s));
+  }
+
+  /**
+   * Finds a string defined by system property first, then env variable or sticks to default.
+   * @param propName     Name of the JVM's system property to override (1st).
+   * @param envName      Name of env variable (2nd).
+   * @param defaultValue Default value if cannot find a valid config (last).
+   *
+   * @return String from system property (1st) or env variable (2nd) or default (last).
+   */
+  public static String getStringOrDefault(String propName, String envName, String defaultValue) {
+    return getValueOrDefault(propName, envName, defaultValue, s -> s);
   }
 
   /**

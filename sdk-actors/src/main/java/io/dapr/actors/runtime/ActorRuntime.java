@@ -26,7 +26,7 @@ public class ActorRuntime {
   /**
    * Serializer for internal Dapr objects.
    */
-  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+  private static final ActorObjectSerializer INTERNAL_SERIALIZER = new ActorObjectSerializer();
 
   /**
    * A trace type used when logging.

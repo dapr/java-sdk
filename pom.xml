@@ -24,7 +24,8 @@
     <maven.compiler.target>8</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
     <gpg.skip>true</gpg.skip>
-
+    <spotbugs.version>4.0.0-RC1</spotbugs.version>
+    <spotbugs.fail>true</spotbugs.fail>
   </properties>
 
   <distributionManagement>
@@ -162,12 +163,11 @@
           <dependency>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs</artifactId>
-            <version>4.0.0-RC1</version>
+            <version>${spotbugs.version}</version>
           </dependency>
         </dependencies>
         <configuration>
-          <!-- TODO: enable once bugs are fixed. -->
-          <failOnError>false</failOnError>
+          <failOnError>${spotbugs.fail}</failOnError>
           <xmlOutput>true</xmlOutput>
         </configuration>
         <executions>

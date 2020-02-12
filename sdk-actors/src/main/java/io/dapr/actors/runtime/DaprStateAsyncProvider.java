@@ -10,15 +10,22 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.Properties;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
  */
 class DaprStateAsyncProvider {
+
+  /**
+   * Dapr's charset.
+   */
+  private static final Charset CHARSET = Properties.STRING_CHARSET.get();
 
   /**
    * Shared Json Factory as per Jackson's documentation, used only for this class.
@@ -136,7 +143,7 @@ class DaprStateAsyncProvider {
             if (this.isStateSerializerDefault) {
               // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
               generator.writeFieldName("value");
-              generator.writeRawValue(new String(data));
+              generator.writeRawValue(new String(data, CHARSET));
             } else {
               // Custom serializer uses byte[].
               generator.writeBinaryField("value", data);

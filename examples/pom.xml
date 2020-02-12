@@ -23,6 +23,7 @@
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <spotbugs.fail>false</spotbugs.fail>
   </properties>
 
   <dependencies>

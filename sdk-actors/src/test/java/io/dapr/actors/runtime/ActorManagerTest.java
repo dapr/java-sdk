@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
  */
 public class ActorManagerTest {
 
-  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+  private static final ActorObjectSerializer INTERNAL_SERIALIZER = new ActorObjectSerializer();
 
   private static final AtomicInteger ACTOR_ID_COUNT = new AtomicInteger();
 

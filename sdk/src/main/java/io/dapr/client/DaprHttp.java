@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,18 +44,19 @@ public class DaprHttp {
 
     /**
      * Represents an http response.
-     * @param body The body of the http response.
-     * @param headers The headers of the http response.
+     *
+     * @param body       The body of the http response.
+     * @param headers    The headers of the http response.
      * @param statusCode The status code of the http response.
      */
     public Response(byte[] body, Map<String, String> headers, int statusCode) {
-      this.body = body;
+      this.body = body == null ? EMPTY_BYTES : Arrays.copyOf(body, body.length);
       this.headers = headers;
       this.statusCode = statusCode;
     }
 
     public byte[] getBody() {
-      return body;
+      return Arrays.copyOf(this.body, this.body.length);
     }
 
     public Map<String, String> getHeaders() {
@@ -156,62 +158,58 @@ public class DaprHttp {
       String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
     return Mono.fromCallable(
         () -> {
-          try {
-            final String requestId = UUID.randomUUID().toString();
-            RequestBody body = REQUEST_BODY_EMPTY_JSON;
+          final String requestId = UUID.randomUUID().toString();
+          RequestBody body;
 
-            String contentType = headers != null ? headers.get("content-type") : null;
-            MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
-            if (content == null) {
-              body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON)
-                  ? REQUEST_BODY_EMPTY_JSON
-                  : RequestBody.Companion.create(new byte[0], mediaType);
-            } else {
-              body = RequestBody.Companion.create(content, mediaType);
-            }
-            HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-            urlBuilder.scheme("http").host(Constants.DEFAULT_HOSTNAME).port(this.port).addPathSegments(urlString);
-            Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
-                .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
+          String contentType = headers != null ? headers.get("content-type") : null;
+          MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
+          if (content == null) {
+            body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON)
+                ? REQUEST_BODY_EMPTY_JSON
+                : RequestBody.Companion.create(new byte[0], mediaType);
+          } else {
+            body = RequestBody.Companion.create(content, mediaType);
+          }
+          HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
+          urlBuilder.scheme("http").host(Constants.DEFAULT_HOSTNAME).port(this.port).addPathSegments(urlString);
+          Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
+              .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
 
-            Request.Builder requestBuilder = new Request.Builder()
-                .url(urlBuilder.build())
-                .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
-            if (HttpMethods.GET.name().equals(method)) {
-              requestBuilder.get();
-            } else if (HttpMethods.DELETE.name().equals(method)) {
-              requestBuilder.delete();
-            } else {
-              requestBuilder.method(method, body);
-            }
-            if (headers != null) {
-              Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
-                  .forEach(header -> {
-                    requestBuilder.addHeader(header.getKey(), header.getValue());
-                  });
-            }
+          Request.Builder requestBuilder = new Request.Builder()
+              .url(urlBuilder.build())
+              .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
+          if (HttpMethods.GET.name().equals(method)) {
+            requestBuilder.get();
+          } else if (HttpMethods.DELETE.name().equals(method)) {
+            requestBuilder.delete();
+          } else {
+            requestBuilder.method(method, body);
+          }
+          if (headers != null) {
+            Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
+                .forEach(header -> {
+                  requestBuilder.addHeader(header.getKey(), header.getValue());
+                });
+          }
 
-            Request request = requestBuilder.build();
+          Request request = requestBuilder.build();
 
-            try (okhttp3.Response response = this.httpClient.newCall(request).execute()) {
-              if (!response.isSuccessful()) {
-                DaprError error = parseDaprError(response.body().bytes());
-                if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-                  throw new RuntimeException(new DaprException(error));
-                }
-
-                throw new RuntimeException("Unknown error.");
+          try (okhttp3.Response response = this.httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+              DaprError error = parseDaprError(response.body().bytes());
+              if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
+                throw new DaprException(error);
               }
 
-              Map<String, String> mapHeaders = new HashMap<>();
-              byte[] result = response.body().bytes();
-              response.headers().forEach(pair -> {
-                mapHeaders.put(pair.getFirst(), pair.getSecond());
-              });
-              return new Response(result == null ? EMPTY_BYTES : result, mapHeaders, response.code());
+              throw new IllegalStateException("Unknown error.");
             }
-          } catch (Exception e) {
-            throw new RuntimeException(e);
+
+            Map<String, String> mapHeaders = new HashMap<>();
+            byte[] result = response.body().bytes();
+            response.headers().forEach(pair -> {
+              mapHeaders.put(pair.getFirst(), pair.getSecond());
+            });
+            return new Response(result, mapHeaders, response.code());
           }
         });
   }

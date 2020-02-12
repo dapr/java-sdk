@@ -6,7 +6,6 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
-import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -39,7 +38,7 @@ public class ActorRuntimeTest {
     }
   }
 
-  private static final ObjectSerializer ACTOR_STATE_SERIALIZER = new ObjectSerializer();
+  private static final ActorObjectSerializer ACTOR_STATE_SERIALIZER = new ActorObjectSerializer();
 
   private static Constructor<ActorRuntime> constructor;
 

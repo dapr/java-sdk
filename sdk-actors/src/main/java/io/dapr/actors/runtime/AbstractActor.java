@@ -21,7 +21,7 @@ import java.util.Map;
  */
 public abstract class AbstractActor {
 
-  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+  private static final ActorObjectSerializer INTERNAL_SERIALIZER = new ActorObjectSerializer();
 
   /**
    * Type of tracing messages.

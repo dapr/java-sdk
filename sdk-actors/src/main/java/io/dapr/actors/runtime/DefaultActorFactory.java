@@ -33,17 +33,19 @@ class DefaultActorFactory<T extends AbstractActor> implements ActorFactory<T> {
       }
 
       Constructor<T> constructor = actorRuntimeContext
-            .getActorTypeInformation()
-            .getImplementationClass()
-            .getConstructor(ActorRuntimeContext.class, ActorId.class);
+          .getActorTypeInformation()
+          .getImplementationClass()
+          .getConstructor(ActorRuntimeContext.class, ActorId.class);
       return constructor.newInstance(actorRuntimeContext, actorId);
+    } catch (RuntimeException e) {
+      throw e;
     } catch (Exception e) {
       ACTOR_TRACE.writeError(
             actorRuntimeContext.getActorTypeInformation().getName(),
             actorId.toString(),
             "Failed to create actor instance.");
+      throw new RuntimeException(e);
     }
-    return null;
   }
 
 }
