@@ -215,20 +215,15 @@ public class ActorStateManager {
             throw new IllegalArgumentException("State's name cannot be null.");
           }
 
-          if (this.stateChangeTracker.containsKey(stateName)) {
-            StateChangeMetadata metadata = this.stateChangeTracker.get(stateName);
-
-            if (metadata.kind == ActorStateChangeKind.REMOVE) {
-              return Boolean.FALSE;
-            }
-
-            return Boolean.TRUE;
-          }
-
-          return null;
+          return this.stateChangeTracker.get(stateName);
         }
+    ).map(metadata -> {
+      if (metadata.kind == ActorStateChangeKind.REMOVE) {
+        return Boolean.FALSE;
+      }
 
-    ).switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName));
+      return Boolean.TRUE;
+    }).switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName));
   }
 
   /**
@@ -243,14 +238,9 @@ public class ActorStateManager {
       }
 
       List<ActorStateChange> changes = new ArrayList<>();
-      List<String> removed = new ArrayList<>();
       for (Map.Entry<String, StateChangeMetadata> tuple : this.stateChangeTracker.entrySet()) {
         if (tuple.getValue().kind == ActorStateChangeKind.NONE) {
           continue;
-        }
-
-        if (tuple.getValue().kind == ActorStateChangeKind.REMOVE) {
-          removed.add(tuple.getKey());
         }
 
         changes.add(new ActorStateChange(tuple.getKey(), tuple.getValue().value, tuple.getValue().kind));

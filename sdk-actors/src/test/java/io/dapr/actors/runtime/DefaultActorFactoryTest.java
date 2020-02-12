@@ -59,14 +59,13 @@ public class DefaultActorFactoryTest {
   /**
    * Class is not an actor.
    */
-  @Test
+  @Test(expected = RuntimeException.class)
   public void noValidConstructor() {
     DefaultActorFactory<InvalidActor> factory = new DefaultActorFactory<>();
 
     ActorId actorId = ActorId.createRandom();
-    InvalidActor actor = factory.createActor(createActorRuntimeContext(InvalidActor.class), actorId);
 
-    Assert.assertNull(actor);
+    factory.createActor(createActorRuntimeContext(InvalidActor.class), actorId);
   }
 
   private static <T extends AbstractActor> ActorRuntimeContext<T> createActorRuntimeContext(Class<T> clazz) {

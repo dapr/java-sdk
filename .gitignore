@@ -1,6 +1,7 @@
 # IDE generated files and directories
 *.iml
 .idea/
+.vs/
 
 # Output folders
 **/target/
