@@ -6,7 +6,7 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.ObjectSerializer;
+import io.dapr.actors.runtime.ActorObjectSerializer;
 import io.dapr.serializer.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
@@ -20,7 +20,7 @@ class ActorProxyImpl implements ActorProxy {
   /**
    * Serializer used for internal objects.
    */
-  private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
+  private static final ActorObjectSerializer INTERNAL_SERIALIZER = new ActorObjectSerializer();
 
   /**
    * Actor's identifier for this Actor instance.

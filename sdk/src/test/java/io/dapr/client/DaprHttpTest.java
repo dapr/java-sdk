@@ -194,7 +194,7 @@ public class DaprHttpTest {
       responseDeleted.block();
       fail("Expected DaprException");
     } catch (Exception ex) {
-      assertEquals(DaprException.class, ex.getCause().getCause().getClass());
+      assertEquals(DaprException.class, ex.getClass());
     }
   }
 
