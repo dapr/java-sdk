@@ -97,7 +97,7 @@ Once running, the ExposerService is now ready to be invoked by Dapr.
 
 ### Running the InvokeClient sample
 
-The Invoke client sample uses the Dapr SDK for invoking the remote method. The main method declares a Dapr Client using the DaprClientBuilder class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. It needs to know the method name to invoke as well as the application id for the remote application. In `InvokeClient.java` file, you will find the `InvokeClient` class and the `main` method. See the code snippet below:
+The Invoke client sample uses the Dapr SDK for invoking the remote method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that [DaprClientBuilder](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprClientBuilder.java) can receive two optional serializers: `withObjectSerializer()` is for Dapr's sent and received objects, and `withStateSerializer()` is for objects to be persisted. It needs to know the method name to invoke as well as the application id for the remote application. This example, we stick to the [default serializer](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/serializer/DefaultObjectSerializer.java). In `InvokeClient.java` file, you will find the `InvokeClient` class and the `main` method. See the code snippet below:
 
 ```java
 public class InvokeClient {
@@ -107,14 +107,16 @@ private static final String SERVICE_APP_ID = "invokedemo";
   public static void main(String[] args) {
     DaprClient client = (new DaprClientBuilder()).build();
     for (String message : args) {
-      client.invokeService(Verb.POST, SERVICE_APP_ID, "say", message, null, String.class).block();
+      byte[] response = client.invokeService(
+          Verb.POST, SERVICE_APP_ID, "say", message, null, byte[].class).block();
+      System.out.println(new String(response));
     }
   }
 ///...
 }
 ```
 
-The class knows the app id for the remote application. It uses the the static `Dapr.getInstance().invokeService` method to invoke the remote method defining the parameters: The verb, application id, method name, and proper data and metadata, as well as the type of the expected retun data.
+The class knows the app id for the remote application. It uses the the static `Dapr.getInstance().invokeService` method to invoke the remote method defining the parameters: The verb, application id, method name, and proper data and metadata, as well as the type of the expected return type. The returned payload for this method invocation is plain text and not a [JSON String](https://www.w3schools.com/js/js_json_datatypes.asp), so we expect `byte[]` to get the raw response and not try to deserialize it.
  
  Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh
