@@ -5,9 +5,6 @@
 
 package io.dapr.springboot;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
