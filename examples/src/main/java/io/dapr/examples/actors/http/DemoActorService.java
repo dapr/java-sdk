@@ -18,7 +18,7 @@ import org.apache.commons.cli.Options;
  * mvn clean install
  * 2. Run the server:
  * dapr run --app-id demoactorservice --app-port 3000 --port 3005 \
- *   -- java -jar examples/target/dapr-sdk-examples-0.2.0-SNAPSHOT-exec.jar
+ *   -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  *   io.dapr.examples.actors.http.DemoActorService -p 3000
  */
 public class DemoActorService {

@@ -105,7 +105,7 @@ An actor inherits from `AbstractActor` and implements the constructor to pass th
 Now, execute the following script in order to run DemoActorService:
 ```sh
 cd to [repo-root]
-dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- java -jar examples/target/dapr-sdk-examples-0.2.0-SNAPSHOT-exec.jar io.dapr.examples.actors.http.DemoActorService -p 3000
+dapr run --app-id demoactorservice --app-port 3000 --port 3005 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorService -p 3000
 ```
 
 ### Running the Actor client
@@ -164,7 +164,7 @@ Use the follow command to execute the DemoActorClient:
 
 ```sh
 cd to [repo-root]
-dapr run --app-id demoactorclient --port 3006 -- java -jar examples/target/dapr-sdk-examples-0.2.0-SNAPSHOT-exec.jar io.dapr.examples.actors.http.DemoActorClient
+dapr run --app-id demoactorclient --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorClient
 ```
 
 Once running, the `DemoActorClient` logs will start displaying the different steps: 

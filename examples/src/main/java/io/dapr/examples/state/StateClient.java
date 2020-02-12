@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
  * mvn clean install
  * 2. send a message to be saved as state:
  * dapr run --port 3006 -- \
- * java -jar examples/target/dapr-sdk-examples-0.2.0-SNAPSHOT-exec.jar
+ * java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  * io.dapr.examples.state.StateClient 'my message'
  */
 public class StateClient {

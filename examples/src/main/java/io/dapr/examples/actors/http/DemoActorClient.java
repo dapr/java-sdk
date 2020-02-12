@@ -18,7 +18,7 @@ import java.util.List;
  * mvn clean install
  * 2. Run the client:
  * dapr run --app-id demoactorclient --port 3006 -- java -jar \
- * examples/target/dapr-sdk-examples-0.2.0-SNAPSHOT-exec.jar io.dapr.examples.actors.http.DemoActorClient
+ * examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorClient
  */
 public class DemoActorClient {
 

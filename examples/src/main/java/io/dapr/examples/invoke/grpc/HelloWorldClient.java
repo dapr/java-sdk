@@ -13,7 +13,7 @@ import io.dapr.client.domain.Verb;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Send messages to the server:
- * dapr run -- java -jar examples/target/dapr-sdk-examples-0.2.0-SNAPSHOT-exec.jar
+ * dapr run -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  * io.dapr.examples.invoke.grpc.HelloWorldClient
  */
 public class HelloWorldClient {

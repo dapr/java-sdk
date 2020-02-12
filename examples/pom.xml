@@ -153,6 +153,7 @@
             <configuration>
               <mainClass>io.dapr.springboot.DaprMainApplication</mainClass>
               <classifier>exec</classifier>
+              <finalName>dapr-java-sdk-examples</finalName>
             </configuration>
           </execution>
         </executions>

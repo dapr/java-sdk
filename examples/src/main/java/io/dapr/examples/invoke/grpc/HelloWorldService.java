@@ -30,7 +30,7 @@ import static io.dapr.examples.DaprExamplesProtos.SayResponse;
  * mvn clean install
  * 2. Run in server mode:
  * dapr run --app-id hellogrpc --app-port 5000 --protocol grpc \
- *   -- java -jar examples/target/dapr-sdk-examples-0.2.0-SNAPSHOT-exec.jar
+ *   -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  *   io.dapr.examples.invoke.grpc.HelloWorldService \
  *   -p 5000
  */
