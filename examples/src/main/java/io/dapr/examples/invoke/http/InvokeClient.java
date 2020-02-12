@@ -31,7 +31,9 @@ public class InvokeClient {
   public static void main(String[] args) {
     DaprClient client = (new DaprClientBuilder()).build();
     for (String message : args) {
-      client.invokeService(Verb.POST, SERVICE_APP_ID, "say", message, null, String.class).block();
+      byte[] response = client.invokeService(
+          Verb.POST, SERVICE_APP_ID, "say", message, null, byte[].class).block();
+      System.out.println(new String(response));
     }
   }
 }
