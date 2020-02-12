@@ -51,6 +51,9 @@ public class StateClient {
 
     Mono<State<MyClass>> retrievedDeletedMessageMono = client.getState(STATE_STORE_NAME, KEY_NAME, MyClass.class);
     System.out.println("Trying to retrieve deleted state: " + retrievedDeletedMessageMono.block().getValue());
-  }
 
+    // This is an example, so for simplicity we are just exiting here.  
+    // Normally a dapr app would be a web service and not exit main. 
+    System.out.println("Done");
+  }
 }

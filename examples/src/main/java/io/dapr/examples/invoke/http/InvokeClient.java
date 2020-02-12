@@ -35,5 +35,9 @@ public class InvokeClient {
           Verb.POST, SERVICE_APP_ID, "say", message, null, byte[].class).block();
       System.out.println(new String(response));
     }
+
+    // This is an example, so for simplicity we are just exiting here.  
+    // Normally a dapr app would be a web service and not exit main.
+    System.out.println("Done");
   }
 }

@@ -55,6 +55,8 @@ public class Publisher {
             Collections.singletonMap("content-type", "application/octet-stream")).block();
     System.out.println("Published one byte.");
 
+    // This is an example, so for simplicity we are just exiting here.  
+    // Normally a dapr app would be a web service and not exit main.    
     System.out.println("Done.");
   }
 }
