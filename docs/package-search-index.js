@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"io.dapr"},{"l":"io.dapr.actors"},{"l":"io.dapr.actors.client"},{"l":"io.dapr.actors.runtime"},{"l":"io.dapr.client"},{"l":"io.dapr.client.domain"},{"l":"io.dapr.exceptions"},{"l":"io.dapr.serializer"},{"l":"io.dapr.utils"}]
