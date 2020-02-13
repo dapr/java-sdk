@@ -98,11 +98,14 @@ public class DaprRun {
     if (this.ports.getGrpcPort() != null) {
       System.getProperties().setProperty("dapr.grpc.port", String.valueOf(this.ports.getGrpcPort()));
     }
-    System.getProperties().setProperty("dapr.grpc.enabled", Boolean.FALSE.toString());
   }
 
   public void switchToGRPC() {
     System.getProperties().setProperty("dapr.grpc.enabled", Boolean.TRUE.toString());
+  }
+
+  public void switchToHTTP() {
+    System.getProperties().setProperty("dapr.grpc.enabled", Boolean.FALSE.toString());
   }
 
   public int getGrpcPort() {
