@@ -14,7 +14,7 @@ import io.dapr.client.domain.Verb;
  * mvn clean install
  * 2. Send messages to the server:
  * dapr run --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- *   'message one' 'message two'
+ *   io.dapr.examples.invoke.http.InvokeClient 'message one' 'message two'
  */
 public class InvokeClient {
 
@@ -35,5 +35,9 @@ public class InvokeClient {
           Verb.POST, SERVICE_APP_ID, "say", message, null, byte[].class).block();
       System.out.println(new String(response));
     }
+
+    // This is an example, so for simplicity we are just exiting here.  
+    // Normally a dapr app would be a web service and not exit main.
+    System.out.println("Done");
   }
 }
