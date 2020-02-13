@@ -60,13 +60,19 @@ For a Maven project, add the following to your `pom.xml` file:
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk</artifactId>
-          <version>0.2.0-SNAPSHOT</version>
+          <version>0.2.0</version>
         </dependency>
         <!-- Dapr's SDK for Actors (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk-actors</artifactId>
-          <version>0.2.0-SNAPSHOT</version>
+          <version>0.2.0</version>
+        </dependency>
+        <!-- If needed, resolve version conflict of okhttp3. -->
+        <dependency>
+          <groupId>com.squareup.okhttp3</groupId>
+          <artifactId>okhttp</artifactId>
+          <version>4.2.2</version>
         </dependency>
         ...
       </dependencies>
@@ -94,9 +100,14 @@ repositories {
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:0.2.0-SNAPSHOT')
+    compile('io.dapr:dapr-sdk:0.2.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:0.2.0-SNAPSHOT')
+    compile('io.dapr:dapr-sdk-actors:0.2.0')
+
+    // If needed, force conflict resolution for okhttp3.
+    configurations.all {
+        resolutionStrategy.force 'com.squareup.okhttp3:okhttp:4.2.2'
+    }
 }
 ```
 
