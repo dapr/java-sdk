@@ -7,7 +7,7 @@ package io.dapr.it;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static io.dapr.it.Retry.callWithRetry;
 
@@ -32,12 +32,15 @@ public class DaprRun {
 
   private final Command stopCommand;
 
-  DaprRun(
-      String testName, DaprPorts ports, String successMessage, Class serviceClass, int maxWaitMilliseconds) {
+  private DaprRun(String testName,
+                  DaprPorts ports,
+                  String successMessage,
+                  Class serviceClass,
+                  int maxWaitMilliseconds) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
     this.appName = String.format("%s_%s", testName, serviceClass.getSimpleName());
     this.startCommand =
-      new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports));
+        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports));
     this.stopCommand = new Command(
         "app stopped successfully",
         "dapr stop --app-id " + this.appName);
@@ -98,6 +101,7 @@ public class DaprRun {
     if (this.ports.getGrpcPort() != null) {
       System.getProperties().setProperty("dapr.grpc.port", String.valueOf(this.ports.getGrpcPort()));
     }
+    System.getProperties().setProperty("dapr.grpc.enabled", Boolean.TRUE.toString());
   }
 
   public void switchToGRPC() {
@@ -137,7 +141,8 @@ public class DaprRun {
   private static void assertListeningOnPort(int port) {
     System.out.printf("Checking port %d ...\n", port);
 
-    java.net.SocketAddress socketAddress = new java.net.InetSocketAddress(io.dapr.utils.Constants.DEFAULT_HOSTNAME, port);
+    java.net.SocketAddress socketAddress = new java.net.InetSocketAddress(io.dapr.utils.Constants.DEFAULT_HOSTNAME,
+        port);
     try (java.net.Socket socket = new java.net.Socket()) {
       socket.connect(socketAddress, 1000);
     } catch (Exception e) {
@@ -145,5 +150,40 @@ public class DaprRun {
     }
 
     System.out.printf("Confirmed listening on port %d.\n", port);
+  }
+
+  static class Builder {
+
+    private final String testName;
+
+    private final Supplier<DaprPorts> portsSupplier;
+
+    private final String successMessage;
+
+    private final Class serviceClass;
+
+    private final int maxWaitMilliseconds;
+
+    Builder(
+        String testName,
+        Supplier<DaprPorts> portsSupplier,
+        String successMessage,
+        Class serviceClass,
+        int maxWaitMilliseconds) {
+      this.testName = testName;
+      this.portsSupplier = portsSupplier;
+      this.successMessage = successMessage;
+      this.serviceClass = serviceClass;
+      this.maxWaitMilliseconds = maxWaitMilliseconds;
+    }
+
+    DaprRun build() {
+      return new DaprRun(
+          this.testName,
+          this.portsSupplier.get(),
+          this.successMessage,
+          this.serviceClass,
+          this.maxWaitMilliseconds);
+    }
   }
 }

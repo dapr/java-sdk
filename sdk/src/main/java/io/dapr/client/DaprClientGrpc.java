@@ -193,7 +193,7 @@ public class DaprClientGrpc implements DaprClient {
         builder.setData(data);
       }
       if (metadata != null) {
-        builder.getMetadataMap().putAll(metadata);
+        builder.putAllMetadata(metadata);
       }
       DaprProtos.InvokeBindingEnvelope envelope = builder.build();
       return Mono.fromCallable(() -> {
@@ -461,11 +461,14 @@ public class DaprClientGrpc implements DaprClient {
       String verb, String appId, String method, K request) throws IOException {
     DaprProtos.InvokeServiceEnvelope.Builder envelopeBuilder = DaprProtos.InvokeServiceEnvelope.newBuilder()
         .setId(appId)
-        .setMethod(verb);
+        .setMethod(method)
+        .putMetadata("http.verb", verb);
     if (request != null) {
       byte[] byteRequest = objectSerializer.serialize(request);
       Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
       envelopeBuilder.setData(data);
+    } else {
+      envelopeBuilder.setData(Any.newBuilder().build());
     }
     return envelopeBuilder.build();
   }
