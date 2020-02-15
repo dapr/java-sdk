@@ -232,3 +232,20 @@ When releasing a new version of this SDK you must increase the version of all mo
 mvn versions:set -DnewVersion="0.1.0-preview02"
 mvn versions:commit
 ```
+
+#### Update proto files
+
+Change the properties below in [pom.xml](./pom.xml) to point to the desired reference URL in Git. Avoid pointing to master branch since it can change over time and create unpredictable behavior in the build.
+
+```xml
+<project>
+  ...
+  <properties>
+    ...
+    <dapr.proto.url>https://raw.githubusercontent.com/dapr/dapr/v0.4.0/pkg/proto/dapr/dapr.proto</dapr.proto.url>
+    <dapr.client.proto.url>https://raw.githubusercontent.com/dapr/dapr/v0.4.0/pkg/proto/daprclient/daprclient.proto</dapr.client.proto.url>
+    ...
+  </properties>
+  ...
+</project>
+```

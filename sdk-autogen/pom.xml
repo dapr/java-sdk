@@ -18,7 +18,7 @@
 
   <properties>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
-    <protobuf.input.directory>${project.parent.basedir}/proto</protobuf.input.directory>
+    <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
@@ -56,6 +56,41 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <version>1.3.0</version>
+        <executions>
+          <execution>
+            <id>getDaprProto</id>
+            <!-- the wget goal actually binds itself to this phase by default -->
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>${dapr.proto.url}</url>
+              <outputFileName>dapr.proto</outputFileName>
+              <!-- default target location, just to demonstrate the parameter -->
+              <outputDirectory>${protobuf.input.directory}/dapr</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>getDaprClientProto</id>
+            <!-- the wget goal actually binds itself to this phase by default -->
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>${dapr.client.proto.url}</url>
+              <outputFileName>daprclient.proto</outputFileName>
+              <!-- default target location, just to demonstrate the parameter -->
+              <outputDirectory>${protobuf.input.directory}/daprclient</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>com.github.os72</groupId>
         <artifactId>protoc-jar-maven-plugin</artifactId>
