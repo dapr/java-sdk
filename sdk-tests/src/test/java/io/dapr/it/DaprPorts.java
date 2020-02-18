@@ -24,12 +24,16 @@ public class DaprPorts {
     this.appPort = appPort;
   }
 
-  public static DaprPorts build(boolean appPort, boolean httpPort, boolean grpcPort) throws IOException {
-    List<Integer> freePorts = findFreePorts(3);
-    return new DaprPorts(
-        appPort ? freePorts.get(0) : null,
-        httpPort ? freePorts.get(1) : null,
-        grpcPort ? freePorts.get(2) : null);
+  public static DaprPorts build(boolean appPort, boolean httpPort, boolean grpcPort) {
+    try {
+      List<Integer> freePorts = findFreePorts(3);
+      return new DaprPorts(
+          appPort ? freePorts.get(0) : null,
+          httpPort ? freePorts.get(1) : null,
+          grpcPort ? freePorts.get(2) : null);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public static DaprPorts build() throws IOException {

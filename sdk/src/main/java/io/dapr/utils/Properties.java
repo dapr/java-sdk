@@ -28,7 +28,7 @@ public class Properties {
   /**
    * Dapr's default GRPC port.
    */
-  private static final Boolean DEFAULT_GRPC_ENABLED = false;
+  private static final Boolean DEFAULT_GRPC_ENABLED = true;
 
   /**
    * Dapr's default String encoding: UTF-8.

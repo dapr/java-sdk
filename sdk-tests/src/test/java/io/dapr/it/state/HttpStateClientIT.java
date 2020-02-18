@@ -37,6 +37,7 @@ public class HttpStateClientIT extends BaseIT {
         false,
         1000
     );
+    daprRun.switchToHTTP();
   }
 
   @Test

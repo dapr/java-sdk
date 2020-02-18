@@ -7,11 +7,15 @@ package io.dapr.it;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.AfterClass;
 
 public abstract class BaseIT {
 
   protected static final String STATE_STORE_NAME = "statestore";
+
+  private static final Map<String, DaprRun.Builder> DAPR_RUN_BUILDERS = new HashMap<>();
 
   private static final Collection<DaprRun> DAPR_RUNS = new ArrayList<>();
 
@@ -31,16 +35,28 @@ public abstract class BaseIT {
       Boolean useAppPort,
       Boolean useDaprPorts,
       int maxWaitMilliseconds) throws Exception {
-    DaprRun run = new DaprRun(
+    DaprRun.Builder builder = new DaprRun.Builder(
         testName,
-        DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
+        () -> DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
         successMessage,
         serviceClass,
         maxWaitMilliseconds);
+    DaprRun run = builder.build();
     DAPR_RUNS.add(run);
+    DAPR_RUN_BUILDERS.put(run.getAppName(), builder);
     run.start();
     run.use();
     return run;
+  }
+
+  protected static DaprRun restartDaprApp(DaprRun run) throws Exception {
+    DaprRun.Builder builder = DAPR_RUN_BUILDERS.get(run.getAppName());
+    run.stop();
+    DaprRun newRun = builder.build();
+    DAPR_RUNS.add(newRun);
+    newRun.start();
+    newRun.use();
+    return newRun;
   }
 
   @AfterClass

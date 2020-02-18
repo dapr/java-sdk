@@ -10,15 +10,20 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Verb;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import java.util.Arrays;
+import java.util.Collection;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(Parameterized.class)
 public class PubSubIT extends BaseIT {
 
     //Number of messages to be sent: 10
@@ -26,6 +31,19 @@ public class PubSubIT extends BaseIT {
     
     //The title of the topic to be used for publishing
     private static final String TOPIC_NAME = "testingtopic";
+
+    /**
+     * Parameters for this test.
+     * Param #1: useGrpc.
+     * @return Collection of parameter tuples.
+     */
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] { { false }, { true } });
+    }
+
+    @Parameterized.Parameter
+    public boolean useGrpc;
 
     @Test
     public void testPubSub() throws Exception {
@@ -38,6 +56,11 @@ public class PubSubIT extends BaseIT {
                 true,
                 60000);
         // At this point, it is guaranteed that the service above is running and all ports being listened to.
+        if (this.useGrpc) {
+            daprRun.switchToGRPC();
+        } else {
+            daprRun.switchToHTTP();
+        }
 
         DaprClient client = new DaprClientBuilder().build();
         for (int i = 0; i < NUM_MESSAGES; i++) {

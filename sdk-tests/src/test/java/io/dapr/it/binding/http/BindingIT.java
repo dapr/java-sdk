@@ -13,12 +13,16 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.services.EmptyService;
 import io.dapr.serializer.DefaultObjectSerializer;
+import java.util.Arrays;
+import java.util.Collection;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.Assert.assertEquals;
@@ -27,6 +31,7 @@ import static org.junit.Assert.fail;
 /**
  * Service for input and output binding example.
  */
+@RunWith(Parameterized.class)
 public class BindingIT extends BaseIT {
 
   public static class MyClass {
@@ -36,11 +41,24 @@ public class BindingIT extends BaseIT {
     public String message;
   }
 
+  /**
+   * Parameters for this test.
+   * Param #1: useGrpc.
+   * @return Collection of parameter tuples.
+   */
+  @Parameterized.Parameters
+  public static Collection<Object[]> data() {
+    return Arrays.asList(new Object[][] { { false }, { true } });
+  }
+
+  @Parameterized.Parameter
+  public boolean useGrpc;
+
   @Test
   public void inputOutputBinding() throws Exception {
     System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
-    DaprRun daprRunInputBinding = startDaprApp(
+    DaprRun daprRun = startDaprApp(
         this.getClass().getSimpleName(),
         InputBindingService.SUCCESS_MESSAGE,
         InputBindingService.class,
@@ -49,6 +67,11 @@ public class BindingIT extends BaseIT {
     // At this point, it is guaranteed that the service above is running and all ports being listened to.
     // TODO: figure out why this wait is needed for this scenario to work end-to-end. Kafka not up yet?
     Thread.sleep(120000);
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      daprRun.switchToHTTP();
+    }
 
     DaprClient client = new DaprClientBuilder().build();
 
@@ -74,7 +97,7 @@ public class BindingIT extends BaseIT {
       final List<String> messages =
           client.invokeService(
               Verb.GET,
-              daprRunInputBinding.getAppName(),
+              daprRun.getAppName(),
               "messages",
               null,
               List.class).block();

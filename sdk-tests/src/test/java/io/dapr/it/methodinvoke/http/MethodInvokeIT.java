@@ -5,21 +5,49 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Verb;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.runners.Parameterized.*;
 
+@RunWith(Parameterized.class)
 public class MethodInvokeIT extends BaseIT {
 
     //Number of messages to be sent: 10
     private static final int NUM_MESSAGES = 10;
-    private static DaprRun daprRun=null;
+
+    /**
+     * Parameters for this test.
+     * Param #1: useGrpc.
+     * @return Collection of parameter tuples.
+     */
+    @Parameters
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] { { false }, { true } });
+    }
+
+    /**
+     * Run of a Dapr application.
+     */
+    private static DaprRun daprRun = null;
+
+    /**
+     * Flag to determine if there is a context change based on parameters.
+     */
+    private static Boolean wasGrpc;
+
+    @Parameter
+    public boolean useGrpc;
 
     @BeforeClass
-    public static void init() throws Exception {
+    public static void initClass() throws Exception {
         System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
         daprRun = startDaprApp(
@@ -28,6 +56,24 @@ public class MethodInvokeIT extends BaseIT {
                 MethodInvokeService.class,
                 true,
                 60000);
+    }
+
+    @Before
+    public void init() throws Exception {
+        if (wasGrpc != null) {
+            if (wasGrpc.booleanValue() != this.useGrpc) {
+                // Context change.
+                daprRun = super.restartDaprApp(daprRun);
+            }
+        }
+
+        if (this.useGrpc) {
+            daprRun.switchToGRPC();
+        } else {
+            daprRun.switchToHTTP();
+        }
+
+        wasGrpc = this.useGrpc;
     }
 
     @Test
