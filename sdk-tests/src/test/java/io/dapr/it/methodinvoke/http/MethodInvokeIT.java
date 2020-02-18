@@ -47,7 +47,7 @@ public class MethodInvokeIT extends BaseIT {
     public boolean useGrpc;
 
     @BeforeClass
-    public static void initAll() throws Exception {
+    public static void initClass() throws Exception {
         System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
         daprRun = startDaprApp(
