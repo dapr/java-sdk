@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorType;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
 import io.dapr.actors.client.DaprClientStub;
@@ -604,23 +605,23 @@ public class ActorStatefulTest {
     DaprClientStub daprClient = mock(DaprClientStub.class);
 
     when(daprClient.invokeActorMethod(
-      eq(context.getActorTypeInformation().getName()),
-      eq(actorId.toString()),
-      any(),
-      any()))
-      .thenAnswer(invocationOnMock ->
-        this.manager.invokeMethod(
-          new ActorId(invocationOnMock.getArgument(1, String.class)),
-          invocationOnMock.getArgument(2, String.class),
-          invocationOnMock.getArgument(3, byte[].class)));
+            eq(context.getActorTypeInformation().getName()),
+            eq(actorId.toString()),
+            any(),
+            any()))
+            .thenAnswer(invocationOnMock ->
+                    this.manager.invokeMethod(
+                            new ActorId(invocationOnMock.getArgument(1, String.class)),
+                            invocationOnMock.getArgument(2, String.class),
+                            invocationOnMock.getArgument(3, byte[].class)));
 
     this.manager.activateActor(actorId).block();
 
     return new ActorProxyForTestsImpl(
-      context.getActorTypeInformation().getName(),
-      actorId,
-      new DefaultObjectSerializer(),
-      daprClient);
+            context.getActorTypeInformation().getName(),
+            actorId,
+            new DefaultObjectSerializer(),
+            daprClient);
   }
 
   private byte[] createReminderParams(String data) throws IOException {

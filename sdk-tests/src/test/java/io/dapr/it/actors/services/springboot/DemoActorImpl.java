@@ -8,15 +8,16 @@ package io.dapr.it.actors.services.springboot;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
-import io.dapr.actors.runtime.ActorType;
 import reactor.core.publisher.Mono;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.TimeZone;
 
-@ActorType(name = "DemoActorTest")
 public class DemoActorImpl extends AbstractActor implements DemoActor {
 
   public static final List<String> ACTIVE_ACTOR = new ArrayList<>();

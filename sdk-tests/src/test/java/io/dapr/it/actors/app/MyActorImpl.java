@@ -6,9 +6,9 @@
 package io.dapr.it.actors.app;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorType;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
-import io.dapr.actors.runtime.ActorType;
 import io.dapr.actors.runtime.Remindable;
 import io.dapr.it.actors.MethodEntryTracker;
 import reactor.core.publisher.Mono;
@@ -16,7 +16,11 @@ import reactor.core.publisher.Mono;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.TimeZone;
 
 @ActorType(name = "MyActorTest")
 public class MyActorImpl extends AbstractActor implements MyActor, Remindable<String> {

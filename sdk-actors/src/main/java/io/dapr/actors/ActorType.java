@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.actors.runtime;
+package io.dapr.actors;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

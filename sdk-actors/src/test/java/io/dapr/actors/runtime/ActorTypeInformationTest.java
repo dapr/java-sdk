@@ -5,6 +5,7 @@
 
 package io.dapr.actors.runtime;
 
+import io.dapr.actors.ActorType;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -15,6 +16,13 @@ import java.time.Duration;
  * Unit tests for ActorTypeInformation.
  */
 public class ActorTypeInformationTest {
+
+  /**
+   * Actor interfaced used in this test only.
+   */
+  @ActorType(name = "MyActorWithAnnotation")
+  private interface MyActorAnnotated {
+  }
 
   /**
    * Actor interfaced used in this test only.
@@ -97,6 +105,27 @@ public class ActorTypeInformationTest {
     Assert.assertFalse(info.isRemindable());
     Assert.assertEquals(1, info.getInterfaces().size());
     Assert.assertTrue(info.getInterfaces().contains(MyActor.class));
+  }
+
+  /**
+   * Checks information for an actor renamed via annotation at interface.
+   */
+  @Test
+  public void renamedWithAnnotationAtInterface() {
+    class A extends AbstractActor implements MyActorAnnotated {
+      A() {
+        super(null, null);
+      }
+    }
+
+    ActorTypeInformation info = ActorTypeInformation.create(A.class);
+    Assert.assertNotNull(info);
+    Assert.assertEquals("MyActorWithAnnotation", info.getName());
+    Assert.assertEquals(A.class, info.getImplementationClass());
+    Assert.assertFalse(info.isAbstractClass());
+    Assert.assertFalse(info.isRemindable());
+    Assert.assertEquals(1, info.getInterfaces().size());
+    Assert.assertTrue(info.getInterfaces().contains(MyActorAnnotated.class));
   }
 
   /**

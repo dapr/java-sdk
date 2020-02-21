@@ -5,6 +5,8 @@
 
 package io.dapr.actors.runtime;
 
+import io.dapr.actors.ActorUtils;
+
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
@@ -143,9 +145,8 @@ final class ActorTypeInformation<T> {
 
     boolean isAbstract = Modifier.isAbstract(actorClass.getModifiers());
     boolean isRemindable = ActorTypeUtilities.isRemindableActor(actorClass);
-    ActorType actorTypeAnnotation = actorClass.getAnnotation(ActorType.class);
-    String typeName = actorTypeAnnotation != null ? actorTypeAnnotation.name() : actorClass.getSimpleName();
 
+    String typeName = ActorUtils.findActorTypeName(actorClass);
     return new ActorTypeInformation(typeName, actorClass, Arrays.asList(actorInterfaces), isAbstract, isRemindable);
   }
 

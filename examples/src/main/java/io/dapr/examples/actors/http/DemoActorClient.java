@@ -6,7 +6,6 @@
 package io.dapr.examples.actors.http;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 
 import java.util.ArrayList;
@@ -30,16 +29,17 @@ public class DemoActorClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) throws InterruptedException {
-    ActorProxyBuilder builder = new ActorProxyBuilder("DemoActor");
+    ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class);
 
     List<Thread> threads = new ArrayList<>(NUM_ACTORS);
 
     // Creates multiple actors.
     for (int i = 0; i < NUM_ACTORS; i++) {
-      ActorProxy actor = builder.build(ActorId.createRandom());
+      ActorId actorId = ActorId.createRandom();
+      DemoActor actor = builder.build(actorId);
 
       // Start a thread per actor.
-      Thread thread = new Thread(() -> callActorForever(actor));
+      Thread thread = new Thread(() -> callActorForever(actorId.toString(), actor));
       thread.start();
       threads.add(thread);
     }
@@ -54,21 +54,22 @@ public class DemoActorClient {
 
   /**
    * Makes multiple method calls into actor until interrupted.
+   * @param actorId Actor's identifier.
    * @param actor Actor to be invoked.
    */
-  private static final void callActorForever(ActorProxy actor) {
+  private static final void callActorForever(String actorId, DemoActor actor) {
     // First, register reminder.
-    actor.invokeActorMethod("registerReminder").block();
+    actor.registerReminder();
 
     // Now, we run until thread is interrupted.
     while (!Thread.currentThread().isInterrupted()) {
       // Invoke actor method to increment counter by 1, then build message.
-      int messageNumber = actor.invokeActorMethod("incrementAndGet", 1, int.class).block();
-      String message = String.format("Actor %s said message #%d", actor.getActorId().toString(), messageNumber);
+      int messageNumber = actor.incrementAndGet(1).block();
+      String message = String.format("Actor %s said message #%d", actorId, messageNumber);
 
       // Invoke the 'say' method in actor.
-      String result = actor.invokeActorMethod("say", message, String.class).block();
-      System.out.println(String.format("Actor %s got a reply: %s", actor.getActorId().toString(), result));
+      String result = actor.say(message);
+      System.out.println(String.format("Actor %s got a reply: %s", actorId, result));
 
       try {
         // Waits for up to 1 second.

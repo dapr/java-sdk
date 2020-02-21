@@ -6,9 +6,9 @@
 package io.dapr.it.actors.services.springboot;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorType;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
-import io.dapr.actors.runtime.ActorType;
 
 @ActorType(name = "StatefulActorTest")
 public class StatefulActorImpl extends AbstractActor implements StatefulActor {
