@@ -28,8 +28,7 @@ public class DemoActorService {
     ActorRuntime.getInstance().getConfig().setActorScanInterval(Duration.ofSeconds(2));
     ActorRuntime.getInstance().getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(10));
     ActorRuntime.getInstance().getConfig().setDrainBalancedActors(true);
-    ActorRuntime.getInstance().registerActor(
-      DemoActorImpl.class, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    ActorRuntime.getInstance().registerActor(DemoActorImpl.class);
     DaprApplication.start(port);
   }
 }

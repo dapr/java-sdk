@@ -35,7 +35,7 @@ mvn install
 
 ### Running the Demo actor service
 
-The first element is to run is `DemoActorService`. Its job is registering the `DemoActor` implementation in the Dapr's Actor runtime. In `DemoActorService.java` file, you will find the `DemoActorService` class and the `main` method. See the code snippet below:
+The first Java class is `DemoActorService`. Its job is to register an implementation of `DemoActor` in the Dapr's Actor runtime. In `DemoActorService.java` file, you will find the `DemoActorService` class and the `main` method. See the code snippet below:
 
 ```java
 @SpringBootApplication
@@ -59,7 +59,6 @@ This application uses `ActorRuntime.getInstance().registerActor()` in order to r
 
 See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of an actor:
 ```java
-@ActorType(name = "DemoActor")
 public class DemoActorImpl extends AbstractActor implements DemoActor, Remindable<Integer> {
   //...
 
@@ -99,7 +98,28 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
   }
 }
 ```
-An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`.
+An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`. The `DemoActor` interface is used by the Actor runtime and also client. See how `DemoActor` interface can be annotated as Dapr Actor.
+
+```java
+/**
+ * Example of implementation of an Actor.
+ */
+@ActorType(name = "DemoActor")
+public interface DemoActor {
+
+  void registerReminder();
+
+  String say(String something);
+
+  void clock(String message);
+
+  @ActorMethod(returns = Integer.class)
+  Mono<Integer> incrementAndGet(int delta);
+}
+
+```
+
+The `@ActorType` annotation indicates the Dapr Java SDK that this interface is an Actor Type, allowing a name for the type to be defined. Some methods can return a `Mono` object. In these cases, the `@ActorMethod` annotation is used to hint the Dapr Java SDK of the type encapsulated in the `Mono` object. You can read more about Java generic type erasure [here](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html).  
 
 
 Now, execute the following script in order to run DemoActorService:
@@ -120,31 +140,32 @@ public class DemoActorClient {
   private static final int NUM_ACTORS = 3;
 
   public static void main(String[] args) throws InterruptedException {
+    ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class);
     ///...
     for (int i = 0; i < NUM_ACTORS; i++) {
-      ActorProxy actor = builder.build(ActorId.createRandom());
+      DemoActor actor = builder.build(ActorId.createRandom());
 
       // Start a thread per actor.
-      Thread thread = new Thread(() -> callActorForever(actor));
+      Thread thread = new Thread(() -> callActorForever(actorId.toString(), actor));
       thread.start();
       threads.add(thread);
     }
     ///...
   }
 
-  private static final void callActorForever(ActorProxy actor) {
+  private static final void callActorForever(String actorId, DemoActor actor) {
     // First, register reminder.
-    actor.invokeActorMethod("registerReminder").block();
+    actor.registerReminder();
  
     // Now, we run until thread is interrupted.
     while (!Thread.currentThread().isInterrupted()) {
       // Invoke actor method to increment counter by 1, then build message.
-      int messageNumber = actor.invokeActorMethod("incrementAndGet", 1, int.class).block();
-      String message = String.format("Actor %s said message #%d", actor.getActorId().toString(), messageNumber);
+      int messageNumber = actor.incrementAndGet(1).block();
+      String message = String.format("Actor %s said message #%d", actorId, messageNumber);
    
       // Invoke the 'say' method in actor.
-      String result = actor.invokeActorMethod("say", message, String.class).block();
-      System.out.println(String.format("Actor %s got a reply: %s", actor.getActorId().toString(), result));
+      String result = actor.say(message);
+      System.out.println(String.format("Actor %s got a reply: %s", actorId, result));
     
       try {
         // Waits for up to 1 second.
@@ -158,7 +179,7 @@ public class DemoActorClient {
 }
 ```
 
-First, the client defines how many actors it is going to create. Then the main method declares a `ActorProxyBuilder` for the `DemoActor` class to create `ActorProxy` instances, which are the actor representation provided by the SDK. The code executes the `callActorForever` private method once per actor. This method triggers the DemoActor's implementation by using `actor.invokeActorMethod()`. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
+First, the client defines how many actors it is going to create. Then the main method declares a `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. The code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
 
 Use the follow command to execute the DemoActorClient:
 
@@ -180,5 +201,10 @@ After invoking `incrementAndGet`, the code invokes `say` method (you'll see thes
 On the other hand, the console for `DemoActorService` is also responding to the remote invocations:
 ![actordemo2](../../../../../../resources/img/demo-actor-service.png)
 
+For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../springboot/DaprApplication.java) Application implementation.
 
-For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../springboot/DaprApplication.java)  Application implementation.
+### Limitations
+
+Currently, these are the limitations in the Java SDK for Dapr:
+* Actor interface cannot have overloaded methods (methods with same name but different signature).
+* Actor methods can only have zero or one parameter.

@@ -6,21 +6,18 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.ActorObjectSerializer;
+import io.dapr.actors.ActorMethod;
 import io.dapr.serializer.DaprObjectSerializer;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 
 /**
  * Implements a proxy client for an Actor's instance.
  */
-class ActorProxyImpl implements ActorProxy {
-
-  /**
-   * Serializer used for internal objects.
-   */
-  private static final ActorObjectSerializer INTERNAL_SERIALIZER = new ActorObjectSerializer();
+class ActorProxyImpl implements ActorProxy, InvocationHandler {
 
   /**
    * Actor's identifier for this Actor instance.
@@ -108,6 +105,45 @@ class ActorProxyImpl implements ActorProxy {
   }
 
   /**
+   * Handles an invocation via reflection.
+   *
+   * @param proxy Interface or class being invoked.
+   * @param method Method being invoked.
+   * @param args Arguments to invoke method.
+   * @return Response object for the invocation.
+   */
+  @Override
+  public Object invoke(Object proxy, Method method, Object[] args) {
+    if (method.getParameterCount() > 1) {
+      throw new UnsupportedOperationException("Actor methods can only have zero or one arguments.");
+    }
+
+    if (method.getParameterCount() == 0) {
+      if (method.getReturnType().equals(Mono.class)) {
+        ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
+        if (actorMethodAnnotation == null) {
+          return invokeActorMethod(method.getName());
+        }
+
+        return invokeActorMethod(method.getName(), actorMethodAnnotation.returns());
+      }
+
+      return invokeActorMethod(method.getName(), method.getReturnType()).block();
+    }
+
+    if (method.getReturnType().equals(Mono.class)) {
+      ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
+      if (actorMethodAnnotation == null) {
+        return invokeActorMethod(method.getName(), args[0]);
+      }
+
+      return invokeActorMethod(method.getName(), args[0], actorMethodAnnotation.returns());
+    }
+
+    return invokeActorMethod(method.getName(), args[0], method.getReturnType()).block();
+  }
+
+  /**
    * Extracts the response object from the Actor's method result.
    *
    * @param response response returned by API.
@@ -138,5 +174,4 @@ class ActorProxyImpl implements ActorProxy {
       throw new RuntimeException(e);
     }
   }
-
 }

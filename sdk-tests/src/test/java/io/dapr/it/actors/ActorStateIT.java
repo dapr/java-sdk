@@ -41,7 +41,7 @@ public class ActorStateIT extends BaseIT {
     ActorId actorId = new ActorId(Long.toString(System.currentTimeMillis()));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
-    ActorProxyBuilder proxyBuilder = new ActorProxyBuilder(actorType);
+    ActorProxyBuilder<ActorProxy> proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class);
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     callWithRetry(() -> {

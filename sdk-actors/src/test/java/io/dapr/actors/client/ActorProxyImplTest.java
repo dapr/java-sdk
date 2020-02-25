@@ -36,19 +36,40 @@ public class ActorProxyImplTest {
   public void invokeActorMethodWithoutDataWithReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     Mono<byte[]> daprResponse = Mono.just(
-      "{\n\t\t\"propertyA\": \"valueA\",\n\t\t\"propertyB\": \"valueB\"\n\t}".getBytes());
+            "{\n\t\t\"propertyA\": \"valueA\",\n\t\t\"propertyB\": \"valueB\"\n\t}".getBytes());
 
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
-        .thenReturn(daprResponse);
+            .thenReturn(daprResponse);
 
     final ActorProxy actorProxy = new ActorProxyImpl(
-        "myActorType",
-        new ActorId("100"),
-        new DefaultObjectSerializer(),
-        daprClient);
+            "myActorType",
+            new ActorId("100"),
+            new DefaultObjectSerializer(),
+            daprClient);
 
     Mono<MyData> result = actorProxy.invokeActorMethod("getData", MyData.class);
     MyData myData = result.block();
+    Assert.assertNotNull(myData);
+    Assert.assertEquals("valueA", myData.getPropertyA());
+    Assert.assertEquals("valueB", myData.getPropertyB());// propertyB=null
+  }
+
+  @Test()
+  public void invokeActorMethodWithoutDataWithReturnTypeViaReflection() throws NoSuchMethodException {
+    final DaprClient daprClient = mock(DaprClient.class);
+    Mono<byte[]> daprResponse = Mono.just(
+            "{\n\t\t\"propertyA\": \"valueA\",\n\t\t\"propertyB\": \"valueB\"\n\t}".getBytes());
+
+    when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNull()))
+            .thenReturn(daprResponse);
+
+    final ActorProxyImpl actorProxy = new ActorProxyImpl(
+            "myActorType",
+            new ActorId("100"),
+            new DefaultObjectSerializer(),
+            daprClient);
+
+    MyData myData = (MyData) actorProxy.invoke(actorProxy, Actor.class.getMethod("getData"), null);
     Assert.assertNotNull(myData);
     Assert.assertEquals("valueA", myData.getPropertyA());
     Assert.assertEquals("valueB", myData.getPropertyB());// propertyB=null
@@ -248,6 +269,10 @@ public class ActorProxyImplTest {
     Mono<Void> result = actorProxy.invokeActorMethod("getData");
     Void emptyResponse = result.block();
     Assert.assertNull(emptyResponse);
+  }
+
+  interface Actor {
+    MyData getData();
   }
 
   static class MyData {
