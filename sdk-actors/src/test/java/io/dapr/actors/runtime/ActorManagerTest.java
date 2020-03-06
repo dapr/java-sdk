@@ -8,13 +8,13 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.Assert;
-import org.junit.Test;
-import reactor.core.publisher.Mono;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -35,6 +35,12 @@ public class ActorManagerTest {
     int getCount();
 
     void incrementCount(int delta);
+
+    void throwsException();
+
+    Mono<Void> throwsExceptionHotMono();
+
+    Mono<Void> throwsExceptionMono();
   }
 
   public static class NotRemindableActor extends AbstractActor {
@@ -61,6 +67,21 @@ public class ActorManagerTest {
     @Override
     public void incrementCount(int delta) {
       this.timeCount = timeCount + delta;
+    }
+
+    @Override
+    public void throwsException() {
+      throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Mono<Void> throwsExceptionHotMono() {
+      throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Mono<Void> throwsExceptionMono() {
+      return Mono.error(new IllegalArgumentException());
     }
 
     public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
@@ -105,6 +126,63 @@ public class ActorManagerTest {
     Assert.assertEquals(executeSayMethod(
       this.context.getObjectSerializer().deserialize(message, String.class)),
       this.context.getObjectSerializer().deserialize(response, String.class));
+  }
+
+  @Test
+  public void activateThenInvokeWithActorImplException() throws Exception {
+    ActorId actorId = newActorId();
+    this.manager.activateActor(actorId).block();
+
+    Assertions.assertThrows(RuntimeException.class, () -> {
+      this.manager.invokeMethod(actorId, "throwsException", null).block();
+    });
+  }
+
+  @Test
+  public void activateThenInvokeWithActorImplExceptionButNotSubscribed() throws Exception {
+    ActorId actorId = newActorId();
+    this.manager.activateActor(actorId).block();
+
+    // Nothing happens because we don't call block().
+    this.manager.invokeMethod(actorId, "throwsException", null);
+  }
+
+  @Test
+  public void activateThenInvokeWithActorImplHotMonoException() throws Exception {
+    ActorId actorId = newActorId();
+    this.manager.activateActor(actorId).block();
+
+    Assertions.assertThrows(RuntimeException.class, () -> {
+      this.manager.invokeMethod(actorId, "throwsExceptionHotMono", null).block();
+    });
+  }
+
+  @Test
+  public void activateThenInvokeWithActorImplHotMonoExceptionNotSubscribed() throws Exception {
+    ActorId actorId = newActorId();
+    this.manager.activateActor(actorId).block();
+
+    // Nothing happens because we don't call block().
+    this.manager.invokeMethod(actorId, "throwsExceptionHotMono", null);
+  }
+
+  @Test
+  public void activateThenInvokeWithActorImplMonoException() throws Exception {
+    ActorId actorId = newActorId();
+    this.manager.activateActor(actorId).block();
+
+    Assertions.assertThrows(RuntimeException.class, () -> {
+      this.manager.invokeMethod(actorId, "throwsExceptionMono", null).block();
+    });
+  }
+
+  @Test
+  public void activateThenInvokeWithActorImplMonoExceptionNotSubscribed() throws Exception {
+    ActorId actorId = newActorId();
+    this.manager.activateActor(actorId).block();
+
+    // Nothing happens because we don't call block().
+    this.manager.invokeMethod(actorId, "throwsExceptionMono", null);
   }
 
   @Test(expected = IllegalArgumentException.class)
