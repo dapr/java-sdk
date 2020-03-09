@@ -285,8 +285,10 @@ class ActorManager<T extends AbstractActor> {
           // Actor methods must have a one or no parameter, which is guaranteed at this point.
           return method.invoke(actor, input);
         }
+      } catch (RuntimeException e) {
+        throw e;
       } catch (Exception e) {
-        return Mono.error(e);
+        throw new RuntimeException(e);
       }
     });
   }
