@@ -221,7 +221,7 @@ public class DaprHttp {
    * @return DaprError or null if could not parse.
    */
   private static DaprError parseDaprError(byte[] json) throws IOException {
-    if (json == null) {
+    if ((json == null) || (json.length == 0)) {
       return null;
     }
     return OBJECT_MAPPER.readValue(json, DaprError.class);
