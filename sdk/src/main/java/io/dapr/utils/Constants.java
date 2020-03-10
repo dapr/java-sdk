@@ -79,4 +79,9 @@ public final class Constants {
    * State Path.
    */
   public static final String STATE_PATH = API_VERSION + "/state";
+
+  /**
+   * Secrets Path.
+   */
+  public static final String SECRETS_PATH = API_VERSION + "/secrets";
 }

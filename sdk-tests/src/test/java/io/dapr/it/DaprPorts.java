@@ -36,10 +36,6 @@ public class DaprPorts {
     }
   }
 
-  public static DaprPorts build() throws IOException {
-    return build(true, true, true);
-  }
-
   public Integer getGrpcPort() {
     return grpcPort;
   }

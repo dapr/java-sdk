@@ -16,10 +16,12 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 
 /**
  * An adapter for the HTTP Client.
@@ -437,6 +439,48 @@ public class DaprClientHttp implements DaprClient {
       etag = response.getHeaders().get("Etag");
     }
     return new State<>(value, key, etag, stateOptions);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName, Map<String, String> metadata) {
+    try {
+      if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret store name cannot be null or empty.");
+      }
+      if ((secretName == null) || (secretName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret name cannot be null or empty.");
+      }
+    } catch (Exception e) {
+      return Mono.error(e);
+    }
+
+    String url = Constants.SECRETS_PATH + "/" + secretStoreName + "/" + secretName;
+    return this.client
+      .invokeApi(DaprHttp.HttpMethods.GET.name(), url, metadata, (String)null, null)
+      .flatMap(response -> {
+        try {
+          Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
+          if (m == null) {
+            return Mono.just(Collections.EMPTY_MAP);
+          }
+
+          return Mono.just(m);
+        } catch (IOException e) {
+          return Mono.error(e);
+        }
+      })
+      .map(m -> (Map<String, String>)m);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName) {
+    return this.getSecret(secretStoreName, secretName, null);
   }
 
 }

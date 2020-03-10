@@ -53,6 +53,8 @@ public class DaprRun {
     long start = System.currentTimeMillis();
     // First, try to stop previous run (if left running).
     this.stop();
+    // Wait for some time in case the previous run did not kill the process on time.
+    Thread.sleep(10000);
     System.out.println("Starting dapr application ...");
     this.startCommand.run();
     this.started.set(true);

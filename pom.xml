@@ -17,8 +17,8 @@
     <grpc.version>1.25.0</grpc.version>
     <protobuf.version>3.11.0</protobuf.version>
     <protoc.version>3.10.0</protoc.version>
-    <dapr.proto.url>https://raw.githubusercontent.com/dapr/dapr/v0.4.0/pkg/proto/dapr/dapr.proto</dapr.proto.url>
-    <dapr.client.proto.url>https://raw.githubusercontent.com/dapr/dapr/v0.4.0/pkg/proto/daprclient/daprclient.proto</dapr.client.proto.url>
+    <dapr.proto.url>https://raw.githubusercontent.com/dapr/dapr/3b792de734594463f6a16ce8c952fe2ed96c0dc0/pkg/proto/dapr/dapr.proto</dapr.proto.url>
+    <dapr.client.proto.url>https://raw.githubusercontent.com/dapr/dapr/3b792de734594463f6a16ce8c952fe2ed96c0dc0/pkg/proto/daprclient/daprclient.proto</dapr.client.proto.url>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>

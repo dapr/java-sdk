@@ -201,7 +201,7 @@ public class DaprHttp {
                 throw new DaprException(error);
               }
 
-              throw new IllegalStateException("Unknown error.");
+              throw new IllegalStateException("Unknown Dapr error. HTTP status code: " + response.code());
             }
 
             Map<String, String> mapHeaders = new HashMap<>();
@@ -221,7 +221,7 @@ public class DaprHttp {
    * @return DaprError or null if could not parse.
    */
   private static DaprError parseDaprError(byte[] json) throws IOException {
-    if (json == null) {
+    if ((json == null) || (json.length == 0)) {
       return null;
     }
     return OBJECT_MAPPER.readValue(json, DaprError.class);

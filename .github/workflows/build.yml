@@ -17,15 +17,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      GOVER: 1.13.7
+      GOVER: 1.14.0
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: 13.0.x
       DAPR_RUNTIME_VER: 0.4.0-rc.1
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/f84566fb2bf5a599252ab9d6bd82fc78faf94dba/install/install.sh
-      DAPR_CLI_REF:
-      DAPR_REF:
+      DAPR_CLI_REF: eb76cbf2200058f849814649f23212b3247a952c
+      DAPR_REF: 034b82ebfbb7c76e5801ae6d90c2edd29f629df8
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
@@ -40,7 +40,7 @@ jobs:
       run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash
     - name: Set up Go ${{ env.GOVER }}
       if: env.DAPR_REF != '' || env.DAPR_CLI_REF != ''
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v2-beta
       with:
         go-version: ${{ env.GOVER }}
     - name: Checkout Dapr CLI repo to override dapr command.
@@ -80,6 +80,12 @@ jobs:
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
         docker ps
+    - name: Install Local Hashicorp Vault using docker-compose
+      run: |
+        docker-compose -f ./sdk-tests/deploy/local-test-vault.yml up -d
+        docker ps
+    - name: Setup Vault's test token
+      run: echo myroot > /tmp/.hashicorp_vault_token
     - name: Clean up files
       run: mvn clean
     - name: Build sdk
