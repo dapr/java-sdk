@@ -79,6 +79,18 @@ public class DaprClientHttpTest {
     assertNull(mono.block());
   }
 
+  @Test
+  public void publishEventNoHotMono() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/publish/A")
+        .respond(EXPECTED_RESULT);
+    String event = "{ \"message\": \"This is a test\" }";
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    daprClientHttp.publishEvent("", event);
+    // Should not throw exception because did not call block() on mono above.
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void invokeServiceVerbNull() {
     mockInterceptor.addRule()
@@ -190,6 +202,18 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void invokeServiceNoHotMono() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+        .respond(500);
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    daprClientHttp.invokeService(Verb.GET, "41", "neworder", "", map);
+    // No exception should be thrown because did not call block() on mono above.
+  }
+
+  @Test
   public void invokeBinding() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
@@ -213,6 +237,17 @@ public class DaprClientHttpTest {
     assertNull(mono.block());
   }
 
+  @Test
+  public void bindingNoHotMono() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+        .respond(EXPECTED_RESULT);
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    daprClientHttp.invokeBinding(null, "");
+    // No exception is thrown because did not call block() on mono above.
+  }
 
   @Test
   public void getStates() {
@@ -253,6 +288,18 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
     Mono<State<String>> monoNullEtag = daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
     assertEquals(monoNullEtag.block().getKey(), "key");
+  }
+
+  @Test
+  public void getStatesNoHotMono() {
+    State<String> stateNullEtag = new State("value", "key", null, null);
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+        .respond(500);
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
+    // No exception should be thrown since did not call block() on mono above.
   }
 
   @Test
@@ -321,6 +368,17 @@ public class DaprClientHttpTest {
     assertNull(mono.block());
   }
 
+  @Test
+  public void saveStatesNoHotMono() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
+        .respond(500);
+    StateOptions stateOptions = mock(StateOptions.class);
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
+    // No exception should be thrown because we did not call block() on the mono above.
+  }
 
   @Test
   public void deleteState() {
@@ -333,6 +391,19 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
     Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
     assertNull(mono.block());
+  }
+
+  @Test
+  public void deleteStateNoHotMono() {
+    StateOptions stateOptions = mock(StateOptions.class);
+    State<String> stateKeyValue = new State("value", "key", "etag", stateOptions);
+    mockInterceptor.addRule()
+        .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+        .respond(500);
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
+    // No exception should be thrown because we did not call block() on the mono above.
   }
 
   @Test
