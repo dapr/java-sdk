@@ -471,4 +471,42 @@ public class DaprClientGrpc implements DaprClient {
     return envelopeBuilder.build();
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName, Map<String, String> metadata) {
+    try {
+      if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret store name cannot be null or empty.");
+      }
+      if ((secretName == null) || (secretName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret name cannot be null or empty.");
+      }
+    } catch (Exception e) {
+      return Mono.error(e);
+    }
+
+    DaprProtos.GetSecretEnvelope.Builder envelopeBuilder = DaprProtos.GetSecretEnvelope.newBuilder()
+          .setStoreName(secretStoreName)
+          .setKey(secretName);
+
+    if (metadata != null) {
+      envelopeBuilder.putAllMetadata(metadata);
+    }
+    return Mono.fromCallable(() -> {
+      DaprProtos.GetSecretEnvelope envelope = envelopeBuilder.build();
+      ListenableFuture<DaprProtos.GetSecretResponseEnvelope> future = client.getSecret(envelope);
+      return future.get();
+    }).map(future -> future.getDataMap());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName) {
+    return this.getSecret(secretStoreName, secretName, null);
+  }
+
 }

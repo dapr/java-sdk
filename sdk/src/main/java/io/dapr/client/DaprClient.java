@@ -230,4 +230,23 @@ public interface DaprClient {
    * @return a Mono plan of type Void.
    */
   Mono<Void>  deleteState(String stateStoreName, String key, String etag, StateOptions options);
+
+  /**
+   * Fetches a secret from the configured vault.
+   *
+   * @param secretStoreName Name of vault component in Dapr.
+   * @param secretName Secret to be fetched.
+   * @param metadata Optional metadata.
+   * @return Key-value pairs for the secret.
+   */
+  Mono<Map<String, String>> getSecret(String secretStoreName, String secretName, Map<String, String> metadata);
+
+  /**
+   * Fetches a secret from the configured vault.
+   *
+   * @param secretStoreName Name of vault component in Dapr.
+   * @param secretName Secret to be fetched.
+   * @return Key-value pairs for the secret.
+   */
+  Mono<Map<String, String>> getSecret(String secretStoreName, String secretName);
 }

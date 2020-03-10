@@ -12,7 +12,7 @@ import java.time.Duration;
 
 public class DemoActorService {
 
-  public static final String SUCCESS_MESSAGE = "actors: established connection to placement service at localhost";
+  public static final String SUCCESS_MESSAGE = "established connection to placement service at localhost";
 
   /**
    * Starts the service.

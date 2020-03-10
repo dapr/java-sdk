@@ -65,6 +65,13 @@
       <version>2.2.2.RELEASE</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- This is need for us to programmatically add secrets in integration tests. -->
+      <groupId>com.bettercloud</groupId>
+      <artifactId>vault-java-driver</artifactId>
+      <version>5.1.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

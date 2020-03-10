@@ -201,7 +201,7 @@ public class DaprHttp {
                 throw new DaprException(error);
               }
 
-              throw new IllegalStateException("Unknown error.");
+              throw new IllegalStateException("Unknown Dapr error. HTTP status code: " + response.code());
             }
 
             Map<String, String> mapHeaders = new HashMap<>();

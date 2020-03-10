@@ -16,6 +16,7 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DefaultObjectSerializer;
+import java.util.Collections;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,12 +31,15 @@ import java.util.Map;
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class DaprClientGrpcTest {
 
   private static final String STATE_STORE_NAME = "MyStateStore";
+
+  private static final String SECRET_STORE_NAME = "MySecretStore";
 
   private DaprGrpc.DaprFutureStub client;
   private DaprClientGrpc adapter;
@@ -1020,6 +1024,102 @@ public class DaprClientGrpcTest {
     assertNull(state2);
   }
 
+  @Test
+  public void getSecrets() {
+    String expectedKey = "attributeKey";
+    String expectedValue = "Expected secret value";
+    DaprProtos.GetSecretResponseEnvelope responseEnvelope = buildGetSecretResponseEnvelope(expectedKey, expectedValue);
+    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    settableFuture.set(responseEnvelope);
+
+    when(client.getSecret(any(io.dapr.DaprProtos.GetSecretEnvelope.class)))
+      .thenAnswer(context -> {
+        io.dapr.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        assertEquals("key", req.getKey());
+        assertEquals(SECRET_STORE_NAME, req.getStoreName());
+        assertEquals(0, req.getMetadataCount());
+        return settableFuture;
+      });
+
+    Map<String, String> result = adapter.getSecret(SECRET_STORE_NAME, "key").block();
+
+    assertEquals(1, result.size());
+    assertEquals(expectedValue, result.get(expectedKey));
+  }
+
+  @Test
+  public void getSecretsEmptyResponse() {
+    DaprProtos.GetSecretResponseEnvelope responseEnvelope = buildGetSecretResponseEnvelope();
+    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    settableFuture.set(responseEnvelope);
+
+    when(client.getSecret(any(io.dapr.DaprProtos.GetSecretEnvelope.class)))
+      .thenAnswer(context -> {
+        io.dapr.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        assertEquals("key", req.getKey());
+        assertEquals(SECRET_STORE_NAME, req.getStoreName());
+        assertEquals(0, req.getMetadataCount());
+        return settableFuture;
+      });
+
+    Map<String, String> result = adapter.getSecret(SECRET_STORE_NAME, "key").block();
+
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  public void getSecretsException() {
+    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(new RuntimeException());
+    addCallback(settableFuture, callback, directExecutor());
+    settableFuture.setException(new RuntimeException());
+
+    when(client.getSecret(any(io.dapr.DaprProtos.GetSecretEnvelope.class)))
+      .thenAnswer(context -> {
+        io.dapr.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        assertEquals("key", req.getKey());
+        assertEquals(SECRET_STORE_NAME, req.getStoreName());
+        assertEquals(0, req.getMetadataCount());
+        return settableFuture;
+      });
+
+    assertThrows(RuntimeException.class, () -> {
+      Map<String, String> result = adapter.getSecret(SECRET_STORE_NAME, "key").block();
+    });
+  }
+
+  @Test
+  public void getSecretsWithMetadata() {
+    String expectedKey = "attributeKey";
+    String expectedValue = "Expected secret value";
+    DaprProtos.GetSecretResponseEnvelope responseEnvelope = buildGetSecretResponseEnvelope(expectedKey, expectedValue);
+    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    settableFuture.set(responseEnvelope);
+
+    when(client.getSecret(any(io.dapr.DaprProtos.GetSecretEnvelope.class)))
+      .thenAnswer(context -> {
+        io.dapr.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        assertEquals("key", req.getKey());
+        assertEquals(SECRET_STORE_NAME, req.getStoreName());
+        assertEquals("metavalue", req.getMetadataMap().get("metakey"));
+        return settableFuture;
+      });
+
+    Map<String, String> result = adapter.getSecret(
+      SECRET_STORE_NAME,
+      "key",
+      Collections.singletonMap("metakey", "metavalue")).block();
+
+    assertEquals(1, result.size());
+    assertEquals(expectedValue, result.get(expectedKey));
+  }
+
   private <T> SettableFuture<DaprProtos.GetStateResponseEnvelope> buildFutureGetStateEnvelop(T value, String etag) throws IOException {
     DaprProtos.GetStateResponseEnvelope envelope = buildGetStateResponseEnvelope(value, etag);
     SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
@@ -1035,6 +1135,16 @@ public class DaprClientGrpcTest {
         .setData(getAny(value))
         .setEtag(etag)
         .build();
+  }
+
+  private DaprProtos.GetSecretResponseEnvelope buildGetSecretResponseEnvelope(String key, String value) {
+    return DaprProtos.GetSecretResponseEnvelope.newBuilder()
+        .putAllData(Collections.singletonMap(key, value))
+        .build();
+  }
+
+  private DaprProtos.GetSecretResponseEnvelope buildGetSecretResponseEnvelope() {
+    return DaprProtos.GetSecretResponseEnvelope.newBuilder().build();
   }
 
   private StateOptions buildStateOptions(StateOptions.Consistency consistency, StateOptions.Concurrency concurrency,
@@ -1081,7 +1191,10 @@ public class DaprClientGrpcTest {
     public synchronized void onFailure(Throwable throwable) {
       assertFalse(wasCalled);
       wasCalled = true;
-      assertEquals(failure, throwable);
+      assertEquals(failure == null, throwable == null);
+      if (failure != null) {
+        assertEquals(failure.getClass(), throwable.getClass());
+      }
     }
   }
 
