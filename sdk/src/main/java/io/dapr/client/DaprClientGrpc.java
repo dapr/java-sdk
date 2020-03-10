@@ -287,8 +287,7 @@ public class DaprClientGrpc implements DaprClient {
       }
       DaprProtos.SaveStateEnvelope envelope = builder.build();
 
-      ListenableFuture<Empty> futureEmpty = client.saveState(envelope);
-      return Mono.just(futureEmpty).flatMap(f -> {
+      return Mono.fromCallable(() -> client.saveState(envelope)).flatMap(f -> {
         try {
           f.get();
         } catch (Exception ex) {
@@ -432,8 +431,7 @@ public class DaprClientGrpc implements DaprClient {
       }
 
       DaprProtos.DeleteStateEnvelope envelope = builder.build();
-      ListenableFuture<Empty> futureEmpty = client.deleteState(envelope);
-      return Mono.just(futureEmpty).flatMap(f -> {
+      return Mono.fromCallable(() -> client.deleteState(envelope)).flatMap(f -> {
         try {
           f.get();
         } catch (Exception ex) {
