@@ -60,13 +60,13 @@ For a Maven project, add the following to your `pom.xml` file:
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk</artifactId>
-          <version>0.2.0</version>
+          <version>0.3.0</version>
         </dependency>
         <!-- Dapr's SDK for Actors (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk-actors</artifactId>
-          <version>0.2.0</version>
+          <version>0.3.0</version>
         </dependency>
         <!-- If needed, resolve version conflict of okhttp3. -->
         <dependency>
@@ -100,9 +100,9 @@ repositories {
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:0.2.0')
+    compile('io.dapr:dapr-sdk:0.3.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:0.2.0')
+    compile('io.dapr:dapr-sdk-actors:0.3.0')
 
     // If needed, force conflict resolution for okhttp3.
     configurations.all {
@@ -214,7 +214,7 @@ In case you need to publish Dapr's SDK to a private Nexus repo, run the command 
 
 ```sh
 mvn package
-mvn deploy:deploy-file -DgeneratePom=false -DrepositoryId=nexus -Durl=http://localhost:8081/repository/maven-releases -DpomFile=pom.xml -Dfile=target/dapr-sdk-0.2.0.jar
+mvn deploy:deploy-file -DgeneratePom=false -DrepositoryId=nexus -Durl=http://localhost:8081/repository/maven-releases -DpomFile=pom.xml -Dfile=target/dapr-sdk-0.3.0.jar
 ```
 
 For more documentation reference:
