@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Service for subscriber.
  */
-@SpringBootApplication(scanBasePackages = {"io.dapr.it.methodinvoke.http"})
+@SpringBootApplication
 public class MethodInvokeService {
 
   public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running. Init Elapsed";

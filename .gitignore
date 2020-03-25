@@ -49,3 +49,6 @@ hs_err_pid*
 /docs/dapr-sdk
 /proto/dapr
 /proto/daprclient
+
+# macOS
+.DS_Store

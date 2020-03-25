@@ -6,6 +6,7 @@
 package io.dapr.springboot;
 
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,14 +22,19 @@ import reactor.core.publisher.Mono;
 @RestController
 public class DaprController {
 
-  @GetMapping("/")
-  public String index() {
-    return "Greetings from Dapr!";
-  }
+  /**
+   * Dapr's default serializer/deserializer.
+   */
+  private static final DefaultObjectSerializer SERIALIZER = new DefaultObjectSerializer();
 
   @GetMapping("/dapr/config")
   public byte[] daprConfig() throws Exception {
     return ActorRuntime.getInstance().serializeConfig();
+  }
+
+  @GetMapping("/dapr/subscribe")
+  public byte[] daprSubscribe() throws Exception {
+    return SERIALIZER.serialize(DaprRuntime.getInstance().listSubscribedTopics());
   }
 
   @PostMapping(path = "/actors/{type}/{id}")

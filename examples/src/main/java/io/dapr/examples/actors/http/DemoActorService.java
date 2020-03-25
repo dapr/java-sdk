@@ -12,6 +12,8 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 
+import java.time.Duration;
+
 /**
  * Service for Actor runtime.
  * 1. Build and install jars:
@@ -36,7 +38,16 @@ public class DemoActorService {
     CommandLine cmd = parser.parse(options, args);
 
     // If port string is not valid, it will throw an exception.
-    int port = Integer.parseInt(cmd.getOptionValue("port"));
+    final int port = Integer.parseInt(cmd.getOptionValue("port"));
+
+    // Idle timeout until actor instance is deactivated.
+    ActorRuntime.getInstance().getConfig().setActorIdleTimeout(Duration.ofSeconds(30));
+    // How often actor instances are scanned for deactivation and balance.
+    ActorRuntime.getInstance().getConfig().setActorScanInterval(Duration.ofSeconds(10));
+    // How long to wait until for draining an ongoing API call for an actor instance.
+    ActorRuntime.getInstance().getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(10));
+    // Determines whether to drain API calls for actors instances being balanced.
+    ActorRuntime.getInstance().getConfig().setDrainBalancedActors(true);
 
     // Register the Actor class.
     ActorRuntime.getInstance().registerActor(DemoActorImpl.class);

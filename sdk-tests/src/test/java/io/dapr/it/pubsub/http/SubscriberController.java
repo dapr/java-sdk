@@ -5,6 +5,7 @@
 
 package io.dapr.it.pubsub.http;
 
+import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.web.bind.annotation.*;
@@ -22,21 +23,12 @@ public class SubscriberController {
 
   private static final List<String> messagesReceived = new ArrayList();
 
-  /**
-   * Dapr's default serializer/deserializer.
-   */
-  private static final DefaultObjectSerializer SERIALIZER = new DefaultObjectSerializer ();
-
-  @GetMapping("/dapr/subscribe")
-  public byte[] daprConfig() throws Exception {
-    return SERIALIZER.serialize(new String[] { "testingtopic" });
-  }
-
   @GetMapping(path = "/messages")
   public List<String> getMessages() {
     return messagesReceived;
   }
 
+  @Topic(name = "testingtopic")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                   @RequestHeader Map<String, String> headers) {
