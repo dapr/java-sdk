@@ -7,7 +7,6 @@ package io.dapr.it.secrets;
 
 import com.bettercloud.vault.Vault;
 import com.bettercloud.vault.VaultConfig;
-import com.bettercloud.vault.response.LogicalResponse;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprClientGrpc;

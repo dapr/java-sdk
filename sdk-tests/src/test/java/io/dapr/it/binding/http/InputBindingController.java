@@ -22,11 +22,6 @@ public class InputBindingController {
 
   private static final List<String> messagesReceived = new ArrayList();
 
-  @GetMapping("/dapr/config")
-  public String daprConfig() throws Exception {
-    return "{}";
-  }
-
   @PostMapping(path = "/sample123")
   @PutMapping(path = "/sample123")
   public void handleInputBinding(@RequestBody(required = false) String body) {

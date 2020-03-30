@@ -13,7 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Service for subscriber.
  */
-@SpringBootApplication(scanBasePackages = {"io.dapr.it.pubsub.http"})
+@SpringBootApplication(scanBasePackages = {"io.dapr.springboot", "io.dapr.it.pubsub.http"})
 public class SubscriberService {
 
   public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running. Init Elapsed";

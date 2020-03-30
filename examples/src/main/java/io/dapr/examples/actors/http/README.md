@@ -38,7 +38,6 @@ mvn install
 The first Java class is `DemoActorService`. Its job is to register an implementation of `DemoActor` in the Dapr's Actor runtime. In `DemoActorService.java` file, you will find the `DemoActorService` class and the `main` method. See the code snippet below:
 
 ```java
-@SpringBootApplication
 public class DemoActorService {
 
   public static void main(String[] args) throws Exception {
