@@ -8,6 +8,9 @@ package io.dapr.springboot;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Internal Singleton to handle Dapr configuration.
+ */
 class DaprRuntime {
 
   /**
@@ -15,6 +18,9 @@ class DaprRuntime {
    */
   private static volatile DaprRuntime instance;
 
+  /**
+   * List of subscribed topics.
+   */
   private final Set<String> subscribedTopics = new HashSet<>();
 
   /**
@@ -40,6 +46,11 @@ class DaprRuntime {
     return instance;
   }
 
+  /**
+   * Adds a topic to the list of subscribed topics.
+   *
+   * @param topicName Name of the topic being subscribed to.
+   */
   public synchronized void addSubscribedTopic(String topicName) {
     if (!this.subscribedTopics.contains(topicName)) {
       this.subscribedTopics.add(topicName);
