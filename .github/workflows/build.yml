@@ -22,10 +22,10 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: 13.0.x
-      DAPR_RUNTIME_VER: 0.4.0-rc.1
+      DAPR_RUNTIME_VER: 0.5.1
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/f84566fb2bf5a599252ab9d6bd82fc78faf94dba/install/install.sh
-      DAPR_CLI_REF: 60fd705fcd47cd50135162ea70a567234414d7db
-      DAPR_REF: 643fcda6b7694e0e73b52c59f538598a8b3b3830
+      DAPR_CLI_REF:
+      DAPR_REF:
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
