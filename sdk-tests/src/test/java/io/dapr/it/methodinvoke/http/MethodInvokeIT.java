@@ -36,44 +36,25 @@ public class MethodInvokeIT extends BaseIT {
     /**
      * Run of a Dapr application.
      */
-    private static DaprRun daprRun = null;
-
-    /**
-     * Flag to determine if there is a context change based on parameters.
-     */
-    private static Boolean wasGrpc;
+    private DaprRun daprRun = null;
 
     @Parameter
     public boolean useGrpc;
 
-    @BeforeClass
-    public static void initClass() throws Exception {
-        System.out.println("Working Directory = " + System.getProperty("user.dir"));
-
-        daprRun = startDaprApp(
-                MethodInvokeIT.class.getSimpleName(),
-                MethodInvokeService.SUCCESS_MESSAGE,
-                MethodInvokeService.class,
-                true,
-                60000);
-    }
-
     @Before
     public void init() throws Exception {
-        if (wasGrpc != null) {
-            if (wasGrpc.booleanValue() != this.useGrpc) {
-                // Context change.
-                daprRun = super.restartDaprApp(daprRun);
-            }
-        }
+        daprRun = startDaprApp(
+          MethodInvokeIT.class.getSimpleName(),
+          MethodInvokeService.SUCCESS_MESSAGE,
+          MethodInvokeService.class,
+          true,
+          60000);
 
         if (this.useGrpc) {
             daprRun.switchToGRPC();
         } else {
             daprRun.switchToHTTP();
         }
-
-        wasGrpc = this.useGrpc;
     }
 
     @Test

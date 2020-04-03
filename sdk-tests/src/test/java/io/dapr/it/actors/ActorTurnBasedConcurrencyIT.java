@@ -77,9 +77,9 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
       MyActorService.SUCCESS_MESSAGE,
       MyActorService.class,
       true,
-      10000);
+      60000);
 
-    Thread.sleep(2000);
+    Thread.sleep(3000);
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 

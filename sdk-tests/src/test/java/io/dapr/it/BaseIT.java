@@ -49,16 +49,6 @@ public abstract class BaseIT {
     return run;
   }
 
-  protected static DaprRun restartDaprApp(DaprRun run) throws Exception {
-    DaprRun.Builder builder = DAPR_RUN_BUILDERS.get(run.getAppName());
-    run.stop();
-    DaprRun newRun = builder.build();
-    DAPR_RUNS.add(newRun);
-    newRun.start();
-    newRun.use();
-    return newRun;
-  }
-
   @AfterClass
   public static void cleanUp() throws Exception {
     for (DaprRun app : DAPR_RUNS) {
