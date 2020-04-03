@@ -30,6 +30,8 @@ public class DaprRun {
 
   private final Command startCommand;
 
+  private final Command listCommand;
+
   private final Command stopCommand;
 
   private DaprRun(String testName,
@@ -41,6 +43,9 @@ public class DaprRun {
     this.appName = String.format("%s_%s", testName, serviceClass.getSimpleName());
     this.startCommand =
         new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports));
+    this.listCommand = new Command(
+      this.appName,
+      "dapr list");
     this.stopCommand = new Command(
         "app stopped successfully",
         "dapr stop --app-id " + this.appName);
@@ -60,7 +65,17 @@ public class DaprRun {
     this.started.set(true);
 
     long timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
+    callWithRetry(() -> {
+      System.out.println("Checking if Dapr is listening on HTTP port ...");
+      try {
+        this.listCommand.run();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }, timeLeft);
+
     if (this.ports.getAppPort() != null) {
+      timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
       callWithRetry(() -> {
         System.out.println("Checking if app is listening on port ...");
         assertListeningOnPort(this.ports.getAppPort());
@@ -89,11 +104,11 @@ public class DaprRun {
     System.out.println("Stopping dapr application ...");
     try {
       this.stopCommand.run();
-    } catch (RuntimeException e) {
-      System.out.println("Could not stop app: " + this.appName);
-    }
 
-    System.out.println("Dapr application stopped.");
+      System.out.println("Dapr application stopped.");
+    } catch (RuntimeException e) {
+      System.out.println("Could not stop app " + this.appName + ": " + e.getMessage());
+    }
   }
 
   public void use() {

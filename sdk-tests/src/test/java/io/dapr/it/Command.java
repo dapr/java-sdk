@@ -63,7 +63,7 @@ public class Command {
     // Waits for success to happen within 1 minute.
     finished.tryAcquire(SUCCESS_WAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
     if (!success.get()) {
-      System.out.println("TEST WARNING: Could find success criteria for command: " + command);
+      throw new IllegalStateException("Could not find success criteria for command: " + command);
     }
   }
 }
