@@ -78,7 +78,7 @@ class DaprStateAsyncProvider {
 
   Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
     Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
-    return result.map(s -> true).defaultIfEmpty(false);
+    return result.map(s -> s.length > 0).defaultIfEmpty(false);
   }
 
   /**

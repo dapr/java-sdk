@@ -32,6 +32,20 @@ public class StatefulActorImpl extends AbstractActor implements StatefulActor {
   }
 
   @Override
+  public void writeName(String something) {
+    super.getActorStateManager().set("name", something).block();
+  }
+
+  @Override
+  public String readName() {
+    if (super.getActorStateManager().contains("name").block()) {
+      return super.getActorStateManager().get("name", String.class).block();
+    }
+
+    return null;
+  }
+
+  @Override
   public void writeData(MyData something) {
     super.getActorStateManager().set("mydata", something).block();
   }

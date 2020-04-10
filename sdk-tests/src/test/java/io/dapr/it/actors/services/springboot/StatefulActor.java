@@ -11,6 +11,10 @@ public interface StatefulActor {
 
   String readMessage();
 
+  void writeName(String something);
+
+  String readName();
+
   void writeData(MyData something);
 
   MyData readData();

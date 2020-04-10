@@ -38,11 +38,19 @@ public class ActorStateIT extends BaseIT {
       60000);
 
     String message = "This is a message to be saved and retrieved.";
+    String name = "Jon Doe";
     ActorId actorId = new ActorId(Long.toString(System.currentTimeMillis()));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class);
     ActorProxy proxy = proxyBuilder.build(actorId);
+
+    // Validate conditional read works.
+    callWithRetry(() -> {
+      logger.debug("Invoking readMessage where data is not present yet ... ");
+      String result = proxy.invokeActorMethod("readMessage", String.class).block();
+      assertNull(result);
+    }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeMessage ... ");
@@ -67,6 +75,28 @@ public class ActorStateIT extends BaseIT {
       logger.debug("Invoking readData where data is probably still cached ... ");
       StatefulActor.MyData result = proxy.invokeActorMethod("readData", StatefulActor.MyData.class).block();
       assertEquals(mydata.value, result.value);
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking writeName ... ");
+      proxy.invokeActorMethod("writeName", name).block();
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readName where data is probably still cached ... ");
+      String result = proxy.invokeActorMethod("readName", String.class).block();
+      assertEquals(name, result);
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking writeName with empty content... ");
+      proxy.invokeActorMethod("writeName", "").block();
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readName where empty content is probably still cached ... ");
+      String result = proxy.invokeActorMethod("readName", String.class).block();
+      assertEquals("", result);
     }, 5000);
 
     logger.debug("Waiting, so actor can be deactivated ...");
@@ -97,5 +127,11 @@ public class ActorStateIT extends BaseIT {
       assertEquals(mydata.value, result.value);
     }, 5000);
     logger.debug("Finished testing actor string state.");
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readName where empty content is not cached ... ");
+      String result = newProxy.invokeActorMethod("readName", String.class).block();
+      assertEquals("", result);
+    }, 5000);
   }
 }
