@@ -37,7 +37,13 @@ class DaprHttpClient implements DaprClient {
   public Mono<byte[]> getActorState(String actorType, String actorId, String keyName) {
     String url = String.format(Constants.ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
     Mono<DaprHttp.Response> responseMono = this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), url, null, "", null);
-    return responseMono.map(r -> r.getBody());
+    return responseMono.map(r -> {
+      if ((r.getStatusCode() != 200) && (r.getStatusCode() != 204)) {
+        throw new IllegalStateException(
+            String.format("Error getting actor state: %s/%s/%s", actorType, actorId, keyName));
+      }
+      return r.getBody();
+    });
   }
 
   /**
