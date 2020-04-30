@@ -5,11 +5,11 @@
 
 package io.dapr.client;
 
-import io.dapr.DaprGrpc;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
 import io.dapr.utils.Properties;
+import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import okhttp3.OkHttpClient;

@@ -15,7 +15,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class MethodInvokeService {
 
-  public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running. Init Elapsed";
+  public static final String SUCCESS_MESSAGE = "You're up and running!";
 
   public static void main(String[] args) {
     int port = Integer.parseInt(args[0]);

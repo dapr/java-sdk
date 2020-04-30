@@ -10,12 +10,13 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Empty;
-import io.dapr.DaprGrpc;
-import io.dapr.DaprProtos;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.v1.CommonProtos;
+import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprProtos;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import java.util.Map;
 /**
  * An adapter for the GRPC Client.
  *
- * @see io.dapr.DaprGrpc
+ * @see io.dapr.v1.DaprGrpc
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientGrpc implements DaprClient {
@@ -34,7 +35,7 @@ public class DaprClientGrpc implements DaprClient {
   /**
    * The GRPC client to be used.
    *
-   * @see io.dapr.DaprGrpc.DaprFutureStub
+   * @see io.dapr.v1.DaprGrpc.DaprFutureStub
    */
   private DaprGrpc.DaprFutureStub client;
 
@@ -108,10 +109,11 @@ public class DaprClientGrpc implements DaprClient {
       Map<String, String> metadata,
       Class<T> clazz) {
     try {
-      DaprProtos.InvokeServiceEnvelope envelope = buildInvokeServiceEnvelope(verb.toString(), appId, method, request);
+      DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(verb.toString(), appId, method, request);
       return Mono.fromCallable(() -> {
-        ListenableFuture<DaprProtos.InvokeServiceResponseEnvelope> futureResponse =
+        ListenableFuture<CommonProtos.InvokeResponse> futureResponse =
             client.invokeService(envelope);
+
         return objectSerializer.deserialize(futureResponse.get().getData().getValue().toByteArray(), clazz);
       });
     } catch (Exception ex) {
@@ -311,12 +313,12 @@ public class DaprClientGrpc implements DaprClient {
       stateBuilder.setValue(data);
     }
     stateBuilder.setKey(state.getKey());
-    DaprProtos.StateRequestOptions.Builder optionBuilder = null;
+    DaprProtos.StateOptions.Builder optionBuilder = null;
     if (state.getOptions() != null) {
       StateOptions options = state.getOptions();
-      DaprProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
+      DaprProtos.RetryPolicy.Builder retryPolicyBuilder = null;
       if (options.getRetryPolicy() != null) {
-        retryPolicyBuilder = DaprProtos.StateRetryPolicy.newBuilder();
+        retryPolicyBuilder = DaprProtos.RetryPolicy.newBuilder();
         StateOptions.RetryPolicy retryPolicy = options.getRetryPolicy();
         if (options.getRetryPolicy().getInterval() != null) {
           Duration.Builder durationBuilder = Duration.newBuilder()
@@ -332,7 +334,7 @@ public class DaprClientGrpc implements DaprClient {
         }
       }
 
-      optionBuilder = DaprProtos.StateRequestOptions.newBuilder();
+      optionBuilder = DaprProtos.StateOptions.newBuilder();
       if (options.getConcurrency() != null) {
         optionBuilder.setConcurrency(options.getConcurrency().getValue());
       }
@@ -445,7 +447,7 @@ public class DaprClientGrpc implements DaprClient {
   }
 
   /**
-   * Builds the object io.dapr.{@link DaprProtos.InvokeServiceEnvelope} to be send based on the parameters.
+   * Builds the object io.dapr.{@link DaprProtos.InvokeServiceRequest} to be send based on the parameters.
    *
    * @param verb    String that must match HTTP Methods
    * @param appId   The application id to be invoked
@@ -455,19 +457,29 @@ public class DaprClientGrpc implements DaprClient {
    * @return The object to be sent as part of the invokation.
    * @throws IOException If there's an issue serializing the request.
    */
-  private <K> DaprProtos.InvokeServiceEnvelope buildInvokeServiceEnvelope(
+  private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(
       String verb, String appId, String method, K request) throws IOException {
-    DaprProtos.InvokeServiceEnvelope.Builder envelopeBuilder = DaprProtos.InvokeServiceEnvelope.newBuilder()
-        .setId(appId)
-        .setMethod(method)
-        .putMetadata("http.verb", verb);
+    CommonProtos.InvokeRequest.Builder requestBuilder = CommonProtos.InvokeRequest.newBuilder();
+    requestBuilder.setMethod(method);
     if (request != null) {
       byte[] byteRequest = objectSerializer.serialize(request);
       Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
-      envelopeBuilder.setData(data);
+      requestBuilder.setData(data);
     } else {
-      envelopeBuilder.setData(Any.newBuilder().build());
+      requestBuilder.setData(Any.newBuilder().build());
     }
+
+    CommonProtos.HTTPExtension.Builder httpExtensionBuilder = CommonProtos.HTTPExtension.newBuilder();
+    if ((verb != null) && !verb.isEmpty()) {
+      httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.valueOf(verb.toUpperCase()));
+    } else {
+      httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.NONE);
+    }
+    requestBuilder.setHttpExtension(httpExtensionBuilder.build());
+
+    DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
+        .setId(appId)
+        .setMessage(requestBuilder.build());
     return envelopeBuilder.build();
   }
 

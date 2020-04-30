@@ -6,8 +6,9 @@
 package io.dapr.examples.invoke.grpc;
 
 import com.google.protobuf.Any;
-import io.dapr.DaprClientGrpc;
-import io.dapr.DaprClientProtos;
+import io.dapr.v1.CommonProtos;
+import io.dapr.v1.DaprClientGrpc;
+import io.dapr.v1.DaprClientProtos;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -95,13 +96,16 @@ public class HelloWorldService {
      * @param responseObserver Dapr envelope response.
      */
     @Override
-    public void onInvoke(DaprClientProtos.InvokeEnvelope request, StreamObserver<Any> responseObserver) {
+    public void onInvoke(CommonProtos.InvokeRequest request,
+                         StreamObserver<CommonProtos.InvokeResponse> responseObserver) {
       try {
         if ("say".equals(request.getMethod())) {
           SayRequest sayRequest =
               SayRequest.newBuilder().setMessage(request.getData().getValue().toStringUtf8()).build();
           SayResponse sayResponse = this.say(sayRequest);
-          responseObserver.onNext(Any.pack(sayResponse));
+          CommonProtos.InvokeResponse.Builder responseBuilder = CommonProtos.InvokeResponse.newBuilder();
+          responseBuilder.setData(Any.pack(sayResponse));
+          responseObserver.onNext(responseBuilder.build());
         }
       } finally {
         responseObserver.onCompleted();

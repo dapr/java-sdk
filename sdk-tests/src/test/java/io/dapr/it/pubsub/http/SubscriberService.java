@@ -16,7 +16,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = {"io.dapr.springboot", "io.dapr.it.pubsub.http"})
 public class SubscriberService {
 
-  public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running. Init Elapsed";
+  public static final String SUCCESS_MESSAGE = "You're up and running!";
 
   public static void main(String[] args) throws Exception {
     int port = Integer.parseInt(args[0]);
