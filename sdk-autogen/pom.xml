@@ -52,6 +52,11 @@
       <artifactId>protoc-jar-maven-plugin</artifactId>
       <version>3.10.1</version>
     </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>1.25.0</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -62,6 +67,20 @@
         <version>1.3.0</version>
         <executions>
           <execution>
+            <id>getCommonProto</id>
+            <!-- the wget goal actually binds itself to this phase by default -->
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>${dapr.proto.baseurl}/common/v1/common.proto</url>
+              <outputFileName>common.proto</outputFileName>
+              <!-- default target location, just to demonstrate the parameter -->
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/common/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>getDaprProto</id>
             <!-- the wget goal actually binds itself to this phase by default -->
             <phase>initialize</phase>
@@ -69,10 +88,10 @@
               <goal>wget</goal>
             </goals>
             <configuration>
-              <url>${dapr.proto.url}</url>
+              <url>${dapr.proto.baseurl}/dapr/v1/dapr.proto</url>
               <outputFileName>dapr.proto</outputFileName>
               <!-- default target location, just to demonstrate the parameter -->
-              <outputDirectory>${protobuf.input.directory}/dapr</outputDirectory>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -83,10 +102,10 @@
               <goal>wget</goal>
             </goals>
             <configuration>
-              <url>${dapr.client.proto.url}</url>
+              <url>${dapr.proto.baseurl}/daprclient/v1/daprclient.proto</url>
               <outputFileName>daprclient.proto</outputFileName>
               <!-- default target location, just to demonstrate the parameter -->
-              <outputDirectory>${protobuf.input.directory}/daprclient</outputDirectory>
+              <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -107,8 +126,8 @@
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>
               <inputDirectories>
-                <include>${protobuf.input.directory}/dapr</include>
-                <include>${protobuf.input.directory}/daprclient</include>
+                <include>${protobuf.input.directory}/dapr/proto/common/v1</include>
+                <include>${protobuf.input.directory}</include>
               </inputDirectories>
               <outputTargets>
                 <outputTarget>

@@ -58,15 +58,27 @@ public class DaprRun {
     long start = System.currentTimeMillis();
     // First, try to stop previous run (if left running).
     this.stop();
-    // Wait for some time in case the previous run did not kill the process on time.
-    Thread.sleep(10000);
+    // Wait for the previous run to kill the prior process.
+    long timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
+    callWithRetry(() -> {
+      System.out.println("Checking if previous run for Dapr application has stopped ...");
+      try {
+        this.listCommand.run();
+        throw new RuntimeException("Previous run for app has not stopped yet!");
+      } catch (IllegalStateException e) {
+        // Success because we the list command did not find the app id.
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }, timeLeft);
+
     System.out.println("Starting dapr application ...");
     this.startCommand.run();
     this.started.set(true);
 
-    long timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
+    timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
     callWithRetry(() -> {
-      System.out.println("Checking if Dapr is listening on HTTP port ...");
+      System.out.println("Checking if Dapr application has started ...");
       try {
         this.listCommand.run();
       } catch (Exception e) {

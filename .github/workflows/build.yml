@@ -22,10 +22,10 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: 13.0.x
-      DAPR_RUNTIME_VER: 0.4.0-rc.1
+      DAPR_RUNTIME_VER: 0.6.0
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/f84566fb2bf5a599252ab9d6bd82fc78faf94dba/install/install.sh
-      DAPR_CLI_REF: 60fd705fcd47cd50135162ea70a567234414d7db
-      DAPR_REF: 643fcda6b7694e0e73b52c59f538598a8b3b3830
+      DAPR_CLI_REF: 2e607cb6de0bd69770b244020eecd668fcded19b
+      DAPR_REF: 7d6e111a181d9d3fdd7537e5c7f6c02764064846
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
@@ -76,6 +76,12 @@ jobs:
         make
         sudo cp dist/linux_amd64/release/daprd /usr/local/bin/daprd
         cd ..
+    - name: Override placement service.
+      if: env.DAPR_REF != ''
+      run: |
+        docker stop dapr_placement
+        cd dapr
+        ./dist/linux_amd64/release/placement &
     - name: Install Local kafka using docker-compose
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d

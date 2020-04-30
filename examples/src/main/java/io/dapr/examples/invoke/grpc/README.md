@@ -53,7 +53,9 @@ private static class GrpcHelloWorldDaprService extends DaprClientGrpc.DaprClient
               SayRequest sayRequest =
                   SayRequest.newBuilder().setMessage(request.getData().getValue().toStringUtf8()).build();
               SayResponse sayResponse = this.say(sayRequest);
-              responseObserver.onNext(Any.pack(sayResponse));
+              CommonProtos.InvokeResponse.Builder responseBuilder = CommonProtos.InvokeResponse.newBuilder();
+              responseBuilder.setData(Any.pack(sayResponse));
+              responseObserver.onNext(responseBuilder.build());
             }
           } finally {
             responseObserver.onCompleted();
