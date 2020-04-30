@@ -2,7 +2,7 @@
 
 In this example, we'll use Dapr to test the actor pattern capabilities such as concurrency, state, life-cycle management for actor activation/deactivation and timers and reminders to wake-up actors.
 
-Visit [this](https://github.com/dapr/docs/blob/master/concepts/actor/actor_overview.md) link for more information about the Actor pattern.
+Visit [this](https://github.com/dapr/docs/blob/master/concepts/actors/README.md) link for more information about the Actor pattern.
 
 This example contains the follow classes:
 
