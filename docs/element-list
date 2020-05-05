@@ -7,3 +7,4 @@ io.dapr.client.domain
 io.dapr.exceptions
 io.dapr.serializer
 io.dapr.utils
+io.dapr.v1
