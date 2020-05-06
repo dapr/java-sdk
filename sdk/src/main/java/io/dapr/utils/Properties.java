@@ -23,7 +23,7 @@ public class Properties {
   /**
    * Dapr's default GRPC port.
    */
-  private static final Integer DEFAULT_GRPC_PORT = 50051;
+  private static final Integer DEFAULT_GRPC_PORT = 50001;
 
   /**
    * Dapr's default GRPC port.
