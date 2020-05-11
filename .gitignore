@@ -53,3 +53,7 @@ hs_err_pid*
 
 # macOS
 .DS_Store
+
+# Visual Studio Code
+**/.vscode/
+.factorypath
