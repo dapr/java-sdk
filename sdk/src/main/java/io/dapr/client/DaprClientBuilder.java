@@ -23,7 +23,7 @@ public class DaprClientBuilder {
   /**
    * Determine if this builder will create GRPC clients instead of HTTP clients.
    */
-  private final boolean useGrpc;
+  private boolean useGrpc;
 
   /**
    * Serializer used for request and response objects in DaprClient.
@@ -121,5 +121,13 @@ public class DaprClientBuilder {
     OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
     DaprHttp daprHttp = new DaprHttp(port, okHttpClient);
     return new DaprClientHttp(daprHttp, this.objectSerializer, this.stateSerializer);
+  }
+
+  public boolean getUseGrpc() {
+    return this.useGrpc;
+  }
+
+  public void setUseGrpc(boolean enableGrpc) {
+    this.useGrpc = enableGrpc;
   }
 }
