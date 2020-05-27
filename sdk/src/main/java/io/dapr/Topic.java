@@ -18,8 +18,16 @@ public @interface Topic {
 
   /**
    * Name of topic to be subscribed to.
-   *
    * @return Topic's name.
    */
   String name();
+
+  /**
+   * Metadata in the form of a json object.
+   * {
+   *    "mykey": "myvalue"
+   * }
+   * @return metadata object
+   */
+  String metadata() default "{}";
 }
