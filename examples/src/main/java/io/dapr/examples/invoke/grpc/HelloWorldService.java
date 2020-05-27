@@ -6,9 +6,9 @@
 package io.dapr.examples.invoke.grpc;
 
 import com.google.protobuf.Any;
+import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.CommonProtos;
-import io.dapr.v1.DaprClientGrpc;
-import io.dapr.v1.DaprClientProtos;
+import io.dapr.v1.DaprAppCallbackProtos;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -40,7 +40,7 @@ public class HelloWorldService {
   /**
    * Server mode: class that encapsulates all server-side logic for Grpc.
    */
-  private static class GrpcHelloWorldDaprService extends DaprClientGrpc.DaprClientImplBase {
+  private static class GrpcHelloWorldDaprService extends AppCallbackGrpc.AppCallbackImplBase {
 
     /**
      * Format to output date and time.

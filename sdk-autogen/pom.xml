@@ -88,7 +88,7 @@
               <goal>wget</goal>
             </goals>
             <configuration>
-              <url>${dapr.proto.baseurl}/dapr/v1/dapr.proto</url>
+              <url>${dapr.proto.baseurl}/runtime/v1/dapr.proto</url>
               <outputFileName>dapr.proto</outputFileName>
               <!-- default target location, just to demonstrate the parameter -->
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
@@ -102,8 +102,8 @@
               <goal>wget</goal>
             </goals>
             <configuration>
-              <url>${dapr.proto.baseurl}/daprclient/v1/daprclient.proto</url>
-              <outputFileName>daprclient.proto</outputFileName>
+              <url>${dapr.proto.baseurl}/runtime/v1/appcallback.proto</url>
+              <outputFileName>appcallback.proto</outputFileName>
               <!-- default target location, just to demonstrate the parameter -->
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
