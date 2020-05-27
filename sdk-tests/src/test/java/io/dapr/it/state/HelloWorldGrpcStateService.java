@@ -9,8 +9,8 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprGrpc.DaprBlockingStub;
-import io.dapr.v1.DaprProtos.SaveStateEnvelope;
-import io.dapr.v1.DaprProtos.StateRequest;
+import io.dapr.v1.DaprProtos.SaveStateRequest;
+import io.dapr.v1.CommonProtos.StateItem;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -37,14 +37,14 @@ public class HelloWorldGrpcStateService {
     // First, write key-value pair.
 
     String value = "Hello World";
-    StateRequest req = StateRequest
+    StateItem req = StateItem
         .newBuilder()
         .setKey(key)
-        .setValue(Any.newBuilder().setValue(ByteString.copyFromUtf8(value)).build())
+        .setValue(ByteString.copyFromUtf8(value))
         .build();
-    SaveStateEnvelope state = SaveStateEnvelope.newBuilder()
+    SaveStateRequest state = SaveStateRequest.newBuilder()
         .setStoreName("statestore")
-        .addRequests(req)
+        .addStates(req)
         .build();
     client.saveState(state);
     System.out.println("Saved!");
