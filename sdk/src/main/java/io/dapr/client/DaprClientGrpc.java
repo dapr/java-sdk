@@ -24,9 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-//import static io.dapr.client.domain.StateOptions;
-import static io.dapr.client.domain.StateOptions.Concurrency;
-import static io.dapr.client.domain.StateOptions.Consistency;
 import static io.dapr.client.domain.StateOptions.RetryPolicy;
 
 /**
@@ -118,11 +115,7 @@ public class DaprClientGrpc implements DaprClient {
   @Override
   public Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata) {
     try {
-      /*
-      byte[] byteEvent = objectSerializer.serialize(event);
-      Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteEvent)).build();
       // TODO: handle metadata.
-      */
       DaprProtos.PublishEventRequest envelope = DaprProtos.PublishEventRequest.newBuilder()
           .setTopic(topic).setData(ByteString.copyFrom(objectSerializer.serialize(event))).build();
 
@@ -230,7 +223,6 @@ public class DaprClientGrpc implements DaprClient {
       DaprProtos.InvokeBindingRequest.Builder builder = DaprProtos.InvokeBindingRequest.newBuilder()
           .setName(name);
       if (byteRequest != null) {
-        //Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
         builder.setData(ByteString.copyFrom(byteRequest));
       }
       if (metadata != null) {
