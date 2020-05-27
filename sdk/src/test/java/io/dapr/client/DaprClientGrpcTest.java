@@ -1121,6 +1121,75 @@ public class DaprClientGrpcTest {
     assertEquals(expectedValue, result.get(expectedKey));
   }
 
+  /* If this test is failing, it means that a new value was added to StateOptions.Consistency
+   * enum, without creating a mapping to one of the proto defined gRPC enums
+   */
+  @Test
+  public void stateOptionsConsistencyValuesHaveValidGrpcEnumMappings() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    settableFuture.set(Empty.newBuilder().build());
+    for (StateOptions.Consistency consistency : StateOptions.Consistency.values()) {
+      StateOptions options = buildStateOptions(consistency, StateOptions.Concurrency.FIRST_WRITE,
+              Duration.ofDays(100), null, StateOptions.RetryPolicy.Pattern.LINEAR);
+      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      result.block();
+    }
+
+    assertTrue(callback.wasCalled);
+  }
+
+  /* If this test is failing, it means that a new value was added to StateOptions.Concurrency
+   * enum, without creating a mapping to one of the proto defined gRPC enums
+   */
+  @Test
+  public void stateOptionsConcurrencyValuesHaveValidGrpcEnumMappings() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    settableFuture.set(Empty.newBuilder().build());
+    for (StateOptions.Concurrency concurrency : StateOptions.Concurrency.values()) {
+      StateOptions options = buildStateOptions(StateOptions.Consistency.EVENTUAL, concurrency,
+              Duration.ofDays(100), null, StateOptions.RetryPolicy.Pattern.LINEAR);
+      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      result.block();
+    }
+
+    assertTrue(callback.wasCalled);
+  }
+
+  /* If this test is failing, it means that a new value was added to StateOptions.RetryPolicy.Pattern
+   * enum, without creating a mapping to one of the proto defined gRPC enums
+   */
+  @Test
+  public void stateOptionsRetryPatternValuesHaveValidGrpcEnumMappings() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    settableFuture.set(Empty.newBuilder().build());
+    for (StateOptions.RetryPolicy.Pattern retryPattern : StateOptions.RetryPolicy.Pattern.values()) {
+      StateOptions options = buildStateOptions(StateOptions.Consistency.EVENTUAL,
+              StateOptions.Concurrency.FIRST_WRITE, Duration.ofDays(100), null, retryPattern);
+      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      result.block();
+    }
+
+    assertTrue(callback.wasCalled);
+  }
+
   private <T> SettableFuture<DaprProtos.GetStateResponse> buildFutureGetStateEnvelop(T value, String etag) throws IOException {
     DaprProtos.GetStateResponse envelope = buildGetStateResponse(value, etag);
     SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();

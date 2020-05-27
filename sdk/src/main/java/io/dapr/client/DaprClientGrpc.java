@@ -78,7 +78,7 @@ public class DaprClientGrpc implements DaprClient {
       case STRONG:
         return CommonProtos.StateOptions.StateConsistency.CONSISTENCY_STRONG;
       default:
-        throw new IllegalArgumentException("Unsupported consistency model");
+        throw new IllegalArgumentException("Missing Consistency mapping to gRPC Consistency enum");
     }
   }
 
@@ -89,7 +89,7 @@ public class DaprClientGrpc implements DaprClient {
       case LAST_WRITE:
         return CommonProtos.StateOptions.StateConcurrency.CONCURRENCY_LAST_WRITE;
       default:
-        throw new IllegalArgumentException("Unsupported consistency model");
+        throw new IllegalArgumentException("Missing StateConcurrency mapping to gRPC Concurrency enum");
     }
   }
 
@@ -100,7 +100,7 @@ public class DaprClientGrpc implements DaprClient {
       case EXPONENTIAL:
         return CommonProtos.StateRetryPolicy.RetryPattern.RETRY_EXPONENTIAL;
       default:
-        throw new IllegalArgumentException("Unsupported consistency model");
+        throw new IllegalArgumentException("Missing RetryPattern mapping to gRPC retry pattern enum");
     }
   }
 
