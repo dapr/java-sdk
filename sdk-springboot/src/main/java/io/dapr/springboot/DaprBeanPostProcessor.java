@@ -55,7 +55,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
    * Subscribe to topics based on {@link Topic} annotations on the given class and any of ancestor classes.
    * @param clazz Controller class where {@link Topic} is expected.
    */
-  private static void subscribeToTopics(Class clazz) throws IllegalArgumentException {
+  private static void subscribeToTopics(Class clazz) {
     if (clazz == null) {
       return;
     }
