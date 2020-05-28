@@ -31,6 +31,7 @@ public class PubSubIT extends BaseIT {
     
     //The title of the topic to be used for publishing
     private static final String TOPIC_NAME = "testingtopic";
+    private static final String ANOTHER_TOPIC_NAME = "anothertopic";
 
     /**
      * Parameters for this test.
@@ -62,12 +63,21 @@ public class PubSubIT extends BaseIT {
             daprRun.switchToHTTP();
         }
 
+        // Send a batch of messages on one topic
         DaprClient client = new DaprClientBuilder().build();
         for (int i = 0; i < NUM_MESSAGES; i++) {
-            String message = String.format("This is message #%d", i);
+            String message = String.format("This is message #%d on topic %s", i, TOPIC_NAME);
             //Publishing messages
             client.publishEvent(TOPIC_NAME, message).block();
-            System.out.println("Published message: " + message);
+            System.out.println(String.format("Published message: '%s' to topic '%s'", message, TOPIC_NAME));
+        }
+
+        // Send a batch of different messages on the other.
+        for (int i = 0; i < NUM_MESSAGES; i++) {
+            String message = String.format("This is message #%d on topic %s", i, ANOTHER_TOPIC_NAME);
+            //Publishing messages
+            client.publishEvent(ANOTHER_TOPIC_NAME, message).block();
+            System.out.println(String.format("Published message: '%s' to topic '%s'", message, ANOTHER_TOPIC_NAME));
         }
 
         //Publishing a single byte: Example of non-string based content published
@@ -80,12 +90,12 @@ public class PubSubIT extends BaseIT {
         Thread.sleep(3000);
 
         callWithRetry(() -> {
-            System.out.println("Checking results ...");
-            final List<String> messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages", null, List.class).block();
+            System.out.println("Checking results for topic " + TOPIC_NAME);
+            final List<String> messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages/testingtopic", null, List.class).block();
             assertEquals(11, messages.size());
 
             for (int i = 0; i < NUM_MESSAGES; i++) {
-                    assertTrue(messages.contains(String.format("This is message #%d", i)));
+                assertTrue(messages.contains(String.format("This is message #%d on topic %s", i, TOPIC_NAME)));
             }
 
             boolean foundByte = false;
@@ -96,6 +106,16 @@ public class PubSubIT extends BaseIT {
             }
             assertTrue(foundByte);
 
+        }, 2000);
+
+        callWithRetry(() -> {
+            System.out.println("Checking results for topic " + ANOTHER_TOPIC_NAME);
+            final List<String> messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages/anothertopic", null, List.class).block();
+            assertEquals(10, messages.size());
+
+            for (int i = 0; i < NUM_MESSAGES; i++) {
+                assertTrue(messages.contains(String.format("This is message #%d on topic %s", i, ANOTHER_TOPIC_NAME)));
+            }
         }, 2000);
     }
 
