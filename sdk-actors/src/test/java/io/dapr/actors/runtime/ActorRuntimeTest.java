@@ -25,17 +25,59 @@ public class ActorRuntimeTest {
 
   public interface MyActor {
     String say();
+    int count();
   }
 
   @ActorType(name = ACTOR_NAME)
   public static class MyActorImpl extends AbstractActor implements MyActor {
 
+    private int count = 0;
+
+    private Boolean activated;
+
     public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
     }
 
+    public Mono<Void> onActivate() {
+      return Mono.fromRunnable(() -> {
+        if (this.activated != null) {
+          throw new IllegalStateException("already activated once");
+        }
+
+        this.activated = true;
+      });
+    }
+
+    public Mono<Void> onDeactivate() {
+      return Mono.fromRunnable(() -> {
+        if (this.activated == null) {
+          throw new IllegalStateException("never activated");
+        }
+
+        if (this.activated == false) {
+          throw new IllegalStateException("already deactivated");
+        }
+
+        if (this.count == 0) {
+          throw new IllegalStateException("test expects a call before deactivate");
+        }
+
+        this.activated = false;
+      });
+    }
+
     public String say() {
+      if (!this.activated) {
+        throw new IllegalStateException("not activated");
+      }
+
+      this.count++;
       return "Nothing to say.";
+    }
+
+    public int count() {
+      return this.count;
     }
   }
 
@@ -71,30 +113,15 @@ public class ActorRuntimeTest {
     Assert.assertTrue(new String(this.runtime.serializeConfig()).contains(ACTOR_NAME));
   }
 
-  @Test
-  public void activateActor() throws Exception {
-    String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
-    this.runtime.activate(ACTOR_NAME, actorId).block();
-  }
 
   @Test
   public void invokeActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
     this.runtime.registerActor(MyActorImpl.class);
-    this.runtime.activate(ACTOR_NAME, actorId).block();
 
     byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
     String message = ACTOR_STATE_SERIALIZER.deserialize(response, String.class);
     Assert.assertEquals("Nothing to say.", message);
-  }
-
-  @Test
-  public void activateThendeactivateActor() throws Exception {
-    String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
-    this.runtime.activate(ACTOR_NAME, actorId).block();
-    this.runtime.deactivate(ACTOR_NAME, actorId).block();
   }
 
   @Test
@@ -105,29 +132,15 @@ public class ActorRuntimeTest {
   }
 
   @Test
-  public void lazyActivate() throws Exception {
-    String actorId = UUID.randomUUID().toString();
-    this.runtime.registerActor(MyActorImpl.class);
-    this.runtime.activate(ACTOR_NAME, actorId).block();
-
-    this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
-      .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
-      .doOnSuccess(s -> Assert.fail())
-      .onErrorReturn("".getBytes())
-      .block();
-  }
-
-  @Test
   public void lazyDeactivate() throws Exception {
     String actorId = UUID.randomUUID().toString();
     this.runtime.registerActor(MyActorImpl.class);
-    this.runtime.activate(ACTOR_NAME, actorId).block();
 
-    Mono<Void> deacticateCall = this.runtime.deactivate(ACTOR_NAME, actorId);
+    Mono<Void> deactivateCall = this.runtime.deactivate(ACTOR_NAME, actorId);
 
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
 
-    deacticateCall.block();
+    deactivateCall.block();
 
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
       .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
@@ -143,9 +156,15 @@ public class ActorRuntimeTest {
 
     Mono<byte[]> invokeCall = this.runtime.invoke(ACTOR_NAME, actorId, "say", null);
 
-    this.runtime.activate(ACTOR_NAME, actorId).block();
+    byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
+    int count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
+    Assert.assertEquals(0, count);
 
     invokeCall.block();
+
+    response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
+    count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
+    Assert.assertEquals(1, count);
   }
 
 }

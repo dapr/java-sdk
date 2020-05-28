@@ -58,8 +58,13 @@ class ActorManager<T extends AbstractActor> {
    * @return Asynchronous void response.
    */
   Mono<Void> activateActor(ActorId actorId) {
-    return Mono.fromSupplier(() -> this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId))
-        .flatMap(actor -> actor.onActivateInternal().then(this.onActivatedActor(actorId, actor)));
+    return Mono.fromSupplier(() -> {
+      if (this.activeActors.containsKey(actorId)) {
+        return null;
+      }
+
+      return this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId);
+    }).flatMap(actor -> actor.onActivateInternal().then(this.onActivatedActor(actorId, actor)));
   }
 
   /**

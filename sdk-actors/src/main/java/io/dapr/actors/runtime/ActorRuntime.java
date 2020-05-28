@@ -199,18 +199,6 @@ public class ActorRuntime {
   }
 
   /**
-   * Activates an actor for an actor type with given actor id.
-   *
-   * @param actorTypeName Actor type name to activate the actor for.
-   * @param actorId       Actor id for the actor to be activated.
-   * @return Async void task.
-   */
-  public Mono<Void> activate(String actorTypeName, String actorId) {
-    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.activateActor(new ActorId(actorId)));
-  }
-
-  /**
    * Deactivates an actor for an actor type with given actor id.
    *
    * @param actorTypeName Actor type name to deactivate the actor for.
@@ -233,8 +221,10 @@ public class ActorRuntime {
    * @return Response for the actor method.
    */
   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
+    ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, payload));
+          .flatMap(m -> m.activateActor(id).thenReturn(m))
+          .flatMap(m -> ((ActorManager)m).invokeMethod(id, actorMethodName, payload));
   }
 
   /**
@@ -247,8 +237,10 @@ public class ActorRuntime {
    * @return Async void task.
    */
   public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, byte[] params) {
+    ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.invokeReminder(new ActorId(actorId), reminderName, params));
+          .flatMap(m -> m.activateActor(id).thenReturn(m))
+          .flatMap(m -> ((ActorManager)m).invokeReminder(new ActorId(actorId), reminderName, params));
   }
 
   /**
@@ -260,8 +252,10 @@ public class ActorRuntime {
    * @return Async void task.
    */
   public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
+    ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.invokeTimer(new ActorId(actorId), timerName));
+          .flatMap(m -> m.activateActor(id).thenReturn(m))
+          .flatMap(m -> ((ActorManager)m).invokeTimer(new ActorId(actorId), timerName));
   }
 
   /**
