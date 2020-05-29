@@ -31,20 +31,20 @@ public class HelloWorldClientIT extends BaseIT {
 
     String key = "mykey";
     {
-      DaprProtos.GetStateEnvelope req = DaprProtos.GetStateEnvelope
+      DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
         .newBuilder()
         .setStoreName(STATE_STORE_NAME)
         .setKey(key)
         .build();
-      DaprProtos.GetStateResponseEnvelope response = client.getState(req);
-      String value = response.getData().getValue().toStringUtf8();
+      DaprProtos.GetStateResponse response = client.getState(req);
+      String value = response.getData().toStringUtf8();
       System.out.println("Got: " + value);
       Assert.assertEquals("Hello World", value);
     }
 
     // Then, delete it.
     {
-      DaprProtos.DeleteStateEnvelope req = DaprProtos.DeleteStateEnvelope
+      DaprProtos.DeleteStateRequest req = DaprProtos.DeleteStateRequest
         .newBuilder()
         .setStoreName(STATE_STORE_NAME)
         .setKey(key)
@@ -54,13 +54,13 @@ public class HelloWorldClientIT extends BaseIT {
     }
 
     {
-      DaprProtos.GetStateEnvelope req = DaprProtos.GetStateEnvelope
+      DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
         .newBuilder()
         .setStoreName(STATE_STORE_NAME)
         .setKey(key)
         .build();
-      DaprProtos.GetStateResponseEnvelope response = client.getState(req);
-      String value = response.getData().getValue().toStringUtf8();
+      DaprProtos.GetStateResponse response = client.getState(req);
+      String value = response.getData().toStringUtf8();
       System.out.println("Got: " + value);
       Assert.assertEquals("", value);
     }

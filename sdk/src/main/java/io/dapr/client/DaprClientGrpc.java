@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static io.dapr.client.domain.StateOptions.RetryPolicy;
+
 /**
  * An adapter for the GRPC Client.
  *
@@ -66,6 +68,39 @@ public class DaprClientGrpc implements DaprClient {
     this.stateSerializer = stateSerializer;
   }
 
+  private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
+    switch (options.getConsistency()) {
+      case EVENTUAL:
+        return CommonProtos.StateOptions.StateConsistency.CONSISTENCY_EVENTUAL;
+      case STRONG:
+        return CommonProtos.StateOptions.StateConsistency.CONSISTENCY_STRONG;
+      default:
+        throw new IllegalArgumentException("Missing Consistency mapping to gRPC Consistency enum");
+    }
+  }
+
+  private CommonProtos.StateOptions.StateConcurrency getGrpcStateConcurrency(StateOptions options) {
+    switch (options.getConcurrency()) {
+      case FIRST_WRITE:
+        return CommonProtos.StateOptions.StateConcurrency.CONCURRENCY_FIRST_WRITE;
+      case LAST_WRITE:
+        return CommonProtos.StateOptions.StateConcurrency.CONCURRENCY_LAST_WRITE;
+      default:
+        throw new IllegalArgumentException("Missing StateConcurrency mapping to gRPC Concurrency enum");
+    }
+  }
+
+  private CommonProtos.StateRetryPolicy.RetryPattern getGrpcStateRetryPolicy(RetryPolicy policy) {
+    switch (policy.getPattern()) {
+      case LINEAR:
+        return CommonProtos.StateRetryPolicy.RetryPattern.RETRY_LINEAR;
+      case EXPONENTIAL:
+        return CommonProtos.StateRetryPolicy.RetryPattern.RETRY_EXPONENTIAL;
+      default:
+        throw new IllegalArgumentException("Missing RetryPattern mapping to gRPC retry pattern enum");
+    }
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -80,12 +115,9 @@ public class DaprClientGrpc implements DaprClient {
   @Override
   public Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata) {
     try {
-      byte[] byteEvent = objectSerializer.serialize(event);
-      Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteEvent)).build();
       // TODO: handle metadata.
-
-      DaprProtos.PublishEventEnvelope envelope = DaprProtos.PublishEventEnvelope.newBuilder()
-          .setTopic(topic).setData(data).build();
+      DaprProtos.PublishEventRequest envelope = DaprProtos.PublishEventRequest.newBuilder()
+          .setTopic(topic).setData(ByteString.copyFrom(objectSerializer.serialize(event))).build();
 
       return Mono.fromCallable(() -> {
         ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
@@ -188,16 +220,15 @@ public class DaprClientGrpc implements DaprClient {
   public Mono<Void> invokeBinding(String name, Object request, Map<String, String> metadata) {
     try {
       byte[] byteRequest = objectSerializer.serialize(request);
-      DaprProtos.InvokeBindingEnvelope.Builder builder = DaprProtos.InvokeBindingEnvelope.newBuilder()
+      DaprProtos.InvokeBindingRequest.Builder builder = DaprProtos.InvokeBindingRequest.newBuilder()
           .setName(name);
       if (byteRequest != null) {
-        Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
-        builder.setData(data);
+        builder.setData(ByteString.copyFrom(byteRequest));
       }
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
-      DaprProtos.InvokeBindingEnvelope envelope = builder.build();
+      DaprProtos.InvokeBindingRequest envelope = builder.build();
       return Mono.fromCallable(() -> {
         ListenableFuture<Empty> futureEmpty = client.invokeBinding(envelope);
         futureEmpty.get();
@@ -237,17 +268,17 @@ public class DaprClientGrpc implements DaprClient {
       if ((key == null) || (key.trim().isEmpty())) {
         throw new IllegalArgumentException("Key cannot be null or empty.");
       }
-      DaprProtos.GetStateEnvelope.Builder builder = DaprProtos.GetStateEnvelope.newBuilder()
+      DaprProtos.GetStateRequest.Builder builder = DaprProtos.GetStateRequest.newBuilder()
           .setStoreName(stateStoreName)
           .setKey(key);
       if (options != null && options.getConsistency() != null) {
-        builder.setConsistency(options.getConsistency().getValue());
+        builder.setConsistency(getGrpcStateConsistency(options));
       }
 
-      DaprProtos.GetStateEnvelope envelope = builder.build();
+      DaprProtos.GetStateRequest envelope = builder.build();
       return Mono.fromCallable(() -> {
-        ListenableFuture<DaprProtos.GetStateResponseEnvelope> futureResponse = client.getState(envelope);
-        DaprProtos.GetStateResponseEnvelope response = null;
+        ListenableFuture<DaprProtos.GetStateResponse> futureResponse = client.getState(envelope);
+        DaprProtos.GetStateResponse response = null;
         try {
           response = futureResponse.get();
         } catch (NullPointerException npe) {
@@ -261,11 +292,11 @@ public class DaprClientGrpc implements DaprClient {
   }
 
   private <T> State<T> buildStateKeyValue(
-      DaprProtos.GetStateResponseEnvelope response,
+      DaprProtos.GetStateResponse response,
       String requestedKey,
       StateOptions stateOptions,
       Class<T> clazz) throws IOException {
-    ByteString payload = response.getData().getValue();
+    ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
     T value = stateSerializer.deserialize(data, clazz);
     String etag = response.getEtag();
@@ -282,14 +313,14 @@ public class DaprClientGrpc implements DaprClient {
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
-      DaprProtos.SaveStateEnvelope.Builder builder = DaprProtos.SaveStateEnvelope.newBuilder();
+      DaprProtos.SaveStateRequest.Builder builder = DaprProtos.SaveStateRequest.newBuilder();
       builder.setStoreName(stateStoreName);
       for (State state : states) {
-        builder.addRequests(buildStateRequest(state).build());
+        builder.addStates(buildStateRequest(state).build());
       }
-      DaprProtos.SaveStateEnvelope envelope = builder.build();
+      DaprProtos.SaveStateRequest request = builder.build();
 
-      return Mono.fromCallable(() -> client.saveState(envelope)).flatMap(f -> {
+      return Mono.fromCallable(() -> client.saveState(request)).flatMap(f -> {
         try {
           f.get();
         } catch (Exception ex) {
@@ -302,10 +333,10 @@ public class DaprClientGrpc implements DaprClient {
     }
   }
 
-  private <T> DaprProtos.StateRequest.Builder buildStateRequest(State<T> state) throws IOException {
+  private <T> CommonProtos.StateItem.Builder buildStateRequest(State<T> state) throws IOException {
     byte[] bytes = stateSerializer.serialize(state.getValue());
-    Any data = Any.newBuilder().setValue(ByteString.copyFrom(bytes)).build();
-    DaprProtos.StateRequest.Builder stateBuilder = DaprProtos.StateRequest.newBuilder();
+    ByteString data = ByteString.copyFrom(bytes);
+    CommonProtos.StateItem.Builder stateBuilder = CommonProtos.StateItem.newBuilder();
     if (state.getEtag() != null) {
       stateBuilder.setEtag(state.getEtag());
     }
@@ -313,13 +344,13 @@ public class DaprClientGrpc implements DaprClient {
       stateBuilder.setValue(data);
     }
     stateBuilder.setKey(state.getKey());
-    DaprProtos.StateOptions.Builder optionBuilder = null;
+    CommonProtos.StateOptions.Builder optionBuilder = null;
     if (state.getOptions() != null) {
       StateOptions options = state.getOptions();
-      DaprProtos.RetryPolicy.Builder retryPolicyBuilder = null;
+      CommonProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
       if (options.getRetryPolicy() != null) {
-        retryPolicyBuilder = DaprProtos.RetryPolicy.newBuilder();
-        StateOptions.RetryPolicy retryPolicy = options.getRetryPolicy();
+        retryPolicyBuilder = CommonProtos.StateRetryPolicy.newBuilder();
+        RetryPolicy retryPolicy = options.getRetryPolicy();
         if (options.getRetryPolicy().getInterval() != null) {
           Duration.Builder durationBuilder = Duration.newBuilder()
               .setNanos(retryPolicy.getInterval().getNano())
@@ -330,16 +361,16 @@ public class DaprClientGrpc implements DaprClient {
           retryPolicyBuilder.setThreshold(retryPolicy.getThreshold());
         }
         if (retryPolicy.getPattern() != null) {
-          retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
+          retryPolicyBuilder.setPattern(getGrpcStateRetryPolicy(retryPolicy));
         }
       }
 
-      optionBuilder = DaprProtos.StateOptions.newBuilder();
+      optionBuilder = CommonProtos.StateOptions.newBuilder();
       if (options.getConcurrency() != null) {
-        optionBuilder.setConcurrency(options.getConcurrency().getValue());
+        optionBuilder.setConcurrency(getGrpcStateConcurrency(options));
       }
       if (options.getConsistency() != null) {
-        optionBuilder.setConsistency(options.getConsistency().getValue());
+        optionBuilder.setConsistency(getGrpcStateConsistency(options));
       }
       if (retryPolicyBuilder != null) {
         optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
@@ -389,13 +420,13 @@ public class DaprClientGrpc implements DaprClient {
         throw new IllegalArgumentException("Key cannot be null or empty.");
       }
 
-      DaprProtos.StateOptions.Builder optionBuilder = null;
+      CommonProtos.StateOptions.Builder optionBuilder = null;
       if (options != null) {
-        optionBuilder = DaprProtos.StateOptions.newBuilder();
-        DaprProtos.RetryPolicy.Builder retryPolicyBuilder = null;
+        optionBuilder = CommonProtos.StateOptions.newBuilder();
+        CommonProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
         if (options.getRetryPolicy() != null) {
-          retryPolicyBuilder = DaprProtos.RetryPolicy.newBuilder();
-          StateOptions.RetryPolicy retryPolicy = options.getRetryPolicy();
+          retryPolicyBuilder = CommonProtos.StateRetryPolicy.newBuilder();
+          RetryPolicy retryPolicy = options.getRetryPolicy();
           if (options.getRetryPolicy().getInterval() != null) {
             Duration.Builder durationBuilder = Duration.newBuilder()
                 .setNanos(retryPolicy.getInterval().getNano())
@@ -406,22 +437,22 @@ public class DaprClientGrpc implements DaprClient {
             retryPolicyBuilder.setThreshold(retryPolicy.getThreshold());
           }
           if (retryPolicy.getPattern() != null) {
-            retryPolicyBuilder.setPattern(retryPolicy.getPattern().getValue());
+            retryPolicyBuilder.setPattern(getGrpcStateRetryPolicy(retryPolicy));
           }
         }
 
-        optionBuilder = DaprProtos.StateOptions.newBuilder();
+        optionBuilder = CommonProtos.StateOptions.newBuilder();
         if (options.getConcurrency() != null) {
-          optionBuilder.setConcurrency(options.getConcurrency().getValue());
+          optionBuilder.setConcurrency(getGrpcStateConcurrency(options));
         }
         if (options.getConsistency() != null) {
-          optionBuilder.setConsistency(options.getConsistency().getValue());
+          optionBuilder.setConsistency(getGrpcStateConsistency(options));
         }
         if (retryPolicyBuilder != null) {
           optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
         }
       }
-      DaprProtos.DeleteStateEnvelope.Builder builder = DaprProtos.DeleteStateEnvelope.newBuilder()
+      DaprProtos.DeleteStateRequest.Builder builder = DaprProtos.DeleteStateRequest.newBuilder()
           .setStoreName(stateStoreName)
           .setKey(key);
       if (etag != null) {
@@ -432,8 +463,8 @@ public class DaprClientGrpc implements DaprClient {
         builder.setOptions(optionBuilder.build());
       }
 
-      DaprProtos.DeleteStateEnvelope envelope = builder.build();
-      return Mono.fromCallable(() -> client.deleteState(envelope)).flatMap(f -> {
+      DaprProtos.DeleteStateRequest request = builder.build();
+      return Mono.fromCallable(() -> client.deleteState(request)).flatMap(f -> {
         try {
           f.get();
         } catch (Exception ex) {
@@ -499,16 +530,16 @@ public class DaprClientGrpc implements DaprClient {
       return Mono.error(e);
     }
 
-    DaprProtos.GetSecretEnvelope.Builder envelopeBuilder = DaprProtos.GetSecretEnvelope.newBuilder()
+    DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
           .setStoreName(secretStoreName)
           .setKey(secretName);
 
     if (metadata != null) {
-      envelopeBuilder.putAllMetadata(metadata);
+      requestBuilder.putAllMetadata(metadata);
     }
     return Mono.fromCallable(() -> {
-      DaprProtos.GetSecretEnvelope envelope = envelopeBuilder.build();
-      ListenableFuture<DaprProtos.GetSecretResponseEnvelope> future = client.getSecret(envelope);
+      DaprProtos.GetSecretRequest request = requestBuilder.build();
+      ListenableFuture<DaprProtos.GetSecretResponse> future = client.getSecret(request);
       return future.get();
     }).map(future -> future.getDataMap());
   }

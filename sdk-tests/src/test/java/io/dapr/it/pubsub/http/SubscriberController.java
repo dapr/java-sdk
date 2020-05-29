@@ -21,15 +21,21 @@ import java.util.Map;
 @RestController
 public class SubscriberController {
 
-  private static final List<String> messagesReceived = new ArrayList();
+  private static final List<String> messagesReceivedTestingTopic = new ArrayList();
+  private static final List<String> messagesReceivedAnotherTopic = new ArrayList();
 
-  @GetMapping(path = "/messages")
-  public List<String> getMessages() {
-    return messagesReceived;
+  @GetMapping(path = "/messages/testingtopic")
+  public List<String> getMessagesReceivedTestingTopic() {
+    return messagesReceivedTestingTopic;
+  }
+
+  @GetMapping(path = "/messages/anothertopic")
+  public List<String> getMessagesReceivedAnotherTopic() {
+    return messagesReceivedAnotherTopic;
   }
 
   @Topic(name = "testingtopic")
-  @PostMapping(path = "/testingtopic")
+  @PostMapping(path = "/route1")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                   @RequestHeader Map<String, String> headers) {
     return Mono.fromRunnable(() -> {
@@ -39,7 +45,25 @@ public class SubscriberController {
 
         String message = envelope.getData() == null ? "" : envelope.getData();
         System.out.println("Subscriber got message: " + message);
-        messagesReceived.add(envelope.getData());
+        messagesReceivedTestingTopic.add(envelope.getData());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "anothertopic")
+  @PostMapping(path = "/route2")
+  public Mono<Void> handleMessageAnotherTopic(@RequestBody(required = false) byte[] body,
+                                  @RequestHeader Map<String, String> headers) {
+    return Mono.fromRunnable(() -> {
+      try {
+        // Dapr's event is compliant to CloudEvent.
+        CloudEvent envelope = CloudEvent.deserialize(body);
+
+        String message = envelope.getData() == null ? "" : envelope.getData();
+        System.out.println("Subscriber got message: " + message);
+        messagesReceivedAnotherTopic.add(envelope.getData());
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

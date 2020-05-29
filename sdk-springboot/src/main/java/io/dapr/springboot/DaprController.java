@@ -57,18 +57,6 @@ public class DaprController {
   }
 
   /**
-   * Handles API to activate an actor.
-   * @param type Actor type.
-   * @param id Actor Id.
-   * @return Void.
-   */
-  @PostMapping(path = "/actors/{type}/{id}")
-  public Mono<Void> activateActor(@PathVariable("type") String type,
-                                  @PathVariable("id") String id) {
-    return ActorRuntime.getInstance().activate(type, id);
-  }
-
-  /**
    * Handles API to deactivate an actor.
    * @param type Actor type.
    * @param id Actor Id.

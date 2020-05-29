@@ -55,7 +55,7 @@ public class DaprClientGrpcTest {
 
   @Test(expected = RuntimeException.class)
   public void publishEventExceptionThrownTest() {
-    when(client.publishEvent(any(DaprProtos.PublishEventEnvelope.class)))
+    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<Void> result = adapter.publishEvent("topic", "object");
     result.block();
@@ -67,7 +67,7 @@ public class DaprClientGrpcTest {
     RuntimeException ex = new RuntimeException("An Exception");
     MockCallback<Empty> callback = new MockCallback<Empty>(ex);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventEnvelope.class)))
+    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.publishEvent("topic", "object");
     settableFuture.setException(ex);
@@ -79,7 +79,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventEnvelope.class)))
+    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.publishEvent("topic", "object");
     settableFuture.set(Empty.newBuilder().build());
@@ -92,7 +92,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventEnvelope.class)))
+    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenAnswer(c -> {
           settableFuture.set(Empty.newBuilder().build());
           return settableFuture;
@@ -107,7 +107,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventEnvelope.class)))
+    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenReturn(settableFuture);
     MyObject event = new MyObject(1, "Event");
     Mono<Void> result = adapter.publishEvent("topic", event);
@@ -132,7 +132,7 @@ public class DaprClientGrpcTest {
         new MockCallback<Empty>(ex);
     addCallback(settableFuture, callback, directExecutor());
     settableFuture.setException(ex);
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingEnvelope.class)))
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.invokeBinding("BindingName", "request");
     result.block();
@@ -143,7 +143,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingEnvelope.class)))
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.invokeBinding("BindingName", "request");
     settableFuture.set(Empty.newBuilder().build());
@@ -156,7 +156,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingEnvelope.class)))
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenReturn(settableFuture);
     MyObject event = new MyObject(1, "Event");
     Mono<Void> result = adapter.invokeBinding("BindingName", event);
@@ -170,7 +170,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingEnvelope.class)))
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenAnswer(c -> {
           settableFuture.set(Empty.newBuilder().build());
           return settableFuture;
@@ -488,7 +488,7 @@ public class DaprClientGrpcTest {
 
   @Test(expected = RuntimeException.class)
   public void getStateExceptionThrownTest() {
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateEnvelope.class))).thenThrow(RuntimeException.class);
+    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class))).thenThrow(RuntimeException.class);
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
     result.block();
@@ -496,12 +496,12 @@ public class DaprClientGrpcTest {
 
   @Test(expected = RuntimeException.class)
   public void getStateCallbackExceptionThrownTest() {
-    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<DaprProtos.GetStateResponseEnvelope> callback =
+    MockCallback<DaprProtos.GetStateResponse> callback =
         new MockCallback<>(ex);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateEnvelope.class)))
+    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
@@ -515,11 +515,11 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String expectedValue = "Expected state";
     State<String> expectedState = buildStateKey(expectedValue, key, etag, null);
-    DaprProtos.GetStateResponseEnvelope responseEnvelope = buildGetStateResponseEnvelope(expectedValue, etag);
-    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateEnvelope.class)))
+    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
       .thenReturn(settableFuture);
     State<String> keyRequest = buildStateKey(null, key, etag, null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, keyRequest, String.class);
@@ -533,11 +533,11 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String expectedValue = "Expected state";
     State<String> expectedState = buildStateKey(expectedValue, key, etag, null);
-    DaprProtos.GetStateResponseEnvelope responseEnvelope = buildGetStateResponseEnvelope(expectedValue, etag);
-    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateEnvelope.class)))
+    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
       .thenAnswer(c -> {
         settableFuture.set(responseEnvelope);
         return settableFuture;
@@ -556,15 +556,15 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
         Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
     State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
-    DaprProtos.GetStateResponseEnvelope responseEnvelope = DaprProtos.GetStateResponseEnvelope.newBuilder()
-        .setData(getAny(expectedValue))
+    DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
+        .setData(getBytes(expectedValue))
         .setEtag(etag)
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
-    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateEnvelope.class)))
+    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
         .thenReturn(settableFuture);
     Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
     settableFuture.set(responseEnvelope);
@@ -579,15 +579,15 @@ public class DaprClientGrpcTest {
     StateOptions options = new StateOptions(null, StateOptions.Concurrency.FIRST_WRITE,
         new StateOptions.RetryPolicy(Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR));
     State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
-    DaprProtos.GetStateResponseEnvelope responseEnvelope = DaprProtos.GetStateResponseEnvelope.newBuilder()
-        .setData(getAny(expectedValue))
+    DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
+        .setData(getBytes(expectedValue))
         .setEtag(etag)
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
-    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateEnvelope.class)))
+    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
         .thenReturn(settableFuture);
     Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
     settableFuture.set(responseEnvelope);
@@ -596,7 +596,7 @@ public class DaprClientGrpcTest {
 
   @Test(expected = RuntimeException.class)
   public void deleteStateExceptionThrowTest() {
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class))).thenThrow(RuntimeException.class);
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class))).thenThrow(RuntimeException.class);
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
     result.block();
@@ -609,7 +609,7 @@ public class DaprClientGrpcTest {
     MockCallback<Empty> callback =
         new MockCallback<Empty>(ex);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
@@ -624,7 +624,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -643,7 +643,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
       .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -662,7 +662,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
       .thenAnswer(c -> {
         settableFuture.set(Empty.newBuilder().build());
         return settableFuture;
@@ -683,7 +683,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -702,7 +702,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -721,7 +721,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -740,7 +740,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -759,7 +759,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -778,7 +778,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFuture);
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
@@ -793,7 +793,7 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenThrow(RuntimeException.class);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenThrow(RuntimeException.class);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
     result.block();
   }
@@ -807,7 +807,7 @@ public class DaprClientGrpcTest {
     RuntimeException ex = new RuntimeException("An Exception");
     MockCallback<Empty> callback = new MockCallback<>(ex);
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
     settableFuture.setException(ex);
     result.block();
@@ -821,7 +821,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
@@ -836,7 +836,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
       Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -853,7 +853,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenAnswer(c -> {
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenAnswer(c -> {
       settableFuture.set(Empty.newBuilder().build());
       return settableFuture;
     });
@@ -872,7 +872,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE,
         Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -889,7 +889,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null,
         Duration.ofDays(100), 1, StateOptions.RetryPolicy.Pattern.LINEAR);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -906,7 +906,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
         null, null, null);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -923,7 +923,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
         null, 1, StateOptions.RetryPolicy.Pattern.LINEAR);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -940,7 +940,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
         Duration.ofDays(100), null, StateOptions.RetryPolicy.Pattern.LINEAR);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -957,7 +957,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateEnvelope.class))).thenReturn(settableFuture);
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE,
         Duration.ofDays(100), 1, null);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
@@ -998,10 +998,10 @@ public class DaprClientGrpcTest {
     String key2 = "key2";
     String expectedValue2 = "Expected state 2";
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, null);
-    Map<String, SettableFuture<DaprProtos.GetStateResponseEnvelope>> futuresMap = new HashMap<>();
+    Map<String, SettableFuture<DaprProtos.GetStateResponse>> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
-    when(client.getState(argThat(new GetStateEnvelopeKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
+    when(client.getState(argThat(new GetStateRequestKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
     State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
     Mono<State<String>> resultGet1 = adapter.getState(STATE_STORE_NAME, keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
@@ -1011,7 +1011,7 @@ public class DaprClientGrpcTest {
     SettableFuture<Empty> settableFutureDelete = SettableFuture.create();
     MockCallback<Empty> callbackDelete = new MockCallback<>(Empty.newBuilder().build());
     addCallback(settableFutureDelete, callbackDelete, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateEnvelope.class)))
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
         .thenReturn(settableFutureDelete);
     Mono<Void> resultDelete = adapter.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
         keyRequest2.getOptions());
@@ -1019,7 +1019,7 @@ public class DaprClientGrpcTest {
     resultDelete.block();
     assertTrue(callbackDelete.wasCalled);
     futuresMap.replace(key2, null);
-    when(client.getState(argThat(new GetStateEnvelopeKeyMatcher(key2)))).thenReturn(futuresMap.get(key2));
+    when(client.getState(argThat(new GetStateRequestKeyMatcher(key2)))).thenReturn(futuresMap.get(key2));
 
     State<String> state2 = resultGet2.block();
     assertNull(state2);
@@ -1029,15 +1029,15 @@ public class DaprClientGrpcTest {
   public void getSecrets() {
     String expectedKey = "attributeKey";
     String expectedValue = "Expected secret value";
-    DaprProtos.GetSecretResponseEnvelope responseEnvelope = buildGetSecretResponseEnvelope(expectedKey, expectedValue);
-    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
+    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
     settableFuture.set(responseEnvelope);
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretEnvelope.class)))
+    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
       .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
         assertEquals("key", req.getKey());
         assertEquals(SECRET_STORE_NAME, req.getStoreName());
         assertEquals(0, req.getMetadataCount());
@@ -1052,15 +1052,15 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getSecretsEmptyResponse() {
-    DaprProtos.GetSecretResponseEnvelope responseEnvelope = buildGetSecretResponseEnvelope();
-    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse();
+    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
     settableFuture.set(responseEnvelope);
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretEnvelope.class)))
+    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
       .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
         assertEquals("key", req.getKey());
         assertEquals(SECRET_STORE_NAME, req.getStoreName());
         assertEquals(0, req.getMetadataCount());
@@ -1074,14 +1074,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getSecretsException() {
-    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(new RuntimeException());
+    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(new RuntimeException());
     addCallback(settableFuture, callback, directExecutor());
     settableFuture.setException(new RuntimeException());
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretEnvelope.class)))
+    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
       .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
         assertEquals("key", req.getKey());
         assertEquals(SECRET_STORE_NAME, req.getStoreName());
         assertEquals(0, req.getMetadataCount());
@@ -1097,15 +1097,15 @@ public class DaprClientGrpcTest {
   public void getSecretsWithMetadata() {
     String expectedKey = "attributeKey";
     String expectedValue = "Expected secret value";
-    DaprProtos.GetSecretResponseEnvelope responseEnvelope = buildGetSecretResponseEnvelope(expectedKey, expectedValue);
-    SettableFuture<DaprProtos.GetSecretResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponseEnvelope> callback = new MockCallback<>(responseEnvelope);
+    DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
+    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
     settableFuture.set(responseEnvelope);
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretEnvelope.class)))
+    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
       .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretEnvelope req = context.getArgument(0);
+        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
         assertEquals("key", req.getKey());
         assertEquals(SECRET_STORE_NAME, req.getStoreName());
         assertEquals("metavalue", req.getMetadataMap().get("metakey"));
@@ -1121,31 +1121,100 @@ public class DaprClientGrpcTest {
     assertEquals(expectedValue, result.get(expectedKey));
   }
 
-  private <T> SettableFuture<DaprProtos.GetStateResponseEnvelope> buildFutureGetStateEnvelop(T value, String etag) throws IOException {
-    DaprProtos.GetStateResponseEnvelope envelope = buildGetStateResponseEnvelope(value, etag);
-    SettableFuture<DaprProtos.GetStateResponseEnvelope> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponseEnvelope> callback = new MockCallback<>(envelope);
+  /* If this test is failing, it means that a new value was added to StateOptions.Consistency
+   * enum, without creating a mapping to one of the proto defined gRPC enums
+   */
+  @Test
+  public void stateOptionsConsistencyValuesHaveValidGrpcEnumMappings() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    settableFuture.set(Empty.newBuilder().build());
+    for (StateOptions.Consistency consistency : StateOptions.Consistency.values()) {
+      StateOptions options = buildStateOptions(consistency, StateOptions.Concurrency.FIRST_WRITE,
+              Duration.ofDays(100), null, StateOptions.RetryPolicy.Pattern.LINEAR);
+      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      result.block();
+    }
+
+    assertTrue(callback.wasCalled);
+  }
+
+  /* If this test is failing, it means that a new value was added to StateOptions.Concurrency
+   * enum, without creating a mapping to one of the proto defined gRPC enums
+   */
+  @Test
+  public void stateOptionsConcurrencyValuesHaveValidGrpcEnumMappings() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    settableFuture.set(Empty.newBuilder().build());
+    for (StateOptions.Concurrency concurrency : StateOptions.Concurrency.values()) {
+      StateOptions options = buildStateOptions(StateOptions.Consistency.EVENTUAL, concurrency,
+              Duration.ofDays(100), null, StateOptions.RetryPolicy.Pattern.LINEAR);
+      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      result.block();
+    }
+
+    assertTrue(callback.wasCalled);
+  }
+
+  /* If this test is failing, it means that a new value was added to StateOptions.RetryPolicy.Pattern
+   * enum, without creating a mapping to one of the proto defined gRPC enums
+   */
+  @Test
+  public void stateOptionsRetryPatternValuesHaveValidGrpcEnumMappings() {
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    settableFuture.set(Empty.newBuilder().build());
+    for (StateOptions.RetryPolicy.Pattern retryPattern : StateOptions.RetryPolicy.Pattern.values()) {
+      StateOptions options = buildStateOptions(StateOptions.Consistency.EVENTUAL,
+              StateOptions.Concurrency.FIRST_WRITE, Duration.ofDays(100), null, retryPattern);
+      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      result.block();
+    }
+
+    assertTrue(callback.wasCalled);
+  }
+
+  private <T> SettableFuture<DaprProtos.GetStateResponse> buildFutureGetStateEnvelop(T value, String etag) throws IOException {
+    DaprProtos.GetStateResponse envelope = buildGetStateResponse(value, etag);
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(envelope);
     addCallback(settableFuture, callback, directExecutor());
     settableFuture.set(envelope);
 
     return settableFuture;
   }
 
-  private <T> DaprProtos.GetStateResponseEnvelope buildGetStateResponseEnvelope(T value, String etag) throws IOException {
-    return DaprProtos.GetStateResponseEnvelope.newBuilder()
-        .setData(getAny(value))
+  private <T> DaprProtos.GetStateResponse buildGetStateResponse(T value, String etag) throws IOException {
+    return DaprProtos.GetStateResponse.newBuilder()
+        .setData(getBytes(value))
         .setEtag(etag)
         .build();
   }
 
-  private DaprProtos.GetSecretResponseEnvelope buildGetSecretResponseEnvelope(String key, String value) {
-    return DaprProtos.GetSecretResponseEnvelope.newBuilder()
+  private DaprProtos.GetSecretResponse buildGetSecretResponse(String key, String value) {
+    return DaprProtos.GetSecretResponse.newBuilder()
         .putAllData(Collections.singletonMap(key, value))
         .build();
   }
 
-  private DaprProtos.GetSecretResponseEnvelope buildGetSecretResponseEnvelope() {
-    return DaprProtos.GetSecretResponseEnvelope.newBuilder().build();
+  private DaprProtos.GetSecretResponse buildGetSecretResponse() {
+    return DaprProtos.GetSecretResponse.newBuilder().build();
   }
 
   private StateOptions buildStateOptions(StateOptions.Consistency consistency, StateOptions.Concurrency concurrency,
@@ -1166,6 +1235,11 @@ public class DaprClientGrpcTest {
   private <T> Any getAny(T value) throws IOException {
     byte[] byteValue = serializer.serialize(value);
     return Any.newBuilder().setValue(ByteString.copyFrom(byteValue)).build();
+  }
+
+  private <T> ByteString getBytes(T value) throws IOException {
+    byte[] byteValue = serializer.serialize(value);
+    return ByteString.copyFrom(byteValue);
   }
 
   private final class MockCallback<T> implements FutureCallback<T> {
@@ -1248,16 +1322,16 @@ public class DaprClientGrpcTest {
     }
   }
 
-  private static class GetStateEnvelopeKeyMatcher implements ArgumentMatcher<DaprProtos.GetStateEnvelope> {
+  private static class GetStateRequestKeyMatcher implements ArgumentMatcher<DaprProtos.GetStateRequest> {
 
     private final String propValue;
 
-    GetStateEnvelopeKeyMatcher(String propValue) {
+    GetStateRequestKeyMatcher(String propValue) {
       this.propValue = propValue;
     }
 
     @Override
-    public boolean matches(DaprProtos.GetStateEnvelope argument) {
+    public boolean matches(DaprProtos.GetStateRequest argument) {
       if (argument == null) {
         return false;
       }
