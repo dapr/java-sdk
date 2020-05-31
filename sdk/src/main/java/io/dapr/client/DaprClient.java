@@ -5,9 +5,12 @@
 
 package io.dapr.client;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.protobuf.ByteString;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
+import io.dapr.v1.DaprProtos;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -127,23 +130,50 @@ public interface DaprClient {
   Mono<byte[]> invokeService(Verb verb, String appId, String method, byte[] request, Map<String, String> metadata);
 
   /**
-   * Invokes a Binding.
+   * Invokes a Binding operation.
    *
-   * @param name    The name of the biding to call.
-   * @param request The request needed for the binding, use byte[] to skip serialization.
-   * @return a Mono plan of type Void.
+   * @param name      The name of the biding to call.
+   * @param operation The operation to be performed by the binding request processor.
+   * @param data      The data to be processed, use byte[] to skip serialization.
+   * @return an empty Mono.
    */
-  Mono<Void> invokeBinding(String name, Object request);
+  Mono<Void> invokeBinding(String name, String operation, Object data);
 
   /**
-   * Invokes a Binding with metadata.
+   * Invokes a Binding operation, skipping serialization.
    *
-   * @param name     The name of the biding to call.
-   * @param request  The request needed for the binding, use byte[] to skip serialization.
-   * @param metadata The metadata map.
-   * @return a Mono plan of type Void.
+   * @param name      The name of the biding to call.
+   * @param operation The operation to be performed by the binding request processor.
+   * @param data      The data to be processed, skipping serialization.
+   * @param metadata  The metadata map.
+   * @return a Mono plan of type byte[].
    */
-  Mono<Void> invokeBinding(String name, Object request, Map<String, String> metadata);
+  Mono<byte[]> invokeBinding(String name, String operation, byte[] data, Map<String, String> metadata);
+
+  /**
+   * Invokes a Binding operation.
+   *
+   * @param name      The name of the biding to call.
+   * @param operation The operation to be performed by the binding request processor.
+   * @param data      The data to be processed, use byte[] to skip serialization.
+   * @param clazz     The type being returned.
+   * @param <T>       The type of the return
+   * @return a Mono plan of type T.
+   */
+  <T> Mono<T> invokeBinding(String name, String operation, Object data, Class<T> clazz);
+
+  /**
+   * Invokes a Binding operation.
+   *
+   * @param name      The name of the biding to call.
+   * @param operation The operation to be performed by the binding request processor.
+   * @param data      The data to be processed, use byte[] to skip serialization.
+   * @param metadata  The metadata map.
+   * @param clazz     The type being returned.
+   * @param <T>       The type of the return
+   * @return a Mono plan of type T.
+   */
+  <T> Mono<T> invokeBinding(String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz);
 
   /**
    * Retrieve a State based on their key.

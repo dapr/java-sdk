@@ -28,6 +28,8 @@ public class OutputBindingExample {
 
   static final String BINDING_NAME = "sample123";
 
+  static final String BINDING_OPERATION = "create";
+
   /**
    * The main method of this app.
    *
@@ -49,10 +51,10 @@ public class OutputBindingExample {
         myClass.message = message;
 
         System.out.println("sending a class with message: " + myClass.message);
-        client.invokeBinding(BINDING_NAME, myClass).block();
+        client.invokeBinding(BINDING_NAME, BINDING_OPERATION, myClass).block();
       } else {
         System.out.println("sending a plain string: " + message);
-        client.invokeBinding(BINDING_NAME, message).block();
+        client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message).block();
       }
 
       try {

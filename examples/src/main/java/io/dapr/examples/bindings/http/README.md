@@ -40,8 +40,8 @@ mvn install
 
 Before getting into the application code, follow these steps in order to setup a local instance of Kafka. This is needed for the local instances. Steps are:
 
-1. navigate to the [repo-root]/examples/src/main/java/io/dapr/examples/bindings/http
-2. Run `docker-compose -f ./docker-compose-single-kafka.yml up -d` to run the container locally
+1. Navigate to the root directory for the git repository.
+2. Run `docker-compose -f ./examples/src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d` to run the container locally
 3. Run `docker ps` to see the container running locally: 
 
 ```bash
@@ -100,18 +100,21 @@ In the `OutputBindingExample.java` file, you will find the `OutputBindingExample
 ```java
 public class OutputBindingExample {
 ///...
-  public static void main(String[] args) throws Exception {
+  static final String BINDING_NAME = "sample123";
+
+  static final String BINDING_OPERATION = "create";
+///...
+  public static void main(String[] args) {
     DaprClient client = new DaprClientBuilder().build();
-    final String BINDING_NAME = "bindingSample";
     ///...
     MyClass myClass = new MyClass();
     myClass.message = message;
 
     System.out.println("sending an object instance with message: " + myClass.message);
-    client.invokeBinding(BINDING_NAME, myClass); //Binding a data object
+    client.invokeBinding(BINDING_NAME, BINDING_OPERATION, myClass); //Binding a data object
     ///...
     System.out.println("sending a plain string: " + m);
-    client.invokeBinding(BINDING_NAME, message); //Binding a plain string text
+    client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message); //Binding a plain string text
     }
 ///...
 }

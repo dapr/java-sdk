@@ -16,8 +16,13 @@ import reactor.core.publisher.Mono;
 @RestController
 public class InputBindingController {
 
+  /**
+   * Handles input binding from Dapr.
+   * @param body Content from Dapr's sidecar.
+   * @return Empty Mono.
+   */
   @PostMapping(path = "/sample123")
-  public Mono<Void> handleInputBinding(@RequestBody(required = false) byte[] body) {
+  public Mono<String> handleInputBinding(@RequestBody(required = false) byte[] body) {
     return Mono.fromRunnable(() ->
             System.out.println("Received message through binding: " + (body == null ? "" : new String(body))));
   }
