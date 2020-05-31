@@ -24,20 +24,20 @@ public interface DaprClient {
    * Publish an event.
    *
    * @param topic the topic where the event will be published.
-   * @param event the event to be published, use byte[] for skipping serialization.
+   * @param data the event's data to be published, use byte[] for skipping serialization.
    * @return a Mono plan of type Void.
    */
-  Mono<Void> publishEvent(String topic, Object event);
+  Mono<Void> publishEvent(String topic, Object data);
 
   /**
    * Publish an event.
    *
    * @param topic    the topic where the event will be published.
-   * @param event    the event to be published, use byte[] for skipping serialization.
+   * @param data    the event's data to be published, use byte[] for skipping serialization.
    * @param metadata The metadata for the published event.
    * @return a Mono plan of type Void.
    */
-  Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata);
+  Mono<Void> publishEvent(String topic, Object data, Map<String, String> metadata);
 
   /**
    * Invoke a service with all possible parameters, using serialization.

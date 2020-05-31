@@ -105,19 +105,19 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object event) {
-    return this.publishEvent(topic, event, null);
+  public Mono<Void> publishEvent(String topic, Object data) {
+    return this.publishEvent(topic, data, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata) {
+  public Mono<Void> publishEvent(String topic, Object data, Map<String, String> metadata) {
     try {
       // TODO: handle metadata.
       DaprProtos.PublishEventRequest envelope = DaprProtos.PublishEventRequest.newBuilder()
-          .setTopic(topic).setData(ByteString.copyFrom(objectSerializer.serialize(event))).build();
+          .setTopic(topic).setData(ByteString.copyFrom(objectSerializer.serialize(data))).build();
 
       return Mono.fromCallable(() -> {
         ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);

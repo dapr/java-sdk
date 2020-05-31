@@ -95,21 +95,21 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object event) {
-    return this.publishEvent(topic, event, null);
+  public Mono<Void> publishEvent(String topic, Object data) {
+    return this.publishEvent(topic, data, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata) {
+  public Mono<Void> publishEvent(String topic, Object data, Map<String, String> metadata) {
     try {
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
 
-      byte[] serializedEvent = objectSerializer.serialize(event);
+      byte[] serializedEvent = objectSerializer.serialize(data);
       StringBuilder url = new StringBuilder(Constants.PUBLISH_PATH).append("/").append(topic);
       return this.client.invokeApi(
           DaprHttp.HttpMethods.POST.name(), url.toString(), null, serializedEvent, metadata).then();
