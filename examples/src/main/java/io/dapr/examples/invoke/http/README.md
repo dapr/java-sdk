@@ -1,6 +1,6 @@
 # Method invocation Sample
 
-In this sample, we'll create a two java applications: An demo service application which exposes a method and a client application which will invoke the method from demo service using Dapr.
+In this sample, we'll create two java applications: a service application which exposes a method and a client application which will invoke the method from the service using Dapr.
 This sample includes:
 
 * DemoService (Exposes the method to be remotely accessed)
