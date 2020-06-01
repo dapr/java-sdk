@@ -105,19 +105,19 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object event) {
-    return this.publishEvent(topic, event, null);
+  public Mono<Void> publishEvent(String topic, Object data) {
+    return this.publishEvent(topic, data, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object event, Map<String, String> metadata) {
+  public Mono<Void> publishEvent(String topic, Object data, Map<String, String> metadata) {
     try {
       // TODO: handle metadata.
       DaprProtos.PublishEventRequest envelope = DaprProtos.PublishEventRequest.newBuilder()
-          .setTopic(topic).setData(ByteString.copyFrom(objectSerializer.serialize(event))).build();
+          .setTopic(topic).setData(ByteString.copyFrom(objectSerializer.serialize(data))).build();
 
       return Mono.fromCallable(() -> {
         ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
@@ -209,30 +209,54 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeBinding(String name, Object request) {
-    return this.invokeBinding(name, request, null);
+  public Mono<Void> invokeBinding(String name, String operation, Object data) {
+    return this.invokeBinding(name, operation, data, null, byte[].class).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeBinding(String name, Object request, Map<String, String> metadata) {
+  public Mono<byte[]> invokeBinding(String name, String operation, byte[] data, Map<String, String> metadata) {
+    return this.invokeBinding(name, operation, data, metadata, byte[].class);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeBinding(String name, String operation, Object data, Class<T> clazz) {
+    return this.invokeBinding(name, operation, data, null, clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeBinding(
+      String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
     try {
-      byte[] byteRequest = objectSerializer.serialize(request);
+      if (name == null || name.trim().isEmpty()) {
+        throw new IllegalArgumentException("Binding name cannot be null or empty.");
+      }
+
+      if (operation == null || operation.trim().isEmpty()) {
+        throw new IllegalArgumentException("Binding operation cannot be null or empty.");
+      }
+
+      byte[] byteData = objectSerializer.serialize(data);
       DaprProtos.InvokeBindingRequest.Builder builder = DaprProtos.InvokeBindingRequest.newBuilder()
-          .setName(name);
-      if (byteRequest != null) {
-        builder.setData(ByteString.copyFrom(byteRequest));
+          .setName(name).setOperation(operation);
+      if (byteData != null) {
+        builder.setData(ByteString.copyFrom(byteData));
       }
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
       return Mono.fromCallable(() -> {
-        ListenableFuture<Empty> futureEmpty = client.invokeBinding(envelope);
-        futureEmpty.get();
-        return null;
+        ListenableFuture<DaprProtos.InvokeBindingResponse> futureResponse = client.invokeBinding(envelope);
+        return objectSerializer.deserialize(futureResponse.get().getData().toByteArray(), clazz);
       });
     } catch (Exception ex) {
       return Mono.error(ex);

@@ -218,11 +218,23 @@ public class DaprClientHttpTest {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond(EXPECTED_RESULT);
+      .respond("");
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "");
+    Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "");
     assertNull(mono.block());
+  }
+
+  @Test
+  public void invokeBindingResponseObject() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond("\"OK\"");
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
+    assertEquals("OK", mono.block());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -233,7 +245,19 @@ public class DaprClientHttpTest {
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.invokeBinding(null, "");
+    Mono<Void> mono = daprClientHttp.invokeBinding(null, "myoperation", "");
+    assertNull(mono.block());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void invokeBindingNullOpName() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond(EXPECTED_RESULT);
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", null, "");
     assertNull(mono.block());
   }
 
@@ -245,7 +269,7 @@ public class DaprClientHttpTest {
         .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    daprClientHttp.invokeBinding(null, "");
+    daprClientHttp.invokeBinding(null, "", "");
     // No exception is thrown because did not call block() on mono above.
   }
 
