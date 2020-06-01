@@ -37,7 +37,7 @@ public class SubscriberController {
         // Dapr's event is compliant to CloudEvent.
         CloudEvent envelope = CloudEvent.deserialize(body);
 
-        String message = envelope.getData() == null ? "" : new String(envelope.getData());
+        String message = envelope.getData() == null ? "" : envelope.getData();
         System.out.println("Subscriber got message: " + message);
       } catch (Exception e) {
         throw new RuntimeException(e);

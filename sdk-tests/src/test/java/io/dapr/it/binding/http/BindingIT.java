@@ -34,6 +34,10 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class BindingIT extends BaseIT {
 
+  private static final String BINDING_NAME = "sample123";
+
+  private static final String BINDING_OPERATION = "create";
+
   public static class MyClass {
     public MyClass() {
     }
@@ -75,21 +79,21 @@ public class BindingIT extends BaseIT {
 
     DaprClient client = new DaprClientBuilder().build();
 
-    final String BINDING_NAME = "sample123";
-
     // This is an example of sending data in a user-defined object.  The input binding will receive:
     //   {"message":"hello"}
     MyClass myClass = new MyClass();
     myClass.message = "hello";
 
     System.out.println("sending first message");
-    client.invokeBinding(BINDING_NAME, myClass, Collections.singletonMap("MyMetadata", "MyValue")).block();
+    client.invokeBinding(
+      BINDING_NAME, BINDING_OPERATION, myClass, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
 
     // This is an example of sending a plain string.  The input binding will receive
     //   cat
     final String m = "cat";
     System.out.println("sending " + m);
-    client.invokeBinding(BINDING_NAME, m, Collections.singletonMap("MyMetadata", "MyValue")).block();
+    client.invokeBinding(
+      BINDING_NAME, BINDING_OPERATION, m, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
 
     // Metadata is not used by Kafka component, so it is not possible to validate.
     callWithRetry(() -> {

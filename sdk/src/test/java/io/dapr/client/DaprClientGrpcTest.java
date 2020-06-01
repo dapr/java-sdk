@@ -19,6 +19,7 @@ import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import java.util.Collections;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
@@ -120,48 +121,68 @@ public class DaprClientGrpcTest {
   public void invokeBindingExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
-    Mono<Void> result = adapter.invokeBinding("BindingName", "request");
+    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
     result.block();
   }
 
   @Test(expected = RuntimeException.class)
   public void invokeBindingCallbackExceptionThrownTest() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<Empty> callback =
-        new MockCallback<Empty>(ex);
+    MockCallback<DaprProtos.InvokeBindingResponse> callback =
+        new MockCallback<>(ex);
     addCallback(settableFuture, callback, directExecutor());
     settableFuture.setException(ex);
     when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeBinding("BindingName", "request");
+    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
     result.block();
   }
 
   @Test
-  public void invokeBindingTest() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
+  public void invokeBindingTest() throws IOException {
+    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+      DaprProtos.InvokeBindingResponse.newBuilder().setData(getBytes("OK"));
+    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeBinding("BindingName", "request");
-    settableFuture.set(Empty.newBuilder().build());
+    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
+    settableFuture.set(responseBuilder.build());
     result.block();
     assertTrue(callback.wasCalled);
   }
 
   @Test
-  public void invokeBindingObjectTest() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<Empty>(Empty.newBuilder().build());
+  public void invokeBindingObjectTest() throws IOException {
+    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+      DaprProtos.InvokeBindingResponse.newBuilder().setData(getBytes("OK"));
+    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenReturn(settableFuture);
+      .thenReturn(settableFuture);
     MyObject event = new MyObject(1, "Event");
-    Mono<Void> result = adapter.invokeBinding("BindingName", event);
-    settableFuture.set(Empty.newBuilder().build());
+    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", event);
+    settableFuture.set(responseBuilder.build());
     result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void invokeBindingResponseObjectTest() throws IOException {
+    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+      DaprProtos.InvokeBindingResponse.newBuilder().setData(getBytes("OK"));
+    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
+      .thenReturn(settableFuture);
+    MyObject event = new MyObject(1, "Event");
+    Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, null, String.class);
+    settableFuture.set(responseBuilder.build());
+    assertEquals("OK", result.block());
     assertTrue(callback.wasCalled);
   }
 
@@ -176,7 +197,7 @@ public class DaprClientGrpcTest {
           return settableFuture;
         });
     MyObject event = new MyObject(1, "Event");
-    adapter.invokeBinding("BindingName", event);
+    adapter.invokeBinding("BindingName", "MyOperation", event);
     // Do not call block() on mono above, so nothing should happen.
     assertFalse(callback.wasCalled);
   }
@@ -1232,12 +1253,11 @@ public class DaprClientGrpcTest {
     return options;
   }
 
-  private <T> Any getAny(T value) throws IOException {
-    byte[] byteValue = serializer.serialize(value);
-    return Any.newBuilder().setValue(ByteString.copyFrom(byteValue)).build();
+  private Any getAny(Object value) throws IOException {
+    return Any.newBuilder().setValue(getBytes(value)).build();
   }
 
-  private <T> ByteString getBytes(T value) throws IOException {
+  private ByteString getBytes(Object value) throws IOException {
     byte[] byteValue = serializer.serialize(value);
     return ByteString.copyFrom(byteValue);
   }
