@@ -14,7 +14,7 @@ import static io.dapr.it.Retry.callWithRetry;
 
 public class DaprRun {
 
-  private static final String DAPR_RUN = "dapr run --app-id %s ";
+  private static final String DAPR_RUN = "dapr run --app-id %s --components-path ./components";
 
   // the arg in -Dexec.args is the app's port
   private static final String DAPR_COMMAND =
