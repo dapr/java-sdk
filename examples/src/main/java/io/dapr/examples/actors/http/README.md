@@ -54,7 +54,7 @@ public class DemoActorService {
 This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
  
 
-`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](../../springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
+`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](https://github.com/dapr/java-sdk/blob/master/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
 
 See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of an actor:
 ```java
@@ -200,7 +200,7 @@ After invoking `incrementAndGet`, the code invokes `say` method (you'll see thes
 On the other hand, the console for `DemoActorService` is also responding to the remote invocations:
 ![actordemo2](../../../../../../resources/img/demo-actor-service.png)
 
-For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../springboot/DaprApplication.java) Application implementation.
+For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java) Application implementation.
 
 ### Limitations
 
