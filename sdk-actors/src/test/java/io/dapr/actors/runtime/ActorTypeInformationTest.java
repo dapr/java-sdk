@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorType;
+import io.dapr.utils.TypeRef;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -64,7 +65,7 @@ public class ActorTypeInformationTest {
       }
 
       @Override
-      public Class getStateType() {
+      public TypeRef getStateType() {
         return null;
       }
 

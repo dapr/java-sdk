@@ -7,10 +7,13 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 /**
  * Serializes and deserializes an internal object.
@@ -59,18 +62,35 @@ public class ObjectSerializer {
    * Deserializes the byte array into the original object.
    *
    * @param content Content to be parsed.
+   * @param type    Type of the object being deserialized.
+   * @param <T>     Generic type of the object being deserialized.
+   * @return Object of type T.
+   * @throws IOException In case content cannot be deserialized.
+   */
+  public <T> T deserialize(byte[] content, TypeRef<T> type) throws IOException {
+    return deserialize(content, OBJECT_MAPPER.constructType(type.getType()));
+  }
+
+  /**
+   * Deserializes the byte array into the original object.
+   *
+   * @param content Content to be parsed.
    * @param clazz   Type of the object being deserialized.
    * @param <T>     Generic type of the object being deserialized.
    * @return Object of type T.
    * @throws IOException In case content cannot be deserialized.
    */
   public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
-    if ((clazz == null) || (clazz == Void.class)) {
+    return deserialize(content, OBJECT_MAPPER.constructType(clazz));
+  }
+
+  private <T> T deserialize(byte[] content, JavaType javaType) throws IOException {
+    if ((javaType == null) || javaType.isTypeOrSubTypeOf(Void.class)) {
       return null;
     }
 
-    if (clazz.isPrimitive()) {
-      return deserializePrimitives(content, clazz);
+    if (javaType.isPrimitive()) {
+      return deserializePrimitives(content, javaType);
     }
 
     if (content == null) {
@@ -78,7 +98,7 @@ public class ObjectSerializer {
     }
 
     // Deserialization of GRPC response fails without this check since it does not come as base64 encoded byte[].
-    if (clazz == byte[].class) {
+    if (javaType.hasRawClass(byte[].class)) {
       return (T) content;
     }
 
@@ -86,59 +106,59 @@ public class ObjectSerializer {
       return (T) null;
     }
 
-    if (clazz == CloudEvent.class) {
+    if (javaType.hasRawClass(CloudEvent.class)) {
       return (T) CloudEvent.deserialize(content);
     }
 
-    return OBJECT_MAPPER.readValue(content, clazz);
+    return OBJECT_MAPPER.readValue(content, javaType);
   }
 
   /**
    * Parses a given String to the corresponding object defined by class.
    *
-   * @param content Value to be parsed.
-   * @param clazz   Class of the expected result type.
-   * @param <T>     Result type.
+   * @param content  Value to be parsed.
+   * @param javaType Type of the expected result type.
+   * @param <T>      Result type.
    * @return Result as corresponding type.
    * @throws Exception if cannot deserialize primitive time.
    */
-  private static <T> T deserializePrimitives(byte[] content, Class<T> clazz) throws IOException {
+  private static <T> T deserializePrimitives(byte[] content, JavaType javaType) throws IOException {
     if ((content == null) || (content.length == 0)) {
-      if (boolean.class == clazz) {
+      if (javaType.hasRawClass(boolean.class)) {
         return (T) Boolean.FALSE;
       }
 
-      if (byte.class == clazz) {
+      if (javaType.hasRawClass(byte.class)) {
         return (T) Byte.valueOf((byte) 0);
       }
 
-      if (short.class == clazz) {
+      if (javaType.hasRawClass(short.class)) {
         return (T) Short.valueOf((short) 0);
       }
 
-      if (int.class == clazz) {
+      if (javaType.hasRawClass(int.class)) {
         return (T) Integer.valueOf(0);
       }
 
-      if (long.class == clazz) {
+      if (javaType.hasRawClass(long.class)) {
         return (T) Long.valueOf(0L);
       }
 
-      if (float.class == clazz) {
+      if (javaType.hasRawClass(float.class)) {
         return (T) Float.valueOf(0);
       }
 
-      if (double.class == clazz) {
+      if (javaType.hasRawClass(double.class)) {
         return (T) Double.valueOf(0);
       }
 
-      if (char.class == clazz) {
+      if (javaType.hasRawClass(char.class)) {
         return (T) Character.valueOf(Character.MIN_VALUE);
       }
 
       return null;
     }
 
-    return OBJECT_MAPPER.readValue(content, clazz);
+    return OBJECT_MAPPER.readValue(content, javaType);
   }
 }

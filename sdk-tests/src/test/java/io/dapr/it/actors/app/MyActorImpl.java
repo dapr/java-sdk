@@ -11,6 +11,7 @@ import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
 import io.dapr.actors.runtime.Remindable;
 import io.dapr.it.actors.MethodEntryTracker;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.text.DateFormat;
@@ -146,8 +147,8 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
   }
 
   @Override
-  public Class<String> getStateType() {
-    return String.class;
+  public TypeRef<String> getStateType() {
+    return TypeRef.STRING;
   }
 
 

@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -253,7 +254,7 @@ class ActorManager<T extends AbstractActor> {
         if (method.getParameterCount() == 1) {
           // Actor methods must have a one or no parameter, which is guaranteed at this point.
           Class<?> inputClass = method.getParameterTypes()[0];
-          input = this.runtimeContext.getObjectSerializer().deserialize(request, inputClass);
+          input = this.runtimeContext.getObjectSerializer().deserialize(request, TypeRef.get(inputClass));
         }
 
         if (method.getReturnType().equals(Mono.class)) {

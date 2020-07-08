@@ -5,6 +5,8 @@
 
 package io.dapr.serializer;
 
+import io.dapr.utils.TypeRef;
+
 import java.io.IOException;
 
 /**
@@ -13,7 +15,7 @@ import java.io.IOException;
 public interface DaprObjectSerializer {
 
   /**
-   * Serializes the given object as a String to be saved.
+   * Serializes the given object as byte[].
    *
    * @param o Object to be serialized.
    * @return Serialized object.
@@ -22,13 +24,13 @@ public interface DaprObjectSerializer {
   byte[] serialize(Object o) throws IOException;
 
   /**
-   * Deserializes the given String into a object.
+   * Deserializes the given byte[] into a object.
    *
    * @param data Data to be deserialized.
-   * @param clazz Class of object to be deserialized.
+   * @param type Type of object to be deserialized.
    * @param <T> Type of object to be deserialized.
    * @return Deserialized object.
    * @throws IOException If cannot deserialize object.
    */
-  <T> T deserialize(byte[] data, Class<T> clazz) throws IOException;
+  <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException;
 }

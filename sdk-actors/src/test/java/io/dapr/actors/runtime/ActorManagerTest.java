@@ -11,6 +11,8 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.dapr.utils.TypeRef;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
@@ -96,8 +98,8 @@ public class ActorManagerTest {
     }
 
     @Override
-    public Class<String> getStateType() {
-      return String.class;
+    public TypeRef<String> getStateType() {
+      return TypeRef.STRING;
     }
 
     @Override
@@ -124,8 +126,8 @@ public class ActorManagerTest {
     this.manager.activateActor(actorId).block();
     byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
     Assert.assertEquals(executeSayMethod(
-      this.context.getObjectSerializer().deserialize(message, String.class)),
-      this.context.getObjectSerializer().deserialize(response, String.class));
+      this.context.getObjectSerializer().deserialize(message, TypeRef.STRING)),
+      this.context.getObjectSerializer().deserialize(response, TypeRef.STRING));
   }
 
   @Test
@@ -192,8 +194,8 @@ public class ActorManagerTest {
     this.manager.activateActor(actorId).block();
     byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
     Assert.assertEquals(executeSayMethod(
-      this.context.getObjectSerializer().deserialize(message, String.class)),
-      this.context.getObjectSerializer().deserialize(response, String.class));
+      this.context.getObjectSerializer().deserialize(message, TypeRef.STRING)),
+      this.context.getObjectSerializer().deserialize(response, TypeRef.STRING));
 
     this.manager.deactivateActor(actorId).block();
     this.manager.invokeMethod(actorId, "say", message).block();

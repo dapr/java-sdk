@@ -8,6 +8,7 @@ package io.dapr.actors.client;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorMethod;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -72,10 +73,28 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
+  public <T> Mono<T> invokeActorMethod(String methodName, Object data, TypeRef<T> type) {
     return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.serialize(data))
           .filter(s -> s.length > 0)
-          .map(s -> deserialize(s, clazz));
+          .map(s -> deserialize(s, type));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
+    return this.invokeActorMethod(methodName, data, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeActorMethod(String methodName, TypeRef<T> type) {
+    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
+          .filter(s -> s.length > 0)
+          .map(s -> deserialize(s, type));
   }
 
   /**
@@ -83,9 +102,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
-          .filter(s -> s.length > 0)
-          .map(s -> deserialize(s, clazz));
+    return this.invokeActorMethod(methodName, TypeRef.get(clazz));
   }
 
   /**
@@ -147,14 +164,14 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * Extracts the response object from the Actor's method result.
    *
    * @param response response returned by API.
-   * @param clazz    Expected response class.
+   * @param type     Expected response type.
    * @param <T>      Expected response type.
    * @return Response object or null.
    * @throws RuntimeException In case it cannot generate Object.
    */
-  private <T> T deserialize(final byte[] response, Class<T> clazz) {
+  private <T> T deserialize(final byte[] response, TypeRef<T> type) {
     try {
-      return this.serializer.deserialize(response, clazz);
+      return this.serializer.deserialize(response, type);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

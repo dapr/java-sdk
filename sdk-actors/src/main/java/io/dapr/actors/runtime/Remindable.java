@@ -5,6 +5,7 @@
 
 package io.dapr.actors.runtime;
 
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -15,11 +16,11 @@ import java.time.Duration;
 public interface Remindable<T> {
 
   /**
-   * Gets the class for state object.
+   * Gets the type for state object.
    *
    * @return Class for state object.
    */
-  Class<T> getStateType();
+  TypeRef<T> getStateType();
 
   /**
    * The reminder call back invoked when an actor reminder is triggered.

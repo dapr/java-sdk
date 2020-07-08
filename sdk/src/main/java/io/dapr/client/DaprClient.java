@@ -5,12 +5,10 @@
 
 package io.dapr.client;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.protobuf.ByteString;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
-import io.dapr.v1.DaprProtos;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -45,14 +43,29 @@ public interface DaprClient {
   /**
    * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
-   * @param request The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
+   * @param appId    The Application ID where the service is.
+   * @param method   The actual Method to be call in the application.
+   * @param request  The request to be sent to invoke the service, use byte[] to skip serialization.
    * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @param clazz   the Type needed as return for the call.
-   * @param <T>     the Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type clazz.
+   * @param type     The Type needed as return for the call.
+   * @param <T>      The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type .
+   */
+  <T> Mono<T> invokeService(
+      Verb verb, String appId, String method, Object request, Map<String, String> metadata, TypeRef<T> type);
+
+  /**
+   * Invoke a service with all possible parameters, using serialization.
+   *
+   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
+   * @param appId    The Application ID where the service is.
+   * @param method   The actual Method to be call in the application.
+   * @param request  The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
+   * @param clazz    The type needed as return for the call.
+   * @param <T>      The type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type .
    */
   <T> Mono<T> invokeService(
       Verb verb, String appId, String method, Object request, Map<String, String> metadata, Class<T> clazz);
@@ -64,22 +77,48 @@ public interface DaprClient {
    * @param appId   The Application ID where the service is.
    * @param method  The actual Method to be call in the application.
    * @param request The request to be sent to invoke the service, use byte[] to skip serialization.
-   * @param clazz   the Type needed as return for the call.
-   * @param <T>     the Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type clazz.
+   * @param type    The type needed as return for the call.
+   * @param <T>     The type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type .
+   */
+  <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, TypeRef<T> type);
+
+  /**
+   * Invoke a service without metadata, using serialization.
+   *
+   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
+   * @param appId   The Application ID where the service is.
+   * @param method  The actual Method to be call in the application.
+   * @param request The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param clazz   The type needed as return for the call.
+   * @param <T>     The type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type .
    */
   <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, Class<T> clazz);
 
   /**
    * Invoke a service without input, using serialization for response.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
+   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
+   * @param appId    The Application ID where the service is.
+   * @param method   The actual Method to be call in the application.
    * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @param clazz   the Type needed as return for the call.
-   * @param <T>     the Type of the return, use byte[] to skip serialization.
-   * @return A Mono plan of type clazz.
+   * @param type     The type needed as return for the call.
+   * @param <T>      The type of the return, use byte[] to skip serialization.
+   * @return A Mono plan of type type .
+   */
+  <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, TypeRef<T> type);
+
+  /**
+   * Invoke a service without input, using serialization for response.
+   *
+   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
+   * @param appId    The Application ID where the service is.
+   * @param method   The actual Method to be call in the application.
+   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
+   * @param clazz    The type needed as return for the call.
+   * @param <T>      The type of the return, use byte[] to skip serialization.
+   * @return A Mono plan of type type .
    */
   <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz);
 
@@ -156,11 +195,36 @@ public interface DaprClient {
    * @param name      The name of the biding to call.
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, use byte[] to skip serialization.
+   * @param type      The type being returned.
+   * @param <T>       The type of the return
+   * @return a Mono plan of type T.
+   */
+  <T> Mono<T> invokeBinding(String name, String operation, Object data, TypeRef<T> type);
+
+  /**
+   * Invokes a Binding operation.
+   *
+   * @param name      The name of the biding to call.
+   * @param operation The operation to be performed by the binding request processor.
+   * @param data      The data to be processed, use byte[] to skip serialization.
    * @param clazz     The type being returned.
    * @param <T>       The type of the return
    * @return a Mono plan of type T.
    */
   <T> Mono<T> invokeBinding(String name, String operation, Object data, Class<T> clazz);
+
+  /**
+   * Invokes a Binding operation.
+   *
+   * @param name      The name of the biding to call.
+   * @param operation The operation to be performed by the binding request processor.
+   * @param data      The data to be processed, use byte[] to skip serialization.
+   * @param metadata  The metadata map.
+   * @param type      The type being returned.
+   * @param <T>       The type of the return
+   * @return a Mono plan of type T.
+   */
+  <T> Mono<T> invokeBinding(String name, String operation, Object data, Map<String, String> metadata, TypeRef<T> type);
 
   /**
    * Invokes a Binding operation.
@@ -180,8 +244,19 @@ public interface DaprClient {
    *
    * @param stateStoreName The name of the state store.
    * @param state          State to be re-retrieved.
-   * @param clazz          The Type of State needed as return.
-   * @param <T>            The Type of the return.
+   * @param type           The type of State needed as return.
+   * @param <T>            The type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<State<T>> getState(String stateStoreName, State<T> state, TypeRef<T> type);
+
+  /**
+   * Retrieve a State based on their key.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param state          State to be re-retrieved.
+   * @param clazz          The type of State needed as return.
+   * @param <T>            The type of the return.
    * @return A Mono Plan for the requested State.
    */
   <T> Mono<State<T>> getState(String stateStoreName, State<T> state, Class<T> clazz);
@@ -191,8 +266,19 @@ public interface DaprClient {
    *
    * @param stateStoreName The name of the state store.
    * @param key            The key of the State to be retrieved.
-   * @param clazz          The Type of State needed as return.
-   * @param <T>            The Type of the return.
+   * @param type           The type of State needed as return.
+   * @param <T>            The type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<State<T>> getState(String stateStoreName, String key, TypeRef<T> type);
+
+  /**
+   * Retrieve a State based on their key.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param key            The key of the State to be retrieved.
+   * @param clazz          The type of State needed as return.
+   * @param <T>            The type of the return.
    * @return A Mono Plan for the requested State.
    */
   <T> Mono<State<T>> getState(String stateStoreName, String key, Class<T> clazz);
@@ -204,8 +290,21 @@ public interface DaprClient {
    * @param key            The key of the State to be retrieved.
    * @param etag           Optional etag for conditional get
    * @param options        Optional settings for retrieve operation.
-   * @param clazz          The Type of State needed as return.
+   * @param type           The Type of State needed as return.
    * @param <T>            The Type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<State<T>> getState(String stateStoreName, String key, String etag, StateOptions options, TypeRef<T> type);
+
+  /**
+   * Retrieve a State based on their key.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param key            The key of the State to be retrieved.
+   * @param etag           Optional etag for conditional get
+   * @param options        Optional settings for retrieve operation.
+   * @param clazz          The type of State needed as return.
+   * @param <T>            The type of the return.
    * @return A Mono Plan for the requested State.
    */
   <T> Mono<State<T>> getState(String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz);

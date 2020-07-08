@@ -7,6 +7,7 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -28,7 +29,7 @@ public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
   }
 
   @Override
-  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
+  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
     return Mono.fromSupplier(() -> {
       try {
         String stateId = this.buildId(actorType, actorId, stateName);
@@ -36,7 +37,7 @@ public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
           throw new IllegalStateException("State not found.");
         }
 
-        return this.serializer.deserialize(this.stateStore.get(stateId), clazz);
+        return this.serializer.deserialize(this.stateStore.get(stateId), type);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

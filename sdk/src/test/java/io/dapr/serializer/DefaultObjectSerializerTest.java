@@ -5,15 +5,22 @@
 
 package io.dapr.serializer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.utils.TypeRef;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.ref.Reference;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
@@ -389,10 +396,33 @@ public class DefaultObjectSerializerTest {
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
     MyObjectTestToSerialize result;
-    
+
     try {
-      result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+      result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), TypeRef.get(MyObjectTestToSerialize.class));
       assertEquals("The expected value is different than the actual result", expectedResult, result);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void deserializeArrayObjectTest() {
+    String jsonToDeserialize = "[{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}]";
+    MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
+    expectedResult.setStringValue("A String");
+    expectedResult.setIntValue(2147483647);
+    expectedResult.setBoolValue(true);
+    expectedResult.setCharValue('a');
+    expectedResult.setByteValue((byte) 65);
+    expectedResult.setShortValue((short) 32767);
+    expectedResult.setLongValue(9223372036854775807L);
+    expectedResult.setFloatValue(1.0f);
+    expectedResult.setDoubleValue(1000.0);
+    List<MyObjectTestToSerialize> result;
+
+    try {
+      result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), new TypeRef<List<MyObjectTestToSerialize>>(){});
+      assertEquals("The expected value is different than the actual result", expectedResult, result.get(0));
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -414,12 +444,10 @@ public class DefaultObjectSerializerTest {
   public void deserializeNullObjectOrPrimitiveTest() {
     
     try {
-      MyObjectTestToSerialize expectedObj = null;
       MyObjectTestToSerialize objResult = SERIALIZER.deserialize(null, MyObjectTestToSerialize.class);
-      assertEquals(expectedObj, objResult);
-      boolean expectedBoolResutl = false;
+      assertNull(objResult);
       boolean boolResult = SERIALIZER.deserialize(null, boolean.class);
-      assertEquals(expectedBoolResutl, boolResult);
+      assertEquals(false, boolResult);
       byte expectedByteResult = Byte.valueOf((byte) 0);
       byte byteResult = SERIALIZER.deserialize(null, byte.class);
       assertEquals(expectedByteResult, byteResult);
@@ -783,6 +811,17 @@ public class DefaultObjectSerializerTest {
       deserializeData.apply("{\"id\": \"123:\", \"name\": \"Jon Doe\"}"));
     assertEquals("{\"id\": \"123:\", \"name\": \"Jon Doe\"}",
       deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123:\", \"name\": \"Jon Doe\"}")));
+  }
+
+  @Test
+  public void deserializeListOfString() throws IOException {
+    List<String> r = SERIALIZER.deserialize("[\"1\", \"2\", \"3\"]".getBytes(), new ArrayList<String>().getClass());
+
+    assertNotNull(r);
+    assertEquals(3, r.size());
+    assertEquals("1", r.get(0));
+    assertEquals("2", r.get(1));
+    assertEquals("3", r.get(2));
   }
 
   private static String quote(String content) {

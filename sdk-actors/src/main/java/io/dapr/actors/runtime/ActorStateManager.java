@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -101,6 +102,18 @@ public class ActorStateManager {
    * @return Asynchronous response with fetched object.
    */
   public <T> Mono<T> get(String stateName, Class<T> clazz) {
+    return this.get(stateName, TypeRef.get(clazz));
+  }
+
+  /**
+   * Fetches the most recent value for the given state, including cached value.
+   *
+   * @param stateName Name of the state.
+   * @param type      Class type for the value being fetched.
+   * @param <T>       Type being fetched.
+   * @return Asynchronous response with fetched object.
+   */
+  public <T> Mono<T> get(String stateName, TypeRef<T> type) {
     return Mono.fromSupplier(() -> {
       if (stateName == null) {
         throw new IllegalArgumentException("State's name cannot be null.");
@@ -118,7 +131,7 @@ public class ActorStateManager {
 
       return (T) null;
     }).switchIfEmpty(
-        this.stateProvider.load(this.actorTypeName, this.actorId, stateName, clazz)
+        this.stateProvider.load(this.actorTypeName, this.actorId, stateName, type)
             .switchIfEmpty(Mono.error(new NoSuchElementException("State not found: " + stateName)))
             .map(v -> {
               this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.NONE, v));
