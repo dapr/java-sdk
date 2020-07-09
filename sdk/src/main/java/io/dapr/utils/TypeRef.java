@@ -59,7 +59,7 @@ public abstract class TypeRef<T> {
    *
    * @param clazz Class type to be referenced.
    */
-  public TypeRef(Class<T> clazz) {
+  private TypeRef(Class<T> clazz) {
     this.type = clazz;
   }
 
