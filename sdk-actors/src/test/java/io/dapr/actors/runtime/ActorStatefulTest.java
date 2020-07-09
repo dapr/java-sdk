@@ -11,6 +11,7 @@ import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -247,9 +248,9 @@ public class ActorStatefulTest {
     }
 
     @Override
-    public Class<String> getStateType() {
+    public TypeRef<String> getStateType() {
       // Remindable type.
-      return String.class;
+      return TypeRef.STRING;
     }
 
     @Override

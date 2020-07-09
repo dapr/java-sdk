@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
@@ -170,23 +171,24 @@ public class DaprStateAsyncProviderTest {
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 
     Assert.assertEquals("Jon Doe",
-      provider.load("MyActor", new ActorId("123"), "name", String.class).block());
+      provider.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
     Assert.assertEquals(98021,
-      (int)provider.load("MyActor", new ActorId("123"), "zipcode", int.class).block());
+      (int)provider.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
     Assert.assertEquals(98,
-      (int) provider.load("MyActor", new ActorId("123"), "goals", int.class).block());
+      (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
     Assert.assertEquals(98,
-      (int) provider.load("MyActor", new ActorId("123"), "goals", int.class).block());
+      (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
     Assert.assertEquals(46.55,
-      (double) provider.load("MyActor", new ActorId("123"), "balance", double.class).block(),
+      (double) provider.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block(),
       EPSILON);
     Assert.assertEquals(true,
-      (boolean) provider.load("MyActor", new ActorId("123"), "active", boolean.class).block());
+      (boolean) provider.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block());
     Assert.assertEquals(new Customer().setId(1000).setName("Roxane"),
-      provider.load("MyActor", new ActorId("123"), "customer", Customer.class).block());
+      provider.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
     Assert.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
-      provider.load("MyActor", new ActorId("123"), "anotherCustomer", Customer.class).block());
-    Assert.assertNull(provider.load("MyActor", new ActorId("123"), "nullCustomer", Customer.class).block());
+      provider.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertNull(
+      provider.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
   }
 
   @Test

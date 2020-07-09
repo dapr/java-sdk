@@ -99,7 +99,7 @@ public class DaprClientHttpTest {
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.invokeService(null, "", "", null, null, null);
+    Mono<Void> mono = daprClientHttp.invokeService(null, "", "", null, null, (Class)null);
     assertNull(mono.block());
   }
 
@@ -112,19 +112,19 @@ public class DaprClientHttpTest {
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeService(null, "", "", null, null, null).block();
+      daprClientHttp.invokeService(null, "", "", null, null, (Class)null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeService(Verb.POST, null, "", null, null, null).block();
+      daprClientHttp.invokeService(Verb.POST, null, "", null, null, (Class)null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeService(Verb.POST, "", "", null, null, null).block();
+      daprClientHttp.invokeService(Verb.POST, "", "", null, null, (Class)null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeService(Verb.POST, "1", null, null, null, null).block();
+      daprClientHttp.invokeService(Verb.POST, "1", null, null, null, (Class)null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeService(Verb.POST, "1", "", null, null, null).block();
+      daprClientHttp.invokeService(Verb.POST, "1", "", null, null, (Class)null).block();
     });
   }
 
@@ -137,7 +137,7 @@ public class DaprClientHttpTest {
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.invokeService(Verb.POST, "1", "", null, null, null);
+    Mono<Void> mono = daprClientHttp.invokeService(Verb.POST, "1", "", null, null, (Class)null);
     assertNull(mono.block());
   }
 
@@ -235,6 +235,78 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
     Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
     assertEquals("OK", mono.block());
+  }
+
+  @Test
+  public void invokeBindingResponseDouble() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond("1.5");
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Double> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, double.class);
+    assertEquals(1.5, mono.block(), 0.0001);
+  }
+
+  @Test
+  public void invokeBindingResponseFloat() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond("1.5");
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Float> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, float.class);
+    assertEquals(1.5, mono.block(), 0.0001);
+  }
+
+  @Test
+  public void invokeBindingResponseChar() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond("\"a\"");
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Character> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, char.class);
+    assertEquals('a', (char)mono.block());
+  }
+
+  @Test
+  public void invokeBindingResponseByte() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond("\"2\"");
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Byte> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, byte.class);
+    assertEquals((byte)0x2, (byte)mono.block());
+  }
+
+  @Test
+  public void invokeBindingResponseLong() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond("1");
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Long> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, long.class);
+    assertEquals(1, (long)mono.block());
+  }
+
+  @Test
+  public void invokeBindingResponseInt() {
+    Map<String, String> map = new HashMap<>();
+    mockInterceptor.addRule()
+      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+      .respond("1");
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Integer> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, int.class);
+    assertEquals(1, (int)mono.block());
   }
 
   @Test(expected = IllegalArgumentException.class)

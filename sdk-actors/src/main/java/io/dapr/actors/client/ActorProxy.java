@@ -6,6 +6,7 @@
 package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 /**
@@ -31,11 +32,32 @@ public interface ActorProxy {
    * Invokes an Actor method on Dapr.
    *
    * @param methodName Method name to invoke.
+   * @param type       The type of the return class.
+   * @param <T>        The type to be returned.
+   * @return Asynchronous result with the Actor's response.
+   */
+  <T> Mono<T> invokeActorMethod(String methodName, TypeRef<T> type);
+
+  /**
+   * Invokes an Actor method on Dapr.
+   *
+   * @param methodName Method name to invoke.
    * @param clazz      The type of the return class.
    * @param <T>        The type to be returned.
    * @return Asynchronous result with the Actor's response.
    */
   <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz);
+
+  /**
+   * Invokes an Actor method on Dapr.
+   *
+   * @param methodName Method name to invoke.
+   * @param data       Object with the data.
+   * @param type       The type of the return class.
+   * @param <T>        The type to be returned.
+   * @return Asynchronous result with the Actor's response.
+   */
+  <T> Mono<T> invokeActorMethod(String methodName, Object data, TypeRef<T> type);
 
   /**
    * Invokes an Actor method on Dapr.

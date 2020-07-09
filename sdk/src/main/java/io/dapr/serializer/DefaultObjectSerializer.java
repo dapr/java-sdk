@@ -6,8 +6,10 @@
 package io.dapr.serializer;
 
 import io.dapr.client.ObjectSerializer;
+import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 /**
  * Default serializer/deserializer for request/response objects and for state objects too.
@@ -26,7 +28,7 @@ public class DefaultObjectSerializer extends ObjectSerializer implements DaprObj
    * {@inheritDoc}
    */
   @Override
-  public <T> T deserialize(byte[] data, Class<T> clazz) throws IOException {
-    return super.deserialize(data, clazz);
+  public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
+    return super.deserialize(data, type);
   }
 }

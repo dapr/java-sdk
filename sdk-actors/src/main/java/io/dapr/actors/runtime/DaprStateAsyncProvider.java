@@ -11,6 +11,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Properties;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
@@ -59,12 +60,12 @@ class DaprStateAsyncProvider {
     this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
   }
 
-  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, Class<T> clazz) {
+  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
     Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
 
     return result.flatMap(s -> {
       try {
-        T response = this.stateSerializer.deserialize(s, clazz);
+        T response = this.stateSerializer.deserialize(s, type);
         if (response == null) {
           return Mono.empty();
         }

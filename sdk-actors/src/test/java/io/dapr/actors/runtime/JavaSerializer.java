@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.TypeRef;
 
 import java.io.*;
 
@@ -32,7 +33,7 @@ public class JavaSerializer implements DaprObjectSerializer {
    * {@inheritDoc}
    */
   @Override
-  public <T> T deserialize(byte[] data, Class<T> clazz) throws IOException {
+  public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
     try (ByteArrayInputStream bis = new ByteArrayInputStream(data)) {
       try (ObjectInputStream ois = new ObjectInputStream(bis)) {
         try {

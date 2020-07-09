@@ -9,6 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
 import io.dapr.actors.runtime.Remindable;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.text.DateFormat;
@@ -121,8 +122,8 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
    * @return Class for reminder's state.
    */
   @Override
-  public Class<Integer> getStateType() {
-    return Integer.class;
+  public TypeRef<Integer> getStateType() {
+    return TypeRef.INT;
   }
 
   /**

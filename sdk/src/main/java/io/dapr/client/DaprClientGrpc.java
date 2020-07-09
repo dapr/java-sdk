@@ -14,6 +14,7 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
@@ -139,14 +140,14 @@ public class DaprClientGrpc implements DaprClient {
       String method,
       Object request,
       Map<String, String> metadata,
-      Class<T> clazz) {
+      TypeRef<T> type) {
     try {
       DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(verb.toString(), appId, method, request);
       return Mono.fromCallable(() -> {
         ListenableFuture<CommonProtos.InvokeResponse> futureResponse =
             client.invokeService(envelope);
 
-        return objectSerializer.deserialize(futureResponse.get().getData().getValue().toByteArray(), clazz);
+        return objectSerializer.deserialize(futureResponse.get().getData().getValue().toByteArray(), type);
       });
     } catch (Exception ex) {
       return Mono.error(ex);
@@ -158,8 +159,39 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeService(
+      Verb verb,
+      String appId,
+      String method,
+      Object request,
+      Map<String, String> metadata,
+      Class<T> clazz) {
+    return this.invokeService(verb, appId, method, request, metadata, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(
+      Verb verb, String appId, String method, Map<String, String> metadata, TypeRef<T> type) {
+    return this.invokeService(verb, appId, method, null, metadata, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(
       Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeService(verb, appId, method, null, metadata, clazz);
+    return this.invokeService(verb, appId, method, null, metadata, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, TypeRef<T> type) {
+    return this.invokeService(verb, appId, method, request, null, type);
   }
 
   /**
@@ -167,7 +199,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, Class<T> clazz) {
-    return this.invokeService(verb, appId, method, request, null, clazz);
+    return this.invokeService(verb, appId, method, request, null, TypeRef.get(clazz));
   }
 
   /**
@@ -175,7 +207,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public Mono<Void> invokeService(Verb verb, String appId, String method, Object request) {
-    return this.invokeService(verb, appId, method, request, null, byte[].class).then();
+    return this.invokeService(verb, appId, method, request, null, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
@@ -184,7 +216,7 @@ public class DaprClientGrpc implements DaprClient {
   @Override
   public Mono<Void> invokeService(
       Verb verb, String appId, String method, Object request, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, request, metadata, byte[].class).then();
+    return this.invokeService(verb, appId, method, request, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
@@ -193,7 +225,7 @@ public class DaprClientGrpc implements DaprClient {
   @Override
   public Mono<Void> invokeService(
       Verb verb, String appId, String method, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, null, metadata, byte[].class).then();
+    return this.invokeService(verb, appId, method, null, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
@@ -202,7 +234,7 @@ public class DaprClientGrpc implements DaprClient {
   @Override
   public Mono<byte[]> invokeService(
       Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, request, metadata, byte[].class);
+    return this.invokeService(verb, appId, method, request, metadata, TypeRef.BYTE_ARRAY);
   }
 
   /**
@@ -210,7 +242,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public Mono<Void> invokeBinding(String name, String operation, Object data) {
-    return this.invokeBinding(name, operation, data, null, byte[].class).then();
+    return this.invokeBinding(name, operation, data, null, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
@@ -218,7 +250,15 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public Mono<byte[]> invokeBinding(String name, String operation, byte[] data, Map<String, String> metadata) {
-    return this.invokeBinding(name, operation, data, metadata, byte[].class);
+    return this.invokeBinding(name, operation, data, metadata, TypeRef.BYTE_ARRAY);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeBinding(String name, String operation, Object data, TypeRef<T> type) {
+    return this.invokeBinding(name, operation, data, null, type);
   }
 
   /**
@@ -226,7 +266,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeBinding(String name, String operation, Object data, Class<T> clazz) {
-    return this.invokeBinding(name, operation, data, null, clazz);
+    return this.invokeBinding(name, operation, data, null, TypeRef.get(clazz));
   }
 
   /**
@@ -234,7 +274,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
+      String name, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
     try {
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Binding name cannot be null or empty.");
@@ -256,7 +296,7 @@ public class DaprClientGrpc implements DaprClient {
       DaprProtos.InvokeBindingRequest envelope = builder.build();
       return Mono.fromCallable(() -> {
         ListenableFuture<DaprProtos.InvokeBindingResponse> futureResponse = client.invokeBinding(envelope);
-        return objectSerializer.deserialize(futureResponse.get().getData().toByteArray(), clazz);
+        return objectSerializer.deserialize(futureResponse.get().getData().toByteArray(), type);
       });
     } catch (Exception ex) {
       return Mono.error(ex);
@@ -267,8 +307,33 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
+  public <T> Mono<T> invokeBinding(
+      String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
+    return this.invokeBinding(name, operation, data, metadata, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, TypeRef<T> type) {
+    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, Class<T> clazz) {
-    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), clazz);
+    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<State<T>> getState(String stateStoreName, String key, TypeRef<T> type) {
+    return this.getState(stateStoreName, key, null, null, type);
   }
 
   /**
@@ -276,7 +341,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(String stateStoreName, String key, Class<T> clazz) {
-    return this.getState(stateStoreName, key, null, null, clazz);
+    return this.getState(stateStoreName, key, null, null, TypeRef.get(clazz));
   }
 
   /**
@@ -284,7 +349,7 @@ public class DaprClientGrpc implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
+      String stateStoreName, String key, String etag, StateOptions options, TypeRef<T> type) {
     try {
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
@@ -308,21 +373,30 @@ public class DaprClientGrpc implements DaprClient {
         } catch (NullPointerException npe) {
           return null;
         }
-        return buildStateKeyValue(response, key, options, clazz);
+        return buildStateKeyValue(response, key, options, type);
       });
     } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<State<T>> getState(
+      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
+    return this.getState(stateStoreName, key, etag, options, TypeRef.get(clazz));
+  }
+
   private <T> State<T> buildStateKeyValue(
       DaprProtos.GetStateResponse response,
       String requestedKey,
       StateOptions stateOptions,
-      Class<T> clazz) throws IOException {
+      TypeRef<T> type) throws IOException {
     ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, clazz);
+    T value = stateSerializer.deserialize(data, type);
     String etag = response.getEtag();
     String key = requestedKey;
     return new State<>(value, key, etag, stateOptions);
