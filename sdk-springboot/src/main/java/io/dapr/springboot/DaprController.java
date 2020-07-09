@@ -7,6 +7,7 @@ package io.dapr.springboot;
 
 import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.serializer.DefaultObjectSerializer;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,7 +33,7 @@ public class DaprController {
   /**
    * Callback API for health checks from Dapr's sidecar.
    */
-  @GetMapping("/healthz")
+  @GetMapping(path = "/healthz")
   public void healthz() {
   }
 
@@ -41,7 +42,7 @@ public class DaprController {
    * @return Actor's configuration.
    * @throws IOException If cannot generate configuration.
    */
-  @GetMapping("/dapr/config")
+  @GetMapping(path = "/dapr/config", produces = MediaType.APPLICATION_JSON_VALUE)
   public byte[] daprConfig() throws IOException {
     return ActorRuntime.getInstance().serializeConfig();
   }
@@ -51,7 +52,7 @@ public class DaprController {
    * @return List of subscribed topics.
    * @throws IOException If cannot generate list of topics.
    */
-  @GetMapping("/dapr/subscribe")
+  @GetMapping(path = "/dapr/subscribe", produces = MediaType.APPLICATION_JSON_VALUE)
   public byte[] daprSubscribe() throws IOException {
     return SERIALIZER.serialize(DaprRuntime.getInstance().listSubscribedTopics());
   }
