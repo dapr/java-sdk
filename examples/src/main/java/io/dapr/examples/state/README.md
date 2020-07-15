@@ -24,6 +24,11 @@ Then build the Maven project:
 mvn install
 ```
 
+Then get into the examples directory:
+```sh
+cd examples
+```
+
 ### Running the StateClient
 This example uses the Java SDK Dapr client in order to save, retrieve and delete a state, in this case, an instance of a class. Multiple state stores are supported since Dapr 0.4. See the code snippet bellow: 
 
@@ -62,7 +67,7 @@ The code uses the `DaprClient` created by the `DaprClientBuilder`. Notice that t
 
 Run this example with the following command:
 ```sh
-dapr run --components-path ./components --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
+dapr run --components-path ./components --port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
 Once running, the OutputBindingExample should print the output as follows:
 
