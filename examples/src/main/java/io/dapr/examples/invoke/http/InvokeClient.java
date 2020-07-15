@@ -13,7 +13,8 @@ import io.dapr.client.domain.Verb;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Send messages to the server:
- * dapr run --components-path ./components --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
+ * dapr run --components-path ./examples/components \
+ *   --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  *   io.dapr.examples.invoke.http.InvokeClient 'message one' 'message two'
  */
 public class InvokeClient {

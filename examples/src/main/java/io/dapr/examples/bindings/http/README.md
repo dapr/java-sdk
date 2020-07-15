@@ -36,13 +36,19 @@ Then build the Maven project:
 # make sure you are in the `java-sdk` directory.
 mvn install
 ```
+
+Then, go into the examples directory:
+
+```sh
+cd examples
+```
+
 ### Setting Kafka locally
 
 Before getting into the application code, follow these steps in order to setup a local instance of Kafka. This is needed for the local instances. Steps are:
 
-1. Navigate to the root directory for the git repository.
-2. Run `docker-compose -f ./examples/src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d` to run the container locally
-3. Run `docker ps` to see the container running locally: 
+1. Run `docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d` to run the container locally
+2. Run `docker ps` to see the container running locally: 
 
 ```bash
 342d3522ca14        kafka-docker_kafka                      "start-kafka.sh"         14 hours ago        Up About
@@ -88,7 +94,6 @@ public class InputBindingController {
 
  Execute the follow script in order to run the Input Binding example:
 ```sh
-cd to [repo-root]/examples
 dapr run --components-path ./components --app-id inputbinding --app-port 3000 --port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
 ```
 
@@ -125,7 +130,6 @@ This example binds two events: A user-defined data object (using the `myClass` o
 Use the follow command to execute the Output Binding example:
 
 ```sh
-cd to [repo-root]/examples
 dapr run --components-path ./components --app-id outputbinding --port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
 ```
 
