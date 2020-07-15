@@ -15,7 +15,7 @@ import org.apache.commons.cli.Options;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run in server mode:
- * dapr run --app-id invokedemo --app-port 3000 --port 3005 \
+ * dapr run --components-path ./components --app-id invokedemo --app-port 3000 --port 3005 \
  *   -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  *   io.dapr.examples.invoke.http.DemoService -p 3000
  */

@@ -18,7 +18,8 @@ import java.util.Map;
  * 3. Add secret to vault:
  *   vault kv put secret/dapr/movie title="[my favorite movie]"
  * 4. Read secret from example:
- *   dapr run  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+ *   dapr run --components-path ./components -- \
+ *     java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
  */
 public class SecretClient {
 
