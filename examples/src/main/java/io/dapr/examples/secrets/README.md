@@ -100,7 +100,7 @@ The secret store's name **must** match the component's name defined in `< repo d
  Execute the follow script in order to run the example:
 ```sh
 cd to [repo-root]/examples
-dapr run  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+dapr run --components-path ./components  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
 ```
 
 Once running, the program should print the output as follows:

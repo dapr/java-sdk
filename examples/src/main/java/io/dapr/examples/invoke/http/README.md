@@ -89,7 +89,7 @@ public class DemoServiceController {
 Use the follow command to execute the demo service example:
 
 ```sh
-dapr run --app-id invokedemo --app-port 3000 --port 3005 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3000
+dapr run --components-path ./components --app-id invokedemo --app-port 3000 --port 3005 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3000
 ```
 
 Once running, the ExposerService is now ready to be invoked by Dapr.
@@ -120,7 +120,7 @@ The class knows the app id for the remote application. It uses the the static `D
  
  Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh
-dapr run --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient 'message one' 'message two'
+dapr run --components-path ./components --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient 'message one' 'message two'
 ```
 Once running, the output should display the messages sent from invoker in the demo service output as follows:
 
