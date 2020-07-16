@@ -60,25 +60,25 @@ For a Maven project, add the following to your `pom.xml` file:
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk</artifactId>
-          <version>0.6.0</version>
+          <version>0.7.0</version>
         </dependency>
         <!-- Dapr's SDK for Actors (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk-actors</artifactId>
-          <version>0.6.0</version>
+          <version>0.7.0</version>
         </dependency>
         <!-- Dapr's SDK integration with SpringBoot (optional). -->
         <dependency>
           <groupId>io.dapr</groupId>
           <artifactId>dapr-sdk-springboot</artifactId>
-          <version>0.6.0</version>
+          <version>0.7.0</version>
         </dependency>
         <!-- If needed, resolve version conflict of okhttp3. -->
         <dependency>
           <groupId>com.squareup.okhttp3</groupId>
           <artifactId>okhttp</artifactId>
-          <version>4.2.2</version>
+          <version>0.7.0</version>
         </dependency>
         ...
       </dependencies>
@@ -106,11 +106,11 @@ repositories {
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:0.6.0')
+    compile('io.dapr:dapr-sdk:0.7.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:0.6.0')
+    compile('io.dapr:dapr-sdk-actors:0.7.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:0.6.0')
+    compile('io.dapr:dapr-sdk-springboot:0.7.0')
 
     // If needed, force conflict resolution for okhttp3.
     configurations.all {
