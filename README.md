@@ -78,7 +78,7 @@ For a Maven project, add the following to your `pom.xml` file:
         <dependency>
           <groupId>com.squareup.okhttp3</groupId>
           <artifactId>okhttp</artifactId>
-          <version>4.2.2</version>
+          <version>4.2.2</version> <!-- version required by Dapr's sdk -->
         </dependency>
         ...
       </dependencies>
