@@ -2,20 +2,20 @@ package io.dapr.it.methodinvoke.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.Verb;
+import io.dapr.client.DaprHttp;
+import io.dapr.client.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.runners.Parameterized.*;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class MethodInvokeIT extends BaseIT {
@@ -66,20 +66,21 @@ public class MethodInvokeIT extends BaseIT {
         for (int i = 0; i < NUM_MESSAGES; i++) {
             String message = String.format("This is message #%d", i);
             //Publishing messages
-            client.invokeService(Verb.POST, daprRun.getAppName(), "messages", message.getBytes()).block();
+            client.invokeService(daprRun.getAppName(), "messages", message.getBytes(), HttpExtension.POST).block();
             System.out.println("Invoke method messages : " + message);
         }
 
-        Map<Integer,String> messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages", null, Map.class).block();
+        Map<Integer,String> messages = client.invokeService(daprRun.getAppName(), "messages", null,
+            HttpExtension.GET, Map.class).block();
         assertEquals(10, messages.size());
 
-        client.invokeService(Verb.DELETE,daprRun.getAppName(),"messages/1",null).block();
+        client.invokeService(daprRun.getAppName(),"messages/1",null, HttpExtension.DELETE).block();
 
-        messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages", null, Map.class).block();
+        messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
         assertEquals(9, messages.size());
 
-        client.invokeService(Verb.PUT, daprRun.getAppName(), "messages/2", "updated message".getBytes()).block();
-        messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages", null, Map.class).block();
+        client.invokeService(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
+        messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
         assertEquals("updated message", messages.get("2"));
 
     }
@@ -94,16 +95,16 @@ public class MethodInvokeIT extends BaseIT {
             person.setLastName(String.format("Last Name %d", i));
             person.setBirthDate(new Date());
             //Publishing messages
-            client.invokeService(Verb.POST, daprRun.getAppName(), "persons", person).block();
+            client.invokeService(daprRun.getAppName(), "persons", person, HttpExtension.POST).block();
             System.out.println("Invoke method persons with parameter : " + person);
         }
 
-        List<Person> persons = Arrays.asList(client.invokeService(Verb.GET, daprRun.getAppName(), "persons", null, Person[].class).block());
+        List<Person> persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
         assertEquals(10, persons.size());
 
-        client.invokeService(Verb.DELETE,daprRun.getAppName(),"persons/1",null).block();
+        client.invokeService(daprRun.getAppName(),"persons/1",null, HttpExtension.DELETE).block();
 
-        persons = Arrays.asList(client.invokeService(Verb.GET, daprRun.getAppName(), "persons", null, Person[].class).block());
+        persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
         assertEquals(9, persons.size());
 
         Person person= new Person();
@@ -111,9 +112,9 @@ public class MethodInvokeIT extends BaseIT {
         person.setLastName("Smith");
         person.setBirthDate(Calendar.getInstance().getTime());
 
-        client.invokeService(Verb.PUT, daprRun.getAppName(), "persons/2", person).block();
+        client.invokeService(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
 
-        persons = Arrays.asList(client.invokeService(Verb.GET, daprRun.getAppName(), "persons", null, Person[].class).block());
+        persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
         Person resultPerson= persons.get(1);
         assertEquals("John", resultPerson.getName());
         assertEquals("Smith", resultPerson.getLastName());

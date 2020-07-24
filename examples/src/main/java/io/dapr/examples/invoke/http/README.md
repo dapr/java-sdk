@@ -113,8 +113,8 @@ private static final String SERVICE_APP_ID = "invokedemo";
   public static void main(String[] args) {
     DaprClient client = (new DaprClientBuilder()).build();
     for (String message : args) {
-      byte[] response = client.invokeService(
-          Verb.POST, SERVICE_APP_ID, "say", message, null, byte[].class).block();
+      byte[] response = client.invokeService(SERVICE_APP_ID, "say", 
+        message, HttpExtension.POST, null, byte[].class).block();
       System.out.println(new String(response));
     }
   }

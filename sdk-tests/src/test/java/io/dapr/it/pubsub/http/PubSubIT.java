@@ -7,17 +7,18 @@ package io.dapr.it.pubsub.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.Verb;
+import io.dapr.client.DaprHttp;
+import io.dapr.client.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import java.util.Arrays;
-import java.util.Collection;
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.List;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.Assert.assertEquals;
@@ -91,7 +92,7 @@ public class PubSubIT extends BaseIT {
 
         callWithRetry(() -> {
             System.out.println("Checking results for topic " + TOPIC_NAME);
-            final List<String> messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages/testingtopic", null, List.class).block();
+            final List<String> messages = client.invokeService(daprRun.getAppName(), "messages/testingtopic", null, HttpExtension.GET, List.class).block();
             assertEquals(11, messages.size());
 
             for (int i = 0; i < NUM_MESSAGES; i++) {
@@ -110,7 +111,7 @@ public class PubSubIT extends BaseIT {
 
         callWithRetry(() -> {
             System.out.println("Checking results for topic " + ANOTHER_TOPIC_NAME);
-            final List<String> messages = client.invokeService(Verb.GET, daprRun.getAppName(), "messages/anothertopic", null, List.class).block();
+            final List<String> messages = client.invokeService(daprRun.getAppName(), "messages/anothertopic", null, HttpExtension.GET, List.class).block();
             assertEquals(10, messages.size());
 
             for (int i = 0; i < NUM_MESSAGES; i++) {

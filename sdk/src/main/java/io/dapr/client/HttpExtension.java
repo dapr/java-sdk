@@ -1,0 +1,97 @@
+/*
+ * Copyright (c) Microsoft Corporation.
+ * Licensed under the MIT License.
+ */
+
+package io.dapr.client;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * HTTP Extension class.
+ * This class is only needed if the app you are calling is listening on HTTP.
+ * It contains properties that represent data that may be populated for an HTTP receiver.
+ */
+
+public class HttpExtension {
+  /**
+   * HTTP verb.
+   */
+  private DaprHttp.HttpMethods method;
+
+  /**
+   * HTTP querystring.
+   */
+  private Map<String, String> queryString;
+
+  /**
+   * Convenience HttpExtension object for the NONE Verb with empty queryStreing.
+   */
+  public static final HttpExtension NONE = new HttpExtension(DaprHttp.HttpMethods.NONE, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the GET Verb with empty queryStreing.
+   */
+  public static final HttpExtension GET = new HttpExtension(DaprHttp.HttpMethods.GET, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the PUT Verb with empty queryStreing.
+   */
+  public static final HttpExtension PUT = new HttpExtension(DaprHttp.HttpMethods.PUT, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the POST Verb with empty queryStreing.
+   */
+  public static final HttpExtension POST = new HttpExtension(DaprHttp.HttpMethods.POST, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the DELETE Verb with empty queryStreing.
+   */
+  public static final HttpExtension DELETE = new HttpExtension(DaprHttp.HttpMethods.DELETE, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the HEAD Verb with empty queryStreing.
+   */
+  public static final HttpExtension HEAD = new HttpExtension(DaprHttp.HttpMethods.HEAD, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the CONNECT Verb with empty queryStreing.
+   */
+  public static final HttpExtension CONNECT = new HttpExtension(DaprHttp.HttpMethods.CONNECT, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the OPTIONS Verb with empty queryStreing.
+   */
+  public static final HttpExtension OPTIONS = new HttpExtension(DaprHttp.HttpMethods.OPTIONS, new HashMap<>());
+  /**
+   * Convenience HttpExtension object for the TRACE Verb with empty queryStreing.
+   */
+  public static final HttpExtension TRACE = new HttpExtension(DaprHttp.HttpMethods.TRACE, new HashMap<>());
+
+  /**
+   * Default no-op constructor.
+   */
+  private HttpExtension() {
+    // No-Op
+  }
+
+  /**
+   * Construct a HttpExtension object.
+   * @param method      Required value denoting the HttpMethod.
+   * @param queryString Non-null map value for the queryString for a HTTP listener.
+   * @see io.dapr.client.DaprHttp.HttpMethods for supported methods.
+   * @throws IllegalArgumentException on null method or queryString.
+   */
+  public HttpExtension(DaprHttp.HttpMethods method, Map<String, String> queryString) {
+    if (method == null) {
+      throw new IllegalArgumentException("HttpExtension method cannot be null");
+    } else if (queryString == null) {
+      throw new IllegalArgumentException("HttpExtension queryString map cannot be null");
+    }
+    this.method = method;
+    this.queryString = Collections.unmodifiableMap(queryString);
+  }
+
+  public DaprHttp.HttpMethods getMethod() {
+    return method;
+  }
+
+  public Map<String, String> getQueryString() {
+    return queryString;
+  }
+}
