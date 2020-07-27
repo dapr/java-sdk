@@ -16,11 +16,6 @@ public final class Constants {
   public static final String API_VERSION = "v1.0";
 
   /**
-   * Dapr's default protocol.
-   */
-  public static final String DEFAULT_PROTOCOL = "http";
-
-  /**
    * Dapr's default hostname.
    */
   public static final String DEFAULT_HOSTNAME = "127.0.0.1";
