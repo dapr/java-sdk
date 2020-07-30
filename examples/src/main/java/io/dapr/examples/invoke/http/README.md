@@ -110,12 +110,17 @@ public class InvokeClient {
 
 private static final String SERVICE_APP_ID = "invokedemo";
 ///...
-  public static void main(String[] args) {
-    DaprClient client = (new DaprClientBuilder()).build();
-    for (String message : args) {
-      byte[] response = client.invokeService(SERVICE_APP_ID, "say", 
-        message, HttpExtension.POST, null, byte[].class).block();
-      System.out.println(new String(response));
+public static void main(String[] args) throws IOException {
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
+      for (String message : args) {
+        byte[] response = client.invokeService(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
+            byte[].class).block();
+        System.out.println(new String(response));
+      }
+
+      // This is an example, so for simplicity we are just exiting here.
+      // Normally a dapr app would be a web service and not exit main.
+      System.out.println("Done");
     }
   }
 ///...
@@ -124,7 +129,7 @@ private static final String SERVICE_APP_ID = "invokedemo";
 
 The class knows the app id for the remote application. It uses the the static `Dapr.getInstance().invokeService` method to invoke the remote method defining the parameters: The verb, application id, method name, and proper data and metadata, as well as the type of the expected return type. The returned payload for this method invocation is plain text and not a [JSON String](https://www.w3schools.com/js/js_json_datatypes.asp), so we expect `byte[]` to get the raw response and not try to deserialize it.
  
- Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
+Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh
 dapr run --components-path ./components --port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient 'message one' 'message two'
 ```

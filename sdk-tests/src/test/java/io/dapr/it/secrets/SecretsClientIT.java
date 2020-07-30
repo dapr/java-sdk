@@ -14,12 +14,14 @@ import io.dapr.client.DaprClientHttp;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.services.EmptyService;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -94,6 +96,11 @@ public class SecretsClientIT extends BaseIT {
     } else {
       assertEquals(DaprClientHttp.class, this.daprClient.getClass());
     }
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    daprClient.close();
   }
 
   @Test

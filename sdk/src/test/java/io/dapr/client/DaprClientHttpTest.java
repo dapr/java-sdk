@@ -434,6 +434,14 @@ public class DaprClientHttpTest {
     assertNull(mono.block());
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void saveStateNullStateStoreName() {
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Void> mono = daprClientHttp.saveStates(null, null);
+    assertNull(mono.block());
+  }
+
   @Test
   public void saveStatesNull() {
     State<String> stateKeyValue = new State("value", "key", "", null);
@@ -619,6 +627,13 @@ public class DaprClientHttpTest {
     assertThrows(IllegalStateException.class, () -> {
       daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
     });
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void getSecretsNullStoreName() {
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    daprClientHttp.getSecret(null, "key").block();
   }
 
   @Test

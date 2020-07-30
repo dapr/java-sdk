@@ -592,4 +592,8 @@ public class DaprClientHttp implements DaprClient {
     return this.getSecret(secretStoreName, secretName, null);
   }
 
+  @Override
+  public void close() throws IOException {
+    client.close();
+  }
 }

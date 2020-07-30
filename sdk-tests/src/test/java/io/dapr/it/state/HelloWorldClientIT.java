@@ -64,5 +64,6 @@ public class HelloWorldClientIT extends BaseIT {
       System.out.println("Got: " + value);
       Assert.assertEquals("", value);
     }
+    channel.shutdown();
   }
 }

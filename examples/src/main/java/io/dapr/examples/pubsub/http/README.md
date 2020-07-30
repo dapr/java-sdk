@@ -84,20 +84,23 @@ dapr run --components-path ./components --app-id subscriber --app-port 3000 --po
 
 The other component is the publisher. It is a simple java application with a main method that uses the Dapr HTTP Client to publish 10 messages to an specific topic.
 
-In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. See the code snippet below:  
+In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:  
 ```java
 public class Publisher {
     private static final int NUM_MESSAGES = 10;
     private static final String TOPIC_NAME = "testingtopic";
 ///...
   public static void main(String[] args) throws Exception {
-    DaprClient client = new DaprClientBuilder().build();
-    for (int i = 0; i < NUM_MESSAGES; i++) {
-      String message = String.format("This is message #%d", i);
-      client.publishEvent(TOPIC_NAME, message).block();
-      System.out.println("Published message: " + message);
-      //..
-    }
+      //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
+      try (DaprClient client = new DaprClientBuilder().build()) {
+        for (int i = 0; i < NUM_MESSAGES; i++) {
+          String message = String.format("This is message #%d", i);
+          //Publishing messages
+          client.publishEvent(TOPIC_NAME, message).block();
+          System.out.println("Published message: " + message);
+          //...
+        }
+      }
   }
 ///...
 }
