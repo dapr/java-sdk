@@ -14,10 +14,13 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import okhttp3.OkHttpClient;
 
+import java.io.Closeable;
+
 /**
  * A builder for the DaprClient,
  * Currently only and HTTP Client will be supported.
  */
+
 public class DaprClientBuilder {
 
   /**
@@ -105,7 +108,13 @@ public class DaprClientBuilder {
       throw new IllegalStateException("Invalid port.");
     }
     ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, port).usePlaintext().build();
-    return new DaprClientGrpc(DaprGrpc.newFutureStub(channel), this.objectSerializer, this.stateSerializer);
+    Closeable closeableChannel = () -> {
+      if (channel != null && !channel.isShutdown()) {
+        channel.shutdown();
+      }
+    };
+    DaprGrpc.DaprFutureStub stub = DaprGrpc.newFutureStub(channel);
+    return new DaprClientGrpc(closeableChannel, stub, this.objectSerializer, this.stateSerializer);
   }
 
   /**

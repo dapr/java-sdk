@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -44,8 +45,9 @@ public class SecretClient {
     }
 
     String secretKey = args[0];
-    DaprClient client = (new DaprClientBuilder()).build();
-    Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
-    System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
+      Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
+      System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+    }
   }
 }

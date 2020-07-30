@@ -12,18 +12,19 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
-import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import reactor.core.publisher.Mono;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
@@ -43,15 +44,25 @@ public class DaprClientGrpcTest {
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
+  private Closeable closeable;
   private DaprGrpc.DaprFutureStub client;
   private DaprClientGrpc adapter;
   private ObjectSerializer serializer;
 
   @Before
-  public void setup() {
+  public void setup() throws IOException {
+    closeable = mock(Closeable.class);
     client = mock(DaprGrpc.DaprFutureStub.class);
-    adapter = new DaprClientGrpc(client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    adapter = new DaprClientGrpc(closeable, client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     serializer = new ObjectSerializer();
+    doNothing().when(closeable).close();
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    adapter.close();
+    verify(closeable).close();
+    verifyNoMoreInteractions(closeable);
   }
 
   @Test(expected = RuntimeException.class)

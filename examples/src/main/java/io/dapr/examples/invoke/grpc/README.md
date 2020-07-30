@@ -87,26 +87,31 @@ The other component is the client. It will send one message per second to the se
 private static class HelloWorldClient {
 ///...
   public static void main(String[] args) {
-    DaprClient client = new DaprClientBuilder().build();
+    try (DaprClient client = new DaprClientBuilder().build()) {
+    
+      String serviceAppId = "hellogrpc";
+      String method = "say";
 
-    String serviceAppId = "hellogrpc";
-    String method = "say";
+      int count = 0;
+      while (true) {
+        String message = "Message #" + (count++);
+        System.out.println("Sending message: " + message);
+        client.invokeService(serviceAppId, method, message, HttpExtension.NONE).block();
+        System.out.println("Message sent: " + message);
 
-    int count = 0;
-    while (true) {
-      String message = "Message #" + (count++);
-      System.out.println("Sending message: " + message);
-      client.invokeService(serviceAppId, method, message, HttpExtension.NONE).block();
-      System.out.println("Message sent: " + message);
+        Thread.sleep(1000);
 
-      Thread.sleep(1000);
+        // This is an example, so for simplicity we are just exiting here.  
+        // Normally a dapr app would be a web service and not exit main.
+        System.out.println("Done");
+      }
     }
   }
 ///...
 }
 ```
 
-First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient is transparent to the application. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar.
+First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient is transparent to the application. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar. The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
 Finally, it will go through in an infinite loop and invoke the `say` method every second. Notice the use of `block()` on the return from `invokeService` - it is required to actually make the service invocation via a [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) object.
 

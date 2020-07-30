@@ -6,11 +6,13 @@ import io.dapr.client.DaprHttp;
 import io.dapr.client.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -58,65 +60,65 @@ public class MethodInvokeIT extends BaseIT {
     }
 
     @Test
-    public void testInvoke() {
+    public void testInvoke() throws IOException {
 
         // At this point, it is guaranteed that the service above is running and all ports being listened to.
 
-        DaprClient client = new DaprClientBuilder().build();
-        for (int i = 0; i < NUM_MESSAGES; i++) {
-            String message = String.format("This is message #%d", i);
-            //Publishing messages
-            client.invokeService(daprRun.getAppName(), "messages", message.getBytes(), HttpExtension.POST).block();
-            System.out.println("Invoke method messages : " + message);
+        try (DaprClient client = new DaprClientBuilder().build()) {
+            for (int i = 0; i < NUM_MESSAGES; i++) {
+                String message = String.format("This is message #%d", i);
+                //Publishing messages
+                client.invokeService(daprRun.getAppName(), "messages", message.getBytes(), HttpExtension.POST).block();
+                System.out.println("Invoke method messages : " + message);
+            }
+
+            Map<Integer, String> messages = client.invokeService(daprRun.getAppName(), "messages", null,
+                HttpExtension.GET, Map.class).block();
+            assertEquals(10, messages.size());
+
+            client.invokeService(daprRun.getAppName(), "messages/1", null, HttpExtension.DELETE).block();
+
+            messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            assertEquals(9, messages.size());
+
+            client.invokeService(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
+            messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            assertEquals("updated message", messages.get("2"));
         }
-
-        Map<Integer,String> messages = client.invokeService(daprRun.getAppName(), "messages", null,
-            HttpExtension.GET, Map.class).block();
-        assertEquals(10, messages.size());
-
-        client.invokeService(daprRun.getAppName(),"messages/1",null, HttpExtension.DELETE).block();
-
-        messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
-        assertEquals(9, messages.size());
-
-        client.invokeService(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
-        messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
-        assertEquals("updated message", messages.get("2"));
-
     }
 
     @Test
-    public void testInvokeWithObjects()  {
-        DaprClient client = new DaprClientBuilder().build();
+    public void testInvokeWithObjects() throws IOException {
+        try (DaprClient client = new DaprClientBuilder().build()) {
+            for (int i = 0; i < NUM_MESSAGES; i++) {
+                Person person = new Person();
+                person.setName(String.format("Name %d", i));
+                person.setLastName(String.format("Last Name %d", i));
+                person.setBirthDate(new Date());
+                //Publishing messages
+                client.invokeService(daprRun.getAppName(), "persons", person, HttpExtension.POST).block();
+                System.out.println("Invoke method persons with parameter : " + person);
+            }
 
-        for (int i = 0; i < NUM_MESSAGES; i++) {
-            Person person= new Person();
-            person.setName(String.format("Name %d", i));
-            person.setLastName(String.format("Last Name %d", i));
-            person.setBirthDate(new Date());
-            //Publishing messages
-            client.invokeService(daprRun.getAppName(), "persons", person, HttpExtension.POST).block();
-            System.out.println("Invoke method persons with parameter : " + person);
+            List<Person> persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            assertEquals(10, persons.size());
+
+            client.invokeService(daprRun.getAppName(), "persons/1", null, HttpExtension.DELETE).block();
+
+            persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            assertEquals(9, persons.size());
+
+            Person person = new Person();
+            person.setName("John");
+            person.setLastName("Smith");
+            person.setBirthDate(Calendar.getInstance().getTime());
+
+            client.invokeService(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
+
+            persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            Person resultPerson = persons.get(1);
+            assertEquals("John", resultPerson.getName());
+            assertEquals("Smith", resultPerson.getLastName());
         }
-
-        List<Person> persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
-        assertEquals(10, persons.size());
-
-        client.invokeService(daprRun.getAppName(),"persons/1",null, HttpExtension.DELETE).block();
-
-        persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
-        assertEquals(9, persons.size());
-
-        Person person= new Person();
-        person.setName("John");
-        person.setLastName("Smith");
-        person.setBirthDate(Calendar.getInstance().getTime());
-
-        client.invokeService(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
-
-        persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
-        Person resultPerson= persons.get(1);
-        assertEquals("John", resultPerson.getName());
-        assertEquals("Smith", resultPerson.getLastName());
     }
 }

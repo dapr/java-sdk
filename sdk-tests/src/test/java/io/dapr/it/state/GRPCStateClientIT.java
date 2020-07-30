@@ -13,11 +13,13 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.services.EmptyService;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.time.Duration;
 
 import static org.junit.Assert.*;
@@ -44,6 +46,11 @@ public class GRPCStateClientIT extends BaseIT {
     daprClient = new DaprClientBuilder().build();
 
     assertTrue(daprClient instanceof DaprClientGrpc);
+  }
+
+  @AfterClass
+  public static void tearDown() throws IOException {
+    daprClient.close();
   }
 
 

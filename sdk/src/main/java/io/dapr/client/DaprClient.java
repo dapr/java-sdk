@@ -11,6 +11,7 @@ import io.dapr.client.domain.Verb;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ import java.util.Map;
  *
  * @see io.dapr.client.DaprClientBuilder for information on how to make instance for this interface.
  */
-public interface DaprClient {
+public interface DaprClient extends Closeable {
 
   /**
    * Publish an event.

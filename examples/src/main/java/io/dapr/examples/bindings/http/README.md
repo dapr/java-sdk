@@ -101,25 +101,45 @@ dapr run --components-path ./components --app-id inputbinding --app-port 3000 --
 
 The output binding application is a simple java class with a main method that uses the Dapr Client to invoke binding.
 
-In the `OutputBindingExample.java` file, you will find the `OutputBindingExample` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes events using `invokeBinding` method. See the code snippet below: 
+In the `OutputBindingExample.java` file, you will find the `OutputBindingExample` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes events using `invokeBinding` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below: 
 ```java
-public class OutputBindingExample {
+public class OutputBindingExample{
 ///...
   static final String BINDING_NAME = "sample123";
 
   static final String BINDING_OPERATION = "create";
 ///...
-  public static void main(String[] args) {
-    DaprClient client = new DaprClientBuilder().build();
-    ///...
-    MyClass myClass = new MyClass();
-    myClass.message = message;
-
-    System.out.println("sending an object instance with message: " + myClass.message);
-    client.invokeBinding(BINDING_NAME, BINDING_OPERATION, myClass); //Binding a data object
-    ///...
-    System.out.println("sending a plain string: " + m);
-    client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message); //Binding a plain string text
+  public static void main(String[] args) throws IOException {
+      try (DaprClient client = new DaprClientBuilder().build()) {
+  
+        int count = 0;
+        while (!Thread.currentThread().isInterrupted()) {
+          String message = "Message #" + (count++);
+  
+          // Randomly decides between a class type or string type to be sent.
+          if (Math.random() >= 0.5) {
+            // This is an example of sending data in a user-defined object.  The input binding will receive:
+            //   {"message":"hello"}
+            MyClass myClass = new MyClass();
+            myClass.message = message;
+  
+            System.out.println("sending a class with message: " + myClass.message);
+            client.invokeBinding(BINDING_NAME, BINDING_OPERATION, myClass).block();
+          } else {
+            System.out.println("sending a plain string: " + message);
+            client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message).block();
+          }
+  
+          try {
+            Thread.sleep((long) (10000 * Math.random()));
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+          }
+        }
+  
+        System.out.println("Done.");
+      }
     }
 ///...
 }
@@ -144,5 +164,10 @@ Once running, the InputBindingExample should print the output as follows:
 ![publisherinput](../../../../../../resources/img/inputbinding.png)
 
 Events have been retrieved from the binding.
+
+For bringing down the kafka cluster that was started in the beginning, run
+```sh
+docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml down
+```
 
 For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java)  Application implementation.

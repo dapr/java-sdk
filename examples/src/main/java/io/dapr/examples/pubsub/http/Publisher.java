@@ -8,6 +8,7 @@ package io.dapr.examples.pubsub.http;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 
+import java.io.IOException;
 import java.util.Collections;
 
 /**
@@ -32,31 +33,32 @@ public class Publisher {
    */
   public static void main(String[] args) throws Exception {
     //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
-    DaprClient client = new DaprClientBuilder().build();
-    for (int i = 0; i < NUM_MESSAGES; i++) {
-      String message = String.format("This is message #%d", i);
-      //Publishing messages
-      client.publishEvent(TOPIC_NAME, message).block();
-      System.out.println("Published message: " + message);
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d", i);
+        //Publishing messages
+        client.publishEvent(TOPIC_NAME, message).block();
+        System.out.println("Published message: " + message);
 
-      try {
-        Thread.sleep((long)(1000 * Math.random()));
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-        return;
+        try {
+          Thread.sleep((long) (1000 * Math.random()));
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          Thread.currentThread().interrupt();
+          return;
+        }
       }
+
+      //Publishing a single bite: Example of non-string based content published
+      client.publishEvent(
+          TOPIC_NAME,
+          new byte[]{1},
+          Collections.singletonMap("content-type", "application/octet-stream")).block();
+      System.out.println("Published one byte.");
+
+      // This is an example, so for simplicity we are just exiting here.
+      // Normally a dapr app would be a web service and not exit main.
+      System.out.println("Done.");
     }
-
-    //Publishing a single bite: Example of non-string based content published
-    client.publishEvent(
-            TOPIC_NAME,
-            new byte[] { 1 },
-            Collections.singletonMap("content-type", "application/octet-stream")).block();
-    System.out.println("Published one byte.");
-
-    // This is an example, so for simplicity we are just exiting here.  
-    // Normally a dapr app would be a web service and not exit main.    
-    System.out.println("Done.");
   }
 }

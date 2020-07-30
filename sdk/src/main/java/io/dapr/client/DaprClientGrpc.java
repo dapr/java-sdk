@@ -19,6 +19,7 @@ import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import reactor.core.publisher.Mono;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,11 @@ import static io.dapr.client.domain.StateOptions.RetryPolicy;
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientGrpc implements DaprClient {
+
+  /**
+   * The GRPC managed channel to be used.
+   */
+  private Closeable channel;
 
   /**
    * The GRPC client to be used.
@@ -54,15 +60,18 @@ public class DaprClientGrpc implements DaprClient {
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
+   * @param closeableChannel A closeable for a Managed GRPC channel
    * @param futureClient     GRPC client
    * @param objectSerializer Serializer for transient request/response objects.
    * @param stateSerializer  Serializer for state objects.
    * @see DaprClientBuilder
    */
   DaprClientGrpc(
+      Closeable closeableChannel,
       DaprGrpc.DaprFutureStub futureClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
+    this.channel = closeableChannel;
     this.client = futureClient;
     this.objectSerializer = objectSerializer;
     this.stateSerializer = stateSerializer;
@@ -642,4 +651,15 @@ public class DaprClientGrpc implements DaprClient {
     return this.getSecret(secretStoreName, secretName, null);
   }
 
+  /**
+   * Closes the ManagedChannel for GRPC.
+   * @see io.grpc.ManagedChannel#shutdown()
+   * @throws IOException on exception.
+   */
+  @Override
+  public void close() throws IOException {
+    if (channel != null) {
+      channel.close();
+    }
+  }
 }

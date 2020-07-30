@@ -73,51 +73,52 @@ public class BindingIT extends BaseIT {
       daprRun.switchToHTTP();
     }
 
-    DaprClient client = new DaprClientBuilder().build();
+    try(DaprClient client = new DaprClientBuilder().build()) {
 
-    // This is an example of sending data in a user-defined object.  The input binding will receive:
-    //   {"message":"hello"}
-    MyClass myClass = new MyClass();
-    myClass.message = "hello";
+      // This is an example of sending data in a user-defined object.  The input binding will receive:
+      //   {"message":"hello"}
+      MyClass myClass = new MyClass();
+      myClass.message = "hello";
 
-    System.out.println("sending first message");
-    client.invokeBinding(
-      BINDING_NAME, BINDING_OPERATION, myClass, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
+      System.out.println("sending first message");
+      client.invokeBinding(
+          BINDING_NAME, BINDING_OPERATION, myClass, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
 
-    // This is an example of sending a plain string.  The input binding will receive
-    //   cat
-    final String m = "cat";
-    System.out.println("sending " + m);
-    client.invokeBinding(
-      BINDING_NAME, BINDING_OPERATION, m, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
+      // This is an example of sending a plain string.  The input binding will receive
+      //   cat
+      final String m = "cat";
+      System.out.println("sending " + m);
+      client.invokeBinding(
+          BINDING_NAME, BINDING_OPERATION, m, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
 
-    // Metadata is not used by Kafka component, so it is not possible to validate.
-    callWithRetry(() -> {
-      System.out.println("Checking results ...");
-      final List<String> messages =
-          client.invokeService(
-              daprRun.getAppName(),
-              "messages",
-              null,
-              HttpExtension.GET,
-              List.class).block();
-      assertEquals(2, messages.size());
+      // Metadata is not used by Kafka component, so it is not possible to validate.
+      callWithRetry(() -> {
+        System.out.println("Checking results ...");
+        final List<String> messages =
+            client.invokeService(
+                daprRun.getAppName(),
+                "messages",
+                null,
+                HttpExtension.GET,
+                List.class).block();
+        assertEquals(2, messages.size());
 
-      MyClass resultClass = null;
-      try {
-        resultClass = new ObjectMapper().readValue(messages.get(0), MyClass.class);
-      } catch (Exception ex) {
-        ex.printStackTrace();
-        fail("Error on decode message 1");
-      }
+        MyClass resultClass = null;
+        try {
+          resultClass = new ObjectMapper().readValue(messages.get(0), MyClass.class);
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          fail("Error on decode message 1");
+        }
 
-      try {
-        assertEquals("cat", new ObjectMapper().readValue(messages.get(1), String.class));
-      } catch (Exception ex) {
-        ex.printStackTrace();
-        fail("Error on decode message 2");
-      }
-      assertEquals("hello", resultClass.message);
-    }, 8000);
+        try {
+          assertEquals("cat", new ObjectMapper().readValue(messages.get(1), String.class));
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          fail("Error on decode message 2");
+        }
+        assertEquals("hello", resultClass.message);
+      }, 8000);
+    }
   }
 }

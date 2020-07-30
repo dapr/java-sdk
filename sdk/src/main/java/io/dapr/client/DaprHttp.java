@@ -16,6 +16,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import reactor.core.publisher.Mono;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -25,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class DaprHttp {
+public class DaprHttp implements Closeable {
   /**
    * Dapr's http default scheme.
    */
@@ -237,6 +238,15 @@ public class DaprHttp {
       return null;
     }
     return OBJECT_MAPPER.readValue(json, DaprError.class);
+  }
+
+  /**
+   * Shutdown call is not necessary for OkHttpClient.
+   * @see OkHttpClient
+   */
+  @Override
+  public void close() throws IOException {
+    // No code needed
   }
 
 }

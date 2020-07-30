@@ -43,8 +43,8 @@ mvn install
 
 Before getting into the application code, follow these steps in order to setup a local instance of Vault. This is needed for the local instances. Steps are:
 
-1. navigate to the [repo-root] with `cd java-sdk`
-2. Run `docker-compose -f ./examples/src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml up -d` to run the container locally
+1. navigate to the [examples] with `cd examples`
+2. Run `docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml up -d` to run the container locally
 3. Run `docker ps` to see the container running locally: 
 
 ```bash
@@ -60,6 +60,8 @@ Dapr's API for secret store only support read operations. For this sample to run
 ```bash
 vault login myroot
 ```
+
+> Note: If you get `http: server gave HTTP response to HTTPS client` make sure the local vault address is set `export VAULT_ADDR=http://127.0.0.1:8200/`
 
 2. Create secret (replace `[my favorite movie]` with a title of our choice):
 ```bash
@@ -78,24 +80,36 @@ The example's main function is in `SecretClient.java`.
 
 ```java
 public class SecretClient {
-
-  private static final String SECRET_STORE_NAME = "vault";
+    /**
+     * Identifier in Dapr for the secret store.
+     */
+    private static final String SECRET_STORE_NAME = "vault";
+  
+    /**
+     * JSON Serializer to print output.
+     */
+    private static final ObjectMapper JSON_SERIALIZER = new ObjectMapper();
   
   ///...
 
   public static void main(String[] args) throws Exception {
-    ///...
-    String secretKey = args[0];
-    DaprClient client = (new DaprClientBuilder()).build();
-    Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
-    System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
-  }
+      if (args.length != 1) {
+        throw new IllegalArgumentException("Use one argument: secret's key to be retrieved.");
+      }
+  
+      String secretKey = args[0];
+      try (DaprClient client = (new DaprClientBuilder()).build()) {
+        Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
+        System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+      }
+    }
 ///...
 }
 ```
 The program receives one and only one argument: the secret's key to be fetched.
 After identifying the key to be fetched, it will retrieve it from the pre-defined secret store: `vault`.
 The secret store's name **must** match the component's name defined in `< repo dir >/examples/components/hashicorp_vault.yaml`.
+The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
  Execute the follow script in order to run the example:
 ```sh
@@ -107,6 +121,13 @@ Once running, the program should print the output as follows:
 
 ```
 == APP == {"title":"[my favorite movie]"}
+```
+
+To close the app, press CTRL+c.
+
+To cleanup and bring the vault container down, run
+```sh
+docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml down
 ```
 
 Thanks for playing.
