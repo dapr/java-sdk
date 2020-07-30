@@ -29,18 +29,15 @@ import java.util.Optional;
 public class StateOptions {
   private final Consistency consistency;
   private final Concurrency concurrency;
-  private final RetryPolicy retryPolicy;
 
   /**
    * Represents options for a Dapr state API call.
    * @param consistency The consistency mode.
    * @param concurrency The concurrency mode.
-   * @param retryPolicy The retry policy.
    */
-  public StateOptions(Consistency consistency, Concurrency concurrency, RetryPolicy retryPolicy) {
+  public StateOptions(Consistency consistency, Concurrency concurrency) {
     this.consistency = consistency;
     this.concurrency = concurrency;
-    this.retryPolicy = retryPolicy;
   }
 
   public Concurrency getConcurrency() {
@@ -49,10 +46,6 @@ public class StateOptions {
 
   public Consistency getConsistency() {
     return consistency;
-  }
-
-  public RetryPolicy getRetryPolicy() {
-    return retryPolicy;
   }
 
   /**
@@ -69,17 +62,6 @@ public class StateOptions {
       }
       if (this.getConcurrency() != null) {
         mapOptions.put("concurrency", this.getConcurrency().getValue());
-      }
-      if (this.getRetryPolicy() != null) {
-        if (this.getRetryPolicy().getInterval() != null) {
-          mapOptions.put("retryInterval", String.valueOf(this.getRetryPolicy().getInterval().toMillis()));
-        }
-        if (this.getRetryPolicy().getThreshold() != null) {
-          mapOptions.put("retryThreshold", this.getRetryPolicy().getThreshold().toString());
-        }
-        if (this.getRetryPolicy().getPattern() != null) {
-          mapOptions.put("retryPattern", this.getRetryPolicy().getPattern().getValue());
-        }
       }
     }
     return Collections.unmodifiableMap(Optional.ofNullable(mapOptions).orElse(Collections.EMPTY_MAP));
@@ -124,60 +106,6 @@ public class StateOptions {
     @JsonCreator
     public static Concurrency fromValue(String value) {
       return Concurrency.valueOf(value);
-    }
-  }
-
-  public static class RetryPolicy {
-    public enum Pattern {
-      LINEAR("linear"),
-      EXPONENTIAL("exponential");
-
-      private String value;
-
-      Pattern(String value) {
-        this.value = value;
-      }
-
-      @JsonValue
-      public String getValue() {
-        return this.value;
-      }
-
-      @JsonCreator
-      public static Pattern fromValue(String value) {
-        return Pattern.valueOf(value);
-      }
-    }
-
-    @JsonSerialize(using = StateOptionDurationSerializer.class)
-    @JsonDeserialize(using = StateOptionDurationDeserializer.class)
-    private final Duration interval;
-    private final Integer threshold;
-    private final Pattern pattern;
-
-
-    /**
-     * Represents retry policies on a state operation.
-     * @param interval The delay between retries.
-     * @param threshold The total number of retries.
-     * @param pattern The way to retry: linear or exponential.
-     */
-    public RetryPolicy(Duration interval, Integer threshold, Pattern pattern) {
-      this.interval = interval;
-      this.threshold = threshold;
-      this.pattern = pattern;
-    }
-
-    public Duration getInterval() {
-      return interval;
-    }
-
-    public Integer getThreshold() {
-      return threshold;
-    }
-
-    public Pattern getPattern() {
-      return pattern;
     }
   }
 

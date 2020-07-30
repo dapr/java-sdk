@@ -7,7 +7,6 @@ package io.dapr.client;
 
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
-import io.dapr.client.domain.Verb;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
