@@ -202,15 +202,15 @@ public class DaprRuntimeTest {
           eq(Constants.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
           any(),
           eq(serializer.serialize(message.data)),
-          eq(null)))
+          any()))
           .thenAnswer(x ->
               this.daprRuntime.handleInvocation(
               METHOD_NAME,
               serializer.serialize(message.data),
               message.metadata)
           .map(r -> new DaprHttpStub.ResponseStub(r, null, 200)));
-
-      Mono<byte[]> response = client.invokeService(Verb.POST, APP_ID, METHOD_NAME, message.data, message.metadata, byte[].class);
+      Mono<byte[]> response = client.invokeService(APP_ID, METHOD_NAME, message.data, HttpExtension.POST,
+          message.metadata, byte[].class);
       Assert.assertArrayEquals(expectedResponse, response.block());
 
       verify(listener, times(1))

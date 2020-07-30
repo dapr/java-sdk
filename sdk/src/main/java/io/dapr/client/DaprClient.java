@@ -43,130 +43,144 @@ public interface DaprClient {
   /**
    * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId    The Application ID where the service is.
-   * @param method   The actual Method to be call in the application.
-   * @param request  The request to be sent to invoke the service, use byte[] to skip serialization.
-   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @param type     The Type needed as return for the call.
-   * @param <T>      The Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type .
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
+   * @param type          The Type needed as return for the call.
+   * @param <T>           The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type.
    */
-  <T> Mono<T> invokeService(
-      Verb verb, String appId, String method, Object request, Map<String, String> metadata, TypeRef<T> type);
+  <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+                            Map<String, String> metadata, TypeRef<T> type);
 
   /**
    * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId    The Application ID where the service is.
-   * @param method   The actual Method to be call in the application.
-   * @param request  The request to be sent to invoke the service, use byte[] to skip serialization.
-   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @param clazz    The type needed as return for the call.
-   * @param <T>      The type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type .
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
+   * @param clazz         The type needed as return for the call.
+   * @param <T>           The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type.
    */
-  <T> Mono<T> invokeService(
-      Verb verb, String appId, String method, Object request, Map<String, String> metadata, Class<T> clazz);
+  <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+                            Map<String, String> metadata, Class<T> clazz);
 
   /**
-   * Invoke a service without metadata, using serialization.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
-   * @param request The request to be sent to invoke the service, use byte[] to skip serialization.
-   * @param type    The type needed as return for the call.
-   * @param <T>     The type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type .
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param type          The Type needed as return for the call.
+   * @param <T>           The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type.
    */
-  <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, TypeRef<T> type);
+  <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension, TypeRef<T> type);
 
   /**
-   * Invoke a service without metadata, using serialization.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
-   * @param request The request to be sent to invoke the service, use byte[] to skip serialization.
-   * @param clazz   The type needed as return for the call.
-   * @param <T>     The type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type .
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param clazz         The type needed as return for the call.
+   * @param <T>           The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type.
    */
-  <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, Class<T> clazz);
+  <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension, Class<T> clazz);
 
   /**
-   * Invoke a service without input, using serialization for response.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId    The Application ID where the service is.
-   * @param method   The actual Method to be call in the application.
-   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @param type     The type needed as return for the call.
-   * @param <T>      The type of the return, use byte[] to skip serialization.
-   * @return A Mono plan of type type .
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
+   * @param type          The Type needed as return for the call.
+   * @param <T>           The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type.
    */
-  <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, TypeRef<T> type);
+  <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension, Map<String, String> metadata,
+                            TypeRef<T> type);
 
   /**
-   * Invoke a service without input, using serialization for response.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb     The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId    The Application ID where the service is.
-   * @param method   The actual Method to be call in the application.
-   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @param clazz    The type needed as return for the call.
-   * @param <T>      The type of the return, use byte[] to skip serialization.
-   * @return A Mono plan of type type .
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
+   * @param clazz         The type needed as return for the call.
+   * @param <T>           The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type type.
    */
-  <T> Mono<T> invokeService(Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz);
+  <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension, Map<String, String> metadata,
+                            Class<T> clazz);
 
   /**
-   * Invoke a service with void response, using serialization.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
-   * @param request The request to be sent to invoke the service, use byte[] to skip serialization.
-   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @return A Mono plan for Void.
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
+   * @return A Mono Plan of type type.
    */
-  Mono<Void> invokeService(Verb verb, String appId, String method, Object request, Map<String, String> metadata);
+  Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+                            Map<String, String> metadata);
 
   /**
-   * Invoke a service with void response, no metadata and using serialization.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
-   * @param request The request to be sent to invoke the service, use byte[] to skip serialization.
-   * @return A Mono plan for Void.
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @return A Mono Plan of type type.
    */
-  Mono<Void> invokeService(Verb verb, String appId, String method, Object request);
+  Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension);
 
   /**
-   * Invoke a service without input and void response.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
-   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @return A Mono plan for Void.
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
+   * @return A Mono Plan of type type.
    */
-  Mono<Void> invokeService(Verb verb, String appId, String method, Map<String, String> metadata);
+  Mono<Void> invokeService(String appId, String method, HttpExtension httpExtension, Map<String, String> metadata);
 
   /**
-   * Invoke a service without serialization.
+   * Invoke a service with all possible parameters, using serialization.
    *
-   * @param verb    The Verb to be used for HTTP will be the HTTP Verb, for GRPC is just a metadata value.
-   * @param appId   The Application ID where the service is.
-   * @param method  The actual Method to be call in the application.
-   * @param request The request to be sent to invoke the service
-   * @param metadata Metadata (in GRPC) or headers (in HTTP) to be send in request.
-   * @return A Mono plan of byte[].
+   * @param appId         The Application ID where the service is.
+   * @param method        The actual Method to be call in the application.
+   * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
+   * @param httpExtension Additional fields that are needed if the receiving app is listening on
+   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
+   * @return A Mono Plan of type type.
    */
-  Mono<byte[]> invokeService(Verb verb, String appId, String method, byte[] request, Map<String, String> metadata);
+  Mono<byte[]> invokeService(String appId, String method, byte[] request, HttpExtension httpExtension,
+                           Map<String, String> metadata);
 
   /**
    * Invokes a Binding operation.

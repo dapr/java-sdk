@@ -14,12 +14,11 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.Verb;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
-import java.util.Collections;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
@@ -27,6 +26,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -206,7 +206,15 @@ public class DaprClientGrpcTest {
   public void invokeServiceVoidExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", "request");
+    Mono<Void> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE);
+    result.block();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void invokeServiceEmptyRequestVoidExceptionThrownTest() {
+    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
+        .thenThrow(RuntimeException.class);
+    Mono<Void> result = adapter.invokeService("appId", "method", HttpExtension.NONE, (Map<String, String>)null);
     result.block();
   }
 
@@ -220,7 +228,7 @@ public class DaprClientGrpcTest {
     settableFuture.setException(ex);
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", "request");
+    Mono<Void> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE);
     result.block();
   }
 
@@ -234,7 +242,7 @@ public class DaprClientGrpcTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", "request");
+    Mono<Void> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE);
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -251,7 +259,7 @@ public class DaprClientGrpcTest {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
     MyObject request = new MyObject(1, "Event");
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", request);
+    Mono<Void> result = adapter.invokeService("appId", "method", request, HttpExtension.NONE);
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -261,7 +269,23 @@ public class DaprClientGrpcTest {
   public void invokeServiceExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", "request", null, String.class);
+    Mono<String> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE, null, String.class);
+    result.block();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void invokeServiceNoRequestClassExceptionThrownTest() {
+    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
+        .thenThrow(RuntimeException.class);
+    Mono<String> result = adapter.invokeService("appId", "method", HttpExtension.NONE, (Map<String, String>)null, String.class);
+    result.block();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void invokeServiceNoRequestTypeRefExceptionThrownTest() {
+    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
+        .thenThrow(RuntimeException.class);
+    Mono<String> result = adapter.invokeService("appId", "method", HttpExtension.NONE, (Map<String, String>)null, TypeRef.STRING);
     result.block();
   }
 
@@ -274,9 +298,39 @@ public class DaprClientGrpcTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", "request", null, String.class);
+    Mono<String> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE, null, String.class);
     settableFuture.setException(ex);
     result.block();
+  }
+
+  @Test
+  public void invokeServiceWithHttpExtensionTest() throws IOException {
+    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, new HashMap<String, String>() {{
+      put("test", "1");
+    }});
+    CommonProtos.InvokeRequest message = CommonProtos.InvokeRequest.newBuilder()
+        .setMethod("method")
+        .setData(getAny("request"))
+        .setHttpExtension(CommonProtos.HTTPExtension.newBuilder()
+            .setVerb(CommonProtos.HTTPExtension.Verb.GET)
+            .putQuerystring("test", "1").build())
+        .build();
+    DaprProtos.InvokeServiceRequest request = DaprProtos.InvokeServiceRequest.newBuilder()
+        .setId("appId")
+        .setMessage(message)
+        .build();
+    String expected = "Value";
+    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
+    MockCallback<CommonProtos.InvokeResponse> callback =
+        new MockCallback<CommonProtos.InvokeResponse>(CommonProtos.InvokeResponse.newBuilder()
+            .setData(getAny(expected)).build());
+    addCallback(settableFuture, callback, directExecutor());
+    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+    when(client.invokeService(eq(request)))
+        .thenReturn(settableFuture);
+    Mono<String> result = adapter.invokeService("appId", "method", "request", httpExtension, null, String.class);
+    String strOutput = result.block();
+    assertEquals(expected, strOutput);
   }
 
   @Test
@@ -290,7 +344,7 @@ public class DaprClientGrpcTest {
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", "request", null, String.class);
+    Mono<String> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE, null, String.class);
     String strOutput = result.block();
     assertEquals(expected, strOutput);
   }
@@ -306,7 +360,7 @@ public class DaprClientGrpcTest {
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<MyObject> result = adapter.invokeService(Verb.GET, "appId", "method", "request", null, MyObject.class);
+    Mono<MyObject> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE, null, MyObject.class);
     MyObject resultObject = result.block();
     assertEquals(object.id, resultObject.id);
     assertEquals(object.value, resultObject.value);
@@ -316,7 +370,7 @@ public class DaprClientGrpcTest {
   public void invokeServiceNoRequestBodyExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", null, String.class);
+    Mono<String> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE, (Class)String.class);
     result.block();
   }
 
@@ -329,7 +383,7 @@ public class DaprClientGrpcTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", null, String.class);
+    Mono<String> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE, String.class);
     settableFuture.setException(ex);
     result.block();
   }
@@ -346,7 +400,7 @@ public class DaprClientGrpcTest {
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<String> result = adapter.invokeService(Verb.GET, "appId", "method", null, String.class);
+    Mono<String> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE, String.class);
     String strOutput = result.block();
     assertEquals(expected, strOutput);
   }
@@ -363,7 +417,7 @@ public class DaprClientGrpcTest {
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<MyObject> result = adapter.invokeService(Verb.GET, "appId", "method", null, MyObject.class);
+    Mono<MyObject> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE, MyObject.class);
     MyObject resultObject = result.block();
     assertEquals(object.id, resultObject.id);
     assertEquals(object.value, resultObject.value);
@@ -375,7 +429,7 @@ public class DaprClientGrpcTest {
         .thenThrow(RuntimeException.class);
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
-    Mono<byte[]> result = adapter.invokeService(Verb.GET, "appId", "method", byteRequest, byte[].class);
+    Mono<byte[]> result = adapter.invokeService("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
     result.block();
   }
 
@@ -391,7 +445,7 @@ public class DaprClientGrpcTest {
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
     Mono<byte[]> result =
-        adapter.invokeService(Verb.GET, "appId", "method", byteRequest, (HashMap<String, String>) null);
+        adapter.invokeService("appId", "method", byteRequest, HttpExtension.NONE,(HashMap<String, String>) null);
     settableFuture.setException(ex);
     result.block();
   }
@@ -410,7 +464,7 @@ public class DaprClientGrpcTest {
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
     Mono<byte[]> result = adapter.invokeService(
-        Verb.GET, "appId", "method", byteRequest, (HashMap<String, String>) null);
+        "appId", "method", byteRequest, HttpExtension.NONE, (HashMap<String, String>) null);
     byte[] byteOutput = result.block();
     String strOutput = serializer.deserialize(byteOutput, String.class);
     assertEquals(expected, strOutput);
@@ -429,7 +483,7 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
-    Mono<byte[]> result = adapter.invokeService(Verb.GET, "appId", "method", byteRequest, byte[].class);
+    Mono<byte[]> result = adapter.invokeService("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
     byte[] byteOutput = result.block();
     assertEquals(resultObj, serializer.deserialize(byteOutput, MyObject.class));
   }
@@ -438,7 +492,7 @@ public class DaprClientGrpcTest {
   public void invokeServiceNoRequestNoClassBodyExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", null);
+    Mono<Void> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE);
     result.block();
   }
 
@@ -451,7 +505,7 @@ public class DaprClientGrpcTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", null);
+    Mono<Void> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE);
     settableFuture.setException(ex);
     result.block();
   }
@@ -466,7 +520,7 @@ public class DaprClientGrpcTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", null);
+    Mono<Void> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE);
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -485,7 +539,7 @@ public class DaprClientGrpcTest {
           settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
           return settableFuture;
         });
-    adapter.invokeService(Verb.GET, "appId", "method", null);
+    adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE);
     // Do not call block() on mono above, so nothing should happen.
     assertFalse(callback.wasCalled);
   }
@@ -502,7 +556,7 @@ public class DaprClientGrpcTest {
     settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeService(Verb.GET, "appId", "method", null);
+    Mono<Void> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE);
     result.block();
     assertTrue(callback.wasCalled);
   }

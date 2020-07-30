@@ -96,7 +96,7 @@ private static class HelloWorldClient {
     while (true) {
       String message = "Message #" + (count++);
       System.out.println("Sending message: " + message);
-      client.invokeService(Verb.POST, serviceAppId, method, message).block();
+      client.invokeService(serviceAppId, method, message, HttpExtension.NONE).block();
       System.out.println("Message sent: " + message);
 
       Thread.sleep(1000);

@@ -8,21 +8,17 @@ package io.dapr.it.binding.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.Verb;
+import io.dapr.client.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.services.EmptyService;
-import io.dapr.serializer.DefaultObjectSerializer;
-import java.util.Arrays;
-import java.util.Collection;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.Assert.assertEquals;
@@ -100,10 +96,10 @@ public class BindingIT extends BaseIT {
       System.out.println("Checking results ...");
       final List<String> messages =
           client.invokeService(
-              Verb.GET,
               daprRun.getAppName(),
               "messages",
               null,
+              HttpExtension.GET,
               List.class).block();
       assertEquals(2, messages.size());
 

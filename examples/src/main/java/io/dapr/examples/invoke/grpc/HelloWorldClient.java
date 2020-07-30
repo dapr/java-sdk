@@ -7,7 +7,7 @@ package io.dapr.examples.invoke.grpc;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.Verb;
+import io.dapr.client.HttpExtension;
 
 /**
  * 1. Build and install jars:
@@ -33,7 +33,7 @@ public class HelloWorldClient {
     while (true) {
       String message = "Message #" + (count++);
       System.out.println("Sending message: " + message);
-      client.invokeService(Verb.POST, serviceAppId, method, message).block();
+      client.invokeService(serviceAppId, method, message, HttpExtension.NONE).block();
       System.out.println("Message sent: " + message);
 
       Thread.sleep(1000);

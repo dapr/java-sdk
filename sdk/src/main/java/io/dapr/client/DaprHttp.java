@@ -26,15 +26,24 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class DaprHttp {
+  /**
+   * Dapr's http default scheme.
+   */
+  private static final String DEFAULT_HTTP_SCHEME = "http";
 
   /**
    * HTTP Methods supported.
    */
   public enum HttpMethods {
+    NONE,
     GET,
     PUT,
     POST,
-    DELETE
+    DELETE,
+    HEAD,
+    CONNECT,
+    OPTIONS,
+    TRACE
   }
 
   public static class Response {
@@ -171,7 +180,10 @@ public class DaprHttp {
             body = RequestBody.Companion.create(content, mediaType);
           }
           HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-          urlBuilder.scheme("http").host(Constants.DEFAULT_HOSTNAME).port(this.port).addPathSegments(urlString);
+          urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
+              .host(Constants.DEFAULT_HOSTNAME)
+              .port(this.port)
+              .addPathSegments(urlString);
           Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
               .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
 

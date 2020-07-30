@@ -122,14 +122,19 @@ public class DaprClientHttp implements DaprClient {
   /**
    * {@inheritDoc}
    */
-  @Override
   public <T> Mono<T> invokeService(
-      Verb verb, String appId, String method, Object request, Map<String, String> metadata, TypeRef<T> type) {
+      String appId,
+      String method,
+      Object request,
+      HttpExtension httpExtension,
+      Map<String, String> metadata,
+      TypeRef<T> type) {
     try {
-      if (verb == null) {
-        throw new IllegalArgumentException("Verb cannot be null.");
+      if (httpExtension == null) {
+        throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
       }
-      String httMethod = verb.toString();
+      // If the httpExtension is not null, then the method will not be null based on checks in constructor
+      String httMethod = httpExtension.getMethod().toString();
       if (appId == null || appId.trim().isEmpty()) {
         throw new IllegalArgumentException("App Id cannot be null or empty.");
       }
@@ -138,7 +143,8 @@ public class DaprClientHttp implements DaprClient {
       }
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path, metadata, serializedRequestBody, null);
+      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path,
+          httpExtension.getQueryString(), serializedRequestBody, metadata);
       return response.flatMap(r -> {
         try {
           T object = objectSerializer.deserialize(r.getBody(), type);
@@ -161,13 +167,13 @@ public class DaprClientHttp implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeService(
-      Verb verb,
       String appId,
       String method,
       Object request,
+      HttpExtension httpExtension,
       Map<String, String> metadata,
       Class<T> clazz) {
-    return this.invokeService(verb, appId, method, request, metadata, TypeRef.get(clazz));
+    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.get(clazz));
   }
 
   /**
@@ -175,8 +181,8 @@ public class DaprClientHttp implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeService(
-      Verb verb, String appId, String method, Map<String, String> metadata, TypeRef<T> type) {
-    return this.invokeService(verb, appId, method, null, metadata, type);
+      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
+    return this.invokeService(appId, method, null, httpExtension, metadata, type);
   }
 
   /**
@@ -184,41 +190,34 @@ public class DaprClientHttp implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeService(
-      Verb verb, String appId, String method, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeService(verb, appId, method, null, metadata, TypeRef.get(clazz));
+      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
+    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, TypeRef<T> type) {
-    return this.invokeService(verb, appId, method, request, null, type);
+  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+                                   TypeRef<T> type) {
+    return this.invokeService(appId, method, request, httpExtension, null, type);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(Verb verb, String appId, String method, Object request, Class<T> clazz) {
-    return this.invokeService(verb, appId, method, request, null, TypeRef.get(clazz));
+  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+                                   Class<T> clazz) {
+    return this.invokeService(appId, method, request, httpExtension,null, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(Verb verb, String appId, String method, Object request) {
-    return this.invokeService(verb, appId, method, request, null, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeService(
-      Verb verb, String appId, String method, Object request, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, request, metadata, TypeRef.BYTE_ARRAY).then();
+  public Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension) {
+    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
@@ -226,8 +225,17 @@ public class DaprClientHttp implements DaprClient {
    */
   @Override
   public Mono<Void> invokeService(
-      Verb verb, String appId, String method, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, null, metadata, TypeRef.BYTE_ARRAY).then();
+      String appId, String method, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
+    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> invokeService(
+      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata) {
+    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
@@ -235,8 +243,8 @@ public class DaprClientHttp implements DaprClient {
    */
   @Override
   public Mono<byte[]> invokeService(
-      Verb verb, String appId, String method, byte[] request, Map<String, String> metadata) {
-    return this.invokeService(verb, appId, method, request, metadata, TypeRef.BYTE_ARRAY);
+      String appId, String method, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
+    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
   }
 
   /**

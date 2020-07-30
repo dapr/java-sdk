@@ -7,7 +7,7 @@ package io.dapr.examples.invoke.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.Verb;
+import io.dapr.client.HttpExtension;
 
 /**
  * 1. Build and install jars:
@@ -32,8 +32,8 @@ public class InvokeClient {
   public static void main(String[] args) {
     DaprClient client = (new DaprClientBuilder()).build();
     for (String message : args) {
-      byte[] response = client.invokeService(
-          Verb.POST, SERVICE_APP_ID, "say", message, null, byte[].class).block();
+      byte[] response = client.invokeService(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
+          byte[].class).block();
       System.out.println(new String(response));
     }
 
