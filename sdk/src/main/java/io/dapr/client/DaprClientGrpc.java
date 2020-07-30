@@ -8,7 +8,6 @@ package io.dapr.client;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Duration;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -24,8 +23,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static io.dapr.client.domain.StateOptions.RetryPolicy;
 
 /**
  * An adapter for the GRPC Client.
@@ -96,17 +93,6 @@ public class DaprClientGrpc implements DaprClient {
         return CommonProtos.StateOptions.StateConcurrency.CONCURRENCY_LAST_WRITE;
       default:
         throw new IllegalArgumentException("Missing StateConcurrency mapping to gRPC Concurrency enum");
-    }
-  }
-
-  private CommonProtos.StateRetryPolicy.RetryPattern getGrpcStateRetryPolicy(RetryPolicy policy) {
-    switch (policy.getPattern()) {
-      case LINEAR:
-        return CommonProtos.StateRetryPolicy.RetryPattern.RETRY_LINEAR;
-      case EXPONENTIAL:
-        return CommonProtos.StateRetryPolicy.RetryPattern.RETRY_EXPONENTIAL;
-      default:
-        throw new IllegalArgumentException("Missing RetryPattern mapping to gRPC retry pattern enum");
     }
   }
 
@@ -447,33 +433,12 @@ public class DaprClientGrpc implements DaprClient {
     CommonProtos.StateOptions.Builder optionBuilder = null;
     if (state.getOptions() != null) {
       StateOptions options = state.getOptions();
-      CommonProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
-      if (options.getRetryPolicy() != null) {
-        retryPolicyBuilder = CommonProtos.StateRetryPolicy.newBuilder();
-        RetryPolicy retryPolicy = options.getRetryPolicy();
-        if (options.getRetryPolicy().getInterval() != null) {
-          Duration.Builder durationBuilder = Duration.newBuilder()
-              .setNanos(retryPolicy.getInterval().getNano())
-              .setSeconds(retryPolicy.getInterval().getSeconds());
-          retryPolicyBuilder.setInterval(durationBuilder.build());
-        }
-        if (retryPolicy.getThreshold() != null) {
-          retryPolicyBuilder.setThreshold(retryPolicy.getThreshold());
-        }
-        if (retryPolicy.getPattern() != null) {
-          retryPolicyBuilder.setPattern(getGrpcStateRetryPolicy(retryPolicy));
-        }
-      }
-
       optionBuilder = CommonProtos.StateOptions.newBuilder();
       if (options.getConcurrency() != null) {
         optionBuilder.setConcurrency(getGrpcStateConcurrency(options));
       }
       if (options.getConsistency() != null) {
         optionBuilder.setConsistency(getGrpcStateConsistency(options));
-      }
-      if (retryPolicyBuilder != null) {
-        optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
       }
     }
     if (optionBuilder != null) {
@@ -523,23 +488,6 @@ public class DaprClientGrpc implements DaprClient {
       CommonProtos.StateOptions.Builder optionBuilder = null;
       if (options != null) {
         optionBuilder = CommonProtos.StateOptions.newBuilder();
-        CommonProtos.StateRetryPolicy.Builder retryPolicyBuilder = null;
-        if (options.getRetryPolicy() != null) {
-          retryPolicyBuilder = CommonProtos.StateRetryPolicy.newBuilder();
-          RetryPolicy retryPolicy = options.getRetryPolicy();
-          if (options.getRetryPolicy().getInterval() != null) {
-            Duration.Builder durationBuilder = Duration.newBuilder()
-                .setNanos(retryPolicy.getInterval().getNano())
-                .setSeconds(retryPolicy.getInterval().getSeconds());
-            retryPolicyBuilder.setInterval(durationBuilder.build());
-          }
-          if (retryPolicy.getThreshold() != null) {
-            retryPolicyBuilder.setThreshold(retryPolicy.getThreshold());
-          }
-          if (retryPolicy.getPattern() != null) {
-            retryPolicyBuilder.setPattern(getGrpcStateRetryPolicy(retryPolicy));
-          }
-        }
 
         optionBuilder = CommonProtos.StateOptions.newBuilder();
         if (options.getConcurrency() != null) {
@@ -547,9 +495,6 @@ public class DaprClientGrpc implements DaprClient {
         }
         if (options.getConsistency() != null) {
           optionBuilder.setConsistency(getGrpcStateConsistency(options));
-        }
-        if (retryPolicyBuilder != null) {
-          optionBuilder.setRetryPolicy(retryPolicyBuilder.build());
         }
       }
       DaprProtos.DeleteStateRequest.Builder builder = DaprProtos.DeleteStateRequest.newBuilder()
