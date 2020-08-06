@@ -160,8 +160,8 @@ public class DaprRun {
   private static String buildDaprCommand(String appName, Class serviceClass, DaprPorts ports) {
     StringBuilder stringBuilder = new StringBuilder(String.format(DAPR_RUN, appName))
         .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
-        .append(ports.getHttpPort() != null ? " --port " + ports.getHttpPort() : "")
-        .append(ports.getGrpcPort() != null ? " --grpc-port " + ports.getGrpcPort() : "")
+        .append(ports.getHttpPort() != null ? " --dapr-http-port " + ports.getHttpPort() : "")
+        .append(ports.getGrpcPort() != null ? " --dapr-grpc-port " + ports.getGrpcPort() : "")
         .append(String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
             ports.getAppPort() != null ? ports.getAppPort().toString() : ""));
     return stringBuilder.toString();
