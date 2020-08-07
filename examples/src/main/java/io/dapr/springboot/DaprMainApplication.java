@@ -27,7 +27,6 @@ public class DaprMainApplication {
       Object[] methodArgs = new Object[1];
       methodArgs[0] = arguments;
       mainMethod.invoke(mainClass, methodArgs);
-
     }
   }
 }

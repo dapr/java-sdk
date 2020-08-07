@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -26,17 +27,26 @@ import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Duration;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class DaprClientGrpcTest {
 
@@ -53,6 +63,7 @@ public class DaprClientGrpcTest {
   public void setup() throws IOException {
     closeable = mock(Closeable.class);
     client = mock(DaprGrpc.DaprFutureStub.class);
+    when(client.withInterceptors(any())).thenReturn(client);
     adapter = new DaprClientGrpc(closeable, client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     serializer = new ObjectSerializer();
     doNothing().when(closeable).close();
@@ -154,7 +165,7 @@ public class DaprClientGrpcTest {
   public void invokeBindingTest() throws IOException {
     SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-      DaprProtos.InvokeBindingResponse.newBuilder().setData(getBytes("OK"));
+      DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
@@ -166,10 +177,25 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void invokeBindingByteArrayTest() throws IOException {
+    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprProtos.InvokeBindingResponse.newBuilder().setData(ByteString.copyFrom("OK".getBytes()));
+    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
+        .thenReturn(settableFuture);
+    Mono<byte[]> result = adapter.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
+    settableFuture.set(responseBuilder.build());
+    assertEquals("OK", new String(result.block(), StandardCharsets.UTF_8));
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
   public void invokeBindingObjectTest() throws IOException {
     SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-      DaprProtos.InvokeBindingResponse.newBuilder().setData(getBytes("OK"));
+      DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
@@ -185,13 +211,29 @@ public class DaprClientGrpcTest {
   public void invokeBindingResponseObjectTest() throws IOException {
     SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-      DaprProtos.InvokeBindingResponse.newBuilder().setData(getBytes("OK"));
+        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
     addCallback(settableFuture, callback, directExecutor());
     when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-      .thenReturn(settableFuture);
+        .thenReturn(settableFuture);
     MyObject event = new MyObject(1, "Event");
-    Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, null, String.class);
+    Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, String.class);
+    settableFuture.set(responseBuilder.build());
+    assertEquals("OK", result.block());
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void invokeBindingResponseObjectTypeRefTest() throws IOException {
+    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
+        .thenReturn(settableFuture);
+    MyObject event = new MyObject(1, "Event");
+    Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, TypeRef.get(String.class));
     settableFuture.set(responseBuilder.build());
     assertEquals("OK", result.block());
     assertTrue(callback.wasCalled);
@@ -642,7 +684,7 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
     DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
-        .setData(getBytes(expectedValue))
+        .setData(serialize(expectedValue))
         .setEtag(etag)
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
@@ -664,7 +706,7 @@ public class DaprClientGrpcTest {
     StateOptions options = new StateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
     State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
     DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
-        .setData(getBytes(expectedValue))
+        .setData(serialize(expectedValue))
         .setEtag(etag)
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
@@ -1125,7 +1167,7 @@ public class DaprClientGrpcTest {
 
   private <T> DaprProtos.GetStateResponse buildGetStateResponse(T value, String etag) throws IOException {
     return DaprProtos.GetStateResponse.newBuilder()
-        .setData(getBytes(value))
+        .setData(serialize(value))
         .setEtag(etag)
         .build();
   }
@@ -1149,10 +1191,10 @@ public class DaprClientGrpcTest {
   }
 
   private Any getAny(Object value) throws IOException {
-    return Any.newBuilder().setValue(getBytes(value)).build();
+    return Any.newBuilder().setValue(serialize(value)).build();
   }
 
-  private ByteString getBytes(Object value) throws IOException {
+  private ByteString serialize(Object value) throws IOException {
     byte[] byteValue = serializer.serialize(value);
     return ByteString.copyFrom(byteValue);
   }

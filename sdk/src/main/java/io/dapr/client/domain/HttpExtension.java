@@ -3,7 +3,9 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.client;
+package io.dapr.client.domain;
+
+import io.dapr.client.DaprHttp;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,7 +19,7 @@ import java.util.Map;
 
 public final class HttpExtension {
   /**
-   * Convenience HttpExtension object for {@link DaprHttp.HttpMethods#NONE} with empty queryString.
+   * Convenience HttpExtension object for {@link io.dapr.client.DaprHttp.HttpMethods#NONE} with empty queryString.
    */
   public static final HttpExtension NONE = new HttpExtension(DaprHttp.HttpMethods.NONE, new HashMap<>());
   /**

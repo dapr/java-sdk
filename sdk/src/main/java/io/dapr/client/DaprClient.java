@@ -5,6 +5,15 @@
 
 package io.dapr.client;
 
+import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.GetSecretRequest;
+import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeBindingRequest;
+import io.dapr.client.domain.InvokeServiceRequest;
+import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.Response;
+import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.utils.TypeRef;
@@ -43,23 +52,31 @@ public interface DaprClient extends Closeable {
   Mono<Void> publishEvent(String pubsubName, String topic, Object data, Map<String, String> metadata);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Publish an event.
+   *
+   * @param request the request for the publish event.
+   * @return a Mono plan of a Dapr's void response.
+   */
+  Mono<Response<Void>> publishEvent(PublishEventRequest request);
+
+  /**
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
    * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
    * @param httpExtension Additional fields that are needed if the receiving app is listening on
-   *                      HTTP, {@link HttpExtension#NONE} otherwise.
+   *                      HTTP, {@link io.dapr.client.domain.HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type T.
    */
   <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
                             Map<String, String> metadata, TypeRef<T> type);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
@@ -69,13 +86,13 @@ public interface DaprClient extends Closeable {
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type T.
    */
   <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
                             Map<String, String> metadata, Class<T> clazz);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
@@ -84,12 +101,12 @@ public interface DaprClient extends Closeable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type T.
    */
   <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension, TypeRef<T> type);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
@@ -98,12 +115,12 @@ public interface DaprClient extends Closeable {
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type T.
    */
   <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension, Class<T> clazz);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
@@ -112,13 +129,13 @@ public interface DaprClient extends Closeable {
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @param type          The Type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type T.
    */
   <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension, Map<String, String> metadata,
                             TypeRef<T> type);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
@@ -127,13 +144,13 @@ public interface DaprClient extends Closeable {
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
    * @param clazz         The type needed as return for the call.
    * @param <T>           The Type of the return, use byte[] to skip serialization.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type T.
    */
   <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension, Map<String, String> metadata,
                             Class<T> clazz);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
@@ -141,37 +158,37 @@ public interface DaprClient extends Closeable {
    * @param httpExtension Additional fields that are needed if the receiving app is listening on
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type Void.
    */
   Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
                             Map<String, String> metadata);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
    * @param request       The request to be sent to invoke the service, use byte[] to skip serialization.
    * @param httpExtension Additional fields that are needed if the receiving app is listening on
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type Void.
    */
   Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
    * @param httpExtension Additional fields that are needed if the receiving app is listening on
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type Void.
    */
   Mono<Void> invokeService(String appId, String method, HttpExtension httpExtension, Map<String, String> metadata);
 
   /**
-   * Invoke a service with all possible parameters, using serialization.
+   * Invoke a service method, without using serialization.
    *
    * @param appId         The Application ID where the service is.
    * @param method        The actual Method to be call in the application.
@@ -179,10 +196,20 @@ public interface DaprClient extends Closeable {
    * @param httpExtension Additional fields that are needed if the receiving app is listening on
    *                      HTTP, {@link HttpExtension#NONE} otherwise.
    * @param metadata      Metadata (in GRPC) or headers (in HTTP) to be sent in request.
-   * @return A Mono Plan of type type.
+   * @return A Mono Plan of type byte[].
    */
   Mono<byte[]> invokeService(String appId, String method, byte[] request, HttpExtension httpExtension,
                            Map<String, String> metadata);
+
+  /**
+   * Invoke a service method.
+   *
+   * @param invokeServiceRequest Request object.
+   * @param type                 The Type needed as return for the call.
+   * @param <T>                  The Type of the return, use byte[] to skip serialization.
+   * @return A Mono Plan of type T.
+   */
+  <T> Mono<Response<T>> invokeService(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type);
 
   /**
    * Invokes a Binding operation.
@@ -256,6 +283,16 @@ public interface DaprClient extends Closeable {
   <T> Mono<T> invokeBinding(String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz);
 
   /**
+   * Invokes a Binding operation.
+   *
+   * @param request The binding invocation request.
+   * @param type    The type being returned.
+   * @param <T>     The type of the return
+   * @return a Mono plan of type T.
+   */
+  <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type);
+
+  /**
    * Retrieve a State based on their key.
    *
    * @param stateStoreName The name of the state store.
@@ -315,6 +352,16 @@ public interface DaprClient extends Closeable {
   /**
    * Retrieve a State based on their key.
    *
+   * @param request The request to get state.
+   * @param type    The Type of State needed as return.
+   * @param <T>     The Type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type);
+
+  /**
+   * Retrieve a State based on their key.
+   *
    * @param stateStoreName The name of the state store.
    * @param key            The key of the State to be retrieved.
    * @param etag           Optional etag for conditional get
@@ -333,6 +380,14 @@ public interface DaprClient extends Closeable {
    * @return a Mono plan of type Void.
    */
   Mono<Void> saveStates(String stateStoreName, List<State<?>> states);
+
+  /**
+   * Save/Update a list of states.
+   *
+   * @param request Request to save states.
+   * @return a Mono plan of type Void.
+   */
+  Mono<Response<Void>> saveStates(SaveStateRequest request);
 
   /**
    * Save/Update a state.
@@ -377,6 +432,14 @@ public interface DaprClient extends Closeable {
   Mono<Void>  deleteState(String stateStoreName, String key, String etag, StateOptions options);
 
   /**
+   * Delete a state.
+   *
+   * @param request Request to delete a state.
+   * @return a Mono plan of type Void.
+   */
+  Mono<Response<Void>> deleteState(DeleteStateRequest request);
+
+  /**
    * Fetches a secret from the configured vault.
    *
    * @param secretStoreName Name of vault component in Dapr.
@@ -394,4 +457,12 @@ public interface DaprClient extends Closeable {
    * @return Key-value pairs for the secret.
    */
   Mono<Map<String, String>> getSecret(String secretStoreName, String secretName);
+
+  /**
+   * Fetches a secret from the configured vault.
+   *
+   * @param request Request to fetch secret.
+   * @return Key-value pairs for the secret.
+   */
+  Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request);
 }

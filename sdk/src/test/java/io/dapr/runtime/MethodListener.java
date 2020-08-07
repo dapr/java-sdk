@@ -5,7 +5,6 @@
 
 package io.dapr.runtime;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;

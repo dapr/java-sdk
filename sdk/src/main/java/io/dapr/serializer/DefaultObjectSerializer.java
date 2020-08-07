@@ -9,7 +9,6 @@ import io.dapr.client.ObjectSerializer;
 import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 
 /**
  * Default serializer/deserializer for request/response objects and for state objects too.

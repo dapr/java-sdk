@@ -7,8 +7,11 @@ package io.dapr.runtime;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import io.dapr.client.*;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientTestBuilder;
+import io.dapr.client.DaprHttpStub;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.client.domain.HttpExtension;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
@@ -25,7 +28,12 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprRuntimeTest {
 
@@ -116,7 +124,8 @@ public class DaprRuntimeTest {
           eq(Constants.PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME),
           any(),
           eq(serializer.serialize(message.data)),
-          eq(null)))
+          eq(null),
+          any()))
           .thenAnswer(invocationOnMock -> this.daprRuntime.handleInvocation(
               TOPIC_NAME,
               this.serialize(message),
@@ -203,6 +212,7 @@ public class DaprRuntimeTest {
           eq(Constants.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
           any(),
           eq(serializer.serialize(message.data)),
+          any(),
           any()))
           .thenAnswer(x ->
               this.daprRuntime.handleInvocation(
