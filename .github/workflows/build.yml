@@ -25,7 +25,7 @@ jobs:
       DAPR_RUNTIME_VER: 0.9.0-rc.1
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/e498de9f7dd92c30aa592d6e6761dc924bb53cc2/install/install.sh
       DAPR_CLI_REF: 35b9a824d2fd9e2dcf8e75d1d49ce59a39c7cf5b
-      DAPR_REF:
+      DAPR_REF: b53586d1e5a880a3f87044975ace25b9ae51daec
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
