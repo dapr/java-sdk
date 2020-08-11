@@ -16,7 +16,7 @@ import java.io.IOException;
  * 1. Build and install jars:
  * mvn clean install
  * 2. send a message to be saved as state:
- * dapr run --components-path ./components --port 3006 -- \
+ * dapr run --components-path ./components --dapr-http-port 3006 -- \
  * java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  * io.dapr.examples.state.StateClient 'my message'
  */

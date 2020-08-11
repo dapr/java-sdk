@@ -19,7 +19,7 @@ import java.time.Duration;
  * 1. Build and install jars:
  * mvn clean install
  * 2. Run the server:
- * dapr run --components-path ./components --app-id demoactorservice --app-port 3000 --port 3005 \
+ * dapr run --components-path ./components --app-id demoactorservice --app-port 3000 --dapr-http-port 3005 \
  *   -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
  *   io.dapr.examples.actors.http.DemoActorService -p 3000
  */

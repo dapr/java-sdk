@@ -128,7 +128,7 @@ The `@ActorType` annotation indicates the Dapr Java SDK that this interface is a
 
 Now, execute the following script in order to run DemoActorService:
 ```sh
-dapr run --components-path ./components --app-id demoactorservice --app-port 3000 --port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorService -p 3000
+dapr run --components-path ./components --app-id demoactorservice --app-port 3000 --dapr-http-port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorService -p 3000
 ```
 
 ### Running the Actor client
@@ -187,7 +187,7 @@ First, the client defines how many actors it is going to create. Then the main m
 Use the follow command to execute the DemoActorClient:
 
 ```sh
-dapr run --components-path ./components --app-id demoactorclient --port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorClient
+dapr run --components-path ./components --app-id demoactorclient --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorClient
 ```
 
 Once running, the `DemoActorClient` logs will start displaying the different steps: 

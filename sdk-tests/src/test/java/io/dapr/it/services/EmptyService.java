@@ -10,7 +10,7 @@ package io.dapr.it.services;
  * <p>
  * To run manually, from repo root:
  * 1. mvn clean install
- * 2. dapr run --components-path ./components --grpc-port 41707 --port 32851 -- mvn exec:java -Dexec.mainClass=io.dapr.it.services.EmptyService -Dexec.classpathScope="test" -Dexec.args="-p 44511 -grpcPort 41707 -httpPort 32851" -pl=sdk
+ * 2. dapr run --components-path ./components --dapr-grpc-port 41707 --dapr-http-port 32851 -- mvn exec:java -Dexec.mainClass=io.dapr.it.services.EmptyService -Dexec.classpathScope="test" -Dexec.args="-p 44511 -grpcPort 41707 -httpPort 32851" -pl=sdk
  */
 public class EmptyService {
 
