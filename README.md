@@ -199,12 +199,12 @@ If you have a Java application or an issue on this SDK that needs to be debugged
 For Linux and MacOS:
 
 ```sh
-dapr run --app-id testapp --app-port 3000 --port 3500 --grpc-port 5001 -- cat
+dapr run --app-id testapp --app-port 3000 --dapr-http-port 3500 --dapr-grpc-port 5001 -- cat
 ```
 
 For Windows:
 ```sh
-dapr run --app-id testapp --app-port 3000 --port 3500 --grpc-port 5001 -- waitfor FOREVER
+dapr run --app-id testapp --app-port 3000 --dapr-http-port 3500 --dapr-grpc-port 5001 -- waitfor FOREVER
 ```
 
 When running your Java application from IDE, make sure the following environment variables are set, so the Java SDK knows how to connect to Dapr's sidecar:
