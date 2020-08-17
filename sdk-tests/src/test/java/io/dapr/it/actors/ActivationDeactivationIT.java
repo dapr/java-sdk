@@ -6,19 +6,16 @@
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.services.springboot.DemoActor;
 import io.dapr.it.actors.services.springboot.DemoActorService;
-import io.dapr.it.services.EmptyService;
-import io.dapr.serializer.DefaultObjectSerializer;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.Assert.assertFalse;

@@ -40,7 +40,7 @@ public class DaprRun {
                   Class serviceClass,
                   int maxWaitMilliseconds) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
-    this.appName = String.format("%s_%s", testName, serviceClass.getSimpleName());
+    this.appName = String.format("%s_%s", testName, serviceClass == null ? "" : serviceClass.getSimpleName());
     this.startCommand =
         new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports));
     this.listCommand = new Command(
@@ -162,8 +162,9 @@ public class DaprRun {
         .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
         .append(ports.getHttpPort() != null ? " --dapr-http-port " + ports.getHttpPort() : "")
         .append(ports.getGrpcPort() != null ? " --dapr-grpc-port " + ports.getGrpcPort() : "")
-        .append(String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
-            ports.getAppPort() != null ? ports.getAppPort().toString() : ""));
+        .append(serviceClass == null ? "" :
+            String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
+                ports.getAppPort() != null ? ports.getAppPort().toString() : ""));
     return stringBuilder.toString();
   }
 
@@ -189,21 +190,24 @@ public class DaprRun {
 
     private final String successMessage;
 
-    private final Class serviceClass;
-
     private final int maxWaitMilliseconds;
+
+    private Class serviceClass;
 
     Builder(
         String testName,
         Supplier<DaprPorts> portsSupplier,
         String successMessage,
-        Class serviceClass,
         int maxWaitMilliseconds) {
       this.testName = testName;
       this.portsSupplier = portsSupplier;
       this.successMessage = successMessage;
-      this.serviceClass = serviceClass;
       this.maxWaitMilliseconds = maxWaitMilliseconds;
+    }
+
+    public Builder withServiceClass(Class serviceClass) {
+      this.serviceClass = serviceClass;
+      return this;
     }
 
     DaprRun build() {
