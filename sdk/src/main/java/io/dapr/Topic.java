@@ -23,6 +23,12 @@ public @interface Topic {
   String name();
 
   /**
+   * Name of the pubsub bus to be subscribed to.
+   * @return pubsub bus's name.
+   */
+  String pubsubName();
+
+  /**
    * Metadata in the form of a json object.
    * {
    *    "mykey": "myvalue"

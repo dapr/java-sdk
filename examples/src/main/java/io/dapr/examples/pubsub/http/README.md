@@ -57,7 +57,7 @@ This Spring Controller handles the message endpoint, Printing the message which 
 @RestController
 public class SubscriberController {
   ///...
-  @Topic(name = "testingtopic")
+  @Topic(name = "testingtopic", pubsubName = "messagebus")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                    @RequestHeader Map<String, String> headers) {
@@ -89,6 +89,8 @@ In the `Publisher.java` file, you will find the `Publisher` class, containing th
 public class Publisher {
     private static final int NUM_MESSAGES = 10;
     private static final String TOPIC_NAME = "testingtopic";
+    private static final String PUBSUB_NAME = "messagebus";
+
 ///...
   public static void main(String[] args) throws Exception {
       //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
@@ -96,7 +98,7 @@ public class Publisher {
         for (int i = 0; i < NUM_MESSAGES; i++) {
           String message = String.format("This is message #%d", i);
           //Publishing messages
-          client.publishEvent(TOPIC_NAME, message).block();
+          client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
           System.out.println("Published message: " + message);
           //...
         }

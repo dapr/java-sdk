@@ -33,6 +33,8 @@ public class DaprRuntimeTest {
 
   private static final String TYPE_PLAIN_TEXT = "plain/text";
 
+  private static final String PUBSUB_NAME = "mypubsubname";
+
   private static final String TOPIC_NAME = "mytopic";
 
   private static final String APP_ID = "myappid";
@@ -111,7 +113,7 @@ public class DaprRuntimeTest {
     for (Message message : messages) {
       when(daprHttp.invokeApi(
           eq("POST"),
-          eq(Constants.PUBLISH_PATH + "/" + TOPIC_NAME),
+          eq(Constants.PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME),
           any(),
           eq(serializer.serialize(message.data)),
           eq(null)))
@@ -120,7 +122,7 @@ public class DaprRuntimeTest {
               this.serialize(message),
               message.metadata).then());
 
-      client.publishEvent(TOPIC_NAME, message.data).block();
+      client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message.data).block();
 
       CloudEvent envelope = new CloudEvent(
         message.id,

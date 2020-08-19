@@ -57,14 +57,18 @@ class DaprRuntime {
   /**
    * Adds a topic to the list of subscribed topics.
    *
+   * @param pubsubName Pubsub name to subcribe to.
    * @param topicName Name of the topic being subscribed to.
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
    */
-  public synchronized void addSubscribedTopic(String topicName, String route, Map<String,String> metadata) {
+  public synchronized void addSubscribedTopic(String pubsubName,
+                                              String topicName,
+                                              String route,
+                                              Map<String,String> metadata) {
     if (!this.subscribedTopics.contains(topicName)) {
       this.subscribedTopics.add(topicName);
-      this.subscriptions.add(new DaprTopicSubscription(topicName, route, metadata));
+      this.subscriptions.add(new DaprTopicSubscription(pubsubName, topicName, route, metadata));
     }
   }
 

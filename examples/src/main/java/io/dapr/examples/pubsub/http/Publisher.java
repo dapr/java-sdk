@@ -26,6 +26,9 @@ public class Publisher {
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
 
+  //The name of the pubseb
+  private static final String PUBSUB_NAME = "messagebus";
+
   /**
    * This is the entry point of the publisher app example.
    * @param args Args, unused.
@@ -37,7 +40,7 @@ public class Publisher {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d", i);
         //Publishing messages
-        client.publishEvent(TOPIC_NAME, message).block();
+        client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
         System.out.println("Published message: " + message);
 
         try {
@@ -51,6 +54,7 @@ public class Publisher {
 
       //Publishing a single bite: Example of non-string based content published
       client.publishEvent(
+          PUBSUB_NAME,
           TOPIC_NAME,
           new byte[]{1},
           Collections.singletonMap("content-type", "application/octet-stream")).block();
