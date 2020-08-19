@@ -75,12 +75,13 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       }
 
       String topicName = topic.name();
-      if ((topicName != null) && (topicName.length() > 0)) {
+      String pubSubName = topic.pubsubName();
+      if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
           TypeReference<HashMap<String, String>> typeRef
                   = new TypeReference<HashMap<String, String>>() {};
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
-          DaprRuntime.getInstance().addSubscribedTopic(topicName, route, metadata);
+          DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, route, metadata);
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException("Error while parsing metadata: " + e.toString());
         }

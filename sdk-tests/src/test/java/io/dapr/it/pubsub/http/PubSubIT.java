@@ -30,6 +30,7 @@ public class PubSubIT extends BaseIT {
   //Number of messages to be sent: 10
   private static final int NUM_MESSAGES = 10;
 
+  private static final String PUBSUB_NAME = "messagebus";
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
   private static final String ANOTHER_TOPIC_NAME = "anothertopic";
@@ -70,20 +71,21 @@ public class PubSubIT extends BaseIT {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TOPIC_NAME);
         //Publishing messages
-        client.publishEvent(TOPIC_NAME, message).block();
-        System.out.println(String.format("Published message: '%s' to topic '%s'", message, TOPIC_NAME));
+        client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
+        System.out.println(String.format("Published message: '%s' to topic '%s' pubsub_name '%s'", message, TOPIC_NAME, PUBSUB_NAME));
       }
 
       // Send a batch of different messages on the other.
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, ANOTHER_TOPIC_NAME);
         //Publishing messages
-        client.publishEvent(ANOTHER_TOPIC_NAME, message).block();
-        System.out.println(String.format("Published message: '%s' to topic '%s'", message, ANOTHER_TOPIC_NAME));
+        client.publishEvent(PUBSUB_NAME, ANOTHER_TOPIC_NAME, message).block();
+        System.out.println(String.format("Published message: '%s' to topic '%s' pubsub_name '%s'", message, ANOTHER_TOPIC_NAME, PUBSUB_NAME));
       }
 
       //Publishing a single byte: Example of non-string based content published
       client.publishEvent(
+          PUBSUB_NAME,
           TOPIC_NAME,
           new byte[]{1},
           Collections.singletonMap("content-type", "application/octet-stream")).block();
@@ -96,7 +98,7 @@ public class PubSubIT extends BaseIT {
         final List<String> messages = client.invokeService(daprRun.getAppName(), "messages/testingtopic", null, HttpExtension.GET, List.class).block();
         assertEquals(11, messages.size());
         for (int i = 0; i < NUM_MESSAGES; i++) {
-          assertTrue(messages.contains(String.format("This is message #%d on topic %s", i, TOPIC_NAME)));
+          assertTrue(messages.toString(), messages.contains(String.format("This is message #%d on topic %s", i, TOPIC_NAME)));
         }
 
         boolean foundByte = false;

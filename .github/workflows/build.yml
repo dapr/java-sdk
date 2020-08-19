@@ -22,10 +22,10 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: 13.0.x
-      DAPR_RUNTIME_VER: 0.9.0-rc.1
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/e498de9f7dd92c30aa592d6e6761dc924bb53cc2/install/install.sh
-      DAPR_CLI_REF: 35b9a824d2fd9e2dcf8e75d1d49ce59a39c7cf5b
-      DAPR_REF: b53586d1e5a880a3f87044975ace25b9ae51daec
+      DAPR_RUNTIME_VER: 0.10.0-rc.0
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/e7c9a643dfefbcfff0c2c26c12029259e6e81180/install/install.sh
+      DAPR_CLI_REF: e7c9a643dfefbcfff0c2c26c12029259e6e81180
+      DAPR_REF: 98365b1b9ade55e7cf46cbc2313f0625318c0977
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
@@ -66,15 +66,15 @@ jobs:
         cd ..
     - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
       run: |
-        sudo dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
-        echo "Showing dapr version..."
-        dapr --version
+        dapr uninstall --all
+        dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
     - name: Build and override daprd with referenced commit.
       if: env.DAPR_REF != ''
       run: |
         cd dapr
         make
-        sudo cp dist/linux_amd64/release/daprd /usr/local/bin/daprd
+        mkdir -p $HOME/.dapr/bin/
+        cp dist/linux_amd64/release/daprd $HOME/.dapr/bin/daprd
         cd ..
     - name: Override placement service.
       if: env.DAPR_REF != ''

@@ -34,7 +34,7 @@ public class SubscriberController {
     return messagesReceivedAnotherTopic;
   }
 
-  @Topic(name = "testingtopic")
+  @Topic(name = "testingtopic", pubsubName = "messagebus")
   @PostMapping(path = "/route1")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                   @RequestHeader Map<String, String> headers) {
@@ -44,7 +44,7 @@ public class SubscriberController {
         CloudEvent envelope = CloudEvent.deserialize(body);
 
         String message = envelope.getData() == null ? "" : envelope.getData();
-        System.out.println("Subscriber got message: " + message);
+        System.out.println("Testing topic Subscriber got message: " + message);
         messagesReceivedTestingTopic.add(envelope.getData());
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -52,7 +52,7 @@ public class SubscriberController {
     });
   }
 
-  @Topic(name = "anothertopic")
+  @Topic(name = "anothertopic", pubsubName = "messagebus")
   @PostMapping(path = "/route2")
   public Mono<Void> handleMessageAnotherTopic(@RequestBody(required = false) byte[] body,
                                   @RequestHeader Map<String, String> headers) {
@@ -62,7 +62,7 @@ public class SubscriberController {
         CloudEvent envelope = CloudEvent.deserialize(body);
 
         String message = envelope.getData() == null ? "" : envelope.getData();
-        System.out.println("Subscriber got message: " + message);
+        System.out.println("Another topic Subscriber got message: " + message);
         messagesReceivedAnotherTopic.add(envelope.getData());
       } catch (Exception e) {
         throw new RuntimeException(e);

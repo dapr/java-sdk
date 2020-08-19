@@ -45,48 +45,48 @@ public class DaprClientHttpTest {
   @Test
   public void publishEventInvokation() {
     mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.publishEvent("A", event, null);
+    Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname", "A", event, null);
     assertNull(mono.block());
   }
 
   @Test
   public void publishEvent() {
     mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.publishEvent("A", event);
+    Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname","A", event);
     assertNull(mono.block());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void publishEventIfTopicIsNull() {
     mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/publish/A")
+      .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.publishEvent("", event);
+    Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname", "", event);
     assertNull(mono.block());
   }
 
   @Test
   public void publishEventNoHotMono() {
     mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/publish/A")
+        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
         .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    daprClientHttp.publishEvent("", event);
+    daprClientHttp.publishEvent("mypubsubname", "", event);
     // Should not throw exception because did not call block() on mono above.
   }
 

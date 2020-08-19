@@ -5,6 +5,7 @@
 
 package io.dapr.springboot;
 
+
 import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.http.MediaType;
