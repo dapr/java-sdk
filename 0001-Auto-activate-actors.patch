@@ -1,0 +1,265 @@
+From 2921f133676149aae8a6029dae3fd2ccfe705ed6 Mon Sep 17 00:00:00 2001
+From: Artur Souza <artursouza.ms@outlook.com>
+Date: Wed, 27 May 2020 18:54:47 -0700
+Subject: [PATCH] Auto-activate actors.
+
+---
+ .../io/dapr/actors/runtime/ActorManager.java  |  9 +-
+ .../io/dapr/actors/runtime/ActorRuntime.java  | 24 ++----
+ .../dapr/actors/runtime/ActorRuntimeTest.java | 83 ++++++++++++-------
+ .../io/dapr/springboot/DaprController.java    | 12 ---
+ 4 files changed, 67 insertions(+), 61 deletions(-)
+
+diff --git a/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorManager.java b/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorManager.java
+index e249585..e0a2ec6 100644
+--- a/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorManager.java
++++ b/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorManager.java
+@@ -58,8 +58,13 @@ class ActorManager<T extends AbstractActor> {
+    * @return Asynchronous void response.
+    */
+   Mono<Void> activateActor(ActorId actorId) {
+-    return Mono.fromSupplier(() -> this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId))
+-        .flatMap(actor -> actor.onActivateInternal().then(this.onActivatedActor(actorId, actor)));
++    return Mono.fromSupplier(() -> {
++      if (this.activeActors.containsKey(actorId)) {
++        return null;
++      }
++
++      return this.runtimeContext.getActorFactory().createActor(runtimeContext, actorId);
++    }).flatMap(actor -> actor.onActivateInternal().then(this.onActivatedActor(actorId, actor)));
+   }
+ 
+   /**
+diff --git a/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorRuntime.java b/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorRuntime.java
+index 8925672..9404efe 100644
+--- a/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorRuntime.java
++++ b/sdk-actors/src/main/java/io/dapr/actors/runtime/ActorRuntime.java
+@@ -198,18 +198,6 @@ public class ActorRuntime {
+     this.config.addRegisteredActorType(actorTypeInfo.getName());
+   }
+ 
+-  /**
+-   * Activates an actor for an actor type with given actor id.
+-   *
+-   * @param actorTypeName Actor type name to activate the actor for.
+-   * @param actorId       Actor id for the actor to be activated.
+-   * @return Async void task.
+-   */
+-  public Mono<Void> activate(String actorTypeName, String actorId) {
+-    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+-          .flatMap(m -> m.activateActor(new ActorId(actorId)));
+-  }
+-
+   /**
+    * Deactivates an actor for an actor type with given actor id.
+    *
+@@ -233,8 +221,10 @@ public class ActorRuntime {
+    * @return Response for the actor method.
+    */
+   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
++    ActorId id = new ActorId(actorId);
+     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+-          .flatMap(m -> m.invokeMethod(new ActorId(actorId), actorMethodName, payload));
++          .flatMap(m -> m.activateActor(id).thenReturn(m))
++          .flatMap(m -> ((ActorManager)m).invokeMethod(id, actorMethodName, payload));
+   }
+ 
+   /**
+@@ -247,8 +237,10 @@ public class ActorRuntime {
+    * @return Async void task.
+    */
+   public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, byte[] params) {
++    ActorId id = new ActorId(actorId);
+     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+-          .flatMap(m -> m.invokeReminder(new ActorId(actorId), reminderName, params));
++          .flatMap(m -> m.activateActor(id).thenReturn(m))
++          .flatMap(m -> ((ActorManager)m).invokeReminder(new ActorId(actorId), reminderName, params));
+   }
+ 
+   /**
+@@ -260,8 +252,10 @@ public class ActorRuntime {
+    * @return Async void task.
+    */
+   public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
++    ActorId id = new ActorId(actorId);
+     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+-          .flatMap(m -> m.invokeTimer(new ActorId(actorId), timerName));
++          .flatMap(m -> m.activateActor(id).thenReturn(m))
++          .flatMap(m -> ((ActorManager)m).invokeTimer(new ActorId(actorId), timerName));
+   }
+ 
+   /**
+diff --git a/sdk-actors/src/test/java/io/dapr/actors/runtime/ActorRuntimeTest.java b/sdk-actors/src/test/java/io/dapr/actors/runtime/ActorRuntimeTest.java
+index 34b4605..986cac5 100644
+--- a/sdk-actors/src/test/java/io/dapr/actors/runtime/ActorRuntimeTest.java
++++ b/sdk-actors/src/test/java/io/dapr/actors/runtime/ActorRuntimeTest.java
+@@ -25,18 +25,60 @@ public class ActorRuntimeTest {
+ 
+   public interface MyActor {
+     String say();
++    int count();
+   }
+ 
+   @ActorType(name = ACTOR_NAME)
+   public static class MyActorImpl extends AbstractActor implements MyActor {
+ 
++    private int count = 0;
++
++    private Boolean activated;
++
+     public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+       super(runtimeContext, id);
+     }
+ 
++    public Mono<Void> onActivate() {
++      return Mono.fromRunnable(() -> {
++        if (this.activated != null) {
++          throw new IllegalStateException("already activated once");
++        }
++
++        this.activated = true;
++      });
++    }
++
++    public Mono<Void> onDeactivate() {
++      return Mono.fromRunnable(() -> {
++        if (this.activated == null) {
++          throw new IllegalStateException("never activated");
++        }
++
++        if (this.activated == false) {
++          throw new IllegalStateException("already deactivated");
++        }
++
++        if (this.count == 0) {
++          throw new IllegalStateException("test expects a call before deactivate");
++        }
++
++        this.activated = false;
++      });
++    }
++
+     public String say() {
++      if (!this.activated) {
++        throw new IllegalStateException("not activated");
++      }
++
++      this.count++;
+       return "Nothing to say.";
+     }
++
++    public int count() {
++      return this.count;
++    }
+   }
+ 
+   private static final ActorObjectSerializer ACTOR_STATE_SERIALIZER = new ActorObjectSerializer();
+@@ -71,32 +113,17 @@ public class ActorRuntimeTest {
+     Assert.assertTrue(new String(this.runtime.serializeConfig()).contains(ACTOR_NAME));
+   }
+ 
+-  @Test
+-  public void activateActor() throws Exception {
+-    String actorId = UUID.randomUUID().toString();
+-    this.runtime.registerActor(MyActorImpl.class);
+-    this.runtime.activate(ACTOR_NAME, actorId).block();
+-  }
+ 
+   @Test
+   public void invokeActor() throws Exception {
+     String actorId = UUID.randomUUID().toString();
+     this.runtime.registerActor(MyActorImpl.class);
+-    this.runtime.activate(ACTOR_NAME, actorId).block();
+ 
+     byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
+     String message = ACTOR_STATE_SERIALIZER.deserialize(response, String.class);
+     Assert.assertEquals("Nothing to say.", message);
+   }
+ 
+-  @Test
+-  public void activateThendeactivateActor() throws Exception {
+-    String actorId = UUID.randomUUID().toString();
+-    this.runtime.registerActor(MyActorImpl.class);
+-    this.runtime.activate(ACTOR_NAME, actorId).block();
+-    this.runtime.deactivate(ACTOR_NAME, actorId).block();
+-  }
+-
+   @Test
+   public void deactivateActor() throws Exception {
+     String actorId = UUID.randomUUID().toString();
+@@ -104,30 +131,16 @@ public class ActorRuntimeTest {
+     this.runtime.deactivate(ACTOR_NAME, actorId).block();
+   }
+ 
+-  @Test
+-  public void lazyActivate() throws Exception {
+-    String actorId = UUID.randomUUID().toString();
+-    this.runtime.registerActor(MyActorImpl.class);
+-    this.runtime.activate(ACTOR_NAME, actorId).block();
+-
+-    this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
+-      .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
+-      .doOnSuccess(s -> Assert.fail())
+-      .onErrorReturn("".getBytes())
+-      .block();
+-  }
+-
+   @Test
+   public void lazyDeactivate() throws Exception {
+     String actorId = UUID.randomUUID().toString();
+     this.runtime.registerActor(MyActorImpl.class);
+-    this.runtime.activate(ACTOR_NAME, actorId).block();
+ 
+-    Mono<Void> deacticateCall = this.runtime.deactivate(ACTOR_NAME, actorId);
++    Mono<Void> deactivateCall = this.runtime.deactivate(ACTOR_NAME, actorId);
+ 
+     this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
+ 
+-    deacticateCall.block();
++    deactivateCall.block();
+ 
+     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
+       .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
+@@ -143,9 +156,15 @@ public class ActorRuntimeTest {
+ 
+     Mono<byte[]> invokeCall = this.runtime.invoke(ACTOR_NAME, actorId, "say", null);
+ 
+-    this.runtime.activate(ACTOR_NAME, actorId).block();
++    byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
++    int count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
++    Assert.assertEquals(0, count);
+ 
+     invokeCall.block();
++
++    response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
++    count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
++    Assert.assertEquals(1, count);
+   }
+ 
+ }
+diff --git a/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java b/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java
+index 96e6925..0b8ebbb 100644
+--- a/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java
++++ b/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java
+@@ -56,18 +56,6 @@ public class DaprController {
+     return SERIALIZER.serialize(DaprRuntime.getInstance().listSubscribedTopics());
+   }
+ 
+-  /**
+-   * Handles API to activate an actor.
+-   * @param type Actor type.
+-   * @param id Actor Id.
+-   * @return Void.
+-   */
+-  @PostMapping(path = "/actors/{type}/{id}")
+-  public Mono<Void> activateActor(@PathVariable("type") String type,
+-                                  @PathVariable("id") String id) {
+-    return ActorRuntime.getInstance().activate(type, id);
+-  }
+-
+   /**
+    * Handles API to deactivate an actor.
+    * @param type Actor type.
+-- 
+2.21.1 (Apple Git-122.3)
+
