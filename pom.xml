@@ -7,7 +7,7 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.8.0-SNAPSHOT</version>
+  <version>0.9.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -17,7 +17,7 @@
     <grpc.version>1.25.0</grpc.version>
     <protobuf.version>3.11.0</protobuf.version>
     <protoc.version>3.10.0</protoc.version>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/b59f7895191db87195ea24667bc96902ad2a1b98/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/98365b1b9ade55e7cf46cbc2313f0625318c0977/dapr/proto</dapr.proto.baseurl>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>

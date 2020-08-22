@@ -69,7 +69,7 @@ public class DaprClientGrpcTest {
   public void publishEventExceptionThrownTest() {
     when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenThrow(RuntimeException.class);
-    Mono<Void> result = adapter.publishEvent("topic", "object");
+    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
     result.block();
   }
 
@@ -81,7 +81,7 @@ public class DaprClientGrpcTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.publishEvent("topic", "object");
+    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
     settableFuture.setException(ex);
     result.block();
   }
@@ -93,7 +93,7 @@ public class DaprClientGrpcTest {
     addCallback(settableFuture, callback, directExecutor());
     when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenReturn(settableFuture);
-    Mono<Void> result = adapter.publishEvent("topic", "object");
+    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
@@ -109,7 +109,7 @@ public class DaprClientGrpcTest {
           settableFuture.set(Empty.newBuilder().build());
           return settableFuture;
         });
-    adapter.publishEvent("topic", "object");
+    adapter.publishEvent("pubsubname", "topic", "object");
     // Do not call block() on the mono above, so nothing should happen.
     assertFalse(callback.wasCalled);
   }
@@ -122,7 +122,7 @@ public class DaprClientGrpcTest {
     when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenReturn(settableFuture);
     MyObject event = new MyObject(1, "Event");
-    Mono<Void> result = adapter.publishEvent("topic", event);
+    Mono<Void> result = adapter.publishEvent("pubsubname", "topic", event);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);

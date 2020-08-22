@@ -28,7 +28,7 @@ public class SubscriberController {
    * @param headers The headers of the http message.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic")
+  @Topic(name = "testingtopic", pubsubName = "messagebus")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                   @RequestHeader Map<String, String> headers) {

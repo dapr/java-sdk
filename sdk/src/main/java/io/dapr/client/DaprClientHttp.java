@@ -14,6 +14,7 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -95,22 +96,24 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object data) {
-    return this.publishEvent(topic, data, null);
+  public Mono<Void> publishEvent(String pubsubName, String topic, Object data) {
+    return this.publishEvent(pubsubName, topic, data, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String topic, Object data, Map<String, String> metadata) {
+  public Mono<Void> publishEvent(String pubsubName, String topic, Object data, Map<String, String> metadata) {
     try {
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
 
+      StringBuilder url = new StringBuilder(Constants.PUBLISH_PATH)
+              .append("/").append(pubsubName)
+              .append("/").append(topic);
       byte[] serializedEvent = objectSerializer.serialize(data);
-      StringBuilder url = new StringBuilder(Constants.PUBLISH_PATH).append("/").append(topic);
       return this.client.invokeApi(
           DaprHttp.HttpMethods.POST.name(), url.toString(), null, serializedEvent, metadata).then();
     } catch (Exception ex) {
