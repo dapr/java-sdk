@@ -13,7 +13,6 @@ import io.dapr.client.DaprClientGrpc;
 import io.dapr.client.DaprClientHttp;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.services.EmptyService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -22,9 +21,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test Secrets Store APIs using Harshicorp's vault.
@@ -66,13 +69,7 @@ public class SecretsClientIT extends BaseIT {
 
   @BeforeClass
   public static void init() throws Exception {
-    daprRun = startDaprApp(
-        SecretsClientIT.class.getSimpleName(),
-        EmptyService.SUCCESS_MESSAGE,
-        EmptyService.class,
-        false,
-        5000
-    );
+    daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
 
     VaultConfig vaultConfig = new VaultConfig()
       .address(LOCAL_VAULT_ADDRESS)

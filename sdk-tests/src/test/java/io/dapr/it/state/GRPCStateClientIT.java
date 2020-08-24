@@ -12,7 +12,6 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.services.EmptyService;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -20,9 +19,12 @@ import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.time.Duration;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test State GRPC DAPR capabilities using a DAPR instance with an empty service running
@@ -35,13 +37,7 @@ public class GRPCStateClientIT extends BaseIT {
 
   @BeforeClass
   public static void init() throws Exception {
-    daprRun = startDaprApp(
-        GRPCStateClientIT.class.getSimpleName(),
-        EmptyService.SUCCESS_MESSAGE,
-        EmptyService.class,
-        false,
-        5000
-    );
+    daprRun = startDaprApp(GRPCStateClientIT.class.getSimpleName(), 5000);
     daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder().build();
 

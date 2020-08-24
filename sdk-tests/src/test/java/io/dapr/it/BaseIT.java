@@ -30,6 +30,12 @@ public abstract class BaseIT {
 
   protected static DaprRun startDaprApp(
       String testName,
+      int maxWaitMilliseconds) throws Exception {
+    return startDaprApp(testName, "You're up and running!", null, false, true, maxWaitMilliseconds);
+  }
+
+  protected static DaprRun startDaprApp(
+      String testName,
       String successMessage,
       Class serviceClass,
       Boolean useAppPort,
@@ -39,8 +45,7 @@ public abstract class BaseIT {
         testName,
         () -> DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
         successMessage,
-        serviceClass,
-        maxWaitMilliseconds);
+        maxWaitMilliseconds).withServiceClass(serviceClass);
     DaprRun run = builder.build();
     DAPR_RUNS.add(run);
     DAPR_RUN_BUILDERS.put(run.getAppName(), builder);

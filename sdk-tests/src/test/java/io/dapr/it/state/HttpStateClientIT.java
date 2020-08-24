@@ -11,15 +11,10 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.services.EmptyService;
-import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
-
-import java.time.Duration;
 
 /**
  * Test State HTTP DAPR capabilities using a DAPR instance with an empty service running
@@ -30,13 +25,7 @@ public class HttpStateClientIT extends BaseIT {
 
   @BeforeClass
   public static void init() throws Exception {
-    daprRun = startDaprApp(
-        HttpStateClientIT.class.getSimpleName(),
-        EmptyService.SUCCESS_MESSAGE,
-        EmptyService.class,
-        false,
-        1000
-    );
+    daprRun = startDaprApp(HttpStateClientIT.class.getSimpleName(), 1000);
     daprRun.switchToHTTP();
   }
 
