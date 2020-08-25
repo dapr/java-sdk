@@ -61,6 +61,16 @@ public final class Constants {
   public static final String ACTOR_TIMER_RELATIVE_URL_FORMAT = ACTORS_BASE_URL + "/%s/%s/timers/%s";
 
   /**
+   * Environment variable name for dapr api token.
+   */
+  public static final String DAPR_API_TOKEN = "DAPR_API_TOKEN";
+
+  /**
+   * Header name for the dapr api token environment variable name.
+   */
+  public static final String DAPR_API_TOKEN_HEADER = "dapr-api-token";
+
+  /**
    * Base path to invoke methods.
    */
   public static final String INVOKE_PATH = API_VERSION + "/invoke";

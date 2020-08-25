@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
+import io.dapr.utils.Properties;
 import io.grpc.Context;
 import io.opentelemetry.OpenTelemetry;
 import io.opentelemetry.context.propagation.HttpTextFormat;
@@ -258,6 +259,12 @@ public class DaprHttp implements Closeable {
     } else {
       requestBuilder.method(method, body);
     }
+
+    String daprApiToken = Properties.getStringOrDefault(Constants.DAPR_API_TOKEN, Constants.DAPR_API_TOKEN, null);
+    if (daprApiToken != null) {
+      requestBuilder.addHeader(Constants.DAPR_API_TOKEN_HEADER, daprApiToken);
+    }
+
     if (headers != null) {
       Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
           .forEach(header -> {
