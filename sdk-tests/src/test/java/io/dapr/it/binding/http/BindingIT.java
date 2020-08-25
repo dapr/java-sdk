@@ -8,7 +8,7 @@ package io.dapr.it.binding.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.HttpExtension;
+import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.Test;

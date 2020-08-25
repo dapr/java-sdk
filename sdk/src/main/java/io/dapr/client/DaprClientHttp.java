@@ -5,18 +5,27 @@
 
 package io.dapr.client;
 
+import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.GetSecretRequest;
+import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeBindingRequest;
+import io.dapr.client.domain.InvokeServiceRequest;
+import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.Response;
+import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
 import io.dapr.utils.TypeRef;
+import io.grpc.Context;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +39,7 @@ import java.util.Optional;
  * @see io.dapr.client.DaprHttp
  * @see io.dapr.client.DaprClient
  */
-public class DaprClientHttp implements DaprClient {
+public class DaprClientHttp extends AbstractDaprClient {
 
   /**
    * Serializer for internal objects.
@@ -43,16 +52,6 @@ public class DaprClientHttp implements DaprClient {
    * @see io.dapr.client.DaprHttp
    */
   private final DaprHttp client;
-
-  /**
-   * A utility class for serialize and deserialize customer's transient objects.
-   */
-  private final DaprObjectSerializer objectSerializer;
-
-  /**
-   * A utility class for serialize and deserialize customer's state objects.
-   */
-  private final DaprObjectSerializer stateSerializer;
 
   /**
    * Flag determining if object serializer's input and output is Dapr's default instead of user provided.
@@ -74,9 +73,8 @@ public class DaprClientHttp implements DaprClient {
    * @see DefaultObjectSerializer
    */
   DaprClientHttp(DaprHttp client, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
+    super(objectSerializer, stateSerializer);
     this.client = client;
-    this.objectSerializer = objectSerializer;
-    this.stateSerializer = stateSerializer;
     this.isObjectSerializerDefault = objectSerializer.getClass() == DefaultObjectSerializer.class;
     this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
   }
@@ -96,16 +94,14 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String pubsubName, String topic, Object data) {
-    return this.publishEvent(pubsubName, topic, data, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> publishEvent(String pubsubName, String topic, Object data, Map<String, String> metadata) {
+  public Mono<Response<Void>> publishEvent(PublishEventRequest request) {
     try {
+      String pubsubName = request.getPubsubName();
+      String topic = request.getTopic();
+      Object data = request.getData();
+      Map<String, String> metadata = request.getMetadata();
+      Context context = request.getContext();
+
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
@@ -115,7 +111,8 @@ public class DaprClientHttp implements DaprClient {
               .append("/").append(topic);
       byte[] serializedEvent = objectSerializer.serialize(data);
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), url.toString(), null, serializedEvent, metadata).then();
+          DaprHttp.HttpMethods.POST.name(), url.toString(), null, serializedEvent, metadata, context)
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -124,14 +121,14 @@ public class DaprClientHttp implements DaprClient {
   /**
    * {@inheritDoc}
    */
-  public <T> Mono<T> invokeService(
-      String appId,
-      String method,
-      Object request,
-      HttpExtension httpExtension,
-      Map<String, String> metadata,
-      TypeRef<T> type) {
+  public <T> Mono<Response<T>> invokeService(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
     try {
+      final String appId = invokeServiceRequest.getAppId();
+      final String method = invokeServiceRequest.getMethod();
+      final Object request = invokeServiceRequest.getBody();
+      final Map<String, String> metadata = invokeServiceRequest.getMetadata();
+      final HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
+      final Context context = invokeServiceRequest.getContext();
       if (httpExtension == null) {
         throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
       }
@@ -146,7 +143,7 @@ public class DaprClientHttp implements DaprClient {
       String path = String.format("%s/%s/method/%s", Constants.INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
       Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path,
-          httpExtension.getQueryString(), serializedRequestBody, metadata);
+          httpExtension.getQueryString(), serializedRequestBody, metadata, context);
       return response.flatMap(r -> {
         try {
           T object = objectSerializer.deserialize(r.getBody(), type);
@@ -158,7 +155,7 @@ public class DaprClientHttp implements DaprClient {
         } catch (Exception ex) {
           return Mono.error(ex);
         }
-      });
+      }).map(r -> new Response(context, r));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -168,126 +165,13 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
-      String appId,
-      String method,
-      Object request,
-      HttpExtension httpExtension,
-      Map<String, String> metadata,
-      Class<T> clazz) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   TypeRef<T> type) {
-    return this.invokeService(appId, method, request, httpExtension, null, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   Class<T> clazz) {
-    return this.invokeService(appId, method, request, httpExtension,null, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension) {
-    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeService(
-      String appId, String method, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<byte[]> invokeService(
-      String appId, String method, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeBinding(String name, String operation, Object data) {
-    return this.invokeBinding(name, operation, data, null, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<byte[]> invokeBinding(String name, String operation, byte[] data, Map<String, String> metadata) {
-    return this.invokeBinding(name, operation, data, metadata, TypeRef.BYTE_ARRAY);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeBinding(String name, String operation, Object data, TypeRef<T> type) {
-    return this.invokeBinding(name, operation, data, null, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeBinding(String name, String operation, Object data, Class<T> clazz) {
-    return this.invokeBinding(name, operation, data, null, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
+  public <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
     try {
+      final String name = request.getName();
+      final String operation = request.getOperation();
+      final Object data = request.getData();
+      final Map<String, String> metadata = request.getMetadata();
+      final Context context = request.getContext();
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Binding name cannot be null or empty.");
       }
@@ -326,7 +210,8 @@ public class DaprClientHttp implements DaprClient {
 
       byte[] payload = INTERNAL_SERIALIZER.serialize(jsonMap);
       String httpMethod = DaprHttp.HttpMethods.POST.name();
-      Mono<DaprHttp.Response> response = this.client.invokeApi(httpMethod, url.toString(), null, payload, null);
+      Mono<DaprHttp.Response> response = this.client.invokeApi(
+              httpMethod, url.toString(), null, payload, null, context);
       return response.flatMap(r -> {
         try {
           T object = objectSerializer.deserialize(r.getBody(), type);
@@ -338,61 +223,24 @@ public class DaprClientHttp implements DaprClient {
         } catch (Exception ex) {
           return Mono.error(ex);
         }
-      });
+      }).map(r -> new Response<T>(context, r));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
-
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeBinding(name, operation, data, metadata, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, TypeRef<T> type) {
-    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, Class<T> clazz) {
-    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, String key, TypeRef<T> type) {
-    return this.getState(stateStoreName, key, null, null, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, String key, Class<T> clazz) {
-    return this.getState(stateStoreName, key, null, null, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, TypeRef<T> type) {
+  public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
     try {
+      final String stateStoreName = request.getStateStoreName();
+      final String key = request.getKey();
+      final StateOptions options = request.getStateOptions();
+      final String etag = request.getEtag();
+      final Context context = request.getContext();
+
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -414,31 +262,29 @@ public class DaprClientHttp implements DaprClient {
           .orElse(new HashMap<>());
 
       return this.client
-          .invokeApi(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers)
+          .invokeApi(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers, context)
           .flatMap(s -> {
             try {
               return Mono.just(buildStateKeyValue(s, key, options, type));
             } catch (Exception ex) {
               return Mono.error(ex);
             }
-          });
+          })
+          .map(r -> new Response<>(context, r));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
-  }
-
-  @Override
-  public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
-    return null;
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveStates(String stateStoreName, List<State<?>> states) {
+  public Mono<Response<Void>> saveStates(SaveStateRequest request) {
     try {
+      final String stateStoreName = request.getStateStoreName();
+      final List<State<?>> states = request.getStates();
+      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -472,7 +318,8 @@ public class DaprClientHttp implements DaprClient {
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers).then();
+          DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers, context)
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -482,33 +329,14 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String stateStoreName, String key, Object value) {
-    return this.saveState(stateStoreName, key, null, value, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> saveState(String stateStoreName, String key, String etag, Object value, StateOptions options) {
-    return Mono.fromSupplier(() -> new State<>(value, key, etag, options))
-        .flatMap(state -> saveStates(stateStoreName, Arrays.asList(state)));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> deleteState(String stateStoreName, String key) {
-    return this.deleteState(stateStoreName, key, null, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> deleteState(String stateStoreName, String key, String etag, StateOptions options) {
+  public Mono<Response<Void>> deleteState(DeleteStateRequest request) {
     try {
+      final String stateStoreName = request.getStateStoreName();
+      final String key = request.getKey();
+      final StateOptions options = request.getStateOptions();
+      final String etag = request.getEtag();
+      final Context context = request.getContext();
+
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -524,7 +352,9 @@ public class DaprClientHttp implements DaprClient {
           .map(stateOptions -> stateOptions.getStateOptionsAsMap())
           .orElse(new HashMap<>());
 
-      return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers).then();
+      return this.client.invokeApi(
+              DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers, context)
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -556,21 +386,25 @@ public class DaprClientHttp implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName, Map<String, String> metadata) {
+  public Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request) {
+    String secretStoreName = request.getSecretStoreName();
+    String key = request.getKey();
+    Map<String, String> metadata = request.getMetadata();
+    Context context = request.getContext();
     try {
       if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Secret store name cannot be null or empty.");
       }
-      if ((secretName == null) || (secretName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Secret name cannot be null or empty.");
+      if ((key == null) || (key.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret key cannot be null or empty.");
       }
     } catch (Exception e) {
       return Mono.error(e);
     }
 
-    String url = Constants.SECRETS_PATH + "/" + secretStoreName + "/" + secretName;
+    String url = Constants.SECRETS_PATH + "/" + secretStoreName + "/" + key;
     return this.client
-      .invokeApi(DaprHttp.HttpMethods.GET.name(), url, metadata, (String)null, null)
+      .invokeApi(DaprHttp.HttpMethods.GET.name(), url, metadata, (String)null, null, context)
       .flatMap(response -> {
         try {
           Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
@@ -583,15 +417,8 @@ public class DaprClientHttp implements DaprClient {
           return Mono.error(e);
         }
       })
-      .map(m -> (Map<String, String>)m);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName) {
-    return this.getSecret(secretStoreName, secretName, null);
+      .map(m -> (Map<String, String>)m)
+      .map(m -> new Response<>(context, m));
   }
 
   @Override

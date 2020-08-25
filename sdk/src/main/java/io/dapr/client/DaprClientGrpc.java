@@ -9,6 +9,15 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.GetSecretRequest;
+import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeBindingRequest;
+import io.dapr.client.domain.InvokeServiceRequest;
+import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.Response;
+import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -16,13 +25,31 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
+import io.grpc.Context;
+import io.grpc.ForwardingClientCall;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
+import io.opencensus.implcore.trace.propagation.PropagationComponentImpl;
+import io.opencensus.implcore.trace.propagation.TraceContextFormat;
+import io.opencensus.trace.SpanContext;
+import io.opencensus.trace.propagation.BinaryFormat;
+import io.opencensus.trace.propagation.SpanContextParseException;
+import io.opencensus.trace.propagation.TextFormat;
+import io.opentelemetry.OpenTelemetry;
+import io.opentelemetry.context.propagation.HttpTextFormat;
+import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * An adapter for the GRPC Client.
@@ -30,7 +57,12 @@ import java.util.Map;
  * @see io.dapr.v1.DaprGrpc
  * @see io.dapr.client.DaprClient
  */
-public class DaprClientGrpc implements DaprClient {
+public class DaprClientGrpc extends AbstractDaprClient {
+
+  /**
+   * Binary formatter to generate grpc-trace-bin.
+   */
+  private static final BinaryFormat OPENCENSUS_BINARY_FORMAT = new PropagationComponentImpl().getBinaryFormat();
 
   /**
    * The GRPC managed channel to be used.
@@ -43,16 +75,6 @@ public class DaprClientGrpc implements DaprClient {
    * @see io.dapr.v1.DaprGrpc.DaprFutureStub
    */
   private DaprGrpc.DaprFutureStub client;
-
-  /**
-   * A utitlity class for serialize and deserialize the transient objects.
-   */
-  private DaprObjectSerializer objectSerializer;
-
-  /**
-   * A utitlity class for serialize and deserialize state objects.
-   */
-  private DaprObjectSerializer stateSerializer;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -68,10 +90,9 @@ public class DaprClientGrpc implements DaprClient {
       DaprGrpc.DaprFutureStub futureClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
+    super(objectSerializer, stateSerializer);
     this.channel = closeableChannel;
-    this.client = futureClient;
-    this.objectSerializer = objectSerializer;
-    this.stateSerializer = stateSerializer;
+    this.client = populateWithInterceptors(futureClient);
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -100,43 +121,48 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String pubsubName, String topic, Object data) {
-    return this.publishEvent(pubsubName, topic, data, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> publishEvent(String pubsubName, String topic, Object data, Map<String, String> metadata) {
+  public Mono<Response<Void>> publishEvent(PublishEventRequest request) {
     try {
-      // TODO: handle metadata.
+      String pubsubName = request.getPubsubName();
+      String topic = request.getTopic();
+      Object data = request.getData();
+      // TODO(artursouza): handle metadata.
+      // Map<String, String> metadata = request.getMetadata();
+      Context context = request.getContext();
       DaprProtos.PublishEventRequest envelope = DaprProtos.PublishEventRequest.newBuilder()
           .setTopic(topic)
           .setPubsubName(pubsubName)
           .setData(ByteString.copyFrom(objectSerializer.serialize(data))).build();
 
-      return Mono.fromCallable(() -> {
+      return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
         futureEmpty.get();
         return null;
-      });
+      }));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
 
-  @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   Map<String, String> metadata, TypeRef<T> type) {
+  /**
+   * {@inheritDoc}
+   */
+  public <T> Mono<Response<T>> invokeService(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
     try {
+      String appId = invokeServiceRequest.getAppId();
+      String method = invokeServiceRequest.getMethod();
+      Object request = invokeServiceRequest.getBody();
+      HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
+      // TODO(artursouza): handle metadata once available in GRPC proto.
+      // Map<String, String> metadata = invokeServiceRequest.getMetadata();
+      Context context = invokeServiceRequest.getContext();
       DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(httpExtension, appId, method, request);
-      return Mono.fromCallable(() -> {
+      return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<CommonProtos.InvokeResponse> futureResponse =
             client.invokeService(envelope);
 
         return objectSerializer.deserialize(futureResponse.get().getData().getValue().toByteArray(), type);
-      });
+      })).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -146,126 +172,13 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
-      String appId,
-      String method,
-      Object request,
-      HttpExtension httpExtension,
-      Map<String, String> metadata,
-      Class<T> clazz) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   TypeRef<T> type) {
-    return this.invokeService(appId, method, request, httpExtension, null, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   Class<T> clazz) {
-    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension) {
-    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeService(
-      String appId, String method, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<byte[]> invokeService(
-      String appId, String method, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> invokeBinding(String name, String operation, Object data) {
-    return this.invokeBinding(name, operation, data, null, TypeRef.BYTE_ARRAY).then();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<byte[]> invokeBinding(String name, String operation, byte[] data, Map<String, String> metadata) {
-    return this.invokeBinding(name, operation, data, metadata, TypeRef.BYTE_ARRAY);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeBinding(String name, String operation, Object data, TypeRef<T> type) {
-    return this.invokeBinding(name, operation, data, null, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeBinding(String name, String operation, Object data, Class<T> clazz) {
-    return this.invokeBinding(name, operation, data, null, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
+  public <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
     try {
+      final String name = request.getName();
+      final String operation = request.getOperation();
+      final Object data = request.getData();
+      final Map<String, String> metadata = request.getMetadata();
+      final Context context = request.getContext();
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Binding name cannot be null or empty.");
       }
@@ -284,10 +197,10 @@ public class DaprClientGrpc implements DaprClient {
         builder.putAllMetadata(metadata);
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
-      return Mono.fromCallable(() -> {
+      return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<DaprProtos.InvokeBindingResponse> futureResponse = client.invokeBinding(envelope);
         return objectSerializer.deserialize(futureResponse.get().getData().toByteArray(), type);
-      });
+      })).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -297,50 +210,15 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeBinding(name, operation, data, metadata, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, TypeRef<T> type) {
-    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, Class<T> clazz) {
-    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, String key, TypeRef<T> type) {
-    return this.getState(stateStoreName, key, null, null, type);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, String key, Class<T> clazz) {
-    return this.getState(stateStoreName, key, null, null, TypeRef.get(clazz));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, TypeRef<T> type) {
+  public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
     try {
+      final String stateStoreName = request.getStateStoreName();
+      final String key = request.getKey();
+      final StateOptions options = request.getStateOptions();
+      // TODO(artursouza): handle etag once available in proto.
+      // String etag = request.getEtag();
+      final Context context = request.getContext();
+
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -355,7 +233,7 @@ public class DaprClientGrpc implements DaprClient {
       }
 
       DaprProtos.GetStateRequest envelope = builder.build();
-      return Mono.fromCallable(() -> {
+      return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<DaprProtos.GetStateResponse> futureResponse = client.getState(envelope);
         DaprProtos.GetStateResponse response = null;
         try {
@@ -364,19 +242,10 @@ public class DaprClientGrpc implements DaprClient {
           return null;
         }
         return buildStateKeyValue(response, key, options, type);
-      });
+      })).map(s -> new Response(context, s));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
-    return this.getState(stateStoreName, key, etag, options, TypeRef.get(clazz));
   }
 
   private <T> State<T> buildStateKeyValue(
@@ -396,8 +265,11 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveStates(String stateStoreName, List<State<?>> states) {
+  public Mono<Response<Void>> saveStates(SaveStateRequest request) {
     try {
+      final String stateStoreName = request.getStateStoreName();
+      final List<State<?>> states = request.getStates();
+      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -406,16 +278,16 @@ public class DaprClientGrpc implements DaprClient {
       for (State state : states) {
         builder.addStates(buildStateRequest(state).build());
       }
-      DaprProtos.SaveStateRequest request = builder.build();
+      DaprProtos.SaveStateRequest req = builder.build();
 
-      return Mono.fromCallable(() -> client.saveState(request)).flatMap(f -> {
+      return Mono.fromCallable(wrap(context, () -> client.saveState(req))).flatMap(f -> {
         try {
           f.get();
         } catch (Exception ex) {
           return Mono.error(ex);
         }
         return Mono.empty();
-      });
+      }).thenReturn(new Response<Void>(context, null));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -453,33 +325,14 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String stateStoreName, String key, Object value) {
-    return this.saveState(stateStoreName, key, null, value, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> saveState(String stateStoreName, String key, String etag, Object value, StateOptions options) {
-    State<?> state = new State<>(value, key, etag, options);
-    return this.saveStates(stateStoreName, Arrays.asList(state));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> deleteState(String stateStoreName, String key) {
-    return this.deleteState(stateStoreName, key, null, null);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Void> deleteState(String stateStoreName, String key, String etag, StateOptions options) {
+  public Mono<Response<Void>> deleteState(DeleteStateRequest request) {
     try {
+      final String stateStoreName = request.getStateStoreName();
+      final String key = request.getKey();
+      final StateOptions options = request.getStateOptions();
+      final String etag = request.getEtag();
+      final Context context = request.getContext();
+
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -510,15 +363,15 @@ public class DaprClientGrpc implements DaprClient {
         builder.setOptions(optionBuilder.build());
       }
 
-      DaprProtos.DeleteStateRequest request = builder.build();
-      return Mono.fromCallable(() -> client.deleteState(request)).flatMap(f -> {
+      DaprProtos.DeleteStateRequest req = builder.build();
+      return Mono.fromCallable(wrap(context, () -> client.deleteState(req))).flatMap(f -> {
         try {
           f.get();
         } catch (Exception ex) {
           return Mono.error(ex);
         }
         return Mono.empty();
-      });
+      }).thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -564,13 +417,17 @@ public class DaprClientGrpc implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName, Map<String, String> metadata) {
+  public Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request) {
+    String secretStoreName = request.getSecretStoreName();
+    String key = request.getKey();
+    Map<String, String> metadata = request.getMetadata();
+    Context context = request.getContext();
     try {
       if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Secret store name cannot be null or empty.");
       }
-      if ((secretName == null) || (secretName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Secret name cannot be null or empty.");
+      if ((key == null) || (key.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret key cannot be null or empty.");
       }
     } catch (Exception e) {
       return Mono.error(e);
@@ -578,24 +435,16 @@ public class DaprClientGrpc implements DaprClient {
 
     DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
           .setStoreName(secretStoreName)
-          .setKey(secretName);
+          .setKey(key);
 
     if (metadata != null) {
       requestBuilder.putAllMetadata(metadata);
     }
-    return Mono.fromCallable(() -> {
-      DaprProtos.GetSecretRequest request = requestBuilder.build();
-      ListenableFuture<DaprProtos.GetSecretResponse> future = client.getSecret(request);
+    return Mono.fromCallable(wrap(context, () -> {
+      DaprProtos.GetSecretRequest req = requestBuilder.build();
+      ListenableFuture<DaprProtos.GetSecretResponse> future = client.getSecret(req);
       return future.get();
-    }).map(future -> future.getDataMap());
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName) {
-    return this.getSecret(secretStoreName, secretName, null);
+    })).map(future -> new Response<>(context, future.getDataMap()));
   }
 
   /**
@@ -608,5 +457,87 @@ public class DaprClientGrpc implements DaprClient {
     if (channel != null) {
       channel.close();
     }
+  }
+
+  /**
+   * Populates GRPC client with interceptors.
+   *
+   * @param client GRPC client for Dapr.
+   * @return Client after adding interceptors.
+   */
+  private static DaprGrpc.DaprFutureStub populateWithInterceptors(DaprGrpc.DaprFutureStub client) {
+    ClientInterceptor interceptor = new ClientInterceptor() {
+      @Override
+      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+          MethodDescriptor<ReqT, RespT> methodDescriptor,
+          CallOptions callOptions,
+          Channel channel) {
+        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
+        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
+          @Override
+          public void start(final Listener<RespT> responseListener, final Metadata headers) {
+            // Dapr only supports "grpc-trace-bin" for GRPC and OpenTelemetry SDK does not support that yet:
+            // https://github.com/open-telemetry/opentelemetry-specification/issues/639
+            // This should be the only use of OpenCensus SDK: populate "grpc-trace-bin".
+            Context context = Context.current();
+            SpanContext opencensusSpanContext = extractOpenCensusSpanContext(context);
+            if (opencensusSpanContext != null) {
+              byte[] grpcTraceBin = OPENCENSUS_BINARY_FORMAT.toByteArray(opencensusSpanContext);
+              headers.put(Metadata.Key.of("grpc-trace-bin", Metadata.BINARY_BYTE_MARSHALLER), grpcTraceBin);
+            }
+            super.start(responseListener, headers);
+          }
+        };
+      }
+    };
+    return client.withInterceptors(interceptor);
+  }
+
+  /**
+   * Extracts the context from OpenTelemetry and creates a SpanContext for OpenCensus.
+   *
+   * @param openTelemetryContext Context from OpenTelemetry.
+   * @return SpanContext for OpenCensus.
+   */
+  private static SpanContext extractOpenCensusSpanContext(Context openTelemetryContext) {
+    Map<String, String> map = new HashMap<>();
+
+    OpenTelemetry.getPropagators().getHttpTextFormat().inject(
+        openTelemetryContext,
+        map,
+        new HttpTextFormat.Setter<Map<String, String>>() {
+          @Override
+          public void set(Map<String, String> map, String key, String value) {
+            if (map != null) {
+              map.put(key, value);
+            }
+          }
+        });
+
+    if (!map.containsKey("traceparent")) {
+      // Trying to extract context without this key will throw an "expected" exception, so we avoid it here.
+      return null;
+    }
+
+    try {
+      return new TraceContextFormat()
+          .extract(map, new TextFormat.Getter<Map<String, String>>() {
+            @Nullable
+            @Override
+            public String get(Map<String, String> map, String key) {
+              return map.get(key);
+            }
+          });
+    } catch (SpanContextParseException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static <V> Callable<V> wrap(Context context, Callable<V> callable) {
+    if (context == null) {
+      return callable;
+    }
+
+    return context.wrap(callable);
   }
 }

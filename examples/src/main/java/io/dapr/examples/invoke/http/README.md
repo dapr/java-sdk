@@ -131,7 +131,7 @@ The class knows the app id for the remote application. It uses the the static `D
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh
-dapr run --components-path ./components --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient 'message one' 'message two'
+dapr run --components-path ./components --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient "message one" "message two"
 ```
 Once running, the output should display the messages sent from invoker in the demo service output as follows:
 

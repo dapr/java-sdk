@@ -13,7 +13,6 @@ import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 
 /**
  * Serializes and deserializes an internal object.

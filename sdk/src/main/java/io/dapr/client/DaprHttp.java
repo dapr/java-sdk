@@ -9,11 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
+import io.grpc.Context;
+import io.opentelemetry.OpenTelemetry;
+import io.opentelemetry.context.propagation.HttpTextFormat;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
@@ -31,6 +36,14 @@ public class DaprHttp implements Closeable {
    * Dapr's http default scheme.
    */
   private static final String DEFAULT_HTTP_SCHEME = "http";
+
+  private static final HttpTextFormat.Setter<Request.Builder> OPENTELEMETRY_SETTER =
+      new HttpTextFormat.Setter<Request.Builder>() {
+        @Override
+        public void set(Request.Builder requestBuilder, String key, String value) {
+          requestBuilder.addHeader(key, value);
+        }
+      };
 
   /**
    * HTTP Methods supported.
@@ -128,11 +141,16 @@ public class DaprHttp implements Closeable {
    * @param urlString     url as String.
    * @param urlParameters URL parameters
    * @param headers       HTTP headers.
+   * @param context       OpenTelemetry's Context.
    * @return Asynchronous text
    */
   public Mono<Response> invokeApi(
-      String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
-    return this.invokeApi(method, urlString, urlParameters, (byte[]) null, headers);
+      String method,
+      String urlString,
+      Map<String, String> urlParameters,
+      Map<String, String> headers,
+      Context context) {
+    return this.invokeApi(method, urlString, urlParameters, (byte[]) null, headers, context);
   }
 
   /**
@@ -143,15 +161,21 @@ public class DaprHttp implements Closeable {
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
+   * @param context       OpenTelemetry's Context.
    * @return Asynchronous response
    */
   public Mono<Response> invokeApi(
-      String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
+      String method,
+      String urlString,
+      Map<String, String> urlParameters,
+      String content,
+      Map<String, String> headers,
+      Context context) {
 
     return this.invokeApi(
         method, urlString, urlParameters, content == null
             ? EMPTY_BYTES
-            : content.getBytes(StandardCharsets.UTF_8), headers);
+            : content.getBytes(StandardCharsets.UTF_8), headers, context);
   }
 
   /**
@@ -162,69 +186,104 @@ public class DaprHttp implements Closeable {
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
+   * @param context       OpenTelemetry's Context.
    * @return Asynchronous response
    */
   public Mono<Response> invokeApi(
-      String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
-    return Mono.fromCallable(
-        () -> {
-          final String requestId = UUID.randomUUID().toString();
-          RequestBody body;
+          String method,
+          String urlString,
+          Map<String, String> urlParameters,
+          byte[] content,
+          Map<String, String> headers,
+          Context context) {
+    return Mono.fromCallable(() -> doInvokeApi(method, urlString, urlParameters, content, headers, context));
+  }
 
-          String contentType = headers != null ? headers.get("content-type") : null;
-          MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
-          if (content == null) {
-            body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON)
-                ? REQUEST_BODY_EMPTY_JSON
-                : RequestBody.Companion.create(new byte[0], mediaType);
-          } else {
-            body = RequestBody.Companion.create(content, mediaType);
-          }
-          HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-          urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
-              .host(Constants.DEFAULT_HOSTNAME)
-              .port(this.port)
-              .addPathSegments(urlString);
-          Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
-              .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
+  /**
+   * Shutdown call is not necessary for OkHttpClient.
+   * @see OkHttpClient
+   */
+  @Override
+  public void close() throws IOException {
+    // No code needed
+  }
 
-          Request.Builder requestBuilder = new Request.Builder()
-              .url(urlBuilder.build())
-              .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
-          if (HttpMethods.GET.name().equals(method)) {
-            requestBuilder.get();
-          } else if (HttpMethods.DELETE.name().equals(method)) {
-            requestBuilder.delete();
-          } else {
-            requestBuilder.method(method, body);
-          }
-          if (headers != null) {
-            Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
-                .forEach(header -> {
-                  requestBuilder.addHeader(header.getKey(), header.getValue());
-                });
-          }
+  /**
+   * Invokes an API that returns a text payload.
+   *
+   * @param method        HTTP method.
+   * @param urlString     url as String.
+   * @param urlParameters Parameters in the URL
+   * @param content       payload to be posted.
+   * @param headers       HTTP headers.
+   * @param context       OpenTelemetry's Context.
+   * @return Response
+   */
+  @NotNull
+  private Response doInvokeApi(String method,
+                               String urlString,
+                               Map<String, String> urlParameters,
+                               byte[] content, Map<String, String> headers,
+                               Context context) throws IOException {
+    final String requestId = UUID.randomUUID().toString();
+    RequestBody body;
 
-          Request request = requestBuilder.build();
+    String contentType = headers != null ? headers.get("content-type") : null;
+    MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
+    if (content == null) {
+      body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON)
+          ? REQUEST_BODY_EMPTY_JSON
+          : RequestBody.Companion.create(new byte[0], mediaType);
+    } else {
+      body = RequestBody.Companion.create(content, mediaType);
+    }
+    HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
+    urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
+        .host(Constants.DEFAULT_HOSTNAME)
+        .port(this.port)
+        .addPathSegments(urlString);
+    Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
+        .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
 
-          try (okhttp3.Response response = this.httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-              DaprError error = parseDaprError(response.body().bytes());
-              if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-                throw new DaprException(error);
-              }
+    Request.Builder requestBuilder = new Request.Builder()
+        .url(urlBuilder.build())
+        .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
+    if (context != null) {
+      OpenTelemetry.getPropagators().getHttpTextFormat().inject(context, requestBuilder, OPENTELEMETRY_SETTER);
+    }
+    if (HttpMethods.GET.name().equals(method)) {
+      requestBuilder.get();
+    } else if (HttpMethods.DELETE.name().equals(method)) {
+      requestBuilder.delete();
+    } else {
+      requestBuilder.method(method, body);
+    }
+    if (headers != null) {
+      Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
+          .forEach(header -> {
+            requestBuilder.addHeader(header.getKey(), header.getValue());
+          });
+    }
 
-              throw new IllegalStateException("Unknown Dapr error. HTTP status code: " + response.code());
-            }
+    Request request = requestBuilder.build();
 
-            Map<String, String> mapHeaders = new HashMap<>();
-            byte[] result = response.body().bytes();
-            response.headers().forEach(pair -> {
-              mapHeaders.put(pair.getFirst(), pair.getSecond());
-            });
-            return new Response(result, mapHeaders, response.code());
-          }
-        });
+    try (okhttp3.Response response = this.httpClient.newCall(request).execute()) {
+      if (!response.isSuccessful()) {
+        DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
+        if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
+          throw new DaprException(error);
+        }
+
+        throw new IllegalStateException("Unknown Dapr error. HTTP status code: " + response.code());
+      }
+
+      Map<String, String> mapHeaders = new HashMap<>();
+      byte[] result = getBodyBytesOrEmptyArray(response);
+      response.headers().forEach(pair -> {
+        mapHeaders.put(pair.getFirst(), pair.getSecond());
+      });
+      return new Response(result, mapHeaders, response.code());
+    }
   }
 
   /**
@@ -240,13 +299,13 @@ public class DaprHttp implements Closeable {
     return OBJECT_MAPPER.readValue(json, DaprError.class);
   }
 
-  /**
-   * Shutdown call is not necessary for OkHttpClient.
-   * @see OkHttpClient
-   */
-  @Override
-  public void close() throws IOException {
-    // No code needed
+  private static byte[] getBodyBytesOrEmptyArray(okhttp3.Response response) throws IOException {
+    ResponseBody body = response.body();
+    if (body != null) {
+      return body.bytes();
+    }
+
+    return EMPTY_BYTES;
   }
 
 }

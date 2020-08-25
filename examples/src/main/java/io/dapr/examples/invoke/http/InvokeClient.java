@@ -7,7 +7,7 @@ package io.dapr.examples.invoke.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.HttpExtension;
+import io.dapr.client.domain.HttpExtension;
 
 import java.io.IOException;
 

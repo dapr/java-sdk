@@ -8,7 +8,7 @@ package io.dapr.it.pubsub.http;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprHttp;
-import io.dapr.client.HttpExtension;
+import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.Test;

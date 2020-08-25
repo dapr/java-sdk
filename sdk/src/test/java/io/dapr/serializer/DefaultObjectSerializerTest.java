@@ -5,26 +5,23 @@
 
 package io.dapr.serializer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.ref.Reference;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class DefaultObjectSerializerTest {
 

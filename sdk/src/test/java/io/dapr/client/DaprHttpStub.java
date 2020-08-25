@@ -5,8 +5,10 @@
 
 package io.dapr.client;
 
+import io.grpc.Context;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -31,7 +33,7 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public Mono<DaprHttp.Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers) {
+    public Mono<Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, Map<String, String> headers, Context context) {
         return Mono.empty();
     }
 
@@ -39,7 +41,7 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public Mono<DaprHttp.Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers) {
+    public Mono<Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, String content, Map<String, String> headers, Context context) {
         return Mono.empty();
     }
 
@@ -47,7 +49,15 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public Mono<DaprHttp.Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers) {
+    public Mono<Response> invokeApi(String method, String urlString, Map<String, String> urlParameters, byte[] content, Map<String, String> headers, Context context) {
         return Mono.empty();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() throws IOException {
+        return;
     }
 }
