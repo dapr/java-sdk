@@ -21,6 +21,8 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.Constants;
+import io.dapr.utils.Properties;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -33,6 +35,7 @@ import io.grpc.Context;
 import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import io.grpc.Metadata.Key;
 import io.opencensus.implcore.trace.propagation.PropagationComponentImpl;
 import io.opencensus.implcore.trace.propagation.TraceContextFormat;
 import io.opencensus.trace.SpanContext;
@@ -483,8 +486,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
             SpanContext opencensusSpanContext = extractOpenCensusSpanContext(context);
             if (opencensusSpanContext != null) {
               byte[] grpcTraceBin = OPENCENSUS_BINARY_FORMAT.toByteArray(opencensusSpanContext);
-              headers.put(Metadata.Key.of("grpc-trace-bin", Metadata.BINARY_BYTE_MARSHALLER), grpcTraceBin);
+              headers.put(Key.of("grpc-trace-bin", Metadata.BINARY_BYTE_MARSHALLER), grpcTraceBin);
             }
+
+            String daprApiToken = Properties.getStringOrDefault(Constants.DAPR_API_TOKEN,
+                                                                Constants.DAPR_API_TOKEN, null);
+            if (daprApiToken != null) {
+              headers.put(Key.of(Constants.DAPR_API_TOKEN_HEADER, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
+            }
+
             super.start(responseListener, headers);
           }
         };
