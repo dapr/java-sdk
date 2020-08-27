@@ -108,10 +108,7 @@ public class DaprClientBuilder {
     if (port <= 0) {
       throw new IllegalStateException("Invalid port.");
     }
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, port)
-                                .usePlaintext()
-                                .intercept(new DaprClientGrpcInterceptor())
-                                .build();
+    ManagedChannel channel = ManagedChannelBuilder.forAddress(Constants.DEFAULT_HOSTNAME, port).usePlaintext().build();
     Closeable closeableChannel = () -> {
       if (channel != null && !channel.isShutdown()) {
         channel.shutdown();
