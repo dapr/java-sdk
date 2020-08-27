@@ -13,6 +13,8 @@ import okhttp3.ResponseBody;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
@@ -27,6 +29,9 @@ import static org.junit.Assert.fail;
 
 public class DaprHttpTest {
 
+  @Rule
+  public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
   private static final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
@@ -40,6 +45,38 @@ public class DaprHttpTest {
   public void setUp() throws Exception {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+  }
+
+  @Test
+  public void invokeApi_daprApiToken_present() throws IOException {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3500/v1.0/state")
+        .hasHeader(Constants.DAPR_API_TOKEN_HEADER)
+        .respond(serializer.serialize(EXPECTED_RESULT));
+    environmentVariables.set(Constants.DAPR_API_TOKEN, "xyz");
+    assertEquals("xyz", System.getenv(Constants.DAPR_API_TOKEN));
+    DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
+    Mono<DaprHttp.Response> mono =
+        daprHttp.invokeApi("POST", "v1.0/state", null, (byte[]) null, null, Context.current());
+    DaprHttp.Response response = mono.block();
+    String body = serializer.deserialize(response.getBody(), String.class);
+    assertEquals(EXPECTED_RESULT, body);
+  }
+
+  @Test
+  public void invokeApi_daprApiToken_absent() throws IOException {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3500/v1.0/state")
+        .not()
+        .hasHeader(Constants.DAPR_API_TOKEN_HEADER)
+        .respond(serializer.serialize(EXPECTED_RESULT));
+    assertNull(System.getenv(Constants.DAPR_API_TOKEN));
+    DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
+    Mono<DaprHttp.Response> mono =
+        daprHttp.invokeApi("POST", "v1.0/state", null, (byte[]) null, null, Context.current());
+    DaprHttp.Response response = mono.block();
+    String body = serializer.deserialize(response.getBody(), String.class);
+    assertEquals(EXPECTED_RESULT, body);
   }
 
   @Test
