@@ -5,7 +5,6 @@
 
 package io.dapr.client;
 
-import io.dapr.DaprClientGrpcInterceptor;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Constants;
