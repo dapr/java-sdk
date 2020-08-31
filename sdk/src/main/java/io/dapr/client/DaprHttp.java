@@ -260,7 +260,7 @@ public class DaprHttp implements Closeable {
       requestBuilder.method(method, body);
     }
 
-    String daprApiToken = Properties.getStringOrDefault(Constants.DAPR_API_TOKEN, Constants.DAPR_API_TOKEN, null);
+    String daprApiToken = Properties.DAPR_API_TOKEN.get();
     if (daprApiToken != null) {
       requestBuilder.addHeader(Constants.DAPR_API_TOKEN_HEADER, daprApiToken);
     }

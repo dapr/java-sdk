@@ -489,8 +489,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
               headers.put(Key.of("grpc-trace-bin", Metadata.BINARY_BYTE_MARSHALLER), grpcTraceBin);
             }
 
-            String daprApiToken = Properties.getStringOrDefault(Constants.DAPR_API_TOKEN,
-                                                                Constants.DAPR_API_TOKEN, null);
+            String daprApiToken = Properties.DAPR_API_TOKEN.get();
             if (daprApiToken != null) {
               headers.put(Key.of(Constants.DAPR_API_TOKEN_HEADER, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
             }

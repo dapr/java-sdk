@@ -6,6 +6,7 @@ package io.dapr.client;
 
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Constants;
+import io.dapr.utils.Properties;
 import io.grpc.Context;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -54,7 +55,7 @@ public class DaprHttpTest {
         .hasHeader(Constants.DAPR_API_TOKEN_HEADER)
         .respond(serializer.serialize(EXPECTED_RESULT));
     environmentVariables.set(Constants.DAPR_API_TOKEN, "xyz");
-    assertEquals("xyz", System.getenv(Constants.DAPR_API_TOKEN));
+    assertEquals("xyz", Properties.DAPR_API_TOKEN.get());
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state", null, (byte[]) null, null, Context.current());
@@ -70,7 +71,7 @@ public class DaprHttpTest {
         .not()
         .hasHeader(Constants.DAPR_API_TOKEN_HEADER)
         .respond(serializer.serialize(EXPECTED_RESULT));
-    assertNull(System.getenv(Constants.DAPR_API_TOKEN));
+    assertNull(Properties.DAPR_API_TOKEN.get());
     DaprHttp daprHttp = new DaprHttp(3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state", null, (byte[]) null, null, Context.current());
