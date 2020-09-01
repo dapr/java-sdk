@@ -36,6 +36,13 @@ public class Properties {
   private static final String DEFAULT_STRING_CHARSET = StandardCharsets.UTF_8.name();
 
   /**
+   * API token for Dapr after checking system property and environment variable.
+   */
+  public static final Supplier<String> DAPR_API_TOKEN = () -> getStringOrDefault(
+      "dapr.api.token",
+      Constants.DAPR_API_TOKEN, null);
+
+  /**
    * HTTP port for Dapr after checking system property and environment variable.
    */
   public static final Supplier<Integer> HTTP_PORT = () -> getIntOrDefault(
@@ -70,7 +77,7 @@ public class Properties {
    *
    * @return Integer from system property (1st) or env variable (2nd) or default (last).
    */
-  public static Integer getIntOrDefault(String propName, String envName, Integer defaultValue) {
+  private static Integer getIntOrDefault(String propName, String envName, Integer defaultValue) {
     return getValueOrDefault(propName, envName, defaultValue, s -> Integer.valueOf(s));
   }
 
@@ -82,7 +89,7 @@ public class Properties {
    *
    * @return Boolean from system property (1st) or env variable (2nd) or default (last).
    */
-  public static Boolean getBooleanOrDefault(String propName, String envName, Boolean defaultValue) {
+  private static Boolean getBooleanOrDefault(String propName, String envName, Boolean defaultValue) {
     return getValueOrDefault(propName, envName, defaultValue, s -> Boolean.valueOf(s));
   }
 
@@ -94,7 +101,7 @@ public class Properties {
    *
    * @return String from system property (1st) or env variable (2nd) or default (last).
    */
-  public static String getStringOrDefault(String propName, String envName, String defaultValue) {
+  private static String getStringOrDefault(String propName, String envName, String defaultValue) {
     return getValueOrDefault(propName, envName, defaultValue, s -> s);
   }
 
