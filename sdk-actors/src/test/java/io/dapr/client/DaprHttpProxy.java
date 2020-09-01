@@ -9,8 +9,8 @@ import okhttp3.OkHttpClient;
 
 public class DaprHttpProxy extends io.dapr.client.DaprHttp {
 
-  public DaprHttpProxy(int port, OkHttpClient httpClient) {
-    super(port, httpClient);
+  public DaprHttpProxy(String hostname, int port, OkHttpClient httpClient) {
+    super(hostname, port, httpClient);
   }
 
 }
