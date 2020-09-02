@@ -8,13 +8,13 @@ package io.dapr.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientHttp;
 import io.dapr.client.DaprClientTestBuilder;
 import io.dapr.client.DaprHttpStub;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.utils.Constants;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -121,7 +121,7 @@ public class DaprRuntimeTest {
     for (Message message : messages) {
       when(daprHttp.invokeApi(
           eq("POST"),
-          eq(Constants.PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME),
+          eq(DaprClientHttp.PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME),
           any(),
           eq(serializer.serialize(message.data)),
           eq(null),
@@ -209,7 +209,7 @@ public class DaprRuntimeTest {
 
       when(daprHttp.invokeApi(
           eq("POST"),
-          eq(Constants.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
+          eq(DaprClientHttp.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
           any(),
           eq(serializer.serialize(message.data)),
           any(),
