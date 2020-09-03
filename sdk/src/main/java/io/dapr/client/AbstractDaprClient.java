@@ -62,9 +62,7 @@ abstract class AbstractDaprClient implements DaprClient {
    * @param stateSerializer  Serializer for state objects.
    * @see DaprClientBuilder
    */
-  AbstractDaprClient(
-      DaprObjectSerializer objectSerializer,
-      DaprObjectSerializer stateSerializer) {
+  AbstractDaprClient(DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
     this.objectSerializer = objectSerializer;
     this.stateSerializer = stateSerializer;
   }
@@ -89,19 +87,12 @@ abstract class AbstractDaprClient implements DaprClient {
   /**
    * {@inheritDoc}
    */
-  public <T> Mono<T> invokeService(
-      String appId,
-      String method,
-      Object request,
-      HttpExtension httpExtension,
-      Map<String, String> metadata,
-      TypeRef<T> type) {
+  @Override
+  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+      Map<String, String> metadata, TypeRef<T> type, String contentType) {
     InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(appId, method);
-    InvokeServiceRequest req = builder
-        .withBody(request)
-        .withHttpExtension(httpExtension)
-        .withMetadata(metadata)
-        .build();
+    InvokeServiceRequest req = builder.withBody(request).withHttpExtension(httpExtension).withMetadata(metadata)
+        .withContentType(contentType).build();
 
     return this.invokeService(req, type).map(r -> r.getObject());
   }
@@ -110,13 +101,17 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
-      String appId,
-      String method,
-      Object request,
-      HttpExtension httpExtension,
-      Map<String, String> metadata,
-      Class<T> clazz) {
+  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+      Map<String, String> metadata, TypeRef<T> type) {
+    return this.invokeService(appId, method, request, httpExtension, metadata, type, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+      Map<String, String> metadata, Class<T> clazz) {
     return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.get(clazz));
   }
 
@@ -124,8 +119,17 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
+  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+      Map<String, String> metadata, Class<T> clazz, String contentType) {
+    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.get(clazz), contentType);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension,
+      Map<String, String> metadata, TypeRef<T> type) {
     return this.invokeService(appId, method, null, httpExtension, metadata, type);
   }
 
@@ -133,8 +137,17 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
+  public <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension,
+      Map<String, String> metadata, TypeRef<T> type, String contentType) {
+    return this.invokeService(appId, method, null, httpExtension, metadata, type, contentType);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension,
+      Map<String, String> metadata, Class<T> clazz) {
     return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.get(clazz));
   }
 
@@ -142,9 +155,9 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   TypeRef<T> type) {
-    return this.invokeService(appId, method, request, httpExtension, null, type);
+  public <T> Mono<T> invokeService(String appId, String method, HttpExtension httpExtension,
+      Map<String, String> metadata, Class<T> clazz, String contentType) {
+    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.get(clazz), contentType);
   }
 
   /**
@@ -152,8 +165,35 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   Class<T> clazz) {
+      TypeRef<T> type) {
+    return this.invokeService(appId, method, request, httpExtension, null, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(String appId, String method, Object request,
+      HttpExtension httpExtension, TypeRef<T> type, String contentType) {
+    return this.invokeService(appId, method, request, httpExtension, null, type, contentType);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+      Class<T> clazz) {
     return this.invokeService(appId, method, request, httpExtension, null, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<T> invokeService(String appId, String method, Object request,
+      HttpExtension httpExtension, Class<T> clazz, String contentType) {
+    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.get(clazz), contentType);
   }
 
   /**
@@ -168,8 +208,17 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(
-      String appId, String method, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
+  public Mono<Void> invokeService(String appId, String method, Object request,
+      HttpExtension httpExtension, String contentType) {
+    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.BYTE_ARRAY, contentType).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
+      Map<String, String> metadata) {
     return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
@@ -177,8 +226,17 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata) {
+  public Mono<Void> invokeService(String appId, String method, Object request,
+      HttpExtension httpExtension, Map<String, String> metadata, String contentType) {
+    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY, contentType).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> invokeService(String appId, String method, HttpExtension httpExtension,
+      Map<String, String> metadata) {
     return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
@@ -186,9 +244,27 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> invokeService(
-      String appId, String method, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
+  public Mono<Void> invokeService(String appId, String method, HttpExtension httpExtension,
+      Map<String, String> metadata, String contentType) {
+    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.BYTE_ARRAY, contentType).then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<byte[]> invokeService(String appId, String method, byte[] request, HttpExtension httpExtension,
+      Map<String, String> metadata) {
     return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<byte[]> invokeService(String appId, String method, byte[] request,
+      HttpExtension httpExtension, Map<String, String> metadata, String contentType) {
+    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY, contentType);
   }
 
   /**
@@ -227,22 +303,19 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
-    InvokeBindingRequest request = new InvokeBindingRequestBuilder(name, operation)
-        .withData(data)
-        .withMetadata(metadata)
-        .build();
+  public <T> Mono<T> invokeBinding(String name, String operation, Object data, Map<String, String> metadata,
+      TypeRef<T> type) {
+    InvokeBindingRequest request = new InvokeBindingRequestBuilder(name, operation).withData(data)
+        .withMetadata(metadata).build();
     return this.invokeBinding(request, type).map(r -> r.getObject());
   }
-
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
+  public <T> Mono<T> invokeBinding(String name, String operation, Object data, Map<String, String> metadata,
+      Class<T> clazz) {
     return this.invokeBinding(name, operation, data, metadata, TypeRef.get(clazz));
   }
 
@@ -282,30 +355,24 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, TypeRef<T> type) {
-    GetStateRequest request = new GetStateRequestBuilder(stateStoreName, key)
-        .withEtag(etag)
-        .withStateOptions(options)
+  public <T> Mono<State<T>> getState(String stateStoreName, String key, String etag, StateOptions options,
+      TypeRef<T> type) {
+    GetStateRequest request = new GetStateRequestBuilder(stateStoreName, key).withEtag(etag).withStateOptions(options)
         .build();
     return this.getState(request, type).map(r -> r.getObject());
   }
-
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
+  public <T> Mono<State<T>> getState(String stateStoreName, String key, String etag, StateOptions options,
+      Class<T> clazz) {
     return this.getState(stateStoreName, key, etag, options, TypeRef.get(clazz));
   }
 
-  private <T> State<T> buildStateKeyValue(
-      DaprProtos.GetStateResponse response,
-      String requestedKey,
-      StateOptions stateOptions,
-      TypeRef<T> type) throws IOException {
+  private <T> State<T> buildStateKeyValue(DaprProtos.GetStateResponse response, String requestedKey,
+      StateOptions stateOptions, TypeRef<T> type) throws IOException {
     ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
     T value = stateSerializer.deserialize(data, type);
@@ -319,9 +386,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Void> saveStates(String stateStoreName, List<State<?>> states) {
-    SaveStateRequest request = new SaveStateRequestBuilder(stateStoreName)
-        .withStates(states)
-        .build();
+    SaveStateRequest request = new SaveStateRequestBuilder(stateStoreName).withStates(states).build();
     return this.saveStates(request).then();
   }
 
@@ -355,26 +420,27 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Void> deleteState(String stateStoreName, String key, String etag, StateOptions options) {
-    DeleteStateRequest request = new DeleteStateRequestBuilder(stateStoreName, key)
-        .withEtag(etag)
-        .withStateOptions(options)
-        .build();
+    DeleteStateRequest request = new DeleteStateRequestBuilder(stateStoreName, key).withEtag(etag)
+        .withStateOptions(options).build();
     return deleteState(request).then();
   }
 
   /**
-   * Builds the object io.dapr.{@link io.dapr.v1.DaprProtos.InvokeServiceRequest} to be send based on the parameters.
+   * Builds the object io.dapr.{@link io.dapr.v1.DaprProtos.InvokeServiceRequest}
+   * to be send based on the parameters.
    *
    * @param httpExtension Object for HttpExtension
    * @param appId         The application id to be invoked
+   * @param contentType   The content type of the request body
    * @param method        The application method to be invoked
-   * @param request       The body of the request to be send as part of the invocation
+   * @param request       The body of the request to be send as part of the
+   *                      invocation
    * @param <K>           The Type of the Body
    * @return The object to be sent as part of the invocation.
    * @throws java.io.IOException If there's an issue serializing the request.
    */
-  private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(
-      HttpExtension httpExtension, String appId, String method, K request) throws IOException {
+  private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(HttpExtension httpExtension, String appId,
+      String contentType, String method, K request) throws IOException {
     if (httpExtension == null) {
       throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
     }
@@ -392,8 +458,11 @@ abstract class AbstractDaprClient implements DaprClient {
         .putAllQuerystring(httpExtension.getQueryString());
     requestBuilder.setHttpExtension(httpExtensionBuilder.build());
 
-    DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
-        .setId(appId)
+    if (contentType != null) {
+      requestBuilder.setContentType(contentType);
+    }
+
+    DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder().setId(appId)
         .setMessage(requestBuilder.build());
     return envelopeBuilder.build();
   }
@@ -403,9 +472,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Map<String, String>> getSecret(String secretStoreName, String key, Map<String, String> metadata) {
-    GetSecretRequest request = new GetSecretRequestBuilder(secretStoreName, key)
-        .withMetadata(metadata)
-        .build();
+    GetSecretRequest request = new GetSecretRequestBuilder(secretStoreName, key).withMetadata(metadata).build();
     return getSecret(request).map(r -> r.getObject() == null ? new HashMap<>() : r.getObject());
   }
 

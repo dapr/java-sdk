@@ -153,10 +153,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
       String method = invokeServiceRequest.getMethod();
       Object request = invokeServiceRequest.getBody();
       HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
-      // TODO(artursouza): handle metadata once available in GRPC proto.
-      // Map<String, String> metadata = invokeServiceRequest.getMetadata();
+      String contentType = invokeServiceRequest.getContentType();
       Context context = invokeServiceRequest.getContext();
-      DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(httpExtension, appId, method, request);
+      DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
+          httpExtension,
+          appId,
+          contentType,
+          method,
+          request);
       return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<CommonProtos.InvokeResponse> futureResponse =
             client.invokeService(envelope);
@@ -382,6 +386,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    *
    * @param httpExtension Object for HttpExtension
    * @param appId         The application id to be invoked
+   * @param contentType   The content type of the request body
    * @param method        The application method to be invoked
    * @param request       The body of the request to be send as part of the invocation
    * @param <K>           The Type of the Body
@@ -389,7 +394,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @throws IOException If there's an issue serializing the request.
    */
   private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(
-      HttpExtension httpExtension, String appId, String method, K request) throws IOException {
+      HttpExtension httpExtension,
+      String appId,
+      String contentType,
+      String method,
+      K request) throws IOException {
     if (httpExtension == null) {
       throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
     }
@@ -406,6 +415,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
     httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.valueOf(httpExtension.getMethod().toString()))
         .putAllQuerystring(httpExtension.getQueryString());
     requestBuilder.setHttpExtension(httpExtensionBuilder.build());
+
+    if (contentType != null) {
+      requestBuilder.setContentType(contentType);
+    }
 
     DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
         .setId(appId)
