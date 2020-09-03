@@ -360,18 +360,96 @@ public interface DaprClient extends Closeable {
   <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type);
 
   /**
-   * Retrieve a State based on their key.
+   * Retrieve bulk States based on their keys.
    *
    * @param stateStoreName The name of the state store.
-   * @param key            The key of the State to be retrieved.
-   * @param etag           Optional etag for conditional get
+   * @param keys           The keys of the States to be retrieved.
    * @param options        Optional settings for retrieve operation.
    * @param clazz          The type of State needed as return.
    * @param <T>            The type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<State<T>> getState(String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz);
+  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, StateOptions options, Class<T> clazz);
 
+  /**
+   * Retrieve bulk States based on their keys.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param states         States to be re-retrieved.
+   * @param type           The type of State needed as return.
+   * @param <T>            The type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<State<T>> states, TypeRef<T> type);
+
+  /**
+   * Retrieve bulk States based on their keys.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param states         States to be re-retrieved.
+   * @param clazz          The type of State needed as return.
+   * @param <T>            The type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<State<T>> states, Class<T> clazz);
+
+  /**
+   * Retrieve bulk States based on their keys.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param keys           The keys of the State to be retrieved.
+   * @param type           The type of State needed as return.
+   * @param <T>            The type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, TypeRef<T> type);
+
+  /**
+   * Retrieve bulk States based on their keys.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param keys           The keys of the State to be retrieved.
+   * @param clazz          The type of State needed as return.
+   * @param <T>            The type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, Class<T> clazz);
+
+  /**
+   * Retrieve bulk States based on their keys.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param keys           The keys of the State to be retrieved.
+   * @param options        Optional settings for retrieve operation.
+   * @param type           The Type of State needed as return.
+   * @param <T>            The Type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, StateOptions options, TypeRef<T> type);
+
+  /**
+   * Retrieve bulk States based on their keys.
+   *
+   * @param request The request to get state.
+   * @param type    The Type of State needed as return.
+   * @param <T>     The Type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type);
+
+  /**
+   * Retrieve bulk States based on their keys.
+   *
+   * @param stateStoreName The name of the state store.
+   * @param keys           The keys of the State to be retrieved.
+   * @param options        Optional settings for retrieve operation.
+   * @param clazz          The type of State needed as return.
+   * @param <T>            The type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, StateOptions options, Class<T> clazz);
+
+  
   /**
    * Save/Update a list of states.
    *

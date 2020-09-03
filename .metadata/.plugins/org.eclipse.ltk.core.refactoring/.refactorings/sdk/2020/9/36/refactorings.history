@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;GetStateRequest.java&apos; to &apos;io.dapr.client.domain.GetStateRequest.java&apos;&#x0D;&#x0A;- Original project: &apos;sdk&apos;&#x0D;&#x0A;- Destination element: &apos;io.dapr.client.domain.GetStateRequest.java&apos;&#x0D;&#x0A;- Original element: &apos;io.dapr.client.domain.GetStateRequest.java&apos;" description="Copy compilation unit" destination="/src\/main\/java&lt;io.dapr.client.domain{GetStateRequest.java" element1="/src\/main\/java&lt;io.dapr.client.domain{GetStateRequest.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1599002078833" units="1" version="1.0"/>
+</session>

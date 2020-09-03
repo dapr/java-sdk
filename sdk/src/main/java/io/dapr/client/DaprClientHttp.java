@@ -8,6 +8,7 @@ package io.dapr.client;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeServiceRequest;
@@ -256,6 +257,45 @@ public class DaprClientHttp extends AbstractDaprClient {
       return Mono.error(ex);
     }
   }
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
+	try {
+		final String stateStoreName = request.getStateStoreName();
+	    final List<String> keys = request.getKeys();
+	    final StateOptions options = request.getStateOptions();
+	    final Context context = request.getContext();
+	    if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+	    	throw new IllegalArgumentException("State store name cannot be null or empty.");
+	    }
+	    if (keys == null || keys.isEmpty()) {
+	    	throw new IllegalArgumentException("Key cannot be null or empty.");
+	    }    
+	    
+	    final String url = Constants.STATE_PATH + "/" + stateStoreName;
+	    Map<String, String> urlParameters = Optional.ofNullable(options)
+	            .map(o -> o.getStateOptionsAsMap())
+	            .orElse(new HashMap<>());
+	    byte[] serializedKeysBody = INTERNAL_SERIALIZER.serialize(keys);
+	    return this.client
+	    	.invokeApi(DaprHttp.HttpMethods.POST.name(), url.toString(), urlParameters, serializedKeysBody, null, context)
+	            .flatMap(s -> {
+	              try {
+	                return Mono.just(buildStateKeyValue(s, key, options, type));
+	              } catch (Exception ex) {
+	                return Mono.error(ex);
+	              }
+	            })
+	            .map(r -> new Response<>(context, r));
+
+	} catch (Exception ex) {
+      return Mono.error(ex);
+    }
+  }
+  
 
   /**
    * {@inheritDoc}

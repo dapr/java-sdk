@@ -1,0 +1,1485 @@
+<?xml version="1.0" ?>
+ <rss version="2.0">
+  <channel>
+    <title>Eclipse News</title>
+    <link>http://www.eclipse.org</link>
+    <description>Eclipse News</description>
+    <image>
+      <url>http://eclipse.org/eclipse.org-common/themes/Nova/images/eclipse.png</url>
+      <title>eclipse.org</title>
+      <link>http://www.eclipse.org</link>
+    </image>
+    <item>
+      <title><![CDATA[EclipseCon 2020 CFP is Open]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/eclipsecon-2020-cfp-open]]></link>
+      <description><![CDATA[If you are interested in speaking, our call for proposals is now open. Please visit the CFP page for information on how to submit your talk.]]></description>
+      <pubDate>Thu, 16 Apr 2020 15:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Add Your Voice to the 2020 Jakarta EE Developer Survey]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/add-your-voice-2020-jakarta-ee-developer-survey]]></link>
+      <description><![CDATA[Our third annual Jakarta EE Developer Survey is now open and I encourage everyone to take a few minutes and complete the survey before the April 30 deadline.]]></description>
+      <pubDate>Tue, 7 Apr 2020 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Releases Eclipse Theia 1.0, a True Open Source Alternative to Visual Studio Code]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20200331-theia.php]]></link>
+      <description><![CDATA[The Eclipse Foundation, one of the world’s largest open source foundations, today announced the release of Theia 1.0, a true open source alternative to Microsoft’s popular Visual Studio Code (VS Code) software.]]></description>
+      <pubDate>Tue, 31 Mar 2020 07:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon 2020 to Be Held as Virtual Event]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/paul-white/eclipsecon-2020-be-held-virtual-event]]></link>
+      <description><![CDATA[The Eclipse Foundation is announcing today that it will hold its annual EclipseCon conference as a virtual event.]]></description>
+      <pubDate>Fri, 27 Mar 2020 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Supports EU Funded SmartCLIDE Project]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20200326-smartclide.php]]></link>
+      <description><![CDATA[A European consortium of eleven partners from Germany, Greece, Luxembourg, Portugal, Spain, and the United Kingdom has announced the launch of the SmartCLIDE project, a €4.9 million research project funded by the European Union’s Horizon 2020 research and innovation program.]]></description>
+      <pubDate>Thu, 26 Mar 2020 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Board Election Results]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20200319-boardelection.php]]></link>
+      <description><![CDATA[Today we are pleased to announce the results of the Eclipse Foundation Sustaining Member and Committer Member elections for representatives to our Board of Directors. The positions of Sustaining Members and Committer representatives are a vitally important part of the Eclipse Foundation's governance.]]></description>
+      <pubDate>Thu, 19 Mar 2020 09:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Real-World IoT Adoption]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/real-world-iot-adoption]]></link>
+      <description><![CDATA[The results of our first IoT Commercial Adoption survey tell a clear story about what organizations are doing with IoT right now and their plans for production deployments.]]></description>
+      <pubDate>Fri, 13 Mar 2020 12:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Releases IoT Commercial Adoption Survey Results]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20200310-iot-commercial-adoption-survey-2019.php]]></link>
+      <description><![CDATA[The Eclipse Foundation announced the release of its first annual IoT Commercial Adoption survey.]]></description>
+      <pubDate>Tue, 10 Mar 2020 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[IOTA and the Eclipse Foundation Launch Working Group to Develop Commercial Applications on Distributed Ledger Technology]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20200212-iota.php]]></link>
+      <description><![CDATA[New Tangle EE Working Group Brings Together Fifteen Diverse Organizations to Foster Data and Payment Innovation on Distributed Ledger Technology (DLT)]]></description>
+      <pubDate>Tue, 11 Feb 2020 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Sparkplug: Standardizing Industrial IoT Communications]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/sparkplug-standardizing-industrial-iot-communications]]></link>
+      <description><![CDATA[With the launch this week of the Sparkplug Working Group, we’re bringing together the industry leaders and technologies needed to drive...]]></description>
+      <pubDate>Thu, 06 Feb 2020 13:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Launches the Sparkplug Working Group to Bring Device Communications Standardization to the Industrial Internet of Things and Industrial Automation]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2020/02/03/1978911/0/en/The-Eclipse-Foundation-Launches-the-Sparkplug-Working-Group-to-Bring-Device-Communications-Standardization-to-the-Industrial-Internet-of-Things-and-Industrial-Automation.html]]></link>
+      <description><![CDATA[Founding members Chevron, Canary Labs, Cirrus Link Solutions, HiveMQ, Inductive Automation, and ORing are defining an open standard specification to create interoperable MQTT IIoT solutions]]></description>
+      <pubDate>Tue, 04 Feb 2020 8:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Announces the CN4J Day 2020 Event for Building Enterprise Java on Kubernetes]]></title>
+      <link><![CDATA[https://jakarta.ee/news/announcements/2020/01/28/the-eclipse-foundation-announces-the-cn4j-day-2020-event-for-building-enterprise-java-on-kubernetes/]]></link>
+      <description><![CDATA[Today the Eclipse Foundation announced the launch of the Cloud Native for Java (CN4J) Day event, a full-day of expert talks, demos, and thought-provoking sessions focused on enterprise applications implemented using open source vendor-neutral Jakarta EE (successor of Java EE) and Eclipse MicroProfile specifications on Kubernetes.]]></description>
+      <pubDate>Tue, 28 Jan 2020 8:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Moving Forward With Jakarta EE 9]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/moving-forward-jakarta-ee-9]]></link>
+      <description><![CDATA[On behalf of the Jakarta EE Working Group, we are excited to announce the unanimous approval of the plan for Jakarta EE 9, with an anticipated mid-2020 release.]]></description>
+      <pubDate>Mon, 20 Jan 2020 10:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The realities of running an open-source community]]></title>
+      <link><![CDATA[https://sdtimes.com/open-source/the-realities-of-running-an-open-source-community/]]></link>
+      <description><![CDATA[The benefits of using open-source software is immeasurable, but it’s not the code itself that makes open-source software an invaluable resource.]]></description>
+      <pubDate>Thu, 9 Jan 2020 09:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation’s New Bylaws Are in Effect]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20200107-bylaws_release_3.php]]></link>
+      <description><![CDATA[We are pleased to announce the Eclipse Foundation’s new Bylaws went into effect on January 1, 2020.]]></description>
+      <pubDate>Tue, 7 Jan 2020 09:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Close to the Edge]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/close-edge]]></link>
+      <description><![CDATA[Today we are launching our new Edge Native Working Group to help drive the industry platform for edge computing.]]></description>
+      <pubDate>Tue, 17 Dec 2019 9:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Launches the Edge Native Working Group to Deliver Production-Grade Code for Open Source Edge Computing]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2019/12/10/1958428/0/en/The-Eclipse-Foundation-Launches-the-Edge-Native-Working-Group-to-Deliver-Production-Grade-Code-for-Open-Source-Edge-Computing.html]]></link>
+      <description><![CDATA[The Eclipse Foundation today announced the launch of the Edge Native Working Group, a vendor-neutral and code-first industry collaboration that will drive the evolution and broad adoption of open source software for edge computing.]]></description>
+      <pubDate>Tue, 10 Dec 2019 9:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Participate in the 2019 IoT Commercial Adoption Survey!!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/participate-2019-iot-commercial-adoption-survey]]></link>
+      <description><![CDATA[According to McKinsey, the Internet of Things (IoT) will have a total potential economic impact of up to $11.1 trillion a year by 2025.]]></description>
+      <pubDate>Thu, 10 Oct 2019 10:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Payara Server is Jakarta EE 8 Compatible!]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20191009-payara.php]]></link>
+      <description><![CDATA[Payara Services and the Eclipse Foundation, Inc. today announced the application server ,Payara Server, a Jakarta EE 8 compatible implementation.]]></description>
+      <pubDate>Wed, 9 Oct 2019 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Launches The Eclipse Cloud Development Tools Working Group for Cloud Native Software!]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20191008-ECD.php]]></link>
+      <description><![CDATA[The Eclipse Foundation today announced the launch of the Eclipse Cloud Development Tools Working Group (ECD WG)]]></description>
+      <pubDate>Tue, 8 Oct 2019 13:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Early registration for EclipseCon Europe ends October 1!]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2019/registration]]></link>
+      <description><![CDATA[If you haven't got your tickets yet, register now and save for EclipseCon Europe! Early Bird pricing ends tomorrow!]]></description>
+      <pubDate>Mon, 30 Sep 2019 11:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Call for Birds of Feather's (BoFs) for EclipseCon Europe 2019!]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2019/news/call-bofs]]></link>
+      <description><![CDATA[Community Evening includes an Edge Computing hackathon, a Project Pitch game, Eclipse Night School, and - of course - BoFs!]]></description>
+      <pubDate>Tue, 24 Sep 2019 11:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Come to Eclipse Night School at EclipseCon Europe!]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2019/news/eclipse-night-school]]></link>
+      <description><![CDATA[Come to Night School, and learn all about what the Foundation staff does to make your (Eclipse) life better!]]></description>
+      <pubDate>Tue, 24 Sep 2019 11:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Wins Duke's Choice Award for Open Source Contributions to the Java Ecosystem]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2019/09/17/1916531/0/en/The-Eclipse-Foundation-Wins-Duke-s-Choice-Award-for-Open-Source-Contributions-to-the-Java-Ecosystem.html]]></link>
+      <description><![CDATA[The Eclipse Foundation was awarded a Duke's Choice Award yesterday in recognition for outstanding open source contributions to the Java ecosystem and the community-driven achievement of moving Java EE technologies from Oracle to the Jakarta EE Working Group.]]></description>
+      <pubDate>Tue, 17 Sep 2019 9:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[The Eclipse Foundation Releases Eclipse Che 7, the First Kubernetes-Native IDE, to Make Creating Cloud Native Applications Easier, Faster, and More Secure]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2019/09/17/1916522/0/en/The-Eclipse-Foundation-Releases-Eclipse-Che-7-the-First-Kubernetes-Native-IDE-to-Make-Creating-Cloud-Native-Applications-Easier-Faster-and-More-Secure.html]]></link>
+      <description><![CDATA[The Eclipse Foundation today announced at the Oracle Code One conference and tradeshow the release of Eclipse Che 7, the first developer workspace server and Integrated Development Environment (IDE) for creating cloud native, enterprise applications on Kubernetes]]></description>
+      <pubDate>Tue, 17 Sep 2019 9:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Community Continues to Deliver on Open Source Commitment]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/eclipse-community-continues-deliver-open-source-commitment]]></link>
+      <description><![CDATA[Community is key. And the Eclipse Foundation's community is on a roll.]]></description>
+      <pubDate>Tue, 17 Sep 2019 9:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[EclipseCon Europe 2019 Keynotes Announced - Register Now!]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2019/keynotes]]></link>
+      <description><![CDATA[We are excited to announce the keynote speaker lineup for our community's biggest event of the year.]]></description>
+      <pubDate>Tue, 17 Sep 2019 9:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[The Eclipse Foundation Releases Jakarta EE 8 Specifications; Completes Transition to Eclipse Foundation as the New Home for Open Source Cloud Native Java]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2019/09/10/1913300/0/en/The-Eclipse-Foundation-Releases-Jakarta-EE-8-Specifications-Completes-Transition-to-Eclipse-Foundation-as-the-New-Home-for-Open-Source-Cloud-Native-Java.html]]></link>
+      <description><![CDATA[The Eclipse Foundation today announced during the JakartaOne Livestream virtual conference the release of the Jakarta EE 8 Full Platform and Web Profile specifications and related Technology Compatibility Kits (TCKs).]]></description>
+      <pubDate>Tue, 17 Sep 2019 9:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[OpenADx Becomes Eclipse Working Group Focused on Interoperability in the Autonomous Driving Software Stack]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2019/08/27/1906959/0/en/OpenADx-Becomes-Eclipse-Working-Group-Focused-on-Interoperability-in-the-Autonomous-Driving-Software-Stack.html]]></link>
+      <description><![CDATA[Originally launched by Bosch and Microsoft, the OpenADx working group calls for participation from automotive industry OEMs, tools vendors, and developer community]]></description>
+      <pubDate>Tue, 17 Sep 2019 9:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Welcome to the Future of Cloud Native Java]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/welcome-future-cloud-native-java]]></link>
+      <description><![CDATA[Today, with the release of Jakarta EE 8, we've entered a new era in Java innovation!]]></description>
+      <pubDate>Tue, 10 Sep 2019 11:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Update for Jakarta EE community: September 2019]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/update-jakarta-ee-community-september-2019]]></link>
+      <description><![CDATA[There's a lot happening in the Jakarta EE ecosystem so if you want to get a richer insight into Jakarta EE, read on.]]></description>
+      <pubDate>Mon, 09 Sep 2019 15:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Welcome Ivar Grimstad!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/paul-buck/welcome-ivar]]></link>
+      <description><![CDATA[We are happy to announce that effective October 1st, Ivar Grimstad will join the Eclipse Foundation in the role of Jakarta EE Developer Advocate.]]></description>
+      <pubDate>Mon, 26 Aug 2019 11:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Jakarta Newsletter August 2019: Jakarta EE 8 Preview]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/gabriela-motroc/jakarta-newsletter-august-2019-jakarta-ee-8-preview]]></link>
+      <description><![CDATA[There's a lot happening in the Jakarta EE ecosystem so if you want to get a richer insight into Jakarta EE, read on.]]></description>
+      <pubDate>Mon, 26 Aug 2019 11:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+   <item>
+      <title><![CDATA[Community Day and Community Evening at EclipseCon Europe 2019]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/stephanie-swart/community-day-and-community-evening-eclipsecon-europe-2019]]></link>
+      <description><![CDATA[Learn how you can help us plan Community Day and the new Community Evening this year at EclipseCon Europe!]]></description>
+      <pubDate>Wed, 07 Aug 2019 15:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Update for Jakarta EE community: August 2019]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/update-jakarta-ee-community-august-2019]]></link>
+      <description><![CDATA[There's a lot happening in the Jakarta EE ecosystem so if you want to get a richer insight into Jakarta EE, read on.]]></description>
+      <pubDate>Wed, 07 Aug 2019 15:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter - July 2019: Research@Eclipse]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/gabriela-motroc/eclipse-newsletter-july-2019-researcheclipse]]></link>
+      <description><![CDATA[Read Gabriela Motroc's latest blog on the Eclipse Newsletter: Research@Eclipse]]></description>
+      <pubDate>Thu, 26 Jul 2019 08:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[The latest Eclipse Newsletter had been released: Research@Eclipse]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2019/july/]]></link>
+      <description><![CDATA[We are very proud to offer you an introduction to most of the research projects we're involved in and the Eclipse Foundation!]]></description>
+      <pubDate>Thu, 25 Jul 2019 09:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Industrial-Scale Collaboration for the Business Win]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/industrial-scale-collaboration-business-win]]></link>
+      <description><![CDATA[Today, we are thrilled to release the Business of Open Source eBook focused on how successful entrepreneurs are leveraging all that open source has to offer to drive digital disruption within business-friendly open source foundations.]]></description>
+      <pubDate>Tue, 16 Jul 2019 10:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Commercial-Grade Collaboration at the Eclipse Foundation]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/commercial-grade-collaboration-eclipse-foundation]]></link>
+      <description><![CDATA[We've just released a Business of Open Source eBook that is essential reading for leaders in the age of digital disruption who are considering how to maximize their returns from open source participation.]]></description>
+      <pubDate>Tue, 16 Jul 2019 10:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Update for Jakarta EE community: July 2019]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/update-jakarta-ee-community-july-2019]]></link>
+      <description><![CDATA[There are a few ways to get richer insight into the work that has been invested in Jakarta EE so far, so if you'd like to learn more about Jakarta EE-related plans and get involved in shaping the future of Cloud Native Java, read on.]]></description>
+      <pubDate>Mon, 15 Jul 2019 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Early-Bird Talks: A Preview of What's to Come]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2019/news/early-bird-talks-preview-whats-come]]></link>
+      <description><![CDATA[The community really came though for the early-bird deadline this year. The program committee reviewed a record number of talks (144) to come up with a top-six list!]]></description>
+      <pubDate>Fri, 05 Jul 2019 08:25:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[The Eclipse IoT Newsletter is out!]]></title>
+      <link><![CDATA[https://mailchi.mp/18324dc88d65/eclipse-iot-newsletter-june-2019]]></link>
+      <description><![CDATA[Welcome to the second issue of the Eclipse IoT Newsletter for 2019, a newsletter tailored to share Eclipse IoT community and industry news.]]></description>
+      <pubDate>Thu, 27 Jun 2019 11:25:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Newsletter: First Look at Eclipse IDE 2019-06]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2019/june/]]></link>
+      <description><![CDATA[This month the Eclipse Newsletter features the Eclipse IDE 2019-06, which is now available for download!]]></description>
+      <pubDate>Thu, 27 Jun 2019 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse ioFog: Evolving Toward Native Kubernetes Orchestration at the Edge]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/eclipse-iofog-evolving-toward-native-kubernetes-orchestration-edge]]></link>
+      <description><![CDATA[The Eclipse Foundation is excited to support today's announcement of the initial availability of Eclipse ioFog features that make any Kubernetes distribution edge-aware.]]></description>
+      <pubDate>Mon, 24 Jun 2019 13:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Become a Sponsor at EclipseCon Europe 2019!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/jameka-woodberry/become-sponsor-eclipsecon-europe-2019]]></link>
+      <description><![CDATA[We're gearing up for EclipseCon Europe 2019, our biggest event of the year which brings together developers, architects, and open source business leaders.]]></description>
+      <pubDate>Fri, 21 Jun 2019 11:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Update for Jakarta EE community: June 2019]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/update-jakarta-ee-community-june-2019]]></link>
+      <description><![CDATA[Get the latest monthly email update on the Jakarta EE community from news highlights to various meetings and events related to the platform!]]></description>
+      <pubDate>Thu, 20 Jun 2019 12:05:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Individual Committer Agreement 4.0 Update]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/sharon-corbett/eclipse-individual-committer-agreement-40-update]]></link>
+      <description><![CDATA[On June 13th, we retired all versions of the  Eclipse Individual Committer Agreement (ICA) prior to version 4.0. Update yours today!]]></description>
+      <pubDate>Mon, 17 Jun 2019 09:05:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[2019 Annual Eclipse Foundation Community Report]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/foundation/reports/annual_report.php]]></link>
+      <description><![CDATA[Read the eighth annual Eclipse Foundation Community Report! Comments and feedback on the style and content are welcome!]]></description>
+      <pubDate>Tue, 11 Jun 2019 13:05:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Jakarta Newsletter May 2019: Onwards and Upwards for the Jakarta Community]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/gabriela-motroc/jakarta-newsletter-may-2019-onwards-and-upwards-jakarta-community]]></link>
+      <description><![CDATA[The elected positions are to represent each of the Enterprise Members, Participant Members, and Committer Members.]]></description>
+      <pubDate>Tue, 04 Jun 2019 08:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Election time for Jakarta EE Working Group Committees!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/election-time-jakarta-ee-working-group-committees]]></link>
+      <description><![CDATA[The elected positions are to represent each of the Enterprise Members, Participant Members, and Committer Members.]]></description>
+      <pubDate>Tue, 28 May 2019 11:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon Europe 2019: Call for Papers open until July 15 - Submit a talk today!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/jameka-woodberry/eclipsecon-europe-2019-call-papers-open-until-july-15-submit-talk-today]]></link>
+      <description><![CDATA[Submit your proposals to be part of ECE's 2019 speaker lineup. The conference is in Ludwigsburg, Germany Oct 21-24, 2019]]></description>
+      <pubDate>Tue, 28 May 2019 11:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Statement by the Eclipse Foundation on Huawei Entity List Ruling]]></title>
+      <link><![CDATA[https://eclipse.org/org/press-release/20190527-EAR.php]]></link>
+      <description><![CDATA[Open Source projects involving encryption software source code are still required to send a notice of the URL to BIS and NSA to satisfy the "publicly available" notice requirement in EAR &sect; 742.15(b)]]></description>
+      <pubDate>Mon, 27 May 2019 09:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Industry leaders Red Hat, Eurotech, and Cloudera join forces at the Eclipse Foundation]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/jameka-woodberry/industry-leaders-red-hat-eurotech-and-cloudera-join-forces-eclipse-foundation]]></link>
+      <description><![CDATA[Industry leaders Red Hat, Eurotech and Cloudera turned to the Eclipse IoT Working Group to overcome common challenges and provide their customers with an end-to-end IoT solution.]]></description>
+      <pubDate>Mon, 27 May 2019 08:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[ECE 2019: CFP Now Open!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/ece-2019-cfp-now-open]]></link>
+      <description><![CDATA[The ECE 2019 Call for Papers is now open. The early-bird deadline is July 1 and final submission is July 15. ]]></description>
+      <pubDate>Tue, 21 May 2019 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Cloud Native Java Innovation at the Eclipse Foundation]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/cloud-native-java-innovation-eclipse-foundation]]></link>
+      <description><![CDATA[The world's leading technology vendors, including Fujitsu, IBM, Microsoft, Oracle, Red Hat, SAP, and Tomitribe, are collaborating at the Eclipse Foundation to advance enterprise Java technologies to support the migration of mission-critical applications to the cloud.]]></description>
+      <pubDate>Tue, 21 May 2019 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Update for Jakarta EE community: May 2019]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/update-jakarta-ee-community-may-2019]]></link>
+      <description><![CDATA[Active participation represents the best way to drive the vendor-neutral and rapid innovation necessary to modernize enterprise systems for cloud use cases.]]></description>
+      <pubDate>Tue, 21 May 2019 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Launches openMobility Working Group]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2019/05/13/1822364/0/en/Eclipse-Foundation-Launches-openMobility-Working-Group.html]]></link>
+      <description><![CDATA[Today we announced the launch of the openMobility Working Group that will focus on open and shared collaboration around one of the major issues in urban planning around autonomous vehicles and future transportation requirements.]]></description>
+      <pubDate>Mon, 13 May 2019 17:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[New Eclipse Foundation Community Survey of Java Developers Shows Cloud Native Adoption Accelerating Dramatically with Jakarta EE]]></title>
+      <link><![CDATA[https://www.globenewswire.com/news-release/2019/05/09/1820952/0/en/New-Eclipse-Foundation-Community-Survey-of-Java-Developers-Shows-Cloud-Native-Adoption-Accelerating-Dramatically-with-Jakarta-EE.html]]></link>
+      <description><![CDATA[Eclipse Foundation enterprise Java survey shows cloud deployments increasing over 2018 findings with 62% of Java developers building cloud native architectures now or within the year]]></description>
+      <pubDate>Thu, 09 May 2019 14:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[The Cloud Native Imperative - Results from the 2019 Jakarta EE Developer Survey]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/cloud-native-imperative-%E2%80%94-results-2019-jakarta-ee-developer-survey]]></link>
+      <description><![CDATA[The results of the 2019 Jakarta EE Developer Survey are out. Almost 1,800 Java developers from around the world have spoken.]]></description>
+      <pubDate>Fri, 10 May 2019 14:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Frequently Asked Questions About Jakarta EE 8]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/frequently-asked-questions-about-jakarta-ee-8]]></link>
+      <description><![CDATA[Have questions about Jakarta EE 8? Check out Mike Milinkovich's newest FAQ blog!]]></description>
+      <pubDate>Wed, 08 May 2019 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Contributor Agreement 3.0]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/eclipse-contributor-agreement-30]]></link>
+      <description><![CDATA[The Eclipse Foundation's IP Team has been working hard to get the various agreements that we maintain between the Eclipse Foundation and community updated.]]></description>
+      <pubDate>Wed, 08 May 2019 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Update on Jakarta EE Rights to Java Trademarks]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/update-jakarta-ee-rights-java-trademarks]]></link>
+      <description><![CDATA[Summary of progress to date and implications of the agreement between Eclipse and Oracle on Jakarta EE and use of Java trademarks and the javax namespace.]]></description>
+      <pubDate>Fri, 03 May 2019 15:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation on the move!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/eclipse-foundation-move]]></link>
+      <description><![CDATA[After 15 years at 102 Centrepointe Drive in Ottawa, the Eclipse Foundation is on the move!]]></description>
+      <pubDate>Thu, 25 Apr 2019 15:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[The 2019 IoT Developer Survey Results are Live]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/2019-iot-developer-survey-results-are-live]]></link>
+      <description><![CDATA[This year marks the fifth year the Eclipse IoT Working Group has asked the global IoT developer community to share their perceptions, requirements, and priorities.]]></description>
+      <pubDate>Wed, 17 Apr 2019 08:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[New Survey of More Than 1,700 IoT Developers Reveals Top Hardware, Software "Stack" Choices]]></title>
+      <link><![CDATA[http://www.globenewswire.com/news-release/2019/04/17/1805318/0/en/New-Survey-of-More-Than-1-700-IoT-Developers-Reveals-Top-Hardware-Software-Stack-Choices.html]]></link>
+      <description><![CDATA[Today, we released the 2019 IoT Developer Survey results that canvassed more than 1,700 developers about their IoT efforts!]]></description>
+      <pubDate>Wed, 17 Apr 2019 08:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Renaming Java EE Specifications for Jakarta EE]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/renaming-java-ee-specifications-jakarta-ee]]></link>
+      <description><![CDATA[As we prepare to engage in actual specification work, it's time to start thinking about changing the names of the specifications and the projects that contain their artifacts.]]></description>
+      <pubDate>Fri, 05 Apr 2019 07:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[How to participate in advancing Jakarta EE Specification: Technical and Collateral material related work]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/how-participate-advancing-jakarta-ee-specification-technical-and-collateral]]></link>
+      <description><![CDATA[We have heard from members of the community some suggestions on what they need from the specification, but we can always use more!]]></description>
+      <pubDate>Fri, 05 Apr 2019 07:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Welcome Gabriela!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/welcome-gabriela]]></link>
+      <description><![CDATA[We'd like to welcome Gabriela Motroc to the Eclipse Foundation as a Content Marketing Specialist based in Germany!]]></description>
+      <pubDate>Mon, 01 Apr 2019 09:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Thank You for Taking the Jakarta EE 2019 Developer Survey!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/thank-you-taking-jakarta-ee-2019-developer-survey]]></link>
+      <description><![CDATA[The survey wrapped up at midnight on Monday, March 25, with over 1,770 responses from developers around the globe.]]></description>
+      <pubDate>Mon, 01 Apr 2019 08:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Incubation in the Eclipse Development Process]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/incubation-eclipse-development-process]]></link>
+      <description><![CDATA[The Eclipse Development Process has a notion of phases. Two of those phases are Incubation and Mature.]]></description>
+      <pubDate>Fri, 15 Mar 2019 15:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[That's A Wrap, Folks! Thank You for Participating in Our 2019 IoT Developer Survey!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/jameka-woodberry/thats-wrap-folks-thank-you-participating-our-2019-iot-developer-survey]]></link>
+      <description><![CDATA[We are proud to announce that our 2019 IoT Developer Survey, organized by the Eclipse IoT Working Group, was a huge success with over 1,700 responses!]]></description>
+      <pubDate>Mon, 11 Mar 2019 13:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Specification Process Step-by-Step]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/eclipse-foundation-specification-process-step-step]]></link>
+      <description><![CDATA[The Eclipse Foundation Specification Process (EFSP) provides a framework and governance model for developers engaged in the process of developing specifications.]]></description>
+      <pubDate>Fri, 08 Mar 2019 13:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Board Election Results]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20190305-boardelection.php]]></link>
+      <description><![CDATA[See the results of the Eclipse Foundation Sustaining Member and Committer Member elections for representatives to our Board of Directors.]]></description>
+      <pubDate>Wed, 06 Mar 2019 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[The 2019 Jakarta EE Developer Survey is underway!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/paul-buck/2019-jakarta-ee-developer-survey-underway]]></link>
+      <description><![CDATA[The Jakarta EE Working Group is launching the Jakarta EE Developer Survey for 2019!]]></description>
+      <pubDate>Tue, 05 Mar 2019 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Jakarta EE - What's New in 2019?]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2019/february/]]></link>
+      <description><![CDATA[Check out what's new in 2019 for Jakarta EE!]]></description>
+      <pubDate>Mon, 04 Mar 2019 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse IoT Reaches New Milestones in Open Source IoT Leadership]]></title>
+      <link><![CDATA[https://globenewswire.com/news-release/2019/02/26/1742272/0/en/Eclipse-IoT-Reaches-New-Milestones-in-Open-Source-IoT-Leadership.html]]></link>
+      <description><![CDATA[Eclipse IoT reaches three million lines of code, 41 member companies, 37 IoT projects, and 350 contributors - bringing IoT leaders together to standardize open architecture.]]></description>
+      <pubDate>Tue, 26 Feb 2019 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Participate in the 2019 IoT Developer Survey!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/participate-2019-iot-developer-survey]]></link>
+      <description><![CDATA[The Eclipse IoT Working Group is pleased to launch the 2019 IoT Developer Survey and we want to hear from you!]]></description>
+      <pubDate>Mon, 11 Feb 2019 10:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter - Editorial Calendar 2019]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/jameka-woodberry/eclipse-newsletter-%E2%80%94-editorial-calendar-2019]]></link>
+      <description><![CDATA[Our goal with the newsletter is to deliver great content that educates, motivates, and inspires our community!]]></description>
+      <pubDate>Mon, 11 Feb 2019 10:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Open Source: Can you afford not to get involved?]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/open-source-can-you-afford-not-get-involved]]></link>
+      <description><![CDATA[To say that the open source community is on a roll would be an understatement.]]></description>
+      <pubDate>Thu, 07 Feb 2019 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation: 15 Years Young]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/eclipse-foundation-15-years-young]]></link>
+      <description><![CDATA[Saturday, February 2, 2019 marks the 15th birthday of the Eclipse Foundation. That was the day that it was publicly and officially announced, and the opening day of the first ever EclipseCon conference.]]></description>
+      <pubDate>Fri, 01 Feb 2019 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Jakartablogs.ee is Live! PS: Bloggers, We Need You!]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/jakartablogsee-live-ps-bloggers-we-need-you]]></link>
+      <description><![CDATA[Jakartablogs.ee is the new blog home for our global community to stay up to date on the latest Jakarta EE news, technologies, best practices, and more.]]></description>
+      <pubDate>Tue, 29 Jan 2019 15:20:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Specification Process IV: The Specification Committee Votes]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/eclipse-specification-process-iv-specification-committee-votes]]></link>
+      <description><![CDATA[One key difference between Eclipse open source software projects and open source specification projects is that specification projects must be aligned with exactly one specification committee]]></description>
+      <pubDate>Mon, 21 Jan 2019 14:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Tradista Joins Eclipse Foundation]]></title>
+      <link><![CDATA[https://globenewswire.com/news-release/2019/01/10/1685988/0/en/Tradista-Joins-Eclipse-Foundation.html]]></link>
+      <description><![CDATA[Tradista will contribute to the Jakarta EE project, bringing its long experience in the Java EE platform applied to the financial sector.]]></description>
+      <pubDate>Thu, 10 Jan 2019 08:35:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Development Process 2018]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/eclipse-development-process-2018]]></link>
+      <description><![CDATA[In December 7/2018, the Eclipse Foundation's Board of Directors approved a new edition of the Eclipse Development Process (EDP) which introduces one particularly significant change, along with a small number of other useful changes.]]></description>
+      <pubDate>Wed, 19 Dec 2018 09:35:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Drives $9 Billion in Open Source Innovation]]></title>
+      <link><![CDATA[https://globenewswire.com/news-release/2018/12/18/1668576/0/en/Eclipse-Foundation-Drives-9-Billion-in-Open-Source-Innovation.html]]></link>
+      <description><![CDATA[Global open source foundation finishes 2018 with 360+ open source projects, 162+ million lines of code written and more than 275 sponsor members]]></description>
+      <pubDate>Wed, 19 Dec 2018 09:35:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>    
+    <item>
+      <title><![CDATA[Read the newest Jakarta EE Newsletter!]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/november/]]></link>
+      <description><![CDATA[This month we bring you a fully loaded Jakarta EE newsletter with a mix of technical content, community news, and a tutorial!]]></description>
+      <pubDate>Fri, 30 Nov 2018 09:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Specification Process, Part III: Creation]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/eclipse-foundation-specification-process-part-iii-creation]]></link>
+      <description><![CDATA[Creation' is an integral part of the Eclipse Foundation Specification Process. Read Wayne Beaton's newest blog on the topic.]]></description>
+      <pubDate>Fri, 30 Nov 2018 09:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[How is the Eclipse Foundation Specification Process (EFSP) different from Java Community Process (JCP)?]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/how-eclipse-foundation-specification-process-efsp-different-java-community]]></link>
+      <description><![CDATA[There are many differences between Eclipse Foundation Specification Process (EFSP) and Java Community Process (JCP), let's focus on my top 5!]]></description>
+      <pubDate>Tue, 27 Nov 2018 12:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Specification Process, Part II: the EFSP]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/eclipse-foundation-specification-process-part-ii-efsp]]></link>
+      <description><![CDATA[The Eclipse Foundation Specification Process defines a general framework for developing specifications in open source at the Eclipse Foundation.]]></description>
+      <pubDate>Tue, 27 Nov 2018 12:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Specification Process, Part I: The EDP]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/wayne-beaton/eclipse-foundation-specification-process-part-i-edp]]></link>
+      <description><![CDATA[A quick Eclipse Development Process (EDP) primer.]]></description>
+      <pubDate>Thu, 08 Nov 2018 11:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Hosted Services Privacy and Acceptable Usage Policy]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/christopher-guindon/eclipse-foundation-hosted-services-privacy-and-acceptable-usage-policy]]></link>
+      <description><![CDATA[The Eclipse Foundation recently made available a new policy to make sure that our projects and hosted services are compliant with the General Data Protection Regulation (GDPR).]]></description>
+      <pubDate>Thu, 08 Nov 2018 11:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Updating Contributor and Committer Agreements]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/mike-milinkovich/new-eclipse-foundation-committer-and-contributor-agreements]]></link>
+      <description><![CDATA[See Mike Milinkovich's blog explaining the upcoming changes to these agreements and what steps are being taken to implement the update]]></description>
+      <pubDate>Mon, 05 Nov 2018 14:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Publishes MicroProfile eBook]]></title>
+      <link><![CDATA[http://globenewswire.ca/news-release/2018/11/05/1644913/0/en/Eclipse-Foundation-Publishes-MicroProfile-eBook.html]]></link>
+      <description><![CDATA[15 page executive guide sets context for enterprises evaluating MicroProfile & enterprise Java microservices for digital transformation]]></description>
+      <pubDate>Mon, 05 Nov 2018 11:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Participate in the 2018 Eclipse Foundation Brand Survey]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/participate-2018-eclipse-foundation-brand-survey]]></link>
+      <description><![CDATA[We are excited to launch the 2018 edition of our brand survey!]]></description>
+      <pubDate>Mon, 05 Nov 2018 10:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Case Study: How Bosch Is Succeeding with Open Source at Eclipse IoT]]></title>
+      <link><![CDATA[https://mmilinkov.wordpress.com/2018/10/02/how-bosch-is-succeeding-with-open-source/]]></link>
+      <description><![CDATA[How is it that a 150-year-old, 400,000 employee industrial conglomerate is competing and winning in the rapidly involving IoT software industry?]]></description>
+      <pubDate>Tue, 02 Oct 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse CBI - Common Build Infrastructure changes]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/denis-roy/eclipse-cbi-common-build-infrastructure-changes]]></link>
+      <description><![CDATA[The Eclipse CBI, which traces its roots back to 2006, has undergone some important changes recently, including a new Kubernetes+Docker-powered environment at https://jenkins.eclipse.org that re announced previously.]]></description>
+      <pubDate>Fri, 28 Sep 2018 15:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+     <title><![CDATA[Eclipse Foundation and Cloud Native Computing Foundation Collaborate to Grow Kubernetes Use Cases in Trillion Dollar IoT Market]]></title>
+      <link><![CDATA[https://globenewswire.com/news-release/2018/09/26/1576651/0/en/Eclipse-Foundation-and-Cloud-Native-Computing-Foundation-Collaborate-to-Grow-Kubernetes-Use-Cases-in-Trillion-Dollar-IoT-Market.html]]></link>
+      <description><![CDATA[Red Hat and other Eclipse IoT members will collaborate in working group to extend capabilities of Kubernetes for IoT Edge use cases.]]></description>
+      <pubDate>Thu, 27 Sep 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+    <title><![CDATA[K8s at the Edge - Some Context on the New Kubernetes IoT Working Group]]></title>
+      <link><![CDATA[http://bit.ly/2Du9i4p]]></link>
+      <description><![CDATA[The Eclipse Foundation is excited to be part of today's announcement of a new Kubernetes IoT Edge Working Group.]]></description>
+      <pubDate>Wed, 26 Sep 2018 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+    <title><![CDATA[Welcoming GlassFish to the Eclipse Foundation]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/tanja-obradovic/welcoming-glassfish-eclipse-foundation]]></link>
+      <description><![CDATA[A major milestone was achieved yesterday! The GlassFish code from Oracle made its home in the Eclipse Foundation's Git repositories, starting a new era of Eclipse GlassFish. ]]></description>
+      <pubDate>Wed, 19 Sep 2018 14:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+    <title><![CDATA[An $8.7 Billion Shared Investment: Sizing the Economic Value of Eclipse Community Collaboration]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/87-billion-shared-investment-sizing-economic-value-eclipse-community]]></link>
+      <description><![CDATA[What is the value of the code contributed by the Eclipse community? We estimate that the roughly 162 million total physical source lines of code in Eclipse repositories represent a $8.7 billion USD shared technology investment by our community.]]></description>
+      <pubDate>Thu, 13 Sep 2018 09:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+    <title><![CDATA[Mizuho International Joins Eclipse Foundation]]></title>
+      <link><![CDATA[http://www.globenewswire.com/news-release/2018/09/11/1569175/0/en/Mizuho-International-Joins-Eclipse-Foundation.html]]></link>
+      <description><![CDATA[Mizuho International, the securities & investment banking arm of the Mizuho Financial Group, has joined the Eclipse Foundation.]]></description>
+      <pubDate>Tue, 11 Sep 2018 14:55:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+   <item>
+    <title><![CDATA[How many lines of Open Source code are hosted at the Eclipse Foundation?]]></title>
+      <link><![CDATA[https://blog.benjamin-cabe.com/2018/09/04/how-many-lines-of-open-source-code-are-hosted-at-the-eclipse-foundation]]></link>
+      <description><![CDATA[As of August 1st, there are 330 active open-source projects and 1120 Git repositories, as for lines of code... ]]></description>
+      <pubDate>Wed, 05 Sep 2018 09:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Talk with your team about EclipseCon Europe 2018]]></title>
+      <link><![CDATA[https://eclipsecon.org/europe2018]]></link>
+      <description><![CDATA[Review the program - talks, keynotes and special events - and register by October 1 for the best rates!]]></description>
+      <pubDate>Tue, 04 Sep 2018 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Welcomes 16 New Members As Jakarta EE and Eclipse IoT Developer Communities Surge]]></title>
+      <link><![CDATA[https://globenewswire.com/news-release/2018/08/29/1558325/0/en/Eclipse-Foundation-Welcomes-16-New-Members-As-Jakarta-EE-and-Eclipse-IoT-Developer-Communities-Surge.html]]></link>
+      <description><![CDATA[Today, the Eclipse Foundation announced the addition of 16 new members.]]></description>
+      <pubDate>Wed, 29 Aug 2018 15:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation and IBM Partner to Help Fight Natural Disasters in New Global Open Source Software Initiative]]></title>
+      <link><![CDATA[http://www.globenewswire.com/news-release/2018/08/21/1554460/0/en/Eclipse-Foundation-and-IBM-Partner-to-Help-Fight-Natural-Disasters-in-New-Global-Open-Source-Software-Initiative.html]]></link>
+      <description><![CDATA[OSS developers are encouraged to create solutions that help communities improve disaster preparedness & recovery.]]></description>
+      <pubDate>Tue, 21 Aug 2018 14:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[We Are Open]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/we-are-open]]></link>
+      <description><![CDATA[We Are Open campaign provides a peek into Eclipse community's openness, innovation, and collaboration.]]></description>
+      <pubDate>Thu, 02 Aug 2018 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Foundation Announces Jakarta EE Committee Election Results]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20180731-jakartaEE_committee_election.php]]></link>
+      <description><![CDATA[The results are in for Participant and Committer Member elections for representatives to the Jakarta EE Working Group!]]></description>
+      <pubDate>Tue, 31 Jul 2018 09:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Embedded Development]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/july/]]></link>
+      <description><![CDATA[This month's newsletter features five articles that focus on Embedded Development. Read it now.]]></description>
+      <pubDate>Thu, 26 Jul 2018 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse IoT Day Singapore Announced]]></title>
+      <link><![CDATA[https://iot.eclipse.org/eclipse-iot-day-singapore-2018/]]></link>
+      <description><![CDATA[The very first Eclipse IoT Day Singapore will take place Sept. 18 in co-location with IoT World Asia 2018.]]></description>
+      <pubDate>Tue, 24 Jul 2018 06:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[New Working Group and Charter at the Eclipse Foundation: OpenMobility]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/workinggroups/openmobility_charter.php]]></link>
+      <description><![CDATA[OpenMobility will drive the evolution and broad adoption of mobility modelling and simulation technologies.]]></description>
+      <pubDate>Fri, 20 Jul 2018 12:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Call for submissions for EclipseCon Europe 2018]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2018]]></link>
+      <description><![CDATA[Be part of the EclipseCon Europe program. Submit your talks by July 16th.]]></description>
+      <pubDate>Fri, 06 Jul 2018 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Foundation Annual Community Report]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/foundation/reports/2018_annual_report.php]]></link>
+      <description><![CDATA[The Eclipse Foundation's 2018 Annual Community Report has been published, and is now available.]]></description>
+      <pubDate>Tue, 03 Jul 2018 15:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Eclipse Photon]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/june/]]></link>
+      <description><![CDATA[Naturally, this issue of the newsletter features some of the things that are new in Eclipse Photon!]]></description>
+      <pubDate>Tue, 03 Jul 2018 12:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Take Your Code to the Next Level With Eclipse Photon]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/take-your-code-next-level-eclipse-photon]]></link>
+      <description><![CDATA[Join over 4 million active users of the Eclipse IDE and take your coding to the next level with Eclipse Photon.]]></description>
+      <pubDate>Thu, 28 June 2018 12:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[New Photon Release of Eclipse IDE Ships With Full Rust Support]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20180627_new-photon-release-of-eclipse-ide-ships-with-full-rust-support.php]]></link>
+      <description><![CDATA[The Eclipse Foundation today announced the Eclipse Photon simultaneous release.]]></description>
+      <pubDate>Wed, 27 June 2018 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter - A First Look at Jakarta EE]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/may/]]></link>
+      <description><![CDATA[This month, read eight great pieces to get informed about various parts of Jakarta EE.]]></description>
+      <pubDate>Mon, 04 June 2018 05:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[RC2 now available for Eclipse Photon]]></title>
+      <link><![CDATA[https://www.eclipse.org/downloads/index-developer.php]]></link>
+      <description><![CDATA[Download and test release candidate 2 for Eclipse Photon!]]></description>
+      <pubDate>Fri, 01 June 2018 11:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Updates to our Privacy Policy]]></title>
+      <link><![CDATA[https://blogs.eclipse.org/post/thabang-mashologu/updates-our-privacy-policy]]></link>
+      <description><![CDATA[The Eclipse Foundation has updated it's privacy policy for the protection of your personal data.]]></description>
+      <pubDate>Fri, 25 May 2018 10:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon Europe 2018 Call for Papers]]></title>
+      <link><![CDATA[http://www.eclipsecon.org/europe2018]]></link>
+      <description><![CDATA[Review the CFP, talk with your team and submit your talks today!]]></description>
+      <pubDate>Mon, 14 May 2018 13:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[New Proposed Charter for OS.bea Working Group]]></title>
+      <link><![CDATA[https://eclipse.org/org/workinggroups/osbea_wg_charter.php]]></link>
+      <description><![CDATA[New proposed charter for OS.bea Working Group is ready for review. Paticipate by adding feedback on the mailing-list.]]></description>
+      <pubDate>Mon, 14 May 2018 13:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Common Build Infrastructure: Upcoming Changes]]></title>
+      <link><![CDATA[https://www.youtube.com/watch?v=nvzqdQmw9gY&feature=youtu.be]]></link>
+      <description><![CDATA[Eclipse CBI is undergoing important changes, including Kubernetes/ Docker via Red Hat OpenShift & CloudBees Jenkins Enterprise.]]></description>
+      <pubDate>Thu, 10 May 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter - Java Tools and Runtimes]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/april/]]></link>
+      <description><![CDATA[This month, read all about Eclipse projects: Collections, JNoSQL, MicroProfile, OpenJ9, and Vert.x]]></description>
+      <pubDate>Fri, 04 May 2018 05:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon France 2018: Register Early!]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/france2018/registration]]></link>
+      <description><![CDATA[Prices go up after April 30, so register now.]]></description>
+      <pubDate>Wed, 25 Apr 2018 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Survey of 1800+ developers now released on new Jakarta EE website]]></title>
+      <link><![CDATA[https://jakarta.ee/news/2018/04/24/jakarta-ee-community-survey/]]></link>
+      <description><![CDATA[Survey of 1,800+ Java developers reveals "cloud native" top requirement in platform's evolution.]]></description>
+      <pubDate>Tue, 24 Apr 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[IoT Developer Survey 2018 | Results are in!]]></title>
+      <link><![CDATA[https://blog.benjamin-cabe.com/2018/04/17/key-trends-iot-developer-survey-2018]]></link>
+      <description><![CDATA[Results from the IoT Developer Survey are in! Read about the key findings about IoT cloud platforms, databases, security, and more.]]></description>
+      <pubDate>Tue, 17 Apr 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Oxygen 3A has been released!]]></title>
+      <link><![CDATA[https://www.eclipse.org/downloads/packages/release/oxygen/3a]]></link>
+      <description><![CDATA[Download the Oxygen 3A packages today.]]></description>
+      <pubDate>Thu, 12 Apr 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Winners of Open IoT Challenge 4.0 Demonstrate How Open Source Accelerates Innovation]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20180404_iotchallenge_winners2018.php]]></link>
+      <description><![CDATA[Eclipse IoT is pleased to announce the winners of the fourth annual Open IoT Challenge!]]></description>
+      <pubDate>Wed, 04 Apr 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon France 2018 Program Announced]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/france2018/program/sessions/accepted]]></link>
+      <description><![CDATA[See the list of accepted sessions, and register now for the lowest price. We'll see you June 13 - 14 in Toulouse.]]></description>
+      <pubDate>Tue, 03 Apr 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Voting for the Jakarta EE logo is now open!]]></title>
+      <link><![CDATA[https://docs.google.com/forms/d/e/1FAIpQLSdRcnQs2PHRFOsx0k_wGgvvYg1r8Vss44eIsgjjWDGOfQ8e4A/viewform]]></link>
+      <description><![CDATA[Voting will be conducted using a ranked poll. To vote, simply rank the final shortlist of logos in order of preference.]]></description>
+      <pubDate>Thu, 29 Mar 2018 17:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Three days left to complete the Jakarta EE Survey!]]></title>
+      <link><![CDATA[https://www.surveymonkey.com/r/jakartaec]]></link>
+      <description><![CDATA[One week left to share your insights on Java EE and help shape the future of Jakarta EE.]]></description>
+      <pubDate>Tue, 27 Mar 2018 07:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Code in Different Languages]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/march/]]></link>
+      <description><![CDATA[Read what's new in the Eclipse JDT Language Server and Eclipse PDT (PHP), then learn about Eclipse Xtext and Eclipse Mita (IoT).]]></description>
+      <pubDate>Thu, 22 Mar 2018 04:13:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Complete the Jakarta EE Developer Survey]]></title>
+      <link><![CDATA[https://www.surveymonkey.com/r/jakartaec]]></link>
+      <description><![CDATA[Share your insights on Java EE and help shape the future of Jakarta EE.]]></description>
+      <pubDate>Thu, 16 Mar 2018 06:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse IoT Day Santa Clara | Speakers Announced]]></title>
+      <link><![CDATA[https://iot.eclipse.org/eclipse-iot-day-santa-clara-2018/]]></link>
+      <description><![CDATA[We're pleased to announce the speakers for the Eclipse IoT Day Santa Clara, co-located with IoT World 2018 on May 14.]]></description>
+      <pubDate>Thu, 15 Mar 2018 07:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Last call for EclipseCon France submissions]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/france2018/cfp]]></link>
+      <description><![CDATA[Deadline to propose a talk is Monday, March 19. Get your talk in now for your chance to be part of a great program!]]></description>
+      <pubDate>Mon, 12 Mar 2018 16:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Foundation supports EU funded Brain-IoT Project]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20180312-brainiot.php]]></link>
+      <description><![CDATA[Eclipse Foundation Europe Selected to Provide Open Source Community Building Expertise for EU funded IoT Research Project]]></description>
+      <pubDate>Mon, 12 Mar 2018 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Foundation Announces 2018 Board Member Election Results]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20180307-boardelectionresults2018.php]]></link>
+      <description><![CDATA[Today we are please to announce the results of the Eclipse Foundation Sustaining Member and Committer Member elections.]]></description>
+      <pubDate>Wed, 07 Mar 2018 18:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[From Java EE to Jakarta EE]]></title>
+      <link><![CDATA[https://mmilinkov.wordpress.com/2018/02/26/and-the-name-is/]]></link>
+      <description><![CDATA[We are happy to announce that the new name for the technology formerly known as Java EE is... Jakarta EE!]]></description>
+      <pubDate>Mon, 26 Feb 2018 14:50:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Boot & Build Eclipse Projects]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/february/]]></link>
+      <description><![CDATA[Featuring articles about Spring Tools, Gradle plugin (Buildship), Dirigible cloud platform, and EMF Parsley.]]></description>
+      <pubDate>Thu, 22 Feb 2018 3:51:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Countdown: 2 weeks | Complete IoT Developer Survey]]></title>
+      <link><![CDATA[https://www.surveymonkey.de/r/eclipseorg]]></link>
+      <description><![CDATA[Take 10 minutes to complete the fourth annual IoT Developer survey!]]></description>
+      <pubDate>Tue, 20 Feb 2018 4:27:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[EclipseCon France 2018 | Call for Papers]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/france2018]]></link>
+      <description><![CDATA[Call for paper submissions are now open until March 19. We'll see you June 13 - 14 in Toulouse!]]></description>
+      <pubDate>Mon, 12 Feb 2018 09:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[EE.next working group | Community review process]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/workinggroups/]]></link>
+      <description><![CDATA[Announcing the EE.next working group to support the EE4J projects. Join the review process of the charter.]]></description>
+      <pubDate>Wed, 06 Feb 2018 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Last Week to Submit for FOSS4G NA 2018!]]></title>
+      <link><![CDATA[https://2018.foss4g-na.org/cfp]]></link>
+      <description><![CDATA[Submissions close Feb 8, so propose your talk now for FOSS4G NA 2018, May 14-16 in St. Louis]]></description>
+      <pubDate>Fri, 02 Feb 2018 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Newsletter | Coming in 2018]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2018/january/]]></link>
+      <description><![CDATA[What's coming to the Eclipse Community in 2018? Read the newsletter to find out!]]></description>
+      <pubDate>Wed, 25 Jan 2018 10:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Launching IoT Developer Survey 2018]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/iotdevsurvey2018.php]]></link>
+      <description><![CDATA[We are pleased to launch the fourth annual IoT Developer Survey! Complete the survey today.]]></description>
+      <pubDate>Wed, 24 Jan 2018 4:27:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse IoT Day Santa Clara 2018 | Call for Papers]]></title>
+      <link><![CDATA[https://iot.eclipse.org/eclipse-iot-day-santa-clara-2018/]]></link>
+      <description><![CDATA[We're happy to announce the Eclipse IoT Day Santa Clara, taking place May 14, in co-location with IoT World 2018.]]></description>
+      <pubDate>Mon, 15 Jan 2018 9:15:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Capella: open source MBSE solution]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/december/]]></link>
+      <description><![CDATA[Learn everything about Capella, an open source workbench that allows engineers to design complex systems.]]></description>
+      <pubDate>Thu, 14 Dec 2017 10:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Open Source Community Accelerates Big Data Analytics for Geospatial Solutions]]></title>
+      <link><![CDATA[https://eclipse.org/org/press-release/20171214_locationtechopensource.php]]></link>
+      <description><![CDATA[LocationTech announces new project releases that provide core technology for geospatial big data analytic solutions.]]></description>
+      <pubDate>Thu, 14 Dec 2017 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Announcing Open IoT Challenge 4.0 Scholars]]></title>
+      <link><![CDATA[https://medium.com/@roxanne.iot/open-iot-challenge-4-0-scholars-cf750ec3b14b]]></link>
+      <description><![CDATA[Congratulations to the Top 12 teams who submitted the best proposals for the fourth Open IoT Challenge!]]></description>
+      <pubDate>Wed, 13 Dec 2017 09:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Location Matters]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/november/]]></link>
+      <description><![CDATA[This newsletter is everything geospacial (LocationTech) + a featured article about creating video games.]]></description>
+      <pubDate>Wed, 22 Nov 2017 06:23:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Open IoT Challenge 4.0 | Extended Deadline Nov 20]]></title>
+      <link><![CDATA[http://iot.eclipse.org/open-iot-challenge/]]></link>
+      <description><![CDATA[One last week to submit your open IoT solution idea. You can then work on it until March 15. Submit now!]]></description>
+      <pubDate>Wed, 15 Nov 2017 05:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon + Ludwigsburg = Great Partners]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2017/news/eclipsecon-ludwigsburg-great-partners]]></link>
+      <description><![CDATA[We are pleased to announce a strategic partnership between the Eclipse Foundation Europe and the City of Ludwigsburg that keeps EclipseCon Europe at the Forum am Schlosspark through 2019.]]></description>
+      <pubDate>Sun, 22 Oct 2017 08:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[New Industry 4.0 Open Testbed Addresses Performance Monitoring and Management in Manufacturing]]></title>
+      <link><![CDATA[https://eclipse.org/org/press-release/20171019_industry40_testbed.php]]></link>
+      <description><![CDATA[Bosch Software Innovations, CONTACT Software, Eurotech, fortiss GmbH, and InfluxData collaborate to demonstrate Product Performance Management.]]></description>
+      <pubDate>Thu, 19 Oct 2017 11:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Science Advances Open Source Technology for Scientific Research]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20171018_scienceopensource.php]]></link>
+      <description><![CDATA[The Eclipse Science Working Group, a working group of the Eclipse Foundation, today announced the new releases of five open source projects used by the scientific research community.]]></description>
+      <pubDate>Wed, 18 Oct 2017 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Newsletter | Utility Belt: Projects and Tools]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/october/]]></link>
+      <description><![CDATA[Learn about JUnit 5, e4 on JavaFX, scripting with EASE, embedded tools and Eclipse CDT, Ferret search tool, and software ethics.]]></description>
+      <pubDate>Wed, 18 Oct 2017 05:02:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[On Naming Eclipse Enterprise for Java (EE4J)]]></title>
+      <link><![CDATA[https://mmilinkov.wordpress.com/2017/09/30/on-naming/]]></link>
+      <description><![CDATA[What is EE4J? Will it become the brand that replaces Java EE? Read the blog post to find out.]]></description>
+      <pubDate>Wed, 04 Oct 2017 08:48:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon Europe: Last Chance for the Early Price]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2017/registration]]></link>
+      <description><![CDATA[October 5 is the last day to save &euro;100 on ECE registration.]]></description>
+      <pubDate>Tue, 03 Oct 2017 11:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Annual Donation Campaign: End User Support for the Eclipse Foundation]]></title>
+      <link><![CDATA[https://ianskerrett.wordpress.com/2017/09/29/annual-donation-campaign-end-user-support-for-the-eclipse-foundation/]]></link>
+      <description><![CDATA[To encourage end-user support,  we are launching the October Donation Campaign. The goal is to have over 1000 individuals donate to the Eclipse Foundation and help support the overall community.]]></description>
+      <pubDate>Fri, 29 Sep 2017 11:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse IoT Announces Fourth Edition of the Open IoT Challenge]]></title>
+      <link><![CDATA[https://eclipse.org/org/press-release/20170928_open_iot_challenge_4.php]]></link>
+      <description><![CDATA[IoT enthusiast? This Challenge is for you! Submit your IoT solution proposal by November 13.]]></description>
+      <pubDate>Thu, 28 Sep 2017 09:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse IDE Now Supports Java 9]]></title>
+      <link><![CDATA[https://waynebeaton.wordpress.com/2017/09/22/java-9-support-for-eclipse-ide-oxygen-edition/]]></link>
+      <description><![CDATA[Java 9 has been released into the world and support to make your Eclipse IDE ready to build, run, and debug Java 9 applications is available from the Eclipse Marketplace.]]></description>
+      <pubDate>Tue, 26 Sep 2017 14:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Special Notice for Eclipse IDE Users on macOS 10.13 in non-English mode]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20170925criticalbug.php]]></link>
+      <description><![CDATA[When Eclipse is launched on macOS 10.13 and user's primary language is not set to English, all the menu items in the main menubar are disabled. However, Context menus are not disabled]]></description>
+      <pubDate>Mon, 25 Sep 2017 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Get the Early Price for EclipseCon Europe]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2017/registration]]></link>
+      <description><![CDATA[Register now and save €100! Prices go up after October 5.]]></description>
+      <pubDate>Thu, 21 Sep 2017 08:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Eclipse MicroProfile]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/september/]]></link>
+      <description><![CDATA[In the September issue of the Eclipse Newsletter, discover everything you need to know about Eclipse MicroProfile.]]></description>
+      <pubDate>Wed, 20 Sep 2017 10:30:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Java EE Moves to the Eclipse Foundation]]></title>
+      <link><![CDATA[https://mmilinkov.wordpress.com/2017/09/12/java-ee-moves-to-the-eclipse-foundation/]]></link>
+      <description><![CDATA[Oracle announced today that they, along with IBM and Red Hat, will be moving Java EE to the Eclipse Foundation.]]></description>
+      <pubDate>Tue, 12 Sep 2017 17:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[First Release of Eclipse Papyrus for Real Time: Modeling Tool for UML-RT]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20170907papyrus.php]]></link>
+      <description><![CDATA[The Papyrus Industry Consortium, an Eclipse Foundation Working Group, is pleased to announce the release of Eclipse Papyrus for Real Time v1.0 (Papyrus-RT) a fully open source modeling tool intended for teams working on the design and implementation of embedded reactive systems.]]></description>
+      <pubDate>Thu, 07 Sep 2017 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item>
+     <item>
+      <title><![CDATA[Eclipse Public License Version 2.0 Approved By OSI and Eclipse Foundation Board of Directors]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20170829eplv2.php]]></link>
+      <description><![CDATA[The Eclipse Foundation is pleased to announce a new version 2 of the Eclipse Public License (EPL v2) has been approved by the Eclipse Foundation Board of Directors and the Open Source Initiative (OSI).]]></description>
+      <pubDate>Tue, 29 Aug 2017 14:20:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Exciting New Eclipse Projects]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/august/]]></link>
+      <description><![CDATA[The latest newsletter is all about new and exciting projects!]]></description>
+      <pubDate>Tue, 22 Aug 2017 09:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>
+    <item>
+      <title><![CDATA[EclipseCon Europe: Schedule and Keynotes]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2017]]></link>
+      <description><![CDATA[The keynotes are announced, and the schedule is on line for ECE 2017. Register now!]]></description>
+      <pubDate>Mon, 21 Aug 2017 10:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item>     
+    <item>
+      <title><![CDATA[Launching Eclipse IoT Newsletter]]></title>
+      <link><![CDATA[http://eepurl.com/cYn4-n]]></link>
+      <description><![CDATA[We're lauching a quarterly Eclipse IoT Newsletter. Subscribe to receive the first issue this September.]]></description>
+      <pubDate>Fri, 18 Aug 2017 05:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Eclipse IoT Day @ ThingMonk]]></title>
+      <link><![CDATA[http://thingmonk.com/eclipse-day-talks.html]]></link>
+      <description><![CDATA[Register for the Eclipse IoT Day co-located with ThingMonk on September 11 in London, UK.]]></description>
+      <pubDate>Thu, 17 Aug 2017 08:55:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Potential adware plugin on Eclipse Marketplace - Eclipse Class Decompiler]]></title>
+      <link><![CDATA[https://eclipse.org/org/press-release/20170814_security_bulletin.php]]></link>
+      <description><![CDATA[A listing on Eclipse Marketplace, called Eclipse Class Decompiler, contains binary code that could be used for adware and could potentially download files to Eclipse workspaces.]]></description>
+      <pubDate>Mon, 14 Aug 2017 10:40:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Summer Issue]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/july/]]></link>
+      <description><![CDATA[The latest Eclipse Newsletter is now available. Read it and learn how to try out Java 9 Support for Eclipse Oxygen!]]></description>
+      <pubDate>Tue, 25 Jul 2017 10:05:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[EclipseCon Europe 2017 | Submissions Close in One Week]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2017/]]></link>
+      <description><![CDATA[There’s still time until July 17th, to get your submission in for this year’s EclipseCon Europe in Ludwigsburg Germany.]]></description>
+      <pubDate>Mon, 10 Jul 2017 09:05:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Eclipse Oxygen Now Available]]></title>
+      <link><![CDATA[https://www.eclipse.org/oxygen]]></link>
+      <description><![CDATA[We're proud to announce the arrival of Eclipse Oxygen, the 12th annual simultaneous release from the Eclipse Community. DOWNLOAD NOW!]]></description>
+      <pubDate>Wed, 28 Jun 2017 10:05:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Eclipse Newsletter | Eclipse Oxygen]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/june/]]></link>
+      <description><![CDATA[Find out more about the latest Eclipse Simultaneous Release in the June issue of the Eclipse Newsletter!]]></description>
+      <pubDate>Wed, 28 Jun 2017 10:26:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+      <item>
+      <title><![CDATA[Early Submission Deadline for EclipseCon Europe 2017]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2017/cfp]]></link>
+      <description><![CDATA[Submit your talks by June 30 to be selected for featuring in the early promotion. October 24-26 in Ludwigsburg Germany.]]></description>
+      <pubDate>Mon, 26 Jun 2017 22:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Capella Industry Consortium (IC) Announced at PolarSys]]></title>
+      <link><![CDATA[https://www.polarsys.org/capella-ic-announced]]></link>
+      <description><![CDATA[Capella IC to host the Capella Ecosystem stakeholders in a vendor neutral way, organized by an open governance model.]]></description>
+      <pubDate>Tue, 20 Jun 2017 04:00:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[RC3 Available for Eclipse Oxygen | Download Now]]></title>
+      <link><![CDATA[https://www.eclipse.org/downloads/index-developer.php]]></link>
+      <description><![CDATA[Download and test release candidate 3 for Eclipse Oxygen!]]></description>
+      <pubDate>Mon, 12 Jun 2017 15:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Last Chance to Register for EclipseCon France 2017]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/france2017/registration]]></link>
+      <description><![CDATA[Sign up for learning at EclipseCon France, June 21-22. XText, Capella, Science, Docker, LSP and much more!]]></description>
+      <pubDate>Thu, 08 Jun 2017 10:45:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Eclipse Newsletter - Language Server Protocol 101]]></title>
+      <link><![CDATA[https://www.eclipse.org/community/eclipse_newsletter/2017/may/]]></link>
+      <description><![CDATA[Everything you need to know about the Language Server Procotol (aka LSP) is in this month's newsletter!]]></description>
+      <pubDate>Wed, 24 May 2017 05:35:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[It’s time to organise Eclipse Oxygen DemoCamps]]></title>
+      <link><![CDATA[http://blog.ttoine.net/en/2017/05/23/its-time-to-organise-eclipse-oxygen-democamps/]]></link>
+      <description><![CDATA[What is an Eclipse DemoCamp and why should I organise one?]]></description>
+      <pubDate>Tue, 23 May 2017 04:35:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[Case Study: Deploying Eclipse IoT on Germany's DB Railway System]]></title>
+      <link><![CDATA[https://iot.eclipse.org/resources/case-studies/Eclipse%20IoT%20Success%20Story%20-%20DB.pdf]]></link>
+      <description><![CDATA[We worked with Deutsche Bahn (DB) to find out how they use Eclipse IoT technology on their railway system!]]></description>
+      <pubDate>Thu, 18 May 2017 04:55:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[EclipseCon Europe 2017 | Call for Papers Open]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/europe2017/news/its-time-submit]]></link>
+      <description><![CDATA[Submissions are now open for EclipseCon Europe 2017, October 24 - 26, in Ludwigsburg, Germany.]]></description>
+      <pubDate>Wed, 17 May 2017 09:29:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+       <item>
+      <title><![CDATA[Program Ready for EclipseCon France 2017]]></title>
+      <link><![CDATA[https://www.eclipsecon.org/france2017/conference/schedule/session/2017-06-21]]></link>
+      <description><![CDATA[See the program, and register by May 12 for the best price.]]></description>
+      <pubDate>Thu, 27 Apr 2017 17:10:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>0</pressrelease>
+    </item> 
+    <item>
+      <title><![CDATA[New Eclipse IoT Open Testbeds]]></title>
+      <link><![CDATA[https://www.eclipse.org/org/press-release/20170426_iottestbeds.php]]></link>
+      <description><![CDATA[Announcing the creation of the Eclipse IoT Open Testbeds, an initiative to drive adoption of IoT open source and open standards.]]></description>
+      <pubDate>Thu, 27 Apr 2017 09:05:00 EST</pubDate>
+      <category>news</category>
+      <pressrelease>1</pressrelease>
+    </item> 
+  </channel>
+</rss>

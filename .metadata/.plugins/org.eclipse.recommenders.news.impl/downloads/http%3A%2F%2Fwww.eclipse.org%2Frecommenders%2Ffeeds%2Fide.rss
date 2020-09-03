@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5WLCZXC');</script>
+<!-- End Google Tag Manager -->    <meta name="author" content="Webmaster"/>
+    <meta name="keywords" content="Archived, old, closed, suspended, shutdown, closed"/>
+    <link rel="shortcut icon" href="/eclipse.org-common/themes/solstice/public/images/favicon.ico"/>
+    <title>Archived Projects | The Eclipse Foundation</title>
+    <link rel="stylesheet" href="/eclipse.org-common/themes/solstice/public/stylesheets/quicksilver.min.css?v0.108"/>
+<meta name="description" content="The Eclipse Foundation - home to a global community, the Eclipse IDE, Jakarta EE and over 375 open source projects, including runtimes, tools and frameworks."/>
+<meta property="og:description" content="The Eclipse Foundation - home to a global community, the Eclipse IDE, Jakarta EE and over 375 open source projects, including runtimes, tools and frameworks."/>
+<meta property="og:image" content="https://www.eclipse.org/eclipse.org-common/themes/solstice/public/images/logo/eclipse-foundation-200x200.png"/>
+<meta property="og:title" content="Archived Projects | The Eclipse Foundation"/>
+<meta property="og:image:width" content="200"/>
+<meta property="og:image:height" content="200"/>
+<meta itemprop="name" content="Archived Projects | The Eclipse Foundation"/>
+<meta itemprop="description" content="The Eclipse Foundation - home to a global community, the Eclipse IDE, Jakarta EE and over 375 open source projects, including runtimes, tools and frameworks."/>
+<meta itemprop="image" content="https://www.eclipse.org/eclipse.org-common/themes/solstice/public/images/logo/eclipse-foundation-400x400.png"/>
+<meta name="twitter:site" content="@EclipseFdn"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Archived Projects | The Eclipse Foundation"/>
+<meta name="twitter:url" content="http://www.eclipse.org/projects/archives.php"/>
+<meta name="twitter:description" content="The Eclipse Foundation - home to a global community, the Eclipse IDE, Jakarta EE and over 375 open source projects, including runtimes, tools and frameworks."/>
+<meta name="twitter:image" content="https://www.eclipse.org/eclipse.org-common/themes/solstice/public/images/logo/eclipse-foundation-400x400.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet" type="text/css"/>
+    <script> var eclipse_org_common = {"settings":{"cookies_class":{"name":"eclipse_settings","enabled":1}}}</script>  </head>
+  <body id="body_solstice">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5WLCZXC"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->    <a class="sr-only" href="#content">Skip to main content</a>
+    <header class="header-wrapper" id="header-wrapper">
+      <div class="clearfix toolbar-container-wrapper">
+      <div class="container">
+        <div class="text-right toolbar-row row hidden-print">
+          <div class="col-md-24 row-toolbar-col">
+            <ul class="list-inline">
+              <li><a class="toolbar-link" href="https://accounts.eclipse.org/user/login/?takemeback=http%3A%2F%2Fwww.eclipse.org%2Fprojects%2Farchives.php"><i class="fa fa-sign-in"></i> Log in</a></li>
+              <li><a class="toolbar-link toolbar-manage-cookies dropdown-toggle"><i class="fa fa-wrench"></i> Manage Cookies</a></li>
+            </ul>
+          </div>
+          
+        </div>
+      </div>
+    </div>  <div class="container">
+    <div class="row" id="header-row">
+            <div class="col-sm-5 col-md-4" id="header-left">
+        <div class="wrapper-logo-default"><a href="http://www.eclipse.org/"><img class="logo-eclipse-default hidden-xs" alt="Eclipse.org logo" width="160" src="//www.eclipse.org/eclipse.org-common/themes/solstice/public/images/logo/eclipse-foundation-white-orange.svg"/></a></div>
+      </div>            <div class="col-sm-19 col-md-20 margin-top-10" id="main-menu-wrapper">
+      <div class="float-right hidden-xs" id="btn-call-for-action"><a href="/downloads/" class="btn btn-huge btn-warning"><i class="fa fa-download"></i> Download</a></div>    <div class="navbar yamm float-sm-right" id="main-menu">
+    <div class="navbar-collapse collapse" id="navbar-main-menu">
+      <ul class="nav navbar-nav">
+        <li><a href="http://www.eclipse.org/projects/" target="_self">Projects</a></li><li><a href="http://www.eclipse.org/org/workinggroups/" target="_self">Working Groups</a></li><li><a href="http://www.eclipse.org/membership/" target="_self">Members</a></li>                  <li class="dropdown visible-xs"><a href="#" data-toggle="dropdown" class="dropdown-toggle">Community <b class="caret"></b></a><ul class="dropdown-menu"><li><a href="http://marketplace.eclipse.org">Marketplace</a></li><li><a href="http://events.eclipse.org">Events</a></li><li><a href="http://www.planeteclipse.org/">Planet Eclipse</a></li><li><a href="http://www.eclipse.org/community/eclipse_newsletter/">Newsletter</a></li><li><a href="https://www.youtube.com/user/EclipseFdn">Videos</a></li><li><a href="https://blogs.eclipse.org">Blogs</a></li></ul></li><li class="dropdown visible-xs"><a href="#" data-toggle="dropdown" class="dropdown-toggle">Participate <b class="caret"></b></a><ul class="dropdown-menu"><li><a href="https://bugs.eclipse.org/bugs/">Report a Bug</a></li><li><a href="http://www.eclipse.org/forums/">Forums</a></li><li><a href="http://www.eclipse.org/mail/">Mailing Lists</a></li><li><a href="https://wiki.eclipse.org/">Wiki</a></li><li><a href="https://wiki.eclipse.org/IRC">IRC</a></li><li><a href="https://www.eclipse.org/org/research/">Research</a></li></ul></li><li class="dropdown visible-xs"><a href="#" data-toggle="dropdown" class="dropdown-toggle">Eclipse IDE <b class="caret"></b></a><ul class="dropdown-menu"><li><a href="http://www.eclipse.org/downloads">Download</a></li><li><a href="http://www.eclipse.org/eclipseide">Learn More</a></li><li><a href="https://help.eclipse.org">Documentation</a></li><li><a href="http://www.eclipse.org/getting_started">Getting Started / Support</a></li><li><a href="http://www.eclipse.org/contribute/">How to Contribute</a></li><li><a href="http://www.eclipse.org/ide/">IDE and Tools</a></li><li><a href="https://www.eclipse.org/forums/index.php/f/89/">Newcomer Forum</a></li></ul></li>          <!-- More -->
+          <li class="dropdown eclipse-more hidden-xs">
+            <a data-toggle="dropdown" class="dropdown-toggle" role="button">More<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li>
+                <!-- Content container to add padding -->
+                <div class="yamm-content">
+                  <div class="row">
+                    <ul class="col-sm-8 list-unstyled"><li><p><strong>Community</strong></p></li><li><a href="http://marketplace.eclipse.org">Marketplace</a></li><li><a href="http://events.eclipse.org">Events</a></li><li><a href="http://www.planeteclipse.org/">Planet Eclipse</a></li><li><a href="http://www.eclipse.org/community/eclipse_newsletter/">Newsletter</a></li><li><a href="https://www.youtube.com/user/EclipseFdn">Videos</a></li><li><a href="https://blogs.eclipse.org">Blogs</a></li></ul><ul class="col-sm-8 list-unstyled"><li><p><strong>Participate</strong></p></li><li><a href="https://bugs.eclipse.org/bugs/">Report a Bug</a></li><li><a href="http://www.eclipse.org/forums/">Forums</a></li><li><a href="http://www.eclipse.org/mail/">Mailing Lists</a></li><li><a href="https://wiki.eclipse.org/">Wiki</a></li><li><a href="https://wiki.eclipse.org/IRC">IRC</a></li><li><a href="https://www.eclipse.org/org/research/">Research</a></li></ul><ul class="col-sm-8 list-unstyled"><li><p><strong>Eclipse IDE</strong></p></li><li><a href="http://www.eclipse.org/downloads">Download</a></li><li><a href="http://www.eclipse.org/eclipseide">Learn More</a></li><li><a href="https://help.eclipse.org">Documentation</a></li><li><a href="http://www.eclipse.org/getting_started">Getting Started / Support</a></li><li><a href="http://www.eclipse.org/contribute/">How to Contribute</a></li><li><a href="http://www.eclipse.org/ide/">IDE and Tools</a></li><li><a href="https://www.eclipse.org/forums/index.php/f/89/">Newcomer Forum</a></li></ul>                  </div>
+                </div>
+              </li>
+            </ul>
+          </li>
+                
+      </ul>
+    </div>
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-main-menu">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      </button>
+      <div class="wrapper-logo-mobile"><a class="navbar-brand visible-xs" href="http://www.eclipse.org/"><img class="logo-eclipse-default-mobile img-responsive" alt="Eclipse.org logo" width="160" src="//www.eclipse.org/eclipse.org-common/themes/solstice/public/images/logo/eclipse-foundation-white-orange.svg"/></a></div>    </div>
+  </div>
+</div>
+    </div>
+  </div>
+  </header>
+          <section class="default-breadcrumbs hidden-print breadcrumbs-default-margin" id="breadcrumb">
+      <div class="container">
+        <h3 class="sr-only">Breadcrumbs</h3>
+        <div class="row">
+          <div class="col-sm-24"><ol class="breadcrumb"><li><a href="/">Home</a></li><li><a href="http://www.eclipse.org/projects">Projects</a></li><li class="active">Archived Projects</li></ol></div>
+        </div>
+      </div>
+    </section> <!-- /#breadcrumb -->
+      <main>
+        
+        <div class="novaContent container" id="novaContent">
+          <div class="row"><div class="col-md-18">	 
+
+    <div id="midcolumn">
+	  <h2>Archived Eclipse Projects</h2>
+      <p> You are seeing this because the project you were looking for has been archived.  When projects are archived their data(downloads,source and website), is collected into a single tar.gz file.</p>  
+      <p><h4>Please note: Some projects did not have all of the above data.</h4></p>
+      <p><h4>Please note: The source files (if available) included in these files are direct copies of the available CVS/SVN data.  You will need to load them into a local CVS/SVN repository to access the history.</h4></p>
+      <p><h4>Please note: Some of these archives are larger than 3GB</h4></p>
+      
+      <div id="homeitem">
+        </br>
+        <p><a href="http://archive.eclipse.org/archived_projects/alf.tgz">ALF</a> project.  Archived: January 2009</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/albireo.tgz">Albireo</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/am3.tgz">AM3</a> project.  Archived: November 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/apricot.tgz">Apricot</a> project.  Archived: August 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/apogee.tgz">Apogee</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/atf.tgz">ATF</a> project.  Archived: May 2020</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/athena.tgz">Athena</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/amw.tgz">AMW</a> project.  Archived: March 2015</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/blinki.tgz" alt="DSDP Blinki Archive" >DSDP Blinki</a> project. Archived: October 2010.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/bpmn.tgz">BPMN</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/buckminster.tgz">Buckminster</a> project.  Archived: February 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/cdtk.tgz">CDTK</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/cme-project.tar.gz">CME</a> project.  Archived: January 2006</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/corona.tgz">Corona</a> project.  Archived: April 2010</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/cosmos.tgz">Cosmos</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/cobol.tgz">Cobol</a> project.  Archived: February 2010</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/damos.tgz">Damos</a> project.  Archived: February 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/dd.tgz" alt="DSDP DD Archive" >DSDP DD</a> project. Archived: October 2010.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/dsdp.tgz" alt="DSDP Archive" >DSDP</a> project. Archived: September 2011.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/doc2model.tgz" alt="Doc2Model Archive" >Doc2Model</a> project. Archived: January 2015.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/edje.tgz">IOT Edje</a> project.  Archived: November 2018</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/esl.tgz">ESL</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/emfindex.tgz">EMFindex</a> project.  Archived: July 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ercp.tgz">ERCP</a> project.  Archived: December 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/examples.tgz">Examples</a> project.  Archived: January 2014</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/emf-facet.tgz">EMF Facet</a> project.  Archived: May 2020</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/featuremodel.tgz">Featuremodel</a> project.  Archived: March 2015</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/flux.tgz">Flux</a> project.  Archived: February 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/fproj.tgz">Fproj</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ganomatic.tgz">Ganomatic</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/gems.tgz">Gems</a> project.  Archived: January 2015</p>
+        <p><a href="http://archive.locationtech.org/archived_projects/geoff.tgz">Geoff</a> project.  Archived: May 2017</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/glimmer.tgz">Glimmer</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/g-eclipse.tgz">g-Eclipse</a> project.  Archived: January 2014</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/gyrex.tgz">gyrex</a> project.  Archived: March 2018</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/hibachi.tgz">Hibachi</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/hip.tgz">Hip</a> project.  Archived: August 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/iam.tgz">Iam</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/incquery.tgz">Incquery</a> project.  Archived: February 2016</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/imm.tgz">IMM</a> project.  Archived: January 2015</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ide4edu.tgz">IDE4EDU</a> project.  Archived: January 2014</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/imp.tgz">Imp</a> project.  Archived: January 2014</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/java-ee-config.tgz">Java-ee-config</a> project.  Archived: July 2018</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/jcrm.tgz" alt="JCRM archive" >JCRM</a> project. Archived: July 2013.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/jet.tgz" alt="JET archive" >JET</a> project. Archived: May 2020.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/js4emf.tgz" alt="Js4emf archive" >Js4emf</a> project. Archived: January 2015.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/koi-project.tar.gz">Koi</a> project.  Archived: April 2006</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/koneki.tgz">Koneki</a> project.  Archived: September 2015</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/kepler.tgz">Kepler</a> project.  Archived: July 2008</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/krikkit.tgz">Krikkit</a> project.  Archived: October 2017</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/laszlo-project.tar.gz">Laszlo</a> project.  Archived: December 2006</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/lepido-project.tar.gz">Lepido</a> project.  Archived: June 2006</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/maynstall.tgz">Maynstall</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/mddi-archive.tar.gz" alt="MDDi Archive" >MDDi</a> project. Archived: August 2008.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/mihini.tgz">Mihini</a> project.  Archived: September 2015</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/mint.tgz" alt="Mint archive" >Mint</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/modeling.mdt.eodm.tgz" alt="MDT.EODM Archive" >MDT EODM</a> project. Archived: October 2008.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/modeling.pmf.tgz" alt="modeling PMF Archive" >Modeling PMF</a> project. Archived: September 2019.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/mofscript.tgz" alt="Mofscript archive" >Mofscript</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/mst.tgz" alt="MST archive" >MDT MST</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/mtf.tgz" alt="MTF archive" >MTF</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/mxf.tgz" alt="MXF archive" >MXF</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/nab.tgz" alt="DSDP Nab Archive" >DSDP Nab</a> project. Archived: October 2010.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/emf4net.tgz" alt="EMF4Net archive" >EMF4Net</a> project. Archived: January 2015.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/net4j.tgz" alt="Net4J archive" >Net4J</a> project. Archived: June 2010.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ohf.tgz">OHF</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ofmp.tgz">OFMP</a> project.  Archived: January 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/omelet-project.tar.gz">OMELET</a> project.  Archived: August 2005</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ormf.tgz">Ormf</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/papyrus-xtuml.tgz">Papyrus-xtuml</a> project.  Archived: September 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/pave.tgz">Pave</a> project.  Archived: December 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/phoenix.tgz">Phoenix</a> project.  Archived: February 2013 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/picasso.tgz">Picasso</a> project.  Archived: May 2019 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/pmf.tgz" alt="PMF archive" >PMF</a> project. Archived: January 2013.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/pollinate-project.tar.gz">Polinate</a> project.  Archived: December 2005</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/query2.tgz" alt="Query2 archive" >EMF Query2</a> project. Archived: May 2013.</p>
+        <p><a href="http://archive.locationtech.org/archived_projects/raster.tgz">Raster</a> project.  Archived: January 2018</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/rat.tgz">Rat</a> project.  Archived: May 2012</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/recommenders.tgz">Recommenders</a> project.  Archived: July 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/recommenders.incubator.tgz">Recommenders incubator</a> project.  Archived: October 2019 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/remus.tgz">Remus</a> project.  Archived: May 2020</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/risev2g.tgz">Risev2g</a> project.  Archived: January 2019</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/sbvr.tgz" alt="SBVR archive" >SBVR</a> project. Archived: July 2013.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/sdo.tgz" alt="EMFT SDO archive" >SDO</a> project. Archived: July 2013.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/servus.tgz" alt="Servus archive" >Servus</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/search.tgz" alt="EMFT Search archive" >Search</a> project. Archived: July 2013.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/sketch.tgz" alt="Sketch archive" >Sketch</a> project. Archived: January 2014.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/soc.tgz">SOC</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/spaces.tgz">Spaces</a> project.  Archived: January 2011</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/scalamodules.tgz">Scalamodules</a> project.  Archived: July 2010</p> 
+        <p><a href="http://archive.eclipse.org/archived_projects/smarthome.tgz">Smarthome</a> project.  Archived: May 2020</p> 
+        <p><a href="http://archive.eclipse.org/archived_projects/stellation-project.tar.gz">Stellation</a> project.  Archived: June 2005 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/stardust.tgz">Stardust</a> project.  Archived: November 2017 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/stp.tgz">STP</a> project.  Archived: September 2012 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/swordfish.tgz">Swordfish</a> project.  Archived: January 2014 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/tcs.tgz" alt="TCS archive" >TCS</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/temporality.tgz" alt="Temporality archive" >Temporality</a> project. Archived: November 2012.</p>
+        <p><a href="http://archive.eclipse.org/archived_projects/tmw.tgz">TMW</a> project.  Archived: March 2012 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/tptp.monitoring.tgz">TPTP Monitoring</a> project.  Archived: June 2010 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/tptp.tgz">TPTP</a> project.  Archived: May 2016  </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/umlx.tgz">Umlx</a> project.  Archived: December 2012 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ufacekit.tgz">UFacekit</a> project.  Archived: March 2014 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/ve.tgz">Visual editor</a> project.  Archived: June 2011 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/vtp.tgz">Voice Tools</a> project.  Archived: May 2016 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/whiskers.tgz">Whiskers</a> project.  Archived: January 2019 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/woolsey.tgz">Woolsey</a> project.  Archived: December 2012 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/wtp.datatools.tgz">WTP Datatools</a> project.  Archived: February 2013 </p>
+        <p><a href="http://archive.eclipse.org/archived_projects/xtend.tgz">Xtend</a> project.  Archived: June 2013 </p>          	  
+	  </div>
+	</div>
+	
+</div><div class="col-md-6">  <!-- nav -->
+  <aside class="main-sidebar-default-margin" id="main-sidebar">
+        <ul id="leftnav" class="ul-left-nav fa-ul hidden-print">
+      
+        
+                      <li>
+              <i class="fa fa-caret-right fa-fw"></i>
+              <a href="http://www.eclipse.org" target="_self">
+                Home              </a>
+            </li>
+          
+              
+        
+                      <li>
+              <i class="fa fa-caret-right fa-fw"></i>
+              <a href="http://wiki.eclipse.org" target="_self">
+                Wiki              </a>
+            </li>
+          
+                  </ul>
+      </aside>
+</div></div>
+        </div>
+      </main><p id="back-to-top">
+  <a class="visible-xs" href="#top">Back to the top</a>
+</p>
+      <!-- Sign Up to our Newsletter -->
+    <div class="featured-footer featured-footer-newsletter" style="background-size:cover;background-image:url(https://eclipse.org/home/images/eclipse-ide-2020-03.jpg);border-bottom:1px solid #ccc;border-top:1px solid #ccc;background-position:bottom;">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-24">
+            
+            <h2 class='margin-top-30'><strong>Join us for EclipseCon 2020</strong></h2>
+            <p>EclipseCon 2020 is a free virtual event for the Eclipse community. Join us October 19-22!</p>
+            <a class='btn btn-primary btn-lg' href='https://www.eclipsecon.org/2020/registration'>Register Now</a>
+          </div>
+          
+        </div>
+      </div>
+    </div><footer id="solstice-footer">
+  <div class="container">
+    <div class="row">
+      <section class="col-sm-6 hidden-print" id="footer-eclipse-foundation">
+            <h2 class="section-title">Eclipse Foundation</h2>
+    <ul class="nav"><li><a href="http://www.eclipse.org/org/">About Us</a></li><li><a href="http://www.eclipse.org/org/foundation/contact.php">Contact Us</a></li><li><a href="http://www.eclipse.org/donate">Donate</a></li><li><a href="http://www.eclipse.org/membership/">Members</a></li><li><a href="http://www.eclipse.org/org/documents/">Governance</a></li><li><a href="http://www.eclipse.org/org/documents/Community_Code_of_Conduct.php">Code of Conduct</a></li><li><a href="http://www.eclipse.org/artwork/">Logo and Artwork</a></li><li><a href="http://www.eclipse.org/org/foundation/directors.php">Board of Directors</a></li></ul>      </section>
+      <section class="col-sm-6 hidden-print" id="footer-legal">
+            <h2 class="section-title">Legal</h2>
+    <ul class="nav"><li><a href="http://www.eclipse.org/legal/privacy.php">Privacy Policy</a></li><li><a href="http://www.eclipse.org/legal/termsofuse.php">Terms of Use</a></li><li><a href="http://www.eclipse.org/legal/copyright.php">Copyright Agent</a></li><li><a href="http://www.eclipse.org/legal/epl-2.0/">Eclipse Public License</a></li><li><a href="http://www.eclipse.org/legal/">Legal Resources</a></li></ul>      </section>
+      <section class="col-sm-6 hidden-print" id="footer-useful-links">
+            <h2 class="section-title">Useful Links</h2>
+    <ul class="nav"><li><a href="https://bugs.eclipse.org/bugs/">Report a Bug</a></li><li><a href="//help.eclipse.org/">Documentation</a></li><li><a href="http://www.eclipse.org/contribute/">How to Contribute</a></li><li><a href="http://www.eclipse.org/mail/">Mailing Lists</a></li><li><a href="http://www.eclipse.org/forums/">Forums</a></li><li><a href="//marketplace.eclipse.org">Marketplace</a></li></ul>      </section>
+      <section class="col-sm-6 hidden-print" id="footer-other">
+            <h2 class="section-title">Other</h2>
+    <ul class="nav"><li><a href="http://www.eclipse.org/ide/">IDE and Tools</a></li><li><a href="http://www.eclipse.org/projects">Projects</a></li><li><a href="http://www.eclipse.org/org/workinggroups/">Working Groups</a></li><li><a href="http://www.eclipse.org/org/research/">Research@Eclipse</a></li><li><a href="http://www.eclipse.org/security/">Report a Vulnerability</a></li><li><a href="https://status.eclipse.org">Service Status</a></li></ul>      </section>
+            <div class="col-sm-24 margin-top-20">
+        <div class="row">
+          <div id="copyright" class="col-md-16">
+            <p id="copyright-text">Copyright &copy; Eclipse Foundation, Inc. All Rights Reserved.</p>
+          </div>
+          <div class="col-md-8 social-media">
+            <ul class="list-inline">
+              <li>
+                <a class="social-media-link fa-stack fa-lg" href="https://twitter.com/EclipseFdn">
+                  <i class="fa fa-circle-thin fa-stack-2x"></i>
+                  <i class="fa fa-twitter fa-stack-1x"></i>
+                </a>
+              </li>
+              <li>
+                <a class="social-media-link fa-stack fa-lg" href="https://www.facebook.com/eclipse.org">
+                  <i class="fa fa-circle-thin fa-stack-2x"></i>
+                  <i class="fa fa-facebook fa-stack-1x"></i>
+                </a>
+              </li>
+              <li>
+                <a class="social-media-link fa-stack fa-lg" href="https://www.youtube.com/user/EclipseFdn">
+                  <i class="fa fa-circle-thin fa-stack-2x"></i>
+                  <i class="fa fa-youtube fa-stack-1x"></i>
+                </a>
+              </li>
+              <li>
+                <a class="social-media-link fa-stack fa-lg" href="https://www.linkedin.com/company/eclipse-foundation">
+                  <i class="fa fa-circle-thin fa-stack-2x"></i>
+                  <i class="fa fa-linkedin fa-stack-1x"></i>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>      <a href="#" class="scrollup">Back to the top</a>
+    </div>
+  </div>
+</footer>
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="/eclipse.org-common/themes/solstice/public/javascript/main.min.js?var=1.9"></script>
+
+</body>
+</html>
