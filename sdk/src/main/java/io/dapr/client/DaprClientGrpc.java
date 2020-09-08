@@ -416,9 +416,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
         .putAllQuerystring(httpExtension.getQueryString());
     requestBuilder.setHttpExtension(httpExtensionBuilder.build());
 
-    if (contentType != null) {
-      requestBuilder.setContentType(contentType);
-    }
+    requestBuilder.setContentType(contentType);
 
     DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
         .setId(appId)
