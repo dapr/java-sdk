@@ -153,12 +153,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       String method = invokeServiceRequest.getMethod();
       Object request = invokeServiceRequest.getBody();
       HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
-      String contentType = invokeServiceRequest.getContentType();
       Context context = invokeServiceRequest.getContext();
       DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
           httpExtension,
           appId,
-          contentType,
           method,
           request);
       return Mono.fromCallable(wrap(context, () -> {
@@ -386,7 +384,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
    *
    * @param httpExtension Object for HttpExtension
    * @param appId         The application id to be invoked
-   * @param contentType   The content type of the request body
    * @param method        The application method to be invoked
    * @param request       The body of the request to be send as part of the invocation
    * @param <K>           The Type of the Body
@@ -396,7 +393,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
   private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(
       HttpExtension httpExtension,
       String appId,
-      String contentType,
       String method,
       K request) throws IOException {
     if (httpExtension == null) {
@@ -416,7 +412,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
         .putAllQuerystring(httpExtension.getQueryString());
     requestBuilder.setHttpExtension(httpExtensionBuilder.build());
 
-    requestBuilder.setContentType(contentType);
+    requestBuilder.setContentType(objectSerializer.getContentType());
 
     DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
         .setId(appId)
