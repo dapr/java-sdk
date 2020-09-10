@@ -11,14 +11,17 @@ package io.dapr.client.domain;
  * @param <T> The type of the value of the sate
  */
 public class State<T> {
+
   /**
    * The value of the state.
    */
   private final T value;
+
   /**
    * The key of the state.
    */
   private final String key;
+
   /**
    * The ETag to be used
    * Keep in mind that for some state stores (like reids) only numbers are supported.
@@ -26,13 +29,32 @@ public class State<T> {
   private final String etag;
 
   /**
+   * The error in case the key could not be retrieved.
+   */
+  private final String error;
+
+  /**
    * The options used for saving the state.
    */
   private final StateOptions options;
 
   /**
-   * Create an inmutable state
-   * This Constructor MUST be used anytime you need to retrieve or delete a State.
+   * Create an immutable state reference to be retrieved or deleted.
+   * This Constructor CAN be used anytime you need to retrieve or delete a state.
+   *
+   * @param key - The key of the state
+   */
+  public State(String key) {
+    this.key = key;
+    this.value = null;
+    this.etag = null;
+    this.options = null;
+    this.error = null;
+  }
+
+  /**
+   * Create an immutable state reference to be retrieved or deleted.
+   * This Constructor CAN be used anytime you need to retrieve or delete a state.
    *
    * @param key     - The key of the state
    * @param etag    - The etag of the state - Keep in mind that for some state stores (like redis) only numbers
@@ -44,16 +66,16 @@ public class State<T> {
     this.key = key;
     this.etag = etag;
     this.options = options;
+    this.error = null;
   }
 
   /**
-   * Create an inmutable state.
-   * This Constructor MUST be used anytime you want the state to be send for a Save operation.
+   * Create an immutable state.
+   * This Constructor CAN be used anytime you want the state to be saved.
    *
    * @param value   - The value of the state.
    * @param key     - The key of the state.
-   * @param etag    - The etag of the state - Keep in mind that for some state stores (like redis)
-   *                only numbers are supported.
+   * @param etag    - The etag of the state - for some state stores (like redis) only numbers are supported.
    * @param options - REQUIRED when saving a state.
    */
   public State(T value, String key, String etag, StateOptions options) {
@@ -61,6 +83,38 @@ public class State<T> {
     this.key = key;
     this.etag = etag;
     this.options = options;
+    this.error = null;
+  }
+
+  /**
+   * Create an immutable state.
+   * This Constructor CAN be used anytime you want the state to be saved.
+   *
+   * @param value   - The value of the state.
+   * @param key     - The key of the state.
+   * @param etag    - The etag of the state - some state stores (like redis) only numbers are supported.
+   */
+  public State(T value, String key, String etag) {
+    this.value = value;
+    this.key = key;
+    this.etag = etag;
+    this.options = null;
+    this.error = null;
+  }
+
+  /**
+   * Create an immutable state.
+   * This Constructor MUST be used anytime the key could not be retrieved and contains an error.
+   *
+   * @param key     - The key of the state.
+   * @param error   - Error when fetching the state.
+   */
+  public State(String key, String error) {
+    this.value = null;
+    this.key = key;
+    this.etag = null;
+    this.options = null;
+    this.error = error;
   }
 
   /**
@@ -88,6 +142,16 @@ public class State<T> {
    */
   public String getEtag() {
     return etag;
+  }
+
+  /**
+   * Retrieve the error for this state.
+   *
+   * @return The error for this state.
+   */
+
+  public String getError() {
+    return error;
   }
 
   /**
@@ -123,6 +187,10 @@ public class State<T> {
       return false;
     }
 
+    if (getError() != null ? !getEtag().equals(that.getError()) : that.getError() != null) {
+      return false;
+    }
+
     if (getOptions() != null ? !getOptions().equals(that.getOptions()) : that.getOptions() != null) {
       return false;
     }
@@ -135,6 +203,7 @@ public class State<T> {
     int result = getValue() != null ? getValue().hashCode() : 0;
     result = 31 * result + (getKey() != null ? getKey().hashCode() : 0);
     result = 31 * result + (getEtag() != null ? getEtag().hashCode() : 0);
+    result = 31 * result + (getError() != null ? getError().hashCode() : 0);
     result = 31 * result + (getOptions() != null ? options.hashCode() : 0);
     return result;
   }
@@ -145,6 +214,7 @@ public class State<T> {
         + "value=" + value
         + ", key='" + key + "'"
         + ", etag='" + etag + "'"
+        + ", etag='" + error + "'"
         + ", options={'" + options.toString() + "}"
         + "}";
   }

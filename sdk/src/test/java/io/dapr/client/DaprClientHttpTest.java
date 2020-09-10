@@ -21,11 +21,13 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -38,6 +40,9 @@ public class DaprClientHttpTest {
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
+  private final String EXPECTED_RESULT =
+      "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
+
   private DaprClientHttp daprClientHttp;
 
   private DaprHttp daprHttp;
@@ -45,9 +50,6 @@ public class DaprClientHttpTest {
   private OkHttpClient okHttpClient;
 
   private MockInterceptor mockInterceptor;
-
-  private final String EXPECTED_RESULT =
-      "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
   @Before
   public void setUp() throws Exception {
@@ -382,7 +384,120 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void getStates() {
+  public void getStatesString() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+        .respond("[{\"key\": \"100\", \"data\": \"hello world\", \"etag\": \"1\"}," +
+            "{\"key\": \"200\", \"error\": \"not found\"}]");
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    List<State<String>> result =
+        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals("hello world", result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesInteger() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+        .respond("[{\"key\": \"100\", \"data\": 1234, \"etag\": \"1\"}," +
+            "{\"key\": \"200\", \"error\": \"not found\"}]");
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    List<State<Integer>> result =
+        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(1234, (int)result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesBoolean() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+        .respond("[{\"key\": \"100\", \"data\": true, \"etag\": \"1\"}," +
+            "{\"key\": \"200\", \"error\": \"not found\"}]");
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    List<State<Boolean>> result =
+        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(true, (boolean)result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesByteArray() {
+    byte[] value = new byte[]{1, 2, 3};
+    String base64Value = Base64.getEncoder().encodeToString(value);
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+        .respond("[{\"key\": \"100\", \"data\": \"" + base64Value + "\", \"etag\": \"1\"}," +
+            "{\"key\": \"200\", \"error\": \"not found\"}]");
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
+    // So, users should use String instead of byte[].
+    List<State<String>> result =
+        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(base64Value, result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesObject() {
+    MyObject object = new MyObject(1, "Event");
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+        .respond("[{\"key\": \"100\", \"data\": " +
+            "{ \"id\": \"" + object.id + "\", \"value\": \"" + object.value + "\"}, \"etag\": \"1\"}," +
+            "{\"key\": \"200\", \"error\": \"not found\"}]");
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
+    // So, users should use String instead of byte[].
+    List<State<MyObject>> result =
+        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(object, result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getState() {
     StateOptions stateOptions = mock(StateOptions.class);
     State<String> stateKeyValue = new State("value", "key", "etag", stateOptions);
     State<String> stateKeyNull = new State("value", null, "etag", stateOptions);
@@ -713,6 +828,55 @@ public class DaprClientHttpTest {
 
       assertEquals(1, secret.size());
       assertEquals("mysecretvalue2", secret.get("mysecretkey2"));
+    }
+  }
+
+  public static class MyObject {
+    private Integer id;
+    private String value;
+
+    public MyObject() {
+    }
+
+    public MyObject(Integer id, String value) {
+      this.id = id;
+      this.value = value;
+    }
+
+    public Integer getId() {
+      return id;
+    }
+
+    public void setId(Integer id) {
+      this.id = id;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    public void setValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof MyObject)) return false;
+
+      MyObject myObject = (MyObject) o;
+
+      if (!getId().equals(myObject.getId())) return false;
+      if (getValue() != null ? !getValue().equals(myObject.getValue()) : myObject.getValue() != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = getId().hashCode();
+      result = 31 * result + (getValue() != null ? getValue().hashCode() : 0);
+      return result;
     }
   }
 }

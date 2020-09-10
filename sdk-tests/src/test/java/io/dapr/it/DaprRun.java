@@ -42,7 +42,7 @@ public class DaprRun {
                   Class serviceClass,
                   int maxWaitMilliseconds) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
-    this.appName = String.format("%s_%s", testName, serviceClass == null ? "" : serviceClass.getSimpleName());
+    this.appName = serviceClass == null ? testName : String.format("%s_%s", testName, serviceClass.getSimpleName());
     this.startCommand =
         new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports));
     this.listCommand = new Command(

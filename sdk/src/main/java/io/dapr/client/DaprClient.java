@@ -8,6 +8,7 @@ package io.dapr.client;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.GetStatesRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeServiceRequest;
@@ -352,6 +353,19 @@ public interface DaprClient extends Closeable {
   /**
    * Retrieve a State based on their key.
    *
+   * @param stateStoreName The name of the state store.
+   * @param key            The key of the State to be retrieved.
+   * @param etag           Optional etag for conditional get
+   * @param options        Optional settings for retrieve operation.
+   * @param clazz          The Type of State needed as return.
+   * @param <T>            The Type of the return.
+   * @return A Mono Plan for the requested State.
+   */
+  <T> Mono<State<T>> getState(String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz);
+
+  /**
+   * Retrieve a State based on their key.
+   *
    * @param request The request to get state.
    * @param type    The Type of State needed as return.
    * @param <T>     The Type of the return.
@@ -363,46 +377,12 @@ public interface DaprClient extends Closeable {
    * Retrieve bulk States based on their keys.
    *
    * @param stateStoreName The name of the state store.
-   * @param keys           The keys of the States to be retrieved.
-   * @param options        Optional settings for retrieve operation.
-   * @param clazz          The type of State needed as return.
-   * @param <T>            The type of the return.
-   * @return A Mono Plan for the requested State.
-   */
-  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, StateOptions options, Class<T> clazz);
-
-  /**
-   * Retrieve bulk States based on their keys.
-   *
-   * @param stateStoreName The name of the state store.
-   * @param states         States to be re-retrieved.
-   * @param type           The type of State needed as return.
-   * @param <T>            The type of the return.
-   * @return A Mono Plan for the requested State.
-   */
-  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<State<T>> states, TypeRef<T> type);
-
-  /**
-   * Retrieve bulk States based on their keys.
-   *
-   * @param stateStoreName The name of the state store.
-   * @param states         States to be re-retrieved.
-   * @param clazz          The type of State needed as return.
-   * @param <T>            The type of the return.
-   * @return A Mono Plan for the requested State.
-   */
-  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<State<T>> states, Class<T> clazz);
-
-  /**
-   * Retrieve bulk States based on their keys.
-   *
-   * @param stateStoreName The name of the state store.
    * @param keys           The keys of the State to be retrieved.
    * @param type           The type of State needed as return.
    * @param <T>            The type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, TypeRef<T> type);
+  <T> Mono<List<State<T>>> getStates(String stateStoreName, List<String> keys, TypeRef<T> type);
 
   /**
    * Retrieve bulk States based on their keys.
@@ -413,19 +393,7 @@ public interface DaprClient extends Closeable {
    * @param <T>            The type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, Class<T> clazz);
-
-  /**
-   * Retrieve bulk States based on their keys.
-   *
-   * @param stateStoreName The name of the state store.
-   * @param keys           The keys of the State to be retrieved.
-   * @param options        Optional settings for retrieve operation.
-   * @param type           The Type of State needed as return.
-   * @param <T>            The Type of the return.
-   * @return A Mono Plan for the requested State.
-   */
-  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, StateOptions options, TypeRef<T> type);
+  <T> Mono<List<State<T>>> getStates(String stateStoreName, List<String> keys, Class<T> clazz);
 
   /**
    * Retrieve bulk States based on their keys.
@@ -435,21 +403,8 @@ public interface DaprClient extends Closeable {
    * @param <T>     The Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type);
+  <T> Mono<Response<List<State<T>>>> getStates(GetStatesRequest request, TypeRef<T> type);
 
-  /**
-   * Retrieve bulk States based on their keys.
-   *
-   * @param stateStoreName The name of the state store.
-   * @param keys           The keys of the State to be retrieved.
-   * @param options        Optional settings for retrieve operation.
-   * @param clazz          The type of State needed as return.
-   * @param <T>            The type of the return.
-   * @return A Mono Plan for the requested State.
-   */
-  <T> Mono<List<State<T>>> getBulkState(String stateStoreName, List<String> keys, StateOptions options, Class<T> clazz);
-
-  
   /**
    * Save/Update a list of states.
    *

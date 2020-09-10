@@ -5,10 +5,12 @@
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Strings;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetStatesRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeServiceRequest;
@@ -17,6 +19,7 @@ import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -27,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,6 +78,11 @@ public class DaprClientHttp extends AbstractDaprClient {
    * Secrets Path.
    */
   public static final String SECRETS_PATH = DaprHttp.API_VERSION + "/secrets";
+
+  /**
+   * State Path format for bulk state API.
+   */
+  public static final String STATE_BULK_PATH_FORMAT = STATE_PATH + "/%s/bulk";
 
   /**
    * The HTTP client to be used.
@@ -262,36 +271,41 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
-	try {
-		final String stateStoreName = request.getStateStoreName();
-	    final List<String> keys = request.getKeys();
-	    final StateOptions options = request.getStateOptions();
-	    final Context context = request.getContext();
-	    if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
-	    	throw new IllegalArgumentException("State store name cannot be null or empty.");
-	    }
-	    if (keys == null || keys.isEmpty()) {
-	    	throw new IllegalArgumentException("Key cannot be null or empty.");
-	    }    
-	    
-	    final String url = Constants.STATE_PATH + "/" + stateStoreName;
-	    Map<String, String> urlParameters = Optional.ofNullable(options)
-	            .map(o -> o.getStateOptionsAsMap())
-	            .orElse(new HashMap<>());
-	    byte[] serializedKeysBody = INTERNAL_SERIALIZER.serialize(keys);
-	    return this.client
-	    	.invokeApi(DaprHttp.HttpMethods.POST.name(), url.toString(), urlParameters, serializedKeysBody, null, context)
-	            .flatMap(s -> {
-	              try {
-	                return Mono.just(buildStateKeyValue(s, key, options, type));
-	              } catch (Exception ex) {
-	                return Mono.error(ex);
-	              }
-	            })
-	            .map(r -> new Response<>(context, r));
+  public <T> Mono<Response<List<State<T>>>> getStates(GetStatesRequest request, TypeRef<T> type) {
+    try {
+      final String stateStoreName = request.getStateStoreName();
+      final List<String> keys = request.getKeys();
+      final int parallelism = request.getParallelism();
+      final Context context = request.getContext();
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (keys == null || keys.isEmpty()) {
+        throw new IllegalArgumentException("Key cannot be null or empty.");
+      }
 
-	} catch (Exception ex) {
+      if (parallelism < 0) {
+        throw new IllegalArgumentException("Parallelism cannot be negative.");
+      }
+
+      String url = String.format(STATE_BULK_PATH_FORMAT, stateStoreName);
+      Map<String, Object> jsonMap = new HashMap<>();
+      jsonMap.put("keys", keys);
+      jsonMap.put("parallelism", parallelism);
+
+      byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
+      return this.client
+          .invokeApi(DaprHttp.HttpMethods.POST.name(), url, null, requestBody, null, context)
+          .flatMap(s -> {
+            try {
+              return Mono.just(buildStates(s, type));
+            } catch (Exception ex) {
+              return Mono.error(ex);
+            }
+          })
+          .map(r -> new Response<>(context, r));
+
+    } catch (Exception ex) {
       return Mono.error(ex);
     }
   }
@@ -335,7 +349,7 @@ public class DaprClientHttp extends AbstractDaprClient {
           .invokeApi(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers, context)
           .flatMap(s -> {
             try {
-              return Mono.just(buildStateKeyValue(s, key, options, type));
+              return Mono.just(buildState(s, key, options, type));
             } catch (Exception ex) {
               return Mono.error(ex);
             }
@@ -439,10 +453,10 @@ public class DaprClientHttp extends AbstractDaprClient {
    * @param requestedKey The Key Requested.
    * @param type        The Class of the Value of the state
    * @param <T>          The Type of the Value of the state
-   * @return A StateKeyValue instance
-   * @throws IOException If there's a issue deserialzing the response.
+   * @return A State instance
+   * @throws IOException If there's a issue deserializing the response.
    */
-  private <T> State<T> buildStateKeyValue(
+  private <T> State<T> buildState(
       DaprHttp.Response response, String requestedKey, StateOptions stateOptions, TypeRef<T> type) throws IOException {
     // The state is in the body directly, so we use the state serializer here.
     T value = stateSerializer.deserialize(response.getBody(), type);
@@ -452,6 +466,39 @@ public class DaprClientHttp extends AbstractDaprClient {
       etag = response.getHeaders().get("Etag");
     }
     return new State<>(value, key, etag, stateOptions);
+  }
+
+  /**
+   * Builds a State object based on the Response.
+   *
+   * @param response     The response of the HTTP Call
+   * @param type        The Class of the Value of the state
+   * @param <T>          The Type of the Value of the state
+   * @return A list of states.
+   * @throws IOException If there's a issue deserializing the response.
+   */
+  private <T> List<State<T>> buildStates(
+      DaprHttp.Response response, TypeRef<T> type) throws IOException {
+    JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+    List<State<T>> result = new ArrayList<>();
+    for (Iterator<JsonNode> it = root.elements(); it.hasNext(); ) {
+      JsonNode node = it.next();
+      String key = node.path("key").asText();
+      String error = node.path("error").asText();
+      if (!Strings.isNullOrEmpty(error)) {
+        result.add(new State<>(key, error));
+        continue;
+      }
+
+      String etag = node.path("etag").asText();
+      // TODO(artursouza): JSON cannot differentiate if data returned is String or byte[], it is ambiguous.
+      // This is not a high priority since GRPC is the default (and recommended) client implementation.
+      byte[] data = node.path("data").toString().getBytes(Properties.STRING_CHARSET.get());
+      T value = stateSerializer.deserialize(data, type);
+      result.add(new State<>(value, key, etag));
+    }
+
+    return result;
   }
 
   /**
