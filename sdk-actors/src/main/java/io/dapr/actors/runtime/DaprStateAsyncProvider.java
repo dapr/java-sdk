@@ -8,9 +8,9 @@ package io.dapr.actors.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.actors.ActorId;
+import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.utils.Properties;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 

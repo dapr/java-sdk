@@ -8,11 +8,11 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.actors.runtime.DaprClientHttpUtils;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.app.MyActorService;
-import io.dapr.utils.Constants;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static io.dapr.it.Retry.callWithRetry;
@@ -34,10 +33,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorTurnBasedConcurrencyIT.class);
 
-  private static final AtomicInteger atomicInteger = new AtomicInteger(1);
-
-  private final String BASE_URL = "actors/%s/%s";
-
   private final String ACTOR_TYPE = "MyActorTest";
   private final String REMINDER_NAME = UUID.randomUUID().toString();
   private final String ACTOR_ID = "1";
@@ -45,16 +40,12 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   @After
   public void cleanUpTestCase() {
     // Delete the reminder in case the test failed, otherwise it may interfere with future tests since it is persisted.
-    // It'll have this structure with different values: http://127.0.0.1:33997/v1.0/actors/MyActorTest/1/reminders/588e4adc-f902-4596-b12e-3d2955db68b6
     DaprHttp client = new DaprHttpBuilder().build();
-    String url = String.format(Constants.ACTOR_REMINDER_RELATIVE_URL_FORMAT, ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
-
     System.out.println("Invoking during cleanup");
     try {
-      client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), url, null, null, null).block();
+      DaprClientHttpUtils.unregisterActorReminder(client, ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
     } catch(Exception e) {
-      // informational only
-      System.out.println("Caught " + e.toString());
+      e.printStackTrace();
     }
 
   }

@@ -6,9 +6,9 @@
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
-import io.dapr.utils.Constants;
 import io.grpc.Context;
 import io.opentelemetry.OpenTelemetry;
 import io.opentelemetry.context.propagation.HttpTextFormat;
@@ -32,11 +32,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class DaprHttp implements Closeable {
+
+  /**
+   * Dapr API used in this client.
+   */
+  public static final String API_VERSION = "v1.0";
+
+  /**
+   * Header used for request id in Dapr.
+   */
+  private static final String HEADER_DAPR_REQUEST_ID = "X-DaprRequestId";
+
   /**
    * Dapr's http default scheme.
    */
   private static final String DEFAULT_HTTP_SCHEME = "http";
 
+  /**
+   * Sets the headers for OpenTelemetry SDK.
+   */
   private static final HttpTextFormat.Setter<Request.Builder> OPENTELEMETRY_SETTER =
       new HttpTextFormat.Setter<Request.Builder>() {
         @Override
@@ -114,6 +128,11 @@ public class DaprHttp implements Closeable {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
+   * Hostname used to communicate to Dapr's HTTP endpoint.
+   */
+  private final String hostname;
+
+  /**
    * Port used to communicate to Dapr's HTTP endpoint.
    */
   private final int port;
@@ -126,10 +145,12 @@ public class DaprHttp implements Closeable {
   /**
    * Creates a new instance of {@link DaprHttp}.
    *
+   * @param hostname   Hostname for calling Dapr. (e.g. "127.0.0.1")
    * @param port       Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(int port, OkHttpClient httpClient) {
+  DaprHttp(String hostname, int port, OkHttpClient httpClient) {
+    this.hostname = hostname;
     this.port = port;
     this.httpClient = httpClient;
   }
@@ -239,7 +260,7 @@ public class DaprHttp implements Closeable {
     }
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
     urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
-        .host(Constants.DEFAULT_HOSTNAME)
+        .host(this.hostname)
         .port(this.port)
         .addPathSegments(urlString);
     Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
@@ -247,7 +268,7 @@ public class DaprHttp implements Closeable {
 
     Request.Builder requestBuilder = new Request.Builder()
         .url(urlBuilder.build())
-        .addHeader(Constants.HEADER_DAPR_REQUEST_ID, requestId);
+        .addHeader(HEADER_DAPR_REQUEST_ID, requestId);
     if (context != null) {
       OpenTelemetry.getPropagators().getHttpTextFormat().inject(context, requestBuilder, OPENTELEMETRY_SETTER);
     }
@@ -258,6 +279,12 @@ public class DaprHttp implements Closeable {
     } else {
       requestBuilder.method(method, body);
     }
+
+    String daprApiToken = Properties.API_TOKEN.get();
+    if (daprApiToken != null) {
+      requestBuilder.addHeader(Headers.DAPR_API_TOKEN, daprApiToken);
+    }
+
     if (headers != null) {
       Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()
           .forEach(header -> {
