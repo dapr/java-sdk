@@ -33,4 +33,11 @@ public interface DaprObjectSerializer {
    * @throws IOException If cannot deserialize object.
    */
   <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException;
+
+  /**
+   * Returns the content type of the request.
+   * 
+   * @return content type of the request
+   */
+  String getContentType();
 }

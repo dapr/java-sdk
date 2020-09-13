@@ -30,4 +30,12 @@ public class DefaultObjectSerializer extends ObjectSerializer implements DaprObj
   public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
     return super.deserialize(data, type);
   }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public String getContentType() {
+    return "application/json";
+  }
 }

@@ -20,6 +20,8 @@ public class InvokeServiceRequestBuilder {
 
   private final String method;
 
+  private String contentType;
+
   private Object body;
 
   private Map<String, String> metadata = new HashMap<>();
@@ -31,6 +33,11 @@ public class InvokeServiceRequestBuilder {
   public InvokeServiceRequestBuilder(String appId, String method) {
     this.appId = appId;
     this.method = method;
+  }
+
+  public InvokeServiceRequestBuilder withContentType(String contentType) {
+    this.contentType = contentType;
+    return this;
   }
 
   public InvokeServiceRequestBuilder withBody(Object body) {
@@ -60,6 +67,7 @@ public class InvokeServiceRequestBuilder {
   public InvokeServiceRequest build() {
     InvokeServiceRequest request = new InvokeServiceRequest();
     request.setAppId(this.appId);
+    request.setContentType(contentType);
     request.setMethod(this.method);
     request.setBody(this.body);
     request.setHttpExtension(this.httpExtension);

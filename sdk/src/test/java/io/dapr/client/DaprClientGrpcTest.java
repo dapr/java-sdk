@@ -364,6 +364,7 @@ public class DaprClientGrpcTest {
     CommonProtos.InvokeRequest message = CommonProtos.InvokeRequest.newBuilder()
         .setMethod("method")
         .setData(getAny("request"))
+        .setContentType("application/json")
         .setHttpExtension(CommonProtos.HTTPExtension.newBuilder()
             .setVerb(CommonProtos.HTTPExtension.Verb.GET)
             .putQuerystring("test", "1").build())
