@@ -80,7 +80,7 @@ public class InvokeServiceRequest {
     return contentType;
   }
 
-  public void setContentType(String contentType) {
+  void setContentType(String contentType) {
     this.contentType = contentType;
   }
 }
