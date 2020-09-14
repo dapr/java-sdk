@@ -10,7 +10,13 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+
+import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.DeleteStateRequestBuilder;
+import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -700,6 +706,32 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void getStateObjectValueWithMetadataTest() throws IOException {
+    String etag = "ETag1";
+    String key = "key1";
+    MyObject expectedValue = new MyObject(1, "The Value");
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("key_1", "val_1");
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
+    DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
+        .setData(serialize(expectedValue))
+        .setEtag(etag)
+        .build();
+    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, key);
+    builder.withMetadata(metadata).withEtag(etag).withStateOptions(options);
+    GetStateRequest request = builder.build();
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
+        .thenReturn(settableFuture);
+    Mono<Response<State<MyObject>>> result = adapter.getState(request, TypeRef.get(MyObject.class));
+    settableFuture.set(responseEnvelope);
+    assertEquals(expectedState, result.block().getObject());
+  }
+
+  @Test
   public void getStateObjectValueWithOptionsNoConcurrencyTest() throws IOException {
     String etag = "ETag1";
     String key = "key1";
@@ -774,6 +806,27 @@ public class DaprClientGrpcTest {
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
       stateKey.getOptions());
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void deleteStateWithMetadata() {
+    String etag = "ETag1";
+    String key = "key1";
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("key_1", "val_1");
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
+      .thenReturn(settableFuture);
+    DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, key);
+    builder.withEtag(etag).withStateOptions(options).withMetadata(metadata);
+    DeleteStateRequest request = builder.build();
+    Mono<Response<Void>> result = adapter.deleteState(request);
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);

@@ -289,6 +289,8 @@ public class DaprClientHttp extends AbstractDaprClient {
           .map(o -> o.getStateOptionsAsMap())
           .orElse(new HashMap<>());
 
+      request.getMetadata().forEach(urlParameters::put);
+
       return this.client
           .invokeApi(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers, context)
           .flatMap(s -> {
@@ -379,6 +381,8 @@ public class DaprClientHttp extends AbstractDaprClient {
       Map<String, String> urlParameters = Optional.ofNullable(options)
           .map(stateOptions -> stateOptions.getStateOptionsAsMap())
           .orElse(new HashMap<>());
+
+      request.getMetadata().forEach(urlParameters::put);
 
       return this.client.invokeApi(
               DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers, context)
