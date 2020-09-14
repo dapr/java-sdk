@@ -229,7 +229,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.GetStateRequest.Builder builder = DaprProtos.GetStateRequest.newBuilder()
           .setStoreName(stateStoreName)
-          .setKey(key);
+          .setKey(key)
+          .putAllMetadata(request.getMetadata());
       if (options != null && options.getConsistency() != null) {
         builder.setConsistency(getGrpcStateConsistency(options));
       }
@@ -356,7 +357,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.DeleteStateRequest.Builder builder = DaprProtos.DeleteStateRequest.newBuilder()
           .setStoreName(stateStoreName)
-          .setKey(key);
+          .setKey(key)
+          .putAllMetadata(request.getMetadata());
       if (etag != null) {
         builder.setEtag(etag);
       }

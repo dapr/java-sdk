@@ -4,10 +4,14 @@
  */
 package io.dapr.client;
 
+import io.dapr.client.domain.DeleteStateRequestBuilder;
+import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.config.Properties;
+import io.dapr.utils.TypeRef;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
@@ -407,6 +411,21 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void getStateWithMetadata() {
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("key_1", "val_1");
+    mockInterceptor.addRule()
+      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?key_1=val_1")
+      .respond("\"" + EXPECTED_RESULT + "\"");
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, "key");
+    builder.withMetadata(metadata).withEtag("");
+    Mono<Response<State<String>>> monoMetadata = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
+    assertEquals(monoMetadata.block().getObject().getKey(), "key");
+  }
+
+  @Test
   public void getStatesNullEtag() {
     State<String> stateNullEtag = new State("value", "key", null, null);
     mockInterceptor.addRule()
@@ -527,6 +546,23 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
     Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
     assertNull(mono.block());
+  }
+
+  @Test
+  public void deleteStateWithMetadata() {
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("key_1", "val_1");
+    StateOptions stateOptions = mock(StateOptions.class);
+    State<String> stateKeyValue = new State("value", "key", "etag", stateOptions);
+    mockInterceptor.addRule()
+      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?key_1=val_1")
+      .respond(EXPECTED_RESULT);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, stateKeyValue.getKey());
+    builder.withMetadata(metadata).withEtag(stateKeyValue.getEtag()).withStateOptions(stateOptions);
+    Mono<Response<Void>> monoMetadata = daprClientHttp.deleteState(builder.build());
+    assertNull(monoMetadata.block().getObject());
   }
 
   @Test
