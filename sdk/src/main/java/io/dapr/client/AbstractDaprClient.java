@@ -9,6 +9,8 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
+import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetSecretRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
@@ -24,6 +26,7 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.SaveStateRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
@@ -35,6 +38,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Abstract class with convenient methods common between client implementations.
@@ -312,6 +316,18 @@ abstract class AbstractDaprClient implements DaprClient {
     String etag = response.getEtag();
     String key = requestedKey;
     return new State<>(value, key, etag, stateOptions);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> executeTransaction(String stateStoreName,
+                                       List<TransactionalStateOperation<?>> operations) {
+    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(stateStoreName)
+        .withTransactionalStates(operations)
+        .build();
+    return executeTransaction(request).then();
   }
 
   /**

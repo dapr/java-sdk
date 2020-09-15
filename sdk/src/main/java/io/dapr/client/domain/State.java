@@ -31,7 +31,7 @@ public class State<T> {
   private final StateOptions options;
 
   /**
-   * Create an inmutable state
+   * Create an immutable state
    * This Constructor MUST be used anytime you need to retrieve or delete a State.
    *
    * @param key     - The key of the state
@@ -145,7 +145,7 @@ public class State<T> {
         + "value=" + value
         + ", key='" + key + "'"
         + ", etag='" + etag + "'"
-        + ", options={'" + options.toString() + "}"
+        + ", options={'" + options != null ? options.toString() : "null" + "}"
         + "}";
   }
 }

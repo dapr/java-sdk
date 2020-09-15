@@ -7,6 +7,7 @@ package io.dapr.client;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
@@ -513,6 +514,26 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
     daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
     // No exception should be thrown because we did not call block() on the mono above.
+  }
+
+  @Test
+  public void simpleExecuteTransaction() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+        .respond(EXPECTED_RESULT);
+    String etag = "ETag1";
+    String key = "key1";
+    String data = "my data";
+    StateOptions stateOptions = mock(StateOptions.class);
+    daprHttp = new DaprHttp(3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+
+    State<String> stateKey = new State(data, key, etag, stateOptions);
+    TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.UPSERT,
+        stateKey);
+    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  Collections.singletonList(operation));
+    assertNull(mono.block());
   }
 
   @Test
