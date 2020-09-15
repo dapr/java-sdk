@@ -44,4 +44,12 @@ public class JavaSerializer implements DaprObjectSerializer {
       }
     }
   }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public String getContentType() {
+    return "application/json";
+  }
 }

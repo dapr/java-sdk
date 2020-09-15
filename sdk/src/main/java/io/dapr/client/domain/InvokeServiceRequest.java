@@ -26,6 +26,8 @@ public class InvokeServiceRequest {
 
   private Context context;
 
+  private String contentType;
+
   public String getAppId() {
     return appId;
   }
@@ -72,5 +74,13 @@ public class InvokeServiceRequest {
 
   void setContext(Context context) {
     this.context = context;
+  }
+
+  public String getContentType() {
+    return contentType;
+  }
+
+  void setContentType(String contentType) {
+    this.contentType = contentType;
   }
 }

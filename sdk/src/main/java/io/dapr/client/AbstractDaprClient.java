@@ -105,6 +105,7 @@ abstract class AbstractDaprClient implements DaprClient {
         .withBody(request)
         .withHttpExtension(httpExtension)
         .withMetadata(metadata)
+        .withContentType(objectSerializer.getContentType())
         .build();
 
     return this.invokeService(req, type).map(r -> r.getObject());
@@ -407,6 +408,8 @@ abstract class AbstractDaprClient implements DaprClient {
     httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.valueOf(httpExtension.getMethod().toString()))
         .putAllQuerystring(httpExtension.getQueryString());
     requestBuilder.setHttpExtension(httpExtensionBuilder.build());
+
+    requestBuilder.setContentType(objectSerializer.getContentType());
 
     DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
         .setId(appId)

@@ -5,7 +5,7 @@
 
 package io.dapr.client;
 
-import io.dapr.utils.Properties;
+import io.dapr.config.Properties;
 import okhttp3.OkHttpClient;
 
 import java.time.Duration;
@@ -55,6 +55,6 @@ public class DaprHttpBuilder {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
     builder.readTimeout(this.readTimeout);
     OkHttpClient okHttpClient = builder.build();
-    return new DaprHttp(Properties.HTTP_PORT.get(), okHttpClient);
+    return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), okHttpClient);
   }
 }

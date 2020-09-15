@@ -22,6 +22,7 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
@@ -34,6 +35,7 @@ import io.grpc.ClientInterceptor;
 import io.grpc.Context;
 import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
+import io.grpc.Metadata.Key;
 import io.grpc.MethodDescriptor;
 import io.opencensus.implcore.trace.propagation.PropagationComponentImpl;
 import io.opencensus.implcore.trace.propagation.TraceContextFormat;
@@ -155,10 +157,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
       String method = invokeServiceRequest.getMethod();
       Object request = invokeServiceRequest.getBody();
       HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
-      // TODO(artursouza): handle metadata once available in GRPC proto.
-      // Map<String, String> metadata = invokeServiceRequest.getMetadata();
       Context context = invokeServiceRequest.getContext();
-      DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(httpExtension, appId, method, request);
+      DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
+          httpExtension,
+          appId,
+          method,
+          request);
       return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<CommonProtos.InvokeResponse> futureResponse =
             client.invokeService(envelope);
@@ -229,7 +233,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.GetStateRequest.Builder builder = DaprProtos.GetStateRequest.newBuilder()
           .setStoreName(stateStoreName)
-          .setKey(key);
+          .setKey(key)
+          .putAllMetadata(request.getMetadata());
       if (options != null && options.getConsistency() != null) {
         builder.setConsistency(getGrpcStateConsistency(options));
       }
@@ -397,7 +402,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.DeleteStateRequest.Builder builder = DaprProtos.DeleteStateRequest.newBuilder()
           .setStoreName(stateStoreName)
-          .setKey(key);
+          .setKey(key)
+          .putAllMetadata(request.getMetadata());
       if (etag != null) {
         builder.setEtag(etag);
       }
@@ -432,7 +438,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @throws IOException If there's an issue serializing the request.
    */
   private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(
-      HttpExtension httpExtension, String appId, String method, K request) throws IOException {
+      HttpExtension httpExtension,
+      String appId,
+      String method,
+      K request) throws IOException {
     if (httpExtension == null) {
       throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
     }
@@ -449,6 +458,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
     httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.valueOf(httpExtension.getMethod().toString()))
         .putAllQuerystring(httpExtension.getQueryString());
     requestBuilder.setHttpExtension(httpExtensionBuilder.build());
+
+    requestBuilder.setContentType(objectSerializer.getContentType());
 
     DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
         .setId(appId)
@@ -526,8 +537,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
             SpanContext opencensusSpanContext = extractOpenCensusSpanContext(context);
             if (opencensusSpanContext != null) {
               byte[] grpcTraceBin = OPENCENSUS_BINARY_FORMAT.toByteArray(opencensusSpanContext);
-              headers.put(Metadata.Key.of("grpc-trace-bin", Metadata.BINARY_BYTE_MARSHALLER), grpcTraceBin);
+              headers.put(Key.of(Headers.GRPC_TRACE_BIN, Metadata.BINARY_BYTE_MARSHALLER), grpcTraceBin);
             }
+
+            String daprApiToken = Properties.API_TOKEN.get();
+            if (daprApiToken != null) {
+              headers.put(Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
+            }
+
             super.start(responseListener, headers);
           }
         };

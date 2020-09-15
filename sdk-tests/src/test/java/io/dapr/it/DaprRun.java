@@ -5,6 +5,8 @@
 
 package io.dapr.it;
 
+import io.dapr.config.Properties;
+
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -171,8 +173,7 @@ public class DaprRun {
   private static void assertListeningOnPort(int port) {
     System.out.printf("Checking port %d ...\n", port);
 
-    java.net.SocketAddress socketAddress = new java.net.InetSocketAddress(io.dapr.utils.Constants.DEFAULT_HOSTNAME,
-        port);
+    java.net.SocketAddress socketAddress = new java.net.InetSocketAddress(Properties.SIDECAR_IP.get(), port);
     try (java.net.Socket socket = new java.net.Socket()) {
       socket.connect(socketAddress, 1000);
     } catch (Exception e) {

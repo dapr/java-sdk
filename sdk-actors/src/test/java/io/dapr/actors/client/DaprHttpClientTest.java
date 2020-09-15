@@ -6,6 +6,7 @@ package io.dapr.actors.client;
 
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpProxy;
+import io.dapr.config.Properties;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
@@ -38,7 +39,7 @@ public class DaprHttpClientTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/method/Payment")
       .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono =
       DaprHttpClient.invokeActorMethod("DemoActor", "1", "Payment", "".getBytes());
