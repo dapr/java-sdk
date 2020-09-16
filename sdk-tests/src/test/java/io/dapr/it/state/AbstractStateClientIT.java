@@ -495,7 +495,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     //creation of a dummy data
     String data = "my state 3";
 
-    TransactionalStateOperation<String> operation = createStringTransactionalStateOperation(
+    TransactionalStateOperation<String> operation = createTransactionalStateOperation(
         TransactionalStateOperation.OperationType.UPSERT,
         createState(stateKey, null, null, data));
 
@@ -515,7 +515,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     Assert.assertNotNull(myDataResponse.getKey());
     Assert.assertNotNull(myDataResponse.getValue());
     Assert.assertEquals("my state 3", myDataResponse.getValue());
-    operation = createStringTransactionalStateOperation(
+    operation = createTransactionalStateOperation(
         TransactionalStateOperation.OperationType.DELETE,
         createState(stateKey, null, null, data));
     //create of the deferred call to DAPR to execute the transaction
@@ -581,23 +581,13 @@ public abstract class AbstractStateClientIT extends BaseIT {
     Assert.assertNull(deletedData.getValue());
   }
 
-  private TransactionalStateOperation<MyData> createTransactionalStateOperation(
+  private <T> TransactionalStateOperation<T> createTransactionalStateOperation(
       TransactionalStateOperation.OperationType type,
-      State<MyData> state) {
+      State<T> state) {
     return new TransactionalStateOperation<>(type, state);
   }
 
-  private TransactionalStateOperation<String> createStringTransactionalStateOperation(
-      TransactionalStateOperation.OperationType type,
-      State<String> state) {
-    return new TransactionalStateOperation<>(type, state);
-  }
-
-  private State<String> createState(String stateKey, String etag, StateOptions options, String data) {
-    return new State<>(data, stateKey, etag, options);
-  }
-
-  private State<MyData> createState(String stateKey, String etag, StateOptions options, MyData data) {
+  private <T> State<T> createState(String stateKey, String etag, StateOptions options, T data) {
     return new State<>(data, stateKey, etag, options);
   }
 
