@@ -61,8 +61,8 @@ public class DaprClientBuilder {
       throw new IllegalArgumentException("Object serializer is required");
     }
 
-    if (objectSerializer.getContentType() == null || objectSerializer.getContentType().isBlank()) {
-      throw new IllegalArgumentException("Content Type should not be null or blank");
+    if (objectSerializer.getContentType() == null || objectSerializer.getContentType().isEmpty()) {
+      throw new IllegalArgumentException("Content Type should not be null or empty");
     }
 
     this.objectSerializer = objectSerializer;

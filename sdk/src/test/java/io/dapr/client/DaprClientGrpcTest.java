@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
@@ -19,6 +18,7 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
@@ -1066,6 +1066,68 @@ public class DaprClientGrpcTest {
     settableFuture.set(Empty.newBuilder().build());
     result.block();
     assertTrue(callback.wasCalled);
+  }
+
+  @Test
+  public void executeTransactionTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    String data = "my data";
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
+        .thenReturn(settableFuture);
+    State<String> stateKey = buildStateKey(data, key, etag, options);
+    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.UPSERT,
+        stateKey);
+    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.DELETE,
+        new State<>("testKey")
+    );
+    Mono<Void> result = adapter.executeTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation, deleteOperation));
+    settableFuture.set(Empty.newBuilder().build());
+    result.block();
+    assertTrue(callback.wasCalled);
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void executeTransactionExceptionThrownTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    String data = "my data";
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
+    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
+        .thenThrow(RuntimeException.class);
+    State<String> stateKey = buildStateKey(data, key, etag, options);
+    TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.UPSERT,
+        stateKey);
+    Mono<Void> result = adapter.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    result.block();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void executeTransactionCallbackExceptionTest() {
+    String etag = "ETag1";
+    String key = "key1";
+    String data = "my data";
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
+    SettableFuture<Empty> settableFuture = SettableFuture.create();
+    RuntimeException ex = new RuntimeException("ex");
+    MockCallback<Empty> callback = new MockCallback<>(ex);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
+        .thenReturn(settableFuture);
+    State<String> stateKey = buildStateKey(data, key, etag, options);
+    TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.UPSERT,
+        stateKey);
+    Mono<Void> result = adapter.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    settableFuture.setException(ex);
+    result.block();
   }
 
   @Test(expected = RuntimeException.class)

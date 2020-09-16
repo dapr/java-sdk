@@ -38,10 +38,13 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
   public static void tearDown() throws IOException {
     daprClient.close();
   }
-
+  
   @Override
   protected DaprClient buildDaprClient() {
     return daprClient;
   }
+
+
+
 
 }

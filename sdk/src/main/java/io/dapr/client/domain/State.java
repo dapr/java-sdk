@@ -215,7 +215,7 @@ public class State<T> {
         + ", key='" + key + "'"
         + ", etag='" + etag + "'"
         + ", etag='" + error + "'"
-        + ", options={'" + options.toString() + "}"
+        + ", options={'" + (options != null ? options.toString() : null) + "}"
         + "}";
   }
 }

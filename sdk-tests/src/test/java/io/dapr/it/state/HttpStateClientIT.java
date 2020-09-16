@@ -30,7 +30,6 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     daprRun = startDaprApp(HttpStateClientIT.class.getSimpleName(), 5000);
     daprRun.switchToHTTP();
     daprClient = new DaprClientBuilder().build();
-
     assertTrue(daprClient instanceof DaprClientHttp);
   }
 

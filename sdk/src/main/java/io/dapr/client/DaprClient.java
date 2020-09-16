@@ -6,6 +6,7 @@
 package io.dapr.client;
 
 import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStatesRequest;
@@ -17,6 +18,7 @@ import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -404,6 +406,23 @@ public interface DaprClient extends Closeable {
    * @return A Mono Plan for the requested State.
    */
   <T> Mono<Response<List<State<T>>>> getStates(GetStatesRequest request, TypeRef<T> type);
+
+  /** Execute a transaction.
+   *
+   * @param stateStoreName        The name of the state store.
+   * @param operations            The operations to be performed.
+   * @return  a Mono plan of type Void
+   */
+  Mono<Void> executeTransaction(String stateStoreName,
+                                List<TransactionalStateOperation<?>> operations);
+
+
+  /** Execute a transaction.
+   *
+   * @param request Request to execute transaction.
+   * @return  a Mono plan of type Response Void
+   */
+  Mono<Response<Void>> executeTransaction(ExecuteStateTransactionRequest request);
 
   /**
    * Save/Update a list of states.

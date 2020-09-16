@@ -6,17 +6,16 @@
 package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -483,6 +482,113 @@ public abstract class AbstractStateClientIT extends BaseIT {
     Assert.assertNotNull(myDataResponse.getEtag(), myLastDataResponse.getEtag());
     Assert.assertEquals("last write", myLastDataResponse.getValue().getPropertyA());
     Assert.assertEquals("data in property B2", myLastDataResponse.getValue().getPropertyB());
+  }
+
+  @Test
+  public void saveVerifyAndDeleteTransactionalStateString() {
+
+    //create dapr client
+    DaprClient daprClient = buildDaprClient();
+    //The key use to store the state
+    final String stateKey = "myTKey";
+
+    //creation of a dummy data
+    String data = "my state 3";
+
+    TransactionalStateOperation<String> operation = createTransactionalStateOperation(
+        TransactionalStateOperation.OperationType.UPSERT,
+        createState(stateKey, null, null, data));
+
+    //create of the deferred call to DAPR to execute the transaction
+    Mono<Void> saveResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    //execute the save action
+    saveResponse.block();
+
+    //create of the deferred call to DAPR to get the state
+    Mono<State<String>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey), String.class);
+
+    //retrieve the state
+    State<String> myDataResponse = response.block();
+
+    //Assert that the response is the correct one
+    Assert.assertNotNull(myDataResponse.getEtag());
+    Assert.assertNotNull(myDataResponse.getKey());
+    Assert.assertNotNull(myDataResponse.getValue());
+    Assert.assertEquals("my state 3", myDataResponse.getValue());
+    operation = createTransactionalStateOperation(
+        TransactionalStateOperation.OperationType.DELETE,
+        createState(stateKey, null, null, data));
+    //create of the deferred call to DAPR to execute the transaction
+    Mono<Void> deleteResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    //execute the delete action
+    deleteResponse.block();
+
+    response = daprClient.getState(STATE_STORE_NAME, new State(stateKey), String.class);
+    State<String> deletedData = response.block();
+
+    //Review that the response is null, because the state was deleted
+    Assert.assertNull(deletedData.getValue());
+  }
+
+  @Test
+  public void saveVerifyAndDeleteTransactionalState() {
+
+    //create dapr client
+    DaprClient daprClient = buildDaprClient();
+    //The key use to store the state
+    final String stateKey = "myTKey";
+
+    //creation of a dummy data
+    MyData data = new MyData();
+    data.setPropertyA("data in property AA");
+    data.setPropertyB("data in property BA");
+
+    TransactionalStateOperation<MyData> operation = createTransactionalStateOperation(
+        TransactionalStateOperation.OperationType.UPSERT,
+        createState(stateKey, null, null, data));
+
+    Assert.assertNotNull(daprClient);
+    //create of the deferred call to DAPR to execute the transaction
+    Mono<Void> saveResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    //execute the save action
+    saveResponse.block();
+
+    //create of the deferred call to DAPR to get the state
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey), MyData.class);
+
+    //retrieve the state
+    State<MyData> myDataResponse = response.block();
+
+    //Assert that the response is the correct one
+    Assert.assertNotNull(myDataResponse.getEtag());
+    Assert.assertNotNull(myDataResponse.getKey());
+    Assert.assertNotNull(myDataResponse.getValue());
+    Assert.assertEquals("data in property AA", myDataResponse.getValue().getPropertyA());
+    Assert.assertEquals("data in property BA", myDataResponse.getValue().getPropertyB());
+
+    operation = createTransactionalStateOperation(
+        TransactionalStateOperation.OperationType.DELETE,
+        createState(stateKey, null, null, data));
+    //create of the deferred call to DAPR to execute the transaction
+    Mono<Void> deleteResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    //execute the delete action
+    deleteResponse.block();
+
+    response = daprClient.getState(STATE_STORE_NAME, new State(stateKey), MyData.class);
+    State<MyData> deletedData = response.block();
+
+    //Review that the response is null, because the state was deleted
+    Assert.assertNull(deletedData.getValue());
+  }
+
+  private <T> TransactionalStateOperation<T> createTransactionalStateOperation(
+      TransactionalStateOperation.OperationType type,
+      State<T> state) {
+    return new TransactionalStateOperation<>(type, state);
+  }
+
+  private <T> State<T> createState(String stateKey, String etag, StateOptions options, T data) {
+    return new State<>(data, stateKey, etag, options);
   }
 
   protected abstract DaprClient buildDaprClient();

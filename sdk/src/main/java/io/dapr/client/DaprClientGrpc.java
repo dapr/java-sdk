@@ -11,6 +11,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStatesRequest;
@@ -22,6 +23,7 @@ import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -335,6 +337,47 @@ public class DaprClientGrpc extends AbstractDaprClient {
     String etag = response.getEtag();
     String key = requestedKey;
     return new State<>(value, key, etag, stateOptions);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Response<Void>> executeTransaction(ExecuteStateTransactionRequest request) {
+    try {
+      final String stateStoreName = request.getStateStoreName();
+      final List<TransactionalStateOperation<?>> operations = request.getOperations();
+      final Map<String, String> metadata = request.getMetadata();
+      final Context context = request.getContext();
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      DaprProtos.ExecuteStateTransactionRequest.Builder builder = DaprProtos.ExecuteStateTransactionRequest
+          .newBuilder();
+      builder.setStoreName(stateStoreName);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+      for (TransactionalStateOperation operation: operations) {
+        DaprProtos.TransactionalStateOperation.Builder operationBuilder = DaprProtos.TransactionalStateOperation
+            .newBuilder();
+        operationBuilder.setOperationType(operation.getOperation().toString().toLowerCase());
+        operationBuilder.setRequest(buildStateRequest(operation.getRequest()).build());
+        builder.addOperations(operationBuilder.build());
+      }
+      DaprProtos.ExecuteStateTransactionRequest req = builder.build();
+
+      return Mono.fromCallable(wrap(context, () -> client.executeStateTransaction(req))).flatMap(f -> {
+        try {
+          f.get();
+        } catch (Exception e) {
+          return Mono.error(e);
+        }
+        return Mono.empty();
+      }).thenReturn(new Response<Void>(context, null));
+    } catch (IOException e) {
+      return Mono.error(e);
+    }
   }
 
   /**

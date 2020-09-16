@@ -10,6 +10,7 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
 import io.dapr.utils.TypeRef;
 import okhttp3.OkHttpClient;
@@ -27,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 public class DaprClientHttpTest {
-  
+
   private static final String STATE_STORE_NAME = "MyStateStore";
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
@@ -587,7 +587,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void saveStatesNull() {
-    State<String> stateKeyValue = new State("value", "key", "", null);
     List<State<?>> stateKeyValueList = new ArrayList();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
@@ -649,6 +648,55 @@ public class DaprClientHttpTest {
     daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
     // No exception should be thrown because we did not call block() on the mono above.
   }
+
+  @Test
+  public void simpleExecuteTransaction() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+        .respond(EXPECTED_RESULT);
+    String etag = "ETag1";
+    String key = "key1";
+    String data = "my data";
+    StateOptions stateOptions = mock(StateOptions.class);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+
+    State<String> stateKey = new State(data, key, etag, stateOptions);
+    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.UPSERT,
+        stateKey);
+    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.DELETE,
+        new State<>("deleteKey"));
+    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+        deleteOperation));
+    assertNull(mono.block());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void executeTransactionNullStateStoreName() {
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Void> mono = daprClientHttp.executeTransaction(null,  null);
+    assertNull(mono.block());
+  }
+
+  @Test
+  public void simpleExecuteTransactionNull() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+        .respond(EXPECTED_RESULT);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  null);
+    assertNull(mono.block());
+    mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  Collections.emptyList());
+    assertNull(mono.block());
+  }
+
+  /*
+
+   */
 
   @Test
   public void deleteState() {

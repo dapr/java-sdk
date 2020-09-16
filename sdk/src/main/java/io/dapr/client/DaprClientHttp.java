@@ -8,6 +8,7 @@ package io.dapr.client;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStatesRequest;
@@ -19,6 +20,8 @@ import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.TransactionalStateRequest;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -43,7 +46,6 @@ import java.util.Optional;
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientHttp extends AbstractDaprClient {
-
   /**
    * Header for the conditional operation.
    */
@@ -73,6 +75,11 @@ public class DaprClientHttp extends AbstractDaprClient {
    * State Path.
    */
   public static final String STATE_PATH = DaprHttp.API_VERSION + "/state";
+
+  /**
+   * String format for transaction API.
+   */
+  private static final String TRANSACTION_URL_FORMAT = STATE_PATH + "/%s/transaction";
 
   /**
    * Secrets Path.
@@ -357,6 +364,62 @@ public class DaprClientHttp extends AbstractDaprClient {
           .map(r -> new Response<>(context, r));
     } catch (Exception ex) {
       return Mono.error(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Response<Void>> executeTransaction(ExecuteStateTransactionRequest request) {
+    try {
+      final String stateStoreName = request.getStateStoreName();
+      final List<TransactionalStateOperation<?>> operations = request.getOperations();
+      final Map<String, String> metadata = request.getMetadata();
+      final Context context = request.getContext();
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (operations == null || operations.isEmpty()) {
+        return Mono.empty();
+      }
+      final Map<String, String> headers = new HashMap<>();
+      final String etag = operations.stream()
+          .filter(op -> null != op.getRequest().getEtag() && !op.getRequest().getEtag().trim().isEmpty())
+          .findFirst()
+          .orElse(new TransactionalStateOperation<>(null, new State<>(null,null, null, null)))
+          .getRequest()
+          .getEtag();
+      if (etag != null && !etag.trim().isEmpty()) {
+        headers.put(HEADER_HTTP_ETAG_ID, etag);
+      }
+      final String url = String.format(TRANSACTION_URL_FORMAT,  stateStoreName);
+      List<TransactionalStateOperation<Object>> internalOperationObjects = new ArrayList<>(operations.size());
+      for (TransactionalStateOperation operation : operations) {
+        State<?> state = operation.getRequest();
+        if (state == null) {
+          continue;
+        }
+        if (this.isStateSerializerDefault) {
+          // If default serializer is being used, we just pass the object through to be serialized directly.
+          // This avoids a JSON object from being quoted inside a string.
+          // We WANT this: { "value" : { "myField" : 123 } }
+          // We DON't WANT this: { "value" : "{ \"myField\" : 123 }" }
+          internalOperationObjects.add(operation);
+          continue;
+        }
+        byte[] data = this.stateSerializer.serialize(state.getValue());
+        // Custom serializer, so everything is byte[].
+        operations.add(new TransactionalStateOperation<>(operation.getOperation(),
+            new State<>(data, state.getKey(), state.getEtag(), state.getOptions())));
+      }
+      TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
+      byte[] serializedOperationBody = INTERNAL_SERIALIZER.serialize(req);
+      return this.client.invokeApi(
+          DaprHttp.HttpMethods.POST.name(), url, null, serializedOperationBody, headers, context)
+          .thenReturn(new Response<>(context, null));
+    } catch (IOException e) {
+      return Mono.error(e);
     }
   }
 
