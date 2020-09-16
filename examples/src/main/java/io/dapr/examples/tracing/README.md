@@ -193,7 +193,7 @@ Now, open Zipkin on [http://localhost:9411/zipkin](http://localhost:9411/zipkin)
 
 Click on the search icon to see the latest query results. You should see a tracing diagram similar to the one below:
 
-![zipking-landing](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-tracing.png)
+![zipking-landing](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-result.png)
 
 Once you click on the tracing event, you will see the details of the call stack starting in the client and then showing the service API calls right below.
 
