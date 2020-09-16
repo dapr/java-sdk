@@ -78,6 +78,12 @@
       <version>5.1.0</version>
       <scope>test</scope>
     </dependency>
+      <dependency>
+          <groupId>io.projectreactor</groupId>
+          <artifactId>reactor-core</artifactId>
+          <version>3.3.1.RELEASE</version>
+          <scope>test</scope>
+      </dependency>
   </dependencies>
 
   <build>

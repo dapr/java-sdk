@@ -5,6 +5,7 @@
 
 package io.dapr.client;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
@@ -12,6 +13,7 @@ import com.google.protobuf.Empty;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.GetStatesRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeServiceRequest;
@@ -52,6 +54,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * An adapter for the GRPC Client.
@@ -253,6 +256,74 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<Response<List<State<T>>>> getStates(GetStatesRequest request, TypeRef<T> type) {
+    try {
+      final String stateStoreName = request.getStateStoreName();
+      final List<String> keys = request.getKeys();
+      final int parallelism = request.getParallelism();
+      final Context context = request.getContext();
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (keys == null || keys.isEmpty()) {
+        throw new IllegalArgumentException("Key cannot be null or empty.");
+      }
+
+      if (parallelism < 0) {
+        throw new IllegalArgumentException("Parallelism cannot be negative.");
+      }
+      DaprProtos.GetBulkStateRequest.Builder builder = DaprProtos.GetBulkStateRequest.newBuilder()
+          .setStoreName(stateStoreName)
+          .addAllKeys(keys)
+          .setParallelism(parallelism);
+
+      DaprProtos.GetBulkStateRequest envelope = builder.build();
+      return Mono.fromCallable(wrap(context, () -> {
+        ListenableFuture<DaprProtos.GetBulkStateResponse> futureResponse = client.getBulkState(envelope);
+        DaprProtos.GetBulkStateResponse response = null;
+        try {
+          response = futureResponse.get();
+        } catch (NullPointerException npe) {
+          return null;
+        }
+
+        return response
+            .getItemsList()
+            .stream()
+            .map(b -> {
+              try {
+                return buildStateKeyValue(b, type);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+            .collect(Collectors.toList());
+      })).map(s -> new Response(context, s));
+    } catch (Exception ex) {
+      return Mono.error(ex);
+    }
+  }
+
+  private <T> State<T> buildStateKeyValue(
+      DaprProtos.BulkStateItem item,
+      TypeRef<T> type) throws IOException {
+    String key = item.getKey();
+    String error = item.getError();
+    if (!Strings.isNullOrEmpty(error)) {
+      return new State<>(key, error);
+    }
+
+    ByteString payload = item.getData();
+    byte[] data = payload == null ? null : payload.toByteArray();
+    T value = stateSerializer.deserialize(data, type);
+    String etag = item.getEtag();
+    return new State<>(value, key, etag);
+  }
+
   private <T> State<T> buildStateKeyValue(
       DaprProtos.GetStateResponse response,
       String requestedKey,
@@ -300,13 +371,13 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
   private <T> CommonProtos.StateItem.Builder buildStateRequest(State<T> state) throws IOException {
     byte[] bytes = stateSerializer.serialize(state.getValue());
-    ByteString data = ByteString.copyFrom(bytes);
+
     CommonProtos.StateItem.Builder stateBuilder = CommonProtos.StateItem.newBuilder();
     if (state.getEtag() != null) {
       stateBuilder.setEtag(state.getEtag());
     }
-    if (data != null) {
-      stateBuilder.setValue(data);
+    if (bytes != null) {
+      stateBuilder.setValue(ByteString.copyFrom(bytes));
     }
     stateBuilder.setKey(state.getKey());
     CommonProtos.StateOptions.Builder optionBuilder = null;
@@ -347,8 +418,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       CommonProtos.StateOptions.Builder optionBuilder = null;
       if (options != null) {
-        optionBuilder = CommonProtos.StateOptions.newBuilder();
-
         optionBuilder = CommonProtos.StateOptions.newBuilder();
         if (options.getConcurrency() != null) {
           optionBuilder.setConcurrency(getGrpcStateConcurrency(options));

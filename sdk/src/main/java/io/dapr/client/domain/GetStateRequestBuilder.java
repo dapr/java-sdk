@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Builds a request to publish an event.
+ * Builds a request to request state.
  */
 public class GetStateRequestBuilder {
 
