@@ -5,6 +5,8 @@
 
 package io.dapr.it.state;
 
+import java.util.Objects;
+
 public class MyData {
 
   /// Gets or sets the value for PropertyA.
@@ -12,8 +14,6 @@ public class MyData {
 
   /// Gets or sets the value for PropertyB.
   private String propertyB;
-
-  private MyData myData;
 
   public String getPropertyB() {
     return propertyB;
@@ -39,11 +39,17 @@ public class MyData {
       '}';
   }
 
-  public MyData getMyData() {
-    return myData;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    MyData myData = (MyData) o;
+    return Objects.equals(propertyA, myData.propertyA) &&
+        Objects.equals(propertyB, myData.propertyB);
   }
 
-  public void setMyData(MyData myData) {
-    this.myData = myData;
+  @Override
+  public int hashCode() {
+    return Objects.hash(propertyA, propertyB);
   }
 }

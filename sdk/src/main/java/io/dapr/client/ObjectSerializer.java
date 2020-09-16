@@ -8,6 +8,7 @@ package io.dapr.client;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
@@ -110,6 +111,17 @@ public class ObjectSerializer {
     }
 
     return OBJECT_MAPPER.readValue(content, javaType);
+  }
+
+  /**
+   * Parses the JSON content into a node for fine-grained processing.
+   *
+   * @param content JSON content.
+   * @return JsonNode.
+   * @throws IOException In case content cannot be parsed.
+   */
+  public JsonNode parseNode(byte[] content) throws IOException {
+    return  OBJECT_MAPPER.readTree(content);
   }
 
   /**

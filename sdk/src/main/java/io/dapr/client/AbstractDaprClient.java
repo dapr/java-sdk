@@ -15,6 +15,7 @@ import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetSecretRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
+import io.dapr.client.domain.GetStatesRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeBindingRequestBuilder;
@@ -306,17 +307,20 @@ abstract class AbstractDaprClient implements DaprClient {
     return this.getState(stateStoreName, key, etag, options, TypeRef.get(clazz));
   }
 
-  private <T> State<T> buildStateKeyValue(
-      DaprProtos.GetStateResponse response,
-      String requestedKey,
-      StateOptions stateOptions,
-      TypeRef<T> type) throws IOException {
-    ByteString payload = response.getData();
-    byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
-    String etag = response.getEtag();
-    String key = requestedKey;
-    return new State<>(value, key, etag, stateOptions);
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<List<State<T>>> getStates(String stateStoreName, List<String> keys, TypeRef<T> type) {
+    return this.getStates(new GetStatesRequestBuilder(stateStoreName, keys).build(), type).map(r -> r.getObject());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<List<State<T>>> getStates(String stateStoreName, List<String> keys, Class<T> clazz) {
+    return this.getStates(stateStoreName, keys, TypeRef.get(clazz));
   }
 
   /**

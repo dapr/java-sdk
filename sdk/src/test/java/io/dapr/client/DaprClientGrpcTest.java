@@ -35,12 +35,15 @@ import reactor.core.publisher.Mono;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -752,6 +755,183 @@ public class DaprClientGrpcTest {
     Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
     settableFuture.set(responseEnvelope);
     assertEquals(expectedState, result.block());
+  }
+
+
+  @Test
+  public void getStatesString() throws IOException {
+    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setData(serialize("hello world"))
+            .setKey("100")
+            .setEtag("1")
+            .build())
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setKey("200")
+            .setError("not found")
+            .build())
+        .build();
+    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
+        .thenAnswer(c -> {
+          settableFuture.set(responseEnvelope);
+          return settableFuture;
+        });
+    List<State<String>> result = adapter.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+    assertTrue(callback.wasCalled);
+
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals("hello world", result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesInteger() throws IOException {
+    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setData(serialize(1234))
+            .setKey("100")
+            .setEtag("1")
+            .build())
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setKey("200")
+            .setError("not found")
+            .build())
+        .build();
+    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
+        .thenAnswer(c -> {
+          settableFuture.set(responseEnvelope);
+          return settableFuture;
+        });
+    List<State<Integer>> result = adapter.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
+    assertTrue(callback.wasCalled);
+
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(1234, (int)result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesBoolean() throws IOException {
+    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setData(serialize(true))
+            .setKey("100")
+            .setEtag("1")
+            .build())
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setKey("200")
+            .setError("not found")
+            .build())
+        .build();
+    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
+        .thenAnswer(c -> {
+          settableFuture.set(responseEnvelope);
+          return settableFuture;
+        });
+    List<State<Boolean>> result = adapter.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
+    assertTrue(callback.wasCalled);
+
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(true, result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesByteArray() throws IOException {
+    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setData(serialize(new byte[]{1, 2, 3}))
+            .setKey("100")
+            .setEtag("1")
+            .build())
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setKey("200")
+            .setError("not found")
+            .build())
+        .build();
+    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
+        .thenAnswer(c -> {
+          settableFuture.set(responseEnvelope);
+          return settableFuture;
+        });
+    List<State<byte[]>> result = adapter.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), byte[].class).block();
+    assertTrue(callback.wasCalled);
+
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertArrayEquals(new byte[]{1, 2, 3}, result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStatesObject() throws IOException {
+    MyObject object = new MyObject(1, "Event");
+    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setData(serialize(object))
+            .setKey("100")
+            .setEtag("1")
+            .build())
+        .addItems(DaprProtos.BulkStateItem.newBuilder()
+            .setKey("200")
+            .setError("not found")
+            .build())
+        .build();
+    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
+        .thenAnswer(c -> {
+          settableFuture.set(responseEnvelope);
+          return settableFuture;
+        });
+    List<State<MyObject>> result = adapter.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
+    assertTrue(callback.wasCalled);
+
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals(object, result.stream().findFirst().get().getValue());
+    assertEquals("1", result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
   }
 
   @Test(expected = RuntimeException.class)
