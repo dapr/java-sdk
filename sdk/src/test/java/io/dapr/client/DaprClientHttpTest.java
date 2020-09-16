@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -588,7 +587,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void saveStatesNull() {
-    State<String> stateKeyValue = new State("value", "key", "", null);
     List<State<?>> stateKeyValueList = new ArrayList();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
@@ -664,12 +662,41 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
 
     State<String> stateKey = new State(data, key, etag, stateOptions);
-    TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
+    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
-    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  Collections.singletonList(operation));
+    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
+        TransactionalStateOperation.OperationType.DELETE,
+        new State<>("deleteKey"));
+    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+        deleteOperation));
     assertNull(mono.block());
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void executeTransactionNullStateStoreName() {
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Void> mono = daprClientHttp.executeTransaction(null,  null);
+    assertNull(mono.block());
+  }
+
+  @Test
+  public void simpleExecuteTransactionNull() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+        .respond(EXPECTED_RESULT);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  null);
+    assertNull(mono.block());
+    mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  Collections.emptyList());
+    assertNull(mono.block());
+  }
+
+  /*
+
+   */
 
   @Test
   public void deleteState() {

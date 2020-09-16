@@ -6,7 +6,6 @@
 package io.dapr.client.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dapr.v1.DaprProtos;
 
 import java.util.Objects;
 
