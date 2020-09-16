@@ -183,18 +183,18 @@ dapr run --components-path ./components -- java -jar target/dapr-java-sdk-exampl
 ```
 Once running, the output should display the messages sent from invoker in the demo service output as follows:
 
-![exposeroutput](../../../../../../resources/img/exposer-service.png)
+![exposeroutput](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/exposer-service.png)
 
 Method have been remotely invoked and displaying the remote messages.
 
 Now, open Zipkin on [http://localhost:9411/zipkin](http://localhost:9411/zipkin). You should see a screen like the one below:
 
-![zipking-landing](../../../../../../resources/img/zipkin-landing.png)
+![zipking-landing](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-landing.png)
 
 Click on the search icon to see the latest query results. You should see a tracing diagram similar to the one below:
 
-![zipking-landing](../../../../../../resources/img/zipkin-tracing.png)
+![zipking-landing](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-result.png)
 
 Once you click on the tracing event, you will see the details of the call stack starting in the client and then showing the service API calls right below.
 
-![zipking-details](../../../../../../resources/img/zipkin-details.png)
+![zipking-details](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-details.png)
