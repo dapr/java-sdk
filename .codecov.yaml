@@ -1,2 +1,6 @@
 ignore:
   - examples
+  - sdk-tests
+comment:
+  # Delete old comment and post new one for new coverage information.
+  behavior: new
