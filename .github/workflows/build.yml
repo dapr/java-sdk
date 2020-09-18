@@ -1,15 +1,15 @@
 name: Build
 
-on: 
+on:
   push:
     branches:
       - master
       - release-*
     tags:
       - v*
-    
+
   pull_request:
-    branches: 
+    branches:
     - master
     - release-*
 
@@ -98,6 +98,8 @@ jobs:
       run: mvn compile -q
     - name: Unit tests
       run: mvn test -q
+    - name: Codecov
+      uses: codecov/codecov-action@v1
     - name: Install jars
       run: mvn install -q
     - name: Integration tests
