@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      GOVER: 1.14.0
+      GOVER: 1.15.0
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org

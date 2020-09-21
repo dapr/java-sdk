@@ -45,6 +45,7 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -662,7 +663,9 @@ public class DaprClientGrpcTest {
     State<String> keyRequest = buildStateKey(null, key, etag, null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, keyRequest, String.class);
     settableFuture.set(responseEnvelope);
-    assertEquals(expectedState, result.block());
+    State<String> res = result.block();
+    assertNotNull(res);
+    assertEquals(expectedState, res);
   }
 
   @Test
@@ -705,7 +708,9 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
     settableFuture.set(responseEnvelope);
-    assertEquals(expectedState, result.block());
+    State<MyObject> res = result.block();
+    assertNotNull(res);
+    assertEquals(expectedState, res);
   }
 
   @Test
@@ -731,7 +736,9 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     Mono<Response<State<MyObject>>> result = adapter.getState(request, TypeRef.get(MyObject.class));
     settableFuture.set(responseEnvelope);
-    assertEquals(expectedState, result.block().getObject());
+    Response<State<MyObject>> res = result.block();
+    assertNotNull(res);
+    assertEquals(expectedState, res.getObject());
   }
 
   @Test
