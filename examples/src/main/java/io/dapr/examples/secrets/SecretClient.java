@@ -48,6 +48,13 @@ public class SecretClient {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
       System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+
+      try {
+        secret = client.getSecret(SECRET_STORE_NAME, "randomKey").block();
+        System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+      } catch (Exception ex) {
+        System.out.println(ex.getMessage());
+      }
     }
   }
 }

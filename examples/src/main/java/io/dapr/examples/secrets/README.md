@@ -41,7 +41,7 @@ mvn install
 ```
 ### Setting Vault locally
 
-Before getting into the application code, follow these steps in order to setup a local instance of Vault. This is needed for the local instances. Steps are:
+Before getting into the application code, follow these steps in order to set up a local instance of Vault. This is needed for the local instances. Steps are:
 
 1. navigate to the [examples] with `cd examples`
 2. Run `docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml up -d` to run the container locally
@@ -61,18 +61,23 @@ Dapr's API for secret store only support read operations. For this sample to run
 vault login myroot
 ```
 
-> Note: If you get `http: server gave HTTP response to HTTPS client` make sure the local vault address is set `export VAULT_ADDR=http://127.0.0.1:8200/`
+> Note: If you get `http: server gave HTTP response to HTTPS client` make sure to se the local vault address as  `export VAULT_ADDR=http://127.0.0.1:8200/`
 
 2. Create secret (replace `[my favorite movie]` with a title of our choice):
 ```bash
 vault kv put secret/dapr/movie title="[my favorite movie]"
 ```
 
+3. Create random secret:
+```bash
+vault kv put secret/dapr/randomKey testVal="value"
+```
+
 In the command above, `secret` means the secret engine in Hashicorp's Vault.
 Then, `dapr` is the prefix as defined in `< repo dir >/examples/components/hashicorp_vault.yaml`.
-Finally, `movie` is the secret name and then a `key=value` pair.
+Finally, `movie` and `randomKey` are the secret names with the value set in the form of `key=value` pair.
 
-A secret in dapr is a dictionary. In this sample, only one key-value pair is used but more can be added as an exercise for the reader.
+A secret in Dapr is a dictionary.
 
 ### Running the secret store sample
 
@@ -101,6 +106,13 @@ public class SecretClient {
       try (DaprClient client = (new DaprClientBuilder()).build()) {
         Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
         System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+
+        try {
+          secret = client.getSecret(SECRET_STORE_NAME, "randomKey").block();
+          System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+        } catch (Exception ex) {
+          System.out.println(ex.getMessage());
+        }
       }
     }
 ///...
@@ -111,7 +123,7 @@ After identifying the key to be fetched, it will retrieve it from the pre-define
 The secret store's name **must** match the component's name defined in `< repo dir >/examples/components/hashicorp_vault.yaml`.
 The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
- Execute the follow script in order to run the example:
+ Execute the following script in order to run the example:
 ```sh
 cd to [repo-root]/examples
 dapr run --components-path ./components  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
@@ -121,11 +133,44 @@ Once running, the program should print the output as follows:
 
 ```
 == APP == {"title":"[my favorite movie]"}
+
+== APP == {"testVal":"value"}
 ```
 
 To close the app, press CTRL+c.
 
-To cleanup and bring the vault container down, run
+The example's `config.yaml` is as follows: 
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: daprConfig
+spec:
+  secrets:
+    scopes:
+      - storeName: "vault"
+        defaultAccess: "deny"
+        allowedSecrets: ["movie",]
+```
+
+The configuration defines, that the only allowed secret is `movie` and all other secrets are denied. 
+
+Execute the following script in order to run this example with additional secret scoping: 
+```sh
+cd to [repo-root]/examples
+dapr run --components-path ./components --config ./src/main/java/io/dapr/examples/secrets/config.yaml  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+```
+Once running, the program should print the output as follows:
+
+```
+== APP == {"title":"[my favorite movie]"}
+
+== APP == java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: PERMISSION_DENIED: Access denied by policy to get randomKey from vault
+``` 
+
+To close the app, press CTRL+c.
+
+To clean up and bring the vault container down, run
 ```sh
 docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml down
 ```
