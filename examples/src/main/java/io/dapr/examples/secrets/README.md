@@ -61,7 +61,7 @@ Dapr's API for secret store only support read operations. For this sample to run
 vault login myroot
 ```
 
-> Note: If you get `http: server gave HTTP response to HTTPS client` make sure to se the local vault address as  `export VAULT_ADDR=http://127.0.0.1:8200/`
+> Note: If you get `http: server gave HTTP response to HTTPS client` make sure to set the local vault address as  `export VAULT_ADDR=http://127.0.0.1:8200/`
 
 2. Create secret (replace `[my favorite movie]` with a title of our choice):
 ```bash
