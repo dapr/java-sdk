@@ -38,6 +38,7 @@ public class StateClient {
   private static final String STATE_STORE_NAME = "statestore";
 
   private static final String FIRST_KEY_NAME = "myKey";
+
   private static final String SECOND_KEY_NAME = "myKey2";
 
   /**
