@@ -8,7 +8,10 @@ package io.dapr.it;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DaprPorts {
 
@@ -26,7 +29,7 @@ public class DaprPorts {
 
   public static DaprPorts build(boolean appPort, boolean httpPort, boolean grpcPort) {
     try {
-      List<Integer> freePorts = findFreePorts(3);
+      List<Integer> freePorts = new ArrayList<>(findFreePorts(3));
       return new DaprPorts(
           appPort ? freePorts.get(0) : null,
           httpPort ? freePorts.get(1) : null,
@@ -48,18 +51,18 @@ public class DaprPorts {
     return appPort;
   }
 
-  private static List<Integer> findFreePorts(int n) throws IOException {
-    if (n <= 0) {
-      return new ArrayList<>();
+  private static Set<Integer> findFreePorts(int n) throws IOException {
+    Set<Integer> output = new HashSet<>();
+    for (int i = 0; i < n;) {
+      try (ServerSocket socket = new ServerSocket(0)) {
+        socket.setReuseAddress(true);
+        int port = socket.getLocalPort();
+        if (!output.contains(port)) {
+          output.add(port);
+          i++;
+        }
+      }
     }
-    try (
-      ServerSocket socket = new ServerSocket(0)
-    ) {
-      socket.setReuseAddress(true);
-      int port = socket.getLocalPort();
-      List<Integer> output = findFreePorts(n - 1);
-      output.add(port);
-      return output;
-    }
+    return output;
   }
 }
