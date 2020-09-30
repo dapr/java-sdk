@@ -4,6 +4,7 @@ io.dapr.actors.client
 io.dapr.actors.runtime
 io.dapr.client
 io.dapr.client.domain
+io.dapr.config
 io.dapr.exceptions
 io.dapr.serializer
 io.dapr.utils
