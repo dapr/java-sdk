@@ -117,13 +117,15 @@ jobs:
     - name: Get pom parent version
       run: |
         PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-        echo "##[set-env name=PARENT_VERSION;]$PARENT_VERSION"
+        echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
     - name: Is SNAPSHOT release ?
       if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
-      run: echo "##[set-env name=DEPLOY_OSSRH;]true"
+      run: |
+        echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
     - name: Is Release or RC version ?
       if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
-      run: echo "##[set-env name=DEPLOY_OSSRH;]true"
+      run: |
+        echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
     - name: Publish to ossrh
       if: env.DEPLOY_OSSRH == 'true'
       run: |
