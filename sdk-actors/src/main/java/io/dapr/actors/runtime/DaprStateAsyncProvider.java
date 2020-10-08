@@ -7,6 +7,7 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -27,6 +28,11 @@ class DaprStateAsyncProvider {
    * Dapr's charset.
    */
   private static final Charset CHARSET = Properties.STRING_CHARSET.get();
+
+  /**
+   * Handles special serialization cases.
+   */
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
    * Shared Json Factory as per Jackson's documentation, used only for this class.
@@ -66,6 +72,10 @@ class DaprStateAsyncProvider {
     return result.flatMap(s -> {
       try {
         T response = this.stateSerializer.deserialize(s, type);
+        if (this.isStateSerializerDefault && (response instanceof byte[])) {
+          // Default serializer just passes through byte arrays, so we need to decode it here.
+          response = (T) OBJECT_MAPPER.readValue(s, byte[].class);
+        }
         if (response == null) {
           return Mono.empty();
         }
@@ -141,12 +151,13 @@ class DaprStateAsyncProvider {
             || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
           byte[] data = this.stateSerializer.serialize(stateChange.getValue());
           if (data != null) {
-            if (this.isStateSerializerDefault) {
+            if (this.isStateSerializerDefault && !(stateChange.getValue() instanceof byte[])) {
               // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
               generator.writeFieldName("value");
               generator.writeRawValue(new String(data, CHARSET));
             } else {
               // Custom serializer uses byte[].
+              // DefaultObjectSerializer is just a passthrough for byte[], so we handle it here too.
               generator.writeBinaryField("value", data);
             }
           }

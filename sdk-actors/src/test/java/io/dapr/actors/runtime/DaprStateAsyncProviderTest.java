@@ -90,13 +90,14 @@ public class DaprStateAsyncProviderTest {
               return false;
             }
 
-            if (node.size() != 3) {
+            if (node.size() != 4) {
               return false;
             }
 
             boolean foundInsertName = false;
             boolean foundUpdateZipcode = false;
             boolean foundDeleteFlag = false;
+            boolean foundUpdateBytes = false;
             for (JsonNode operation : node) {
               if (operation.get("operation") == null) {
                 return false;
@@ -119,9 +120,12 @@ public class DaprStateAsyncProviderTest {
               foundDeleteFlag |= "delete".equals(opName) &&
                 "flag".equals(key) &&
                 (value == null);
+              foundUpdateBytes |= "upsert".equals(opName) &&
+                "bytes".equals(key) &&
+                "AQ==".equals(value);
             }
 
-            return foundInsertName && foundUpdateZipcode && foundDeleteFlag;
+            return foundInsertName && foundUpdateZipcode && foundDeleteFlag && foundUpdateBytes;
           } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -134,7 +138,8 @@ public class DaprStateAsyncProviderTest {
       new ActorId("123"),
       createInsertChange("name", "Jon Doe"),
       createUpdateChange("zipcode", 98011),
-      createDeleteChange("flag"))
+      createDeleteChange("flag"),
+      createUpdateChange("bytes", new byte[] {0x1}))
       .block();
 
     verify(daprClient).saveActorStateTransactionally(eq("MyActor"), eq("123"), any());
@@ -167,6 +172,9 @@ public class DaprStateAsyncProviderTest {
     when(daprClient
       .getActorState(any(), any(), eq("nullCustomer")))
       .thenReturn(Mono.empty());
+    when(daprClient
+        .getActorState(any(), any(), eq("bytes")))
+        .thenReturn(Mono.just("\"QQ==\"".getBytes()));
 
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 
@@ -189,6 +197,8 @@ public class DaprStateAsyncProviderTest {
       provider.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
     Assert.assertNull(
       provider.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertArrayEquals("A".getBytes(),
+        provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
   }
 
   @Test
