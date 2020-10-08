@@ -19,6 +19,10 @@ public interface StatefulActor {
 
   MyData readData();
 
+  void saveBytes(byte[] something);
+
+  byte[] readBytes();
+
   class MyData {
     public String value;
   }

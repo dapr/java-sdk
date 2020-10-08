@@ -36,6 +36,7 @@ public class ActorStateIT extends BaseIT {
 
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
+    byte[] bytes = new byte[] { 0x1 };
     ActorId actorId = new ActorId(Long.toString(System.currentTimeMillis()));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
@@ -96,6 +97,28 @@ public class ActorStateIT extends BaseIT {
       assertEquals("", result);
     }, 5000);
 
+    callWithRetry(() -> {
+      logger.debug("Invoking writeBytes ... ");
+      proxy.invokeActorMethod("writeBytes", bytes).block();
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readBytes where data is probably still cached ... ");
+      byte[] result = proxy.invokeActorMethod("readBytes", byte[].class).block();
+      assertArrayEquals(bytes, result);
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking writeBytes with empty content... ");
+      proxy.invokeActorMethod("writeBytes", new byte[0]).block();
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readBytes where empty content is probably still cached ... ");
+      byte[] result = proxy.invokeActorMethod("readBytes", String.class).block();
+      assertArrayEquals(new byte[0], result);
+    }, 5000);
+
     logger.debug("Waiting, so actor can be deactivated ...");
     Thread.sleep(10000);
 
@@ -129,6 +152,12 @@ public class ActorStateIT extends BaseIT {
       logger.debug("Invoking readName where empty content is not cached ... ");
       String result = newProxy.invokeActorMethod("readName", String.class).block();
       assertEquals("", result);
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readBytes where content is not cached ... ");
+      byte[] result = newProxy.invokeActorMethod("readBytes", byte[].class).block();
+      assertEquals(bytes, result);
     }, 5000);
   }
 }
