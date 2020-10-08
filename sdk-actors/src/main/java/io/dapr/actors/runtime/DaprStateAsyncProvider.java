@@ -18,7 +18,6 @@ import reactor.core.publisher.Mono;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Base64;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
