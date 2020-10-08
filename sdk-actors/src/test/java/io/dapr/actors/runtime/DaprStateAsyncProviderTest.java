@@ -167,6 +167,9 @@ public class DaprStateAsyncProviderTest {
     when(daprClient
       .getActorState(any(), any(), eq("nullCustomer")))
       .thenReturn(Mono.empty());
+    when(daprClient
+        .getActorState(any(), any(), eq("bytes")))
+        .thenReturn(Mono.just("\"QQ==\"".getBytes()));
 
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 
@@ -189,6 +192,8 @@ public class DaprStateAsyncProviderTest {
       provider.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
     Assert.assertNull(
       provider.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertArrayEquals("A".getBytes(),
+        provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
   }
 
   @Test

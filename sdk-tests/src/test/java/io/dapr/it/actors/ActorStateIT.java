@@ -108,17 +108,6 @@ public class ActorStateIT extends BaseIT {
       assertArrayEquals(bytes, result);
     }, 5000);
 
-    callWithRetry(() -> {
-      logger.debug("Invoking writeBytes with empty content... ");
-      proxy.invokeActorMethod("writeBytes", new byte[0]).block();
-    }, 5000);
-
-    callWithRetry(() -> {
-      logger.debug("Invoking readBytes where empty content is probably still cached ... ");
-      byte[] result = proxy.invokeActorMethod("readBytes", String.class).block();
-      assertArrayEquals(new byte[0], result);
-    }, 5000);
-
     logger.debug("Waiting, so actor can be deactivated ...");
     Thread.sleep(10000);
 
@@ -157,7 +146,7 @@ public class ActorStateIT extends BaseIT {
     callWithRetry(() -> {
       logger.debug("Invoking readBytes where content is not cached ... ");
       byte[] result = newProxy.invokeActorMethod("readBytes", byte[].class).block();
-      assertEquals(bytes, result);
+      assertArrayEquals(bytes, result);
     }, 5000);
   }
 }
