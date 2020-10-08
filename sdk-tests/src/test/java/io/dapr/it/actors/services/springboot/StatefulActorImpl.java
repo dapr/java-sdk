@@ -58,4 +58,18 @@ public class StatefulActorImpl extends AbstractActor implements StatefulActor {
 
     return null;
   }
+
+  @Override
+  public void writeBytes(byte[] something) {
+    super.getActorStateManager().set("bytes", something).block();
+  }
+
+  @Override
+  public byte[] readBytes() {
+    if (super.getActorStateManager().contains("bytes").block()) {
+      return super.getActorStateManager().get("bytes", byte[].class).block();
+    }
+
+    return null;
+  }
 }
