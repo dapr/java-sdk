@@ -76,7 +76,7 @@ public class ActorProxyBuilder<T> {
    * @param objectSerializer Serializer for objects sent/received.
    * @return This instance.
    */
-  public ActorProxyBuilder withObjectSerializer(DaprObjectSerializer objectSerializer) {
+  public ActorProxyBuilder<T> withObjectSerializer(DaprObjectSerializer objectSerializer) {
     if (objectSerializer == null) {
       throw new IllegalArgumentException("Serializer is required.");
     }
