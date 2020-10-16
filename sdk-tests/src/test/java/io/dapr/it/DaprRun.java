@@ -6,6 +6,7 @@
 package io.dapr.it;
 
 import io.dapr.config.Properties;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,7 +15,9 @@ import java.util.function.Supplier;
 import static io.dapr.it.Retry.callWithRetry;
 
 
-public class DaprRun {
+public class DaprRun implements Stoppable {
+
+  private static final String DAPR_SUCCESS_MESSAGE = "You're up and running!";
 
   private static final String DAPR_RUN = "dapr run --app-id %s --components-path ./components";
 
@@ -114,6 +117,7 @@ public class DaprRun {
     System.out.println("Dapr application started.");
   }
 
+  @Override
   public void stop() throws InterruptedException, IOException {
     System.out.println("Stopping dapr application ...");
     try {
@@ -213,11 +217,33 @@ public class DaprRun {
 
     DaprRun build() {
       return new DaprRun(
-          this.testName,
-          this.portsSupplier.get(),
-          this.successMessage,
-          this.serviceClass,
-          this.maxWaitMilliseconds);
+              this.testName,
+              this.portsSupplier.get(),
+              this.successMessage,
+              this.serviceClass,
+              this.maxWaitMilliseconds);
+    }
+
+    /**
+     * Builds app and dapr run separately. It can be useful to force the restart of one of them.
+     * @return Pair of AppRun and DaprRun.
+     */
+    ImmutablePair<AppRun, DaprRun> splitBuild() {
+      DaprPorts ports = this.portsSupplier.get();
+      AppRun appRun = new AppRun(
+              ports,
+              this.successMessage,
+              this.serviceClass,
+              this.maxWaitMilliseconds);
+
+      DaprRun daprRun = new DaprRun(
+              this.testName,
+              ports,
+              DAPR_SUCCESS_MESSAGE,
+              null,
+              this.maxWaitMilliseconds);
+
+      return new ImmutablePair<>(appRun, daprRun);
     }
   }
 }

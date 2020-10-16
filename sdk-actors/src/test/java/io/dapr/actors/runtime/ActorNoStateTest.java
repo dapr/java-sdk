@@ -15,6 +15,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.lang.reflect.Proxy;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -34,24 +36,30 @@ public class ActorNoStateTest {
   public interface MyActor {
     // The test will only call the versions of this in a derived class to the user code base class.
     // The user code base class version will throw.
+    Mono<String> getMyId();
     Mono<String> stringInStringOut(String input);
     Mono<Boolean> stringInBooleanOut(String input);
     Mono<Void> stringInVoidOutIntentionallyThrows(String input);
     Mono<MyData> classInClassOut(MyData input);
+    Mono<String> registerBadCallbackName();
+    String registerTimerAutoName();
   }
 
   @ActorType(name = "MyActor")
   public static class ActorImpl extends AbstractActor implements MyActor {
-    private final ActorId id;
     private boolean activated;
     private boolean methodReturningVoidInvoked;
 
     //public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
     public ActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
-      this.id = id;
       this.activated = true;
       this.methodReturningVoidInvoked = false;
+    }
+
+    @Override
+    public Mono<String> getMyId() {
+      return Mono.fromSupplier(() -> super.getId().toString());
     }
 
     @Override
@@ -90,6 +98,16 @@ public class ActorNoStateTest {
           input.getNum() + input.getNum());
       });
     }
+
+    @Override
+    public Mono<String> registerBadCallbackName() {
+      return super.registerActorTimer("mytimer", "", "state", Duration.ofSeconds(1), Duration.ofSeconds(1));
+    }
+
+    @Override
+    public String registerTimerAutoName() {
+      return super.registerActorTimer("", "anything", "state", Duration.ofSeconds(1), Duration.ofSeconds(1)).block();
+    }
   }
 
   static class MyData {
@@ -113,6 +131,15 @@ public class ActorNoStateTest {
     public int getNum() {
       return this.num;
     }
+  }
+
+  @Test
+  public void actorId() {
+    ActorProxy proxy = createActorProxy();
+
+    Assert.assertEquals(
+            proxy.getActorId().toString(),
+            proxy.invokeActorMethod("getMyId", String.class).block());
   }
 
   @Test
@@ -163,6 +190,24 @@ public class ActorNoStateTest {
       response.getNum());
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadTimerCallbackName() {
+    MyActor actor = createActorProxy(MyActor.class);
+    actor.registerBadCallbackName().block();
+  }
+
+  @Test
+  public void testAutoTimerName() {
+    MyActor actor = createActorProxy(MyActor.class);
+    String firstTimer = actor.registerTimerAutoName();
+    Assert.assertTrue((firstTimer != null) && !firstTimer.isEmpty());
+
+    String secondTimer = actor.registerTimerAutoName();
+    Assert.assertTrue((secondTimer != null) && !secondTimer.isEmpty());
+
+    Assert.assertNotEquals(firstTimer, secondTimer);
+  }
+
   private static ActorId newActorId() {
     return new ActorId(Integer.toString(ACTOR_ID_COUNT.incrementAndGet()));
   }
@@ -191,6 +236,36 @@ public class ActorNoStateTest {
       actorId,
       new DefaultObjectSerializer(),
       daprClient);
+  }
+
+  private <T> T createActorProxy(Class<T> clazz) {
+    ActorId actorId = newActorId();
+
+    // Mock daprClient for ActorProxy only, not for runtime.
+    DaprClientStub daprClient = mock(DaprClientStub.class);
+
+    when(daprClient.invokeActorMethod(
+            eq(context.getActorTypeInformation().getName()),
+            eq(actorId.toString()),
+            any(),
+            any()))
+            .thenAnswer(invocationOnMock ->
+                    this.manager.invokeMethod(
+                            new ActorId(invocationOnMock.getArgument(1, String.class)),
+                            invocationOnMock.getArgument(2, String.class),
+                            invocationOnMock.getArgument(3, byte[].class)));
+
+    this.manager.activateActor(actorId).block();
+
+    ActorProxyForTestsImpl proxy = new ActorProxyForTestsImpl(
+            context.getActorTypeInformation().getName(),
+            actorId,
+            new DefaultObjectSerializer(),
+            daprClient);
+    return (T) Proxy.newProxyInstance(
+            ActorProxyForTestsImpl.class.getClassLoader(),
+            new Class[]{clazz},
+            proxy);
   }
 
   private static <T extends AbstractActor> ActorRuntimeContext createContext() {

@@ -441,7 +441,7 @@ public class ActorStatefulTest {
   public void invokeTimer() {
     ActorProxy proxy = newActorProxy();
 
-    this.manager.invokeTimer(proxy.getActorId(), "mytimer").block();
+    this.manager.invokeTimer(proxy.getActorId(), "mytimer", "{ \"callback\": \"hasMessage\" }".getBytes()).block();
 
     MyMethodContext preContext =
       proxy.invokeActorMethod("getPreCallMethodContext", MyMethodContext.class).block();
@@ -460,23 +460,25 @@ public class ActorStatefulTest {
 
     this.manager.deactivateActor(proxy.getActorId()).block();
 
-    this.manager.invokeTimer(proxy.getActorId(), "mytimer").block();
+    this.manager.invokeTimer(proxy.getActorId(), "mytimer", "{ \"callback\": \"hasMessage\" }".getBytes()).block();
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void invokeTimerAfterUnregister() {
     ActorProxy proxy = newActorProxy();
 
     proxy.invokeActorMethod("unregisterTimerAndReminder").block();
 
-    this.manager.invokeTimer(proxy.getActorId(), "mytimer").block();
+    // This call succeeds because the SDK does not control register/unregister timer, the Dapr runtime does.
+    this.manager.invokeTimer(proxy.getActorId(), "mytimer", "{ \"callback\": \"hasMessage\" }".getBytes()).block();
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void invokeUnknownTimer() {
     ActorProxy proxy = newActorProxy();
 
-    this.manager.invokeTimer(proxy.getActorId(), "unknown").block();
+    // SDK does not control timers, Dapr runtime does - so an "unknown" timer can still be triggered.
+    this.manager.invokeTimer(proxy.getActorId(), "unknown", "{ \"callback\": \"hasMessage\" }".getBytes()).block();
   }
 
   @Test
