@@ -9,14 +9,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Command {
 
   private static final int SUCCESS_WAIT_TIMEOUT_MINUTES = 5;
+
+  private static final int DESTROY_WAIT_TIMEOUT_SECONDS = 5;
 
   private final String successMessage;
 
@@ -24,15 +26,26 @@ public class Command {
 
   private Process process;
 
-  public Command(String successMessage, String command) {
+  private Map<String, String> env;
+
+  public Command(String successMessage, String command, Map<String, String> env) {
     this.successMessage = successMessage;
     this.command = command;
+    this.env = env;
+  }
+
+  public Command(String successMessage, String command) {
+    this(successMessage, command, null);
   }
 
   public void run() throws InterruptedException, IOException {
     final AtomicBoolean success = new AtomicBoolean(false);
     final Semaphore finished = new Semaphore(0);
-    this.process = Runtime.getRuntime().exec(command);
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
+    if (this.env != null) {
+      processBuilder.environment().putAll(this.env);
+    }
+    this.process = processBuilder.start();
 
     final Thread stdoutReader = new Thread(() -> {
       try {
@@ -65,5 +78,21 @@ public class Command {
     if (!success.get()) {
       throw new IllegalStateException("Could not find success criteria for command: " + command);
     }
+  }
+
+  public void stop() throws InterruptedException {
+    if (this.process != null) {
+      this.process.destroy();
+      Thread.sleep(DESTROY_WAIT_TIMEOUT_SECONDS * 1000);
+      if (this.process.isAlive()) {
+        this.process.destroyForcibly();
+      }
+      this.process = null;
+    }
+  }
+
+  @Override
+  public String toString() {
+    return this.command;
   }
 }

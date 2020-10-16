@@ -108,33 +108,22 @@ class ActorManager<T extends AbstractActor> {
    *
    * @param actorId   Identifier for Actor.
    * @param timerName Name of timer being invoked.
+   * @param params    Parameters for the timer.
    * @return Asynchronous void response.
    */
-  Mono<Void> invokeTimer(ActorId actorId, String timerName) {
+  Mono<Void> invokeTimer(ActorId actorId, String timerName, byte[] params) {
     return Mono.fromSupplier(() -> {
-      AbstractActor actor = this.activeActors.getOrDefault(actorId, null);
-      if (actor == null) {
-        throw new IllegalArgumentException(
-            String.format("Could not find actor %s of type %s.",
-                actorId.toString(),
-                this.runtimeContext.getActorTypeInformation().getName()));
+      try {
+        return OBJECT_SERIALIZER.deserialize(params, ActorTimerParams.class);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
-
-      ActorTimer actorTimer = actor.getActorTimer(timerName);
-      if (actorTimer == null) {
-        throw new IllegalStateException(
-            String.format("Could not find timer %s for actor %s.",
-                timerName,
-                this.runtimeContext.getActorTypeInformation().getName()));
-      }
-
-      return actorTimer;
-    }).flatMap(actorTimer -> invokeMethod(
-        actorId,
-        ActorMethodContext.createForTimer(actorTimer.getName()),
-        actorTimer.getCallback(),
-        actorTimer.getState()))
-        .then();
+    }).flatMap(p ->
+            invokeMethod(
+                    actorId,
+                    ActorMethodContext.createForTimer(timerName),
+                    p.getCallback(),
+                    p.getData())).then();
   }
 
   /**
@@ -198,36 +187,6 @@ class ActorManager<T extends AbstractActor> {
    */
   Mono<byte[]> invokeMethod(ActorId actorId, String methodName, byte[] request) {
     return invokeMethod(actorId, null, methodName, request);
-  }
-
-  /**
-   * Internal method to actually invoke Actor's timer method.
-   *
-   * @param actorId    Identifier for the Actor.
-   * @param context    Method context to be invoked.
-   * @param methodName Method name to be invoked.
-   * @param input      Input object to be passed in to the invoked method.
-   * @return Asynchronous void response.
-   */
-  private Mono<Object> invokeMethod(ActorId actorId, ActorMethodContext context, String methodName, Object input) {
-    ActorMethodContext actorMethodContext = context;
-    if (actorMethodContext == null) {
-      actorMethodContext = ActorMethodContext.createForActor(methodName);
-    }
-
-    return this.invoke(actorId, actorMethodContext, actor -> {
-      try {
-        // Finds the actor method with the given name and 1 or no parameter.
-        Method method = this.actorMethods.get(methodName);
-
-        if (method.getReturnType().equals(Mono.class)) {
-          return invokeMonoMethod(actor, method, input);
-        }
-        return invokeMethod(actor, method, input);
-      } catch (Exception e) {
-        return Mono.error(e);
-      }
-    });
   }
 
   /**

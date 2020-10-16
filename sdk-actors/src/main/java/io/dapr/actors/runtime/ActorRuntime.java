@@ -249,13 +249,14 @@ public class ActorRuntime {
    * @param actorTypeName Actor type name to invoke the method for.
    * @param actorId       Actor id for the actor for which method will be invoked.
    * @param timerName     The name of timer provided during registration.
+   * @param params        Params to trigger timer.
    * @return Async void task.
    */
-  public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName) {
+  public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName, byte[] params) {
     ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
           .flatMap(m -> m.activateActor(id).thenReturn(m))
-          .flatMap(m -> ((ActorManager)m).invokeTimer(new ActorId(actorId), timerName));
+          .flatMap(m -> ((ActorManager)m).invokeTimer(new ActorId(actorId), timerName, params));
   }
 
   /**
