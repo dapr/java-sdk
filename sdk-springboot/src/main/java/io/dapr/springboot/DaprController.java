@@ -91,13 +91,15 @@ public class DaprController {
    * @param type Actor type.
    * @param id Actor Id.
    * @param timer Actor timer's name.
+   * @param body Raw request's body.
    * @return Void.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/timer/{timer}")
   public Mono<Void> invokeActorTimer(@PathVariable("type") String type,
                                      @PathVariable("id") String id,
-                                     @PathVariable("timer") String timer) {
-    return ActorRuntime.getInstance().invokeTimer(type, id, timer);
+                                     @PathVariable("timer") String timer,
+                                     @RequestBody byte[] body) {
+    return ActorRuntime.getInstance().invokeTimer(type, id, timer, body);
   }
 
   /**

@@ -11,8 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.UUID;
 
 /**
  * Represents the base class for actors.
@@ -44,11 +43,6 @@ public abstract class AbstractActor {
   private final ActorTrace actorTrace;
 
   /**
-   * Registered timers for this Actor.
-   */
-  private final Map<String, ActorTimer> timers;
-
-  /**
    * Manager for the states in Actors.
    */
   private final ActorStateManager actorStateManager;
@@ -72,7 +66,6 @@ public abstract class AbstractActor {
           runtimeContext.getActorTypeInformation().getName(),
           id);
     this.actorTrace = runtimeContext.getActorTrace();
-    this.timers = new HashMap<>();
     this.started = false;
   }
 
@@ -135,9 +128,9 @@ public abstract class AbstractActor {
    * @param period    The time interval between invocations of the async callback.
    *                  Specify negative one (-1) milliseconds to disable periodic signaling.
    * @param <T>       Type for the state to be passed in to timer.
-   * @return Asynchronous result.
+   * @return Asynchronous result with timer's name.
    */
-  protected <T> Mono<Void> registerActorTimer(
+  protected <T> Mono<String> registerActorTimer(
         String timerName,
         String callback,
         T state,
@@ -150,19 +143,17 @@ public abstract class AbstractActor {
 
       String name = timerName;
       if ((timerName == null) || (timerName.isEmpty())) {
-        name = String.format("%s_Timer_%d", this.id.toString(), this.timers.size() + 1);
+        name = String.format("%s_Timer_%s", this.id.toString(), UUID.randomUUID().toString());
       }
 
-      ActorTimer actorTimer = new ActorTimer(this, name, callback, state, dueTime, period);
-      this.timers.put(name, actorTimer);
-      return actorTimer;
+      return new ActorTimer(this, name, callback, state, dueTime, period);
     }).flatMap(actorTimer -> {
       try {
         return this.actorRuntimeContext.getDaprClient().registerActorTimer(
               this.actorRuntimeContext.getActorTypeInformation().getName(),
               this.id.toString(),
               actorTimer.getName(),
-              INTERNAL_SERIALIZER.serialize(actorTimer));
+              INTERNAL_SERIALIZER.serialize(actorTimer)).then(Mono.just(actorTimer.getName()));
       } catch (Exception e) {
         return Mono.error(e);
       }
@@ -176,12 +167,10 @@ public abstract class AbstractActor {
    * @return Asynchronous void response.
    */
   protected Mono<Void> unregisterTimer(String timerName) {
-    return Mono.fromSupplier(() -> getActorTimer(timerName))
-          .flatMap(actorTimer -> this.actorRuntimeContext.getDaprClient().unregisterActorTimer(
+    return this.actorRuntimeContext.getDaprClient().unregisterActorTimer(
                 this.actorRuntimeContext.getActorTypeInformation().getName(),
                 this.id.toString(),
-                timerName))
-          .then(Mono.fromRunnable(() -> this.timers.remove(timerName)));
+                timerName);
   }
 
   /**
@@ -261,16 +250,6 @@ public abstract class AbstractActor {
    */
   void resetState() {
     this.actorStateManager.clear();
-  }
-
-  /**
-   * Gets a given timer by name.
-   *
-   * @param timerName Timer name.
-   * @return Asynchronous void response.
-   */
-  ActorTimer getActorTimer(String timerName) {
-    return timers.getOrDefault(timerName, null);
   }
 
   /**

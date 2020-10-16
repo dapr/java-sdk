@@ -231,42 +231,50 @@ public class ActorManagerTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void invokeTimerBeforeActivate() {
+  public void invokeTimerBeforeActivate() throws IOException {
     ActorId actorId = newActorId();
-    this.manager.invokeTimer(actorId, "count").block();
-  }
-
-  @Test(expected = IllegalStateException.class)
-  public void activateThenInvokeTimerBeforeRegister() {
-    ActorId actorId = newActorId();
-    this.manager.activateActor(actorId).block();
-    this.manager.invokeTimer(actorId, "unknown").block();
+    this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
   }
 
   @Test
-  public void activateThenInvokeTimer() {
+  public void activateThenInvokeTimerBeforeRegister() throws IOException {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
-    this.manager.invokeTimer(actorId, "count").block();
+    this.manager.invokeTimer(actorId, "unknown", createTimerParams("incrementCount", 2)).block();
+  }
+
+  @Test
+  public void activateThenInvokeTimer() throws IOException {
+    ActorId actorId = newActorId();
+    this.manager.activateActor(actorId).block();
+    this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
     byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
     Assert.assertEquals("2", new String(response));
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void activateInvokeTimerDeactivateThenInvokeTimer() {
+  public void activateInvokeTimerDeactivateThenInvokeTimer() throws IOException {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
-    this.manager.invokeTimer(actorId, "count").block();
+    this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
     byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
     Assert.assertEquals("2", new String(response));
 
     this.manager.deactivateActor(actorId).block();
-    this.manager.invokeTimer(actorId, "count").block();
+    this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
   }
 
   private byte[] createReminderParams(String data) throws IOException {
     byte[] serializedData = this.context.getObjectSerializer().serialize(data);
     ActorReminderParams params = new ActorReminderParams(serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return INTERNAL_SERIALIZER.serialize(params);
+  }
+
+  private byte[] createTimerParams(String callback, Object data) throws IOException {
+    byte[] serializedData = this.context.getObjectSerializer().serialize(data);
+    ActorTimerParams params = new ActorTimerParams();
+    params.setCallback(callback);
+    params.setData(serializedData);
     return INTERNAL_SERIALIZER.serialize(params);
   }
 

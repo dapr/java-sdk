@@ -176,7 +176,6 @@ class DaprStateAsyncProvider {
       writer.flush();
       payload = writer.toByteArray();
     } catch (IOException e) {
-      e.printStackTrace();
       return Mono.error(e);
     }
 
