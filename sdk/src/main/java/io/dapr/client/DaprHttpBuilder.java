@@ -9,6 +9,7 @@ import io.dapr.config.Properties;
 import okhttp3.OkHttpClient;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A builder for the DaprHttp.
@@ -16,21 +17,30 @@ import java.time.Duration;
 public class DaprHttpBuilder {
 
   /**
-   * Read timeout for http calls.
+   * Singleton OkHttpClient.
    */
-  private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(60);
+  private static final AtomicReference<OkHttpClient> OK_HTTP_CLIENT = new AtomicReference<>();
+
+  /**
+   * Static lock object.
+   */
+  private static final Object LOCK = new Object();
 
   /**
    * Read timeout used to build object.
    */
-  private Duration readTimeout = DEFAULT_READ_TIMEOUT;
+  private Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READTIMEOUTSECONDS.get());
 
   /**
    * Sets the read timeout duration for the instance to be built.
    *
+   * <p>Instead, set environment variable "DAPR_HTTP_CLIENT_READTIMEOUTSECONDS",
+   *   or system property "dapr.http.client.readtimeoutseconds".
+   *
    * @param duration Read timeout duration.
    * @return Same builder instance.
    */
+  @Deprecated
   public DaprHttpBuilder withReadTimeout(Duration duration) {
     this.readTimeout = duration;
     return this;
@@ -52,9 +62,17 @@ public class DaprHttpBuilder {
    * @return Instance of {@link DaprHttp}
    */
   private DaprHttp buildDaprHttp() {
-    OkHttpClient.Builder builder = new OkHttpClient.Builder();
-    builder.readTimeout(this.readTimeout);
-    OkHttpClient okHttpClient = builder.build();
-    return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), okHttpClient);
+    if (OK_HTTP_CLIENT.get() == null) {
+      synchronized (LOCK) {
+        if (OK_HTTP_CLIENT.get() == null) {
+          OkHttpClient.Builder builder = new OkHttpClient.Builder();
+          builder.readTimeout(this.readTimeout);
+          OkHttpClient okHttpClient = builder.build();
+          OK_HTTP_CLIENT.set(okHttpClient);
+        }
+      }
+    }
+
+    return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), OK_HTTP_CLIENT.get());
   }
 }
