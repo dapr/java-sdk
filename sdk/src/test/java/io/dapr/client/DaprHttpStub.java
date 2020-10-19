@@ -58,6 +58,5 @@ public class DaprHttpStub extends DaprHttp {
      */
     @Override
     public void close() throws IOException {
-        return;
     }
 }
