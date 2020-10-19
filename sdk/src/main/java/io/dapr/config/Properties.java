@@ -39,6 +39,11 @@ public class Properties {
   private static final Charset DEFAULT_STRING_CHARSET = StandardCharsets.UTF_8;
 
   /**
+   * Dapr's default timeout in seconds for HTTP client reads.
+   */
+  private static final Integer DEFAULT_HTTP_CLIENT_READTIMEOUTSECONDS = 60;
+
+  /**
    * IP for Dapr's sidecar.
    */
   public static final Property<String> SIDECAR_IP = new StringProperty(
@@ -86,4 +91,12 @@ public class Properties {
       "DAPR_STRING_CHARSET",
       DEFAULT_STRING_CHARSET,
       (s) -> Charset.forName(s));
+
+  /**
+   * Dapr's timeout in seconds for HTTP client reads.
+   */
+  public static final Property<Integer> HTTP_CLIENT_READTIMEOUTSECONDS = new IntegerProperty(
+      "dapr.http.client.readtimeoutseconds",
+      "DAPR_HTTP_CLIENT_READTIMEOUTSECONDS",
+      DEFAULT_HTTP_CLIENT_READTIMEOUTSECONDS);
 }
