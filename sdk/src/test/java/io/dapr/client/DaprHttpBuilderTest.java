@@ -9,37 +9,26 @@ import okhttp3.OkHttpClient;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.time.Duration;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 
 public class DaprHttpBuilderTest {
 
   @Test
-  public void withReadTimeout() throws Exception {
-    DaprHttpBuilder daprHttpBuilder = new DaprHttpBuilder();
-    Duration duration = Duration.ofSeconds(999);
-    daprHttpBuilder.build();
-    DaprHttpBuilder dapr = daprHttpBuilder.withReadTimeout(duration);
-    assertNotNull(dapr);
+  public void singletonOkHttpClient() throws Exception {
+    DaprHttp daprHttp = new DaprHttpBuilder().build();
+    DaprHttp anotherDaprHttp = new DaprHttpBuilder().build();
 
-    DaprHttp daprHttp = daprHttpBuilder.build();
-    assertOKHttpPropertyValue(daprHttp, "readTimeoutMillis", (int)duration.toMillis());
+    assertSame(getOkHttpClient(daprHttp), getOkHttpClient(anotherDaprHttp));
   }
 
-  private static final void assertOKHttpPropertyValue(DaprHttp daprHttp, String propertyName, Object expectedValue) throws Exception {
-    // First, get okHttpClient.
+  private static OkHttpClient getOkHttpClient(DaprHttp daprHttp) throws Exception {
     Field httpClientField = DaprHttp.class.getDeclaredField("httpClient");
     httpClientField.setAccessible(true);
     OkHttpClient okHttpClient = (OkHttpClient) httpClientField.get(daprHttp);
     assertNotNull(okHttpClient);
-
-    Field propertyField = OkHttpClient.class.getDeclaredField(propertyName);
-    propertyField.setAccessible(true);
-    Object value = propertyField.get(okHttpClient);
-    assertNotNull(value);
-    assertEquals(expectedValue, value);
+    return okHttpClient;
   }
 
 }
