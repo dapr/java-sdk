@@ -167,6 +167,7 @@ public class DaprHttpTest {
 
   @Test(expected = RuntimeException.class)
   public void invokePostDaprError() throws IOException {
+
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("text"),

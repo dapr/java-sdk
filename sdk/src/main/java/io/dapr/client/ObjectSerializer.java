@@ -131,7 +131,7 @@ public class ObjectSerializer {
    * @param javaType Type of the expected result type.
    * @param <T>      Result type.
    * @return Result as corresponding type.
-   * @throws Exception if cannot deserialize primitive time.
+   * @throws IOException if cannot deserialize primitive time.
    */
   private static <T> T deserializePrimitives(byte[] content, JavaType javaType) throws IOException {
     if ((content == null) || (content.length == 0)) {

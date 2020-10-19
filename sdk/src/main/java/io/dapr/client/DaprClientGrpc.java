@@ -252,7 +252,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
           return null;
         }
         return buildStateKeyValue(response, key, options, type);
-      })).map(s -> new Response(context, s));
+      })).map(s -> new Response<>(context, s));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -304,7 +304,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
               }
             })
             .collect(Collectors.toList());
-      })).map(s -> new Response(context, s));
+      })).map(s -> new Response<>(context, s));
     } catch (Exception ex) {
       return Mono.error(ex);
     }
@@ -335,8 +335,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     byte[] data = payload == null ? null : payload.toByteArray();
     T value = stateSerializer.deserialize(data, type);
     String etag = response.getEtag();
-    String key = requestedKey;
-    return new State<>(value, key, etag, stateOptions);
+    return new State<>(value, requestedKey, etag, stateOptions);
   }
 
   /**
@@ -358,7 +357,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
-      for (TransactionalStateOperation operation: operations) {
+      for (TransactionalStateOperation<?> operation: operations) {
         DaprProtos.TransactionalStateOperation.Builder operationBuilder = DaprProtos.TransactionalStateOperation
             .newBuilder();
         operationBuilder.setOperationType(operation.getOperation().toString().toLowerCase());
@@ -374,7 +373,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
           return Mono.error(e);
         }
         return Mono.empty();
-      }).thenReturn(new Response<Void>(context, null));
+      }).thenReturn(new Response<>(context, null));
     } catch (IOException e) {
       return Mono.error(e);
     }
@@ -394,7 +393,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.SaveStateRequest.Builder builder = DaprProtos.SaveStateRequest.newBuilder();
       builder.setStoreName(stateStoreName);
-      for (State state : states) {
+      for (State<?> state : states) {
         builder.addStates(buildStateRequest(state).build());
       }
       DaprProtos.SaveStateRequest req = builder.build();
@@ -406,7 +405,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
           return Mono.error(ex);
         }
         return Mono.empty();
-      }).thenReturn(new Response<Void>(context, null));
+      }).thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return Mono.error(ex);
     }

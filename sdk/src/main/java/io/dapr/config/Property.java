@@ -5,8 +5,6 @@
 
 package io.dapr.config;
 
-import io.opentelemetry.trace.propagation.HttpTraceContext;
-
 import java.util.logging.Logger;
 
 /**

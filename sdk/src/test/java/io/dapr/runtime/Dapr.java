@@ -123,8 +123,7 @@ public final class Dapr implements DaprRuntime {
 
     try {
       HandleRequest request = new HandleRequest(name, payload, metadata);
-      Mono<byte[]> response = handler.apply(request);
-      return response;
+      return  handler.apply(request);
     } catch (Exception e) {
       // Handling exception in user code by propagating up via Mono.
       return Mono.error(e);
