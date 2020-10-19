@@ -28,7 +28,7 @@ public class DaprHttpBuilderTest {
     assertOKHttpPropertyValue(daprHttp, "readTimeoutMillis", (int)duration.toMillis());
   }
 
-  private static final void assertOKHttpPropertyValue(DaprHttp daprHttp, String propertyName, Object expectedValue) throws Exception {
+  private static void assertOKHttpPropertyValue(DaprHttp daprHttp, String propertyName, Object expectedValue) throws Exception {
     // First, get okHttpClient.
     Field httpClientField = DaprHttp.class.getDeclaredField("httpClient");
     httpClientField.setAccessible(true);

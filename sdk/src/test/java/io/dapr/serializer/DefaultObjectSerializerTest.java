@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -444,8 +445,8 @@ public class DefaultObjectSerializerTest {
       MyObjectTestToSerialize objResult = SERIALIZER.deserialize(null, MyObjectTestToSerialize.class);
       assertNull(objResult);
       boolean boolResult = SERIALIZER.deserialize(null, boolean.class);
-      assertEquals(false, boolResult);
-      byte expectedByteResult = Byte.valueOf((byte) 0);
+      assertFalse(boolResult);
+      byte expectedByteResult = (byte) 0;
       byte byteResult = SERIALIZER.deserialize(null, byte.class);
       assertEquals(expectedByteResult, byteResult);
       short expectedShortResult = (short) 0;
@@ -460,7 +461,7 @@ public class DefaultObjectSerializerTest {
       float expectedFloatResult = 0f;
       float floatResult = SERIALIZER.deserialize(null, float.class);
       assertEquals(expectedFloatResult, floatResult, 0.0f);
-      double expectedDoubleResult = (double) 0;
+      double expectedDoubleResult = 0;
       double doubleResult = SERIALIZER.deserialize(null, double.class);
       assertEquals(expectedDoubleResult, doubleResult, 0.0);
     } catch (IOException exception) {
@@ -812,7 +813,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeListOfString() throws IOException {
-    List<String> r = SERIALIZER.deserialize("[\"1\", \"2\", \"3\"]".getBytes(), new ArrayList<String>().getClass());
+    List<String> r = SERIALIZER.deserialize("[\"1\", \"2\", \"3\"]".getBytes(), ArrayList.class);
 
     assertNotNull(r);
     assertEquals(3, r.size());

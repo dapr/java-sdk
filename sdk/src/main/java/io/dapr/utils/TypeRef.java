@@ -18,21 +18,21 @@ public abstract class TypeRef<T> {
 
   public static final TypeRef<String> STRING = new TypeRef<String>() {};
 
-  public static final TypeRef<Boolean> BOOLEAN = new TypeRef(boolean.class) {};
+  public static final TypeRef<Boolean> BOOLEAN = new TypeRef<Boolean>(boolean.class) {};
 
-  public static final TypeRef<Integer> INT = new TypeRef(int.class) {};
+  public static final TypeRef<Integer> INT = new TypeRef<Integer>(int.class) {};
 
-  public static final TypeRef<Long> LONG = new TypeRef(long.class) {};
+  public static final TypeRef<Long> LONG = new TypeRef<Long>(long.class) {};
 
-  public static final TypeRef<Character> CHAR = new TypeRef(char.class) {};
+  public static final TypeRef<Character> CHAR = new TypeRef<Character>(char.class) {};
 
-  public static final TypeRef<Byte> BYTE = new TypeRef(byte.class) {};
+  public static final TypeRef<Byte> BYTE = new TypeRef<Byte>(byte.class) {};
 
-  public static final TypeRef<Void> VOID = new TypeRef(void.class) {};
+  public static final TypeRef<Void> VOID = new TypeRef<Void>(void.class) {};
 
-  public static final TypeRef<Float> FLOAT = new TypeRef(float.class) {};
+  public static final TypeRef<Float> FLOAT = new TypeRef<Float>(float.class) {};
 
-  public static final TypeRef<Double> DOUBLE = new TypeRef(double.class) {};
+  public static final TypeRef<Double> DOUBLE = new TypeRef<Double>(double.class) {};
 
   public static final TypeRef<byte[]> BYTE_ARRAY = new TypeRef<byte[]>() {};
 

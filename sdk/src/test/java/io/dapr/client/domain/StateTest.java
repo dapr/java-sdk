@@ -28,7 +28,7 @@ public class StateTest {
         + ", etag='" + ETAG + "'"
         + ", error='null'"
         + ", options={'null'}"
-        + "}";;
+        + "}";
     assertEquals(expected, state.toString());
   }
 
@@ -47,7 +47,7 @@ public class StateTest {
         + ", etag='" + ETAG + "'"
         + ", error='null'"
         + ", options={'" + OPTIONS.toString() + "'}"
-        + "}";;
+        + "}";
     assertEquals(expected, state.toString());
   }
 
@@ -65,7 +65,7 @@ public class StateTest {
         + ", etag='" + ETAG + "'"
         + ", error='null'"
         + ", options={'" + OPTIONS.toString() + "'}"
-        + "}";;
+        + "}";
     assertEquals(expected, state.toString());
     assertEquals("value", state.getValue());
   }

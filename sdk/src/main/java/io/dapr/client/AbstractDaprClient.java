@@ -5,8 +5,6 @@
 
 package io.dapr.client;
 
-import com.google.protobuf.Any;
-import com.google.protobuf.ByteString;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -30,16 +28,12 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
-import io.dapr.v1.CommonProtos;
-import io.dapr.v1.DaprProtos;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Abstract class with convenient methods common between client implementations.
@@ -360,7 +354,7 @@ abstract class AbstractDaprClient implements DaprClient {
   @Override
   public Mono<Void> saveState(String stateStoreName, String key, String etag, Object value, StateOptions options) {
     State<?> state = new State<>(value, key, etag, options);
-    return this.saveStates(stateStoreName, Arrays.asList(state));
+    return this.saveStates(stateStoreName, Collections.singletonList(state));
   }
 
   /**
@@ -381,44 +375,6 @@ abstract class AbstractDaprClient implements DaprClient {
         .withStateOptions(options)
         .build();
     return deleteState(request).then();
-  }
-
-  /**
-   * Builds the object io.dapr.{@link io.dapr.v1.DaprProtos.InvokeServiceRequest} to be send based on the parameters.
-   *
-   * @param httpExtension Object for HttpExtension
-   * @param appId         The application id to be invoked
-   * @param method        The application method to be invoked
-   * @param request       The body of the request to be send as part of the invocation
-   * @param <K>           The Type of the Body
-   * @return The object to be sent as part of the invocation.
-   * @throws java.io.IOException If there's an issue serializing the request.
-   */
-  private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(
-      HttpExtension httpExtension, String appId, String method, K request) throws IOException {
-    if (httpExtension == null) {
-      throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
-    }
-    CommonProtos.InvokeRequest.Builder requestBuilder = CommonProtos.InvokeRequest.newBuilder();
-    requestBuilder.setMethod(method);
-    if (request != null) {
-      byte[] byteRequest = objectSerializer.serialize(request);
-      Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
-      requestBuilder.setData(data);
-    } else {
-      requestBuilder.setData(Any.newBuilder().build());
-    }
-    CommonProtos.HTTPExtension.Builder httpExtensionBuilder = CommonProtos.HTTPExtension.newBuilder();
-    httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.valueOf(httpExtension.getMethod().toString()))
-        .putAllQuerystring(httpExtension.getQueryString());
-    requestBuilder.setHttpExtension(httpExtensionBuilder.build());
-
-    requestBuilder.setContentType(objectSerializer.getContentType());
-
-    DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
-        .setId(appId)
-        .setMessage(requestBuilder.build());
-    return envelopeBuilder.build();
   }
 
   /**

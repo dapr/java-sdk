@@ -286,15 +286,15 @@ public class DaprRuntimeTest {
     result.block();
   }
 
-  private static final String generateMessageId() {
+  private static String generateMessageId() {
     return UUID.randomUUID().toString();
   }
 
-  private static final String generatePayload() {
+  private static String generatePayload() {
     return UUID.randomUUID().toString();
   }
 
-  private static final Map<String, String> generateSingleMetadata() {
+  private static Map<String, String> generateSingleMetadata() {
     return Collections.singletonMap(UUID.randomUUID().toString(), UUID.randomUUID().toString());
   }
 

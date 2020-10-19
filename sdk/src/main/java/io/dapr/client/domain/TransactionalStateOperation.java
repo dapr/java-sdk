@@ -65,8 +65,8 @@ public class TransactionalStateOperation<T> {
         + '}';
   }
 
-  public static enum OperationType {
+  public enum OperationType {
     @JsonProperty("upsert") UPSERT,
-    @JsonProperty("delete") DELETE;
+    @JsonProperty("delete") DELETE
   }
 }
