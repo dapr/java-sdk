@@ -39,20 +39,20 @@ For a Maven project, add the following to your `pom.xml` file:
 ```xml
 <project>
   ...
-  <distributionManagement>
-   ...
+  <repositories>
+    ...
     <!-- BEGIN: Dapr's repositories -->
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
     <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <id>oss-snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </repository>
+    <repository>
+      <id>oss-release</id>
+      <url>https://oss.sonatype.org/content/repositories/releases/</url>
     </repository>
     <!-- END: Dapr's repositories -->
-   ...
-  </distributionManagement>
+    ...
+  </repositories>
   ...
   <dependencyManagement>
       <dependencies>
@@ -100,7 +100,7 @@ repositories {
 	  }
     }
     maven {
-	  url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+	  url "https://oss.sonatype.org/content/repositories/releases/"
     }
 }
 ...
