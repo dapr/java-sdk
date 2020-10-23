@@ -6,7 +6,7 @@ This sample includes:
 * DemoService (Exposes the method to be remotely accessed)
 * InvokeClient (Invokes the exposed method from DemoService)
 
-Visit [this](https://github.com/dapr/docs/blob/master/concepts/service-invocation/service-invocation.md) link for more information about Dapr and service invocation.
+Visit [this](https://docs.dapr.io/developing-applications/building-blocks/service-invocation/service-invocation-overview/) link for more information about Dapr and service invocation.
  
 ## Remote invocation using the Java-SDK
 
@@ -14,7 +14,7 @@ This sample uses the Client provided in Dapr Java SDK invoking a remote method.
 
 ## Pre-requisites
 
-* [Dapr and Dapr CLI](https://github.com/dapr/docs/blob/master/getting-started/environment-setup.md#environment-setup).
+* [Dapr and Dapr CLI](https://docs.dapr.io/getting-started/install-dapr/).
 * Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
@@ -59,7 +59,7 @@ public class DemoService {
 }
 ```
 
-`DaprApplication.start()` Method will run an Spring Boot application that registers the `DemoServiceController`, which exposes the invoking action as a POST request. The Dapr's sidecar is the one that performs the actual call to the controller, triggered by client invocations or [bindings](https://github.com/dapr/docs/blob/master/concepts/bindings/README.md).
+`DaprApplication.start()` Method will run an Spring Boot application that registers the `DemoServiceController`, which exposes the invoking action as a POST request. The Dapr's sidecar is the one that performs the actual call to the controller, triggered by client invocations or [bindings](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/).
 
 This Spring Controller exposes the `say` method. The method retrieves metadata from the headers and prints them along with the current date in console. The actual response from method is the formatted current date. See the code snippet below:
 

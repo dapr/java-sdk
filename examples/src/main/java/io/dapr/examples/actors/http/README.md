@@ -2,7 +2,7 @@
 
 In this example, we'll use Dapr to test the actor pattern capabilities such as concurrency, state, life-cycle management for actor activation/deactivation and timers and reminders to wake-up actors.
 
-Visit [this](https://github.com/dapr/docs/blob/master/concepts/actors/README.md) link for more information about the Actor pattern.
+Visit [this](https://docs.dapr.io/developing-applications/building-blocks/actors/) link for more information about the Actor pattern.
 
 This example contains the follow classes:
 
@@ -13,7 +13,7 @@ This example contains the follow classes:
  
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://github.com/dapr/docs/blob/master/getting-started/environment-setup.md#environment-setup).
+* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
 * Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 

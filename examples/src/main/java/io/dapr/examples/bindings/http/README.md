@@ -6,7 +6,7 @@ This sample includes two applications:
 * InputBindingExample (Initializes the Dapr Spring boot application client)
 * OutputBindingExample (pushes the event message)
 
-Visit [this](https://github.com/dapr/docs/tree/master/concepts/bindings) link for more information about Dapr and bindings concepts.
+Visit [this](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/) link for more information about Dapr and bindings concepts.
  
 ## Binding sample using the Java-SDK
 
@@ -17,7 +17,7 @@ Visit [this](https://github.com/dapr/components-contrib/tree/master/bindings) li
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://github.com/dapr/docs/blob/master/getting-started/environment-setup.md#environment-setup).
+* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
 * Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
