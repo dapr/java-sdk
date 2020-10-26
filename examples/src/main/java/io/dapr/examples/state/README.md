@@ -1,10 +1,10 @@
 ## State management sample
 
-This sample illustrates the capabilities provided by Dapr Java SDK for state management. For further information about state management please refer to [this link](https://github.com/dapr/docs/blob/master/concepts/state-management/state-management.md)
+This sample illustrates the capabilities provided by Dapr Java SDK for state management. For further information about state management please refer to [this link](https://docs.dapr.io/developing-applications/building-blocks/state-management/state-management-overview/)
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://github.com/dapr/docs/blob/master/getting-started/environment-setup.md#environment-setup).
+* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
 * Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 

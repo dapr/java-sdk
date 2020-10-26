@@ -8,7 +8,7 @@ This sample includes two files:
 * Existing Dapr component file in `< repo dir >/examples/components/hashicorp_vault.yaml`
 * Existing token file in `< repo dir >/examples/.hashicorp_vault_token` (Consumed by `daprd`'s vault component above)
 
-Visit [this](https://github.com/dapr/docs/tree/master/concepts/secrets) link for more information about secret stores in Dapr.
+Visit [this](https://docs.dapr.io/developing-applications/building-blocks/secrets/secrets-overview/) link for more information about secret stores in Dapr.
  
 ## Secret store sample using the Java-SDK
 
@@ -19,7 +19,7 @@ Visit [this](https://github.com/dapr/components-contrib/tree/master/secretstores
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://github.com/dapr/docs/blob/master/getting-started/environment-setup.md#environment-setup).
+* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
 * Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 * Hashicorp's vault client [installed](https://www.vaultproject.io/docs/install/).

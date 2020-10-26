@@ -193,9 +193,9 @@ This SDK provides a basic serialization for request/response objects but also fo
 
 #### Debug Java application or Dapr's Java SDK
 
-**In IntelliJ Community Edition, consider [debugging in IntelliJ](https://github.com/dapr/docs/tree/master/howto/intellij-debugging-daprd).**
+**In IntelliJ Community Edition, consider [debugging in IntelliJ](https://docs.dapr.io/developing-applications/ides/intellij/).**
 
-**In Visual Studio Code, consider [debugging in Visual Studio Code](https://github.com/dapr/docs/tree/master/howto/vscode-debugging-daprd).**
+**In Visual Studio Code, consider [debugging in Visual Studio Code](https://docs.dapr.io/developing-applications/ides/vscode-debugging/).**
 
 If you have a Java application or an issue on this SDK that needs to be debugged, run Dapr using a dummy command and start the application from your IDE (IntelliJ, for example).
 For Linux and MacOS:

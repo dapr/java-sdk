@@ -14,10 +14,10 @@ This sample uses the Client provided in Dapr Java SDK invoking a remote method a
 
 ## Pre-requisites
 
-* [Dapr and Dapr CLI](https://github.com/dapr/docs/blob/master/getting-started/environment-setup.md#environment-setup).
+* [Dapr and Dapr CLI](https://docs.dapr.io/getting-started/install-dapr/).
 * Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
-* [Configure Redis](https://github.com/dapr/docs/tree/master/howto/configure-redis) as a state store for Dapr.
+* [Configure Redis](https://docs.dapr.io/getting-started/configure-redis/) as a state store for Dapr.
 
 ### Checking out the code
 
@@ -73,7 +73,7 @@ public class TracingDemoService {
 }
 ```
 
-`DaprApplication.start()` Method will run a Spring Boot application that registers the `TracingDemoServiceController`, which exposes the invoking actions as POST requests. The Dapr's sidecar is the one that performs the actual call to the controller, triggered by client invocations or [bindings](https://github.com/dapr/docs/blob/master/concepts/bindings/README.md).
+`DaprApplication.start()` Method will run a Spring Boot application that registers the `TracingDemoServiceController`, which exposes the invoking actions as POST requests. The Dapr's sidecar is the one that performs the actual call to the controller, triggered by client invocations or [bindings](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/).
 
 This Rest Controller exposes the `echo` and `sleep` methods. The `echo` method retrieves metadata from the headers and prints them along with the current date in console. The actual response from method is the formatted current date. See the code snippet below:
 
