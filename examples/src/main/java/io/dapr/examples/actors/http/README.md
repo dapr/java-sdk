@@ -143,17 +143,18 @@ public class DemoActorClient {
   private static final int NUM_ACTORS = 3;
 
   public static void main(String[] args) throws InterruptedException {
-    ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class);
-    ///...
-    for (int i = 0; i < NUM_ACTORS; i++) {
-      DemoActor actor = builder.build(ActorId.createRandom());
+    try (ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class)) {
+      ///...
+      for (int i = 0; i < NUM_ACTORS; i++) {
+        DemoActor actor = builder.build(ActorId.createRandom());
 
-      // Start a thread per actor.
-      Thread thread = new Thread(() -> callActorForever(actorId.toString(), actor));
-      thread.start();
-      threads.add(thread);
+        // Start a thread per actor.
+        Thread thread = new Thread(() -> callActorForever(actorId.toString(), actor));
+        thread.start();
+        threads.add(thread);
+      }
+      ///...
     }
-    ///...
   }
 
   private static final void callActorForever(String actorId, DemoActor actor) {
@@ -182,7 +183,9 @@ public class DemoActorClient {
 }
 ```
 
-First, the client defines how many actors it is going to create. Then the main method declares a `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. The code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
+First, the client defines how many actors it is going to create. The main method declares a `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. `ActorProxyBuilder` implements `Closeable`, which means it holds resources that need to be closed. In this example, we use the "try-resource" feature in Java.
+
+Then, the code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
 
 Use the follow command to execute the DemoActorClient:
 

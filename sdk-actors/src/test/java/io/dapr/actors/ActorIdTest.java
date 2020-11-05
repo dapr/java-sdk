@@ -4,10 +4,11 @@
  */
 package io.dapr.actors;
 
-import java.util.*;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Unit tests for ActorId.

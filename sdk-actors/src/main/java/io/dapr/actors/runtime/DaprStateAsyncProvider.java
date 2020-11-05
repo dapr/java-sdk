@@ -5,8 +5,6 @@
 
 package io.dapr.actors.runtime;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
 import io.dapr.config.Properties;
@@ -15,9 +13,9 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
@@ -33,11 +31,6 @@ class DaprStateAsyncProvider {
    * Handles special serialization cases.
    */
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-  /**
-   * Shared Json Factory as per Jackson's documentation, used only for this class.
-   */
-  private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
   /**
    * Dapr's client for Actor runtime.
@@ -71,8 +64,15 @@ class DaprStateAsyncProvider {
 
     return result.flatMap(s -> {
       try {
+        if (s == null) {
+          return Mono.empty();
+        }
+
         T response = this.stateSerializer.deserialize(s, type);
         if (this.isStateSerializerDefault && (response instanceof byte[])) {
+          if (s.length == 0) {
+            return Mono.empty();
+          }
           // Default serializer just passes through byte arrays, so we need to decode it here.
           response = (T) OBJECT_MAPPER.readValue(s, byte[].class);
         }
@@ -120,71 +120,42 @@ class DaprStateAsyncProvider {
       return Mono.empty();
     }
 
-    int count = 0;
-    // Constructing the JSON via a stream API to avoid creating transient objects to be instantiated.
-    byte[] payload = null;
-    try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
-      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
-      // Start array
-      generator.writeStartArray();
+    ArrayList<ActorStateOperation> operations = new ArrayList<>(stateChanges.length);
+    for (ActorStateChange stateChange : stateChanges) {
+      if ((stateChange == null) || (stateChange.getChangeKind() == null)) {
+        continue;
+      }
 
-      for (ActorStateChange stateChange : stateChanges) {
-        if ((stateChange == null) || (stateChange.getChangeKind() == null)) {
-          continue;
-        }
+      String operationName = stateChange.getChangeKind().getDaprStateChangeOperation();
+      if ((operationName == null) || (operationName.length() == 0)) {
+        continue;
+      }
 
-        String operationName = stateChange.getChangeKind().getDaprStateChangeOperation();
-        if ((operationName == null) || (operationName.length() == 0)) {
-          continue;
-        }
-
-        count++;
-
-        // Start operation object.
-        generator.writeStartObject();
-        generator.writeStringField("operation", operationName);
-
-        // Start request object.
-        generator.writeObjectFieldStart("request");
-        generator.writeStringField("key", stateChange.getStateName());
-        if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE)
-            || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
+      String key = stateChange.getStateName();
+      Object value = null;
+      if ((stateChange.getChangeKind() == ActorStateChangeKind.UPDATE)
+          || (stateChange.getChangeKind() == ActorStateChangeKind.ADD)) {
+        try {
           byte[] data = this.stateSerializer.serialize(stateChange.getValue());
           if (data != null) {
             if (this.isStateSerializerDefault && !(stateChange.getValue() instanceof byte[])) {
               // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
-              generator.writeFieldName("value");
-              generator.writeRawValue(new String(data, CHARSET));
+              value = new String(data, CHARSET);
             } else {
               // Custom serializer uses byte[].
               // DefaultObjectSerializer is just a passthrough for byte[], so we handle it here too.
-              generator.writeBinaryField("value", data);
+              value = data;
             }
           }
+        } catch (IOException e) {
+          return Mono.error(e);
         }
-        // End request object.
-        generator.writeEndObject();
-
-        // End operation object.
-        generator.writeEndObject();
       }
 
-      // End array
-      generator.writeEndArray();
-
-      generator.close();
-      writer.flush();
-      payload = writer.toByteArray();
-    } catch (IOException e) {
-      return Mono.error(e);
+      operations.add(new ActorStateOperation(operationName, key, value));
     }
 
-    if (count == 0) {
-      // No-op since there is no operation to be performed.
-      Mono.empty();
-    }
-
-    return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), payload);
+    return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), operations);
   }
 
 }

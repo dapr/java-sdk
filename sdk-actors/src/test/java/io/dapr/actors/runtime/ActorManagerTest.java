@@ -8,15 +8,15 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.serializer.DefaultObjectSerializer;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.dapr.utils.TypeRef;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -266,16 +266,14 @@ public class ActorManagerTest {
 
   private byte[] createReminderParams(String data) throws IOException {
     byte[] serializedData = this.context.getObjectSerializer().serialize(data);
-    ActorReminderParams params = new ActorReminderParams(serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
-    return INTERNAL_SERIALIZER.serialize(params);
+    ActorReminderParams p = new ActorReminderParams(serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return INTERNAL_SERIALIZER.serialize(p);
   }
 
   private byte[] createTimerParams(String callback, Object data) throws IOException {
     byte[] serializedData = this.context.getObjectSerializer().serialize(data);
-    ActorTimerParams params = new ActorTimerParams();
-    params.setCallback(callback);
-    params.setData(serializedData);
-    return INTERNAL_SERIALIZER.serialize(params);
+    ActorTimerParams p = new ActorTimerParams(callback, serializedData, Duration.ofSeconds(1), Duration.ofSeconds(1));
+    return INTERNAL_SERIALIZER.serialize(p);
   }
 
   private static ActorId newActorId() {

@@ -29,24 +29,24 @@ public class DemoActorClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) throws InterruptedException {
-    ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class);
+    try (ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class)) {
+      List<Thread> threads = new ArrayList<>(NUM_ACTORS);
 
-    List<Thread> threads = new ArrayList<>(NUM_ACTORS);
+      // Creates multiple actors.
+      for (int i = 0; i < NUM_ACTORS; i++) {
+        ActorId actorId = ActorId.createRandom();
+        DemoActor actor = builder.build(actorId);
 
-    // Creates multiple actors.
-    for (int i = 0; i < NUM_ACTORS; i++) {
-      ActorId actorId = ActorId.createRandom();
-      DemoActor actor = builder.build(actorId);
+        // Start a thread per actor.
+        Thread thread = new Thread(() -> callActorForever(actorId.toString(), actor));
+        thread.start();
+        threads.add(thread);
+      }
 
-      // Start a thread per actor.
-      Thread thread = new Thread(() -> callActorForever(actorId.toString(), actor));
-      thread.start();
-      threads.add(thread);
-    }
-
-    // Waits for threads to finish.
-    for (Thread thread : threads) {
-      thread.join();
+      // Waits for threads to finish.
+      for (Thread thread : threads) {
+        thread.join();
+      }
     }
 
     System.out.println("Done.");

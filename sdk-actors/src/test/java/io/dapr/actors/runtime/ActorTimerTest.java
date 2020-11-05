@@ -26,9 +26,7 @@ public class ActorTimerTest {
       .plusHours(1)
       .plusSeconds(3);
 
-    ActorTimer timer = new ActorTimer(
-      null,
-      "testTimer",
+    ActorTimerParams timer = new ActorTimerParams(
       "myfunction",
       null,
       dueTime,
@@ -51,9 +49,7 @@ public class ActorTimerTest {
       .minusHours(1)
       .minusMinutes(3);
 
-    ActorTimer timer = new ActorTimer(
-      null,
-      "testTimer",
+    ActorTimerParams timer = new ActorTimerParams(
       "myfunction",
       null,
       dueTime,

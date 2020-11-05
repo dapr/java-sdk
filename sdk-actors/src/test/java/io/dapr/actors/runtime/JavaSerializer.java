@@ -8,7 +8,11 @@ package io.dapr.actors.runtime;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 /**
  * Class used to test different serializer implementations.

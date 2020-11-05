@@ -5,55 +5,86 @@
 
 package io.dapr.actors.runtime;
 
+import java.time.Duration;
+
 /**
- * Parameters for Actor Timer.
+ * Represents the timer set on an Actor, to be called once after due time and then every period.
+ *
  */
 final class ActorTimerParams {
 
   /**
-   * Callback function to be invoked in actor.
+   * Name of the method to be called for this timer.
    */
   private String callback;
 
   /**
-   * Data to be passed in as part of the timer trigger.
+   * State to be sent in the timer.
    */
   private byte[] data;
 
   /**
-   * Sets the name of the callback function.
-   *
-   * @param callback Name of the callback function.
+   * Due time for the timer's first trigger.
    */
-  public void setCallback(String callback) {
+  private Duration dueTime;
+
+  /**
+   * Period at which the timer will be triggered.
+   */
+  private Duration period;
+
+  /**
+   * Instantiates a new Actor Timer.
+   *
+   * @param callback  The name of the method to be called for this timer.
+   * @param data      The state to be used by the callback method
+   * @param dueTime   The time when timer is first due.
+   * @param period    The periodic time when timer will be invoked.
+   */
+  ActorTimerParams(String callback,
+                   byte[] data,
+                   Duration dueTime,
+                   Duration period) {
     this.callback = callback;
+    this.data = data;
+    this.dueTime = dueTime;
+    this.period = period;
   }
 
   /**
-   * Gets the name of the callback function.
+   * Gets the name of the method for this Timer.
    *
-   * @return Name of the callback function.
+   * @return The name of the method for this timer.
    */
   public String getCallback() {
     return this.callback;
   }
 
   /**
-   * Sets the raw data for the callback function.
+   * Gets the time when timer is first due.
    *
-   * @param data Raw data for the callback function.
+   * @return Time as Duration when timer is first due.
    */
-  public void setData(byte[] data) {
-    this.data = data;
+  public Duration getDueTime() {
+    return this.dueTime;
   }
 
   /**
-   * Gets the raw data for the callback function.
+   * Gets the periodic time when timer will be invoked.
    *
-   * @return Raw data for the callback function.
+   * @return Periodic time as Duration when timer will be invoked.
+   */
+  public Duration getPeriod() {
+    return this.period;
+  }
+
+  /**
+   * Gets state containing information to be used by the callback method, or null.
+   *
+   * @return State containing information to be used by the callback method, or null.
    */
   public byte[] getData() {
-    return data;
+    return this.data;
   }
 
 }
