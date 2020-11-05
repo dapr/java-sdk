@@ -141,6 +141,7 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [PubSub with subscriber over Http](./examples/src/main/java/io/dapr/examples/pubsub/http)
 * [Binding with input over Http](./examples/src/main/java/io/dapr/examples/bindings/http)
 * [Actors over Http](./examples/src/main/java/io/dapr/examples/actors/http)
+* [Secrets management](./examples/src/main/java/io/dapr/examples/secrets)
 * [Distributed tracing with OpenTelemetry SDK](./examples/src/main/java/io/dapr/examples/tracing)
 
 #### API Documentation
