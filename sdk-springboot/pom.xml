@@ -21,7 +21,7 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>central</id>
+      <id>spring</id>
       <name>libs-release</name>
       <url>https://repo.spring.io/libs-release</url>
     </repository>

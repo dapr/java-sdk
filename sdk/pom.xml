@@ -21,7 +21,7 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>central</id>
+      <id>spring</id>
       <name>libs-release</name>
       <url>https://repo.spring.io/libs-release</url>
     </repository>
@@ -55,7 +55,7 @@
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-api</artifactId>
-      <version>0.7.0</version>
+      <version>0.7.1</version>
     </dependency>
     <dependency>
       <groupId>io.opencensus</groupId>
