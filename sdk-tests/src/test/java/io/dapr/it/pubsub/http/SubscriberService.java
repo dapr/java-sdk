@@ -5,7 +5,6 @@
 
 package io.dapr.it.pubsub.http;
 
-import io.dapr.it.binding.http.InputBindingService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -16,7 +15,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = {"io.dapr.springboot", "io.dapr.it.pubsub.http"})
 public class SubscriberService {
 
-  public static final String SUCCESS_MESSAGE = "You're up and running!";
+  public static final String SUCCESS_MESSAGE = "Completed initialization in";
 
   public static void main(String[] args) throws Exception {
     int port = Integer.parseInt(args[0]);

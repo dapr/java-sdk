@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class InputBindingService {
 
-  public static final String SUCCESS_MESSAGE = "You're up and running!";
+  public static final String SUCCESS_MESSAGE = "Completed initialization in";
 
   public static void main(String[] args) throws Exception {
     // If port string is not valid, it will throw an exception.

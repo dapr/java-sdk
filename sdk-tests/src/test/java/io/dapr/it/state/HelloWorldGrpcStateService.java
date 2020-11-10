@@ -5,12 +5,11 @@
 
 package io.dapr.it.state;
 
-import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import io.dapr.v1.CommonProtos.StateItem;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprGrpc.DaprBlockingStub;
 import io.dapr.v1.DaprProtos.SaveStateRequest;
-import io.dapr.v1.CommonProtos.StateItem;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
