@@ -8,7 +8,7 @@ package io.dapr.it.actors.app;
 import io.dapr.actors.runtime.ActorRuntime;
 
 public class MyActorService {
-  public static final String SUCCESS_MESSAGE = "established connection to placement service at localhost";
+  public static final String SUCCESS_MESSAGE = "established connection to placement service at";
 
   /**
    * Starts the service.

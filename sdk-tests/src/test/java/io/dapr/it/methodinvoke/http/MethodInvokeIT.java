@@ -2,18 +2,21 @@ package io.dapr.it.methodinvoke.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprHttp;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.runners.Parameterized.Parameter;
@@ -57,6 +60,9 @@ public class MethodInvokeIT extends BaseIT {
         } else {
             daprRun.switchToHTTP();
         }
+
+        // Wait since service might be ready even after port is available.
+        Thread.sleep(2000);
     }
 
     @Test
