@@ -12,11 +12,11 @@ import io.dapr.client.domain.InvokeServiceRequest;
 import io.dapr.client.domain.InvokeServiceRequestBuilder;
 import io.dapr.springboot.OpenTelemetryConfig;
 import io.dapr.utils.TypeRef;
-import io.grpc.Context;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.trace.Span;
-import io.opentelemetry.trace.Tracer;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 
 import java.io.IOException;
 
@@ -46,7 +46,8 @@ public class InvokeClient {
     Span span = tracer.spanBuilder("Example's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
-        try (Scope scope = tracer.withSpan(span)) {
+
+        try (Scope scope = span.makeCurrent()) {
           InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "echo");
           InvokeServiceRequest request
               = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
@@ -73,7 +74,7 @@ public class InvokeClient {
   }
 
   private static void shutdown() {
-    OpenTelemetrySdk.getTracerProvider().shutdown();
+    OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
   }
 
 }

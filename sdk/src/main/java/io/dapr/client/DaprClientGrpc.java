@@ -10,43 +10,24 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.GetSecretRequest;
-import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.GetStatesRequest;
-import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.InvokeBindingRequest;
-import io.dapr.client.domain.InvokeServiceRequest;
-import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.Response;
-import io.dapr.client.domain.SaveStateRequest;
-import io.dapr.client.domain.State;
-import io.dapr.client.domain.StateOptions;
-import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.*;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.Context;
-import io.grpc.ForwardingClientCall;
-import io.grpc.Metadata;
+import io.grpc.*;
 import io.grpc.Metadata.Key;
-import io.grpc.MethodDescriptor;
 import io.opencensus.implcore.trace.propagation.PropagationComponentImpl;
 import io.opencensus.implcore.trace.propagation.TraceContextFormat;
 import io.opencensus.trace.SpanContext;
 import io.opencensus.trace.propagation.BinaryFormat;
 import io.opencensus.trace.propagation.SpanContextParseException;
 import io.opencensus.trace.propagation.TextFormat;
-import io.opentelemetry.OpenTelemetry;
-import io.opentelemetry.context.propagation.HttpTextFormat;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.Context;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
@@ -154,6 +135,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Override
   public <T> Mono<Response<T>> invokeService(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
     try {
       String appId = invokeServiceRequest.getAppId();
@@ -629,18 +611,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   private static SpanContext extractOpenCensusSpanContext(Context openTelemetryContext) {
     Map<String, String> map = new HashMap<>();
-
-    OpenTelemetry.getPropagators().getHttpTextFormat().inject(
-        openTelemetryContext,
-        map,
-        new HttpTextFormat.Setter<Map<String, String>>() {
-          @Override
-          public void set(Map<String, String> map, String key, String value) {
-            if (map != null) {
-              map.put(key, value);
-            }
-          }
-        });
+      TextMapPropagator.Setter<Map<String, String>> setter =
+          (mapper, key, value) -> {
+              if (mapper != null) {
+                  mapper.put(key, value);
+              }
+          };
+      OpenTelemetry.getGlobalPropagators().getTextMapPropagator().inject(
+        openTelemetryContext, map, setter
+        );
 
     if (!map.containsKey("traceparent")) {
       // Trying to extract context without this key will throw an "expected" exception, so we avoid it here.

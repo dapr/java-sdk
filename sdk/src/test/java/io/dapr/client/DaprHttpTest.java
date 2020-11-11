@@ -6,7 +6,7 @@ package io.dapr.client;
 
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
-import io.grpc.Context;
+import io.opentelemetry.context.Context;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;

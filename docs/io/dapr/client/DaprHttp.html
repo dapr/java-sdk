@@ -198,35 +198,35 @@ implements java.io.Closeable</pre>
 </tr>
 <tr class="rowColor" id="i1">
 <td class="colFirst"><code>reactor.core.publisher.Mono&lt;<a href="DaprHttp.Response.html" title="class in io.dapr.client">DaprHttp.Response</a>&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#invokeApi(java.lang.String,java.lang.String,java.util.Map,byte%5B%5D,java.util.Map,io.grpc.Context)">invokeApi</a></span>&#8203;(java.lang.String&nbsp;method,
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#invokeApi(java.lang.String,java.lang.String,java.util.Map,byte%5B%5D,java.util.Map,io.opentelemetry.context.Context)">invokeApi</a></span>&#8203;(java.lang.String&nbsp;method,
 java.lang.String&nbsp;urlString,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;urlParameters,
 byte[]&nbsp;content,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;headers,
-io.grpc.Context&nbsp;context)</code></th>
+io.opentelemetry.context.Context&nbsp;context)</code></th>
 <td class="colLast">
 <div class="block">Invokes an API asynchronously that returns a text payload.</div>
 </td>
 </tr>
 <tr class="altColor" id="i2">
 <td class="colFirst"><code>reactor.core.publisher.Mono&lt;<a href="DaprHttp.Response.html" title="class in io.dapr.client">DaprHttp.Response</a>&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#invokeApi(java.lang.String,java.lang.String,java.util.Map,java.lang.String,java.util.Map,io.grpc.Context)">invokeApi</a></span>&#8203;(java.lang.String&nbsp;method,
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#invokeApi(java.lang.String,java.lang.String,java.util.Map,java.lang.String,java.util.Map,io.opentelemetry.context.Context)">invokeApi</a></span>&#8203;(java.lang.String&nbsp;method,
 java.lang.String&nbsp;urlString,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;urlParameters,
 java.lang.String&nbsp;content,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;headers,
-io.grpc.Context&nbsp;context)</code></th>
+io.opentelemetry.context.Context&nbsp;context)</code></th>
 <td class="colLast">
 <div class="block">Invokes an API asynchronously that returns a text payload.</div>
 </td>
 </tr>
 <tr class="rowColor" id="i3">
 <td class="colFirst"><code>reactor.core.publisher.Mono&lt;<a href="DaprHttp.Response.html" title="class in io.dapr.client">DaprHttp.Response</a>&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#invokeApi(java.lang.String,java.lang.String,java.util.Map,java.util.Map,io.grpc.Context)">invokeApi</a></span>&#8203;(java.lang.String&nbsp;method,
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#invokeApi(java.lang.String,java.lang.String,java.util.Map,java.util.Map,io.opentelemetry.context.Context)">invokeApi</a></span>&#8203;(java.lang.String&nbsp;method,
 java.lang.String&nbsp;urlString,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;urlParameters,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;headers,
-io.grpc.Context&nbsp;context)</code></th>
+io.opentelemetry.context.Context&nbsp;context)</code></th>
 <td class="colLast">
 <div class="block">Invokes an API asynchronously without payload that returns a text payload.</div>
 </td>
@@ -276,12 +276,12 @@ io.grpc.Context&nbsp;context)</code></th>
 <ul class="blockList">
 <li class="blockList">
 <section class="detail">
-<h3><a id="invokeApi(java.lang.String,java.lang.String,java.util.Map,java.util.Map,io.grpc.Context)">invokeApi</a></h3>
+<h3><a id="invokeApi(java.lang.String,java.lang.String,java.util.Map,java.util.Map,io.opentelemetry.context.Context)">invokeApi</a></h3>
 <div class="memberSignature"><span class="modifiers">public</span>&nbsp;<span class="returnType">reactor.core.publisher.Mono&lt;<a href="DaprHttp.Response.html" title="class in io.dapr.client">DaprHttp.Response</a>&gt;</span>&nbsp;<span class="memberName">invokeApi</span>&#8203;(<span class="arguments">java.lang.String&nbsp;method,
 java.lang.String&nbsp;urlString,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;urlParameters,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;headers,
-io.grpc.Context&nbsp;context)</span></div>
+io.opentelemetry.context.Context&nbsp;context)</span></div>
 <div class="block">Invokes an API asynchronously without payload that returns a text payload.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -297,13 +297,13 @@ io.grpc.Context&nbsp;context)</span></div>
 </li>
 <li class="blockList">
 <section class="detail">
-<h3><a id="invokeApi(java.lang.String,java.lang.String,java.util.Map,java.lang.String,java.util.Map,io.grpc.Context)">invokeApi</a></h3>
+<h3><a id="invokeApi(java.lang.String,java.lang.String,java.util.Map,java.lang.String,java.util.Map,io.opentelemetry.context.Context)">invokeApi</a></h3>
 <div class="memberSignature"><span class="modifiers">public</span>&nbsp;<span class="returnType">reactor.core.publisher.Mono&lt;<a href="DaprHttp.Response.html" title="class in io.dapr.client">DaprHttp.Response</a>&gt;</span>&nbsp;<span class="memberName">invokeApi</span>&#8203;(<span class="arguments">java.lang.String&nbsp;method,
 java.lang.String&nbsp;urlString,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;urlParameters,
 java.lang.String&nbsp;content,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;headers,
-io.grpc.Context&nbsp;context)</span></div>
+io.opentelemetry.context.Context&nbsp;context)</span></div>
 <div class="block">Invokes an API asynchronously that returns a text payload.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -320,13 +320,13 @@ io.grpc.Context&nbsp;context)</span></div>
 </li>
 <li class="blockList">
 <section class="detail">
-<h3><a id="invokeApi(java.lang.String,java.lang.String,java.util.Map,byte[],java.util.Map,io.grpc.Context)">invokeApi</a></h3>
+<h3><a id="invokeApi(java.lang.String,java.lang.String,java.util.Map,byte[],java.util.Map,io.opentelemetry.context.Context)">invokeApi</a></h3>
 <div class="memberSignature"><span class="modifiers">public</span>&nbsp;<span class="returnType">reactor.core.publisher.Mono&lt;<a href="DaprHttp.Response.html" title="class in io.dapr.client">DaprHttp.Response</a>&gt;</span>&nbsp;<span class="memberName">invokeApi</span>&#8203;(<span class="arguments">java.lang.String&nbsp;method,
 java.lang.String&nbsp;urlString,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;urlParameters,
 byte[]&nbsp;content,
 java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;headers,
-io.grpc.Context&nbsp;context)</span></div>
+io.opentelemetry.context.Context&nbsp;context)</span></div>
 <div class="block">Invokes an API asynchronously that returns a text payload.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

@@ -5,11 +5,12 @@
 
 package io.dapr.springboot;
 
-import io.grpc.Context;
-import io.opentelemetry.OpenTelemetry;
-import io.opentelemetry.context.propagation.HttpTextFormat;
-import io.opentelemetry.trace.Span;
-import io.opentelemetry.trace.Tracer;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapPropagator;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -18,6 +19,7 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Collections;
 
 @Component
 public class OpenTelemetryInterceptor implements HandlerInterceptor {
@@ -28,7 +30,7 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
   @Override
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
-    final HttpTextFormat textFormat = OpenTelemetry.getPropagators().getHttpTextFormat();
+    final TextMapPropagator textFormat = OpenTelemetry.getGlobalPropagators().getTextMapPropagator();
     // preHandle is called twice for asynchronous request. For more information, read:
     // https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/servlet/AsyncHandlerInterceptor.html
     if (request.getDispatcherType() == DispatcherType.ASYNC) {
@@ -37,15 +39,19 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
 
     Span span;
     try {
-      Context context = textFormat.extract(
-          Context.current(),
-          request,
-          new HttpTextFormat.Getter<HttpServletRequest>() {
-            @Override
-            public String get(HttpServletRequest req, String key) {
-              return req.getHeader(key);
+      TextMapPropagator.Getter<HttpServletRequest> getter = new TextMapPropagator.Getter<HttpServletRequest>() {
+          @Override
+            public Iterable<String> keys(HttpServletRequest carrier) {
+                return Collections.list(carrier.getHeaderNames());
             }
-          });
+            @Nullable
+            @Override
+            public String get(@Nullable HttpServletRequest carrier, String key) {
+                return carrier.getHeader(key);
+            }
+        };
+      Context context = textFormat.extract(
+          Context.current(), request, getter);
       request.setAttribute("opentelemetry-context", context);
       span = tracer.spanBuilder(request.getRequestURI()).setParent(context).startSpan();
       span.setAttribute("handler", "pre");
@@ -77,14 +83,8 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
     Context context = (Context) contextObject;
     Span span = (Span) spanObject;
     span.setAttribute("handler", "afterCompletion");
-    final HttpTextFormat textFormat = OpenTelemetry.getPropagators().getHttpTextFormat();
-    textFormat.inject(context, response,
-        new HttpTextFormat.Setter<HttpServletResponse>() {
-          @Override
-          public void set(HttpServletResponse response, String key, String value) {
-            response.addHeader(key, value);
-          }
-        });
+    final TextMapPropagator textFormat = OpenTelemetry.getGlobalPropagators().getTextMapPropagator();
+    textFormat.inject(context, response, HttpServletResponse::addHeader);
     span.end();
   }
 

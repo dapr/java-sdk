@@ -5,7 +5,7 @@
 
 package io.dapr.client;
 
-import io.grpc.Context;
+import io.opentelemetry.context.Context;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
