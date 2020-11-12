@@ -8,6 +8,8 @@ package io.dapr.springboot;
 import io.dapr.examples.invoke.http.InvokeClient;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.HttpTraceContext;
+import io.opentelemetry.context.propagation.DefaultContextPropagators;
 import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -40,6 +42,10 @@ public class OpenTelemetryConfig {
    * @return New tracer's instance.
    */
   public static Tracer createTracer(String instrumentationName) {
+    OpenTelemetry.setGlobalPropagators(
+        DefaultContextPropagators.builder()
+            .addTextMapPropagator(HttpTraceContext.getInstance())
+            .build());
     final Tracer tracer = OpenTelemetry.getGlobalTracer(instrumentationName);
 
     // Only exports to Zipkin if it is up. Otherwise, ignore it.
