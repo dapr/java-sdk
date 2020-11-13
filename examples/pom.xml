@@ -24,6 +24,7 @@
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
     <spotbugs.fail>false</spotbugs.fail>
+    <opentelemetry.version>0.10.0</opentelemetry.version>
   </properties>
 
   <dependencies>
@@ -76,17 +77,17 @@
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-sdk</artifactId>
-      <version>0.7.1</version>
+      <version>${opentelemetry.version}</version>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-exporters-logging</artifactId>
-      <version>0.7.1</version>
+      <artifactId>opentelemetry-exporter-logging</artifactId>
+      <version>${opentelemetry.version}</version>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-exporters-zipkin</artifactId>
-      <version>0.7.1</version>
+      <artifactId>opentelemetry-exporter-zipkin</artifactId>
+      <version>${opentelemetry.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>

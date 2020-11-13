@@ -6,12 +6,14 @@
 package io.dapr.springboot;
 
 import io.dapr.examples.invoke.http.InvokeClient;
-import io.opentelemetry.OpenTelemetry;
-import io.opentelemetry.exporters.logging.LoggingSpanExporter;
-import io.opentelemetry.exporters.zipkin.ZipkinSpanExporter;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.HttpTraceContext;
+import io.opentelemetry.context.propagation.DefaultContextPropagators;
+import io.opentelemetry.exporter.logging.LoggingSpanExporter;
+import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import io.opentelemetry.trace.Tracer;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -40,27 +42,31 @@ public class OpenTelemetryConfig {
    * @return New tracer's instance.
    */
   public static Tracer createTracer(String instrumentationName) {
-    final Tracer tracer = OpenTelemetry.getTracer(instrumentationName);
+    OpenTelemetry.setGlobalPropagators(
+        DefaultContextPropagators.builder()
+            .addTextMapPropagator(HttpTraceContext.getInstance())
+            .build());
+    final Tracer tracer = OpenTelemetry.getGlobalTracer(instrumentationName);
 
     // Only exports to Zipkin if it is up. Otherwise, ignore it.
     // This is helpful to avoid exceptions for examples that do not require Zipkin.
     if (isZipkinUp()) {
       String httpUrl = String.format("http://localhost:%d", ZIPKIN_PORT);
       ZipkinSpanExporter zipkinExporter =
-          ZipkinSpanExporter.newBuilder()
+          ZipkinSpanExporter.builder()
               .setEndpoint(httpUrl + ENDPOINT_V2_SPANS)
               .setServiceName(InvokeClient.class.getName())
               .build();
 
-      OpenTelemetrySdk.getTracerProvider()
-          .addSpanProcessor(SimpleSpanProcessor.newBuilder(zipkinExporter).build());
+      OpenTelemetrySdk.getGlobalTracerManagement()
+          .addSpanProcessor(SimpleSpanProcessor.builder(zipkinExporter).build());
     } else {
       System.out.println("WARNING: Zipkin is not available.");
     }
 
     final LoggingSpanExporter loggingExporter = new LoggingSpanExporter();
-    OpenTelemetrySdk.getTracerProvider()
-        .addSpanProcessor(SimpleSpanProcessor.newBuilder(loggingExporter).build());
+    OpenTelemetrySdk.getGlobalTracerManagement()
+        .addSpanProcessor(SimpleSpanProcessor.builder(loggingExporter).build());
 
     return tracer;
   }

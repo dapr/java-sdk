@@ -5,7 +5,7 @@
 
 package io.dapr.client.domain;
 
-import io.grpc.Context;
+import io.opentelemetry.context.Context;
 import java.util.Collections;
 import java.util.Map;
 
