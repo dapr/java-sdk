@@ -34,7 +34,6 @@ import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
-import io.grpc.Context;
 import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -45,8 +44,9 @@ import io.opencensus.trace.SpanContext;
 import io.opencensus.trace.propagation.BinaryFormat;
 import io.opencensus.trace.propagation.SpanContextParseException;
 import io.opencensus.trace.propagation.TextFormat;
-import io.opentelemetry.OpenTelemetry;
-import io.opentelemetry.context.propagation.HttpTextFormat;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
@@ -65,6 +65,13 @@ import java.util.stream.Collectors;
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientGrpc extends AbstractDaprClient {
+
+  private static final TextMapPropagator.Setter<Map<String, String>> MAP_SETTER =
+      (mapper, key, value) -> {
+        if (mapper != null) {
+          mapper.put(key, value);
+        }
+      };
 
   /**
    * Binary formatter to generate grpc-trace-bin.
@@ -154,6 +161,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Override
   public <T> Mono<Response<T>> invokeService(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
     try {
       String appId = invokeServiceRequest.getAppId();
@@ -629,18 +637,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   private static SpanContext extractOpenCensusSpanContext(Context openTelemetryContext) {
     Map<String, String> map = new HashMap<>();
-
-    OpenTelemetry.getPropagators().getHttpTextFormat().inject(
-        openTelemetryContext,
-        map,
-        new HttpTextFormat.Setter<Map<String, String>>() {
-          @Override
-          public void set(Map<String, String> map, String key, String value) {
-            if (map != null) {
-              map.put(key, value);
-            }
-          }
-        });
+    OpenTelemetry.getGlobalPropagators().getTextMapPropagator().inject(
+        openTelemetryContext, map, MAP_SETTER);
 
     if (!map.containsKey("traceparent")) {
       // Trying to extract context without this key will throw an "expected" exception, so we avoid it here.

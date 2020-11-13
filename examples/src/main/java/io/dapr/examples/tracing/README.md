@@ -175,7 +175,7 @@ private static final String SERVICE_APP_ID = "invokedemo";
 }
 ```
 
-The class knows the app id for the remote application. It uses `invokeService` method to invoke API calls on the service endpoint. The request object includes an instance of `io.grpc.Context` for the proper tracing headers to be propagated.
+The class knows the app id for the remote application. It uses `invokeService` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh
