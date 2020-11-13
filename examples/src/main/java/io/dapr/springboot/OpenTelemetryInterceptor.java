@@ -23,7 +23,19 @@ import java.util.Collections;
 
 @Component
 public class OpenTelemetryInterceptor implements HandlerInterceptor {
+  private static final TextMapPropagator.Getter<HttpServletRequest> HTTP_SERVLET_REQUEST_GETTER =
+      new TextMapPropagator.Getter<>() {
+        @Override
+        public Iterable<String> keys(HttpServletRequest carrier) {
+          return Collections.list(carrier.getHeaderNames());
+        }
 
+        @Nullable
+        @Override
+        public String get(@Nullable HttpServletRequest carrier, String key) {
+          return carrier.getHeader(key);
+      }
+  };
   @Autowired
   Tracer tracer;
 
@@ -39,19 +51,7 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
 
     Span span;
     try {
-      TextMapPropagator.Getter<HttpServletRequest> getter = new TextMapPropagator.Getter<HttpServletRequest>() {
-        @Override
-        public Iterable<String> keys(HttpServletRequest carrier) {
-          return Collections.list(carrier.getHeaderNames());
-        }
-
-        @Nullable
-        @Override
-        public String get(@Nullable HttpServletRequest carrier, String key) {
-          return carrier.getHeader(key);
-        }
-      };
-      Context context = textFormat.extract(Context.current(), request, getter);
+      Context context = textFormat.extract(Context.current(), request, HTTP_SERVLET_REQUEST_GETTER);
       request.setAttribute("opentelemetry-context", context);
       span = tracer.spanBuilder(request.getRequestURI()).setParent(context).startSpan();
       span.setAttribute("handler", "pre");

@@ -66,6 +66,13 @@ import java.util.stream.Collectors;
  */
 public class DaprClientGrpc extends AbstractDaprClient {
 
+  private static final TextMapPropagator.Setter<Map<String, String>> MAP_SETTER =
+      (mapper, key, value) -> {
+        if (mapper != null) {
+          mapper.put(key, value);
+        }
+      };
+
   /**
    * Binary formatter to generate grpc-trace-bin.
    */
@@ -630,14 +637,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   private static SpanContext extractOpenCensusSpanContext(Context openTelemetryContext) {
     Map<String, String> map = new HashMap<>();
-    TextMapPropagator.Setter<Map<String, String>> setter =
-        (mapper, key, value) -> {
-          if (mapper != null) {
-            mapper.put(key, value);
-          }
-        };
     OpenTelemetry.getGlobalPropagators().getTextMapPropagator().inject(
-        openTelemetryContext, map, setter);
+        openTelemetryContext, map, MAP_SETTER);
 
     if (!map.containsKey("traceparent")) {
       // Trying to extract context without this key will throw an "expected" exception, so we avoid it here.
