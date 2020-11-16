@@ -39,13 +39,19 @@ Then build the Maven project:
 # make sure you are in the `java-sdk` directory.
 mvn install
 ```
+
+Then get into the examples directory:
+
+```sh
+cd examples
+```
+
 ### Setting Vault locally
 
 Before getting into the application code, follow these steps in order to set up a local instance of Vault. This is needed for the local instances. Steps are:
 
-1. navigate to the [examples] with `cd examples`
-2. Run `docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml up -d` to run the container locally
-3. Run `docker ps` to see the container running locally: 
+1. Run `docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml up -d` to run the container locally
+2. Run `docker ps` to see the container running locally: 
 
 ```bash
 342d3522ca14        vault                      "docker-entrypoint.s…"         34 seconds ago        Up About
@@ -56,19 +62,22 @@ Click [here](https://hub.docker.com/_/vault/) for more information about the con
 ### Create a secret in Vault
 Dapr's API for secret store only support read operations. For this sample to run, we will first create a secret via the Vault's cli commands:
 
-1. Login:
+Export the `VAULT_ADDR` for vault CLI:
+```bash
+export VAULT_ADDR=http://127.0.0.1:8200/
+```
+
+Login to Hashicorp's Vault:
 ```bash
 vault login myroot
 ```
 
-> Note: If you get `http: server gave HTTP response to HTTPS client` make sure to set the local vault address as  `export VAULT_ADDR=http://127.0.0.1:8200/`
-
-2. Create secret (replace `[my favorite movie]` with a title of our choice):
+Create secret (replace `[my favorite movie]` with a title of our choice):
 ```bash
 vault kv put secret/dapr/movie title="[my favorite movie]"
 ```
 
-3. Create random secret:
+Create random secret:
 ```bash
 vault kv put secret/dapr/randomKey testVal="value"
 ```
@@ -125,7 +134,6 @@ The Dapr client is also within a try-with-resource block to properly close the c
 
  Execute the following script in order to run the example:
 ```sh
-cd to [repo-root]/examples
 dapr run --components-path ./components  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
 ```
 
@@ -157,7 +165,6 @@ The configuration defines, that the only allowed secret is `movie` and all other
 
 Execute the following script in order to run this example with additional secret scoping: 
 ```sh
-cd to [repo-root]/examples
 dapr run --components-path ./components --config ./src/main/java/io/dapr/examples/secrets/config.yaml  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
 ```
 Once running, the program should print the output as follows:
