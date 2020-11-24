@@ -8,20 +8,25 @@ package io.dapr.actors.client;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorUtils;
 import io.dapr.client.DaprHttpBuilder;
+import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.v1.DaprGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
+import java.io.Closeable;
 import java.lang.reflect.Proxy;
 
 /**
  * Builder to generate an ActorProxy instance. Builder can be reused for multiple instances.
  */
-public class ActorProxyBuilder<T> {
+public class ActorProxyBuilder<T> implements Closeable {
 
   /**
-   * Builder for Dapr's raw http client.
+   * Determine if this builder will create GRPC clients instead of HTTP clients.
    */
-  private final DaprHttpBuilder daprHttpBuilder = new DaprHttpBuilder();
+  private final boolean useGrpc;
 
   /**
    * Actor's type.
@@ -37,6 +42,16 @@ public class ActorProxyBuilder<T> {
    * Dapr's object serializer.
    */
   private DaprObjectSerializer objectSerializer;
+
+  /**
+   * Builds Dapr HTTP client.
+   */
+  private DaprHttpBuilder daprHttpBuilder;
+
+  /**
+   * Channel for communication with Dapr.
+   */
+  private final ManagedChannel channel;
 
   /**
    * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer} by default.
@@ -65,9 +80,12 @@ public class ActorProxyBuilder<T> {
       throw new IllegalArgumentException("ActorTypeClass is required.");
     }
 
+    this.useGrpc = Properties.USE_GRPC.get();
     this.actorType = actorType;
     this.objectSerializer = new DefaultObjectSerializer();
     this.clazz = actorTypeClass;
+    this.daprHttpBuilder = new DaprHttpBuilder();
+    this.channel = buildManagedChannel();
   }
 
   /**
@@ -100,7 +118,7 @@ public class ActorProxyBuilder<T> {
             this.actorType,
             actorId,
             this.objectSerializer,
-            new DaprHttpClient(this.daprHttpBuilder.build()));
+            buildDaprClient());
 
     if (this.clazz.equals(ActorProxy.class)) {
       // If users want to use the not strongly typed API, we respect that here.
@@ -113,4 +131,45 @@ public class ActorProxyBuilder<T> {
             proxy);
   }
 
+  /**
+   * Build an instance of the Client based on the provided setup.
+   *
+   * @return an instance of the setup Client
+   * @throws java.lang.IllegalStateException if any required field is missing
+   */
+  private DaprClient buildDaprClient() {
+    if (this.useGrpc) {
+      return new DaprGrpcClient(DaprGrpc.newFutureStub(this.channel));
+    }
+
+    return new DaprHttpClient(daprHttpBuilder.build());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void close() {
+    if (channel != null && !channel.isShutdown()) {
+      channel.shutdown();
+    }
+  }
+
+  /**
+   * Creates a GRPC managed channel (or null, if not applicable).
+   *
+   * @return GRPC managed channel or null.
+   */
+  private static ManagedChannel buildManagedChannel() {
+    if (!Properties.USE_GRPC.get()) {
+      return null;
+    }
+
+    int port = Properties.GRPC_PORT.get();
+    if (port <= 0) {
+      throw new IllegalStateException("Invalid port.");
+    }
+
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+  }
 }

@@ -34,9 +34,9 @@ public class ActorObjectSerializer extends ObjectSerializer {
       return null;
     }
 
-    if (state.getClass() == ActorTimer.class) {
+    if (state.getClass() == ActorTimerParams.class) {
       // Special serializer for this internal classes.
-      return serialize((ActorTimer) state);
+      return serialize((ActorTimerParams) state);
     }
 
     if (state.getClass() == ActorReminderParams.class) {
@@ -61,7 +61,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
    * @return JSON String.
    * @throws IOException If cannot generate JSON.
    */
-  private byte[] serialize(ActorTimer<?> timer) throws IOException {
+  private byte[] serialize(ActorTimerParams timer) throws IOException {
     if (timer == null) {
       return null;
     }
@@ -72,8 +72,8 @@ public class ActorObjectSerializer extends ObjectSerializer {
       generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(timer.getDueTime()));
       generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(timer.getPeriod()));
       generator.writeStringField("callback", timer.getCallback());
-      if (timer.getState() != null) {
-        generator.writeBinaryField("data", this.serialize(timer.getState()));
+      if (timer.getData() != null) {
+        generator.writeBinaryField("data", timer.getData());
       }
       generator.writeEndObject();
       generator.close();
@@ -148,6 +148,11 @@ public class ActorObjectSerializer extends ObjectSerializer {
    */
   @Override
   public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
+    if (clazz == ActorTimerParams.class) {
+      // Special serializer for this internal classes.
+      return (T) deserializeActorTimer(content);
+    }
+
     if (clazz == ActorReminderParams.class) {
       // Special serializer for this internal classes.
       return (T) deserializeActorReminder(content);
@@ -158,49 +163,24 @@ public class ActorObjectSerializer extends ObjectSerializer {
   }
 
   /**
-   * Extracts the response data from a JSON Payload where data is in "data" attribute.
+   * Deserializes an Actor Timer.
    *
-   * @param payload JSON payload containing "data".
-   * @return byte[] instance, null.
-   * @throws IOException In case it cannot generate String.
+   * @param value Content to be deserialized.
+   * @return Actor Timer.
+   * @throws IOException If cannot parse JSON.
    */
-  public byte[] unwrapData(final byte[] payload) throws IOException {
-    if (payload == null) {
+  private ActorTimerParams deserializeActorTimer(byte[] value) throws IOException {
+    if (value == null) {
       return null;
     }
 
-    JsonNode root = OBJECT_MAPPER.readTree(payload);
-    if (root == null) {
-      return null;
-    }
+    JsonNode node = OBJECT_MAPPER.readTree(value);
+    String callback = node.get("callback").asText();
+    Duration dueTime = extractDurationOrNull(node, "dueTime");
+    Duration period = extractDurationOrNull(node, "period");
+    byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
-    JsonNode dataNode = root.get("data");
-    if (dataNode == null) {
-      return null;
-    }
-
-    return dataNode.binaryValue();
-  }
-
-  /**
-   * Wraps data in the "data" attribute in a JSON object.
-   *
-   * @param data bytes to be wrapped into the "data" attribute in a JSON object.
-   * @return String to be sent to Dapr's API.
-   * @throws IOException If there's is any issue reading the data or wraping it
-   */
-  public byte[] wrapData(final byte[] data) throws IOException {
-    try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-      JsonGenerator generator = JSON_FACTORY.createGenerator(output);
-      generator.writeStartObject();
-      if (data != null) {
-        generator.writeBinaryField("data", data);
-      }
-      generator.writeEndObject();
-      generator.close();
-      output.flush();
-      return output.toByteArray();
-    }
+    return new ActorTimerParams(callback, data, dueTime, period);
   }
 
   /**
@@ -216,11 +196,26 @@ public class ActorObjectSerializer extends ObjectSerializer {
     }
 
     JsonNode node = OBJECT_MAPPER.readTree(value);
-    Duration dueTime = DurationUtils.convertDurationFromDaprFormat(node.get("dueTime").asText());
-    Duration period = DurationUtils.convertDurationFromDaprFormat(node.get("period").asText());
+    Duration dueTime = extractDurationOrNull(node, "dueTime");
+    Duration period = extractDurationOrNull(node, "period");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
     return new ActorReminderParams(data, dueTime, period);
   }
 
+  /**
+   * Extracts duration or null.
+   *
+   * @param node Node that contains the attribute.
+   * @param name Attribute name.
+   * @return Parsed duration or null.
+   */
+  private static Duration extractDurationOrNull(JsonNode node, String name) {
+    JsonNode valueNode = node.get(name);
+    if (valueNode == null) {
+      return  null;
+    }
+
+    return DurationUtils.convertDurationFromDaprFormat(valueNode.asText());
+  }
 }

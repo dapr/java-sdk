@@ -5,13 +5,29 @@
 
 package io.dapr.actors.runtime;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.client.DaprHttp;
 import reactor.core.publisher.Mono;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
 
 /**
  * A DaprClient over HTTP for Actor's runtime.
  */
 class DaprHttpClient implements DaprClient {
+
+  /**
+   * Internal serializer for state.
+   */
+  private static final ActorObjectSerializer INTERNAL_SERIALIZER = new ActorObjectSerializer();
+
+  /**
+   * Shared Json Factory as per Jackson's documentation, used only for this class.
+   */
+  private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
   /**
    * Base URL for Dapr Actor APIs.
@@ -75,18 +91,77 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveActorStateTransactionally(String actorType, String actorId, byte[] data) {
+  public Mono<Void> saveActorStateTransactionally(
+      String actorType,
+      String actorId,
+      List<ActorStateOperation> operations) {
+    // Constructing the JSON via a stream API to avoid creating transient objects to be instantiated.
+    byte[] payload = null;
+    try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
+      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
+      // Start array
+      generator.writeStartArray();
+
+      for (ActorStateOperation stateOperation : operations) {
+        // Start operation object.
+        generator.writeStartObject();
+        generator.writeStringField("operation", stateOperation.getOperationType());
+
+        // Start request object.
+        generator.writeObjectFieldStart("request");
+        generator.writeStringField("key", stateOperation.getKey());
+
+        Object value = stateOperation.getValue();
+        if (value != null) {
+          if (value instanceof String) {
+            // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
+            generator.writeFieldName("value");
+            generator.writeRawValue((String) value);
+          } else if (value instanceof byte[]) {
+            // Custom serializer uses byte[].
+            // DefaultObjectSerializer is just a passthrough for byte[], so we handle it here too.
+            generator.writeBinaryField("value", (byte[]) value);
+          } else {
+            return Mono.error(() -> {
+              throw new IllegalArgumentException("Actor state value must be String or byte[]");
+            });
+          }
+        }
+        // End request object.
+        generator.writeEndObject();
+
+        // End operation object.
+        generator.writeEndObject();
+      }
+
+      // End array
+      generator.writeEndArray();
+
+      generator.close();
+      writer.flush();
+      payload = writer.toByteArray();
+    } catch (IOException e) {
+      return Mono.error(e);
+    }
+
     String url = String.format(ACTOR_STATE_RELATIVE_URL_FORMAT, actorType, actorId);
-    return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), url, null, data, null, null).then();
+    return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), url, null, payload, null, null).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, byte[] data) {
+  public Mono<Void> registerActorReminder(
+      String actorType,
+      String actorId,
+      String reminderName,
+      ActorReminderParams reminderParams) {
     String url = String.format(ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
-    return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), url, null, data, null, null).then();
+    return Mono.fromCallable(() -> INTERNAL_SERIALIZER.serialize(reminderParams))
+        .flatMap(data ->
+            this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), url, null, data, null, null)
+        ).then();
   }
 
   /**
@@ -102,9 +177,16 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, byte[] data) {
-    String url = String.format(ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
-    return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), url, null, data, null, null).then();
+  public Mono<Void> registerActorTimer(
+      String actorType,
+      String actorId,
+      String timerName,
+      ActorTimerParams timerParams) {
+    return Mono.fromCallable(() -> INTERNAL_SERIALIZER.serialize(timerParams))
+        .flatMap(data -> {
+          String url = String.format(ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
+          return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), url, null, data, null, null);
+        }).then();
   }
 
   /**

@@ -13,15 +13,37 @@ import io.dapr.it.DaprRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
 import io.dapr.it.actors.services.springboot.StatefulActorService;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.Assert.*;
 
+@RunWith(Parameterized.class)
 public class ActorStateIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorStateIT.class);
+
+  /**
+   * Parameters for this test.
+   * Param #1: useGrpc.
+   * @return Collection of parameter tuples.
+   */
+  @Parameterized.Parameters
+  public static Collection<Object[]> data() {
+    return Arrays.asList(new Object[][] { { false, false }, { false, true }, { true, false }, { true, true } });
+  }
+
+  @Parameterized.Parameter(0)
+  public boolean useGrpc;
+
+  @Parameterized.Parameter(1)
+  public boolean useGrpcInService;
 
   @Test
   public void writeReadState() throws Exception {
@@ -32,15 +54,23 @@ public class ActorStateIT extends BaseIT {
       StatefulActorService.SUCCESS_MESSAGE,
       StatefulActorService.class,
       true,
-      60000);
+      60000,
+      useGrpcInService);
+
+    if (this.useGrpc) {
+      runtime.switchToGRPC();
+    } else {
+      runtime.switchToHTTP();
+    }
 
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
-    ActorId actorId = new ActorId(Long.toString(System.currentTimeMillis()));
+    ActorId actorId = new ActorId(
+        String.format("%d-%b-%b", System.currentTimeMillis(), this.useGrpc, this.useGrpcInService));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
-    ActorProxyBuilder<ActorProxy> proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class);
+    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     // Validate conditional read works.
@@ -115,13 +145,22 @@ public class ActorStateIT extends BaseIT {
     runtime.stop();
 
     logger.debug("Starting service ...");
-    startDaprApp(
+    DaprRun run2 = startDaprApp(
         this.getClass().getSimpleName(),
         StatefulActorService.SUCCESS_MESSAGE,
         StatefulActorService.class,
         true,
-        60000);
+        60000,
+        useGrpcInService);
 
+    if (this.useGrpc) {
+      run2.switchToGRPC();
+    } else {
+      run2.switchToHTTP();
+    }
+
+    // Need new proxy builder because the proxy builder holds the channel.
+    proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     callWithRetry(() -> {

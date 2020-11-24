@@ -79,6 +79,15 @@ public abstract class AbstractActor {
   }
 
   /**
+   * Returns the actor's type.
+   *
+   * @return Actor type.
+   */
+  String getType() {
+    return this.actorRuntimeContext.getActorTypeInformation().getName();
+  }
+
+  /**
    * Returns the state store manager for this Actor.
    *
    * @return State store manager for this Actor
@@ -105,12 +114,11 @@ public abstract class AbstractActor {
     try {
       byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
       ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
-      byte[] serialized = INTERNAL_SERIALIZER.serialize(params);
       return this.actorRuntimeContext.getDaprClient().registerActorReminder(
             this.actorRuntimeContext.getActorTypeInformation().getName(),
             this.id.toString(),
             reminderName,
-            serialized);
+            params);
     } catch (IOException e) {
       return Mono.error(e);
     }
@@ -136,7 +144,7 @@ public abstract class AbstractActor {
         T state,
         Duration dueTime,
         Duration period) {
-    return Mono.fromSupplier(() -> {
+    try {
       if ((callback == null) || callback.isEmpty()) {
         throw new IllegalArgumentException("Timer requires a callback function.");
       }
@@ -146,18 +154,17 @@ public abstract class AbstractActor {
         name = String.format("%s_Timer_%s", this.id.toString(), UUID.randomUUID().toString());
       }
 
-      return new ActorTimer(this, name, callback, state, dueTime, period);
-    }).flatMap(actorTimer -> {
-      try {
-        return this.actorRuntimeContext.getDaprClient().registerActorTimer(
-              this.actorRuntimeContext.getActorTypeInformation().getName(),
-              this.id.toString(),
-              actorTimer.getName(),
-              INTERNAL_SERIALIZER.serialize(actorTimer)).then(Mono.just(actorTimer.getName()));
-      } catch (Exception e) {
-        return Mono.error(e);
-      }
-    });
+      byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
+      ActorTimerParams actorTimer = new ActorTimerParams(callback, data, dueTime, period);
+
+      return this.actorRuntimeContext.getDaprClient().registerActorTimer(
+          this.actorRuntimeContext.getActorTypeInformation().getName(),
+          this.id.toString(),
+          name,
+          actorTimer).thenReturn(name);
+    } catch (Exception e) {
+      return Mono.error(e);
+    }
   }
 
   /**

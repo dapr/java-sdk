@@ -11,7 +11,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import okhttp3.OkHttpClient;
 
 import java.io.Closeable;
 
@@ -26,6 +25,11 @@ public class DaprClientBuilder {
    * Determine if this builder will create GRPC clients instead of HTTP clients.
    */
   private final boolean useGrpc;
+
+  /**
+   * Builder for Dapr's HTTP Client.
+   */
+  private final DaprHttpBuilder daprHttpBuilder;
 
   /**
    * Serializer used for request and response objects in DaprClient.
@@ -47,6 +51,7 @@ public class DaprClientBuilder {
     this.objectSerializer = new DefaultObjectSerializer();
     this.stateSerializer = new DefaultObjectSerializer();
     this.useGrpc = Properties.USE_GRPC.get();
+    this.daprHttpBuilder = new DaprHttpBuilder();
   }
 
   /**
@@ -127,12 +132,6 @@ public class DaprClientBuilder {
    * @return DaprClient over HTTP.
    */
   private DaprClient buildDaprClientHttp() {
-    int port = Properties.HTTP_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
-    }
-    OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
-    return new DaprClientHttp(daprHttp, this.objectSerializer, this.stateSerializer);
+    return new DaprClientHttp(this.daprHttpBuilder.build(), this.objectSerializer, this.stateSerializer);
   }
 }

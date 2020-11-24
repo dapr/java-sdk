@@ -19,7 +19,7 @@ import static io.dapr.it.Retry.callWithRetry;
 public class AppRun implements Stoppable {
 
   private static final String APP_COMMAND =
-      "mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\"";
+      "mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\" -D dapr.grpc.enabled=%b";
 
   private final DaprPorts ports;
 
@@ -30,10 +30,11 @@ public class AppRun implements Stoppable {
   AppRun(DaprPorts ports,
                  String successMessage,
                  Class serviceClass,
-                 int maxWaitMilliseconds) {
+                 int maxWaitMilliseconds,
+                 boolean useGRPC) {
     this.command = new Command(
             successMessage,
-            buildCommand(serviceClass, ports),
+            buildCommand(serviceClass, ports, useGRPC),
             new HashMap<>() {{
               put("DAPR_HTTP_PORT", ports.getHttpPort().toString());
               put("DAPR_GRPC_PORT", ports.getGrpcPort().toString());
@@ -71,9 +72,10 @@ public class AppRun implements Stoppable {
     }
   }
 
-  private static String buildCommand(Class serviceClass, DaprPorts ports) {
+  private static String buildCommand(Class serviceClass, DaprPorts ports, boolean useGRPC) {
     return String.format(APP_COMMAND, serviceClass.getCanonicalName(),
-                ports.getAppPort() != null ? ports.getAppPort().toString() : "");
+                ports.getAppPort() != null ? ports.getAppPort().toString() : "",
+                useGRPC);
   }
 
   private static void assertListeningOnPort(int port) {

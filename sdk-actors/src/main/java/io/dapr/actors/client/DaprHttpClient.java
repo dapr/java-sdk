@@ -51,5 +51,4 @@ class DaprHttpClient implements DaprClient {
           this.client.invokeApi(DaprHttp.HttpMethods.POST.name(), url, null, jsonPayload, null, null);
     return responseMono.map(r -> r.getBody());
   }
-
 }

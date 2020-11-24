@@ -7,6 +7,8 @@ package io.dapr.actors.runtime;
 
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
  */
@@ -25,23 +27,27 @@ interface DaprClient {
   /**
    * Saves state batch to Dapr.
    *
-   * @param actorType Type of actor.
-   * @param actorId   Actor Identifier.
-   * @param data      State to be saved.
+   * @param actorType  Type of actor.
+   * @param actorId    Actor Identifier.
+   * @param operations State transaction operations.
    * @return Asynchronous void result.
    */
-  Mono<Void> saveActorStateTransactionally(String actorType, String actorId, byte[] data);
+  Mono<Void> saveActorStateTransactionally(String actorType, String actorId, List<ActorStateOperation> operations);
 
   /**
    * Register a reminder.
    *
-   * @param actorType    Type of actor.
-   * @param actorId      Actor Identifier.
-   * @param reminderName Name of reminder to be registered.
-   * @param data         JSON reminder data as per Dapr's spec.
+   * @param actorType      Type of actor.
+   * @param actorId        Actor Identifier.
+   * @param reminderName   Name of reminder to be registered.
+   * @param reminderParams Parameters for the reminder.
    * @return Asynchronous void result.
    */
-  Mono<Void> registerActorReminder(String actorType, String actorId, String reminderName, byte[] data);
+  Mono<Void> registerActorReminder(
+      String actorType,
+      String actorId,
+      String reminderName,
+      ActorReminderParams reminderParams);
 
   /**
    * Unregisters a reminder.
@@ -54,15 +60,15 @@ interface DaprClient {
   Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName);
 
   /**
-   * Registers a timer.
+   * Register a timer.
    *
-   * @param actorType Type of actor.
-   * @param actorId   Actor Identifier.
-   * @param timerName Name of timer to be registered.
-   * @param data      JSON reminder data as per Dapr's spec.
+   * @param actorType   Type of actor.
+   * @param actorId     Actor Identifier.
+   * @param timerName   Name of reminder to be registered.
+   * @param timerParams Parameters for the timer.
    * @return Asynchronous void result.
    */
-  Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, byte[] data);
+  Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, ActorTimerParams timerParams);
 
   /**
    * Unregisters a timer.

@@ -7,15 +7,29 @@ package io.dapr.actors.runtime;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpProxy;
 import io.dapr.config.Properties;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
+import okhttp3.mock.RuleAnswer;
+import okio.Buffer;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class DaprHttpClientTest {
 
@@ -52,8 +66,8 @@ public class DaprHttpClientTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
-    Mono<Void> mono =
-      DaprHttpClient.saveActorStateTransactionally("DemoActor", "1", "".getBytes());
+    List<ActorStateOperation> ops = Collections.singletonList(new ActorStateOperation("UPSERT", "key", "value"));
+    Mono<Void> mono = DaprHttpClient.saveActorStateTransactionally("DemoActor", "1", ops);
     assertNull(mono.block());
   }
 
@@ -65,7 +79,11 @@ public class DaprHttpClientTest {
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono =
-      DaprHttpClient.registerActorReminder("DemoActor", "1", "reminder", "".getBytes());
+      DaprHttpClient.registerActorReminder(
+          "DemoActor",
+          "1",
+          "reminder",
+          new ActorReminderParams("".getBytes(), Duration.ofSeconds(1), Duration.ofSeconds(2)));
     assertNull(mono.block());
   }
 
@@ -82,13 +100,42 @@ public class DaprHttpClientTest {
 
   @Test
   public void registerActorTimer() {
+    String data = "hello world";
     mockInterceptor.addRule()
       .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/timers/timer")
-      .respond(EXPECTED_RESULT);
+      .answer(new RuleAnswer() {
+        @Override
+        public Response.Builder respond(Request request) {
+          String expectedBody = "{\"dueTime\":\"0h0m5s0ms\"," +
+              "\"period\":\"0h0m10s0ms\"," +
+              "\"callback\":\"mycallback\"," +
+              "\"data\":\""+ Base64.getEncoder().encodeToString(data.getBytes()) +"\"}";
+          String body = "";
+          try {
+            Buffer buffer = new Buffer();
+            request.body().writeTo(buffer);
+            body = buffer.readString(Charset.defaultCharset());
+          } catch (IOException e) {
+            fail();
+          }
+          assertEquals(expectedBody, body);
+          return new Response.Builder()
+              .code(200)
+              .body(ResponseBody.create("{}", MediaType.get("application/json")));
+        }
+      });
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono =
-      DaprHttpClient.registerActorTimer("DemoActor", "1", "timer", "".getBytes());
+      DaprHttpClient.registerActorTimer(
+          "DemoActor",
+          "1",
+          "timer",
+          new ActorTimerParams(
+              "mycallback",
+              data.getBytes(),
+              Duration.ofSeconds(5),
+              Duration.ofSeconds(10)));
     assertNull(mono.block());
   }
 
@@ -102,5 +149,4 @@ public class DaprHttpClientTest {
     Mono<Void> mono = DaprHttpClient.unregisterActorTimer("DemoActor", "1", "timer");
     assertNull(mono.block());
   }
-
 }

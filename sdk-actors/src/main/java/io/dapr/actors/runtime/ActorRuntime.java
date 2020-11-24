@@ -8,10 +8,14 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
 import io.dapr.client.DaprHttpBuilder;
+import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,7 +25,7 @@ import java.util.Map;
  * Contains methods to register actor types. Registering the types allows the
  * runtime to create instances of the actor.
  */
-public class ActorRuntime {
+public class ActorRuntime implements Closeable {
 
   /**
    * Serializer for internal Dapr objects.
@@ -44,6 +48,11 @@ public class ActorRuntime {
   private static volatile ActorRuntime instance;
 
   /**
+   * Channel for communication with Dapr.
+   */
+  private final ManagedChannel channel;
+
+  /**
    * Configuration for the Actor runtime.
    */
   private final ActorRuntimeConfig config;
@@ -64,16 +73,27 @@ public class ActorRuntime {
    * @throws IllegalStateException If cannot instantiate Runtime.
    */
   private ActorRuntime() throws IllegalStateException {
-    this(new DaprHttpClient(new DaprHttpBuilder().build()));
+    this(buildManagedChannel());
+  }
+
+  /**
+   * Constructor once channel is available. This should not be called directly.
+   *
+   * @param channel GRPC managed channel to be closed (or null).
+   * @throws IllegalStateException If cannot instantiate Runtime.
+   */
+  private ActorRuntime(ManagedChannel channel) throws IllegalStateException {
+    this(channel, buildDaprClient(channel));
   }
 
   /**
    * Constructor with dependency injection, useful for testing. This should not be called directly.
    *
+   * @param channel GRPC managed channel to be closed (or null).
    * @param daprClient Client to communicate with Dapr.
    * @throws IllegalStateException If class has one instance already.
    */
-  private ActorRuntime(DaprClient daprClient) throws IllegalStateException {
+  private ActorRuntime(ManagedChannel channel, DaprClient daprClient) throws IllegalStateException {
     if (instance != null) {
       throw new IllegalStateException("ActorRuntime should only be constructed once");
     }
@@ -81,6 +101,7 @@ public class ActorRuntime {
     this.config = new ActorRuntimeConfig();
     this.actorManagers = Collections.synchronizedMap(new HashMap<>());
     this.daprClient = daprClient;
+    this.channel = channel;
   }
 
   /**
@@ -272,9 +293,52 @@ public class ActorRuntime {
     if (actorManager == null) {
       String errorMsg = String.format("Actor type %s is not registered with Actor runtime.", actorTypeName);
       ACTOR_TRACE.writeError(TRACE_TYPE, actorTypeName, "Actor type is not registered with runtime.");
-      throw new IllegalStateException(errorMsg);
+      throw new IllegalArgumentException(errorMsg);
     }
 
     return actorManager;
+  }
+
+  /**
+   * Build an instance of the Client based on the provided setup.
+   *
+   * @param channel GRPC managed channel (or null, if not using GRPC).
+   * @return an instance of the setup Client
+   * @throws java.lang.IllegalStateException if any required field is missing
+   */
+  private static DaprClient buildDaprClient(ManagedChannel channel) {
+    if (Properties.USE_GRPC.get()) {
+      return new DaprGrpcClient(channel);
+    }
+
+    return new DaprHttpClient(new DaprHttpBuilder().build());
+  }
+
+  /**
+   * Creates a GRPC managed channel (or null, if not applicable).
+   *
+   * @return GRPC managed channel or null.
+   */
+  private static ManagedChannel buildManagedChannel() {
+    if (!Properties.USE_GRPC.get()) {
+      return null;
+    }
+
+    int port = Properties.GRPC_PORT.get();
+    if (port <= 0) {
+      throw new IllegalStateException("Invalid port.");
+    }
+
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void close() {
+    if (channel != null && !channel.isShutdown()) {
+      channel.shutdown();
+    }
   }
 }
