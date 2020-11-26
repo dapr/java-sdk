@@ -426,6 +426,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
     if (state.getEtag() != null) {
       stateBuilder.setEtag(state.getEtag());
     }
+    if (state.getMetadata() != null) {
+      stateBuilder.putAllMetadata(state.getMetadata());
+    }
     if (bytes != null) {
       stateBuilder.setValue(ByteString.copyFrom(bytes));
     }

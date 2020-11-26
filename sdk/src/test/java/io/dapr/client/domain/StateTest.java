@@ -26,6 +26,7 @@ public class StateTest {
         + "value=value"
         + ", key='" + KEY + "'"
         + ", etag='" + ETAG + "'"
+        + ", metadata={'null'}"
         + ", error='null'"
         + ", options={'null'}"
         + "}";
@@ -45,6 +46,7 @@ public class StateTest {
         + "value=null"
         + ", key='" + KEY + "'"
         + ", etag='" + ETAG + "'"
+        + ", metadata={'null'}"
         + ", error='null'"
         + ", options={'" + OPTIONS.toString() + "'}"
         + "}";
@@ -63,6 +65,7 @@ public class StateTest {
         + "value=value"
         + ", key='" + KEY + "'"
         + ", etag='" + ETAG + "'"
+        + ", metadata={'null'}"
         + ", error='null'"
         + ", options={'" + OPTIONS.toString() + "'}"
         + "}";

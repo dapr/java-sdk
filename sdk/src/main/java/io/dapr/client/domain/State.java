@@ -5,6 +5,8 @@
 
 package io.dapr.client.domain;
 
+import java.util.Map;
+
 /**
  * This class reprent what a State is.
  *
@@ -29,6 +31,11 @@ public class State<T> {
   private final String etag;
 
   /**
+   * The metadata which will be passed to state store component.
+   */
+  private final Map<String, String> metadata;
+
+  /**
    * The error in case the key could not be retrieved.
    */
   private final String error;
@@ -48,6 +55,7 @@ public class State<T> {
     this.key = key;
     this.value = null;
     this.etag = null;
+    this.metadata = null;
     this.options = null;
     this.error = null;
   }
@@ -65,6 +73,7 @@ public class State<T> {
     this.value = null;
     this.key = key;
     this.etag = etag;
+    this.metadata = null;
     this.options = options;
     this.error = null;
   }
@@ -82,6 +91,26 @@ public class State<T> {
     this.value = value;
     this.key = key;
     this.etag = etag;
+    this.metadata = null;
+    this.options = options;
+    this.error = null;
+  }
+
+  /**
+   * Create an immutable state.
+   * This Constructor CAN be used anytime you want the state to be saved.
+   *
+   * @param value   - The value of the state.
+   * @param key     - The key of the state.
+   * @param etag    - The etag of the state - for some state stores (like redis) only numbers are supported.
+   * @param metadata - The metadata of the state.
+   * @param options - REQUIRED when saving a state.
+   */
+  public State(T value, String key, String etag, Map<String, String> metadata, StateOptions options) {
+    this.value = value;
+    this.key = key;
+    this.etag = etag;
+    this.metadata = metadata;
     this.options = options;
     this.error = null;
   }
@@ -98,6 +127,7 @@ public class State<T> {
     this.value = value;
     this.key = key;
     this.etag = etag;
+    this.metadata = null;
     this.options = null;
     this.error = null;
   }
@@ -113,6 +143,7 @@ public class State<T> {
     this.value = null;
     this.key = key;
     this.etag = null;
+    this.metadata = null;
     this.options = null;
     this.error = error;
   }
@@ -142,6 +173,14 @@ public class State<T> {
    */
   public String getEtag() {
     return etag;
+  }
+
+  /**
+   * Retrieve the metadata of this state.
+   * @return the metadata of this state
+   */
+  public Map<String, String> getMetadata() {
+    return metadata;
   }
 
   /**
@@ -191,6 +230,10 @@ public class State<T> {
       return false;
     }
 
+    if (getMetadata() != null ? !getMetadata().equals(that.getMetadata()) : that.getMetadata() != null) {
+      return false;
+    }
+
     if (getOptions() != null ? !getOptions().equals(that.getOptions()) : that.getOptions() != null) {
       return false;
     }
@@ -203,6 +246,7 @@ public class State<T> {
     int result = getValue() != null ? getValue().hashCode() : 0;
     result = 31 * result + (getKey() != null ? getKey().hashCode() : 0);
     result = 31 * result + (getEtag() != null ? getEtag().hashCode() : 0);
+    result = 31 * result + (getMetadata() != null ? getMetadata().hashCode() : 0);
     result = 31 * result + (getError() != null ? getError().hashCode() : 0);
     result = 31 * result + (getOptions() != null ? options.hashCode() : 0);
     return result;
@@ -214,6 +258,7 @@ public class State<T> {
         + "value=" + value
         + ", key='" + key + "'"
         + ", etag='" + etag + "'"
+        + ", metadata={'" + (metadata != null ? metadata.toString() : null) + "'}"
         + ", error='" + error + "'"
         + ", options={'" + (options != null ? options.toString() : null) + "'}"
         + "}";
