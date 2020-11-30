@@ -226,7 +226,7 @@ public class State<T> {
       return false;
     }
 
-    if (getError() != null ? !getEtag().equals(that.getError()) : that.getError() != null) {
+    if (getError() != null ? !getError().equals(that.getError()) : that.getError() != null) {
       return false;
     }
 
