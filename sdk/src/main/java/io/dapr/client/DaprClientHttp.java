@@ -411,7 +411,7 @@ public class DaprClientHttp extends AbstractDaprClient {
         byte[] data = this.stateSerializer.serialize(state.getValue());
         // Custom serializer, so everything is byte[].
         operations.add(new TransactionalStateOperation<>(operation.getOperation(),
-            new State<>(data, state.getKey(), state.getEtag(), state.getOptions())));
+            new State<>(data, state.getKey(), state.getEtag(), state.getMetadata(), state.getOptions())));
       }
       TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
       byte[] serializedOperationBody = INTERNAL_SERIALIZER.serialize(req);
@@ -461,7 +461,8 @@ public class DaprClientHttp extends AbstractDaprClient {
 
         byte[] data = this.stateSerializer.serialize(state.getValue());
         // Custom serializer, so everything is byte[].
-        internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getOptions()));
+        internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getMetadata(),
+                state.getOptions()));
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
       return this.client.invokeApi(
