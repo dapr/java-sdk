@@ -716,7 +716,7 @@ public class DaprClientGrpcTest {
     String etag = "ETag1";
     String key = "key1";
     String expectedValue = "Expected state";
-    State<String> expectedState = buildStateKey(expectedValue, key, etag, null);
+    State<String> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), null);
     DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
     SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
     MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
@@ -758,12 +758,12 @@ public class DaprClientGrpcTest {
     String key = "key1";
     MyObject expectedValue = new MyObject(1, "The Value");
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
     DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
         .setData(serialize(expectedValue))
         .setEtag(etag)
         .build();
-    State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
+    State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
     SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
     MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
@@ -784,7 +784,7 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Map<String, String> metadata = new HashMap<>();
     metadata.put("key_1", "val_1");
-    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
     DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
         .setData(serialize(expectedValue))
         .setEtag(etag)
@@ -810,12 +810,12 @@ public class DaprClientGrpcTest {
     String key = "key1";
     MyObject expectedValue = new MyObject(1, "The Value");
     StateOptions options = new StateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
-    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, options);
+    State<MyObject> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
     DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
         .setData(serialize(expectedValue))
         .setEtag(etag)
         .build();
-    State<MyObject> keyRequest = buildStateKey(null, key, etag, options);
+    State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
     SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
     MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
     addCallback(settableFuture, callback, directExecutor());
@@ -1453,6 +1453,10 @@ public class DaprClientGrpcTest {
     return new State<>(value, key, etag, options);
   }
 
+  private <T> State<T> buildStateKey(T value, String key, String etag, Map<String, String> metadata, StateOptions options) {
+    return new State<>(value, key, etag, metadata, options);
+  }
+
   /**
    * The purpose of this test is to show that it doesn't matter when the client is called, the actual coll to DAPR
    * will be done when the output Mono response call the Mono.block method.
@@ -1480,7 +1484,7 @@ public class DaprClientGrpcTest {
     String expectedValue1 = "Expected state 1";
     String key2 = "key2";
     String expectedValue2 = "Expected state 2";
-    State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, null);
+    State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
     Map<String, SettableFuture<DaprProtos.GetStateResponse>> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
