@@ -16,7 +16,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <grpc.version>1.33.1</grpc.version>
     <protobuf.version>3.13.0</protobuf.version>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/83f5c45362b0c577139b1887276d7cf1b7308506/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/a67a76d468c748c76122b04f28d8181a1170249c/dapr/proto</dapr.proto.baseurl>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>

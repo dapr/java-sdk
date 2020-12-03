@@ -331,7 +331,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     byte[] data = payload == null ? null : payload.toByteArray();
     T value = stateSerializer.deserialize(data, type);
     String etag = item.getEtag();
-    return new State<>(value, key, etag);
+    return new State<>(value, key, etag, item.getMetadataMap(), null);
   }
 
   private <T> State<T> buildStateKeyValue(
@@ -343,7 +343,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     byte[] data = payload == null ? null : payload.toByteArray();
     T value = stateSerializer.deserialize(data, type);
     String etag = response.getEtag();
-    return new State<>(value, requestedKey, etag, stateOptions);
+    return new State<>(value, requestedKey, etag, response.getMetadataMap(), stateOptions);
   }
 
   /**
