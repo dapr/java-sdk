@@ -8,6 +8,7 @@ package io.dapr.client.domain;
 import io.opentelemetry.context.Context;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * A request to get bulk state by keys.
@@ -17,6 +18,8 @@ public class GetStatesRequest {
   private String stateStoreName;
 
   private List<String> keys;
+
+  private Map<String, String> metadata;
 
   private int parallelism;
 
@@ -52,5 +55,13 @@ public class GetStatesRequest {
 
   void setContext(Context context) {
     this.context = context;
+  }
+
+  public Map<String, String> getMetadata() {
+    return metadata;
+  }
+
+  void setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata;
   }
 }
