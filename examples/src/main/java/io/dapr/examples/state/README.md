@@ -41,7 +41,7 @@ public class StateClient {
 
   private static final String SECOND_KEY_NAME = "myKey2";
   ///...
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
       try (DaprClient client = new DaprClientBuilder().build()) {
         String message = args.length == 0 ? " " : args[0];
   

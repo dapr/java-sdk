@@ -12,7 +12,6 @@ import io.dapr.exceptions.DaprException;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.propagation.HttpTraceContext;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.context.propagation.TextMapPropagator;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -22,7 +21,6 @@ import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -32,7 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class DaprHttp implements Closeable {
+public class DaprHttp implements AutoCloseable {
 
   /**
    * Dapr API used in this client.
@@ -221,7 +219,7 @@ public class DaprHttp implements Closeable {
    * @see OkHttpClient
    */
   @Override
-  public void close() throws IOException {
+  public void close() {
     // No code needed
   }
 
@@ -297,7 +295,7 @@ public class DaprHttp implements Closeable {
           throw new DaprException(error);
         }
 
-        throw new IllegalStateException("Unknown Dapr error. HTTP status code: " + response.code());
+        throw new DaprException("UNKNOWN", "HTTP status code: " + response.code());
       }
 
       Map<String, String> mapHeaders = new HashMap<>();

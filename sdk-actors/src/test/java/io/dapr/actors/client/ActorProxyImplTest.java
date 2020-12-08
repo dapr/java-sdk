@@ -7,6 +7,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorMethod;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
@@ -309,7 +310,7 @@ public class ActorProxyImplTest {
 
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test(expected = DaprException.class)
   public void invokeActorMethodSavingDataWithIncorrectReturnType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
@@ -355,7 +356,7 @@ public class ActorProxyImplTest {
   }
 
 
-  @Test(expected = RuntimeException.class)
+  @Test(expected = DaprException.class)
   public void invokeActorMethodSavingDataWithIncorrectInputType() {
     final DaprClient daprClient = mock(DaprClient.class);
     when(daprClient.invokeActorMethod(anyString(), anyString(), anyString(), Mockito.isNotNull()))
@@ -402,7 +403,7 @@ public class ActorProxyImplTest {
   }
 
 
-  @Test(expected = RuntimeException.class)
+  @Test(expected = DaprException.class)
   public void invokeActorMethodWithDataWithVoidIncorrectInputType() {
     MyData saveData = new MyData();
     saveData.setPropertyA("valueA");

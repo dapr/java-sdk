@@ -5,6 +5,13 @@
 
 package io.dapr.exceptions;
 
+import io.grpc.StatusRuntimeException;
+import reactor.core.publisher.Mono;
+
+import java.lang.reflect.Executable;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+
 /**
  * A Dapr's specific exception.
  */
@@ -32,8 +39,16 @@ public class DaprException extends RuntimeException {
    *                  permitted, and indicates that the cause is nonexistent or
    *                  unknown.)
    */
-  public DaprException(DaprError daprError, Throwable cause) {
+  public DaprException(DaprError daprError, Exception cause) {
     this(daprError.getErrorCode(), daprError.getMessage(), cause);
+  }
+
+  /**
+   * Wraps an exception into a DaprException.
+   * @param exception the exception to be wrapped.
+   */
+  public DaprException(Exception exception) {
+    this("UNKNOWN", exception.getMessage(), exception);
   }
 
   /**
@@ -56,8 +71,8 @@ public class DaprException extends RuntimeException {
    *                  permitted, and indicates that the cause is nonexistent or
    *                  unknown.)
    */
-  public DaprException(String errorCode, String message, Throwable cause) {
-    super(String.format("%s: %s", errorCode, message), cause);
+  public DaprException(String errorCode, String message, Exception cause) {
+    super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
     this.errorCode = errorCode;
   }
 
@@ -68,5 +83,89 @@ public class DaprException extends RuntimeException {
    */
   public String getErrorCode() {
     return this.errorCode;
+  }
+
+  /**
+   * Convenience to throw an wrapped IllegalArgumentException.
+   * @param message Message for exception.
+   */
+  public static void throwIllegalArgumentException(String message) {
+    try {
+      throw new IllegalArgumentException(message);
+    } catch (Exception e) {
+      wrap(e);
+    }
+  }
+
+  /**
+   * Wraps an exception into DaprException (if not already DaprException).
+   *
+   * @param exception Exception to be wrapped.
+   * @return DaprException.
+   */
+  public static DaprException wrap(Exception exception) {
+    if (exception == null) {
+      return null;
+    }
+
+    if (exception instanceof DaprException) {
+      throw (DaprException) exception;
+    }
+
+    Throwable e = exception;
+    while (e != null) {
+      if (e instanceof StatusRuntimeException) {
+        StatusRuntimeException statusRuntimeException = (StatusRuntimeException) e;
+        throw new DaprException(
+            statusRuntimeException.getStatus().getCode().toString(),
+            statusRuntimeException.getStatus().getDescription(),
+            exception);
+      }
+
+      e = e.getCause();
+    }
+
+    throw new DaprException(exception);
+  }
+
+  /**
+   * Wraps a callable with a try-catch to throw DaprException.
+   * @param callable callable to be invoked.
+   * @param <T> type to be returned
+   * @return object of type T.
+   */
+  public static <T> Callable<T> wrap(Callable<T> callable) {
+    return () -> {
+      try {
+        return callable.call();
+      } catch (Exception e) {
+        return (T) wrap(e);
+      }
+    };
+  }
+
+  /**
+   * Wraps an exception into DaprException (if not already DaprException).
+   *
+   * @param exception Exception to be wrapped.
+   * @param <T> Mono's response type.
+   * @return Mono containing DaprException.
+   */
+  public static <T> Mono<T> wrapMono(Exception exception) {
+    try {
+      wrap(exception);
+    } catch (Exception e) {
+      return Mono.error(e);
+    }
+
+    return Mono.empty();
+  }
+
+  private static String emptyIfNull(String str) {
+    if (str == null) {
+      return "";
+    }
+
+    return str;
   }
 }

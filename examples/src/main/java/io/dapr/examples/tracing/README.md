@@ -140,7 +140,7 @@ public class InvokeClient {
 
 private static final String SERVICE_APP_ID = "invokedemo";
 ///...
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     Tracer tracer = OpenTelemetryConfig.createTracer(InvokeClient.class.getCanonicalName());
 
     Span span = tracer.spanBuilder("Example's Main").setSpanKind(Span.Kind.CLIENT).startSpan();

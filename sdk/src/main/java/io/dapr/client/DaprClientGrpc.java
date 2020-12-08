@@ -9,7 +9,6 @@ import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Empty;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetSecretRequest;
@@ -25,6 +24,7 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
@@ -149,12 +149,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
           .setData(ByteString.copyFrom(objectSerializer.serialize(data))).build();
 
       return Mono.fromCallable(wrap(context, () -> {
-        ListenableFuture<Empty> futureEmpty = client.publishEvent(envelope);
-        futureEmpty.get();
+        get(client.publishEvent(envelope));
         return null;
       }));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -178,10 +177,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
         ListenableFuture<CommonProtos.InvokeResponse> futureResponse =
             client.invokeService(envelope);
 
-        return objectSerializer.deserialize(futureResponse.get().getData().getValue().toByteArray(), type);
+        return objectSerializer.deserialize(get(futureResponse).getData().getValue().toByteArray(), type);
       })).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -216,10 +215,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.InvokeBindingRequest envelope = builder.build();
       return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<DaprProtos.InvokeBindingResponse> futureResponse = client.invokeBinding(envelope);
-        return objectSerializer.deserialize(futureResponse.get().getData().toByteArray(), type);
+        return objectSerializer.deserialize(get(futureResponse).getData().toByteArray(), type);
       })).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -253,16 +252,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.GetStateRequest envelope = builder.build();
       return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<DaprProtos.GetStateResponse> futureResponse = client.getState(envelope);
-        DaprProtos.GetStateResponse response = null;
-        try {
-          response = futureResponse.get();
-        } catch (NullPointerException npe) {
-          return null;
-        }
-        return buildStateKeyValue(response, key, options, type);
+        return buildStateKeyValue(get(futureResponse), key, options, type);
       })).map(s -> new Response<>(context, s));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -294,12 +287,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.GetBulkStateRequest envelope = builder.build();
       return Mono.fromCallable(wrap(context, () -> {
         ListenableFuture<DaprProtos.GetBulkStateResponse> futureResponse = client.getBulkState(envelope);
-        DaprProtos.GetBulkStateResponse response = null;
-        try {
-          response = futureResponse.get();
-        } catch (NullPointerException npe) {
-          return null;
-        }
+        DaprProtos.GetBulkStateResponse response = get(futureResponse);
 
         return response
             .getItemsList()
@@ -307,14 +295,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
             .map(b -> {
               try {
                 return buildStateKeyValue(b, type);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
+              } catch (Exception e) {
+                DaprException.wrap(e);
+                return null;
               }
             })
             .collect(Collectors.toList());
       })).map(s -> new Response<>(context, s));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -374,16 +363,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.ExecuteStateTransactionRequest req = builder.build();
 
-      return Mono.fromCallable(wrap(context, () -> client.executeStateTransaction(req))).flatMap(f -> {
-        try {
-          f.get();
-        } catch (Exception e) {
-          return Mono.error(e);
-        }
-        return Mono.empty();
-      }).thenReturn(new Response<>(context, null));
-    } catch (IOException e) {
-      return Mono.error(e);
+      return Mono.fromCallable(wrap(context, () -> client.executeStateTransaction(req))).map(f -> get(f))
+          .thenReturn(new Response<>(context, null));
+    } catch (Exception e) {
+      return DaprException.wrapMono(e);
     }
   }
 
@@ -406,16 +389,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.SaveStateRequest req = builder.build();
 
-      return Mono.fromCallable(wrap(context, () -> client.saveState(req))).flatMap(f -> {
-        try {
-          f.get();
-        } catch (Exception ex) {
-          return Mono.error(ex);
-        }
-        return Mono.empty();
-      }).thenReturn(new Response<>(context, null));
+      return Mono.fromCallable(wrap(context, () -> client.saveState(req))).map(f -> get(f))
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -492,16 +469,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
 
       DaprProtos.DeleteStateRequest req = builder.build();
-      return Mono.fromCallable(wrap(context, () -> client.deleteState(req))).flatMap(f -> {
-        try {
-          f.get();
-        } catch (Exception ex) {
-          return Mono.error(ex);
-        }
-        return Mono.empty();
-      }).thenReturn(new Response<>(context, null));
+      return Mono.fromCallable(wrap(context, () -> client.deleteState(req))).map(f -> get(f))
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -563,7 +534,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
         throw new IllegalArgumentException("Secret key cannot be null or empty.");
       }
     } catch (Exception e) {
-      return Mono.error(e);
+      return DaprException.wrapMono(e);
     }
 
     DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
@@ -576,7 +547,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     return Mono.fromCallable(wrap(context, () -> {
       DaprProtos.GetSecretRequest req = requestBuilder.build();
       ListenableFuture<DaprProtos.GetSecretResponse> future = client.getSecret(req);
-      return future.get();
+      return get(future);
     })).map(future -> new Response<>(context, future.getDataMap()));
   }
 
@@ -586,9 +557,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @throws IOException on exception.
    */
   @Override
-  public void close() throws IOException {
+  public void close() throws Exception {
     if (channel != null) {
-      channel.close();
+      DaprException.wrap(() -> {
+        channel.close();
+        return true;
+      }).call();
     }
   }
 
@@ -658,15 +632,25 @@ public class DaprClientGrpc extends AbstractDaprClient {
             }
           });
     } catch (SpanContextParseException e) {
-      throw new RuntimeException(e);
+      throw new DaprException(e);
     }
   }
 
   private static <V> Callable<V> wrap(Context context, Callable<V> callable) {
     if (context == null) {
-      return callable;
+      return DaprException.wrap(callable);
     }
 
-    return context.wrap(callable);
+    return DaprException.wrap(context.wrap(callable));
+  }
+
+  private static <V> V get(ListenableFuture<V> future) {
+    try {
+      return future.get();
+    } catch (Exception e) {
+      DaprException.wrap(e);
+    }
+
+    return null;
   }
 }

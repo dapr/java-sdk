@@ -7,6 +7,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorMethod;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
@@ -173,7 +174,8 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
     try {
       return this.serializer.deserialize(response, type);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      DaprException.wrap(e);
+      return null;
     }
   }
 
@@ -188,7 +190,8 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
     try {
       return this.serializer.serialize(request);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      DaprException.wrap(e);
+      return null;
     }
   }
 }

@@ -96,7 +96,7 @@ public class SecretsClientIT extends BaseIT {
   }
 
   @After
-  public void tearDown() throws IOException {
+  public void tearDown() throws Exception {
     daprClient.close();
   }
 

@@ -110,7 +110,7 @@ public class InvokeClient {
 
 private static final String SERVICE_APP_ID = "invokedemo";
 ///...
-public static void main(String[] args) throws IOException {
+public static void main(String[] args) throws Exception {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         byte[] response = client.invokeService(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,

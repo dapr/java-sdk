@@ -23,6 +23,7 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.TransactionalStateRequest;
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -159,7 +160,7 @@ public class DaprClientHttp extends AbstractDaprClient {
           DaprHttp.HttpMethods.POST.name(), url.toString(), null, serializedEvent, metadata, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -198,11 +199,11 @@ public class DaprClientHttp extends AbstractDaprClient {
 
           return Mono.just(object);
         } catch (Exception ex) {
-          return Mono.error(ex);
+          return DaprException.wrapMono(ex);
         }
       }).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -266,11 +267,11 @@ public class DaprClientHttp extends AbstractDaprClient {
 
           return Mono.just(object);
         } catch (Exception ex) {
-          return Mono.error(ex);
+          return DaprException.wrapMono(ex);
         }
       }).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
   
@@ -307,13 +308,13 @@ public class DaprClientHttp extends AbstractDaprClient {
             try {
               return Mono.just(buildStates(s, type));
             } catch (Exception ex) {
-              return Mono.error(ex);
+              return DaprException.wrapMono(ex);
             }
           })
           .map(r -> new Response<>(context, r));
 
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
   
@@ -358,12 +359,12 @@ public class DaprClientHttp extends AbstractDaprClient {
             try {
               return Mono.just(buildState(s, key, options, type));
             } catch (Exception ex) {
-              return Mono.error(ex);
+              return DaprException.wrapMono(ex);
             }
           })
           .map(r -> new Response<>(context, r));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -383,19 +384,12 @@ public class DaprClientHttp extends AbstractDaprClient {
       if (operations == null || operations.isEmpty()) {
         return Mono.empty();
       }
-      final Map<String, String> headers = new HashMap<>();
-      final String etag = operations.stream()
-          .filter(op -> null != op.getRequest().getEtag() && !op.getRequest().getEtag().trim().isEmpty())
-          .findFirst()
-          .orElse(new TransactionalStateOperation<>(null, new State<>(null,null, null, null)))
-          .getRequest()
-          .getEtag();
-      if (etag != null && !etag.trim().isEmpty()) {
-        headers.put(HEADER_HTTP_ETAG_ID, etag);
-      }
       final String url = String.format(TRANSACTION_URL_FORMAT,  stateStoreName);
       List<TransactionalStateOperation<Object>> internalOperationObjects = new ArrayList<>(operations.size());
       for (TransactionalStateOperation operation : operations) {
+        if (operation == null) {
+          continue;
+        }
         State<?> state = operation.getRequest();
         if (state == null) {
           continue;
@@ -416,10 +410,10 @@ public class DaprClientHttp extends AbstractDaprClient {
       TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
       byte[] serializedOperationBody = INTERNAL_SERIALIZER.serialize(req);
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), url, null, serializedOperationBody, headers, context)
+          DaprHttp.HttpMethods.POST.name(), url, null, serializedOperationBody, null, context)
           .thenReturn(new Response<>(context, null));
-    } catch (IOException e) {
-      return Mono.error(e);
+    } catch (Exception e) {
+      return DaprException.wrapMono(e);
     }
   }
 
@@ -437,12 +431,6 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
       if (states == null || states.isEmpty()) {
         return Mono.empty();
-      }
-      final Map<String, String> headers = new HashMap<>();
-      final String etag = states.stream().filter(state -> null != state.getEtag() && !state.getEtag().trim().isEmpty())
-          .findFirst().orElse(new State<>(null, null, null, null)).getEtag();
-      if (etag != null && !etag.trim().isEmpty()) {
-        headers.put(HEADER_HTTP_ETAG_ID, etag);
       }
       final String url = STATE_PATH + "/" + stateStoreName;
       List<State<Object>> internalStateObjects = new ArrayList<>(states.size());
@@ -466,10 +454,10 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, headers, context)
+          DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, null, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -506,7 +494,7 @@ public class DaprClientHttp extends AbstractDaprClient {
               DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
-      return Mono.error(ex);
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -581,7 +569,7 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("Secret key cannot be null or empty.");
       }
     } catch (Exception e) {
-      return Mono.error(e);
+      return DaprException.wrapMono(e);
     }
 
     String url = SECRETS_PATH + "/" + secretStoreName + "/" + key;
@@ -596,7 +584,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
           return Mono.just(m);
         } catch (IOException e) {
-          return Mono.error(e);
+          return DaprException.wrapMono(e);
         }
       })
       .map(m -> (Map<String, String>)m)
@@ -604,7 +592,11 @@ public class DaprClientHttp extends AbstractDaprClient {
   }
 
   @Override
-  public void close() throws IOException {
-    client.close();
+  public void close() {
+    try {
+      client.close();
+    } catch (Exception e) {
+      DaprException.wrap(e);
+    }
   }
 }

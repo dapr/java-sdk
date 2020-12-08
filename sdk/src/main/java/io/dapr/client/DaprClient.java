@@ -31,7 +31,7 @@ import java.util.Map;
  *
  * @see io.dapr.client.DaprClientBuilder for information on how to make instance for this interface.
  */
-public interface DaprClient extends Closeable {
+public interface DaprClient extends AutoCloseable {
 
   /**
    * Publish an event.

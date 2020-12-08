@@ -57,6 +57,6 @@ public class DaprHttpStub extends DaprHttp {
      * {@inheritDoc}
      */
     @Override
-    public void close() throws IOException {
+    public void close() {
     }
 }

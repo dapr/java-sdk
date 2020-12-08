@@ -11,7 +11,6 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.TransactionalStateOperation;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +44,7 @@ public class StateClient {
    * Executes the sate actions.
    * @param args messages to be sent as state value.
    */
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
       String message = args.length == 0 ? " " : args[0];
 
