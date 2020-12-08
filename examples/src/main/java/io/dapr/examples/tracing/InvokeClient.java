@@ -18,8 +18,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
-import java.io.IOException;
-
 /**
  * 1. Build and install jars:
  * mvn clean install
@@ -40,7 +38,7 @@ public class InvokeClient {
    *
    * @param args Messages to be sent as request for the invoke API.
    */
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     Tracer tracer = OpenTelemetryConfig.createTracer(InvokeClient.class.getCanonicalName());
 
     Span span = tracer.spanBuilder("Example's Main").setSpanKind(Span.Kind.CLIENT).startSpan();

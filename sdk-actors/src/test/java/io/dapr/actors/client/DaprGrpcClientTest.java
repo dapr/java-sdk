@@ -14,6 +14,9 @@ import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.util.concurrent.ExecutionException;
+
+import static io.dapr.actors.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -89,8 +92,12 @@ public class DaprGrpcClientTest {
       return true;
     }))).thenReturn(settableFuture);
     Mono<byte[]> result = client.invokeActorMethod(ACTOR_TYPE, ACTOR_ID, methodName, null);
-    Exception exception = assertThrows(Exception.class, () -> result.block());
-    assertTrue(exception.getCause().getCause() instanceof ArithmeticException);
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.ArithmeticException",
+        () -> result.block());
   }
 
   @Test

@@ -109,7 +109,7 @@ public class OutputBindingExample{
 
   static final String BINDING_OPERATION = "create";
 ///...
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
       try (DaprClient client = new DaprClientBuilder().build()) {
   
         int count = 0;

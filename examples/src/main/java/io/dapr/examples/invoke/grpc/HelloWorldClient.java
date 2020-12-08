@@ -9,8 +9,6 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 
-import java.io.IOException;
-
 /**
  * 1. Build and install jars:
  * mvn clean install
@@ -25,7 +23,7 @@ public class HelloWorldClient {
    *
    * @param args Array of messages to be sent.
    */
-  public static void main(String[] args) throws InterruptedException, IOException {
+  public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
 
       String serviceAppId = "hellogrpc";

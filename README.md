@@ -144,6 +144,7 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [Actors over Http](./examples/src/main/java/io/dapr/examples/actors/http)
 * [Secrets management](./examples/src/main/java/io/dapr/examples/secrets)
 * [Distributed tracing with OpenTelemetry SDK](./examples/src/main/java/io/dapr/examples/tracing)
+* [Exception handling](./examples/src/main/java/io/dapr/examples/exception)
 
 #### API Documentation
 
@@ -221,29 +222,11 @@ Now you can go to your IDE (like Eclipse, for example) and debug your Java appli
 
 Calls to Dapr's APIs on `http://127.0.0.1:3500/*` should work now and trigger breakpoints in your code.
 
-#### Creating and publishing the artifacts to Nexus Repository
-In case you need to publish Dapr's SDK to a private Nexus repo, run the command below from the project's root directory:
+#### Exception handling
 
-```sh
-mvn package
-mvn deploy:deploy-file -DgeneratePom=false -DrepositoryId=nexus -Durl=http://localhost:8081/repository/maven-releases -DpomFile=pom.xml -Dfile=target/dapr-sdk-0.3.0.jar
-```
-
-For more documentation reference:
-
-https://maven.apache.org/plugins/maven-deploy-plugin
-
-https://help.sonatype.com/repomanager3/user-interface/uploading-components
+All exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extends from `RuntimeException`, making it compatible with Project Reactor. See [example](./examples/src/main/java/io/dapr/examples/exception) for more details.
 
 ### Development
-
-#### Maven Module version management
-When releasing a new version of this SDK you must increase the version of all modules and pom files, so run the following commands:
-
-```sh
-mvn versions:set -DnewVersion="0.1.0-preview02"
-mvn versions:commit
-```
 
 #### Update proto files
 

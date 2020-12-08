@@ -18,9 +18,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
+import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Common test cases for Dapr client (GRPC and HTTP).
@@ -58,6 +61,22 @@ public abstract class AbstractStateClientIT extends BaseIT {
     Assert.assertNotNull(myDataResponse.getValue());
     Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
     Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+  }
+
+  @Test
+  public void getStateKeyNotFound() {
+    final String stateKey = "unknownKey";
+
+    DaprClient daprClient = buildDaprClient();
+
+    State<String> state = (State<String>)
+        daprClient.getState(STATE_STORE_NAME, new State(stateKey), String.class).block();
+    Assert.assertNotNull(state);
+    Assert.assertEquals("unknownKey", state.getKey());
+    Assert.assertNull(state.getValue());
+    // gRPC returns empty eTag while HTTP returns null.
+    // TODO(artursouza): https://github.com/dapr/java-sdk/issues/405
+    Assert.assertTrue(state.getEtag() == null || state.getEtag().isEmpty());
   }
 
   @Test

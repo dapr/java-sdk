@@ -29,6 +29,9 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.grpc.Status;
+import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import org.junit.After;
 import org.junit.Before;
@@ -44,9 +47,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -85,34 +90,43 @@ public class DaprClientGrpcTest {
   }
 
   @After
-  public void tearDown() throws IOException {
+  public void tearDown() throws Exception {
     adapter.close();
     verify(closeable).close();
     verifyNoMoreInteractions(closeable);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void publishEventExceptionThrownTest() {
     when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
-        .thenThrow(RuntimeException.class);
-    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
-    result.block();
+        .thenThrow(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
+
+    assertThrowsDaprException(
+        StatusRuntimeException.class,
+        "INVALID_ARGUMENT",
+        "INVALID_ARGUMENT: bad bad argument",
+        () -> adapter.publishEvent("pubsubname","topic", "object").block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void publishEventCallbackExceptionThrownTest() {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
-    RuntimeException ex = new RuntimeException("An Exception");
+    RuntimeException ex = newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
     MockCallback<Empty> callback = new MockCallback<>(ex);
     addCallback(settableFuture, callback, directExecutor());
     when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "INVALID_ARGUMENT",
+        "INVALID_ARGUMENT: bad bad argument",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void publishEventSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     adapter = new DaprClientGrpc(closeable, client, mockSerializer, new DefaultObjectSerializer());
@@ -121,7 +135,12 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     Mono<Void> result = adapter.publishEvent("pubsubname","topic", "{invalid-json");
-    result.block();
+
+    assertThrowsDaprException(
+        IOException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
   @Test
@@ -168,25 +187,25 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingIllegalArgumentExceptionTest() {
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty binding name
       adapter.invokeBinding("", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null binding name
       adapter.invokeBinding(null, "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null binding operation
       adapter.invokeBinding("BindingName", null, "request".getBytes(), Collections.EMPTY_MAP).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty binding operation
       adapter.invokeBinding("BindingName", "", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     adapter = new DaprClientGrpc(closeable, client, mockSerializer, new DefaultObjectSerializer());
@@ -195,18 +214,28 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
-    result.block();
+
+    assertThrowsDaprException(
+        IOException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeBindingExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
+    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeBindingCallbackExceptionThrownTest() {
     SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -217,7 +246,12 @@ public class DaprClientGrpcTest {
     when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -314,33 +348,48 @@ public class DaprClientGrpcTest {
     assertFalse(callback.wasCalled);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceVoidExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<Void> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceIllegalArgumentExceptionThrownTest() {
     SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
     // HttpExtension cannot be null
     Mono<Void> result = adapter.invokeService("appId", "method", "request", null);
-    result.block();
+
+    assertThrowsDaprException(
+        IllegalArgumentException.class,
+        "UNKNOWN",
+        "UNKNOWN: HttpExtension cannot be null. Use HttpExtension.NONE instead.",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceEmptyRequestVoidExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<Void> result = adapter.invokeService("appId", "method", HttpExtension.NONE, (Map<String, String>)null);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceVoidCallbackExceptionThrownTest() {
     SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -350,7 +399,12 @@ public class DaprClientGrpcTest {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -384,31 +438,46 @@ public class DaprClientGrpcTest {
     assertTrue(callback.wasCalled);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<String> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE, null, String.class);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceNoRequestClassExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<String> result = adapter.invokeService("appId", "method", HttpExtension.NONE, (Map<String, String>)null, String.class);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceNoRequestTypeRefExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<String> result = adapter.invokeService("appId", "method", HttpExtension.NONE, (Map<String, String>)null, TypeRef.STRING);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceCallbackExceptionThrownTest() {
     SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -418,7 +487,12 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     Mono<String> result = adapter.invokeService("appId", "method", "request", HttpExtension.NONE, null, String.class);
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -482,15 +556,20 @@ public class DaprClientGrpcTest {
     assertEquals(object.value, resultObject.value);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceNoRequestBodyExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<String> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE, String.class);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceNoRequestCallbackExceptionThrownTest() {
     SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -500,7 +579,12 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     Mono<String> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE, String.class);
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -536,17 +620,22 @@ public class DaprClientGrpcTest {
     assertEquals(object.value, resultObject.value);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceByteRequestExceptionThrownTest() throws IOException {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
     Mono<byte[]> result = adapter.invokeService("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceByteRequestCallbackExceptionThrownTest() throws IOException {
     SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -559,7 +648,12 @@ public class DaprClientGrpcTest {
     Mono<byte[]> result =
         adapter.invokeService("appId", "method", byteRequest, HttpExtension.NONE,(HashMap<String, String>) null);
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -598,15 +692,20 @@ public class DaprClientGrpcTest {
     assertEquals(resultObj, serializer.deserialize(byteOutput, MyObject.class));
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceNoRequestNoClassBodyExceptionThrownTest() {
     when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
         .thenThrow(RuntimeException.class);
     Mono<Void> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeServiceNoRequestNoClassCallbackExceptionThrownTest() {
     SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -616,7 +715,12 @@ public class DaprClientGrpcTest {
         .thenReturn(settableFuture);
     Mono<Void> result = adapter.invokeService("appId", "method", (Object)null, HttpExtension.NONE);
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -670,33 +774,38 @@ public class DaprClientGrpcTest {
   @Test
   public void getStateIllegalArgumentExceptionTest() {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.getState("", key, String.class).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.getState(null, key, String.class).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null key
       adapter.getState(STATE_STORE_NAME, (String)null, String.class).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty key
       adapter.getState(STATE_STORE_NAME, "", String.class).block();
     });
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void getStateExceptionThrownTest() {
     when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class))).thenThrow(RuntimeException.class);
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void getStateCallbackExceptionThrownTest() {
     SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -708,7 +817,12 @@ public class DaprClientGrpcTest {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -829,20 +943,20 @@ public class DaprClientGrpcTest {
   @Test
   public void getStatesIllegalArgumentExceptionTest() {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.getStates("", Collections.singletonList("100"), String.class).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.getStates(null, Collections.singletonList("100"), String.class).block();
     });
-    assertThrows(NullPointerException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null key
       // null pointer exception due to keys being converted to an unmodifiable list
       adapter.getStates(STATE_STORE_NAME, null, String.class).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty key list
       adapter.getStates(STATE_STORE_NAME, Collections.emptyList(), String.class).block();
     });
@@ -850,7 +964,7 @@ public class DaprClientGrpcTest {
     GetStatesRequest req = new GetStatesRequestBuilder(STATE_STORE_NAME, Collections.singletonList("100"))
         .withParallelism(-1)
         .build();
-    assertThrows(IllegalArgumentException.class, () -> adapter.getStates(req, TypeRef.BOOLEAN).block());
+    assertThrowsDaprException(IllegalArgumentException.class, () -> adapter.getStates(req, TypeRef.BOOLEAN).block());
   }
 
   @Test
@@ -1029,36 +1143,41 @@ public class DaprClientGrpcTest {
     assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void deleteStateExceptionThrowTest() {
     when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class))).thenThrow(RuntimeException.class);
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
   @Test
   public void deleteStateIllegalArgumentExceptionTest() {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.deleteState("", key.getKey(), "etag", null).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.deleteState(null, key.getKey(), "etag", null).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.deleteState(STATE_STORE_NAME, null, "etag", null).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.deleteState(STATE_STORE_NAME, "", "etag", null).block();
     });
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void deleteStateCallbackExcpetionThrownTest() {
     SettableFuture<Empty> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
@@ -1069,7 +1188,12 @@ public class DaprClientGrpcTest {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -1190,17 +1314,17 @@ public class DaprClientGrpcTest {
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         key);
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.executeTransaction("", Collections.singletonList(upsertOperation)).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.executeTransaction(null, Collections.singletonList(upsertOperation)).block();
     });
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void executeTransactionSerializerExceptionTest() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     adapter = new DaprClientGrpc(closeable, client, mockSerializer, mockSerializer);
@@ -1220,7 +1344,12 @@ public class DaprClientGrpcTest {
         .withTransactionalStates(upsertOperation)
         .build();
     Mono<Response<Void>> result = adapter.executeTransaction(request);
-    result.block();
+
+    assertThrowsDaprException(
+        IOException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
   @Test
@@ -1278,7 +1407,7 @@ public class DaprClientGrpcTest {
     assertTrue(callback.wasCalled);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void executeTransactionExceptionThrownTest() {
     String etag = "ETag1";
     String key = "key1";
@@ -1291,10 +1420,15 @@ public class DaprClientGrpcTest {
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
     Mono<Void> result = adapter.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void executeTransactionCallbackExceptionTest() {
     String etag = "ETag1";
     String key = "key1";
@@ -1312,32 +1446,42 @@ public class DaprClientGrpcTest {
         stateKey);
     Mono<Void> result = adapter.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: ex",
+        () -> result.block());
   }
 
   @Test
   public void saveStatesIllegalArgumentExceptionTest() {
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.saveStates("", Collections.emptyList()).block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.saveStates(null, Collections.emptyList()).block();
     });
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveStateExceptionThrownTest() {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
     when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenThrow(RuntimeException.class);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
-    result.block();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveStateCallbackExceptionThrownTest() {
     String key = "key1";
     String etag = "ETag1";
@@ -1349,7 +1493,12 @@ public class DaprClientGrpcTest {
     when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
     settableFuture.setException(ex);
-    result.block();
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "UNKNOWN",
+        "UNKNOWN: java.lang.RuntimeException: An Exception",
+        () -> result.block());
   }
 
   @Test
@@ -1478,22 +1627,25 @@ public class DaprClientGrpcTest {
    */
 
   @Test
-  public void getStateDeleteStateThenBlockDeleteThenBlockGet() throws Exception {
+  public void getStateThenDelete() throws Exception {
     String etag = "ETag1";
     String key1 = "key1";
     String expectedValue1 = "Expected state 1";
     String key2 = "key2";
     String expectedValue2 = "Expected state 2";
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
+    State<String> expectedState2 = buildStateKey(expectedValue2, key2, etag, new HashMap<>(), null);
     Map<String, SettableFuture<DaprProtos.GetStateResponse>> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
     when(client.getState(argThat(new GetStateRequestKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
+    when(client.getState(argThat(new GetStateRequestKeyMatcher(key2)))).thenReturn(futuresMap.get(key2));
     State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
     Mono<State<String>> resultGet1 = adapter.getState(STATE_STORE_NAME, keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
     State<String> keyRequest2 = buildStateKey(null, key2, etag, null);
     Mono<State<String>> resultGet2 = adapter.getState(STATE_STORE_NAME, keyRequest2, String.class);
+    assertEquals(expectedState2, resultGet2.block());
 
     SettableFuture<Empty> settableFutureDelete = SettableFuture.create();
     MockCallback<Empty> callbackDelete = new MockCallback<>(Empty.newBuilder().build());
@@ -1505,11 +1657,6 @@ public class DaprClientGrpcTest {
     settableFutureDelete.set(Empty.newBuilder().build());
     resultDelete.block();
     assertTrue(callbackDelete.wasCalled);
-    futuresMap.replace(key2, null);
-    when(client.getState(argThat(new GetStateRequestKeyMatcher(key2)))).thenReturn(futuresMap.get(key2));
-
-    State<String> state2 = resultGet2.block();
-    assertNull(state2);
   }
 
   @Test
@@ -1575,24 +1722,24 @@ public class DaprClientGrpcTest {
         return settableFuture;
       });
 
-    assertThrows(RuntimeException.class, () -> adapter.getSecret(SECRET_STORE_NAME, "key").block());
+    assertThrowsDaprException(ExecutionException.class, () -> adapter.getSecret(SECRET_STORE_NAME, "key").block());
   }
 
   @Test
   public void getSecretsIllegalArgumentException() {
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty secret store name
       adapter.getSecret("", "key").block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null secret store name
       adapter.getSecret(null, "key").block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // empty key
       adapter.getSecret(SECRET_STORE_NAME, "").block();
     });
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrowsDaprException(IllegalArgumentException.class, () -> {
       // null key
       adapter.getSecret(SECRET_STORE_NAME, null).block();
     });
@@ -1820,5 +1967,9 @@ public class DaprClientGrpcTest {
     public String toString() {
       return "<Has property of certain value (propName: " + propValue + ") matcher>";
     }
+  }
+
+  private static StatusRuntimeException newStatusRuntimeException(String status, String message) {
+    return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(status)).withDescription(message));
   }
 }

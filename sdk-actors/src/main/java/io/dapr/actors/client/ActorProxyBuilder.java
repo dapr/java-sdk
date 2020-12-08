@@ -18,6 +18,8 @@ import io.grpc.ManagedChannelBuilder;
 import java.io.Closeable;
 import java.lang.reflect.Proxy;
 
+import static io.dapr.exceptions.DaprException.throwIllegalArgumentException;
+
 /**
  * Builder to generate an ActorProxy instance. Builder can be reused for multiple instances.
  */
@@ -74,10 +76,10 @@ public class ActorProxyBuilder<T> implements Closeable {
    */
   public ActorProxyBuilder(String actorType, Class<T> actorTypeClass) {
     if ((actorType == null) || actorType.isEmpty()) {
-      throw new IllegalArgumentException("ActorType is required.");
+      throwIllegalArgumentException("ActorType is required.");
     }
     if (actorTypeClass == null) {
-      throw new IllegalArgumentException("ActorTypeClass is required.");
+      throwIllegalArgumentException("ActorTypeClass is required.");
     }
 
     this.useGrpc = Properties.USE_GRPC.get();
@@ -96,7 +98,7 @@ public class ActorProxyBuilder<T> implements Closeable {
    */
   public ActorProxyBuilder<T> withObjectSerializer(DaprObjectSerializer objectSerializer) {
     if (objectSerializer == null) {
-      throw new IllegalArgumentException("Serializer is required.");
+      throwIllegalArgumentException("Serializer is required.");
     }
 
     this.objectSerializer = objectSerializer;
@@ -111,7 +113,7 @@ public class ActorProxyBuilder<T> implements Closeable {
    */
   public T build(ActorId actorId) {
     if (actorId == null) {
-      throw new IllegalArgumentException("Cannot instantiate an Actor without Id.");
+      throwIllegalArgumentException("Cannot instantiate an Actor without Id.");
     }
 
     ActorProxyImpl proxy = new ActorProxyImpl(
@@ -167,7 +169,7 @@ public class ActorProxyBuilder<T> implements Closeable {
 
     int port = Properties.GRPC_PORT.get();
     if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
+      throwIllegalArgumentException("Invalid port.");
     }
 
     return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();

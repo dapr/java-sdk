@@ -86,7 +86,7 @@ The other component is the client. It will send one message per second to the se
 ```java
 private static class HelloWorldClient {
 ///...
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
     
       String serviceAppId = "hellogrpc";

@@ -8,12 +8,16 @@ package io.dapr.it.state;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprClientHttp;
+import io.dapr.client.domain.State;
 import io.dapr.it.DaprRun;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 
+import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -34,7 +38,7 @@ public class HttpStateClientIT extends AbstractStateClientIT {
   }
 
   @AfterClass
-  public static void tearDown() throws IOException {
+  public static void tearDown() throws Exception {
     daprClient.close();
   }
 
@@ -43,4 +47,45 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     return daprClient;
   }
 
+  /** Tests where HTTP and GRPC behavior differ in Dapr runtime. **/
+
+  @Test
+  public void getStateStoreNotFound() {
+    final String stateKey = "key";
+
+    DaprClient daprClient = buildDaprClient();
+
+    // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
+    assertThrowsDaprException(
+        "ERR_STATE_STORE_NOT_FOUND",
+        "ERR_STATE_STORE_NOT_FOUND: state store unknown%20state%20store is not found",
+        () -> daprClient.getState("unknown state store", new State(stateKey), byte[].class).block());
+  }
+
+  @Test
+  public void getStatesStoreNotFound() {
+    final String stateKey = "key";
+
+    DaprClient daprClient = buildDaprClient();
+
+    // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
+    assertThrowsDaprException(
+        "ERR_STATE_STORE_NOT_FOUND",
+        "ERR_STATE_STORE_NOT_FOUND: state store unknown%20state%20store is not found",
+        () -> daprClient.getStates(
+            "unknown state store",
+            Collections.singletonList(stateKey),
+            byte[].class).block());
+  }
+
+  @Test
+  public void publishPubSubNotFound() {
+    DaprClient daprClient = buildDaprClient();
+
+    // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
+    assertThrowsDaprException(
+        "ERR_PUBSUB_NOT_FOUND",
+        "ERR_PUBSUB_NOT_FOUND: pubsub 'unknown%20pubsub' not found",
+        () -> daprClient.publishEvent("unknown pubsub", "mytopic", "payload").block());
+  }
 }

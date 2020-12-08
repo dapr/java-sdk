@@ -9,8 +9,6 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 
-import java.io.IOException;
-
 /**
  * 1. Build and install jars:
  * mvn clean install
@@ -31,7 +29,7 @@ public class InvokeClient {
    *
    * @param args Messages to be sent as request for the invoke API.
    */
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         byte[] response = client.invokeService(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
