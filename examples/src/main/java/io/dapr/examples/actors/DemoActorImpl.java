@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.examples.actors.http;
+package io.dapr.examples.actors;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.runtime.AbstractActor;
