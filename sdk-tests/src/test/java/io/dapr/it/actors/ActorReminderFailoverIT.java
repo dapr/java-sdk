@@ -8,30 +8,26 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.MyActorService;
-import io.dapr.it.actors.services.springboot.StatefulActorService;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+import static io.dapr.it.actors.MyActorTestUtils.*;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 public class ActorReminderFailoverIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorReminderFailoverIT.class);
+
+  private static final String METHOD_NAME = "receiveReminder";
 
   private ActorProxy proxy;
 
@@ -92,8 +88,8 @@ public class ActorReminderFailoverIT extends BaseIT {
     logger.debug("Pausing 7 seconds to allow reminder to fire");
     Thread.sleep(7000);
 
-    ArrayList<MethodEntryTracker> logs = getAppMethodCallLogs(proxy);
-    validateReminderCalls(logs, 3);
+    List<MethodEntryTracker> logs = fetchMethodCallLogs(proxy);
+    validateMethodCalls(logs, METHOD_NAME, 3);
 
     int originalActorHostIdentifier = Integer.parseInt(
         proxy.invokeActorMethod("getIdentifier", String.class).block());
@@ -106,59 +102,16 @@ public class ActorReminderFailoverIT extends BaseIT {
 
     logger.debug("Pausing 10 seconds to allow failover to take place");
     Thread.sleep(10000);
-    ArrayList<MethodEntryTracker> newLogs = getAppMethodCallLogs(proxy);
+    List<MethodEntryTracker> newLogs = fetchMethodCallLogs(proxy);
     logger.debug("Pausing 10 seconds to allow reminder to fire a few times");
     Thread.sleep(10000);
-    ArrayList<MethodEntryTracker> newLogs2 = getAppMethodCallLogs(proxy);
+    List<MethodEntryTracker> newLogs2 = fetchMethodCallLogs(proxy);
     logger.debug("Check if there has been additional calls");
-    validateReminderCalls(newLogs2, countReminderCalls(newLogs) + 4);
+    validateMethodCalls(newLogs2, METHOD_NAME, countMethodCalls(newLogs, METHOD_NAME) + 4);
 
     int newActorHostIdentifier = Integer.parseInt(
         proxy.invokeActorMethod("getIdentifier", String.class).block());
     assertNotEquals(originalActorHostIdentifier, newActorHostIdentifier);
-  }
-
-  ArrayList<MethodEntryTracker> getAppMethodCallLogs(ActorProxy proxy) {
-    ArrayList<String> logs = proxy.invokeActorMethod("getCallLog", ArrayList.class).block();
-    ArrayList<MethodEntryTracker> trackers = new ArrayList<MethodEntryTracker>();
-    for(String t : logs) {
-      String[] toks = t.split("\\|");
-      MethodEntryTracker m = new MethodEntryTracker(
-        toks[0].equals("Enter") ? true : false,
-        toks[1],
-        new Date(toks[2]));
-      trackers.add(m);
-    }
-
-    return trackers;
-  }
-
-  /**
-   * Validate the reminder has been invoked at least x times.
-   * @param logs logs with info about method entries and exits returned from the app
-   * @return number of successful invocations of reminder
-   */
-  private int countReminderCalls(ArrayList<MethodEntryTracker> logs) {
-    // Counts number of times reminder is invoked.
-    // Events for each actor method call include "enter" and "exit" calls, so they are divided by 2.
-    List<MethodEntryTracker> calls =
-        logs.stream().filter(x -> x.getMethodName().equals(("receiveReminder"))).collect(Collectors.toList());
-    System.out.printf(
-        "Size of reminder count list is %d, which means it's been invoked half that many times.\n", calls.size());
-    return calls.size() / 2;
-  }
-
-  /**
-   * Validate the reminder has been invoked at least x times.
-   * @param logs logs with info about method entries and exits returned from the app
-   * @param minimum minimum number of entries.
-   */
-  void validateReminderCalls(ArrayList<MethodEntryTracker> logs, int minimum) {
-    // Validate the reminder has been invoked at least x times. We cannot validate precisely because of
-    // differences due issues like how loaded the machine may be. Based on its dueTime and period, and our sleep above,
-    // we validate below with some margin.
-    int callsCount = countReminderCalls(logs);
-    assertTrue(callsCount >= minimum);
   }
 
 }
