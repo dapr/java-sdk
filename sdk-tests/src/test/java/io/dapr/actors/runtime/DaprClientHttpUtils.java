@@ -16,6 +16,6 @@ public class DaprClientHttpUtils {
       String actorType,
       String actorId,
       String reminderName) throws Exception {
-    new DaprHttpClient(client).unregisterActorReminder(actorType, actorId, reminderName).block();
+    new DaprHttpClient(client).unregisterReminder(actorType, actorId, reminderName).block();
   }
 }

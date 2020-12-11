@@ -56,7 +56,7 @@ public class DaprGrpcClientTest {
         ACTOR_ID,
         "MyKey"
     )))).thenReturn(settableFuture);
-    Mono<byte[]> result = client.getActorState(ACTOR_TYPE, ACTOR_ID, "MyKey");
+    Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_ID, "MyKey");
     Exception exception = assertThrows(Exception.class, () -> result.block());
     assertTrue(exception.getCause().getCause() instanceof ArithmeticException);
   }
@@ -72,7 +72,7 @@ public class DaprGrpcClientTest {
         ACTOR_ID,
         "MyKey"
     )))).thenReturn(settableFuture);
-    Mono<byte[]> result = client.getActorState(ACTOR_TYPE, ACTOR_ID, "MyKey");
+    Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_ID, "MyKey");
     assertArrayEquals(data, result.block());
   }
 
@@ -86,7 +86,7 @@ public class DaprGrpcClientTest {
         ACTOR_ID,
         new ArrayList<>()
     )))).thenReturn(settableFuture);
-    Mono<Void> result = client.saveActorStateTransactionally(ACTOR_TYPE, ACTOR_ID, new ArrayList<>());
+    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, new ArrayList<>());
     Exception exception = assertThrows(Exception.class, () -> result.block());
     assertTrue(exception.getCause().getCause() instanceof ArithmeticException);
   }
@@ -106,7 +106,7 @@ public class DaprGrpcClientTest {
         ACTOR_ID,
         Arrays.asList(operations)
     )))).thenReturn(settableFuture);
-    Mono<Void> result = client.saveActorStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
+    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
     result.block();
   }
 
@@ -125,7 +125,7 @@ public class DaprGrpcClientTest {
         ACTOR_ID,
         Arrays.asList(operations)
     )))).thenReturn(settableFuture);
-    Mono<Void> result = client.saveActorStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
+    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
     result.block();
   }
 
@@ -136,7 +136,7 @@ public class DaprGrpcClientTest {
         new ActorStateOperation("delete", "mykey", null),
     };
 
-    Mono<Void> result = client.saveActorStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
+    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
     assertThrows(IllegalArgumentException.class, () -> result.block());
   }
 
@@ -161,7 +161,7 @@ public class DaprGrpcClientTest {
       assertEquals(DurationUtils.convertDurationToDaprFormat(params.getPeriod()), argument.getPeriod());
       return true;
     }))).thenReturn(settableFuture);
-    Mono<Void> result = client.registerActorReminder(ACTOR_TYPE, ACTOR_ID, reminderName, params);
+    Mono<Void> result = client.registerReminder(ACTOR_TYPE, ACTOR_ID, reminderName, params);
     result.block();
   }
 
@@ -178,7 +178,7 @@ public class DaprGrpcClientTest {
       assertEquals(reminderName, argument.getName());
       return true;
     }))).thenReturn(settableFuture);
-    Mono<Void> result = client.unregisterActorReminder(ACTOR_TYPE, ACTOR_ID, reminderName);
+    Mono<Void> result = client.unregisterReminder(ACTOR_TYPE, ACTOR_ID, reminderName);
     result.block();
   }
 
@@ -205,7 +205,7 @@ public class DaprGrpcClientTest {
       assertEquals(DurationUtils.convertDurationToDaprFormat(params.getPeriod()), argument.getPeriod());
       return true;
     }))).thenReturn(settableFuture);
-    Mono<Void> result = client.registerActorTimer(ACTOR_TYPE, ACTOR_ID, timerName, params);
+    Mono<Void> result = client.registerTimer(ACTOR_TYPE, ACTOR_ID, timerName, params);
     result.block();
   }
 
@@ -222,7 +222,7 @@ public class DaprGrpcClientTest {
       assertEquals(timerName, argument.getName());
       return true;
     }))).thenReturn(settableFuture);
-    Mono<Void> result = client.unregisterActorTimer(ACTOR_TYPE, ACTOR_ID, timerName);
+    Mono<Void> result = client.unregisterTimer(ACTOR_TYPE, ACTOR_ID, timerName);
     result.block();
   }
 

@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class GetStateRequest {
 
-  private String stateStoreName;
+  private String storeName;
 
   private String key;
 
@@ -27,12 +27,12 @@ public class GetStateRequest {
 
   private Context context;
 
-  public String getStateStoreName() {
-    return stateStoreName;
+  public String getStoreName() {
+    return storeName;
   }
 
-  void setStateStoreName(String stateStoreName) {
-    this.stateStoreName = stateStoreName;
+  void setStoreName(String storeName) {
+    this.storeName = storeName;
   }
 
   public String getKey() {

@@ -11,9 +11,9 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.GetStatesRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeServiceRequest;
@@ -161,7 +161,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeService(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
+  public <T> Mono<Response<T>> invokeMethod(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
     try {
       String appId = invokeServiceRequest.getAppId();
       String method = invokeServiceRequest.getMethod();
@@ -228,7 +228,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
   @Override
   public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
     try {
-      final String stateStoreName = request.getStateStoreName();
+      final String stateStoreName = request.getStoreName();
       final String key = request.getKey();
       final StateOptions options = request.getStateOptions();
       // TODO(artursouza): handle etag once available in proto.
@@ -263,9 +263,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<List<State<T>>>> getStates(GetStatesRequest request, TypeRef<T> type) {
+  public <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
     try {
-      final String stateStoreName = request.getStateStoreName();
+      final String stateStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
       final int parallelism = request.getParallelism();
       final Context context = request.getContext();
@@ -339,7 +339,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> executeTransaction(ExecuteStateTransactionRequest request) {
+  public Mono<Response<Void>> executeStateTransaction(ExecuteStateTransactionRequest request) {
     try {
       final String stateStoreName = request.getStateStoreName();
       final List<TransactionalStateOperation<?>> operations = request.getOperations();
@@ -374,9 +374,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> saveStates(SaveStateRequest request) {
+  public Mono<Response<Void>> saveBulkState(SaveStateRequest request) {
     try {
-      final String stateStoreName = request.getStateStoreName();
+      final String stateStoreName = request.getStoreName();
       final List<State<?>> states = request.getStates();
       final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
@@ -522,7 +522,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request) {
-    String secretStoreName = request.getSecretStoreName();
+    String secretStoreName = request.getStoreName();
     String key = request.getKey();
     Map<String, String> metadata = request.getMetadata();
     Context context = request.getContext();

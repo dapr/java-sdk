@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class GetSecretRequest {
 
-  private String secretStoreName;
+  private String storeName;
 
   private String key;
 
@@ -22,12 +22,12 @@ public class GetSecretRequest {
 
   private Context context;
 
-  public String getSecretStoreName() {
-    return secretStoreName;
+  public String getStoreName() {
+    return storeName;
   }
 
-  void setSecretStoreName(String secretStoreName) {
-    this.secretStoreName = secretStoreName;
+  void setStoreName(String storeName) {
+    this.storeName = storeName;
   }
 
   public String getKey() {

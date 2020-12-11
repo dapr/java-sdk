@@ -98,7 +98,7 @@ public class ActorCustomSerializerTest {
     ActorProxy actorProxy = createActorProxy();
     MyData d = new MyData("hi", 3);
 
-    MyData response = actorProxy.invokeActorMethod("classInClassOut", d, MyData.class).block();
+    MyData response = actorProxy.invoke("classInClassOut", d, MyData.class).block();
 
     Assert.assertEquals("hihi", response.getName());
     Assert.assertEquals(6, response.getNum());
@@ -107,7 +107,7 @@ public class ActorCustomSerializerTest {
   @Test
   public void stringInStringOut() {
     ActorProxy actorProxy = createActorProxy();
-    String response = actorProxy.invokeActorMethod("stringInStringOut", "oi", String.class).block();
+    String response = actorProxy.invoke("stringInStringOut", "oi", String.class).block();
 
     Assert.assertEquals("oioi", response);
   }
@@ -115,7 +115,7 @@ public class ActorCustomSerializerTest {
   @Test
   public void intInIntOut() {
     ActorProxy actorProxy = createActorProxy();
-    int response = actorProxy.invokeActorMethod("intInIntOut", 2, int.class).block();
+    int response = actorProxy.invoke("intInIntOut", 2, int.class).block();
 
     Assert.assertEquals(4, response);
   }
@@ -130,7 +130,7 @@ public class ActorCustomSerializerTest {
     // Mock daprClient for ActorProxy only, not for runtime.
     DaprClientStub daprClient = mock(DaprClientStub.class);
 
-    when(daprClient.invokeActorMethod(
+    when(daprClient.invoke(
       eq(context.getActorTypeInformation().getName()),
       eq(actorId.toString()),
       any(),
@@ -153,10 +153,10 @@ public class ActorCustomSerializerTest {
   private static <T extends AbstractActor> ActorRuntimeContext createContext() {
     DaprClient daprClient = mock(DaprClient.class);
 
-    when(daprClient.registerActorTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.registerActorReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorTimer(any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorReminder(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterTimer(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterReminder(any(), any(), any())).thenReturn(Mono.empty());
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),

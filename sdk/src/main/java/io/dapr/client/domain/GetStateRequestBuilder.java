@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class GetStateRequestBuilder {
 
-  private final String stateStoreName;
+  private final String storeName;
 
   private final String key;
 
@@ -26,8 +26,8 @@ public class GetStateRequestBuilder {
 
   private Context context;
 
-  public GetStateRequestBuilder(String stateStoreName, String key) {
-    this.stateStoreName = stateStoreName;
+  public GetStateRequestBuilder(String storeName, String key) {
+    this.storeName = storeName;
     this.key = key;
   }
 
@@ -57,7 +57,7 @@ public class GetStateRequestBuilder {
    */
   public GetStateRequest build() {
     GetStateRequest request = new GetStateRequest();
-    request.setStateStoreName(this.stateStoreName);
+    request.setStoreName(this.storeName);
     request.setKey(this.key);
     request.setMetadata(this.metadata);
     request.setEtag(this.etag);

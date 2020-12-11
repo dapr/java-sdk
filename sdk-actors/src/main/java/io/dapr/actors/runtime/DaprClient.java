@@ -22,7 +22,7 @@ interface DaprClient {
    * @param keyName   State name.
    * @return Asynchronous result with current state value.
    */
-  Mono<byte[]> getActorState(String actorType, String actorId, String keyName);
+  Mono<byte[]> getState(String actorType, String actorId, String keyName);
 
   /**
    * Saves state batch to Dapr.
@@ -32,7 +32,7 @@ interface DaprClient {
    * @param operations State transaction operations.
    * @return Asynchronous void result.
    */
-  Mono<Void> saveActorStateTransactionally(String actorType, String actorId, List<ActorStateOperation> operations);
+  Mono<Void> saveStateTransactionally(String actorType, String actorId, List<ActorStateOperation> operations);
 
   /**
    * Register a reminder.
@@ -43,7 +43,7 @@ interface DaprClient {
    * @param reminderParams Parameters for the reminder.
    * @return Asynchronous void result.
    */
-  Mono<Void> registerActorReminder(
+  Mono<Void> registerReminder(
       String actorType,
       String actorId,
       String reminderName,
@@ -57,7 +57,7 @@ interface DaprClient {
    * @param reminderName Name of reminder to be unregistered.
    * @return Asynchronous void result.
    */
-  Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName);
+  Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName);
 
   /**
    * Register a timer.
@@ -68,7 +68,7 @@ interface DaprClient {
    * @param timerParams Parameters for the timer.
    * @return Asynchronous void result.
    */
-  Mono<Void> registerActorTimer(String actorType, String actorId, String timerName, ActorTimerParams timerParams);
+  Mono<Void> registerTimer(String actorType, String actorId, String timerName, ActorTimerParams timerParams);
 
   /**
    * Unregisters a timer.
@@ -78,5 +78,5 @@ interface DaprClient {
    * @param timerName Name of timer to be unregistered.
    * @return Asynchronous void result.
    */
-  Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName);
+  Mono<Void> unregisterTimer(String actorType, String actorId, String timerName);
 }

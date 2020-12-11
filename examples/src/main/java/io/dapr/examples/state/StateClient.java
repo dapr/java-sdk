@@ -70,10 +70,10 @@ public class StateClient {
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
               new State<>(secondState, SECOND_KEY_NAME, "")));
 
-      client.executeTransaction(STATE_STORE_NAME, operationList).block();
+      client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
 
       // get multiple states
-      Mono<List<State<MyClass>>> retrievedMessagesMono = client.getStates(STATE_STORE_NAME,
+      Mono<List<State<MyClass>>> retrievedMessagesMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
       System.out.println("Retrieved messages using bulk get:");
       retrievedMessagesMono.block().forEach(System.out::println);
@@ -88,10 +88,10 @@ public class StateClient {
       operationList.clear();
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.DELETE,
           new State<>(SECOND_KEY_NAME)));
-      mono = client.executeTransaction(STATE_STORE_NAME, operationList);
+      mono = client.executeStateTransaction(STATE_STORE_NAME, operationList);
       mono.block();
 
-      Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getStates(STATE_STORE_NAME,
+      Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
       System.out.println("Trying to retrieve deleted states: ");
       retrievedDeletedMessageMono.block().forEach(System.out::println);
