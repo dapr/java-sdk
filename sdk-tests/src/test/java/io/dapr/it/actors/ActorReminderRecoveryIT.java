@@ -118,7 +118,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
     List<MethodEntryTracker> calls =
         logs.stream().filter(x -> x.getMethodName().equals(("receiveReminder"))).collect(Collectors.toList());
     System.out.printf(
-        "Size of reminder count list is %d, which means it's been invoked half that many times.", calls.size());
+        "Size of reminder count list is %d, which means it's been invoked half that many times.\n", calls.size());
     return calls.size() / 2;
   }
 
