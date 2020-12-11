@@ -140,8 +140,8 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
 
       // Handles the request by printing message.
       System.out.println(String.format(
-          "^^^^^^^^^^^^^^Server reminded actor %s of: %s for %s @ %s",
-          this.getId(), reminderName, state, utcNowAsString));
+          "> Server reminded actor %s of: %s for %s @ %s hosted by instance id %s",
+          this.getId(), reminderName, state, utcNowAsString, System.getenv("DAPR_HTTP_PORT")));
 
       this.formatAndLog(false, "receiveReminder");
     });
