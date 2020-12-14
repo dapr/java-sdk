@@ -66,7 +66,7 @@ public class MethodInvokeIT extends BaseIT {
     }
 
     @Test
-    public void testInvoke() throws IOException {
+    public void testInvoke() throws Exception {
 
         // At this point, it is guaranteed that the service above is running and all ports being listened to.
 
@@ -94,7 +94,7 @@ public class MethodInvokeIT extends BaseIT {
     }
 
     @Test
-    public void testInvokeWithObjects() throws IOException {
+    public void testInvokeWithObjects() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 Person person = new Person();

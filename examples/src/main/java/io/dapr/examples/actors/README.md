@@ -128,7 +128,7 @@ The `@ActorType` annotation indicates the Dapr Java SDK that this interface is a
 
 Now, execute the following script in order to run DemoActorService:
 ```sh
-dapr run --components-path ./components --app-id demoactorservice --app-port 3000 --dapr-http-port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorService -p 3000
+dapr run --components-path ./components --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
 ```
 
 ### Running the Actor client
@@ -190,7 +190,7 @@ Then, the code executes the `callActorForever` private method once per actor. In
 Use the follow command to execute the DemoActorClient:
 
 ```sh
-dapr run --components-path ./components --app-id demoactorclient --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.http.DemoActorClient
+dapr run --components-path ./components --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
 ```
 
 Once running, the `DemoActorClient` logs will start displaying the different steps: 

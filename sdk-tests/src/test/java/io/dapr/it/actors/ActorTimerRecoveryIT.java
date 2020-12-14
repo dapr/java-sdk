@@ -17,18 +17,18 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 public class ActorTimerRecoveryIT extends BaseIT {
 
-  private static Logger logger = LoggerFactory.getLogger(ActorTimerRecoveryIT.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActorTimerRecoveryIT.class);
+
+  private static final String METHOD_NAME = "clock";
 
   /**
    * Create an actor, register a timer, validates its content, restarts the Actor and confirms timer continues.
@@ -59,8 +59,8 @@ public class ActorTimerRecoveryIT extends BaseIT {
     logger.debug("Pausing 7 seconds to allow timer to fire");
     Thread.sleep(7000);
 
-    ArrayList<MethodEntryTracker> logs = getAppMethodCallLogs(proxy);
-    validateTimerCalls(logs, 3);
+    List<MethodEntryTracker> logs = fetchMethodCallLogs(proxy);
+    validateMethodCalls(logs, METHOD_NAME, 3);
 
     // Restarts app only.
     runs.left.stop();
@@ -68,8 +68,8 @@ public class ActorTimerRecoveryIT extends BaseIT {
 
     logger.debug("Pausing 10 seconds to allow timer to fire");
     Thread.sleep(10000);
-    ArrayList<MethodEntryTracker> newLogs = getAppMethodCallLogs(proxy);
-    validateTimerCalls(newLogs, 3);
+    List<MethodEntryTracker> newLogs = fetchMethodCallLogs(proxy);
+    validateMethodCalls(newLogs, METHOD_NAME, 3);
 
     // Check that the restart actually happened by confirming the old logs are not in the new logs.
     for (MethodEntryTracker oldLog: logs) {
@@ -81,36 +81,6 @@ public class ActorTimerRecoveryIT extends BaseIT {
     // call unregister
     logger.debug("Calling actor method 'stopTimer' to unregister timer");
     proxy.invokeActorMethod("stopTimer", "myTimer").block();
-  }
-
-  ArrayList<MethodEntryTracker> getAppMethodCallLogs(ActorProxy proxy) {
-    ArrayList<String> logs = proxy.invokeActorMethod("getCallLog", ArrayList.class).block();
-    ArrayList<MethodEntryTracker> trackers = new ArrayList<MethodEntryTracker>();
-    for(String t : logs) {
-      String[] toks = t.split("\\|");
-      MethodEntryTracker m = new MethodEntryTracker(
-        toks[0].equals("Enter") ? true : false,
-        toks[1],
-        new Date(toks[2]));
-      trackers.add(m);
-    }
-
-    return trackers;
-  }
-
-  /**
-   * Validate the timer and reminder has been invoked at least x times.
-   * @param logs logs with info about method entries and exits returned from the app
-   * @param minimum minimum number of entries.
-   */
-  void validateTimerCalls(ArrayList<MethodEntryTracker> logs, int minimum) {
-    // Validate the timer has been invoked at least x times. We cannot validate precisely because of
-    // differences due issues like how loaded the machine may be. Based on its dueTime and period, and our sleep above,
-    // we validate below with some margin.  Events for each actor method call include "enter" and "exit"
-    // calls, so they are divided by 2.
-    List<MethodEntryTracker> timerInvocations = logs.stream().filter(x -> x.getMethodName().equals(("clock"))).collect(Collectors.toList());
-    System.out.println("Size of timer count list is %d, which means it's been invoked half that many times" + timerInvocations.size());
-    assertTrue(timerInvocations.size() / 2 >= minimum);
   }
 
 }

@@ -29,12 +29,12 @@ public class GetStatesRequestBuilder {
 
   public GetStatesRequestBuilder(String stateStoreName, List<String> keys) {
     this.stateStoreName = stateStoreName;
-    this.keys = Collections.unmodifiableList(keys);
+    this.keys = keys == null ? null : Collections.unmodifiableList(keys);
   }
 
   public GetStatesRequestBuilder(String stateStoreName, String... keys) {
     this.stateStoreName = stateStoreName;
-    this.keys = Collections.unmodifiableList(Arrays.asList(keys));
+    this.keys = keys == null ? null : Collections.unmodifiableList(Arrays.asList(keys));
   }
 
   public GetStatesRequestBuilder withMetadata(Map<String, String> metadata) {

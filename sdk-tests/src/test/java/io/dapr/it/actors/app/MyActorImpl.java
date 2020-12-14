@@ -133,17 +133,18 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
 
   @Override
   public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
-    this.formatAndLog(true, "receiveReminder");
-    Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-    String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
+    return Mono.fromRunnable(() -> {
+      this.formatAndLog(true, "receiveReminder");
+      Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+      String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
 
-    // Handles the request by printing message.
-    System.out.println(String.format(
-      "^^^^^^^^^^^^^^Server reminded actor %s of: %s for %s @ %s",
-      this.getId(), reminderName, state, utcNowAsString));
+      // Handles the request by printing message.
+      System.out.println(String.format(
+          "> Server reminded actor %s of: %s for %s @ %s hosted by instance id %s",
+          this.getId(), reminderName, state, utcNowAsString, System.getenv("DAPR_HTTP_PORT")));
 
-    this.formatAndLog(false, "receiveReminder");
-    return Mono.empty();
+      this.formatAndLog(false, "receiveReminder");
+    });
   }
 
   @Override

@@ -20,22 +20,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static io.dapr.it.Retry.callWithRetry;
+import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
-  private static Logger logger = LoggerFactory.getLogger(ActorTurnBasedConcurrencyIT.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActorTurnBasedConcurrencyIT.class);
 
-  private final String ACTOR_TYPE = "MyActorTest";
-  private final String REMINDER_NAME = UUID.randomUUID().toString();
-  private final String ACTOR_ID = "1";
+  private static final String TIMER_METHOD_NAME = "clock";
+
+  private static final String REMINDER_METHOD_NAME = "receiveReminder";
+
+  private static final String ACTOR_TYPE = "MyActorTest";
+
+  private static final String REMINDER_NAME = UUID.randomUUID().toString();
+
+  private static final String ACTOR_ID = "1";
 
   @After
   public void cleanUpTestCase() {
@@ -112,10 +118,11 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logger.debug("Pausing 7 seconds to allow timer and reminders to fire");
     Thread.sleep(7000);
 
-    ArrayList<MethodEntryTracker> logs = getAppMethodCallLogs(proxy);
+    List<MethodEntryTracker> logs = fetchMethodCallLogs(proxy);
     validateTurnBasedConcurrency(logs);
 
-    validateTimerCalls(logs);
+    validateMethodCalls(logs, TIMER_METHOD_NAME, 2);
+    validateMethodCalls(logs, REMINDER_METHOD_NAME, 3);
 
     // call unregister
     logger.debug("Calling actor method 'stopTimer' to unregister timer");
@@ -133,25 +140,10 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     Thread.sleep(5000);
 
     // get history again, we don't additional timer/reminder calls
-    logs = getAppMethodCallLogs(proxy);
-    validateEventNotObserved(logs, "stopTimer", "clock");
-    validateEventNotObserved(logs, "stopReminder", "receiveReminder");
+    logs = fetchMethodCallLogs(proxy);
+    validateEventNotObserved(logs, "stopTimer", TIMER_METHOD_NAME);
+    validateEventNotObserved(logs, "stopReminder", REMINDER_METHOD_NAME);
 
-  }
-
-  ArrayList<MethodEntryTracker> getAppMethodCallLogs(ActorProxy proxy) {
-    ArrayList<String> logs = proxy.invokeActorMethod("getCallLog", ArrayList.class).block();
-    ArrayList<MethodEntryTracker> trackers = new ArrayList<MethodEntryTracker>();
-    for(String t : logs) {
-      String[] toks = t.split("\\|");
-      MethodEntryTracker m = new MethodEntryTracker(
-        toks[0].equals("Enter") ? true : false,
-        toks[1],
-        new Date(toks[2]));
-      trackers.add(m);
-    }
-
-    return trackers;
   }
 
   /**
@@ -159,7 +151,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
    * our app implementation service logs that on actor methods.
    * @param logs logs with info about method entries and exits returned from the app
    */
-  void validateTurnBasedConcurrency(ArrayList<MethodEntryTracker> logs) {
+  void validateTurnBasedConcurrency(List<MethodEntryTracker> logs) {
     if (logs.size() == 0) {
       logger.warn("No logs");
       return;
@@ -187,25 +179,6 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   }
 
   /**
-   * Validate the timer and reminder has been invoked at least x times.
-   * @param logs logs with info about method entries and exits returned from the app
-   */
-  void validateTimerCalls(ArrayList<MethodEntryTracker> logs) {
-
-    // Validate the timer has been invoked at least x times. We cannot validate precisely because of
-    // differences due issues like how loaded the machine may be. Based on its dueTime and period, and our sleep above,
-    // we validate below with some margin.  Events for each actor method call include "enter" and "exit"
-    // calls, so they are divided by 2.
-    List<MethodEntryTracker> timerInvocations = logs.stream().filter(x -> x.getMethodName().equals(("clock"))).collect(Collectors.toList());
-    System.out.println("Size of timer count list is %d, which means it's been invoked half that many times" + timerInvocations.size());
-    assertTrue(timerInvocations.size() / 2 >= 2);
-
-    List<MethodEntryTracker> reminderInvocations = logs.stream().filter(x -> x.getMethodName().equals(("receiveReminder"))).collect(Collectors.toList());
-    System.out.println("Size of reminder count list is %d, which means it's been invoked half that many times" + reminderInvocations.size());
-    assertTrue(reminderInvocations.size() / 2 >= 3);
-  }
-
-  /**
    * Validates that after an event in "startingPointMethodName", the events in "methodNameThatShouldNotAppear" do not appear.
    * This can be used to validate that timers and reminders are stopped.
    *
@@ -213,7 +186,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
    * @param startingPointMethodName The name of the method after which "methodNameThatShouldNotAppear" should not appear
    * @param methodNameThatShouldNotAppear The method which should not appear
    */
-  void validateEventNotObserved(ArrayList<MethodEntryTracker> logs, String startingPointMethodName, String methodNameThatShouldNotAppear) throws Exception {
+  void validateEventNotObserved(List<MethodEntryTracker> logs, String startingPointMethodName, String methodNameThatShouldNotAppear) {
     System.out.println("Validating event " + methodNameThatShouldNotAppear + " does not appear after event " + startingPointMethodName);
     int index = -1;
     for (int i = 0; i < logs.size(); i++) {

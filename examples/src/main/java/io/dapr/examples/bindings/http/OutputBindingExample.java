@@ -8,8 +8,6 @@ package io.dapr.examples.bindings.http;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 
-import java.io.IOException;
-
 /**
  * Service for output binding example.
  * 1. From your repo root, build and install jars:
@@ -38,7 +36,7 @@ public class OutputBindingExample {
    * @param args Not used.
    */
   @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
 
       int count = 0;

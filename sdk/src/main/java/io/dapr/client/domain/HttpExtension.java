@@ -6,6 +6,7 @@
 package io.dapr.client.domain;
 
 import io.dapr.client.DaprHttp;
+import io.dapr.exceptions.DaprException;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,13 +74,18 @@ public final class HttpExtension {
    * @throws IllegalArgumentException on null method or queryString.
    */
   public HttpExtension(DaprHttp.HttpMethods method, Map<String, String> queryString) {
-    if (method == null) {
-      throw new IllegalArgumentException("HttpExtension method cannot be null");
-    } else if (queryString == null) {
-      throw new IllegalArgumentException("HttpExtension queryString map cannot be null");
+    try {
+      if (method == null) {
+        throw new IllegalArgumentException("HttpExtension method cannot be null");
+      } else if (queryString == null) {
+        throw new IllegalArgumentException("HttpExtension queryString map cannot be null");
+      }
+
+      this.method = method;
+      this.queryString = Collections.unmodifiableMap(queryString);
+    } catch (RuntimeException e) {
+      DaprException.wrap(e);
     }
-    this.method = method;
-    this.queryString = Collections.unmodifiableMap(queryString);
   }
 
   public DaprHttp.HttpMethods getMethod() {
