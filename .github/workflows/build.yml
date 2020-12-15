@@ -24,9 +24,9 @@ jobs:
       JDK_VER: 13.0.x
       DAPR_CLI_VER: 1.0.0-rc.2
       DAPR_RUNTIME_VER: 1.0.0-rc.1
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/a60221e96406a145ab22e454eec6642961725f5c/install/install.sh
-      DAPR_CLI_REF:
-      DAPR_REF: 79688c8ce802b3b31382da97422db63a27821599
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/3dacfb672d55f1436c249057aaebbe597e1066f3/install/install.sh
+      DAPR_CLI_REF: 3dacfb672d55f1436c249057aaebbe597e1066f3
+      DAPR_REF: 3cca3cc1567f1cb955ae69b8fd784f075f62ad42
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
