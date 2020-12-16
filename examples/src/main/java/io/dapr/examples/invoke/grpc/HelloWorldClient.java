@@ -12,9 +12,9 @@ import io.dapr.client.domain.HttpExtension;
 /**
  * 1. Build and install jars:
  * mvn clean install
+ * 2. cd [repo root]/examples
  * 2. Send messages to the server:
- * dapr run --components-path ./examples/components -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- * io.dapr.examples.invoke.grpc.HelloWorldClient
+ * dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
  */
 public class HelloWorldClient {
 

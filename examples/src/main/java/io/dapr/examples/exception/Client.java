@@ -15,8 +15,7 @@ import io.dapr.exceptions.DaprException;
  * 2. Go into examples:
  * cd examples
  * 3. send a message to be saved as state:
- * dapr run --components-path ./components --dapr-http-port 3006 -- \
- * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
+ * dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
  */
 public class Client {
 

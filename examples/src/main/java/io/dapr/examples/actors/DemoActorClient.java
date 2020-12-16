@@ -15,8 +15,9 @@ import java.util.List;
  * Client for Actor runtime to invoke actor methods.
  * 1. Build and install jars:
  * mvn clean install
- * 2. Run the client:
- * dapr run --components-path ./components --app-id demoactorclient -- java -jar \
+ * 2. cd to [repo-root]/examples
+ * 3. Run the client:
+ * dapr run --components-path ./components/actors --app-id demoactorclient -- java -jar \
  * target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
  */
 public class DemoActorClient {

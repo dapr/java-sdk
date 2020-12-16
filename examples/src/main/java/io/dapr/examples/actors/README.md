@@ -128,7 +128,7 @@ The `@ActorType` annotation indicates the Dapr Java SDK that this interface is a
 
 Now, execute the following script in order to run DemoActorService:
 ```sh
-dapr run --components-path ./components --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
+dapr run --components-path ./components/actors --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
 ```
 
 ### Running the Actor client
@@ -190,21 +190,21 @@ Then, the code executes the `callActorForever` private method once per actor. In
 Use the follow command to execute the DemoActorClient:
 
 ```sh
-dapr run --components-path ./components --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
+dapr run --components-path ./components/actors --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
 ```
 
 Once running, the `DemoActorClient` logs will start displaying the different steps: 
 First, we can see actors being activated:
-![actordemo1](../../../../../../resources/img/demo-actor-client1.png)
+![actordemo1](../../../../../resources/img/demo-actor-client1.png)
 
 Then we can see the `registerReminder` in action. `DemoActorClient` console displays the actors handling reminders:
-![actordemo2](../../../../../../resources/img/demo-actor-client2.png)
+![actordemo2](../../../../../resources/img/demo-actor-client2.png)
 
 After invoking `incrementAndGet`, the code invokes `say` method (you'll see these messages 10 times per each of the 3 actors):
-![actordemo2](../../../../../../resources/img/demo-actor-client3.png)
+![actordemo2](../../../../../resources/img/demo-actor-client3.png)
 
 On the other hand, the console for `DemoActorService` is also responding to the remote invocations:
-![actordemo2](../../../../../../resources/img/demo-actor-service.png)
+![actordemo2](../../../../../resources/img/demo-actor-service.png)
 
 For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java) Application implementation.
 

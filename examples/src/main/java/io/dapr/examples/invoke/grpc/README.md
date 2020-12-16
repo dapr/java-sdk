@@ -74,7 +74,7 @@ In the `GrpcHelloWorldDaprService` class, the `onInvoke` method is the most impo
 Now run the service code:
 
 ```sh
-dapr run --components-path ./components --app-id hellogrpc --app-port 5000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 5000
+dapr run --app-id hellogrpc --app-port 5000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 5000
 ```
 
 The `app-id` argument is used to identify this service in Dapr's runtime. The `app-port` determines which port Dapr's runtime should call into this service.  The `protocol` argument informs Dapr which protocol it should use to invoke the application: `grpc` or `http`(default).
@@ -118,7 +118,7 @@ Finally, it will go through in an infinite loop and invoke the `say` method ever
 Finally, open a new command line terminal and run the client code to send some messages.
 
 ```sh
-dapr run --components-path ./components -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
+dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
 ```
 
 Once the messages are sent, use `CTRL+C` to exit Dapr.
