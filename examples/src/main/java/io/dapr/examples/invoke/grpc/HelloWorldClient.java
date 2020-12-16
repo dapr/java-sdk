@@ -33,7 +33,7 @@ public class HelloWorldClient {
       while (true) {
         String message = "Message #" + (count++);
         System.out.println("Sending message: " + message);
-        client.invokeService(serviceAppId, method, message, HttpExtension.NONE).block();
+        client.invokeMethod(serviceAppId, method, message, HttpExtension.NONE).block();
         System.out.println("Message sent: " + message);
 
         Thread.sleep(1000);

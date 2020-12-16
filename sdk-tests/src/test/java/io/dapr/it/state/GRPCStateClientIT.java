@@ -73,7 +73,7 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
     assertThrowsDaprException(
         "INVALID_ARGUMENT",
         "INVALID_ARGUMENT: state store unknown state store is not found",
-        () -> daprClient.getStates(
+        () -> daprClient.getBulkState(
             "unknown state store",
             Collections.singletonList(stateKey),
             byte[].class).block());

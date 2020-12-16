@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 public class DaprClientStub implements DaprClient {
 
   @Override
-  public Mono<byte[]> invokeActorMethod(String actorType, String actorId, String methodName, byte[] jsonPayload) {
+  public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
     return Mono.just(new byte[0]);
   }
 

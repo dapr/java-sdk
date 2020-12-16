@@ -74,21 +74,21 @@ public class MethodInvokeIT extends BaseIT {
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
                 //Publishing messages
-                client.invokeService(daprRun.getAppName(), "messages", message.getBytes(), HttpExtension.POST).block();
+                client.invokeMethod(daprRun.getAppName(), "messages", message.getBytes(), HttpExtension.POST).block();
                 System.out.println("Invoke method messages : " + message);
             }
 
-            Map<Integer, String> messages = client.invokeService(daprRun.getAppName(), "messages", null,
+            Map<Integer, String> messages = client.invokeMethod(daprRun.getAppName(), "messages", null,
                 HttpExtension.GET, Map.class).block();
             assertEquals(10, messages.size());
 
-            client.invokeService(daprRun.getAppName(), "messages/1", null, HttpExtension.DELETE).block();
+            client.invokeMethod(daprRun.getAppName(), "messages/1", null, HttpExtension.DELETE).block();
 
-            messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals(9, messages.size());
 
-            client.invokeService(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
-            messages = client.invokeService(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            client.invokeMethod(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
+            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals("updated message", messages.get("2"));
         }
     }
@@ -102,16 +102,16 @@ public class MethodInvokeIT extends BaseIT {
                 person.setLastName(String.format("Last Name %d", i));
                 person.setBirthDate(new Date());
                 //Publishing messages
-                client.invokeService(daprRun.getAppName(), "persons", person, HttpExtension.POST).block();
+                client.invokeMethod(daprRun.getAppName(), "persons", person, HttpExtension.POST).block();
                 System.out.println("Invoke method persons with parameter : " + person);
             }
 
-            List<Person> persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            List<Person> persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(10, persons.size());
 
-            client.invokeService(daprRun.getAppName(), "persons/1", null, HttpExtension.DELETE).block();
+            client.invokeMethod(daprRun.getAppName(), "persons/1", null, HttpExtension.DELETE).block();
 
-            persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(9, persons.size());
 
             Person person = new Person();
@@ -119,9 +119,9 @@ public class MethodInvokeIT extends BaseIT {
             person.setLastName("Smith");
             person.setBirthDate(Calendar.getInstance().getTime());
 
-            client.invokeService(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
+            client.invokeMethod(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
 
-            persons = Arrays.asList(client.invokeService(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             Person resultPerson = persons.get(1);
             assertEquals("John", resultPerson.getName());
             assertEquals("Smith", resultPerson.getLastName());

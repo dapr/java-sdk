@@ -32,7 +32,7 @@ public class InvokeClient {
   public static void main(String[] args) throws Exception {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
-        byte[] response = client.invokeService(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
+        byte[] response = client.invokeMethod(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
             byte[].class).block();
         System.out.println(new String(response));
       }

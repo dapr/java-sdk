@@ -71,7 +71,7 @@ public class ActorReminderFailoverIT extends BaseIT {
   public void tearDown() {
     // call unregister
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeActorMethod("stopReminder", "myReminder").block();
+    proxy.invoke("stopReminder", "myReminder").block();
   }
 
   /**
@@ -83,7 +83,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     clientAppRun.use();
 
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
-    proxy.invokeActorMethod("startReminder", "myReminder").block();
+    proxy.invoke("startReminder", "myReminder").block();
 
     logger.debug("Pausing 7 seconds to allow reminder to fire");
     Thread.sleep(7000);
@@ -92,7 +92,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     validateMethodCalls(logs, METHOD_NAME, 3);
 
     int originalActorHostIdentifier = Integer.parseInt(
-        proxy.invokeActorMethod("getIdentifier", String.class).block());
+        proxy.invoke("getIdentifier", String.class).block());
     if (originalActorHostIdentifier == firstAppRun.getHttpPort()) {
       firstAppRun.stop();
     }
@@ -110,7 +110,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     validateMethodCalls(newLogs2, METHOD_NAME, countMethodCalls(newLogs, METHOD_NAME) + 4);
 
     int newActorHostIdentifier = Integer.parseInt(
-        proxy.invokeActorMethod("getIdentifier", String.class).block());
+        proxy.invoke("getIdentifier", String.class).block());
     assertNotEquals(originalActorHostIdentifier, newActorHostIdentifier);
   }
 

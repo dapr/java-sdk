@@ -74,7 +74,7 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> getActorState(String actorType, String actorId, String keyName) {
+  public Mono<byte[]> getState(String actorType, String actorId, String keyName) {
     String url = String.format(ACTOR_STATE_KEY_RELATIVE_URL_FORMAT, actorType, actorId, keyName);
     Mono<DaprHttp.Response> responseMono =
         this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), url, null, "", null, null);
@@ -91,7 +91,7 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveActorStateTransactionally(
+  public Mono<Void> saveStateTransactionally(
       String actorType,
       String actorId,
       List<ActorStateOperation> operations) {
@@ -152,7 +152,7 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> registerActorReminder(
+  public Mono<Void> registerReminder(
       String actorType,
       String actorId,
       String reminderName,
@@ -168,7 +168,7 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
+  public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
     String url = String.format(ACTOR_REMINDER_RELATIVE_URL_FORMAT, actorType, actorId, reminderName);
     return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), url, null, null, null).then();
   }
@@ -177,7 +177,7 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> registerActorTimer(
+  public Mono<Void> registerTimer(
       String actorType,
       String actorId,
       String timerName,
@@ -193,7 +193,7 @@ class DaprHttpClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
+  public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
     String url = String.format(ACTOR_TIMER_RELATIVE_URL_FORMAT, actorType, actorId, timerName);
     return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), url, null, null, null).then();
   }
