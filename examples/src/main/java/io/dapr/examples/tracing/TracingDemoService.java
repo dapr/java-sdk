@@ -18,10 +18,10 @@ import org.apache.commons.cli.Options;
  *
  * <p>1. Build and install jars:
  * mvn clean install
- * 2. Run in server mode:
- * dapr run --components-path ./examples/components --app-id tracingdemo --app-port 3000 --port 3005 \
- *   -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- *   io.dapr.examples.tracing.TracingDemoService -p 3000
+ * 2. cd [repo root]/examples
+ * 3. Run in server mode:
+ * dapr run --app-id tracingdemo --app-port 3000 \
+ *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3000
  */
 public class TracingDemoService {
 

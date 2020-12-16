@@ -118,7 +118,7 @@ The Dapr client is also within a try-with-resource block to properly close the c
 
 Run this example with the following command:
 ```sh
-dapr run --components-path ./components --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
+dapr run --components-path ./components/state -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
 Once running, the OutputBindingExample should print the output as follows:
 

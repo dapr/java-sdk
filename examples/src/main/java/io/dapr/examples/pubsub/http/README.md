@@ -77,7 +77,7 @@ public class SubscriberController {
 ```
 Execute the follow script in order to run the Subscriber example:
 ```sh
-dapr run --components-path ./components --app-id subscriber --app-port 3000 --dapr-http-port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
+dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
 ```
 
 ### Running the publisher
@@ -130,7 +130,7 @@ public class Publisher {
 Use the follow command to execute the Publisher example:
 
 ```sh
-dapr run --components-path ./components --app-id publisher --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher
+dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher
 ```
 
 Once running, the Publisher should print the output as follows:

@@ -29,11 +29,10 @@ import static io.dapr.examples.DaprExamplesProtos.SayResponse;
 /**
  * 1. Build and install jars:
  * mvn clean install
- * 2. Run in server mode:
- * dapr run --components-path ./components --app-id hellogrpc --app-port 5000 --app-protocol grpc \
- *   -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- *   io.dapr.examples.invoke.grpc.HelloWorldService \
- *   -p 5000
+ * 2. cd [repo root]/examples
+ * 3. Run in server mode:
+ * dapr run --app-id hellogrpc --app-port 5000 --app-protocol grpc \
+ *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 5000
  */
 public class HelloWorldService {
 

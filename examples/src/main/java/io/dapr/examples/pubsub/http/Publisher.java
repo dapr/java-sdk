@@ -15,9 +15,10 @@ import java.util.Collections;
  * Message publisher.
  * 1. Build and install jars:
  * mvn clean install
- * 2. Run the program:
- * dapr run --components-path ./components --app-id publisher --dapr-http-port 3006 -- \
- *  java -jar examples/target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher
+ * 2. cd [repo root]/examples
+ * 3. Run the program:
+ * dapr run --components-path ./components/pubsub --app-id publisher -- \
+ *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher
  */
 public class Publisher {
 
