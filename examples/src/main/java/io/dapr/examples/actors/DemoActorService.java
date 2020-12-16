@@ -18,8 +18,9 @@ import java.time.Duration;
  * Service for Actor runtime.
  * 1. Build and install jars:
  * mvn clean install
- * 2. Run the server:
- * dapr run --components-path ./components --app-id demoactorservice --app-port 3000 \
+ * 2. cd to [repo-root]/examples
+ * 3. Run the server:
+ * dapr run --components-path ./components/actors --app-id demoactorservice --app-port 3000 \
  *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
  */
 public class DemoActorService {

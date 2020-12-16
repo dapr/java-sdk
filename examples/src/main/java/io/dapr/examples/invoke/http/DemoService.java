@@ -14,10 +14,10 @@ import org.apache.commons.cli.Options;
 /**
  * 1. Build and install jars:
  * mvn clean install
- * 2. Run in server mode:
- * dapr run --components-path ./components --app-id invokedemo --app-port 3000 --dapr-http-port 3005 \
- *   -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- *   io.dapr.examples.invoke.http.DemoService -p 3000
+ * 2. cd [repo root]/examples
+ * 3. Run in server mode:
+ * dapr run --app-id invokedemo --app-port 3000 \
+ *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3000
  */
 public class DemoService {
 
