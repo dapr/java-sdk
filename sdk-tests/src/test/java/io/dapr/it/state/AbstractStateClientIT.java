@@ -97,7 +97,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     //retrieves states in bulk.
     Mono<List<State<MyData>>> response =
-        daprClient.getStates(STATE_STORE_NAME, Arrays.asList(stateKeyOne, stateKeyTwo, stateKeyThree), MyData.class);
+        daprClient.getBulkState(STATE_STORE_NAME, Arrays.asList(stateKeyOne, stateKeyTwo, stateKeyThree), MyData.class);
     List<State<MyData>> result = response.block();
 
     //Assert that the response is the correct one
@@ -519,7 +519,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
         createState(stateKey, null, null, data));
 
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> saveResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> saveResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the save action
     saveResponse.block();
 
@@ -538,7 +538,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
         TransactionalStateOperation.OperationType.DELETE,
         createState(stateKey, null, null, data));
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> deleteResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> deleteResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the delete action
     deleteResponse.block();
 
@@ -568,7 +568,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     Assert.assertNotNull(daprClient);
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> saveResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> saveResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the save action
     saveResponse.block();
 
@@ -589,7 +589,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
         TransactionalStateOperation.OperationType.DELETE,
         createState(stateKey, null, null, data));
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> deleteResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> deleteResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the delete action
     deleteResponse.block();
 

@@ -72,7 +72,7 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     assertThrowsDaprException(
         "ERR_STATE_STORE_NOT_FOUND",
         "ERR_STATE_STORE_NOT_FOUND: state store unknown%20state%20store is not found",
-        () -> daprClient.getStates(
+        () -> daprClient.getBulkState(
             "unknown state store",
             Collections.singletonList(stateKey),
             byte[].class).block());

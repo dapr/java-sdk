@@ -48,7 +48,7 @@ public class InvokeClient {
           InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "echo");
           InvokeServiceRequest request
               = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
-          client.invokeService(request, TypeRef.get(byte[].class))
+          client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
                 System.out.println(new String(r.getObject()));
                 return r;
@@ -57,7 +57,7 @@ public class InvokeClient {
                 InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "sleep")
                     .withHttpExtension(HttpExtension.POST)
                     .withContext(r.getContext()).build();
-                return client.invokeService(sleepRequest, TypeRef.get(Void.class));
+                return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
               }).block();
         }
       }

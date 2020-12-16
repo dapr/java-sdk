@@ -95,7 +95,7 @@ public class PubSubIT extends BaseIT {
 
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + TOPIC_NAME);
-        final List<String> messages = client.invokeService(daprRun.getAppName(), "messages/testingtopic", null, HttpExtension.GET, List.class).block();
+        final List<String> messages = client.invokeMethod(daprRun.getAppName(), "messages/testingtopic", null, HttpExtension.GET, List.class).block();
         assertEquals(11, messages.size());
         for (int i = 0; i < NUM_MESSAGES; i++) {
           assertTrue(messages.toString(), messages.contains(String.format("This is message #%d on topic %s", i, TOPIC_NAME)));
@@ -113,7 +113,7 @@ public class PubSubIT extends BaseIT {
 
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + ANOTHER_TOPIC_NAME);
-        final List<String> messages = client.invokeService(daprRun.getAppName(), "messages/anothertopic", null, HttpExtension.GET, List.class).block();
+        final List<String> messages = client.invokeMethod(daprRun.getAppName(), "messages/anothertopic", null, HttpExtension.GET, List.class).block();
         assertEquals(10, messages.size());
 
         for (int i = 0; i < NUM_MESSAGES; i++) {

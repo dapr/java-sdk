@@ -9,11 +9,11 @@ import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
+import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetSecretRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
-import io.dapr.client.domain.GetStatesRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeBindingRequestBuilder;
@@ -72,155 +72,156 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String pubsubName, String topic, Object data) {
-    return this.publishEvent(pubsubName, topic, data, null);
+  public Mono<Void> publishEvent(String pubsubName, String topicName, Object data) {
+    return this.publishEvent(pubsubName, topicName, data, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> publishEvent(String pubsubName, String topic, Object data, Map<String, String> metadata) {
-    PublishEventRequest req = new PublishEventRequestBuilder(pubsubName, topic, data).withMetadata(metadata).build();
+  public Mono<Void> publishEvent(String pubsubName, String topicName, Object data, Map<String, String> metadata) {
+    PublishEventRequest req = new PublishEventRequestBuilder(pubsubName, topicName,
+            data).withMetadata(metadata).build();
     return this.publishEvent(req).then();
   }
 
   /**
    * {@inheritDoc}
    */
-  public <T> Mono<T> invokeService(
+  public <T> Mono<T> invokeMethod(
       String appId,
-      String method,
-      Object request,
+      String methodName,
+      Object data,
       HttpExtension httpExtension,
       Map<String, String> metadata,
       TypeRef<T> type) {
-    InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(appId, method);
+    InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(appId, methodName);
     InvokeServiceRequest req = builder
-        .withBody(request)
+        .withBody(data)
         .withHttpExtension(httpExtension)
         .withMetadata(metadata)
         .withContentType(objectSerializer.getContentType())
         .build();
 
-    return this.invokeService(req, type).map(r -> r.getObject());
+    return this.invokeMethod(req, type).map(r -> r.getObject());
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
+  public <T> Mono<T> invokeMethod(
       String appId,
-      String method,
+      String methodName,
       Object request,
       HttpExtension httpExtension,
       Map<String, String> metadata,
       Class<T> clazz) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.get(clazz));
+    return this.invokeMethod(appId, methodName, request, httpExtension, metadata, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, type);
+  public <T> Mono<T> invokeMethod(
+          String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
+    return this.invokeMethod(appId, methodName, null, httpExtension, metadata, type);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(
+          String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
+    return this.invokeMethod(appId, methodName, null, httpExtension, metadata, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   TypeRef<T> type) {
-    return this.invokeService(appId, method, request, httpExtension, null, type);
+  public <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
+                                  TypeRef<T> type) {
+    return this.invokeMethod(appId, methodName, request, httpExtension, null, type);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeService(String appId, String method, Object request, HttpExtension httpExtension,
-                                   Class<T> clazz) {
-    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension,
+                                  Class<T> clazz) {
+    return this.invokeMethod(appId, methodName, request, httpExtension, null, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(String appId, String method, Object request, HttpExtension httpExtension) {
-    return this.invokeService(appId, method, request, httpExtension, null, TypeRef.BYTE_ARRAY).then();
+  public Mono<Void> invokeMethod(String appId, String methodName, Object request, HttpExtension httpExtension) {
+    return this.invokeMethod(appId, methodName, request, httpExtension, null, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(
-      String appId, String method, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
+  public Mono<Void> invokeMethod(
+          String appId, String methodName, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
+    return this.invokeMethod(appId, methodName, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeService(
-      String appId, String method, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
+  public Mono<Void> invokeMethod(
+          String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata) {
+    return this.invokeMethod(appId, methodName, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> invokeService(
-      String appId, String method, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
-    return this.invokeService(appId, method, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
+  public Mono<byte[]> invokeMethod(
+          String appId, String methodName, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
+    return this.invokeMethod(appId, methodName, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeBinding(String name, String operation, Object data) {
-    return this.invokeBinding(name, operation, data, null, TypeRef.BYTE_ARRAY).then();
+  public Mono<Void> invokeBinding(String bindingName, String operation, Object data) {
+    return this.invokeBinding(bindingName, operation, data, null, TypeRef.BYTE_ARRAY).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> invokeBinding(String name, String operation, byte[] data, Map<String, String> metadata) {
-    return this.invokeBinding(name, operation, data, metadata, TypeRef.BYTE_ARRAY);
+  public Mono<byte[]> invokeBinding(String bindingName, String operation, byte[] data, Map<String, String> metadata) {
+    return this.invokeBinding(bindingName, operation, data, metadata, TypeRef.BYTE_ARRAY);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeBinding(String name, String operation, Object data, TypeRef<T> type) {
-    return this.invokeBinding(name, operation, data, null, type);
+  public <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, TypeRef<T> type) {
+    return this.invokeBinding(bindingName, operation, data, null, type);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeBinding(String name, String operation, Object data, Class<T> clazz) {
-    return this.invokeBinding(name, operation, data, null, TypeRef.get(clazz));
+  public <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, Class<T> clazz) {
+    return this.invokeBinding(bindingName, operation, data, null, TypeRef.get(clazz));
   }
 
   /**
@@ -228,8 +229,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
-    InvokeBindingRequest request = new InvokeBindingRequestBuilder(name, operation)
+          String bindingName, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
+    InvokeBindingRequest request = new InvokeBindingRequestBuilder(bindingName, operation)
         .withData(data)
         .withMetadata(metadata)
         .build();
@@ -242,40 +243,40 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<T> invokeBinding(
-      String name, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
-    return this.invokeBinding(name, operation, data, metadata, TypeRef.get(clazz));
+          String bindingName, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
+    return this.invokeBinding(bindingName, operation, data, metadata, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, TypeRef<T> type) {
-    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), type);
+  public <T> Mono<State<T>> getState(String storeName, State<T> state, TypeRef<T> type) {
+    return this.getState(storeName, state.getKey(), state.getEtag(), state.getOptions(), type);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, State<T> state, Class<T> clazz) {
-    return this.getState(stateStoreName, state.getKey(), state.getEtag(), state.getOptions(), TypeRef.get(clazz));
+  public <T> Mono<State<T>> getState(String storeName, State<T> state, Class<T> clazz) {
+    return this.getState(storeName, state.getKey(), state.getEtag(), state.getOptions(), TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, String key, TypeRef<T> type) {
-    return this.getState(stateStoreName, key, null, null, type);
+  public <T> Mono<State<T>> getState(String storeName, String key, TypeRef<T> type) {
+    return this.getState(storeName, key, null, null, type);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<State<T>> getState(String stateStoreName, String key, Class<T> clazz) {
-    return this.getState(stateStoreName, key, null, null, TypeRef.get(clazz));
+  public <T> Mono<State<T>> getState(String storeName, String key, Class<T> clazz) {
+    return this.getState(storeName, key, null, null, TypeRef.get(clazz));
   }
 
   /**
@@ -283,8 +284,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, TypeRef<T> type) {
-    GetStateRequest request = new GetStateRequestBuilder(stateStoreName, key)
+          String storeName, String key, String etag, StateOptions options, TypeRef<T> type) {
+    GetStateRequest request = new GetStateRequestBuilder(storeName, key)
         .withEtag(etag)
         .withStateOptions(options)
         .build();
@@ -297,80 +298,80 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-      String stateStoreName, String key, String etag, StateOptions options, Class<T> clazz) {
-    return this.getState(stateStoreName, key, etag, options, TypeRef.get(clazz));
+          String storeName, String key, String etag, StateOptions options, Class<T> clazz) {
+    return this.getState(storeName, key, etag, options, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<List<State<T>>> getStates(String stateStoreName, List<String> keys, TypeRef<T> type) {
-    return this.getStates(new GetStatesRequestBuilder(stateStoreName, keys).build(), type).map(r -> r.getObject());
+  public <T> Mono<List<State<T>>> getBulkState(String storeName, List<String> keys, TypeRef<T> type) {
+    return this.getBulkState(new GetBulkStateRequestBuilder(storeName, keys).build(), type).map(r -> r.getObject());
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<List<State<T>>> getStates(String stateStoreName, List<String> keys, Class<T> clazz) {
-    return this.getStates(stateStoreName, keys, TypeRef.get(clazz));
+  public <T> Mono<List<State<T>>> getBulkState(String storeName, List<String> keys, Class<T> clazz) {
+    return this.getBulkState(storeName, keys, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> executeTransaction(String stateStoreName,
-                                       List<TransactionalStateOperation<?>> operations) {
-    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(stateStoreName)
+  public Mono<Void> executeStateTransaction(String storeName,
+                                            List<TransactionalStateOperation<?>> operations) {
+    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(storeName)
         .withTransactionalStates(operations)
         .build();
-    return executeTransaction(request).then();
+    return executeStateTransaction(request).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveStates(String stateStoreName, List<State<?>> states) {
-    SaveStateRequest request = new SaveStateRequestBuilder(stateStoreName)
+  public Mono<Void> saveBulkState(String storeName, List<State<?>> states) {
+    SaveStateRequest request = new SaveStateRequestBuilder(storeName)
         .withStates(states)
         .build();
-    return this.saveStates(request).then();
+    return this.saveBulkState(request).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String stateStoreName, String key, Object value) {
-    return this.saveState(stateStoreName, key, null, value, null);
+  public Mono<Void> saveState(String storeName, String key, Object value) {
+    return this.saveState(storeName, key, null, value, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveState(String stateStoreName, String key, String etag, Object value, StateOptions options) {
+  public Mono<Void> saveState(String storeName, String key, String etag, Object value, StateOptions options) {
     State<?> state = new State<>(value, key, etag, options);
-    return this.saveStates(stateStoreName, Collections.singletonList(state));
+    return this.saveBulkState(storeName, Collections.singletonList(state));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> deleteState(String stateStoreName, String key) {
-    return this.deleteState(stateStoreName, key, null, null);
+  public Mono<Void> deleteState(String storeName, String key) {
+    return this.deleteState(storeName, key, null, null);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> deleteState(String stateStoreName, String key, String etag, StateOptions options) {
-    DeleteStateRequest request = new DeleteStateRequestBuilder(stateStoreName, key)
+  public Mono<Void> deleteState(String storeName, String key, String etag, StateOptions options) {
+    DeleteStateRequest request = new DeleteStateRequestBuilder(storeName, key)
         .withEtag(etag)
         .withStateOptions(options)
         .build();
@@ -381,8 +382,8 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Map<String, String>> getSecret(String secretStoreName, String key, Map<String, String> metadata) {
-    GetSecretRequest request = new GetSecretRequestBuilder(secretStoreName, key)
+  public Mono<Map<String, String>> getSecret(String storeName, String key, Map<String, String> metadata) {
+    GetSecretRequest request = new GetSecretRequestBuilder(storeName, key)
         .withMetadata(metadata)
         .build();
     return getSecret(request).map(r -> r.getObject() == null ? new HashMap<>() : r.getObject());
@@ -392,8 +393,8 @@ abstract class AbstractDaprClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Map<String, String>> getSecret(String secretStoreName, String secretName) {
-    return this.getSecret(secretStoreName, secretName, null);
+  public Mono<Map<String, String>> getSecret(String storeName, String secretName) {
+    return this.getSecret(storeName, secretName, null);
   }
 
 }

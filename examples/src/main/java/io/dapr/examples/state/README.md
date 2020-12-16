@@ -67,7 +67,7 @@ public class StateClient {
         operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
                 new State<>(secondState, SECOND_KEY_NAME, "")));
   
-        client.executeTransaction(STATE_STORE_NAME, operationList).block();
+        client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
   
         // get multiple states
         Mono<List<State<MyClass>>> retrievedMessagesMono = client.getStates(STATE_STORE_NAME,
@@ -85,7 +85,7 @@ public class StateClient {
         operationList.clear();
         operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.DELETE,
             new State<>(SECOND_KEY_NAME)));
-        mono = client.executeTransaction(STATE_STORE_NAME, operationList);
+        mono = client.executeStateTransaction(STATE_STORE_NAME, operationList);
         mono.block();
   
         Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getStates(STATE_STORE_NAME,
@@ -105,10 +105,10 @@ The code uses the `DaprClient` created by the `DaprClientBuilder`. Notice that t
 This example performs multiple operations: 
 * `client.saveState(...)` for persisting an instance of `MyClass`.
 * `client.getState(...)` operation in order to retrieve back the persisted state using the same key. 
-* `client.executeTransaction(...)` operation in order to update existing state and add new state. 
-* `client.getStates(...)` operation in order to retrieve back the persisted states using the same keys.
+* `client.executeStateTransaction(...)` operation in order to update existing state and add new state. 
+* `client.getBulkState(...)` operation in order to retrieve back the persisted states using the same keys.
 * `client.deleteState(...)` operation to remove  one of the persisted states. 
-* `client.executeTransaction(...)` operation in order to remove the other persisted state.
+* `client.executeStateTransaction(...)` operation in order to remove the other persisted state.
 
 Finally, the code tries to retrieve the deleted states, which should not be found. 
 

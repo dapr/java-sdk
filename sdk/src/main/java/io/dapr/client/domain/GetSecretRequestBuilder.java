@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class GetSecretRequestBuilder {
 
-  private final String secretStoreName;
+  private final String storeName;
 
   private final String key;
 
@@ -23,8 +23,8 @@ public class GetSecretRequestBuilder {
 
   private Context context;
 
-  public GetSecretRequestBuilder(String secretStoreName, String key) {
-    this.secretStoreName = secretStoreName;
+  public GetSecretRequestBuilder(String storeName, String key) {
+    this.storeName = storeName;
     this.key = key;
   }
 
@@ -44,7 +44,7 @@ public class GetSecretRequestBuilder {
    */
   public GetSecretRequest build() {
     GetSecretRequest request = new GetSecretRequest();
-    request.setSecretStoreName(this.secretStoreName);
+    request.setStoreName(this.storeName);
     request.setKey(this.key);
     request.setMetadata(this.metadata);
     request.setContext(this.context);

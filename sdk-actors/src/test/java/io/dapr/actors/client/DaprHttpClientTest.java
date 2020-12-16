@@ -43,7 +43,7 @@ public class DaprHttpClientTest {
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono =
-        DaprHttpClient.invokeActorMethod("DemoActor", "1", "Payment", "".getBytes());
+        DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());
     assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
@@ -58,7 +58,7 @@ public class DaprHttpClientTest {
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono =
-        DaprHttpClient.invokeActorMethod("DemoActor", "1", "Payment", "".getBytes());
+        DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());
 
     assertThrowsDaprException(
         "ERR_SOMETHING",
