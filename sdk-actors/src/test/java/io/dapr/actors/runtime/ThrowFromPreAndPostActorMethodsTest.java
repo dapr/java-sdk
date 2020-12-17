@@ -121,7 +121,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       false,
-      proxy.invoke("stringInBooleanOut", "hello world", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
   }
 
   // IllegalMonitorStateException should be intentionally thrown.  This type was chosen for this test just because
@@ -133,7 +133,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       true,
-      proxy.invoke("stringInBooleanOut", "true", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
 
   private static ActorId newActorId() {

@@ -98,7 +98,7 @@ public class ActorCustomSerializerTest {
     ActorProxy actorProxy = createActorProxy();
     MyData d = new MyData("hi", 3);
 
-    MyData response = actorProxy.invoke("classInClassOut", d, MyData.class).block();
+    MyData response = actorProxy.invokeMethod("classInClassOut", d, MyData.class).block();
 
     Assert.assertEquals("hihi", response.getName());
     Assert.assertEquals(6, response.getNum());
@@ -107,7 +107,7 @@ public class ActorCustomSerializerTest {
   @Test
   public void stringInStringOut() {
     ActorProxy actorProxy = createActorProxy();
-    String response = actorProxy.invoke("stringInStringOut", "oi", String.class).block();
+    String response = actorProxy.invokeMethod("stringInStringOut", "oi", String.class).block();
 
     Assert.assertEquals("oioi", response);
   }
@@ -115,7 +115,7 @@ public class ActorCustomSerializerTest {
   @Test
   public void intInIntOut() {
     ActorProxy actorProxy = createActorProxy();
-    int response = actorProxy.invoke("intInIntOut", 2, int.class).block();
+    int response = actorProxy.invokeMethod("intInIntOut", 2, int.class).block();
 
     Assert.assertEquals(4, response);
   }
