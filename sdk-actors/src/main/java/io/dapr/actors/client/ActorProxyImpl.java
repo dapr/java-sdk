@@ -74,7 +74,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invoke(String methodName, Object data, TypeRef<T> type) {
+  public <T> Mono<T> invokeMethod(String methodName, Object data, TypeRef<T> type) {
     return this.daprClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data))
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
@@ -84,15 +84,15 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invoke(String methodName, Object data, Class<T> clazz) {
-    return this.invoke(methodName, data, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(String methodName, Object data, Class<T> clazz) {
+    return this.invokeMethod(methodName, data, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invoke(String methodName, TypeRef<T> type) {
+  public <T> Mono<T> invokeMethod(String methodName, TypeRef<T> type) {
     return this.daprClient.invoke(actorType, actorId.toString(), methodName, null)
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
@@ -102,15 +102,15 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invoke(String methodName, Class<T> clazz) {
-    return this.invoke(methodName, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(String methodName, Class<T> clazz) {
+    return this.invokeMethod(methodName, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invoke(String methodName) {
+  public Mono<Void> invokeMethod(String methodName) {
     return this.daprClient.invoke(actorType, actorId.toString(), methodName, null).then();
   }
 
@@ -118,7 +118,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invoke(String methodName, Object data) {
+  public Mono<Void> invokeMethod(String methodName, Object data) {
     return this.daprClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data)).then();
   }
 
@@ -140,25 +140,25 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
       if (method.getReturnType().equals(Mono.class)) {
         ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
         if (actorMethodAnnotation == null) {
-          return invoke(method.getName());
+          return invokeMethod(method.getName());
         }
 
-        return invoke(method.getName(), actorMethodAnnotation.returns());
+        return invokeMethod(method.getName(), actorMethodAnnotation.returns());
       }
 
-      return invoke(method.getName(), method.getReturnType()).block();
+      return invokeMethod(method.getName(), method.getReturnType()).block();
     }
 
     if (method.getReturnType().equals(Mono.class)) {
       ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
       if (actorMethodAnnotation == null) {
-        return invoke(method.getName(), args[0]);
+        return invokeMethod(method.getName(), args[0]);
       }
 
-      return invoke(method.getName(), args[0], actorMethodAnnotation.returns());
+      return invokeMethod(method.getName(), args[0], actorMethodAnnotation.returns());
     }
 
-    return invoke(method.getName(), args[0], method.getReturnType()).block();
+    return invokeMethod(method.getName(), args[0], method.getReturnType()).block();
   }
 
   /**

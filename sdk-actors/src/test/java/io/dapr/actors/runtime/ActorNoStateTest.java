@@ -139,7 +139,7 @@ public class ActorNoStateTest {
 
     Assert.assertEquals(
             proxy.getActorId().toString(),
-            proxy.invoke("getMyId", String.class).block());
+            proxy.invokeMethod("getMyId", String.class).block());
   }
 
   @Test
@@ -149,7 +149,7 @@ public class ActorNoStateTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       "abcabc",
-      proxy.invoke("stringInStringOut", "abc", String.class).block());
+      proxy.invokeMethod("stringInStringOut", "abc", String.class).block());
   }
 
   @Test
@@ -159,11 +159,11 @@ public class ActorNoStateTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       false,
-      proxy.invoke("stringInBooleanOut", "hello world", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
 
     Assert.assertEquals(
       true,
-      proxy.invoke("stringInBooleanOut", "true", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
 
   @Test(expected = IllegalMonitorStateException.class)
@@ -171,7 +171,7 @@ public class ActorNoStateTest {
     ActorProxy actorProxy = createActorProxy();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    actorProxy.invoke("stringInVoidOutIntentionallyThrows", "hello world").block();
+    actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
   }
 
   @Test
@@ -180,7 +180,7 @@ public class ActorNoStateTest {
     MyData d = new MyData("hi", 3);
 
     // this should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    MyData response = actorProxy.invoke("classInClassOut", d, MyData.class).block();
+    MyData response = actorProxy.invokeMethod("classInClassOut", d, MyData.class).block();
 
     Assert.assertEquals(
       "hihi",

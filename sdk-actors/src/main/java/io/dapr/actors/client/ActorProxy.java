@@ -36,7 +36,7 @@ public interface ActorProxy {
    * @param <T>        The type to be returned.
    * @return Asynchronous result with the Actor's response.
    */
-  <T> Mono<T> invoke(String methodName, TypeRef<T> type);
+  <T> Mono<T> invokeMethod(String methodName, TypeRef<T> type);
 
   /**
    * Invokes an Actor method on Dapr.
@@ -46,7 +46,7 @@ public interface ActorProxy {
    * @param <T>        The type to be returned.
    * @return Asynchronous result with the Actor's response.
    */
-  <T> Mono<T> invoke(String methodName, Class<T> clazz);
+  <T> Mono<T> invokeMethod(String methodName, Class<T> clazz);
 
   /**
    * Invokes an Actor method on Dapr.
@@ -57,7 +57,7 @@ public interface ActorProxy {
    * @param <T>        The type to be returned.
    * @return Asynchronous result with the Actor's response.
    */
-  <T> Mono<T> invoke(String methodName, Object data, TypeRef<T> type);
+  <T> Mono<T> invokeMethod(String methodName, Object data, TypeRef<T> type);
 
   /**
    * Invokes an Actor method on Dapr.
@@ -68,7 +68,7 @@ public interface ActorProxy {
    * @param <T>        The type to be returned.
    * @return Asynchronous result with the Actor's response.
    */
-  <T> Mono<T> invoke(String methodName, Object data, Class<T> clazz);
+  <T> Mono<T> invokeMethod(String methodName, Object data, Class<T> clazz);
 
   /**
    * Invokes an Actor method on Dapr.
@@ -76,7 +76,7 @@ public interface ActorProxy {
    * @param methodName Method name to invoke.
    * @return Asynchronous result with the Actor's response.
    */
-  Mono<Void> invoke(String methodName);
+  Mono<Void> invokeMethod(String methodName);
 
   /**
    * Invokes an Actor method on Dapr.
@@ -85,6 +85,6 @@ public interface ActorProxy {
    * @param data       Object with the data.
    * @return Asynchronous result with the Actor's response.
    */
-  Mono<Void> invoke(String methodName, Object data);
+  Mono<Void> invokeMethod(String methodName, Object data);
 
 }

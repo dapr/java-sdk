@@ -49,7 +49,7 @@ public class ActorProxyImplTest {
             new DefaultObjectSerializer(),
             daprClient);
 
-    Mono<MyData> result = actorProxy.invoke("getData", MyData.class);
+    Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
     MyData myData = result.block();
     Assert.assertNotNull(myData);
     Assert.assertEquals("valueA", myData.getPropertyA());
@@ -260,7 +260,7 @@ public class ActorProxyImplTest {
         new DefaultObjectSerializer(),
         daprClient);
 
-    Mono<MyData> result = actorProxy.invoke("getData", MyData.class);
+    Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
     MyData myData = result.block();
     Assert.assertNull(myData);
   }
@@ -277,7 +277,7 @@ public class ActorProxyImplTest {
         new DefaultObjectSerializer(),
         daprClient);
 
-    Mono<MyData> result = actorProxy.invoke("getData", MyData.class);
+    Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
 
     result.doOnSuccess(x ->
         Assert.fail("Not exception was throw"))
@@ -302,7 +302,7 @@ public class ActorProxyImplTest {
     saveData.setPropertyA("valueA");
     saveData.setPropertyB("valueB");
 
-    Mono<MyData> result = actorProxy.invoke("getData", saveData, MyData.class);
+    Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
     MyData myData = result.block();
     Assert.assertNotNull(myData);
     Assert.assertEquals("valueA", myData.getPropertyA());
@@ -326,7 +326,7 @@ public class ActorProxyImplTest {
     saveData.setPropertyA("valueA");
     saveData.setPropertyB("valueB");
 
-    Mono<MyData> result = actorProxy.invoke("getData", saveData, MyData.class);
+    Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
     result.doOnSuccess(x ->
         Assert.fail("Not exception was throw"))
         .doOnError(Throwable::printStackTrace
@@ -350,7 +350,7 @@ public class ActorProxyImplTest {
     saveData.setPropertyA("valueA");
     saveData.setPropertyB("valueB");
 
-    Mono<MyData> result = actorProxy.invoke("getData", saveData, MyData.class);
+    Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
     MyData myData = result.block();
     Assert.assertNull(myData);
   }
@@ -373,7 +373,7 @@ public class ActorProxyImplTest {
     saveData.setPropertyB("valueB");
     saveData.setMyData(saveData);
 
-    Mono<MyData> result = actorProxy.invoke("getData", saveData, MyData.class);
+    Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
     result.doOnSuccess(x ->
         Assert.fail("Not exception was throw"))
         .doOnError(Throwable::printStackTrace
@@ -397,7 +397,7 @@ public class ActorProxyImplTest {
         new DefaultObjectSerializer(),
         daprClient);
 
-    Mono<Void> result = actorProxy.invoke("getData", saveData);
+    Mono<Void> result = actorProxy.invokeMethod("getData", saveData);
     Void emptyResponse = result.block();
     Assert.assertNull(emptyResponse);
   }
@@ -420,7 +420,7 @@ public class ActorProxyImplTest {
         new DefaultObjectSerializer(),
         daprClient);
 
-    Mono<Void> result = actorProxy.invoke("getData", saveData);
+    Mono<Void> result = actorProxy.invokeMethod("getData", saveData);
     Void emptyResponse = result.doOnError(Throwable::printStackTrace).block();
     Assert.assertNull(emptyResponse);
   }
@@ -437,7 +437,7 @@ public class ActorProxyImplTest {
         new DefaultObjectSerializer(),
         daprClient);
 
-    Mono<Void> result = actorProxy.invoke("getData");
+    Mono<Void> result = actorProxy.invokeMethod("getData");
     Void emptyResponse = result.block();
     Assert.assertNull(emptyResponse);
   }
