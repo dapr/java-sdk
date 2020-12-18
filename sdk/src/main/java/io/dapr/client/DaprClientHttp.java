@@ -542,6 +542,9 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
 
       String etag = node.path("etag").asText();
+      if (etag.equals("")) {
+        etag = null;
+      }
       // TODO(artursouza): JSON cannot differentiate if data returned is String or byte[], it is ambiguous.
       // This is not a high priority since GRPC is the default (and recommended) client implementation.
       byte[] data = node.path("data").toString().getBytes(Properties.STRING_CHARSET.get());

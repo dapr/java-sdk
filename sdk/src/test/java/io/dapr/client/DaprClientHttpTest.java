@@ -640,8 +640,9 @@ public class DaprClientHttpTest {
       .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<State<String>> monoEmptyEtag = daprClientHttp.getState(STATE_STORE_NAME, stateEmptyEtag, String.class);
-    assertEquals(monoEmptyEtag.block().getKey(), "key");
+    State<String> monoEmptyEtag = daprClientHttp.getState(STATE_STORE_NAME, stateEmptyEtag, String.class).block();
+    assertEquals(monoEmptyEtag.getKey(), "key");
+    assertNull(monoEmptyEtag.getEtag());
   }
 
   @Test
@@ -667,8 +668,9 @@ public class DaprClientHttpTest {
       .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<State<String>> monoNullEtag = daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
-    assertEquals(monoNullEtag.block().getKey(), "key");
+    State<String> monoNullEtag = daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class).block();
+    assertEquals(monoNullEtag.getKey(), "key");
+    assertNull(monoNullEtag.getEtag());
   }
 
   @Test

@@ -1658,6 +1658,62 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void getStateNullEtag() throws Exception {
+    String etag = null;
+    String key1 = "key1";
+    String expectedValue1 = "Expected state 1";
+    State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
+    Map<String, SettableFuture<DaprProtos.GetStateResponse>> futuresMap = new HashMap<>();
+    DaprProtos.GetStateResponse envelope = DaprProtos.GetStateResponse.newBuilder()
+            .setData(serialize(expectedValue1))
+            .build();
+    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(envelope);
+    addCallback(settableFuture, callback, directExecutor());
+    settableFuture.set(envelope);
+    futuresMap.put(key1, settableFuture);
+    when(client.getState(argThat(new GetStateRequestKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
+    State<String> keyRequest1 = buildStateKey(null, key1, null, null);
+    Mono<State<String>> resultGet1 = adapter.getState(STATE_STORE_NAME, keyRequest1, String.class);
+    assertEquals(expectedState1, resultGet1.block());
+  }
+
+  @Test
+  public void getBulkStateNullEtag() throws Exception {
+    DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
+            .addItems(DaprProtos.BulkStateItem.newBuilder()
+                    .setData(serialize("hello world"))
+                    .setKey("100")
+                    .build())
+            .addItems(DaprProtos.BulkStateItem.newBuilder()
+                    .setKey("200")
+                    .setEtag("")
+                    .setError("not found")
+                    .build())
+            .build();
+    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
+    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
+    addCallback(settableFuture, callback, directExecutor());
+    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
+            .thenAnswer(c -> {
+              settableFuture.set(responseEnvelope);
+              return settableFuture;
+            });
+    List<State<String>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+    assertTrue(callback.wasCalled);
+
+    assertEquals(2, result.size());
+    assertEquals("100", result.stream().findFirst().get().getKey());
+    assertEquals("hello world", result.stream().findFirst().get().getValue());
+    assertNull(result.stream().findFirst().get().getEtag());
+    assertNull(result.stream().findFirst().get().getError());
+    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+    assertNull(result.stream().skip(1).findFirst().get().getValue());
+    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
   public void getSecrets() {
     String expectedKey = "attributeKey";
     String expectedValue = "Expected secret value";
