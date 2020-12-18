@@ -74,13 +74,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     Assert.assertNotNull(state);
     Assert.assertEquals("unknownKey", state.getKey());
     Assert.assertNull(state.getValue());
-    // gRPC returns empty eTag while HTTP returns null.
-    // TODO(artursouza): https://github.com/dapr/java-sdk/issues/405
-    Assert.assertTrue(state.getEtag() == null || state.getEtag().isEmpty());
+    Assert.assertNull(state.getEtag());
   }
 
   @Test
-  public void saveAndGetBulkStates() {
+  public void saveAndGetBulkState() {
     final String stateKeyOne = UUID.randomUUID().toString();
     final String stateKeyTwo = UUID.randomUUID().toString();
     final String stateKeyThree = "NotFound";
@@ -114,8 +112,8 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     assertEquals(stateKeyThree, result.stream().skip(2).findFirst().get().getKey());
     assertNull(result.stream().skip(2).findFirst().get().getValue());
-    assertEquals("", result.stream().skip(2).findFirst().get().getEtag());
-    assertNull("not found", result.stream().skip(2).findFirst().get().getError());
+    assertNull(result.stream().skip(2).findFirst().get().getEtag());
+    assertNull(result.stream().skip(2).findFirst().get().getError());
   }
 
   @Test
