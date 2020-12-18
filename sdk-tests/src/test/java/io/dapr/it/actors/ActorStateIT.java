@@ -76,18 +76,18 @@ public class ActorStateIT extends BaseIT {
     // Validate conditional read works.
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not present yet ... ");
-      String result = proxy.invoke("readMessage", String.class).block();
+      String result = proxy.invokeMethod("readMessage", String.class).block();
       assertNull(result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeMessage ... ");
-      proxy.invoke("writeMessage", message).block();
+      proxy.invokeMethod("writeMessage", message).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is probably still cached ... ");
-      String result = proxy.invoke("readMessage", String.class).block();
+      String result = proxy.invokeMethod("readMessage", String.class).block();
       assertEquals(message, result);
     }, 5000);
 
@@ -96,45 +96,45 @@ public class ActorStateIT extends BaseIT {
     mydata.value = "My data value.";
     callWithRetry(() -> {
       logger.debug("Invoking writeData with object ... ");
-      proxy.invoke("writeData", mydata).block();
+      proxy.invokeMethod("writeData", mydata).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readData where data is probably still cached ... ");
-      StatefulActor.MyData result = proxy.invoke("readData", StatefulActor.MyData.class).block();
+      StatefulActor.MyData result = proxy.invokeMethod("readData", StatefulActor.MyData.class).block();
       assertEquals(mydata.value, result.value);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeName ... ");
-      proxy.invoke("writeName", name).block();
+      proxy.invokeMethod("writeName", name).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readName where data is probably still cached ... ");
-      String result = proxy.invoke("readName", String.class).block();
+      String result = proxy.invokeMethod("readName", String.class).block();
       assertEquals(name, result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeName with empty content... ");
-      proxy.invoke("writeName", "").block();
+      proxy.invokeMethod("writeName", "").block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readName where empty content is probably still cached ... ");
-      String result = proxy.invoke("readName", String.class).block();
+      String result = proxy.invokeMethod("readName", String.class).block();
       assertEquals("", result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeBytes ... ");
-      proxy.invoke("writeBytes", bytes).block();
+      proxy.invokeMethod("writeBytes", bytes).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readBytes where data is probably still cached ... ");
-      byte[] result = proxy.invoke("readBytes", byte[].class).block();
+      byte[] result = proxy.invokeMethod("readBytes", byte[].class).block();
       assertArrayEquals(bytes, result);
     }, 5000);
 
@@ -165,26 +165,26 @@ public class ActorStateIT extends BaseIT {
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached ... ");
-      String result = newProxy.invoke("readMessage", String.class).block();
+      String result = newProxy.invokeMethod("readMessage", String.class).block();
       assertEquals(message, result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readData where data is not cached ... ");
-      StatefulActor.MyData result = newProxy.invoke("readData", StatefulActor.MyData.class).block();
+      StatefulActor.MyData result = newProxy.invokeMethod("readData", StatefulActor.MyData.class).block();
       assertEquals(mydata.value, result.value);
     }, 5000);
     logger.debug("Finished testing actor string state.");
 
     callWithRetry(() -> {
       logger.debug("Invoking readName where empty content is not cached ... ");
-      String result = newProxy.invoke("readName", String.class).block();
+      String result = newProxy.invokeMethod("readName", String.class).block();
       assertEquals("", result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readBytes where content is not cached ... ");
-      byte[] result = newProxy.invoke("readBytes", byte[].class).block();
+      byte[] result = newProxy.invokeMethod("readBytes", byte[].class).block();
       assertArrayEquals(bytes, result);
     }, 5000);
   }
