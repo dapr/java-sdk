@@ -5,7 +5,6 @@
 
 package io.dapr.client;
 
-import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import org.junit.Test;
 
@@ -27,17 +26,17 @@ public class DaprClientBuilderTest {
     assertNotNull(daprClient);
   }
 
-  @Test(expected = DaprException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void noObjectSerializer() {
     new DaprClientBuilder().withObjectSerializer(null);
   }
 
-  @Test(expected = DaprException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void blankContentTypeInObjectSerializer() {
     new DaprClientBuilder().withObjectSerializer(mock(DaprObjectSerializer.class));
   }
 
-  @Test(expected = DaprException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void noStateSerializer() {
     new DaprClientBuilder().withStateSerializer(null);
   }

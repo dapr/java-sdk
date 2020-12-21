@@ -51,12 +51,7 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doNothing;
@@ -185,19 +180,19 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingIllegalArgumentExceptionTest() {
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty binding name
       adapter.invokeBinding("", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null binding name
       adapter.invokeBinding(null, "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null binding operation
       adapter.invokeBinding("BindingName", null, "request".getBytes(), Collections.EMPTY_MAP).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty binding operation
       adapter.invokeBinding("BindingName", "", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
@@ -367,11 +362,7 @@ public class DaprClientGrpcTest {
     // HttpExtension cannot be null
     Mono<Void> result = adapter.invokeMethod("appId", "method", "request", null);
 
-    assertThrowsDaprException(
-        IllegalArgumentException.class,
-        "UNKNOWN",
-        "UNKNOWN: HttpExtension cannot be null. Use HttpExtension.NONE instead.",
-        () -> result.block());
+    assertThrows(IllegalArgumentException.class, () -> result.block());
   }
 
   @Test
@@ -772,19 +763,19 @@ public class DaprClientGrpcTest {
   @Test
   public void getStateIllegalArgumentExceptionTest() {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.getState("", key, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.getState(null, key, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null key
       adapter.getState(STATE_STORE_NAME, (String)null, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty key
       adapter.getState(STATE_STORE_NAME, "", String.class).block();
     });
@@ -941,20 +932,20 @@ public class DaprClientGrpcTest {
   @Test
   public void getStatesIllegalArgumentExceptionTest() {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.getBulkState("", Collections.singletonList("100"), String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.getBulkState(null, Collections.singletonList("100"), String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null key
       // null pointer exception due to keys being converted to an unmodifiable list
       adapter.getBulkState(STATE_STORE_NAME, null, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty key list
       adapter.getBulkState(STATE_STORE_NAME, Collections.emptyList(), String.class).block();
     });
@@ -962,7 +953,7 @@ public class DaprClientGrpcTest {
     GetBulkStateRequest req = new GetBulkStateRequestBuilder(STATE_STORE_NAME, Collections.singletonList("100"))
         .withParallelism(-1)
         .build();
-    assertThrowsDaprException(IllegalArgumentException.class, () -> adapter.getBulkState(req, TypeRef.BOOLEAN).block());
+    assertThrows(IllegalArgumentException.class, () -> adapter.getBulkState(req, TypeRef.BOOLEAN).block());
   }
 
   @Test
@@ -1157,19 +1148,19 @@ public class DaprClientGrpcTest {
   @Test
   public void deleteStateIllegalArgumentExceptionTest() {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.deleteState("", key.getKey(), "etag", null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.deleteState(null, key.getKey(), "etag", null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.deleteState(STATE_STORE_NAME, null, "etag", null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.deleteState(STATE_STORE_NAME, "", "etag", null).block();
     });
@@ -1312,11 +1303,11 @@ public class DaprClientGrpcTest {
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         key);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.executeStateTransaction("", Collections.singletonList(upsertOperation)).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
       adapter.executeStateTransaction(null, Collections.singletonList(upsertOperation)).block();
     });
@@ -1454,11 +1445,11 @@ public class DaprClientGrpcTest {
 
   @Test
   public void saveStatesIllegalArgumentExceptionTest() {
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.saveBulkState("", Collections.emptyList()).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
       adapter.saveBulkState(null, Collections.emptyList()).block();
     });
@@ -1781,19 +1772,19 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getSecretsIllegalArgumentException() {
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty secret store name
       adapter.getSecret("", "key").block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null secret store name
       adapter.getSecret(null, "key").block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty key
       adapter.getSecret(SECRET_STORE_NAME, "").block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null key
       adapter.getSecret(SECRET_STORE_NAME, null).block();
     });

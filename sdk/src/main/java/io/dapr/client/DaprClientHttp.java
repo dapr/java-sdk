@@ -596,10 +596,6 @@ public class DaprClientHttp extends AbstractDaprClient {
 
   @Override
   public void close() {
-    try {
-      client.close();
-    } catch (Exception e) {
-      DaprException.wrap(e);
-    }
+    client.close();
   }
 }
