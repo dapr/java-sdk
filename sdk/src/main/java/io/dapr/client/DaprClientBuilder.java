@@ -14,8 +14,6 @@ import io.grpc.ManagedChannelBuilder;
 
 import java.io.Closeable;
 
-import static io.dapr.exceptions.DaprException.throwIllegalArgumentException;
-
 /**
  * A builder for the DaprClient,
  * Currently only and HTTP Client will be supported.
@@ -65,11 +63,11 @@ public class DaprClientBuilder {
    */
   public DaprClientBuilder withObjectSerializer(DaprObjectSerializer objectSerializer) {
     if (objectSerializer == null) {
-      throwIllegalArgumentException("Object serializer is required");
+      throw new IllegalArgumentException("Object serializer is required");
     }
 
     if (objectSerializer.getContentType() == null || objectSerializer.getContentType().isEmpty()) {
-      throwIllegalArgumentException("Content Type should not be null or empty");
+      throw new IllegalArgumentException("Content Type should not be null or empty");
     }
 
     this.objectSerializer = objectSerializer;
@@ -85,7 +83,7 @@ public class DaprClientBuilder {
    */
   public DaprClientBuilder withStateSerializer(DaprObjectSerializer stateSerializer) {
     if (stateSerializer == null) {
-      throwIllegalArgumentException("State serializer is required");
+      throw new IllegalArgumentException("State serializer is required");
     }
 
     this.stateSerializer = stateSerializer;
@@ -115,7 +113,7 @@ public class DaprClientBuilder {
   private DaprClient buildDaprClientGrpc() {
     int port = Properties.GRPC_PORT.get();
     if (port <= 0) {
-      throwIllegalArgumentException("Invalid port.");
+      throw new IllegalArgumentException("Invalid port.");
     }
     ManagedChannel channel = ManagedChannelBuilder.forAddress(
         Properties.SIDECAR_IP.get(), port).usePlaintext().build();

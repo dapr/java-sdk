@@ -7,34 +7,33 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
-import io.dapr.exceptions.DaprException;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ActorProxyBuilderTest {
 
-  @Test(expected = DaprException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorId() {
     new ActorProxyBuilder("test", Object.class)
         .build(null);
 
   }
 
-  @Test(expected = DaprException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void buildWithEmptyActorType() {
     new ActorProxyBuilder("", Object.class)
         .build(new ActorId("100"));
 
   }
 
-  @Test(expected = DaprException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorType() {
     new ActorProxyBuilder(null, Object.class)
       .build(new ActorId("100"));
 
   }
 
-  @Test(expected = DaprException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void buildWithNullSerializer() {
     new ActorProxyBuilder("MyActor", Object.class)
       .withObjectSerializer(null)
