@@ -5,6 +5,7 @@
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
@@ -18,7 +19,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -153,7 +153,7 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API asynchronously without payload that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param path          Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters URL parameters
    * @param headers       HTTP headers.
    * @param context       OpenTelemetry's Context.
@@ -161,18 +161,18 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
       String method,
-      String urlString,
+      String[] path,
       Map<String, String> urlParameters,
       Map<String, String> headers,
       Context context) {
-    return this.invokeApi(method, urlString, urlParameters, (byte[]) null, headers, context);
+    return this.invokeApi(method, path, urlParameters, (byte[]) null, headers, context);
   }
 
   /**
    * Invokes an API asynchronously that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param path          Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
@@ -181,14 +181,14 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
       String method,
-      String urlString,
+      String[] path,
       Map<String, String> urlParameters,
       String content,
       Map<String, String> headers,
       Context context) {
 
     return this.invokeApi(
-        method, urlString, urlParameters, content == null
+        method, path, urlParameters, content == null
             ? EMPTY_BYTES
             : content.getBytes(StandardCharsets.UTF_8), headers, context);
   }
@@ -197,7 +197,7 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API asynchronously that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param path          Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
@@ -206,12 +206,12 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
           String method,
-          String urlString,
+          String[] path,
           Map<String, String> urlParameters,
           byte[] content,
           Map<String, String> headers,
           Context context) {
-    return Mono.fromCallable(() -> doInvokeApi(method, urlString, urlParameters, content, headers, context));
+    return Mono.fromCallable(() -> doInvokeApi(method, path, urlParameters, content, headers, context));
   }
 
   /**
@@ -227,16 +227,15 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param path          Array of path segments (/a/b/c -> ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
    * @param context       OpenTelemetry's Context.
    * @return Response
    */
-  @NotNull
   private Response doInvokeApi(String method,
-                               String urlString,
+                               String[] path,
                                Map<String, String> urlParameters,
                                byte[] content, Map<String, String> headers,
                                Context context) throws IOException {
@@ -255,8 +254,10 @@ public class DaprHttp implements AutoCloseable {
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
     urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
         .host(this.hostname)
-        .port(this.port)
-        .addPathSegments(urlString);
+        .port(this.port);
+    for (String pathSegment : path) {
+      urlBuilder.addPathSegment(pathSegment);
+    }
     Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
         .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
 
@@ -317,7 +318,12 @@ public class DaprHttp implements AutoCloseable {
     if ((json == null) || (json.length == 0)) {
       return null;
     }
-    return OBJECT_MAPPER.readValue(json, DaprError.class);
+
+    try {
+      return OBJECT_MAPPER.readValue(json, DaprError.class);
+    } catch (JsonParseException e) {
+      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
+    }
   }
 
   private static byte[] getBodyBytesOrEmptyArray(okhttp3.Response response) throws IOException {

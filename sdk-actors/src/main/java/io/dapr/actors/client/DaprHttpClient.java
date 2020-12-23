@@ -16,16 +16,6 @@ import reactor.core.publisher.Mono;
 class DaprHttpClient implements DaprClient {
 
   /**
-   * Base URL for Dapr Actor APIs.
-   */
-  private static final String ACTORS_BASE_URL = DaprHttp.API_VERSION + "/" + "actors";
-
-  /**
-   * String format for Actors method invocation relative url.
-   */
-  private static final String ACTOR_METHOD_RELATIVE_URL_FORMAT = ACTORS_BASE_URL + "/%s/%s/method/%s";
-
-  /**
    * The HTTP client to be used.
    *
    * @see DaprHttp
@@ -46,9 +36,9 @@ class DaprHttpClient implements DaprClient {
    */
   @Override
   public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    String url = String.format(ACTOR_METHOD_RELATIVE_URL_FORMAT, actorType, actorId, methodName);
+    String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "method", methodName };
     Mono<DaprHttp.Response> responseMono =
-          this.client.invokeApi(DaprHttp.HttpMethods.POST.name(), url, null, jsonPayload, null, null);
+          this.client.invokeApi(DaprHttp.HttpMethods.POST.name(), path, null, jsonPayload, null, null);
     return responseMono.map(r -> r.getBody());
   }
 }

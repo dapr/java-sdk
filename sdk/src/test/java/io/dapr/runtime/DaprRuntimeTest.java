@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientHttp;
 import io.dapr.client.DaprClientTestBuilder;
+import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpStub;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
@@ -48,6 +49,10 @@ public class DaprRuntimeTest {
   private static final String APP_ID = "myappid";
 
   private static final String METHOD_NAME = "mymethod";
+
+  private static final String INVOKE_PATH = DaprHttp.API_VERSION + "/invoke";
+
+  private static final String PUBLISH_PATH = DaprHttp.API_VERSION + "/publish";
 
   private final DaprRuntime daprRuntime = Dapr.getInstance();
 
@@ -121,7 +126,7 @@ public class DaprRuntimeTest {
     for (Message message : messages) {
       when(daprHttp.invokeApi(
           eq("POST"),
-          eq(DaprClientHttp.PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME),
+          eq((PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME).split("/")),
           any(),
           eq(serializer.serialize(message.data)),
           eq(null),
@@ -209,7 +214,7 @@ public class DaprRuntimeTest {
 
       when(daprHttp.invokeApi(
           eq("POST"),
-          eq(DaprClientHttp.INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME),
+          eq((INVOKE_PATH + "/" + APP_ID + "/method/" + METHOD_NAME).split("/")),
           any(),
           eq(serializer.serialize(message.data)),
           any(),
