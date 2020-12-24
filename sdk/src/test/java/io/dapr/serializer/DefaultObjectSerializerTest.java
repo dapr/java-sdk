@@ -14,7 +14,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
@@ -780,7 +782,7 @@ public class DefaultObjectSerializerTest {
   public void deserializeCloudEventEnvelopeData() throws Exception {
     
 
-    Function<String, String> deserializeData = (jsonData -> {
+    Function<String, Object> deserializeData = (jsonData -> {
       try {
         String payload = String.format("{\"data\": %s}", jsonData);
         return CloudEvent.deserialize(payload.getBytes()).getData();
@@ -789,26 +791,28 @@ public class DefaultObjectSerializerTest {
       }
     });
 
-    assertEquals("123",
-      deserializeData.apply("123"));
-    assertEquals("true",
-      deserializeData.apply("true"));
-    assertEquals("123.45",
-      deserializeData.apply("123.45"));
+    assertEquals(123,
+        deserializeData.apply("123"));
+    assertEquals(true,
+        deserializeData.apply("true"));
+    assertEquals(123.45,
+        deserializeData.apply("123.45"));
     assertEquals("AAEI",
-      deserializeData.apply(quote(Base64.getEncoder().encodeToString(new byte[] { 0, 1, 8}))));
+        deserializeData.apply(quote(Base64.getEncoder().encodeToString(new byte[]{0, 1, 8}))));
     assertEquals("hello world",
-      deserializeData.apply(quote("hello world")));
+        deserializeData.apply(quote("hello world")));
     assertEquals("\"hello world\"",
-      deserializeData.apply(quote("\\\"hello world\\\"")));
+        deserializeData.apply(quote("\\\"hello world\\\"")));
     assertEquals("\"hello world\"",
-      deserializeData.apply(new ObjectMapper().writeValueAsString("\"hello world\"")));
+        deserializeData.apply(new ObjectMapper().writeValueAsString("\"hello world\"")));
     assertEquals("hello world",
-      deserializeData.apply(new ObjectMapper().writeValueAsString("hello world")));
-    assertEquals("{\"id\":\"123:\",\"name\":\"Jon Doe\"}",
-      deserializeData.apply("{\"id\": \"123:\", \"name\": \"Jon Doe\"}"));
-    assertEquals("{\"id\": \"123:\", \"name\": \"Jon Doe\"}",
-      deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123:\", \"name\": \"Jon Doe\"}")));
+        deserializeData.apply(new ObjectMapper().writeValueAsString("hello world")));
+    assertEquals(new TreeMap<String, String>() {{
+      put("id", "123");
+      put("name", "Jon Doe");
+    }}, deserializeData.apply("{\"id\": \"123\", \"name\": \"Jon Doe\"}"));
+    assertEquals("{\"id\": \"123\", \"name\": \"Jon Doe\"}",
+        deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123\", \"name\": \"Jon Doe\"}")));
   }
 
   @Test

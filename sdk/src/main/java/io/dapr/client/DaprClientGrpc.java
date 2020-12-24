@@ -140,16 +140,22 @@ public class DaprClientGrpc extends AbstractDaprClient {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
       Object data = request.getData();
-      // TODO(artursouza): handle metadata.
-      // Map<String, String> metadata = request.getMetadata();
       Context context = request.getContext();
-      DaprProtos.PublishEventRequest envelope = DaprProtos.PublishEventRequest.newBuilder()
+      DaprProtos.PublishEventRequest.Builder envelopeBuilder = DaprProtos.PublishEventRequest.newBuilder()
           .setTopic(topic)
           .setPubsubName(pubsubName)
-          .setData(ByteString.copyFrom(objectSerializer.serialize(data))).build();
+          .setData(ByteString.copyFrom(objectSerializer.serialize(data)));
+      Map<String, String> metadata = request.getMetadata();
+      if (metadata != null) {
+        envelopeBuilder.putAllMetadata(metadata);
+        String contentType = metadata.get(io.dapr.client.domain.Metadata.CONTENT_TYPE);
+        if (contentType != null) {
+          envelopeBuilder.setDataContentType(contentType);
+        }
+      }
 
       return Mono.fromCallable(wrap(context, () -> {
-        get(client.publishEvent(envelope));
+        get(client.publishEvent(envelopeBuilder.build()));
         return null;
       }));
     } catch (Exception ex) {
