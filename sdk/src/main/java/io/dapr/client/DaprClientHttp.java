@@ -190,18 +190,20 @@ public class DaprClientHttp extends AbstractDaprClient {
       byte[] serializedRequestBody = objectSerializer.serialize(request);
       Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path,
           httpExtension.getQueryString(), serializedRequestBody, metadata, context);
-      return response.flatMap(r -> {
-        try {
-          T object = objectSerializer.deserialize(r.getBody(), type);
-          if (object == null) {
-            return Mono.empty();
-          }
+      return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
 
-          return Mono.just(object);
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
-      }).map(r -> new Response<>(context, r));
+  private <T> Mono<T> getMono(TypeRef<T> type, DaprHttp.Response r) {
+    try {
+      T object = objectSerializer.deserialize(r.getBody(), type);
+      if (object == null) {
+        return Mono.empty();
+      }
+
+      return Mono.just(object);
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -258,18 +260,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       String httpMethod = DaprHttp.HttpMethods.POST.name();
       Mono<DaprHttp.Response> response = this.client.invokeApi(
               httpMethod, url.toString(), null, payload, null, context);
-      return response.flatMap(r -> {
-        try {
-          T object = objectSerializer.deserialize(r.getBody(), type);
-          if (object == null) {
-            return Mono.empty();
-          }
-
-          return Mono.just(object);
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
-      }).map(r -> new Response<>(context, r));
+      return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
