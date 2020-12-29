@@ -37,12 +37,12 @@ public class GetBulkStateRequestBuilder {
     this.keys = keys == null ? null : Collections.unmodifiableList(Arrays.asList(keys));
   }
 
-  public GetStatesRequestBuilder withMetadata(Map<String, String> metadata) {
+  public GetBulkStateRequestBuilder withMetadata(Map<String, String> metadata) {
     this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
     return this;
   }
 
-  public GetStatesRequestBuilder withParallelism(int parallelism) {
+  public GetBulkStateRequestBuilder withParallelism(int parallelism) {
     this.parallelism = parallelism;
     return this;
   }
