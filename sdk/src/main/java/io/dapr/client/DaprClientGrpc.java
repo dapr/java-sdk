@@ -283,6 +283,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
           .setStoreName(stateStoreName)
           .addAllKeys(keys)
           .setParallelism(parallelism);
+      if (request.getMetadata() != null) {
+        builder.putAllMetadata(request.getMetadata());
+      }
 
       DaprProtos.GetBulkStateRequest envelope = builder.build();
       return Mono.fromCallable(wrap(context, () -> {
