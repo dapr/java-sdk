@@ -951,6 +951,7 @@ public class DaprClientGrpcTest {
     });
     // negative parallelism
     GetBulkStateRequest req = new GetBulkStateRequestBuilder(STATE_STORE_NAME, Collections.singletonList("100"))
+        .withMetadata(new HashMap<>())
         .withParallelism(-1)
         .build();
     assertThrows(IllegalArgumentException.class, () -> adapter.getBulkState(req, TypeRef.BOOLEAN).block());
