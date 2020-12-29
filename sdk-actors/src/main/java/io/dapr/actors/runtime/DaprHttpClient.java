@@ -50,9 +50,9 @@ class DaprHttpClient implements DaprClient {
    */
   @Override
   public Mono<byte[]> getState(String actorType, String actorId, String keyName) {
-    String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "state", keyName };
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "state", keyName };
     Mono<DaprHttp.Response> responseMono =
-        this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), path, null, "", null, null);
+        this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, null, "", null, null);
     return responseMono.map(r -> {
       if ((r.getStatusCode() != 200) && (r.getStatusCode() != 204)) {
         throw new IllegalStateException(
@@ -119,8 +119,8 @@ class DaprHttpClient implements DaprClient {
       return Mono.error(e);
     }
 
-    String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "state" };
-    return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), path, null, payload, null, null).then();
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "state" };
+    return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), pathSegments, null, payload, null, null).then();
   }
 
   /**
@@ -132,10 +132,17 @@ class DaprHttpClient implements DaprClient {
       String actorId,
       String reminderName,
       ActorReminderParams reminderParams) {
-    String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "reminders", reminderName };
+    String[] pathSegments = new String[] {
+        DaprHttp.API_VERSION,
+        "actors",
+        actorType,
+        actorId,
+        "reminders",
+        reminderName
+    };
     return Mono.fromCallable(() -> INTERNAL_SERIALIZER.serialize(reminderParams))
         .flatMap(data ->
-            this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), path, null, data, null, null)
+            this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), pathSegments, null, data, null, null)
         ).then();
   }
 
@@ -144,8 +151,15 @@ class DaprHttpClient implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
-    String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "reminders", reminderName };
-    return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), path, null, null, null).then();
+    String[] pathSegments = new String[] {
+        DaprHttp.API_VERSION,
+        "actors",
+        actorType,
+        actorId,
+        "reminders",
+        reminderName
+    };
+    return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), pathSegments, null, null, null).then();
   }
 
   /**
@@ -159,8 +173,15 @@ class DaprHttpClient implements DaprClient {
       ActorTimerParams timerParams) {
     return Mono.fromCallable(() -> INTERNAL_SERIALIZER.serialize(timerParams))
         .flatMap(data -> {
-          String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "timers", timerName };
-          return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), path, null, data, null, null);
+          String[] pathSegments = new String[] {
+              DaprHttp.API_VERSION,
+              "actors",
+              actorType,
+              actorId,
+              "timers",
+              timerName
+          };
+          return this.client.invokeApi(DaprHttp.HttpMethods.PUT.name(), pathSegments, null, data, null, null);
         }).then();
   }
 
@@ -169,8 +190,8 @@ class DaprHttpClient implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
-    String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "timers", timerName };
-    return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), path, null, null, null).then();
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "timers", timerName };
+    return this.client.invokeApi(DaprHttp.HttpMethods.DELETE.name(), pathSegments, null, null, null).then();
   }
 
 }

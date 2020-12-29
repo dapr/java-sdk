@@ -119,10 +119,10 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       byte[] serializedEvent = objectSerializer.serialize(data);
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "publish", pubsubName, topic };
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "publish", pubsubName, topic };
 
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), path, null, serializedEvent, metadata, context)
+          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedEvent, metadata, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -153,9 +153,9 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
       byte[] serializedRequestBody = objectSerializer.serialize(request);
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "invoke", appId, "method", method };
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "invoke", appId, "method", method };
 
-      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path,
+      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, pathSegments,
           httpExtension.getQueryString(), serializedRequestBody, metadata, context);
       return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
@@ -224,10 +224,10 @@ public class DaprClientHttp extends AbstractDaprClient {
       byte[] payload = INTERNAL_SERIALIZER.serialize(jsonMap);
       String httpMethod = DaprHttp.HttpMethods.POST.name();
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "bindings", name };
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "bindings", name };
 
       Mono<DaprHttp.Response> response = this.client.invokeApi(
-              httpMethod, path, null, payload, null, context);
+              httpMethod, pathSegments, null, payload, null, context);
       return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -261,10 +261,10 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "bulk"};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "bulk"};
 
       return this.client
-          .invokeApi(DaprHttp.HttpMethods.POST.name(), path, null, requestBody, null, context)
+          .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, null, requestBody, null, context)
           .flatMap(s -> {
             try {
               return Mono.just(buildStates(s, type));
@@ -309,10 +309,10 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       request.getMetadata().forEach(urlParameters::put);
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
 
       return this.client
-          .invokeApi(DaprHttp.HttpMethods.GET.name(), path, urlParameters, headers, context)
+          .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, urlParameters, headers, context)
           .flatMap(s -> {
             try {
               return Mono.just(buildState(s, key, options, type));
@@ -368,10 +368,10 @@ public class DaprClientHttp extends AbstractDaprClient {
       TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
       byte[] serializedOperationBody = INTERNAL_SERIALIZER.serialize(req);
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "transaction"};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "transaction"};
 
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), path, null, serializedOperationBody, null, context)
+          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedOperationBody, null, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception e) {
       return DaprException.wrapMono(e);
@@ -415,10 +415,10 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName};
 
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), path, null, serializedStateBody, null, context)
+          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedStateBody, null, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -454,10 +454,10 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       request.getMetadata().forEach(urlParameters::put);
 
-      String[] path = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
 
       return this.client.invokeApi(
-              DaprHttp.HttpMethods.DELETE.name(), path, urlParameters, headers, context)
+              DaprHttp.HttpMethods.DELETE.name(), pathSegments, urlParameters, headers, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -541,9 +541,9 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(e);
     }
 
-    String[] path = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, key};
+    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, key};
     return this.client
-      .invokeApi(DaprHttp.HttpMethods.GET.name(), path, metadata, (String)null, null, context)
+      .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, metadata, (String)null, null, context)
       .flatMap(response -> {
         try {
           Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);

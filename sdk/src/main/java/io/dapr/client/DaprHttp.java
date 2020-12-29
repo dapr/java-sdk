@@ -153,7 +153,7 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API asynchronously without payload that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param path          Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
+   * @param pathSegments  Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters URL parameters
    * @param headers       HTTP headers.
    * @param context       OpenTelemetry's Context.
@@ -161,18 +161,18 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
       String method,
-      String[] path,
+      String[] pathSegments,
       Map<String, String> urlParameters,
       Map<String, String> headers,
       Context context) {
-    return this.invokeApi(method, path, urlParameters, (byte[]) null, headers, context);
+    return this.invokeApi(method, pathSegments, urlParameters, (byte[]) null, headers, context);
   }
 
   /**
    * Invokes an API asynchronously that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param path          Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
+   * @param pathSegments  Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
@@ -181,14 +181,14 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
       String method,
-      String[] path,
+      String[] pathSegments,
       Map<String, String> urlParameters,
       String content,
       Map<String, String> headers,
       Context context) {
 
     return this.invokeApi(
-        method, path, urlParameters, content == null
+        method, pathSegments, urlParameters, content == null
             ? EMPTY_BYTES
             : content.getBytes(StandardCharsets.UTF_8), headers, context);
   }
@@ -197,7 +197,7 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API asynchronously that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param path          Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
+   * @param pathSegments  Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
@@ -206,12 +206,12 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
           String method,
-          String[] path,
+          String[] pathSegments,
           Map<String, String> urlParameters,
           byte[] content,
           Map<String, String> headers,
           Context context) {
-    return Mono.fromCallable(() -> doInvokeApi(method, path, urlParameters, content, headers, context));
+    return Mono.fromCallable(() -> doInvokeApi(method, pathSegments, urlParameters, content, headers, context));
   }
 
   /**
@@ -227,7 +227,7 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param path          Array of path segments (/a/b/c -> ["a", "b", "c"]).
+   * @param pathSegments  Array of path segments (/a/b/c -> ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
@@ -235,7 +235,7 @@ public class DaprHttp implements AutoCloseable {
    * @return Response
    */
   private Response doInvokeApi(String method,
-                               String[] path,
+                               String[] pathSegments,
                                Map<String, String> urlParameters,
                                byte[] content, Map<String, String> headers,
                                Context context) throws IOException {
@@ -255,7 +255,7 @@ public class DaprHttp implements AutoCloseable {
     urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
         .host(this.hostname)
         .port(this.port);
-    for (String pathSegment : path) {
+    for (String pathSegment : pathSegments) {
       urlBuilder.addPathSegment(pathSegment);
     }
     Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()

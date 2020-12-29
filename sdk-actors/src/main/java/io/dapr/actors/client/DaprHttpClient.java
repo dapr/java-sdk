@@ -36,9 +36,9 @@ class DaprHttpClient implements DaprClient {
    */
   @Override
   public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    String[] path = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "method", methodName };
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "actors", actorType, actorId, "method", methodName };
     Mono<DaprHttp.Response> responseMono =
-          this.client.invokeApi(DaprHttp.HttpMethods.POST.name(), path, null, jsonPayload, null, null);
+          this.client.invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, null, jsonPayload, null, null);
     return responseMono.map(r -> r.getBody());
   }
 }
