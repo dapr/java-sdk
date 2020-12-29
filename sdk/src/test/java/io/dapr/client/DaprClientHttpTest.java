@@ -1007,14 +1007,30 @@ public class DaprClientHttpTest {
   @Test
   public void getSecrets() {
     mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-      .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
     assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
     });
     Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
+
+    assertEquals(1, secret.size());
+    assertEquals("mysecretvalue", secret.get("mysecretkey"));
+  }
+
+  @Test
+  public void getSecretsSpecialCharsInKey() {
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key%2Fone")
+        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
+    });
+    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key/one").block();
 
     assertEquals(1, secret.size());
     assertEquals("mysecretvalue", secret.get("mysecretkey"));
