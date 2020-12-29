@@ -960,6 +960,7 @@ public class DaprClientGrpcTest {
   public void getStatesString() throws IOException {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("meta1", "value1");
+    metadata.put("meta2", "value2");
     DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
         .addItems(DaprProtos.BulkStateItem.newBuilder()
             .setData(serialize("hello world"))
