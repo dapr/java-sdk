@@ -958,10 +958,13 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getStatesString() throws IOException {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
     DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
         .addItems(DaprProtos.BulkStateItem.newBuilder()
             .setData(serialize("hello world"))
             .setKey("100")
+            .putAllMetadata(metadata)
             .setEtag("1")
             .build())
         .addItems(DaprProtos.BulkStateItem.newBuilder()
@@ -983,6 +986,7 @@ public class DaprClientGrpcTest {
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals("hello world", result.stream().findFirst().get().getValue());
+    assertEquals(metadata, result.stream().findFirst().get().getMetadata());
     assertEquals("1", result.stream().findFirst().get().getEtag());
     assertNull(result.stream().findFirst().get().getError());
     assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
@@ -993,10 +997,13 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getStatesInteger() throws IOException {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
     DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
         .addItems(DaprProtos.BulkStateItem.newBuilder()
             .setData(serialize(1234))
             .setKey("100")
+            .putAllMetadata(metadata)
             .setEtag("1")
             .build())
         .addItems(DaprProtos.BulkStateItem.newBuilder()
@@ -1018,6 +1025,7 @@ public class DaprClientGrpcTest {
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals(1234, (int)result.stream().findFirst().get().getValue());
+    assertEquals(metadata, result.stream().findFirst().get().getMetadata());
     assertEquals("1", result.stream().findFirst().get().getEtag());
     assertNull(result.stream().findFirst().get().getError());
     assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
@@ -1028,10 +1036,13 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getStatesBoolean() throws IOException {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
     DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
         .addItems(DaprProtos.BulkStateItem.newBuilder()
             .setData(serialize(true))
             .setKey("100")
+            .putAllMetadata(metadata)
             .setEtag("1")
             .build())
         .addItems(DaprProtos.BulkStateItem.newBuilder()
@@ -1053,6 +1064,7 @@ public class DaprClientGrpcTest {
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals(true, result.stream().findFirst().get().getValue());
+    assertEquals(metadata, result.stream().findFirst().get().getMetadata());
     assertEquals("1", result.stream().findFirst().get().getEtag());
     assertNull(result.stream().findFirst().get().getError());
     assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
@@ -1063,10 +1075,12 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getStatesByteArray() throws IOException {
+    Map<String, String> metadata = new HashMap<>();
     DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
         .addItems(DaprProtos.BulkStateItem.newBuilder()
             .setData(serialize(new byte[]{1, 2, 3}))
             .setKey("100")
+            .putAllMetadata(metadata)
             .setEtag("1")
             .build())
         .addItems(DaprProtos.BulkStateItem.newBuilder()
@@ -1088,6 +1102,7 @@ public class DaprClientGrpcTest {
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertArrayEquals(new byte[]{1, 2, 3}, result.stream().findFirst().get().getValue());
+    assertEquals(0, result.stream().findFirst().get().getMetadata().size());
     assertEquals("1", result.stream().findFirst().get().getEtag());
     assertNull(result.stream().findFirst().get().getError());
     assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
@@ -1124,6 +1139,7 @@ public class DaprClientGrpcTest {
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals(object, result.stream().findFirst().get().getValue());
+    assertEquals(0, result.stream().findFirst().get().getMetadata().size());
     assertEquals("1", result.stream().findFirst().get().getEtag());
     assertNull(result.stream().findFirst().get().getError());
     assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
