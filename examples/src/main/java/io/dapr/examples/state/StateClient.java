@@ -18,10 +18,10 @@ import java.util.List;
 /**
  * 1. Build and install jars:
  * mvn clean install
- * 2. send a message to be saved as state:
- * dapr run --components-path ./components --dapr-http-port 3006 -- \
- * java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- * io.dapr.examples.state.StateClient 'my message'
+ * 2. cd [repo root]/examples
+ * 3. send a message to be saved as state:
+ * dapr run --components-path ./components/state -- \
+ *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
  */
 public class StateClient {
 
@@ -70,10 +70,10 @@ public class StateClient {
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
               new State<>(secondState, SECOND_KEY_NAME, "")));
 
-      client.executeTransaction(STATE_STORE_NAME, operationList).block();
+      client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
 
       // get multiple states
-      Mono<List<State<MyClass>>> retrievedMessagesMono = client.getStates(STATE_STORE_NAME,
+      Mono<List<State<MyClass>>> retrievedMessagesMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
       System.out.println("Retrieved messages using bulk get:");
       retrievedMessagesMono.block().forEach(System.out::println);
@@ -88,10 +88,10 @@ public class StateClient {
       operationList.clear();
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.DELETE,
           new State<>(SECOND_KEY_NAME)));
-      mono = client.executeTransaction(STATE_STORE_NAME, operationList);
+      mono = client.executeStateTransaction(STATE_STORE_NAME, operationList);
       mono.block();
 
-      Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getStates(STATE_STORE_NAME,
+      Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
       System.out.println("Trying to retrieve deleted states: ");
       retrievedDeletedMessageMono.block().forEach(System.out::println);

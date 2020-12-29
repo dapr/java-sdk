@@ -134,7 +134,7 @@ The Dapr client is also within a try-with-resource block to properly close the c
 
  Execute the following script in order to run the example:
 ```sh
-dapr run --components-path ./components  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+dapr run --components-path ./components/secrets  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
 ```
 
 Once running, the program should print the output as follows:
@@ -165,7 +165,7 @@ The configuration defines, that the only allowed secret is `movie` and all other
 
 Execute the following script in order to run this example with additional secret scoping: 
 ```sh
-dapr run --components-path ./components --config ./src/main/java/io/dapr/examples/secrets/config.yaml  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+dapr run --components-path ./components/secrets --config ./src/main/java/io/dapr/examples/secrets/config.yaml  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
 ```
 Once running, the program should print the output as follows:
 

@@ -125,7 +125,7 @@ The instrumentation for the service happens via the `OpenTelemetryIterceptor` cl
 Use the follow command to execute the service:
 
 ```sh
-dapr run --components-path ./components --app-id tracingdemo --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3000
+dapr run --app-id tracingdemo --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3000
 ```
 
 Once running, the TracingDemoService is now ready to be invoked by Dapr.
@@ -159,7 +159,7 @@ private static final String SERVICE_APP_ID = "invokedemo";
                 InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "sleep")
                     .withHttpExtension(HttpExtension.POST)
                     .withContext(r.getContext()).build();
-                return client.invokeService(sleepRequest, TypeRef.get(Void.class));
+                return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
               }).block();
         }
       }
@@ -175,11 +175,11 @@ private static final String SERVICE_APP_ID = "invokedemo";
 }
 ```
 
-The class knows the app id for the remote application. It uses `invokeService` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
+The class knows the app id for the remote application. It uses `invokeMethod` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh
-dapr run --components-path ./components -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
+dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
 ```
 Once running, the output should display the messages sent from invoker in the demo service output as follows:
 

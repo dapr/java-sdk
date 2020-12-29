@@ -12,9 +12,9 @@ import io.dapr.client.domain.HttpExtension;
 /**
  * 1. Build and install jars:
  * mvn clean install
+ * 2. cd [repo root]/examples
  * 2. Send messages to the server:
- * dapr run --components-path ./examples/components -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- * io.dapr.examples.invoke.grpc.HelloWorldClient
+ * dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
  */
 public class HelloWorldClient {
 
@@ -33,7 +33,7 @@ public class HelloWorldClient {
       while (true) {
         String message = "Message #" + (count++);
         System.out.println("Sending message: " + message);
-        client.invokeService(serviceAppId, method, message, HttpExtension.NONE).block();
+        client.invokeMethod(serviceAppId, method, message, HttpExtension.NONE).block();
         System.out.println("Message sent: " + message);
 
         Thread.sleep(1000);

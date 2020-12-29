@@ -74,7 +74,7 @@ In the `GrpcHelloWorldDaprService` class, the `onInvoke` method is the most impo
 Now run the service code:
 
 ```sh
-dapr run --components-path ./components --app-id hellogrpc --app-port 5000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 5000
+dapr run --app-id hellogrpc --app-port 5000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 5000
 ```
 
 The `app-id` argument is used to identify this service in Dapr's runtime. The `app-port` determines which port Dapr's runtime should call into this service.  The `protocol` argument informs Dapr which protocol it should use to invoke the application: `grpc` or `http`(default).
@@ -96,7 +96,7 @@ private static class HelloWorldClient {
       while (true) {
         String message = "Message #" + (count++);
         System.out.println("Sending message: " + message);
-        client.invokeService(serviceAppId, method, message, HttpExtension.NONE).block();
+        client.invokeMethod(serviceAppId, method, message, HttpExtension.NONE).block();
         System.out.println("Message sent: " + message);
 
         Thread.sleep(1000);
@@ -113,12 +113,12 @@ private static class HelloWorldClient {
 
 First, it creates an instance of `DaprClient` via `DaprClientBuilder`. The protocol used by DaprClient is transparent to the application. The HTTP and GRPC ports used by Dapr's sidecar are automatically chosen and exported as environment variables: `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT`. Dapr's Java SDK references these environment variables when communicating to Dapr's sidecar. The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
-Finally, it will go through in an infinite loop and invoke the `say` method every second. Notice the use of `block()` on the return from `invokeService` - it is required to actually make the service invocation via a [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) object.
+Finally, it will go through in an infinite loop and invoke the `say` method every second. Notice the use of `block()` on the return from `invokeMethod` - it is required to actually make the service invocation via a [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) object.
 
 Finally, open a new command line terminal and run the client code to send some messages.
 
 ```sh
-dapr run --components-path ./components -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
+dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
 ```
 
 Once the messages are sent, use `CTRL+C` to exit Dapr.

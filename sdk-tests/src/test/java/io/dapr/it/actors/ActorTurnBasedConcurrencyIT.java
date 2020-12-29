@@ -89,13 +89,13 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logger.debug("Invoking Say from Proxy");
     callWithRetry(() -> {
       logger.debug("Invoking Say from Proxy");
-      String sayResponse = proxy.invokeActorMethod("say", "message", String.class).block();
+      String sayResponse = proxy.invokeMethod("say", "message", String.class).block();
       logger.debug("asserting not null response: [" + sayResponse + "]");
       assertNotNull(sayResponse);
     }, 60000);
 
     logger.debug("Invoking actor method 'startTimer' which will register a timer");
-    proxy.invokeActorMethod("startTimer", "myTimer").block();
+    proxy.invokeMethod("startTimer", "myTimer").block();
 
     // invoke a bunch of calls in parallel to validate turn-based concurrency
     logger.debug("Invoking an actor method 'say' in parallel");
@@ -108,12 +108,12 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
       // the actor method called below should reverse the input
       String msg = "message" + i;
       String reversedString = new StringBuilder(msg).reverse().toString();
-      String output = proxy.invokeActorMethod("say", "message" + i, String.class).block();
+      String output = proxy.invokeMethod("say", "message" + i, String.class).block();
       assertTrue(reversedString.equals(output));
     });
 
     logger.debug("Calling method to register reminder named " + REMINDER_NAME);
-    proxy.invokeActorMethod("startReminder", REMINDER_NAME).block();
+    proxy.invokeMethod("startReminder", REMINDER_NAME).block();
 
     logger.debug("Pausing 7 seconds to allow timer and reminders to fire");
     Thread.sleep(7000);
@@ -126,14 +126,14 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
     // call unregister
     logger.debug("Calling actor method 'stopTimer' to unregister timer");
-    proxy.invokeActorMethod("stopTimer", "myTimer").block();
+    proxy.invokeMethod("stopTimer", "myTimer").block();
 
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeActorMethod("stopReminder", REMINDER_NAME).block();
+    proxy.invokeMethod("stopReminder", REMINDER_NAME).block();
 
     // make some more actor method calls and sleep a bit to see if the timer fires (it should not)
     sayMessages.parallelStream().forEach( i -> {
-      proxy.invokeActorMethod("say", "message" + i, String.class).block();
+      proxy.invokeMethod("say", "message" + i, String.class).block();
     });
 
     logger.debug("Pausing 5 seconds to allow time for timer and reminders to fire if there is a bug.  They should not since we have unregistered them.");

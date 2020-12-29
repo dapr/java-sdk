@@ -94,7 +94,7 @@ public class InputBindingController {
 
  Execute the follow script in order to run the Input Binding example:
 ```sh
-dapr run --components-path ./components --app-id inputbinding --app-port 3000 --dapr-http-port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
+dapr run --components-path ./components/bindings --app-id inputbinding --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
 ```
 
 ### Running the Output binding sample
@@ -150,7 +150,7 @@ This example binds two events: A user-defined data object (using the `myClass` o
 Use the follow command to execute the Output Binding example:
 
 ```sh
-dapr run --components-path ./components --app-id outputbinding --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
+dapr run --components-path ./components/bindings --app-id outputbinding -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
 ```
 
 Once running, the OutputBindingExample should print the output as follows:

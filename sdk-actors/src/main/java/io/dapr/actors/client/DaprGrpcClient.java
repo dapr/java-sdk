@@ -40,7 +40,7 @@ class DaprGrpcClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> invokeActorMethod(String actorType, String actorId, String methodName, byte[] jsonPayload) {
+  public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
     return Mono.fromCallable(DaprException.wrap(() -> {
       DaprProtos.InvokeActorRequest req =
           DaprProtos.InvokeActorRequest.newBuilder()

@@ -59,7 +59,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
   public void tearDown() {
     // call unregister
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeActorMethod("stopReminder", "myReminder").block();
+    proxy.invokeMethod("stopReminder", "myReminder").block();
   }
 
   /**
@@ -69,7 +69,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
   @Test
   public void reminderRecoveryTest() throws Exception {
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
-    proxy.invokeActorMethod("startReminder", "myReminder").block();
+    proxy.invokeMethod("startReminder", "myReminder").block();
 
     logger.debug("Pausing 7 seconds to allow reminder to fire");
     Thread.sleep(7000);

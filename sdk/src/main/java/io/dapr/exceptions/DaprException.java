@@ -8,9 +8,7 @@ package io.dapr.exceptions;
 import io.grpc.StatusRuntimeException;
 import reactor.core.publisher.Mono;
 
-import java.lang.reflect.Executable;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 /**
  * A Dapr's specific exception.
@@ -86,26 +84,13 @@ public class DaprException extends RuntimeException {
   }
 
   /**
-   * Convenience to throw an wrapped IllegalArgumentException.
-   * @param message Message for exception.
-   */
-  public static void throwIllegalArgumentException(String message) {
-    try {
-      throw new IllegalArgumentException(message);
-    } catch (Exception e) {
-      wrap(e);
-    }
-  }
-
-  /**
    * Wraps an exception into DaprException (if not already DaprException).
    *
    * @param exception Exception to be wrapped.
-   * @return DaprException.
    */
-  public static DaprException wrap(Exception exception) {
+  public static void wrap(Exception exception) {
     if (exception == null) {
-      return null;
+      return;
     }
 
     if (exception instanceof DaprException) {
@@ -125,6 +110,10 @@ public class DaprException extends RuntimeException {
       e = e.getCause();
     }
 
+    if (exception instanceof IllegalArgumentException) {
+      throw (IllegalArgumentException) exception;
+    }
+
     throw new DaprException(exception);
   }
 
@@ -139,7 +128,8 @@ public class DaprException extends RuntimeException {
       try {
         return callable.call();
       } catch (Exception e) {
-        return (T) wrap(e);
+        wrap(e);
+        return null;
       }
     };
   }

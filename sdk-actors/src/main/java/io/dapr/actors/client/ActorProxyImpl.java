@@ -74,8 +74,8 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, Object data, TypeRef<T> type) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.serialize(data))
+  public <T> Mono<T> invokeMethod(String methodName, Object data, TypeRef<T> type) {
+    return this.daprClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data))
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -84,16 +84,16 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
-    return this.invokeActorMethod(methodName, data, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(String methodName, Object data, Class<T> clazz) {
+    return this.invokeMethod(methodName, data, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, TypeRef<T> type) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
+  public <T> Mono<T> invokeMethod(String methodName, TypeRef<T> type) {
+    return this.daprClient.invoke(actorType, actorId.toString(), methodName, null)
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -102,24 +102,24 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
-    return this.invokeActorMethod(methodName, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(String methodName, Class<T> clazz) {
+    return this.invokeMethod(methodName, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeActorMethod(String methodName) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null).then();
+  public Mono<Void> invokeMethod(String methodName) {
+    return this.daprClient.invoke(actorType, actorId.toString(), methodName, null).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeActorMethod(String methodName, Object data) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.serialize(data)).then();
+  public Mono<Void> invokeMethod(String methodName, Object data) {
+    return this.daprClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data)).then();
   }
 
   /**
@@ -140,25 +140,25 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
       if (method.getReturnType().equals(Mono.class)) {
         ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
         if (actorMethodAnnotation == null) {
-          return invokeActorMethod(method.getName());
+          return invokeMethod(method.getName());
         }
 
-        return invokeActorMethod(method.getName(), actorMethodAnnotation.returns());
+        return invokeMethod(method.getName(), actorMethodAnnotation.returns());
       }
 
-      return invokeActorMethod(method.getName(), method.getReturnType()).block();
+      return invokeMethod(method.getName(), method.getReturnType()).block();
     }
 
     if (method.getReturnType().equals(Mono.class)) {
       ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
       if (actorMethodAnnotation == null) {
-        return invokeActorMethod(method.getName(), args[0]);
+        return invokeMethod(method.getName(), args[0]);
       }
 
-      return invokeActorMethod(method.getName(), args[0], actorMethodAnnotation.returns());
+      return invokeMethod(method.getName(), args[0], actorMethodAnnotation.returns());
     }
 
-    return invokeActorMethod(method.getName(), args[0], method.getReturnType()).block();
+    return invokeMethod(method.getName(), args[0], method.getReturnType()).block();
   }
 
   /**

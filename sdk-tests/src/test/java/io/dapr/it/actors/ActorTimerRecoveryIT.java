@@ -54,7 +54,7 @@ public class ActorTimerRecoveryIT extends BaseIT {
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     logger.debug("Invoking actor method 'startTimer' which will register a timer");
-    proxy.invokeActorMethod("startTimer", "myTimer").block();
+    proxy.invokeMethod("startTimer", "myTimer").block();
 
     logger.debug("Pausing 7 seconds to allow timer to fire");
     Thread.sleep(7000);
@@ -80,7 +80,7 @@ public class ActorTimerRecoveryIT extends BaseIT {
 
     // call unregister
     logger.debug("Calling actor method 'stopTimer' to unregister timer");
-    proxy.invokeActorMethod("stopTimer", "myTimer").block();
+    proxy.invokeMethod("stopTimer", "myTimer").block();
   }
 
 }

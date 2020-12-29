@@ -95,7 +95,7 @@ public class DemoServiceController {
 Use the follow command to execute the demo service example:
 
 ```sh
-dapr run --components-path ./components --app-id invokedemo --app-port 3000 --dapr-http-port 3005 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3000
+dapr run --app-id invokedemo --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3000
 ```
 
 Once running, the ExposerService is now ready to be invoked by Dapr.
@@ -113,7 +113,7 @@ private static final String SERVICE_APP_ID = "invokedemo";
 public static void main(String[] args) throws Exception {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
-        byte[] response = client.invokeService(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
+        byte[] response = client.invokeMethod(SERVICE_APP_ID, "say", message, HttpExtension.POST, null,
             byte[].class).block();
         System.out.println(new String(response));
       }
@@ -127,11 +127,11 @@ public static void main(String[] args) throws Exception {
 }
 ```
 
-The class knows the app id for the remote application. It uses the the static `Dapr.getInstance().invokeService` method to invoke the remote method defining the parameters: The verb, application id, method name, and proper data and metadata, as well as the type of the expected return type. The returned payload for this method invocation is plain text and not a [JSON String](https://www.w3schools.com/js/js_json_datatypes.asp), so we expect `byte[]` to get the raw response and not try to deserialize it.
+The class knows the app id for the remote application. It uses the the static `Dapr.getInstance().invokeMethod` method to invoke the remote method defining the parameters: The verb, application id, method name, and proper data and metadata, as well as the type of the expected return type. The returned payload for this method invocation is plain text and not a [JSON String](https://www.w3schools.com/js/js_json_datatypes.asp), so we expect `byte[]` to get the raw response and not try to deserialize it.
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh
-dapr run --components-path ./components --dapr-http-port 3006 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient "message one" "message two"
+dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient "message one" "message two"
 ```
 Once running, the output should display the messages sent from invoker in the demo service output as follows:
 

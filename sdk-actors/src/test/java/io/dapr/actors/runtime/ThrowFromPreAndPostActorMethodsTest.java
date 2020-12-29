@@ -121,7 +121,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       false,
-      proxy.invokeActorMethod("stringInBooleanOut", "hello world", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
   }
 
   // IllegalMonitorStateException should be intentionally thrown.  This type was chosen for this test just because
@@ -133,7 +133,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       true,
-      proxy.invokeActorMethod("stringInBooleanOut", "true", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
 
   private static ActorId newActorId() {
@@ -146,7 +146,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
     // Mock daprClient for ActorProxy only, not for runtime.
     DaprClientStub daprClient = mock(DaprClientStub.class);
 
-    when(daprClient.invokeActorMethod(
+    when(daprClient.invoke(
       eq(context.getActorTypeInformation().getName()),
       eq(actorId.toString()),
       any(),
@@ -169,10 +169,10 @@ public class ThrowFromPreAndPostActorMethodsTest {
   private static <T extends AbstractActor> ActorRuntimeContext createContext() {
     DaprClient daprClient = mock(DaprClient.class);
 
-    when(daprClient.registerActorTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.registerActorReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorTimer(any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorReminder(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterTimer(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterReminder(any(), any(), any())).thenReturn(Mono.empty());
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),

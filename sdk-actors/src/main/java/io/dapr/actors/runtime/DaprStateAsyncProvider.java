@@ -60,7 +60,7 @@ class DaprStateAsyncProvider {
   }
 
   <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
-    Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
+    Mono<byte[]> result = this.daprClient.getState(actorType, actorId.toString(), stateName);
 
     return result.flatMap(s -> {
       try {
@@ -88,7 +88,7 @@ class DaprStateAsyncProvider {
   }
 
   Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
-    Mono<byte[]> result = this.daprClient.getActorState(actorType, actorId.toString(), stateName);
+    Mono<byte[]> result = this.daprClient.getState(actorType, actorId.toString(), stateName);
     return result.map(s -> s.length > 0).defaultIfEmpty(false);
   }
 
@@ -155,7 +155,7 @@ class DaprStateAsyncProvider {
       operations.add(new ActorStateOperation(operationName, key, value));
     }
 
-    return this.daprClient.saveActorStateTransactionally(actorType, actorId.toString(), operations);
+    return this.daprClient.saveStateTransactionally(actorType, actorId.toString(), operations);
   }
 
 }

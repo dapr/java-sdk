@@ -17,14 +17,14 @@ import java.util.List;
  */
 public class SaveStateRequestBuilder {
 
-  private final String stateStoreName;
+  private final String storeName;
 
   private List<State<?>> states = new ArrayList<>();
 
   private Context context;
 
-  public SaveStateRequestBuilder(String stateStoreName) {
-    this.stateStoreName = stateStoreName;
+  public SaveStateRequestBuilder(String storeName) {
+    this.storeName = storeName;
   }
 
   public SaveStateRequestBuilder withStates(State<?>... states) {
@@ -48,7 +48,7 @@ public class SaveStateRequestBuilder {
    */
   public SaveStateRequest build() {
     SaveStateRequest request = new SaveStateRequest();
-    request.setStateStoreName(this.stateStoreName);
+    request.setStoreName(this.storeName);
     request.setStates(this.states);
     request.setContext(this.context);
     return request;

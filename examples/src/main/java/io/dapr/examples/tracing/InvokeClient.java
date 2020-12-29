@@ -21,10 +21,10 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 /**
  * 1. Build and install jars:
  * mvn clean install
- * 2. Send messages to the server:
- * dapr run --components-path ./examples/components \
- * --port 3006 -- java -jar examples/target/dapr-java-sdk-examples-exec.jar \
- * io.dapr.examples.tracing.InvokeClient 'message one' 'message two'
+ * 2. cd [repo root]/examples
+ * 3. Send messages to the server:
+ * dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar \
+ *   io.dapr.examples.tracing.InvokeClient 'message one' 'message two'
  */
 public class InvokeClient {
 
@@ -48,7 +48,7 @@ public class InvokeClient {
           InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "echo");
           InvokeServiceRequest request
               = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
-          client.invokeService(request, TypeRef.get(byte[].class))
+          client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
                 System.out.println(new String(r.getObject()));
                 return r;
@@ -57,7 +57,7 @@ public class InvokeClient {
                 InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "sleep")
                     .withHttpExtension(HttpExtension.POST)
                     .withContext(r.getContext()).build();
-                return client.invokeService(sleepRequest, TypeRef.get(Void.class));
+                return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
               }).block();
         }
       }
