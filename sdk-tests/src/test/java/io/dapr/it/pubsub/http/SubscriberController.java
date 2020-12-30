@@ -21,29 +21,25 @@ import java.util.Map;
 @RestController
 public class SubscriberController {
 
-  private static final List<String> messagesReceivedTestingTopic = new ArrayList();
-  private static final List<String> messagesReceivedAnotherTopic = new ArrayList();
+  private static final List<Object> messagesReceivedTestingTopic = new ArrayList();
+  private static final List<Object> messagesReceivedAnotherTopic = new ArrayList();
 
   @GetMapping(path = "/messages/testingtopic")
-  public List<String> getMessagesReceivedTestingTopic() {
+  public List<Object> getMessagesReceivedTestingTopic() {
     return messagesReceivedTestingTopic;
   }
 
   @GetMapping(path = "/messages/anothertopic")
-  public List<String> getMessagesReceivedAnotherTopic() {
+  public List<Object> getMessagesReceivedAnotherTopic() {
     return messagesReceivedAnotherTopic;
   }
 
   @Topic(name = "testingtopic", pubsubName = "messagebus")
   @PostMapping(path = "/route1")
-  public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
-                                  @RequestHeader Map<String, String> headers) {
+  public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {
       try {
-        // Dapr's event is compliant to CloudEvent.
-        CloudEvent envelope = CloudEvent.deserialize(body);
-
-        String message = envelope.getData() == null ? "" : envelope.getData();
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
         System.out.println("Testing topic Subscriber got message: " + message);
         messagesReceivedTestingTopic.add(envelope.getData());
       } catch (Exception e) {
@@ -54,14 +50,10 @@ public class SubscriberController {
 
   @Topic(name = "anothertopic", pubsubName = "messagebus")
   @PostMapping(path = "/route2")
-  public Mono<Void> handleMessageAnotherTopic(@RequestBody(required = false) byte[] body,
-                                  @RequestHeader Map<String, String> headers) {
+  public Mono<Void> handleMessageAnotherTopic(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {
       try {
-        // Dapr's event is compliant to CloudEvent.
-        CloudEvent envelope = CloudEvent.deserialize(body);
-
-        String message = envelope.getData() == null ? "" : envelope.getData();
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
         System.out.println("Another topic Subscriber got message: " + message);
         messagesReceivedAnotherTopic.add(envelope.getData());
       } catch (Exception e) {

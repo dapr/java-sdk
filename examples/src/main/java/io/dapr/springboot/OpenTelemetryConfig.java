@@ -10,7 +10,6 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.HttpTraceContext;
 import io.opentelemetry.context.propagation.DefaultContextPropagators;
-import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
@@ -63,10 +62,6 @@ public class OpenTelemetryConfig {
     } else {
       System.out.println("WARNING: Zipkin is not available.");
     }
-
-    final LoggingSpanExporter loggingExporter = new LoggingSpanExporter();
-    OpenTelemetrySdk.getGlobalTracerManagement()
-        .addSpanProcessor(SimpleSpanProcessor.builder(loggingExporter).build());
 
     return tracer;
   }

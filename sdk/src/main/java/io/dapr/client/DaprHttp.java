@@ -7,6 +7,7 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
@@ -242,7 +243,7 @@ public class DaprHttp implements AutoCloseable {
     final String requestId = UUID.randomUUID().toString();
     RequestBody body;
 
-    String contentType = headers != null ? headers.get("content-type") : null;
+    String contentType = headers != null ? headers.get(Metadata.CONTENT_TYPE) : null;
     MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
     if (content == null) {
       body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON)
