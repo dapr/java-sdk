@@ -58,41 +58,6 @@ public class DaprClientHttp extends AbstractDaprClient {
   private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
 
   /**
-   * Base path to invoke methods.
-   */
-  public static final String INVOKE_PATH = DaprHttp.API_VERSION + "/invoke";
-
-  /**
-   * Invoke Publish Path.
-   */
-  public static final String PUBLISH_PATH = DaprHttp.API_VERSION + "/publish";
-
-  /**
-   * Invoke Binding Path.
-   */
-  public static final String BINDING_PATH = DaprHttp.API_VERSION + "/bindings";
-
-  /**
-   * State Path.
-   */
-  public static final String STATE_PATH = DaprHttp.API_VERSION + "/state";
-
-  /**
-   * String format for transaction API.
-   */
-  private static final String TRANSACTION_URL_FORMAT = STATE_PATH + "/%s/transaction";
-
-  /**
-   * Secrets Path.
-   */
-  public static final String SECRETS_PATH = DaprHttp.API_VERSION + "/secrets";
-
-  /**
-   * State Path format for bulk state API.
-   */
-  public static final String STATE_BULK_PATH_FORMAT = STATE_PATH + "/%s/bulk";
-
-  /**
    * The HTTP client to be used.
    *
    * @see io.dapr.client.DaprHttp
@@ -152,12 +117,12 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
 
-      StringBuilder url = new StringBuilder(PUBLISH_PATH)
-              .append("/").append(pubsubName)
-              .append("/").append(topic);
       byte[] serializedEvent = objectSerializer.serialize(data);
+
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "publish", pubsubName, topic };
+
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), url.toString(), null, serializedEvent, metadata, context)
+          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedEvent, metadata, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -186,9 +151,11 @@ public class DaprClientHttp extends AbstractDaprClient {
       if (method == null || method.trim().isEmpty()) {
         throw new IllegalArgumentException("Method name cannot be null or empty.");
       }
-      String path = String.format("%s/%s/method/%s", INVOKE_PATH, appId, method);
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, path,
+
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "invoke", appId, "method", method };
+
+      Mono<DaprHttp.Response> response = this.client.invokeApi(httMethod, pathSegments,
           httpExtension.getQueryString(), serializedRequestBody, metadata, context);
       return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
@@ -254,12 +221,13 @@ public class DaprClientHttp extends AbstractDaprClient {
         }
       }
 
-      StringBuilder url = new StringBuilder(BINDING_PATH).append("/").append(name);
-
       byte[] payload = INTERNAL_SERIALIZER.serialize(jsonMap);
       String httpMethod = DaprHttp.HttpMethods.POST.name();
+
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "bindings", name };
+
       Mono<DaprHttp.Response> response = this.client.invokeApi(
-              httpMethod, url.toString(), null, payload, null, context);
+              httpMethod, pathSegments, null, payload, null, context);
       return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -287,14 +255,16 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("Parallelism cannot be negative.");
       }
 
-      String url = String.format(STATE_BULK_PATH_FORMAT, stateStoreName);
       Map<String, Object> jsonMap = new HashMap<>();
       jsonMap.put("keys", keys);
       jsonMap.put("parallelism", parallelism);
 
       byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
+
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "bulk"};
+
       return this.client
-          .invokeApi(DaprHttp.HttpMethods.POST.name(), url, null, requestBody, null, context)
+          .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, null, requestBody, null, context)
           .flatMap(s -> {
             try {
               return Mono.just(buildStates(s, type));
@@ -333,19 +303,16 @@ public class DaprClientHttp extends AbstractDaprClient {
         headers.put(HEADER_HTTP_ETAG_ID, etag);
       }
 
-      StringBuilder url = new StringBuilder(STATE_PATH)
-          .append("/")
-          .append(stateStoreName)
-          .append("/")
-          .append(key);
       Map<String, String> urlParameters = Optional.ofNullable(options)
           .map(o -> o.getStateOptionsAsMap())
           .orElse(new HashMap<>());
 
       request.getMetadata().forEach(urlParameters::put);
 
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
+
       return this.client
-          .invokeApi(DaprHttp.HttpMethods.GET.name(), url.toString(), urlParameters, headers, context)
+          .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, urlParameters, headers, context)
           .flatMap(s -> {
             try {
               return Mono.just(buildState(s, key, options, type));
@@ -375,7 +342,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       if (operations == null || operations.isEmpty()) {
         return Mono.empty();
       }
-      final String url = String.format(TRANSACTION_URL_FORMAT,  stateStoreName);
+
       List<TransactionalStateOperation<Object>> internalOperationObjects = new ArrayList<>(operations.size());
       for (TransactionalStateOperation operation : operations) {
         if (operation == null) {
@@ -400,8 +367,11 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
       TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
       byte[] serializedOperationBody = INTERNAL_SERIALIZER.serialize(req);
+
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "transaction"};
+
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), url, null, serializedOperationBody, null, context)
+          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedOperationBody, null, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception e) {
       return DaprException.wrapMono(e);
@@ -423,7 +393,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       if (states == null || states.isEmpty()) {
         return Mono.empty();
       }
-      final String url = STATE_PATH + "/" + stateStoreName;
+
       List<State<Object>> internalStateObjects = new ArrayList<>(states.size());
       for (State state : states) {
         if (state == null) {
@@ -444,8 +414,11 @@ public class DaprClientHttp extends AbstractDaprClient {
                 state.getOptions()));
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
+
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName};
+
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), url, null, serializedStateBody, null, context)
+          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedStateBody, null, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -474,15 +447,17 @@ public class DaprClientHttp extends AbstractDaprClient {
       if (etag != null && !etag.trim().isEmpty()) {
         headers.put(HEADER_HTTP_ETAG_ID, etag);
       }
-      String url = STATE_PATH + "/" + stateStoreName + "/" + key;
+
       Map<String, String> urlParameters = Optional.ofNullable(options)
           .map(stateOptions -> stateOptions.getStateOptionsAsMap())
           .orElse(new HashMap<>());
 
       request.getMetadata().forEach(urlParameters::put);
 
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
+
       return this.client.invokeApi(
-              DaprHttp.HttpMethods.DELETE.name(), url, urlParameters, headers, context)
+              DaprHttp.HttpMethods.DELETE.name(), pathSegments, urlParameters, headers, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -566,9 +541,9 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(e);
     }
 
-    String url = SECRETS_PATH + "/" + secretStoreName + "/" + key;
+    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, key};
     return this.client
-      .invokeApi(DaprHttp.HttpMethods.GET.name(), url, metadata, (String)null, null, context)
+      .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, metadata, (String)null, null, context)
       .flatMap(response -> {
         try {
           Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
