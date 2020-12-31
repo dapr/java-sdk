@@ -46,6 +46,10 @@ public class StateClient {
    */
   public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
+      System.out.println("Waiting for Dapr sidecar ...");
+      client.waitForSidecar(10000).block();
+      System.out.println("Dapr sidecar is ready.");
+
       String message = args.length == 0 ? " " : args[0];
 
       MyClass myClass = new MyClass();

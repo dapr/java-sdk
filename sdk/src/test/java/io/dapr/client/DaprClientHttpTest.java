@@ -6,8 +6,8 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
-import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequestBuilder;
+import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
@@ -26,6 +26,8 @@ import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -35,10 +37,8 @@ import java.util.List;
 import java.util.Map;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static io.dapr.utils.TestUtils.findFreePort;
+import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
@@ -63,6 +63,34 @@ public class DaprClientHttpTest {
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+  }
+
+  @Test
+  public void waitForSidecarTimeout() throws Exception {
+    int port = findFreePort();
+    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+    assertThrows(RuntimeException.class, () -> daprClientHttp.waitForSidecar(1).block());
+  }
+
+  @Test
+  public void waitForSidecarTimeoutOK() throws Exception {
+    try (ServerSocket serverSocket = new ServerSocket(0)) {
+      final int port = serverSocket.getLocalPort();
+      System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+      Thread t = new Thread(() -> {
+        try {
+            try (Socket socket = serverSocket.accept()) {
+            }
+        } catch (IOException e) {
+        }
+      });
+      t.start();
+      daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+      DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+      daprClientHttp.waitForSidecar(10000).block();
+    }
   }
 
   @Test

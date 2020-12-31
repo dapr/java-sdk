@@ -33,6 +33,13 @@ import java.util.Map;
 public interface DaprClient extends AutoCloseable {
 
   /**
+   * Waits for the sidecar, giving up after timeout.
+   * @param timeoutInMilliseconds Timeout in milliseconds to wait for sidecar.
+   * @return a Mono plan of type Void.
+   */
+  Mono<Void> waitForSidecar(int timeoutInMilliseconds);
+
+  /**
    * Publish an event.
    *
    * @param pubsubName the pubsub name we will publish the event to

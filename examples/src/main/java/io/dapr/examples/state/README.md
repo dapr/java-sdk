@@ -43,6 +43,10 @@ public class StateClient {
   ///...
   public static void main(String[] args) throws Exception {
       try (DaprClient client = new DaprClientBuilder().build()) {
+        System.out.println("Waiting for Dapr sidecar ...");
+        client.waitForSidecar(10000).block();
+        System.out.println("Dapr sidecar is ready.");
+
         String message = args.length == 0 ? " " : args[0];
   
         MyClass myClass = new MyClass();
@@ -102,7 +106,8 @@ public class StateClient {
 ```
 The code uses the `DaprClient` created by the `DaprClientBuilder`. Notice that this builder uses default settings. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted. 
 
-This example performs multiple operations: 
+This example performs multiple operations:
+* `client.waitForSidecar(...)` for waiting until Dapr sidecar is ready.
 * `client.saveState(...)` for persisting an instance of `MyClass`.
 * `client.getState(...)` operation in order to retrieve back the persisted state using the same key. 
 * `client.executeStateTransaction(...)` operation in order to update existing state and add new state. 
