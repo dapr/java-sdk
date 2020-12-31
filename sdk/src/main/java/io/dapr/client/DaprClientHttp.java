@@ -26,6 +26,7 @@ import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
 import io.opentelemetry.context.Context;
 import reactor.core.publisher.Mono;
@@ -99,6 +100,20 @@ public class DaprClientHttp extends AbstractDaprClient {
    */
   DaprClientHttp(DaprHttp client) {
     this(client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
+    return Mono.fromRunnable(() -> {
+      try {
+        NetworkUtils.waitForSocket(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), timeoutInMilliseconds);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   /**

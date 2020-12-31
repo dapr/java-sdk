@@ -26,6 +26,7 @@ import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -129,6 +130,20 @@ public class DaprClientGrpc extends AbstractDaprClient {
       default:
         throw new IllegalArgumentException("Missing StateConcurrency mapping to gRPC Concurrency enum");
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
+    return Mono.fromRunnable(() -> {
+      try {
+        NetworkUtils.waitForSocket(Properties.SIDECAR_IP.get(), Properties.GRPC_PORT.get(), timeoutInMilliseconds);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   /**

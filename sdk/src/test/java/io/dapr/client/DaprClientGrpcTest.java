@@ -23,6 +23,7 @@ import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -40,6 +41,8 @@ import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,7 +54,9 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
+import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doNothing;
@@ -87,6 +92,30 @@ public class DaprClientGrpcTest {
     adapter.close();
     verify(closeable).close();
     verifyNoMoreInteractions(closeable);
+  }
+
+  @Test
+  public void waitForSidecarTimeout() throws Exception {
+    int port = findFreePort();
+    System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
+    assertThrows(RuntimeException.class, () -> adapter.waitForSidecar(1).block());
+  }
+
+  @Test
+  public void waitForSidecarTimeoutOK() throws Exception {
+    try (ServerSocket serverSocket = new ServerSocket(0)) {
+      final int port = serverSocket.getLocalPort();
+      System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
+      Thread t = new Thread(() -> {
+        try {
+          try (Socket socket = serverSocket.accept()) {
+          }
+        } catch (IOException e) {
+        }
+      });
+      t.start();
+      adapter.waitForSidecar(10000).block();
+    }
   }
 
   @Test
