@@ -703,14 +703,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
   }
 
-  private static <V> Callable<V> wrap(Context context, Callable<V> callable) {
-    if (context == null) {
-      return DaprException.wrap(callable);
-    }
-
-    return DaprException.wrap(context.wrap(callable));
-  }
-
   private static Runnable wrap(Context context, Runnable runnable) {
     if (context == null) {
       return DaprException.wrap(runnable);
