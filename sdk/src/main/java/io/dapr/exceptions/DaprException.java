@@ -37,7 +37,7 @@ public class DaprException extends RuntimeException {
    *                  permitted, and indicates that the cause is nonexistent or
    *                  unknown.)
    */
-  public DaprException(DaprError daprError, Exception cause) {
+  public DaprException(DaprError daprError, Throwable cause) {
     this(daprError.getErrorCode(), daprError.getMessage(), cause);
   }
 
@@ -45,7 +45,7 @@ public class DaprException extends RuntimeException {
    * Wraps an exception into a DaprException.
    * @param exception the exception to be wrapped.
    */
-  public DaprException(Exception exception) {
+  public DaprException(Throwable exception) {
     this("UNKNOWN", exception.getMessage(), exception);
   }
 
@@ -69,7 +69,7 @@ public class DaprException extends RuntimeException {
    *                  permitted, and indicates that the cause is nonexistent or
    *                  unknown.)
    */
-  public DaprException(String errorCode, String message, Exception cause) {
+  public DaprException(String errorCode, String message, Throwable cause) {
     super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
     this.errorCode = errorCode;
   }
@@ -88,33 +88,12 @@ public class DaprException extends RuntimeException {
    *
    * @param exception Exception to be wrapped.
    */
-  public static void wrap(Exception exception) {
+  public static void wrap(Throwable exception) {
     if (exception == null) {
       return;
     }
 
-    if (exception instanceof DaprException) {
-      throw (DaprException) exception;
-    }
-
-    Throwable e = exception;
-    while (e != null) {
-      if (e instanceof StatusRuntimeException) {
-        StatusRuntimeException statusRuntimeException = (StatusRuntimeException) e;
-        throw new DaprException(
-            statusRuntimeException.getStatus().getCode().toString(),
-            statusRuntimeException.getStatus().getDescription(),
-            exception);
-      }
-
-      e = e.getCause();
-    }
-
-    if (exception instanceof IllegalArgumentException) {
-      throw (IllegalArgumentException) exception;
-    }
-
-    throw new DaprException(exception);
+    throw propagate(exception);
   }
 
   /**
@@ -135,6 +114,21 @@ public class DaprException extends RuntimeException {
   }
 
   /**
+   * Wraps a runnable with a try-catch to throw DaprException.
+   * @param runnable runnable to be invoked.
+   * @return object of type T.
+   */
+  public static Runnable wrap(Runnable runnable) {
+    return () -> {
+      try {
+        runnable.run();
+      } catch (Exception e) {
+        wrap(e);
+      }
+    };
+  }
+
+  /**
    * Wraps an exception into DaprException (if not already DaprException).
    *
    * @param exception Exception to be wrapped.
@@ -149,6 +143,37 @@ public class DaprException extends RuntimeException {
     }
 
     return Mono.empty();
+  }
+
+  /**
+   * Wraps an exception into DaprException (if not already DaprException).
+   *
+   * @param exception Exception to be wrapped.
+   * @return wrapped RuntimeException
+   */
+  public static RuntimeException propagate(Throwable exception) {
+    if (exception instanceof DaprException) {
+      return (DaprException) exception;
+    }
+
+    Throwable e = exception;
+    while (e != null) {
+      if (e instanceof StatusRuntimeException) {
+        StatusRuntimeException statusRuntimeException = (StatusRuntimeException) e;
+        return new DaprException(
+                statusRuntimeException.getStatus().getCode().toString(),
+                statusRuntimeException.getStatus().getDescription(),
+                exception);
+      }
+
+      e = e.getCause();
+    }
+
+    if (exception instanceof IllegalArgumentException) {
+      return (IllegalArgumentException) exception;
+    }
+
+    return new DaprException(exception);
   }
 
   private static String emptyIfNull(String str) {

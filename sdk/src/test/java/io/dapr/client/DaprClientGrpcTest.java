@@ -5,8 +5,6 @@
 
 package io.dapr.client;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
@@ -32,11 +30,12 @@ import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import io.grpc.stub.StreamObserver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
+import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
@@ -51,20 +50,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static com.google.common.util.concurrent.Futures.addCallback;
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class DaprClientGrpcTest {
 
@@ -73,14 +64,14 @@ public class DaprClientGrpcTest {
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
   private Closeable closeable;
-  private DaprGrpc.DaprFutureStub client;
+  private DaprGrpc.DaprStub client;
   private DaprClientGrpc adapter;
   private ObjectSerializer serializer;
 
   @Before
   public void setup() throws IOException {
     closeable = mock(Closeable.class);
-    client = mock(DaprGrpc.DaprFutureStub.class);
+    client = mock(DaprGrpc.DaprStub.class);
     when(client.withInterceptors(any())).thenReturn(client);
     adapter = new DaprClientGrpc(closeable, client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     serializer = new ObjectSerializer();
@@ -120,26 +111,26 @@ public class DaprClientGrpcTest {
 
   @Test
   public void publishEventExceptionThrownTest() {
-    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
-        .thenThrow(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
+    doAnswer((Answer<Void>) invocation -> {
+      throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
+    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
     assertThrowsDaprException(
-        StatusRuntimeException.class,
-        "INVALID_ARGUMENT",
-        "INVALID_ARGUMENT: bad bad argument",
-        () -> adapter.publishEvent("pubsubname","topic", "object").block());
+            StatusRuntimeException.class,
+            "INVALID_ARGUMENT",
+            "INVALID_ARGUMENT: bad bad argument",
+            () -> adapter.publishEvent("pubsubname","topic", "object").block());
   }
 
   @Test
   public void publishEventCallbackExceptionThrownTest() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    RuntimeException ex = newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
-    MockCallback<Empty> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
+      return null;
+    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+
     Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -152,9 +143,13 @@ public class DaprClientGrpcTest {
   public void publishEventSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     adapter = new DaprClientGrpc(closeable, client, mockSerializer, new DefaultObjectSerializer());
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     Mono<Void> result = adapter.publishEvent("pubsubname","topic", "{invalid-json");
 
@@ -167,44 +162,29 @@ public class DaprClientGrpcTest {
 
   @Test
   public void publishEventTest() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
-        .thenReturn(settableFuture);
-    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
-    settableFuture.set(Empty.newBuilder().build());
-    result.block();
-    assertTrue(callback.wasCalled);
-  }
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
-  @Test
-  public void publishEventNoHotMono() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(Empty.newBuilder().build());
-          return settableFuture;
-        });
-    adapter.publishEvent("pubsubname", "topic", "object");
-    // Do not call block() on the mono above, so nothing should happen.
-    assertFalse(callback.wasCalled);
+    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
+    result.block();
   }
 
   @Test
   public void publishEventObjectTest() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.publishEvent(any(DaprProtos.PublishEventRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+
     MyObject event = new MyObject(1, "Event");
     Mono<Void> result = adapter.publishEvent("pubsubname", "topic", event);
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -231,9 +211,13 @@ public class DaprClientGrpcTest {
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     adapter = new DaprClientGrpc(closeable, client, mockSerializer, new DefaultObjectSerializer());
-    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
 
@@ -246,8 +230,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingExceptionThrownTest() {
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
 
     assertThrowsDaprException(
@@ -259,14 +245,13 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingCallbackExceptionThrownTest() {
-    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<DaprProtos.InvokeBindingResponse> callback =
-        new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.setException(ex);
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
 
     assertThrowsDaprException(
@@ -278,102 +263,92 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingTest() throws IOException {
-    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
       DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
-    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
-    settableFuture.set(responseBuilder.build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
-  public void invokeBindingByteArrayTest() throws IOException {
-    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
+  public void invokeBindingByteArrayTest() {
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
         DaprProtos.InvokeBindingResponse.newBuilder().setData(ByteString.copyFrom("OK".getBytes()));
-    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     Mono<byte[]> result = adapter.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
-    settableFuture.set(responseBuilder.build());
+
     assertEquals("OK", new String(result.block(), StandardCharsets.UTF_8));
-    assertTrue(callback.wasCalled);
   }
 
   @Test
   public void invokeBindingObjectTest() throws IOException {
-    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
       DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
-    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-      .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     MyObject event = new MyObject(1, "Event");
     Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", event);
-    settableFuture.set(responseBuilder.build());
+
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
   public void invokeBindingResponseObjectTest() throws IOException {
-    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
         DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
-    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     MyObject event = new MyObject(1, "Event");
     Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, String.class);
-    settableFuture.set(responseBuilder.build());
+
     assertEquals("OK", result.block());
-    assertTrue(callback.wasCalled);
   }
 
   @Test
   public void invokeBindingResponseObjectTypeRefTest() throws IOException {
-    SettableFuture<DaprProtos.InvokeBindingResponse> settableFuture = SettableFuture.create();
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
-    MockCallback<DaprProtos.InvokeBindingResponse> callback = new MockCallback<>(responseBuilder.build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenReturn(settableFuture);
+            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
     MyObject event = new MyObject(1, "Event");
     Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, TypeRef.get(String.class));
-    settableFuture.set(responseBuilder.build());
-    assertEquals("OK", result.block());
-    assertTrue(callback.wasCalled);
-  }
 
-  @Test
-  public void invokeBindingObjectNoHotMono() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeBinding(any(DaprProtos.InvokeBindingRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(Empty.newBuilder().build());
-          return settableFuture;
-        });
-    MyObject event = new MyObject(1, "Event");
-    adapter.invokeBinding("BindingName", "MyOperation", event);
-    // Do not call block() on mono above, so nothing should happen.
-    assertFalse(callback.wasCalled);
+    assertEquals("OK", result.block());
   }
 
   @Test
   public void invokeServiceVoidExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<Void> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE);
 
     assertThrowsDaprException(
@@ -385,9 +360,13 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceIllegalArgumentExceptionThrownTest() {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     // HttpExtension cannot be null
     Mono<Void> result = adapter.invokeMethod("appId", "method", "request", null);
 
@@ -396,8 +375,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceEmptyRequestVoidExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<Void> result = adapter.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null);
 
     assertThrowsDaprException(
@@ -409,13 +390,13 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceVoidCallbackExceptionThrownTest() {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.setException(ex);
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<Void> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE);
 
     assertThrowsDaprException(
@@ -426,40 +407,38 @@ public class DaprClientGrpcTest {
   }
 
   @Test
-  public void invokeServiceVoidTest() throws Exception {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
+  public void invokeServiceVoidTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny("Value")).build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
     Mono<Void> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE);
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
-  public void invokeServiceVoidObjectTest() throws Exception {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
+  public void invokeServiceVoidObjectTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny("Value")).build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
     MyObject request = new MyObject(1, "Event");
     Mono<Void> result = adapter.invokeMethod("appId", "method", request, HttpExtension.NONE);
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
   public void invokeServiceExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
 
     assertThrowsDaprException(
@@ -471,8 +450,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceNoRequestClassExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, String.class);
 
     assertThrowsDaprException(
@@ -484,8 +465,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceNoRequestTypeRefExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, TypeRef.STRING);
 
     assertThrowsDaprException(
@@ -497,14 +480,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceCallbackExceptionThrownTest() {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -531,53 +514,58 @@ public class DaprClientGrpcTest {
         .setMessage(message)
         .build();
     String expected = "Value";
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(expected)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-    when(client.invokeService(eq(request)))
-        .thenReturn(settableFuture);
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(eq(request), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", "request", httpExtension, null, String.class);
     String strOutput = result.block();
     assertEquals(expected, strOutput);
   }
 
   @Test
-  public void invokeServiceTest() throws Exception {
+  public void invokeServiceTest() {
     String expected = "Value";
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(expected)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
     String strOutput = result.block();
+
     assertEquals(expected, strOutput);
   }
 
   @Test
   public void invokeServiceObjectTest() throws Exception {
     MyObject object = new MyObject(1, "Value");
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(object)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<MyObject> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, MyObject.class);
     MyObject resultObject = result.block();
+
     assertEquals(object.id, resultObject.id);
     assertEquals(object.value, resultObject.value);
   }
 
   @Test
   public void invokeServiceNoRequestBodyExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
 
     assertThrowsDaprException(
@@ -589,14 +577,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceNoRequestCallbackExceptionThrownTest() {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<String> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -608,42 +596,44 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeServiceNoRequestBodyTest() throws Exception {
     String expected = "Value";
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(expected)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
     Mono<String> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
     String strOutput = result.block();
+
     assertEquals(expected, strOutput);
   }
 
   @Test
   public void invokeServiceNoRequestBodyObjectTest() throws Exception {
     MyObject object = new MyObject(1, "Value");
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(object)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
     Mono<MyObject> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, MyObject.class);
     MyObject resultObject = result.block();
+
     assertEquals(object.id, resultObject.id);
     assertEquals(object.value, resultObject.value);
   }
 
   @Test
   public void invokeServiceByteRequestExceptionThrownTest() throws IOException {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
+
     Mono<byte[]> result = adapter.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
 
     assertThrowsDaprException(
@@ -655,17 +645,17 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceByteRequestCallbackExceptionThrownTest() throws IOException {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
+
     Mono<byte[]> result =
         adapter.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE,(HashMap<String, String>) null);
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -677,18 +667,19 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeByteRequestServiceTest() throws Exception {
     String expected = "Value";
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(expected)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
+
     Mono<byte[]> result = adapter.invokeMethod(
         "appId", "method", byteRequest, HttpExtension.NONE, (HashMap<String, String>) null);
     byte[] byteOutput = result.block();
+
     String strOutput = serializer.deserialize(byteOutput, String.class);
     assertEquals(expected, strOutput);
   }
@@ -696,24 +687,26 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeServiceByteRequestObjectTest() throws Exception {
     MyObject resultObj = new MyObject(1, "Value");
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(resultObj)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
     Mono<byte[]> result = adapter.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
     byte[] byteOutput = result.block();
+
     assertEquals(resultObj, serializer.deserialize(byteOutput, MyObject.class));
   }
 
   @Test
   public void invokeServiceNoRequestNoClassBodyExceptionThrownTest() {
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
     Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
 
     assertThrowsDaprException(
@@ -725,14 +718,14 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceNoRequestNoClassCallbackExceptionThrownTest() {
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
     Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -742,51 +735,31 @@ public class DaprClientGrpcTest {
   }
 
   @Test
-  public void invokeServiceNoRequestNoClassBodyTest() throws Exception {
+  public void invokeServiceNoRequestNoClassBodyTest() {
     String expected = "Value";
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(expected)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
-    Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-    result.block();
-    assertTrue(callback.wasCalled);
-  }
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-  @Test
-  public void invokeServiceNoRequestNoHotMono() throws Exception {
-    String expected = "Value";
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(expected)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-          return settableFuture;
-        });
-    adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-    // Do not call block() on mono above, so nothing should happen.
-    assertFalse(callback.wasCalled);
+    Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
+    result.block();
   }
 
   @Test
   public void invokeServiceNoRequestNoClassBodyObjectTest() throws Exception {
     MyObject resultObj = new MyObject(1, "Value");
-    SettableFuture<CommonProtos.InvokeResponse> settableFuture = SettableFuture.create();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    MockCallback<CommonProtos.InvokeResponse> callback = new MockCallback<>(CommonProtos.InvokeResponse.newBuilder()
-            .setData(getAny(resultObj)).build());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
-    when(client.invokeService(any(DaprProtos.InvokeServiceRequest.class)))
-        .thenReturn(settableFuture);
     Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -812,7 +785,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getStateExceptionThrownTest() {
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class))).thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
 
@@ -825,16 +801,15 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getStateCallbackExceptionThrownTest() {
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<DaprProtos.GetStateResponse> callback =
-        new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -850,38 +825,19 @@ public class DaprClientGrpcTest {
     String expectedValue = "Expected state";
     State<String> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), null);
     DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
-      .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+
     State<String> keyRequest = buildStateKey(null, key, etag, null);
     Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, keyRequest, String.class);
-    settableFuture.set(responseEnvelope);
     State<String> res = result.block();
+
     assertNotNull(res);
     assertEquals(expectedState, res);
-  }
-
-  @Test
-  public void getStateStringValueNoHotMono() throws IOException {
-    String etag = "ETag1";
-    String key = "key1";
-    String expectedValue = "Expected state";
-    State<String> expectedState = buildStateKey(expectedValue, key, etag, null);
-    DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
-      .thenAnswer(c -> {
-        settableFuture.set(responseEnvelope);
-        return settableFuture;
-      });
-    State<String> keyRequest = buildStateKey(null, key, etag, null);
-    adapter.getState(STATE_STORE_NAME, keyRequest, String.class);
-    // block() on the mono above is not called, so nothing should happen.
-    assertFalse(callback.wasCalled);
   }
 
   @Test
@@ -896,14 +852,16 @@ public class DaprClientGrpcTest {
         .setEtag(etag)
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+
     Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
-    settableFuture.set(responseEnvelope);
     State<MyObject> res = result.block();
+
     assertNotNull(res);
     assertEquals(expectedState, res);
   }
@@ -924,13 +882,14 @@ public class DaprClientGrpcTest {
     GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, key);
     builder.withMetadata(metadata).withEtag(etag).withStateOptions(options);
     GetStateRequest request = builder.build();
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+
     Mono<Response<State<MyObject>>> result = adapter.getState(request, TypeRef.get(MyObject.class));
-    settableFuture.set(responseEnvelope);
     Response<State<MyObject>> res = result.block();
     assertNotNull(res);
     assertEquals(expectedState, res.getObject());
@@ -948,13 +907,15 @@ public class DaprClientGrpcTest {
         .setEtag(etag)
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getState(any(io.dapr.v1.DaprProtos.GetStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+
     Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
-    settableFuture.set(responseEnvelope);
+
     assertEquals(expectedState, result.block());
   }
 
@@ -1003,16 +964,14 @@ public class DaprClientGrpcTest {
             .setError("not found")
             .build())
         .build();
-    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(responseEnvelope);
-          return settableFuture;
-        });
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+
     List<State<String>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
-    assertTrue(callback.wasCalled);
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1042,16 +1001,13 @@ public class DaprClientGrpcTest {
             .setError("not found")
             .build())
         .build();
-    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(responseEnvelope);
-          return settableFuture;
-        });
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
     List<State<Integer>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
-    assertTrue(callback.wasCalled);
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1081,16 +1037,14 @@ public class DaprClientGrpcTest {
             .setError("not found")
             .build())
         .build();
-    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(responseEnvelope);
-          return settableFuture;
-        });
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+
     List<State<Boolean>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
-    assertTrue(callback.wasCalled);
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1119,16 +1073,14 @@ public class DaprClientGrpcTest {
             .setError("not found")
             .build())
         .build();
-    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(responseEnvelope);
-          return settableFuture;
-        });
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+
     List<State<byte[]>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), byte[].class).block();
-    assertTrue(callback.wasCalled);
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1156,16 +1108,14 @@ public class DaprClientGrpcTest {
             .setError("not found")
             .build())
         .build();
-    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
-        .thenAnswer(c -> {
-          settableFuture.set(responseEnvelope);
-          return settableFuture;
-        });
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+
     List<State<MyObject>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
-    assertTrue(callback.wasCalled);
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1181,7 +1131,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void deleteStateExceptionThrowTest() {
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class))).thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
 
@@ -1215,15 +1168,15 @@ public class DaprClientGrpcTest {
 
   @Test
   public void deleteStateCallbackExcpetionThrownTest() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<Empty> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -1236,17 +1189,17 @@ public class DaprClientGrpcTest {
   public void deleteStateNoOptionsTest() {
     String etag = "ETag1";
     String key = "key1";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
     State<String> stateKey = buildStateKey(null, key, etag, null);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
         stateKey.getOptions());
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1254,17 +1207,17 @@ public class DaprClientGrpcTest {
     String etag = "ETag1";
     String key = "key1";
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-      .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
       stateKey.getOptions());
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1274,38 +1227,18 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Map<String, String> metadata = new HashMap<>();
     metadata.put("key_1", "val_1");
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-      .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
     DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, key);
     builder.withEtag(etag).withStateOptions(options).withMetadata(metadata);
     DeleteStateRequest request = builder.build();
     Mono<Response<Void>> result = adapter.deleteState(request);
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
-  }
-
-  @Test
-  public void deleteStateTestNoHotMono() {
-    String etag = "ETag1";
-    String key = "key1";
-    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-      .thenAnswer(c -> {
-        settableFuture.set(Empty.newBuilder().build());
-        return settableFuture;
-      });
-    State<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
-      stateKey.getOptions());
-    // Do not call result.block(), so nothing should happen.
-    assertFalse(callback.wasCalled);
   }
 
   @Test
@@ -1313,17 +1246,17 @@ public class DaprClientGrpcTest {
     String etag = "ETag1";
     String key = "key1";
     StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
         stateKey.getOptions());
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1331,17 +1264,17 @@ public class DaprClientGrpcTest {
     String etag = "ETag1";
     String key = "key1";
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
         stateKey.getOptions());
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1368,9 +1301,14 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String data = "my data";
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+
+
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -1394,11 +1332,13 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String data = "my data";
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
@@ -1413,9 +1353,7 @@ public class DaprClientGrpcTest {
         .withMetadata(metadata)
         .build();
     Mono<Response<Void>> result = adapter.executeStateTransaction(request);
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1424,11 +1362,13 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String data = "my data";
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
@@ -1438,9 +1378,7 @@ public class DaprClientGrpcTest {
         new State<>("testKey")
     );
     Mono<Void> result = adapter.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation, deleteOperation));
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1449,8 +1387,10 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String data = "my data";
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
-        .thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
@@ -1470,18 +1410,18 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String data = "my data";
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("ex");
-    MockCallback<Empty> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class)))
-        .thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
     Mono<Void> result = adapter.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -1507,7 +1447,10 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenThrow(RuntimeException.class);
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
 
     assertThrowsDaprException(
@@ -1522,13 +1465,14 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
     RuntimeException ex = new RuntimeException("An Exception");
-    MockCallback<Empty> callback = new MockCallback<>(ex);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onError(ex);
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
-    settableFuture.setException(ex);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -1542,14 +1486,16 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
+
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1557,33 +1503,16 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
-    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
-    settableFuture.set(Empty.newBuilder().build());
-    result.block();
-    assertTrue(callback.wasCalled);
-  }
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
-  @Test
-  public void saveStateTestNoHotMono() {
-    String key = "key1";
-    String etag = "ETag1";
-    String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenAnswer(c -> {
-      settableFuture.set(Empty.newBuilder().build());
-      return settableFuture;
-    });
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
-    // No call to result.block(), so nothing should happen.
-    assertFalse(callback.wasCalled);
+    result.block();
   }
 
   @Test
@@ -1591,15 +1520,16 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
     StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1607,15 +1537,16 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   @Test
@@ -1623,15 +1554,16 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
-    settableFuture.set(Empty.newBuilder().build());
     result.block();
-    assertTrue(callback.wasCalled);
   }
 
   private <T> State<T> buildStateKey(T value, String key, String etag, StateOptions options) {
@@ -1671,11 +1603,23 @@ public class DaprClientGrpcTest {
     String expectedValue2 = "Expected state 2";
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
     State<String> expectedState2 = buildStateKey(expectedValue2, key2, etag, new HashMap<>(), null);
-    Map<String, SettableFuture<DaprProtos.GetStateResponse>> futuresMap = new HashMap<>();
+    Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
-    when(client.getState(argThat(new GetStateRequestKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
-    when(client.getState(argThat(new GetStateRequestKeyMatcher(key2)))).thenReturn(futuresMap.get(key2));
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(futuresMap.get(key1));
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(futuresMap.get(key2));
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(argThat(new GetStateRequestKeyMatcher(key2)), any());
+
     State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
     Mono<State<String>> resultGet1 = adapter.getState(STATE_STORE_NAME, keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
@@ -1683,16 +1627,16 @@ public class DaprClientGrpcTest {
     Mono<State<String>> resultGet2 = adapter.getState(STATE_STORE_NAME, keyRequest2, String.class);
     assertEquals(expectedState2, resultGet2.block());
 
-    SettableFuture<Empty> settableFutureDelete = SettableFuture.create();
-    MockCallback<Empty> callbackDelete = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFutureDelete, callbackDelete, directExecutor());
-    when(client.deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class)))
-        .thenReturn(settableFutureDelete);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class), any());
+
     Mono<Void> resultDelete = adapter.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
         keyRequest2.getOptions());
-    settableFutureDelete.set(Empty.newBuilder().build());
     resultDelete.block();
-    assertTrue(callbackDelete.wasCalled);
   }
 
   @Test
@@ -1701,16 +1645,18 @@ public class DaprClientGrpcTest {
     String key1 = "key1";
     String expectedValue1 = "Expected state 1";
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
-    Map<String, SettableFuture<DaprProtos.GetStateResponse>> futuresMap = new HashMap<>();
+    Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
     DaprProtos.GetStateResponse envelope = DaprProtos.GetStateResponse.newBuilder()
             .setData(serialize(expectedValue1))
             .build();
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(envelope);
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(envelope);
-    futuresMap.put(key1, settableFuture);
-    when(client.getState(argThat(new GetStateRequestKeyMatcher(key1)))).thenReturn(futuresMap.get(key1));
+    futuresMap.put(key1, envelope);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(futuresMap.get(key1));
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
+
     State<String> keyRequest1 = buildStateKey(null, key1, null, null);
     Mono<State<String>> resultGet1 = adapter.getState(STATE_STORE_NAME, keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
@@ -1729,16 +1675,14 @@ public class DaprClientGrpcTest {
                     .setError("not found")
                     .build())
             .build();
-    SettableFuture<DaprProtos.GetBulkStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetBulkStateResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.getBulkState(any(DaprProtos.GetBulkStateRequest.class)))
-            .thenAnswer(c -> {
-              settableFuture.set(responseEnvelope);
-              return settableFuture;
-            });
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+
     List<State<String>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
-    assertTrue(callback.wasCalled);
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1756,19 +1700,18 @@ public class DaprClientGrpcTest {
     String expectedKey = "attributeKey";
     String expectedValue = "Expected secret value";
     DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
-    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(responseEnvelope);
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
-      .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
-        assertEquals("key", req.getKey());
-        assertEquals(SECRET_STORE_NAME, req.getStoreName());
-        assertEquals(0, req.getMetadataCount());
-        return settableFuture;
-      });
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
+      assertEquals("key", req.getKey());
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals(0, req.getMetadataCount());
+
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
     Map<String, String> result = adapter.getSecret(SECRET_STORE_NAME, "key").block();
 
@@ -1779,19 +1722,18 @@ public class DaprClientGrpcTest {
   @Test
   public void getSecretsEmptyResponse() {
     DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse();
-    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(responseEnvelope);
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
-      .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
-        assertEquals("key", req.getKey());
-        assertEquals(SECRET_STORE_NAME, req.getStoreName());
-        assertEquals(0, req.getMetadataCount());
-        return settableFuture;
-      });
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
+      assertEquals("key", req.getKey());
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals(0, req.getMetadataCount());
+
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
     Map<String, String> result = adapter.getSecret(SECRET_STORE_NAME, "key").block();
 
@@ -1800,19 +1742,16 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getSecretsException() {
-    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(new RuntimeException());
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.setException(new RuntimeException());
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
+      assertEquals("key", req.getKey());
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals(0, req.getMetadataCount());
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
-      .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
-        assertEquals("key", req.getKey());
-        assertEquals(SECRET_STORE_NAME, req.getStoreName());
-        assertEquals(0, req.getMetadataCount());
-        return settableFuture;
-      });
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
+      observer.onError(new RuntimeException());
+      return null;
+    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
     assertThrowsDaprException(ExecutionException.class, () -> adapter.getSecret(SECRET_STORE_NAME, "key").block());
   }
@@ -1842,19 +1781,17 @@ public class DaprClientGrpcTest {
     String expectedKey = "attributeKey";
     String expectedValue = "Expected secret value";
     DaprProtos.GetSecretResponse responseEnvelope = buildGetSecretResponse(expectedKey, expectedValue);
-    SettableFuture<DaprProtos.GetSecretResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetSecretResponse> callback = new MockCallback<>(responseEnvelope);
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(responseEnvelope);
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.GetSecretRequest req = invocation.getArgument(0);
+      assertEquals("key", req.getKey());
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals("metavalue", req.getMetadataMap().get("metakey"));
 
-    when(client.getSecret(any(io.dapr.v1.DaprProtos.GetSecretRequest.class)))
-      .thenAnswer(context -> {
-        io.dapr.v1.DaprProtos.GetSecretRequest req = context.getArgument(0);
-        assertEquals("key", req.getKey());
-        assertEquals(SECRET_STORE_NAME, req.getStoreName());
-        assertEquals("metavalue", req.getMetadataMap().get("metakey"));
-        return settableFuture;
-      });
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
     Map<String, String> result = adapter.getSecret(
       SECRET_STORE_NAME,
@@ -1873,18 +1810,18 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
-    settableFuture.set(Empty.newBuilder().build());
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
     for (StateOptions.Consistency consistency : StateOptions.Consistency.values()) {
       StateOptions options = buildStateOptions(consistency, StateOptions.Concurrency.FIRST_WRITE);
       Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
       result.block();
     }
-
-    assertTrue(callback.wasCalled);
   }
 
   /* If this test is failing, it means that a new value was added to StateOptions.Concurrency
@@ -1895,28 +1832,22 @@ public class DaprClientGrpcTest {
     String key = "key1";
     String etag = "ETag1";
     String value = "State value";
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    MockCallback<Empty> callback = new MockCallback<>(Empty.newBuilder().build());
-    addCallback(settableFuture, callback, directExecutor());
-    when(client.saveState(any(io.dapr.v1.DaprProtos.SaveStateRequest.class))).thenReturn(settableFuture);
-    settableFuture.set(Empty.newBuilder().build());
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
     for (StateOptions.Concurrency concurrency : StateOptions.Concurrency.values()) {
       StateOptions options = buildStateOptions(StateOptions.Consistency.EVENTUAL, concurrency);
       Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
       result.block();
     }
-
-    assertTrue(callback.wasCalled);
   }
 
-  private <T> SettableFuture<DaprProtos.GetStateResponse> buildFutureGetStateEnvelop(T value, String etag) throws IOException {
-    DaprProtos.GetStateResponse envelope = buildGetStateResponse(value, etag);
-    SettableFuture<DaprProtos.GetStateResponse> settableFuture = SettableFuture.create();
-    MockCallback<DaprProtos.GetStateResponse> callback = new MockCallback<>(envelope);
-    addCallback(settableFuture, callback, directExecutor());
-    settableFuture.set(envelope);
-
-    return settableFuture;
+  private <T> DaprProtos.GetStateResponse buildFutureGetStateEnvelop(T value, String etag) throws IOException {
+    return buildGetStateResponse(value, etag);
   }
 
   private <T> DaprProtos.GetStateResponse buildGetStateResponse(T value, String etag) throws IOException {
@@ -1951,37 +1882,6 @@ public class DaprClientGrpcTest {
   private ByteString serialize(Object value) throws IOException {
     byte[] byteValue = serializer.serialize(value);
     return ByteString.copyFrom(byteValue);
-  }
-
-  private static final class MockCallback<T> implements FutureCallback<T> {
-    private T value = null;
-    private Throwable failure = null;
-    private boolean wasCalled = false;
-
-    public MockCallback(T expectedValue) {
-      this.value = expectedValue;
-    }
-
-    public MockCallback(Throwable expectedFailure) {
-      this.failure = expectedFailure;
-    }
-
-    @Override
-    public synchronized void onSuccess(@NullableDecl T result) {
-      assertFalse(wasCalled);
-      wasCalled = true;
-      assertEquals(value, result);
-    }
-
-    @Override
-    public synchronized void onFailure(Throwable throwable) {
-      assertFalse(wasCalled);
-      wasCalled = true;
-      assertEquals(failure == null, throwable == null);
-      if (failure != null) {
-        assertEquals(failure.getClass(), throwable.getClass());
-      }
-    }
   }
 
   public static class MyObject {
