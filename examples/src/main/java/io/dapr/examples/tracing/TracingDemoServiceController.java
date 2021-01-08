@@ -53,11 +53,11 @@ public class TracingDemoServiceController {
    * @return A message containing the time.
    */
   @PostMapping(path = "/echo")
-  public Mono<String> handleMethod(@RequestBody(required = false) byte[] body,
+  public Mono<String> handleMethod(@RequestBody(required = false) String body,
                                    @RequestHeader Map<String, String> headers) {
     return Mono.fromSupplier(() -> {
       try {
-        String message = body == null ? "" : new String(body, StandardCharsets.UTF_8);
+        String message = body == null ? "" : body;
 
         Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
