@@ -31,7 +31,7 @@ public class InvokeClient {
   /**
    * Identifier in Dapr for the service this client will invoke.
    */
-  private static final String SERVICE_APP_ID = "tracingdemo";
+  private static final String SERVICE_APP_ID = "tracingdemoproxy";
 
   /**
    * Starts the invoke client.
@@ -45,7 +45,7 @@ public class InvokeClient {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         try (Scope scope = span.makeCurrent()) {
-          InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "echo");
+          InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_echo");
           InvokeServiceRequest request
               = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
           client.invokeMethod(request, TypeRef.get(byte[].class))
@@ -54,7 +54,7 @@ public class InvokeClient {
                 return r;
               })
               .flatMap(r -> {
-                InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "sleep")
+                InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
                     .withHttpExtension(HttpExtension.POST)
                     .withContext(r.getContext()).build();
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
