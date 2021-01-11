@@ -6,6 +6,7 @@
 package io.dapr.exceptions;
 
 import io.grpc.StatusRuntimeException;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.Callable;
@@ -152,6 +153,8 @@ public class DaprException extends RuntimeException {
    * @return wrapped RuntimeException
    */
   public static RuntimeException propagate(Throwable exception) {
+    Exceptions.throwIfFatal(exception);
+
     if (exception instanceof DaprException) {
       return (DaprException) exception;
     }
