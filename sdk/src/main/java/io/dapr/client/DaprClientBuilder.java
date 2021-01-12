@@ -122,8 +122,8 @@ public class DaprClientBuilder {
         channel.shutdown();
       }
     };
-    DaprGrpc.DaprFutureStub stub = DaprGrpc.newFutureStub(channel);
-    return new DaprClientGrpc(closeableChannel, stub, this.objectSerializer, this.stateSerializer);
+    DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
+    return new DaprClientGrpc(closeableChannel, asyncStub, this.objectSerializer, this.stateSerializer);
   }
 
   /**
