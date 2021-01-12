@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
@@ -171,6 +172,21 @@ public class DaprClientGrpcTest {
 
     Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
     result.block();
+  }
+
+  @Test
+  public void publishEventNoHotMono() {
+    AtomicBoolean called = new AtomicBoolean(false);
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    adapter.publishEvent("pubsubname", "topic", "object");
+    // Do not call block() on the mono above, so nothing should happen.
+    assertFalse(called.get());
   }
 
   @Test
@@ -341,6 +357,24 @@ public class DaprClientGrpcTest {
     Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, TypeRef.get(String.class));
 
     assertEquals("OK", result.block());
+  }
+
+  @Test
+  public void invokeBindingObjectNoHotMono() throws IOException {
+    AtomicBoolean called = new AtomicBoolean(false);
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    MyObject event = new MyObject(1, "Event");
+    adapter.invokeBinding("BindingName", "MyOperation", event);
+    // Do not call block() on mono above, so nothing should happen.
+    assertFalse(called.get());
   }
 
   @Test
@@ -749,6 +783,22 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void invokeServiceNoRequestNoHotMono() {
+    AtomicBoolean called = new AtomicBoolean(false);
+    String expected = "Value";
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+      observer.onCompleted();
+      return null;
+    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
+    // Do not call block() on mono above, so nothing should happen.
+    assertFalse(called.get());
+  }
+
+  @Test
   public void invokeServiceNoRequestNoClassBodyObjectTest() throws Exception {
     MyObject resultObj = new MyObject(1, "Value");
     doAnswer((Answer<Void>) invocation -> {
@@ -838,6 +888,27 @@ public class DaprClientGrpcTest {
 
     assertNotNull(res);
     assertEquals(expectedState, res);
+  }
+
+  @Test
+  public void getStateStringValueNoHotMono() throws IOException {
+    AtomicBoolean called = new AtomicBoolean(false);
+    String etag = "ETag1";
+    String key = "key1";
+    String expectedValue = "Expected state";
+    DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+
+    State<String> keyRequest = buildStateKey(null, key, etag, null);
+    adapter.getState(STATE_STORE_NAME, keyRequest, String.class);
+    // block() on the mono above is not called, so nothing should happen.
+    assertFalse(called.get());
   }
 
   @Test
@@ -1242,6 +1313,27 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void deleteStateTestNoHotMono() {
+    AtomicBoolean called = new AtomicBoolean(false);
+    String etag = "ETag1";
+    String key = "key1";
+    StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
+    State<String> stateKey = buildStateKey(null, key, etag, options);
+    adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+            stateKey.getOptions());
+    // Do not call result.block(), so nothing should happen.
+    assertFalse(called.get());
+  }
+
+  @Test
   public void deleteStateNoConsistencyTest() {
     String etag = "ETag1";
     String key = "key1";
@@ -1513,6 +1605,26 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
+  }
+
+  @Test
+  public void saveStateTestNoHotMono() {
+    AtomicBoolean called = new AtomicBoolean(false);
+    String key = "key1";
+    String etag = "ETag1";
+    String value = "State value";
+    doAnswer((Answer<Void>) invocation -> {
+      called.set(true);
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+    // No call to result.block(), so nothing should happen.
+    assertFalse(called.get());
   }
 
   @Test
