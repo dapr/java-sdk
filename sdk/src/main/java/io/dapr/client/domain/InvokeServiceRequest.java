@@ -20,8 +20,6 @@ public class InvokeServiceRequest {
 
   private Object body;
 
-  private Map<String, String> metadata;
-
   private HttpExtension httpExtension;
 
   private Context context;
@@ -50,14 +48,6 @@ public class InvokeServiceRequest {
 
   void setBody(Object body) {
     this.body = body;
-  }
-
-  public Map<String, String> getMetadata() {
-    return metadata;
-  }
-
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
   }
 
   public HttpExtension getHttpExtension() {

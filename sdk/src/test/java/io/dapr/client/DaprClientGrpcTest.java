@@ -532,9 +532,8 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeServiceWithHttpExtensionTest() throws IOException {
-    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, new HashMap<String, String>() {{
-      put("test", "1");
-    }});
+    HttpExtension httpExtension = new HttpExtension(
+        DaprHttp.HttpMethods.GET, Collections.singletonMap("test", "1"), null);
     CommonProtos.InvokeRequest message = CommonProtos.InvokeRequest.newBuilder()
         .setMethod("method")
         .setData(getAny("request"))
@@ -951,7 +950,7 @@ public class DaprClientGrpcTest {
         .setEtag(etag)
         .build();
     GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, key);
-    builder.withMetadata(metadata).withEtag(etag).withStateOptions(options);
+    builder.withMetadata(metadata).withStateOptions(options);
     GetStateRequest request = builder.build();
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];

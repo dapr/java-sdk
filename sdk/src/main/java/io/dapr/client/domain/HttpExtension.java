@@ -6,10 +6,8 @@
 package io.dapr.client.domain;
 
 import io.dapr.client.DaprHttp;
-import io.dapr.exceptions.DaprException;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -22,39 +20,39 @@ public final class HttpExtension {
   /**
    * Convenience HttpExtension object for {@link io.dapr.client.DaprHttp.HttpMethods#NONE} with empty queryString.
    */
-  public static final HttpExtension NONE = new HttpExtension(DaprHttp.HttpMethods.NONE, new HashMap<>());
+  public static final HttpExtension NONE = new HttpExtension(DaprHttp.HttpMethods.NONE);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#GET} Verb with empty queryString.
    */
-  public static final HttpExtension GET = new HttpExtension(DaprHttp.HttpMethods.GET, new HashMap<>());
+  public static final HttpExtension GET = new HttpExtension(DaprHttp.HttpMethods.GET);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#PUT} Verb with empty queryString.
    */
-  public static final HttpExtension PUT = new HttpExtension(DaprHttp.HttpMethods.PUT, new HashMap<>());
+  public static final HttpExtension PUT = new HttpExtension(DaprHttp.HttpMethods.PUT);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#POST} Verb with empty queryString.
    */
-  public static final HttpExtension POST = new HttpExtension(DaprHttp.HttpMethods.POST, new HashMap<>());
+  public static final HttpExtension POST = new HttpExtension(DaprHttp.HttpMethods.POST);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#DELETE} Verb with empty queryString.
    */
-  public static final HttpExtension DELETE = new HttpExtension(DaprHttp.HttpMethods.DELETE, new HashMap<>());
+  public static final HttpExtension DELETE = new HttpExtension(DaprHttp.HttpMethods.DELETE);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#HEAD} Verb with empty queryString.
    */
-  public static final HttpExtension HEAD = new HttpExtension(DaprHttp.HttpMethods.HEAD, new HashMap<>());
+  public static final HttpExtension HEAD = new HttpExtension(DaprHttp.HttpMethods.HEAD);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#CONNECT} Verb with empty queryString.
    */
-  public static final HttpExtension CONNECT = new HttpExtension(DaprHttp.HttpMethods.CONNECT, new HashMap<>());
+  public static final HttpExtension CONNECT = new HttpExtension(DaprHttp.HttpMethods.CONNECT);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#OPTIONS} Verb with empty queryString.
    */
-  public static final HttpExtension OPTIONS = new HttpExtension(DaprHttp.HttpMethods.OPTIONS, new HashMap<>());
+  public static final HttpExtension OPTIONS = new HttpExtension(DaprHttp.HttpMethods.OPTIONS);
   /**
    * Convenience HttpExtension object for the {@link DaprHttp.HttpMethods#TRACE} Verb with empty queryString.
    */
-  public static final HttpExtension TRACE = new HttpExtension(DaprHttp.HttpMethods.TRACE, new HashMap<>());
+  public static final HttpExtension TRACE = new HttpExtension(DaprHttp.HttpMethods.TRACE);
 
   /**
    * HTTP verb.
@@ -67,25 +65,36 @@ public final class HttpExtension {
   private Map<String, String> queryString;
 
   /**
+   * HTTP headers.
+   */
+  private Map<String, String> headers;
+
+  /**
    * Construct a HttpExtension object.
    * @param method      Required value denoting the HttpMethod.
-   * @param queryString Non-null map value for the queryString for a HTTP listener.
+   * @param queryString map for the queryString the HTTP call.
+   * @param headers     map to set HTTP headers.
    * @see io.dapr.client.DaprHttp.HttpMethods for supported methods.
    * @throws IllegalArgumentException on null method or queryString.
    */
-  public HttpExtension(DaprHttp.HttpMethods method, Map<String, String> queryString) {
-    try {
-      if (method == null) {
-        throw new IllegalArgumentException("HttpExtension method cannot be null");
-      } else if (queryString == null) {
-        throw new IllegalArgumentException("HttpExtension queryString map cannot be null");
-      }
-
-      this.method = method;
-      this.queryString = Collections.unmodifiableMap(queryString);
-    } catch (RuntimeException e) {
-      DaprException.wrap(e);
+  public HttpExtension(DaprHttp.HttpMethods method, Map<String, String> queryString, Map<String, String> headers) {
+    if (method == null) {
+      throw new IllegalArgumentException("HttpExtension method cannot be null");
     }
+
+    this.method = method;
+    this.queryString = Collections.unmodifiableMap(queryString == null ? Collections.EMPTY_MAP : queryString);
+    this.headers = Collections.unmodifiableMap(headers == null ? Collections.EMPTY_MAP : headers);
+  }
+
+  /**
+   * Construct a HttpExtension object.
+   * @param method      Required value denoting the HttpMethod.
+   * @see io.dapr.client.DaprHttp.HttpMethods for supported methods.
+   * @throws IllegalArgumentException on null method or queryString.
+   */
+  public HttpExtension(DaprHttp.HttpMethods method) {
+    this(method, null, null);
   }
 
   public DaprHttp.HttpMethods getMethod() {
@@ -94,5 +103,9 @@ public final class HttpExtension {
 
   public Map<String, String> getQueryString() {
     return queryString;
+  }
+
+  public Map<String, String> getHeaders() {
+    return headers;
   }
 }

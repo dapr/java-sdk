@@ -23,6 +23,7 @@ public class SubscriberController {
 
   private static final List<Object> messagesReceivedTestingTopic = new ArrayList();
   private static final List<Object> messagesReceivedAnotherTopic = new ArrayList();
+  private static final List<Object> messagesReceivedTTLTopic = new ArrayList();
 
   @GetMapping(path = "/messages/testingtopic")
   public List<Object> getMessagesReceivedTestingTopic() {
@@ -32,6 +33,11 @@ public class SubscriberController {
   @GetMapping(path = "/messages/anothertopic")
   public List<Object> getMessagesReceivedAnotherTopic() {
     return messagesReceivedAnotherTopic;
+  }
+
+  @GetMapping(path = "/messages/ttltopic")
+  public List<Object> getMessagesReceivedTTLTopic() {
+    return messagesReceivedTTLTopic;
   }
 
   @Topic(name = "testingtopic", pubsubName = "messagebus")
@@ -56,6 +62,20 @@ public class SubscriberController {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         System.out.println("Another topic Subscriber got message: " + message);
         messagesReceivedAnotherTopic.add(envelope.getData());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "ttltopic", pubsubName = "messagebus")
+  @PostMapping(path = "/route3")
+  public Mono<Void> handleMessageTTLTopic(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
+        System.out.println("TTL topic Subscriber got message: " + message);
+        messagesReceivedTTLTopic.add(envelope.getData());
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

@@ -58,7 +58,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -189,14 +188,17 @@ public class DaprClientGrpc extends AbstractDaprClient {
     try {
       String appId = invokeServiceRequest.getAppId();
       String method = invokeServiceRequest.getMethod();
-      Object request = invokeServiceRequest.getBody();
+      Object body = invokeServiceRequest.getBody();
       HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
       Context context = invokeServiceRequest.getContext();
       DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
           httpExtension,
           appId,
           method,
-          request);
+          body);
+      // Regarding missing metadata in method invocation for gRPC:
+      // gRPC to gRPC does not handle metadata in Dapr runtime proto.
+      // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
 
       return this.<CommonProtos.InvokeResponse>createMono(
               context,
@@ -271,8 +273,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       final String stateStoreName = request.getStoreName();
       final String key = request.getKey();
       final StateOptions options = request.getStateOptions();
-      // TODO(artursouza): handle etag once available in proto.
-      // String etag = request.getEtag();
+      final Map<String, String> metadata = request.getMetadata();
       final Context context = request.getContext();
 
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
@@ -283,8 +284,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.GetStateRequest.Builder builder = DaprProtos.GetStateRequest.newBuilder()
           .setStoreName(stateStoreName)
-          .setKey(key)
-          .putAllMetadata(request.getMetadata());
+          .setKey(key);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
       if (options != null && options.getConsistency() != null) {
         builder.setConsistency(getGrpcStateConsistency(options));
       }
@@ -317,6 +320,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       final String stateStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
       final int parallelism = request.getParallelism();
+      final Map<String, String> metadata = request.getMetadata();
       final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
@@ -332,8 +336,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
           .setStoreName(stateStoreName)
           .addAllKeys(keys)
           .setParallelism(parallelism);
-      if (request.getMetadata() != null) {
-        builder.putAllMetadata(request.getMetadata());
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
       }
 
       DaprProtos.GetBulkStateRequest envelope = builder.build();
@@ -500,6 +504,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       final String key = request.getKey();
       final StateOptions options = request.getStateOptions();
       final String etag = request.getEtag();
+      final Map<String, String> metadata = request.getMetadata();
       final Context context = request.getContext();
 
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
@@ -521,8 +526,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.DeleteStateRequest.Builder builder = DaprProtos.DeleteStateRequest.newBuilder()
           .setStoreName(stateStoreName)
-          .setKey(key)
-          .putAllMetadata(request.getMetadata());
+          .setKey(key);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
       if (etag != null) {
         builder.setEtag(etag);
       }
@@ -548,7 +555,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @param httpExtension Object for HttpExtension
    * @param appId         The application id to be invoked
    * @param method        The application method to be invoked
-   * @param request       The body of the request to be send as part of the invocation
+   * @param body          The body of the request to be send as part of the invocation
    * @param <K>           The Type of the Body
    * @return The object to be sent as part of the invocation.
    * @throws IOException If there's an issue serializing the request.
@@ -557,14 +564,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
       HttpExtension httpExtension,
       String appId,
       String method,
-      K request) throws IOException {
+      K body) throws IOException {
     if (httpExtension == null) {
       throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
     }
     CommonProtos.InvokeRequest.Builder requestBuilder = CommonProtos.InvokeRequest.newBuilder();
     requestBuilder.setMethod(method);
-    if (request != null) {
-      byte[] byteRequest = objectSerializer.serialize(request);
+    if (body != null) {
+      byte[] byteRequest = objectSerializer.serialize(body);
       Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
       requestBuilder.setData(data);
     } else {
