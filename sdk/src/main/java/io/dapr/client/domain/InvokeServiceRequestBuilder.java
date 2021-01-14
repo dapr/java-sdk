@@ -7,10 +7,6 @@ package io.dapr.client.domain;
 
 import io.opentelemetry.context.Context;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Builds a request to invoke a service.
  */
@@ -23,8 +19,6 @@ public class InvokeServiceRequestBuilder {
   private String contentType;
 
   private Object body;
-
-  private Map<String, String> metadata = new HashMap<>();
 
   private HttpExtension httpExtension = HttpExtension.NONE;
 
@@ -42,11 +36,6 @@ public class InvokeServiceRequestBuilder {
 
   public InvokeServiceRequestBuilder withBody(Object body) {
     this.body = body;
-    return this;
-  }
-
-  public InvokeServiceRequestBuilder withMetadata(Map<String, String> metadata) {
-    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
     return this;
   }
 
@@ -71,7 +60,6 @@ public class InvokeServiceRequestBuilder {
     request.setMethod(this.method);
     request.setBody(this.body);
     request.setHttpExtension(this.httpExtension);
-    request.setMetadata(this.metadata);
     request.setContext(this.context);
     return request;
   }

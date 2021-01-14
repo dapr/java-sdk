@@ -354,26 +354,24 @@ public interface DaprClient extends AutoCloseable {
    *
    * @param storeName The name of the state store.
    * @param key            The key of the State to be retrieved.
-   * @param etag           Optional etag for conditional get
    * @param options        Optional settings for retrieve operation.
    * @param type           The Type of State needed as return.
    * @param <T>            The Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<State<T>> getState(String storeName, String key, String etag, StateOptions options, TypeRef<T> type);
+  <T> Mono<State<T>> getState(String storeName, String key, StateOptions options, TypeRef<T> type);
 
   /**
    * Retrieve a State based on their key.
    *
    * @param storeName The name of the state store.
    * @param key            The key of the State to be retrieved.
-   * @param etag           Optional etag for conditional get
    * @param options        Optional settings for retrieve operation.
    * @param clazz          The Type of State needed as return.
    * @param <T>            The Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<State<T>> getState(String storeName, String key, String etag, StateOptions options, Class<T> clazz);
+  <T> Mono<State<T>> getState(String storeName, String key, StateOptions options, Class<T> clazz);
 
   /**
    * Retrieve a State based on their key.

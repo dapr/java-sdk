@@ -100,7 +100,6 @@ abstract class AbstractDaprClient implements DaprClient {
     InvokeServiceRequest req = builder
         .withBody(data)
         .withHttpExtension(httpExtension)
-        .withMetadata(metadata)
         .withContentType(objectSerializer.getContentType())
         .build();
 
@@ -252,7 +251,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(String storeName, State<T> state, TypeRef<T> type) {
-    return this.getState(storeName, state.getKey(), state.getEtag(), state.getOptions(), type);
+    return this.getState(storeName, state.getKey(), state.getOptions(), type);
   }
 
   /**
@@ -260,7 +259,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(String storeName, State<T> state, Class<T> clazz) {
-    return this.getState(storeName, state.getKey(), state.getEtag(), state.getOptions(), TypeRef.get(clazz));
+    return this.getState(storeName, state.getKey(), state.getOptions(), TypeRef.get(clazz));
   }
 
   /**
@@ -268,7 +267,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(String storeName, String key, TypeRef<T> type) {
-    return this.getState(storeName, key, null, null, type);
+    return this.getState(storeName, key, null, type);
   }
 
   /**
@@ -276,7 +275,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(String storeName, String key, Class<T> clazz) {
-    return this.getState(storeName, key, null, null, TypeRef.get(clazz));
+    return this.getState(storeName, key, null, TypeRef.get(clazz));
   }
 
   /**
@@ -284,9 +283,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-          String storeName, String key, String etag, StateOptions options, TypeRef<T> type) {
+          String storeName, String key, StateOptions options, TypeRef<T> type) {
     GetStateRequest request = new GetStateRequestBuilder(storeName, key)
-        .withEtag(etag)
         .withStateOptions(options)
         .build();
     return this.getState(request, type).map(r -> r.getObject());
@@ -298,8 +296,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-          String storeName, String key, String etag, StateOptions options, Class<T> clazz) {
-    return this.getState(storeName, key, etag, options, TypeRef.get(clazz));
+          String storeName, String key, StateOptions options, Class<T> clazz) {
+    return this.getState(storeName, key, options, TypeRef.get(clazz));
   }
 
   /**

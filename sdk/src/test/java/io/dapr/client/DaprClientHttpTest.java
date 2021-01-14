@@ -161,7 +161,7 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
     assertThrows(IllegalArgumentException.class, () -> {
       // null HttpMethod
-      daprClientHttp.invokeMethod("1", "2", "3", new HttpExtension(null, null), null, (Class)null).block();
+      daprClientHttp.invokeMethod("1", "2", "3", new HttpExtension(null), null, (Class)null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null HttpExtension
@@ -282,7 +282,7 @@ public class DaprClientHttpTest {
     daprClientHttp = new DaprClientHttp(daprHttp);
     Map<String, String> queryString = new HashMap<>();
     queryString.put("test", "1");
-    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString);
+    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString, null);
     Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", httpExtension, map);
     assertNull(mono.block());
   }
@@ -679,12 +679,12 @@ public class DaprClientHttpTest {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("key_1", "val_1");
     mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?key_1=val_1")
+      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
       .respond("\"" + EXPECTED_RESULT + "\"");
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
     GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, "key");
-    builder.withMetadata(metadata).withEtag("");
+    builder.withMetadata(metadata);
     Mono<Response<State<String>>> monoMetadata = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
     assertEquals(monoMetadata.block().getObject().getKey(), "key");
   }
@@ -956,7 +956,7 @@ public class DaprClientHttpTest {
     StateOptions stateOptions = mock(StateOptions.class);
     State<String> stateKeyValue = new State<>("value", "key", "etag", stateOptions);
     mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?key_1=val_1")
+      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
       .respond(EXPECTED_RESULT);
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);
@@ -1134,7 +1134,7 @@ public class DaprClientHttpTest {
       .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
       .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
     mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key?metakey=metavalue")
+      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key?metadata.metakey=metavalue")
       .respond("{ \"mysecretkey2\": \"mysecretvalue2\"}");
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientHttp(daprHttp);

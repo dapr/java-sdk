@@ -20,8 +20,6 @@ public class GetStateRequestBuilder {
 
   private Map<String, String> metadata;
 
-  private String etag;
-
   private StateOptions stateOptions;
 
   private Context context;
@@ -33,11 +31,6 @@ public class GetStateRequestBuilder {
 
   public GetStateRequestBuilder withMetadata(Map<String, String> metadata) {
     this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
-    return this;
-  }
-
-  public GetStateRequestBuilder withEtag(String etag) {
-    this.etag = etag;
     return this;
   }
 
@@ -60,7 +53,6 @@ public class GetStateRequestBuilder {
     request.setStoreName(this.storeName);
     request.setKey(this.key);
     request.setMetadata(this.metadata);
-    request.setEtag(this.etag);
     request.setStateOptions(this.stateOptions);
     request.setContext(this.context);
     return request;

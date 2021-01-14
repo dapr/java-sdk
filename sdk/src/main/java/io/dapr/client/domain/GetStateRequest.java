@@ -21,8 +21,6 @@ public class GetStateRequest {
 
   private Map<String, String> metadata;
 
-  private String etag;
-
   private StateOptions stateOptions;
 
   private Context context;
@@ -41,14 +39,6 @@ public class GetStateRequest {
 
   void setKey(String key) {
     this.key = key;
-  }
-
-  public String getEtag() {
-    return etag;
-  }
-
-  void setEtag(String etag) {
-    this.etag = etag;
   }
 
   public StateOptions getStateOptions() {

@@ -8,7 +8,6 @@ package io.dapr.runtime;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientHttp;
 import io.dapr.client.DaprClientTestBuilder;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpStub;
@@ -129,7 +128,7 @@ public class DaprRuntimeTest {
           eq((PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME).split("/")),
           any(),
           eq(serializer.serialize(message.data)),
-          eq(null),
+          any(),
           any()))
           .thenAnswer(invocationOnMock -> this.daprRuntime.handleInvocation(
               TOPIC_NAME,
