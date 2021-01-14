@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.dapr.it.Retry.callWithRetry;
+import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -65,6 +66,33 @@ public class PubSubIT extends BaseIT {
   public void tearDown() throws Exception {
     for (DaprRun run : runs) {
       run.stop();
+    }
+  }
+
+  @Test
+  public void publishPubSubNotFound() throws Exception {
+    DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName(),
+        60000));
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      daprRun.switchToHTTP();
+    }
+
+    try (DaprClient client = new DaprClientBuilder().build()) {
+
+      if (this.useGrpc) {
+        assertThrowsDaprException(
+            "INVALID_ARGUMENT",
+            "INVALID_ARGUMENT: pubsub unknown pubsub not found",
+            () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
+      } else {
+        assertThrowsDaprException(
+            "ERR_PUBSUB_NOT_FOUND",
+            "ERR_PUBSUB_NOT_FOUND: pubsub unknown pubsub not found",
+            () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
+      }
     }
   }
 

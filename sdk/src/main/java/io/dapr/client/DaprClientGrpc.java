@@ -162,6 +162,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
           .setTopic(topic)
           .setPubsubName(pubsubName)
           .setData(ByteString.copyFrom(objectSerializer.serialize(data)));
+      envelopeBuilder.setDataContentType(objectSerializer.getContentType());
       Map<String, String> metadata = request.getMetadata();
       if (metadata != null) {
         envelopeBuilder.putAllMetadata(metadata);

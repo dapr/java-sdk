@@ -79,14 +79,4 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
             byte[].class).block());
   }
 
-  @Test
-  public void publishPubSubNotFound() {
-    DaprClient daprClient = buildDaprClient();
-
-    // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
-    assertThrowsDaprException(
-        "NOT_FOUND",
-        "NOT_FOUND: pubsub 'unknown pubsub' not found",
-        () -> daprClient.publishEvent("unknown pubsub", "mytopic", "payload").block());
-  }
 }

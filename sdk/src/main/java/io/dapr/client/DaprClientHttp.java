@@ -139,12 +139,13 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
 
       byte[] serializedEvent = objectSerializer.serialize(data);
+      Map<String, String> headers = Collections.singletonMap("content-type", objectSerializer.getContentType());
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "publish", pubsubName, topic };
 
       Map<String, String> queryArgs = metadataToQueryArgs(metadata);
       return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedEvent, null, context)
+          DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedEvent, headers, context)
           .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
