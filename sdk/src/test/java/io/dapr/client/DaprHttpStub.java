@@ -8,7 +8,6 @@ package io.dapr.client;
 import io.opentelemetry.context.Context;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**

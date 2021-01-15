@@ -8,8 +8,8 @@ package io.dapr.examples.tracing;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.InvokeServiceRequest;
-import io.dapr.client.domain.InvokeServiceRequestBuilder;
+import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.springboot.OpenTelemetryConfig;
 import io.dapr.utils.TypeRef;
 import io.opentelemetry.api.trace.Span;
@@ -45,8 +45,8 @@ public class InvokeClient {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         try (Scope scope = span.makeCurrent()) {
-          InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_echo");
-          InvokeServiceRequest request
+          InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_echo");
+          InvokeMethodRequest request
               = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
           client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
@@ -54,7 +54,7 @@ public class InvokeClient {
                 return r;
               })
               .flatMap(r -> {
-                InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
+                InvokeMethodRequest sleepRequest = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
                     .withHttpExtension(HttpExtension.POST)
                     .withContext(r.getContext()).build();
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));

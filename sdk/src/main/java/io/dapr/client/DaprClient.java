@@ -12,7 +12,7 @@ import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
-import io.dapr.client.domain.InvokeServiceRequest;
+import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
@@ -215,12 +215,12 @@ public interface DaprClient extends AutoCloseable {
   /**
    * Invoke a service method.
    *
-   * @param invokeServiceRequest Request object.
+   * @param invokeMethodRequest Request object.
    * @param type                 The Type needed as return for the call.
    * @param <T>                  The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
    */
-  <T> Mono<Response<T>> invokeMethod(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type);
+  <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
 
   /**
    * Invokes a Binding operation.

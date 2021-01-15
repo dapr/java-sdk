@@ -17,8 +17,8 @@ import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeBindingRequestBuilder;
-import io.dapr.client.domain.InvokeServiceRequest;
-import io.dapr.client.domain.InvokeServiceRequestBuilder;
+import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.SaveStateRequest;
@@ -96,8 +96,8 @@ abstract class AbstractDaprClient implements DaprClient {
       HttpExtension httpExtension,
       Map<String, String> metadata,
       TypeRef<T> type) {
-    InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(appId, methodName);
-    InvokeServiceRequest req = builder
+    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(appId, methodName);
+    InvokeMethodRequest req = builder
         .withBody(data)
         .withHttpExtension(httpExtension)
         .withContentType(objectSerializer.getContentType())

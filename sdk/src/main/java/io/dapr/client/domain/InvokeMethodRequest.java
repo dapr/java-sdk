@@ -7,12 +7,10 @@ package io.dapr.client.domain;
 
 import io.opentelemetry.context.Context;
 
-import java.util.Map;
-
 /**
  * A request to invoke a service.
  */
-public class InvokeServiceRequest {
+public class InvokeMethodRequest {
 
   private String appId;
 

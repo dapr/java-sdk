@@ -14,7 +14,7 @@ import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
-import io.dapr.client.domain.InvokeServiceRequest;
+import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
@@ -155,14 +155,14 @@ public class DaprClientHttp extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
-  public <T> Mono<Response<T>> invokeMethod(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
+  public <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
-      final String appId = invokeServiceRequest.getAppId();
-      final String method = invokeServiceRequest.getMethod();
-      final Object request = invokeServiceRequest.getBody();
-      final HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
-      final String contentType = invokeServiceRequest.getContentType();
-      final Context context = invokeServiceRequest.getContext();
+      final String appId = invokeMethodRequest.getAppId();
+      final String method = invokeMethodRequest.getMethod();
+      final Object request = invokeMethodRequest.getBody();
+      final HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
+      final String contentType = invokeMethodRequest.getContentType();
+      final Context context = invokeMethodRequest.getContext();
       if (httpExtension == null) {
         throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
       }
