@@ -9,8 +9,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.AfterClass;
 
 import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;

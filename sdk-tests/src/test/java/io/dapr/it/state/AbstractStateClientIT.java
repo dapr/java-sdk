@@ -18,12 +18,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
-import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Common test cases for Dapr client (GRPC and HTTP).

@@ -20,7 +20,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 
-import static io.dapr.it.actors.MyActorTestUtils.*;
+import static io.dapr.it.actors.MyActorTestUtils.countMethodCalls;
+import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static org.junit.Assert.assertNotEquals;
 
 public class ActorReminderFailoverIT extends BaseIT {
