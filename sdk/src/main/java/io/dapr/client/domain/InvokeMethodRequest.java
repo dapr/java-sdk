@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * A request to invoke a service.
  */
-public class InvokeServiceRequest {
+public class InvokeMethodRequest {
 
   private String appId;
 

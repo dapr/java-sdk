@@ -16,7 +16,7 @@ import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
-import io.dapr.client.domain.InvokeServiceRequest;
+import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
@@ -185,13 +185,13 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeMethod(InvokeServiceRequest invokeServiceRequest, TypeRef<T> type) {
+  public <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
-      String appId = invokeServiceRequest.getAppId();
-      String method = invokeServiceRequest.getMethod();
-      Object body = invokeServiceRequest.getBody();
-      HttpExtension httpExtension = invokeServiceRequest.getHttpExtension();
-      Context context = invokeServiceRequest.getContext();
+      String appId = invokeMethodRequest.getAppId();
+      String method = invokeMethodRequest.getMethod();
+      Object body = invokeMethodRequest.getBody();
+      HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
+      Context context = invokeMethodRequest.getContext();
       DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
           httpExtension,
           appId,
