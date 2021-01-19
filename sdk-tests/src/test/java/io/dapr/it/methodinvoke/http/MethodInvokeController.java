@@ -79,4 +79,9 @@ public class MethodInvokeController {
     public List<Person> getPersons() {
         return persons;
     }
+
+    @PostMapping(path = "/sleep")
+    public void sleep(@RequestBody int seconds) throws InterruptedException {
+        Thread.sleep(seconds * 1000);
+    }
 }
