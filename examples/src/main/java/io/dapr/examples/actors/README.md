@@ -126,7 +126,7 @@ public interface DemoActor {
 
 ```
 
-The `@ActorType` annotation indicates the Dapr Java SDK that this interface is an Actor Type, allowing a name for the type to be defined. The `say()` method, in this example, is renamed to `echo_message()` - this can be used when invoking an actor method implemented in a different programming language (like C# or Python) and the method name does not match Java's naming conventions.
+The `@ActorType` annotation indicates the Dapr Java SDK that this interface is an Actor Type, allowing a name for the type to be defined. The `say` method, in this example, is renamed to `echo_message` - this can be used when invoking an actor method implemented in a different programming language (like C# or Python) and the method name does not match Java's naming conventions.
 Some methods can return a `Mono` object. In these cases, the `@ActorMethod` annotation is used to hint the Dapr Java SDK of the type encapsulated in the `Mono` object. You can read more about Java generic type erasure [here](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html).  
 
 
