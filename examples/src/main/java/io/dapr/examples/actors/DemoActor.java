@@ -17,6 +17,7 @@ public interface DemoActor {
 
   void registerReminder();
 
+  @ActorMethod(name = "echo_message")
   String say(String something);
 
   void clock(String message);

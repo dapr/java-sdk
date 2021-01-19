@@ -5,6 +5,8 @@
 
 package io.dapr.it.actors.app;
 
+import io.dapr.actors.ActorMethod;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,4 +28,7 @@ public interface MyActor {
   ArrayList<String> getCallLog();
 
   String getIdentifier();
+
+  @ActorMethod(name = "DotNetMethodAsync")
+  boolean dotNetMethod();
 }

@@ -21,5 +21,12 @@ public @interface ActorMethod {
    *
    * @return Actor's method return type.
    */
-  Class returns();
+  Class returns() default Void.class;
+
+  /**
+   * Actor's method name. This is optional and will override the method's default name for actor invocation.
+   *
+   * @return Actor's method name.
+   */
+  String name() default "";
 }

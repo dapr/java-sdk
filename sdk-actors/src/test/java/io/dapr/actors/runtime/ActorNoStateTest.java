@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorMethod;
 import io.dapr.actors.ActorType;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyForTestsImpl;
@@ -43,6 +44,8 @@ public class ActorNoStateTest {
     Mono<MyData> classInClassOut(MyData input);
     Mono<String> registerBadCallbackName();
     String registerTimerAutoName();
+    @ActorMethod(name = "DotNetMethodASync")
+    void dotNetMethod();
   }
 
   @ActorType(name = "MyActor")
@@ -108,6 +111,10 @@ public class ActorNoStateTest {
     public String registerTimerAutoName() {
       return super.registerActorTimer("", "anything", "state", Duration.ofSeconds(1), Duration.ofSeconds(1)).block();
     }
+
+    @Override
+    public void dotNetMethod() {
+    }
   }
 
   static class MyData {
@@ -172,6 +179,12 @@ public class ActorNoStateTest {
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
+  }
+
+  @Test
+  public void testMethodNameChange() {
+    MyActor actor = createActorProxy(MyActor.class);
+    actor.dotNetMethod();
   }
 
   @Test
