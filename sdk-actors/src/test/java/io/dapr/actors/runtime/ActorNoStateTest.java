@@ -45,7 +45,7 @@ public class ActorNoStateTest {
     Mono<String> registerBadCallbackName();
     String registerTimerAutoName();
     @ActorMethod(name = "DotNetMethodASync")
-    void dotNetMethod();
+    Mono<Void> dotNetMethod();
   }
 
   @ActorType(name = "MyActor")
@@ -113,7 +113,8 @@ public class ActorNoStateTest {
     }
 
     @Override
-    public void dotNetMethod() {
+    public Mono<Void> dotNetMethod() {
+      return Mono.empty();
     }
   }
 

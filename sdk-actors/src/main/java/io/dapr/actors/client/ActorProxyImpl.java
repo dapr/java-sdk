@@ -21,6 +21,8 @@ import java.lang.reflect.Method;
  */
 class ActorProxyImpl implements ActorProxy, InvocationHandler {
 
+  private static final String UNDEFINED_CLASS_NAME = "io.dapr.actors.Undefined";
+
   /**
    * Actor's identifier for this Actor instance.
    */
@@ -144,7 +146,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
 
     if (method.getParameterCount() == 0) {
       if (method.getReturnType().equals(Mono.class)) {
-        if (actorMethodAnnotation == null) {
+        if ((actorMethodAnnotation == null) || UNDEFINED_CLASS_NAME.equals(actorMethodAnnotation.returns().getName())) {
           return invokeMethod(methodName);
         }
 
@@ -155,7 +157,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
     }
 
     if (method.getReturnType().equals(Mono.class)) {
-      if (actorMethodAnnotation == null) {
+      if ((actorMethodAnnotation == null) || UNDEFINED_CLASS_NAME.equals(actorMethodAnnotation.returns().getName())) {
         return invokeMethod(methodName, args[0]);
       }
 
