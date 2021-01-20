@@ -21,6 +21,8 @@ import java.lang.reflect.Method;
  */
 class ActorProxyImpl implements ActorProxy, InvocationHandler {
 
+  private static final String UNDEFINED_CLASS_NAME = "io.dapr.actors.Undefined";
+
   /**
    * Actor's identifier for this Actor instance.
    */
@@ -136,29 +138,33 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
       throw new UnsupportedOperationException("Actor methods can only have zero or one arguments.");
     }
 
+    ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
+    String methodName = method.getName();
+    if ((actorMethodAnnotation != null) && !actorMethodAnnotation.name().isEmpty()) {
+      methodName = actorMethodAnnotation.name();
+    }
+
     if (method.getParameterCount() == 0) {
       if (method.getReturnType().equals(Mono.class)) {
-        ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
-        if (actorMethodAnnotation == null) {
-          return invokeMethod(method.getName());
+        if ((actorMethodAnnotation == null) || UNDEFINED_CLASS_NAME.equals(actorMethodAnnotation.returns().getName())) {
+          return invokeMethod(methodName);
         }
 
-        return invokeMethod(method.getName(), actorMethodAnnotation.returns());
+        return invokeMethod(methodName, actorMethodAnnotation.returns());
       }
 
-      return invokeMethod(method.getName(), method.getReturnType()).block();
+      return invokeMethod(methodName, method.getReturnType()).block();
     }
 
     if (method.getReturnType().equals(Mono.class)) {
-      ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
-      if (actorMethodAnnotation == null) {
-        return invokeMethod(method.getName(), args[0]);
+      if ((actorMethodAnnotation == null) || UNDEFINED_CLASS_NAME.equals(actorMethodAnnotation.returns().getName())) {
+        return invokeMethod(methodName, args[0]);
       }
 
-      return invokeMethod(method.getName(), args[0], actorMethodAnnotation.returns());
+      return invokeMethod(methodName, args[0], actorMethodAnnotation.returns());
     }
 
-    return invokeMethod(method.getName(), args[0], method.getReturnType()).block();
+    return invokeMethod(methodName, args[0], method.getReturnType()).block();
   }
 
   /**

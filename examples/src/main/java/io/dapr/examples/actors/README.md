@@ -105,6 +105,8 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
 An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`. The `DemoActor` interface is used by the Actor runtime and also client. See how `DemoActor` interface can be annotated as Dapr Actor.
 
 ```java
+import io.dapr.actors.ActorMethod;
+
 /**
  * Example of implementation of an Actor.
  */
@@ -113,6 +115,7 @@ public interface DemoActor {
 
   void registerReminder();
 
+  @ActorMethod(name = "echo_message")
   String say(String something);
 
   void clock(String message);
@@ -123,7 +126,10 @@ public interface DemoActor {
 
 ```
 
-The `@ActorType` annotation indicates the Dapr Java SDK that this interface is an Actor Type, allowing a name for the type to be defined. Some methods can return a `Mono` object. In these cases, the `@ActorMethod` annotation is used to hint the Dapr Java SDK of the type encapsulated in the `Mono` object. You can read more about Java generic type erasure [here](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html).  
+The `@ActorType` annotation indicates the Dapr Java SDK that this interface is an Actor Type, allowing a name for the type to be defined. 
+
+The `@ActorMethod` annotation can be applied to an interface method to specify configuration for that method. In this example, the `say` method, is renamed to `echo_message` - this can be used when invoking an actor method implemented in a different programming language (like C# or Python) and the method name does not match Java's naming conventions.
+Some methods can return a `Mono` object. In these cases, the `@ActorMethod` annotation is used to hint the Dapr Java SDK of the type encapsulated in the `Mono` object. You can read more about Java generic type erasure [here](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html).  
 
 
 Now, execute the following script in order to run DemoActorService:
