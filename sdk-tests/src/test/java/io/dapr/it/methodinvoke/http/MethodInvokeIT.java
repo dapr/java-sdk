@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
@@ -18,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 
@@ -124,6 +127,20 @@ public class MethodInvokeIT extends BaseIT {
             Person resultPerson = persons.get(1);
             assertEquals("John", resultPerson.getName());
             assertEquals("Smith", resultPerson.getLastName());
+        }
+    }
+
+    @Test
+    public void testInvokeTimeout() throws Exception {
+        try (DaprClient client = new DaprClientBuilder().build()) {
+            long started = System.currentTimeMillis();
+            String message = assertThrows(IllegalStateException.class, () -> {
+                client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
+                    .block(Duration.ofMillis(10));
+            }).getMessage();
+            long delay = System.currentTimeMillis() - started;
+            assertTrue(delay <= 200);  // 200 ms is a reasonable delay if the request timed out.
+            assertEquals("Timeout on blocking read for 10 MILLISECONDS", message);
         }
     }
 }
