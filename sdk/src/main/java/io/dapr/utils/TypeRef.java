@@ -57,10 +57,10 @@ public abstract class TypeRef<T> {
   /**
    * Constructor for reflection.
    *
-   * @param clazz Class type to be referenced.
+   * @param type Type to be referenced.
    */
-  private TypeRef(Class<T> clazz) {
-    this.type = clazz;
+  private TypeRef(Type type) {
+    this.type = type;
   }
 
   /**
@@ -117,5 +117,20 @@ public abstract class TypeRef<T> {
     }
 
     return new TypeRef<T>(clazz) {};
+  }
+
+  /**
+   * Creates a reference to a given class type.
+   * @param type Type to be referenced.
+   * @param <T> Type to be referenced.
+   * @return Class type reference.
+   */
+  public static <T> TypeRef<T> get(Type type) {
+    if (type instanceof Class) {
+      Class clazz = (Class) type;
+      return get(clazz);
+    }
+    
+    return new TypeRef<T>(type) {};
   }
 }

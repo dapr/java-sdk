@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -234,6 +235,17 @@ public class DefaultObjectSerializerTest {
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
+
+    try {
+      serializedValue = SERIALIZER.serialize(obj);
+      assertNotNull(serializedValue);
+      Type t = MyObjectTestToSerialize.class;
+      TypeRef<MyObjectTestToSerialize> tr = TypeRef.get(t);
+      MyObjectTestToSerialize deserializedValue = SERIALIZER.deserialize(serializedValue, tr);
+      assertEquals(obj, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
   }
 
   @Test
@@ -421,6 +433,16 @@ public class DefaultObjectSerializerTest {
 
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), new TypeRef<List<MyObjectTestToSerialize>>(){});
+      assertEquals("The expected value is different than the actual result", expectedResult, result.get(0));
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+
+    try {
+      TypeRef<List<MyObjectTestToSerialize>> tr1 = new TypeRef<List<MyObjectTestToSerialize>>(){};
+      Type t = tr1.getType();
+      TypeRef<?> tr = TypeRef.get(t);
+      result = (List<MyObjectTestToSerialize>) SERIALIZER.deserialize(jsonToDeserialize.getBytes(), tr);
       assertEquals("The expected value is different than the actual result", expectedResult, result.get(0));
     } catch (IOException exception) {
       fail(exception.getMessage());
