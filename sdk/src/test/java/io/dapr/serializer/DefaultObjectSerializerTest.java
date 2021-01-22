@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -230,6 +231,17 @@ public class DefaultObjectSerializerTest {
       serializedValue = SERIALIZER.serialize(obj);
       assertNotNull(serializedValue);
       MyObjectTestToSerialize deserializedValue = SERIALIZER.deserialize(serializedValue, MyObjectTestToSerialize.class);
+      assertEquals(obj, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+
+    try {
+      serializedValue = SERIALIZER.serialize(obj);
+      assertNotNull(serializedValue);
+      Type t = MyObjectTestToSerialize.class;
+      TypeRef<MyObjectTestToSerialize> tr = TypeRef.get(t);
+      MyObjectTestToSerialize deserializedValue = SERIALIZER.deserialize(serializedValue, tr);
       assertEquals(obj, deserializedValue);
     } catch (IOException exception) {
       fail(exception.getMessage());
