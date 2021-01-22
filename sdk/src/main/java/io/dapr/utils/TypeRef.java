@@ -130,6 +130,7 @@ public abstract class TypeRef<T> {
       Class clazz = (Class) type;
       return get(clazz);
     }
+    
     return new TypeRef<T>(type) {};
   }
 }
