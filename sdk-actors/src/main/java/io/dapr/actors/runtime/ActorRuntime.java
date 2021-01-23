@@ -321,6 +321,10 @@ public class ActorRuntime implements Closeable {
    * @return GRPC managed channel or null.
    */
   private static ManagedChannel buildManagedChannel() {
+    if (Properties.API_PROTOCOL.get() != DaprApiProtocol.GRPC) {
+      return null;
+    }
+
     int port = Properties.GRPC_PORT.get();
     if (port <= 0) {
       throw new IllegalStateException("Invalid port.");
