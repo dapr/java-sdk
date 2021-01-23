@@ -5,6 +5,7 @@
 
 package io.dapr.it;
 
+import io.dapr.client.DaprApiProtocol;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.AfterClass;
 
@@ -30,7 +31,7 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds) throws Exception {
-    return startDaprApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, true);
+    return startDaprApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, DaprApiProtocol.GRPC);
   }
 
   protected static DaprRun startDaprApp(
@@ -39,14 +40,15 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds,
-      boolean useGRPC) throws Exception {
-    return startDaprApp(testName, successMessage, serviceClass, useAppPort, true, maxWaitMilliseconds, useGRPC);
+      DaprApiProtocol protocol) throws Exception {
+    return startDaprApp(testName, successMessage, serviceClass, useAppPort, true, maxWaitMilliseconds, protocol);
   }
 
   protected static DaprRun startDaprApp(
       String testName,
       int maxWaitMilliseconds) throws Exception {
-    return startDaprApp(testName, "You're up and running!", null, false, true, maxWaitMilliseconds, true);
+    return startDaprApp(
+        testName, "You're up and running!", null, false, true, maxWaitMilliseconds, DaprApiProtocol.GRPC);
   }
 
   protected static DaprRun startDaprApp(
@@ -56,13 +58,13 @@ public abstract class BaseIT {
           Boolean useAppPort,
           Boolean useDaprPorts,
           int maxWaitMilliseconds,
-          boolean useGRPC) throws Exception {
+          DaprApiProtocol protocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
             () -> DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
             successMessage,
             maxWaitMilliseconds,
-            useGRPC).withServiceClass(serviceClass);
+            protocol).withServiceClass(serviceClass);
     DaprRun run = builder.build();
     TO_BE_STOPPED.add(run);
     DAPR_RUN_BUILDERS.put(run.getAppName(), builder);
@@ -77,7 +79,8 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds) throws Exception {
-    return startSplitDaprAndApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, true);
+    return startSplitDaprAndApp(
+        testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, DaprApiProtocol.GRPC);
   }
 
   protected static ImmutablePair<AppRun, DaprRun> startSplitDaprAndApp(
@@ -86,13 +89,13 @@ public abstract class BaseIT {
           Class serviceClass,
           Boolean useAppPort,
           int maxWaitMilliseconds,
-          boolean useGRPC) throws Exception {
+          DaprApiProtocol protocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
             () -> DaprPorts.build(useAppPort, true, true),
             successMessage,
             maxWaitMilliseconds,
-            useGRPC).withServiceClass(serviceClass);
+            protocol).withServiceClass(serviceClass);
     ImmutablePair<AppRun, DaprRun> runs = builder.splitBuild();
     TO_BE_STOPPED.add(runs.left);
     TO_BE_STOPPED.add(runs.right);

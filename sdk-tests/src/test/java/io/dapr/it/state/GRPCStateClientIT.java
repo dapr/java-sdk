@@ -7,7 +7,6 @@ package io.dapr.it.state;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprClientGrpc;
 import io.dapr.client.domain.State;
 import io.dapr.it.DaprRun;
 import org.junit.AfterClass;
@@ -17,7 +16,6 @@ import org.junit.Test;
 import java.util.Collections;
 
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test State GRPC DAPR capabilities using a DAPR instance with an empty service running
@@ -33,8 +31,6 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
     daprRun = startDaprApp(GRPCStateClientIT.class.getSimpleName(), 5000);
     daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder().build();
-
-    assertTrue(daprClient instanceof DaprClientGrpc);
   }
 
   @AfterClass

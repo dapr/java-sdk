@@ -8,6 +8,7 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.client.DaprApiProtocol;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
@@ -38,14 +39,19 @@ public class ActorStateIT extends BaseIT {
    */
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] { { false, false }, { false, true }, { true, false }, { true, true } });
+    return Arrays.asList(new Object[][] {
+        { DaprApiProtocol.HTTP, DaprApiProtocol.HTTP },
+        { DaprApiProtocol.HTTP, DaprApiProtocol.GRPC },
+        { DaprApiProtocol.GRPC, DaprApiProtocol.HTTP },
+        { DaprApiProtocol.GRPC, DaprApiProtocol.GRPC },
+    });
   }
 
   @Parameterized.Parameter(0)
-  public boolean useGrpc;
+  public DaprApiProtocol daprClientProtocol;
 
   @Parameterized.Parameter(1)
-  public boolean useGrpcInService;
+  public DaprApiProtocol serviceAppProtocol;
 
   @Test
   public void writeReadState() throws Exception {
@@ -57,19 +63,15 @@ public class ActorStateIT extends BaseIT {
       StatefulActorService.class,
       true,
       60000,
-      useGrpcInService);
+      serviceAppProtocol);
 
-    if (this.useGrpc) {
-      runtime.switchToGRPC();
-    } else {
-      runtime.switchToHTTP();
-    }
+    runtime.switchToProtocol(this.daprClientProtocol);
 
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
     ActorId actorId = new ActorId(
-        String.format("%d-%b-%b", System.currentTimeMillis(), this.useGrpc, this.useGrpcInService));
+        String.format("%d-%b-%b", System.currentTimeMillis(), this.daprClientProtocol, this.serviceAppProtocol));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
@@ -153,13 +155,9 @@ public class ActorStateIT extends BaseIT {
         StatefulActorService.class,
         true,
         60000,
-        useGrpcInService);
+        serviceAppProtocol);
 
-    if (this.useGrpc) {
-      run2.switchToGRPC();
-    } else {
-      run2.switchToHTTP();
-    }
+    runtime.switchToProtocol(this.daprClientProtocol);
 
     // Need new proxy builder because the proxy builder holds the channel.
     proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));

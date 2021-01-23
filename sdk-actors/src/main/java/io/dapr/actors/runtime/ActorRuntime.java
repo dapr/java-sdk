@@ -7,6 +7,7 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
+import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -307,7 +308,7 @@ public class ActorRuntime implements Closeable {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   private static DaprClient buildDaprClient(ManagedChannel channel) {
-    if (Properties.USE_GRPC.get()) {
+    if (Properties.API_PROTOCOL.get() == DaprApiProtocol.GRPC) {
       return new DaprGrpcClient(channel);
     }
 
@@ -320,10 +321,6 @@ public class ActorRuntime implements Closeable {
    * @return GRPC managed channel or null.
    */
   private static ManagedChannel buildManagedChannel() {
-    if (!Properties.USE_GRPC.get()) {
-      return null;
-    }
-
     int port = Properties.GRPC_PORT.get();
     if (port <= 0) {
       throw new IllegalStateException("Invalid port.");

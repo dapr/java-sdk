@@ -77,23 +77,25 @@ public class DaprClientGrpcTest {
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
   private Closeable closeable;
-  private DaprGrpc.DaprStub client;
-  private DaprClientGrpc adapter;
+  private DaprGrpc.DaprStub daprStub;
+  private DaprClient client;
   private ObjectSerializer serializer;
 
   @Before
   public void setup() throws IOException {
     closeable = mock(Closeable.class);
-    client = mock(DaprGrpc.DaprStub.class);
-    when(client.withInterceptors(any())).thenReturn(client);
-    adapter = new DaprClientGrpc(closeable, client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    daprStub = mock(DaprGrpc.DaprStub.class);
+    when(daprStub.withInterceptors(any())).thenReturn(daprStub);
+    DaprClient grpcClient = new DaprClientGrpc(
+        closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    client = new DaprClientProxy(grpcClient);
     serializer = new ObjectSerializer();
     doNothing().when(closeable).close();
   }
 
   @After
   public void tearDown() throws Exception {
-    adapter.close();
+    client.close();
     verify(closeable).close();
     verifyNoMoreInteractions(closeable);
   }
@@ -102,7 +104,7 @@ public class DaprClientGrpcTest {
   public void waitForSidecarTimeout() throws Exception {
     int port = findFreePort();
     System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
-    assertThrows(RuntimeException.class, () -> adapter.waitForSidecar(1).block());
+    assertThrows(RuntimeException.class, () -> client.waitForSidecar(1).block());
   }
 
   @Test
@@ -118,7 +120,7 @@ public class DaprClientGrpcTest {
         }
       });
       t.start();
-      adapter.waitForSidecar(10000).block();
+      client.waitForSidecar(10000).block();
     }
   }
 
@@ -126,13 +128,13 @@ public class DaprClientGrpcTest {
   public void publishEventExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
-    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
     assertThrowsDaprException(
             StatusRuntimeException.class,
             "INVALID_ARGUMENT",
             "INVALID_ARGUMENT: bad bad argument",
-            () -> adapter.publishEvent("pubsubname","topic", "object").block());
+            () -> client.publishEvent("pubsubname","topic", "object").block());
   }
 
   @Test
@@ -141,9 +143,9 @@ public class DaprClientGrpcTest {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
       return null;
-    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
-    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
+    Mono<Void> result = client.publishEvent("pubsubname","topic", "object");
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -155,16 +157,16 @@ public class DaprClientGrpcTest {
   @Test
   public void publishEventSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    adapter = new DaprClientGrpc(closeable, client, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
-    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "{invalid-json");
+    Mono<Void> result = client.publishEvent("pubsubname","topic", "{invalid-json");
 
     assertThrowsDaprException(
         IOException.class,
@@ -180,9 +182,9 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
-    Mono<Void> result = adapter.publishEvent("pubsubname","topic", "object");
+    Mono<Void> result = client.publishEvent("pubsubname","topic", "object");
     result.block();
   }
 
@@ -195,8 +197,8 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
-    adapter.publishEvent("pubsubname", "topic", "object");
+    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    client.publishEvent("pubsubname", "topic", "object");
     // Do not call block() on the mono above, so nothing should happen.
     assertFalse(called.get());
   }
@@ -208,10 +210,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
     MyObject event = new MyObject(1, "Event");
-    Mono<Void> result = adapter.publishEvent("pubsubname", "topic", event);
+    Mono<Void> result = client.publishEvent("pubsubname", "topic", event);
     result.block();
   }
 
@@ -219,35 +221,35 @@ public class DaprClientGrpcTest {
   public void invokeBindingIllegalArgumentExceptionTest() {
     assertThrows(IllegalArgumentException.class, () -> {
       // empty binding name
-      adapter.invokeBinding("", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
+      client.invokeBinding("", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null binding name
-      adapter.invokeBinding(null, "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
+      client.invokeBinding(null, "MyOperation", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null binding operation
-      adapter.invokeBinding("BindingName", null, "request".getBytes(), Collections.EMPTY_MAP).block();
+      client.invokeBinding("BindingName", null, "request".getBytes(), Collections.EMPTY_MAP).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty binding operation
-      adapter.invokeBinding("BindingName", "", "request".getBytes(), Collections.EMPTY_MAP).block();
+      client.invokeBinding("BindingName", "", "request".getBytes(), Collections.EMPTY_MAP).block();
     });
   }
 
   @Test
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    adapter = new DaprClientGrpc(closeable, client, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
-    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
+    Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
 
     assertThrowsDaprException(
         IOException.class,
@@ -260,9 +262,9 @@ public class DaprClientGrpcTest {
   public void invokeBindingExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
-    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
+    Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request");
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -278,9 +280,9 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
-    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
+    Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request");
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -298,9 +300,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
-    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", "request");
+    Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request");
     result.block();
   }
 
@@ -313,9 +315,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
-    Mono<byte[]> result = adapter.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
+    Mono<byte[]> result = client.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
 
     assertEquals("OK", new String(result.block(), StandardCharsets.UTF_8));
   }
@@ -329,10 +331,10 @@ public class DaprClientGrpcTest {
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
     MyObject event = new MyObject(1, "Event");
-    Mono<Void> result = adapter.invokeBinding("BindingName", "MyOperation", event);
+    Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", event);
 
     result.block();
   }
@@ -346,10 +348,10 @@ public class DaprClientGrpcTest {
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
     MyObject event = new MyObject(1, "Event");
-    Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, String.class);
+    Mono<String> result = client.invokeBinding("BindingName", "MyOperation", event, String.class);
 
     assertEquals("OK", result.block());
   }
@@ -363,10 +365,10 @@ public class DaprClientGrpcTest {
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
     MyObject event = new MyObject(1, "Event");
-    Mono<String> result = adapter.invokeBinding("BindingName", "MyOperation", event, TypeRef.get(String.class));
+    Mono<String> result = client.invokeBinding("BindingName", "MyOperation", event, TypeRef.get(String.class));
 
     assertEquals("OK", result.block());
   }
@@ -382,9 +384,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
     MyObject event = new MyObject(1, "Event");
-    adapter.invokeBinding("BindingName", "MyOperation", event);
+    client.invokeBinding("BindingName", "MyOperation", event);
     // Do not call block() on mono above, so nothing should happen.
     assertFalse(called.get());
   }
@@ -393,9 +395,9 @@ public class DaprClientGrpcTest {
   public void invokeServiceVoidExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<Void> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE);
+    Mono<Void> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -411,10 +413,10 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
     // HttpExtension cannot be null
-    Mono<Void> result = adapter.invokeMethod("appId", "method", "request", null);
+    Mono<Void> result = client.invokeMethod("appId", "method", "request", null);
 
     assertThrows(IllegalArgumentException.class, () -> result.block());
   }
@@ -423,9 +425,9 @@ public class DaprClientGrpcTest {
   public void invokeServiceEmptyRequestVoidExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<Void> result = adapter.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null);
+    Mono<Void> result = client.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -441,9 +443,9 @@ public class DaprClientGrpcTest {
       StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<Void> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE);
+    Mono<Void> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -459,9 +461,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<Void> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE);
+    Mono<Void> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE);
     result.block();
   }
 
@@ -472,10 +474,10 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
     MyObject request = new MyObject(1, "Event");
-    Mono<Void> result = adapter.invokeMethod("appId", "method", request, HttpExtension.NONE);
+    Mono<Void> result = client.invokeMethod("appId", "method", request, HttpExtension.NONE);
     result.block();
   }
 
@@ -483,9 +485,9 @@ public class DaprClientGrpcTest {
   public void invokeServiceExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -498,9 +500,9 @@ public class DaprClientGrpcTest {
   public void invokeServiceNoRequestClassExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, String.class);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -513,9 +515,9 @@ public class DaprClientGrpcTest {
   public void invokeServiceNoRequestTypeRefExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, TypeRef.STRING);
+    Mono<String> result = client.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, TypeRef.STRING);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -531,9 +533,9 @@ public class DaprClientGrpcTest {
       StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -565,9 +567,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(eq(request), any());
+    }).when(daprStub).invokeService(eq(request), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", "request", httpExtension, null, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", "request", httpExtension, null, String.class);
     String strOutput = result.block();
     assertEquals(expected, strOutput);
   }
@@ -580,9 +582,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
     String strOutput = result.block();
 
     assertEquals(expected, strOutput);
@@ -596,9 +598,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<MyObject> result = adapter.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, MyObject.class);
+    Mono<MyObject> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, MyObject.class);
     MyObject resultObject = result.block();
 
     assertEquals(object.id, resultObject.id);
@@ -609,9 +611,9 @@ public class DaprClientGrpcTest {
   public void invokeServiceNoRequestBodyExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -627,9 +629,9 @@ public class DaprClientGrpcTest {
       StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -646,9 +648,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<String> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
+    Mono<String> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
     String strOutput = result.block();
 
     assertEquals(expected, strOutput);
@@ -662,9 +664,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<MyObject> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, MyObject.class);
+    Mono<MyObject> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, MyObject.class);
     MyObject resultObject = result.block();
 
     assertEquals(object.id, resultObject.id);
@@ -675,11 +677,11 @@ public class DaprClientGrpcTest {
   public void invokeServiceByteRequestExceptionThrownTest() throws IOException {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
 
-    Mono<byte[]> result = adapter.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
+    Mono<byte[]> result = client.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -695,12 +697,12 @@ public class DaprClientGrpcTest {
       StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
 
     Mono<byte[]> result =
-        adapter.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE,(HashMap<String, String>) null);
+        client.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE,(HashMap<String, String>) null);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -717,11 +719,11 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
 
-    Mono<byte[]> result = adapter.invokeMethod(
+    Mono<byte[]> result = client.invokeMethod(
         "appId", "method", byteRequest, HttpExtension.NONE, (HashMap<String, String>) null);
     byte[] byteOutput = result.block();
 
@@ -737,11 +739,11 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
     String request = "Request";
     byte[] byteRequest = serializer.serialize(request);
-    Mono<byte[]> result = adapter.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
+    Mono<byte[]> result = client.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
     byte[] byteOutput = result.block();
 
     assertEquals(resultObj, serializer.deserialize(byteOutput, MyObject.class));
@@ -751,8 +753,8 @@ public class DaprClientGrpcTest {
   public void invokeServiceNoRequestNoClassBodyExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-    Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -768,9 +770,9 @@ public class DaprClientGrpcTest {
       StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
+    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -787,9 +789,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
+    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
     result.block();
   }
 
@@ -803,8 +805,8 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-    adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
     // Do not call block() on mono above, so nothing should happen.
     assertFalse(called.get());
   }
@@ -817,9 +819,9 @@ public class DaprClientGrpcTest {
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
       observer.onCompleted();
       return null;
-    }).when(client).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
 
-    Mono<Void> result = adapter.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
+    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
     result.block();
   }
 
@@ -828,19 +830,19 @@ public class DaprClientGrpcTest {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
-      adapter.getState("", key, String.class).block();
+      client.getState("", key, String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
-      adapter.getState(null, key, String.class).block();
+      client.getState(null, key, String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null key
-      adapter.getState(STATE_STORE_NAME, (String)null, String.class).block();
+      client.getState(STATE_STORE_NAME, (String)null, String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty key
-      adapter.getState(STATE_STORE_NAME, "", String.class).block();
+      client.getState(STATE_STORE_NAME, "", String.class).block();
     });
   }
 
@@ -848,10 +850,10 @@ public class DaprClientGrpcTest {
   public void getStateExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
+    Mono<State<String>> result = client.getState(STATE_STORE_NAME, key, String.class);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -867,10 +869,10 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, key, String.class);
+    Mono<State<String>> result = client.getState(STATE_STORE_NAME, key, String.class);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -891,10 +893,10 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
     State<String> keyRequest = buildStateKey(null, key, etag, null);
-    Mono<State<String>> result = adapter.getState(STATE_STORE_NAME, keyRequest, String.class);
+    Mono<State<String>> result = client.getState(STATE_STORE_NAME, keyRequest, String.class);
     State<String> res = result.block();
 
     assertNotNull(res);
@@ -914,10 +916,10 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
     State<String> keyRequest = buildStateKey(null, key, etag, null);
-    adapter.getState(STATE_STORE_NAME, keyRequest, String.class);
+    client.getState(STATE_STORE_NAME, keyRequest, String.class);
     // block() on the mono above is not called, so nothing should happen.
     assertFalse(called.get());
   }
@@ -939,9 +941,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
-    Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
+    Mono<State<MyObject>> result = client.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
     State<MyObject> res = result.block();
 
     assertNotNull(res);
@@ -969,9 +971,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
-    Mono<Response<State<MyObject>>> result = adapter.getState(request, TypeRef.get(MyObject.class));
+    Mono<Response<State<MyObject>>> result = client.getState(request, TypeRef.get(MyObject.class));
     Response<State<MyObject>> res = result.block();
     assertNotNull(res);
     assertEquals(expectedState, res.getObject());
@@ -994,9 +996,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getState(any(DaprProtos.GetStateRequest.class), any());
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
-    Mono<State<MyObject>> result = adapter.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
+    Mono<State<MyObject>> result = client.getState(STATE_STORE_NAME, keyRequest, MyObject.class);
 
     assertEquals(expectedState, result.block());
   }
@@ -1006,27 +1008,27 @@ public class DaprClientGrpcTest {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
-      adapter.getBulkState("", Collections.singletonList("100"), String.class).block();
+      client.getBulkState("", Collections.singletonList("100"), String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
-      adapter.getBulkState(null, Collections.singletonList("100"), String.class).block();
+      client.getBulkState(null, Collections.singletonList("100"), String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null key
       // null pointer exception due to keys being converted to an unmodifiable list
-      adapter.getBulkState(STATE_STORE_NAME, null, String.class).block();
+      client.getBulkState(STATE_STORE_NAME, null, String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty key list
-      adapter.getBulkState(STATE_STORE_NAME, Collections.emptyList(), String.class).block();
+      client.getBulkState(STATE_STORE_NAME, Collections.emptyList(), String.class).block();
     });
     // negative parallelism
     GetBulkStateRequest req = new GetBulkStateRequestBuilder(STATE_STORE_NAME, Collections.singletonList("100"))
         .withMetadata(new HashMap<>())
         .withParallelism(-1)
         .build();
-    assertThrows(IllegalArgumentException.class, () -> adapter.getBulkState(req, TypeRef.BOOLEAN).block());
+    assertThrows(IllegalArgumentException.class, () -> client.getBulkState(req, TypeRef.BOOLEAN).block());
   }
 
   @Test
@@ -1051,9 +1053,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<String>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+    List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1088,8 +1090,8 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
-    List<State<Integer>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
+    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    List<State<Integer>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1124,9 +1126,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<Boolean>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
+    List<State<Boolean>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1160,9 +1162,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<byte[]>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), byte[].class).block();
+    List<State<byte[]>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), byte[].class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1195,9 +1197,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<MyObject>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
+    List<State<MyObject>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1215,10 +1217,10 @@ public class DaprClientGrpcTest {
   public void deleteStateExceptionThrowTest() {
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -1232,19 +1234,19 @@ public class DaprClientGrpcTest {
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
     assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
-      adapter.deleteState("", key.getKey(), "etag", null).block();
+      client.deleteState("", key.getKey(), "etag", null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
-      adapter.deleteState(null, key.getKey(), "etag", null).block();
+      client.deleteState(null, key.getKey(), "etag", null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
-      adapter.deleteState(STATE_STORE_NAME, null, "etag", null).block();
+      client.deleteState(STATE_STORE_NAME, null, "etag", null).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
-      adapter.deleteState(STATE_STORE_NAME, "", "etag", null).block();
+      client.deleteState(STATE_STORE_NAME, "", "etag", null).block();
     });
   }
 
@@ -1255,10 +1257,10 @@ public class DaprClientGrpcTest {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     State<String> key = buildStateKey(null, "Key1", "ETag1", null);
-    Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, key.getKey(), key.getEtag(), key.getOptions());
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -1276,10 +1278,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, null);
-    Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
         stateKey.getOptions());
     result.block();
   }
@@ -1294,10 +1296,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
       stateKey.getOptions());
     result.block();
   }
@@ -1314,12 +1316,12 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, key);
     builder.withEtag(etag).withStateOptions(options).withMetadata(metadata);
     DeleteStateRequest request = builder.build();
-    Mono<Response<Void>> result = adapter.deleteState(request);
+    Mono<Response<Void>> result = client.deleteState(request);
     result.block();
   }
 
@@ -1335,10 +1337,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
-    adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+    client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
             stateKey.getOptions());
     // Do not call result.block(), so nothing should happen.
     assertFalse(called.get());
@@ -1354,10 +1356,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
         stateKey.getOptions());
     result.block();
   }
@@ -1372,10 +1374,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
-    Mono<Void> result = adapter.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
         stateKey.getOptions());
     result.block();
   }
@@ -1388,18 +1390,18 @@ public class DaprClientGrpcTest {
         key);
     assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
-      adapter.executeStateTransaction("", Collections.singletonList(upsertOperation)).block();
+      client.executeStateTransaction("", Collections.singletonList(upsertOperation)).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null state store name
-      adapter.executeStateTransaction(null, Collections.singletonList(upsertOperation)).block();
+      client.executeStateTransaction(null, Collections.singletonList(upsertOperation)).block();
     });
   }
 
   @Test
   public void executeTransactionSerializerExceptionTest() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    adapter = new DaprClientGrpc(closeable, client, mockSerializer, mockSerializer);
+    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, mockSerializer);
     String etag = "ETag1";
     String key = "key1";
     String data = "my data";
@@ -1409,7 +1411,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
 
 
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
@@ -1420,7 +1422,7 @@ public class DaprClientGrpcTest {
     ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(STATE_STORE_NAME)
         .withTransactionalStates(upsertOperation)
         .build();
-    Mono<Response<Void>> result = adapter.executeStateTransaction(request);
+    Mono<Response<Void>> result = client.executeStateTransaction(request);
 
     assertThrowsDaprException(
         IOException.class,
@@ -1440,7 +1442,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -1455,7 +1457,7 @@ public class DaprClientGrpcTest {
         .withTransactionalStates(upsertOperation, deleteOperation)
         .withMetadata(metadata)
         .build();
-    Mono<Response<Void>> result = adapter.executeStateTransaction(request);
+    Mono<Response<Void>> result = client.executeStateTransaction(request);
     result.block();
   }
 
@@ -1470,7 +1472,7 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -1480,7 +1482,7 @@ public class DaprClientGrpcTest {
         TransactionalStateOperation.OperationType.DELETE,
         new State<>("testKey")
     );
-    Mono<Void> result = adapter.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation, deleteOperation));
+    Mono<Void> result = client.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation, deleteOperation));
     result.block();
   }
 
@@ -1492,13 +1494,13 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
-    Mono<Void> result = adapter.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> result = client.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -1518,13 +1520,13 @@ public class DaprClientGrpcTest {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
+    }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
 
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> operation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
-    Mono<Void> result = adapter.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> result = client.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -1537,11 +1539,11 @@ public class DaprClientGrpcTest {
   public void saveStatesIllegalArgumentExceptionTest() {
     assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
-      adapter.saveBulkState("", Collections.emptyList()).block();
+      client.saveBulkState("", Collections.emptyList()).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty state store name
-      adapter.saveBulkState(null, Collections.emptyList()).block();
+      client.saveBulkState(null, Collections.emptyList()).block();
     });
   }
 
@@ -1552,9 +1554,9 @@ public class DaprClientGrpcTest {
     String value = "State value";
     doAnswer((Answer<Void>) invocation -> {
       throw new RuntimeException();
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, null);
 
     assertThrowsDaprException(
         RuntimeException.class,
@@ -1573,9 +1575,9 @@ public class DaprClientGrpcTest {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, null);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -1594,10 +1596,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
 
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, null);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, null);
     result.block();
   }
 
@@ -1611,10 +1613,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
   }
 
@@ -1630,10 +1632,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+    client.saveState(STATE_STORE_NAME, key, etag, value, options);
     // No call to result.block(), so nothing should happen.
     assertFalse(called.get());
   }
@@ -1648,10 +1650,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(null, StateOptions.Concurrency.FIRST_WRITE);
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
   }
 
@@ -1665,10 +1667,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, null);
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
   }
 
@@ -1682,10 +1684,10 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
   }
 
@@ -1735,19 +1737,19 @@ public class DaprClientGrpcTest {
       observer.onNext(futuresMap.get(key1));
       observer.onCompleted();
       return null;
-    }).when(client).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
+    }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key2));
       observer.onCompleted();
       return null;
-    }).when(client).getState(argThat(new GetStateRequestKeyMatcher(key2)), any());
+    }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key2)), any());
 
     State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
-    Mono<State<String>> resultGet1 = adapter.getState(STATE_STORE_NAME, keyRequest1, String.class);
+    Mono<State<String>> resultGet1 = client.getState(STATE_STORE_NAME, keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
     State<String> keyRequest2 = buildStateKey(null, key2, etag, null);
-    Mono<State<String>> resultGet2 = adapter.getState(STATE_STORE_NAME, keyRequest2, String.class);
+    Mono<State<String>> resultGet2 = client.getState(STATE_STORE_NAME, keyRequest2, String.class);
     assertEquals(expectedState2, resultGet2.block());
 
     doAnswer((Answer<Void>) invocation -> {
@@ -1755,9 +1757,9 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class), any());
+    }).when(daprStub).deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class), any());
 
-    Mono<Void> resultDelete = adapter.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
+    Mono<Void> resultDelete = client.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
         keyRequest2.getOptions());
     resultDelete.block();
   }
@@ -1778,10 +1780,10 @@ public class DaprClientGrpcTest {
       observer.onNext(futuresMap.get(key1));
       observer.onCompleted();
       return null;
-    }).when(client).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
+    }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
 
     State<String> keyRequest1 = buildStateKey(null, key1, null, null);
-    Mono<State<String>> resultGet1 = adapter.getState(STATE_STORE_NAME, keyRequest1, String.class);
+    Mono<State<String>> resultGet1 = client.getState(STATE_STORE_NAME, keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
   }
 
@@ -1803,9 +1805,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
+    }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<String>> result = adapter.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+    List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1834,9 +1836,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
+    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
-    Map<String, String> result = adapter.getSecret(SECRET_STORE_NAME, "key").block();
+    Map<String, String> result = client.getSecret(SECRET_STORE_NAME, "key").block();
 
     assertEquals(1, result.size());
     assertEquals(expectedValue, result.get(expectedKey));
@@ -1856,9 +1858,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
+    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
-    Map<String, String> result = adapter.getSecret(SECRET_STORE_NAME, "key").block();
+    Map<String, String> result = client.getSecret(SECRET_STORE_NAME, "key").block();
 
     assertTrue(result.isEmpty());
   }
@@ -1874,28 +1876,28 @@ public class DaprClientGrpcTest {
       StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
       observer.onError(new RuntimeException());
       return null;
-    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
+    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
-    assertThrowsDaprException(ExecutionException.class, () -> adapter.getSecret(SECRET_STORE_NAME, "key").block());
+    assertThrowsDaprException(ExecutionException.class, () -> client.getSecret(SECRET_STORE_NAME, "key").block());
   }
 
   @Test
   public void getSecretsIllegalArgumentException() {
     assertThrows(IllegalArgumentException.class, () -> {
       // empty secret store name
-      adapter.getSecret("", "key").block();
+      client.getSecret("", "key").block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null secret store name
-      adapter.getSecret(null, "key").block();
+      client.getSecret(null, "key").block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty key
-      adapter.getSecret(SECRET_STORE_NAME, "").block();
+      client.getSecret(SECRET_STORE_NAME, "").block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null key
-      adapter.getSecret(SECRET_STORE_NAME, null).block();
+      client.getSecret(SECRET_STORE_NAME, null).block();
     });
   }
 
@@ -1914,9 +1916,9 @@ public class DaprClientGrpcTest {
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
-    }).when(client).getSecret(any(DaprProtos.GetSecretRequest.class), any());
+    }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
-    Map<String, String> result = adapter.getSecret(
+    Map<String, String> result = client.getSecret(
       SECRET_STORE_NAME,
       "key",
       Collections.singletonMap("metakey", "metavalue")).block();
@@ -1938,11 +1940,11 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
     for (StateOptions.Consistency consistency : StateOptions.Consistency.values()) {
       StateOptions options = buildStateOptions(consistency, StateOptions.Concurrency.FIRST_WRITE);
-      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
       result.block();
     }
   }
@@ -1960,11 +1962,11 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(client).saveState(any(DaprProtos.SaveStateRequest.class), any());
+    }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
 
     for (StateOptions.Concurrency concurrency : StateOptions.Concurrency.values()) {
       StateOptions options = buildStateOptions(StateOptions.Consistency.EVENTUAL, concurrency);
-      Mono<Void> result = adapter.saveState(STATE_STORE_NAME, key, etag, value, options);
+      Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
       result.block();
     }
   }

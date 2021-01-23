@@ -24,7 +24,12 @@ public class DaprClientBuilder {
   /**
    * Determine if this builder will create GRPC clients instead of HTTP clients.
    */
-  private final boolean useGrpc;
+  private final DaprApiProtocol apiProtocol;
+
+  /**
+   * Determine if this builder will use HTTP client for service method invocation APIs.
+   */
+  private final DaprApiProtocol methodInvocationApiProtocol;
 
   /**
    * Builder for Dapr's HTTP Client.
@@ -50,7 +55,8 @@ public class DaprClientBuilder {
   public DaprClientBuilder() {
     this.objectSerializer = new DefaultObjectSerializer();
     this.stateSerializer = new DefaultObjectSerializer();
-    this.useGrpc = Properties.USE_GRPC.get();
+    this.apiProtocol = Properties.API_PROTOCOL.get();
+    this.methodInvocationApiProtocol = Properties.API_METHOD_INVOCATION_PROTOCOL.get();
     this.daprHttpBuilder = new DaprHttpBuilder();
   }
 
@@ -97,11 +103,30 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   public DaprClient build() {
-    if (this.useGrpc) {
-      return buildDaprClientGrpc();
+    if (this.apiProtocol != this.methodInvocationApiProtocol) {
+      return new DaprClientProxy(buildDaprClient(this.apiProtocol), buildDaprClient(this.methodInvocationApiProtocol));
     }
 
-    return buildDaprClientHttp();
+    return buildDaprClient(this.apiProtocol);
+  }
+
+  /**
+   * Creates an instance of a Dapr Client based on the chosen protocol.
+   *
+   * @param protocol Dapr API's protocol.
+   * @return the GRPC Client.
+   * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
+   */
+  private DaprClient buildDaprClient(DaprApiProtocol protocol) {
+    if (protocol == null) {
+      throw new IllegalStateException("Protocol is required.");
+    }
+
+    switch (protocol) {
+      case GRPC: return buildDaprClientGrpc();
+      case HTTP: return buildDaprClientHttp();
+      default: throw new IllegalStateException("Unsupported protocol: " + protocol.name());
+    }
   }
 
   /**
