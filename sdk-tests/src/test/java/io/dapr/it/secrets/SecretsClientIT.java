@@ -9,8 +9,6 @@ import com.bettercloud.vault.Vault;
 import com.bettercloud.vault.VaultConfig;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprClientGrpc;
-import io.dapr.client.DaprClientHttp;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.After;
@@ -79,7 +77,7 @@ public class SecretsClientIT extends BaseIT {
   }
 
   @Before
-  public void setup() throws Exception {
+  public void setup() {
     if (this.useGrpc) {
       daprRun.switchToGRPC();
     } else {
@@ -87,11 +85,6 @@ public class SecretsClientIT extends BaseIT {
     }
 
     this.daprClient = new DaprClientBuilder().build();
-    if (this.useGrpc) {
-      assertEquals(DaprClientGrpc.class, this.daprClient.getClass());
-    } else {
-      assertEquals(DaprClientHttp.class, this.daprClient.getClass());
-    }
   }
 
   @After

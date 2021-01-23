@@ -7,6 +7,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorUtils;
+import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -26,7 +27,7 @@ public class ActorProxyBuilder<T> implements Closeable {
   /**
    * Determine if this builder will create GRPC clients instead of HTTP clients.
    */
-  private final boolean useGrpc;
+  private final DaprApiProtocol apiProtocol;
 
   /**
    * Actor's type.
@@ -73,6 +74,19 @@ public class ActorProxyBuilder<T> implements Closeable {
    * @param actorTypeClass Actor's type class.
    */
   public ActorProxyBuilder(String actorType, Class<T> actorTypeClass) {
+    this(actorType, actorTypeClass, Properties.API_PROTOCOL.get());
+  }
+
+  /**
+   * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer} by default.
+   *
+   * {@link DefaultObjectSerializer} is not recommended for production scenarios.
+   *
+   * @param actorType      Actor's type.
+   * @param actorTypeClass Actor's type class.
+   * @param apiProtocol    Dapr's API protocol.
+   */
+  private ActorProxyBuilder(String actorType, Class<T> actorTypeClass, DaprApiProtocol apiProtocol) {
     if ((actorType == null) || actorType.isEmpty()) {
       throw new IllegalArgumentException("ActorType is required.");
     }
@@ -80,12 +94,12 @@ public class ActorProxyBuilder<T> implements Closeable {
       throw new IllegalArgumentException("ActorTypeClass is required.");
     }
 
-    this.useGrpc = Properties.USE_GRPC.get();
+    this.apiProtocol = apiProtocol;
     this.actorType = actorType;
     this.objectSerializer = new DefaultObjectSerializer();
     this.clazz = actorTypeClass;
     this.daprHttpBuilder = new DaprHttpBuilder();
-    this.channel = buildManagedChannel();
+    this.channel = buildManagedChannel(apiProtocol);
   }
 
   /**
@@ -138,11 +152,11 @@ public class ActorProxyBuilder<T> implements Closeable {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   private DaprClient buildDaprClient() {
-    if (this.useGrpc) {
-      return new DaprGrpcClient(DaprGrpc.newFutureStub(this.channel));
+    switch (this.apiProtocol) {
+      case GRPC: return new DaprGrpcClient(DaprGrpc.newFutureStub(this.channel));
+      case HTTP: return new DaprHttpClient(daprHttpBuilder.build());
+      default: throw new IllegalStateException("Unsupported protocol: " + this.apiProtocol.name());
     }
-
-    return new DaprHttpClient(daprHttpBuilder.build());
   }
 
   /**
@@ -158,10 +172,11 @@ public class ActorProxyBuilder<T> implements Closeable {
   /**
    * Creates a GRPC managed channel (or null, if not applicable).
    *
+   * @param apiProtocol Dapr's API protocol.
    * @return GRPC managed channel or null.
    */
-  private static ManagedChannel buildManagedChannel() {
-    if (!Properties.USE_GRPC.get()) {
+  private static ManagedChannel buildManagedChannel(DaprApiProtocol apiProtocol) {
+    if (apiProtocol != DaprApiProtocol.GRPC) {
       return null;
     }
 

@@ -29,7 +29,7 @@ public class DaprHttpBuilder {
   /**
    * Read timeout used to build object.
    */
-  private Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READTIMEOUTSECONDS.get());
+  private Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READ_TIMEOUT_SECONDS.get());
 
   /**
    * Sets the read timeout duration for the instance to be built.
