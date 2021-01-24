@@ -63,7 +63,8 @@ public class ActorReminderFailoverIT extends BaseIT {
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
-    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newDaprActorChannel());
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);

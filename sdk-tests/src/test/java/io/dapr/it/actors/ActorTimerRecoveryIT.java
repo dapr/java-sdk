@@ -47,7 +47,8 @@ public class ActorTimerRecoveryIT extends BaseIT {
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
-    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newDaprActorChannel());
     logger.debug("Creating actorId");
     ActorId actorId = new ActorId(UUID.randomUUID().toString());
     logger.debug("Building proxy");

@@ -5,22 +5,16 @@
 
 package io.dapr.actors.client;
 
-import io.dapr.actors.ActorId;
-import io.dapr.actors.ActorUtils;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
-import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.DaprGrpc;
+import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
-import java.io.Closeable;
-import java.lang.reflect.Proxy;
-
 /**
- * Builder to generate an ActorProxy instance. Builder can be reused for multiple instances.
+ * Holds a channel for Dapr sidecar communication. Channel should be reused.
  */
 public class DaprChannel implements AutoCloseable {
 
@@ -32,7 +26,19 @@ public class DaprChannel implements AutoCloseable {
   /**
    * gRPC channel for communication with Dapr sidecar.
    */
-  private final ManagedChannel channel;
+  private final ManagedChannel grpcManagedChannel;
+
+  /**
+   * Dapr's client.
+   */
+  private final DaprClient daprClient;
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   */
+  public DaprChannel() {
+    this(Properties.API_PROTOCOL.get());
+  }
 
   /**
    * Instantiates a new channel for Dapr sidecar communication.
@@ -40,65 +46,27 @@ public class DaprChannel implements AutoCloseable {
    * @param apiProtocol    Dapr's API protocol.
    */
   private DaprChannel(DaprApiProtocol apiProtocol) {
+    this(apiProtocol,  buildManagedChannel(apiProtocol));
+  }
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   *
+   * @param apiProtocol    Dapr's API protocol.
+   */
+  private DaprChannel(DaprApiProtocol apiProtocol, ManagedChannel grpcManagedChannel) {
     this.apiProtocol = apiProtocol;
-    this.channel = buildManagedChannel(apiProtocol);
+    this.grpcManagedChannel = grpcManagedChannel;
+    this.daprClient = buildDaprClient(apiProtocol, grpcManagedChannel);
   }
 
   /**
-   * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer}.
+   * Gets the Dapr client.
    *
-   * @param objectSerializer Serializer for objects sent/received.
-   * @return This instance.
+   * @return the Dapr client.
    */
-  public DaprChannel<T> withObjectSerializer(DaprObjectSerializer objectSerializer) {
-    if (objectSerializer == null) {
-      throw new IllegalArgumentException("Serializer is required.");
-    }
-
-    this.objectSerializer = objectSerializer;
-    return this;
-  }
-
-  /**
-   * Instantiates a new ActorProxy.
-   *
-   * @param actorId Actor's identifier.
-   * @return New instance of ActorProxy.
-   */
-  public T build(ActorId actorId) {
-    if (actorId == null) {
-      throw new IllegalArgumentException("Cannot instantiate an Actor without Id.");
-    }
-
-    ActorProxyImpl proxy = new ActorProxyImpl(
-            this.actorType,
-            actorId,
-            this.objectSerializer,
-            buildDaprClient());
-
-    if (this.clazz.equals(ActorProxy.class)) {
-      // If users want to use the not strongly typed API, we respect that here.
-      return (T) proxy;
-    }
-
-    return (T) Proxy.newProxyInstance(
-            ActorProxyImpl.class.getClassLoader(),
-            new Class[]{this.clazz},
-            proxy);
-  }
-
-  /**
-   * Build an instance of the Client based on the provided setup.
-   *
-   * @return an instance of the setup Client
-   * @throws IllegalStateException if any required field is missing
-   */
-  private DaprClient buildDaprClient() {
-    switch (this.apiProtocol) {
-      case GRPC: return new DaprGrpcClient(DaprGrpc.newFutureStub(this.channel));
-      case HTTP: return new DaprHttpClient(daprHttpBuilder.build());
-      default: throw new IllegalStateException("Unsupported protocol: " + this.apiProtocol.name());
-    }
+  DaprClient getDaprClient() {
+    return this.daprClient;
   }
 
   /**
@@ -106,8 +74,8 @@ public class DaprChannel implements AutoCloseable {
    */
   @Override
   public void close() {
-    if (channel != null && !channel.isShutdown()) {
-      channel.shutdown();
+    if (grpcManagedChannel != null && !grpcManagedChannel.isShutdown()) {
+      grpcManagedChannel.shutdown();
     }
   }
 
@@ -128,5 +96,19 @@ public class DaprChannel implements AutoCloseable {
     }
 
     return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+  }
+
+  /**
+   * Build an instance of the Client based on the provided setup.
+   *
+   * @return an instance of the setup Client
+   * @throws java.lang.IllegalStateException if any required field is missing
+   */
+  private static DaprClient buildDaprClient(DaprApiProtocol apiProtocol, Channel grpcManagedChannel) {
+    switch (apiProtocol) {
+      case GRPC: return new DaprGrpcClient(DaprGrpc.newFutureStub(grpcManagedChannel));
+      case HTTP: return new DaprHttpClient(new DaprHttpBuilder().build());
+      default: throw new IllegalStateException("Unsupported protocol: " + apiProtocol.name());
+    }
   }
 }

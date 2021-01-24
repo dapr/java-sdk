@@ -149,7 +149,8 @@ public class DemoActorClient {
   private static final int NUM_ACTORS = 3;
 
   public static void main(String[] args) throws InterruptedException {
-    try (ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class)) {
+    try (DaprChannel channel = new DaprChannel()) {
+      ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class, channel);
       ///...
       for (int i = 0; i < NUM_ACTORS; i++) {
         DemoActor actor = builder.build(ActorId.createRandom());
@@ -189,7 +190,7 @@ public class DemoActorClient {
 }
 ```
 
-First, the client defines how many actors it is going to create. The main method declares a `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. `ActorProxyBuilder` implements `Closeable`, which means it holds resources that need to be closed. In this example, we use the "try-resource" feature in Java.
+First, the client defines how many actors it is going to create. The main method declares a `DaprChannel` and `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. `DaprChannel` is reusable for different actor types and should be instantiated only once in your code. `DaprChannel` also implements `AutoCloseable`, which means it holds resources that need to be closed. In this example, we use the "try-resource" feature in Java.
 
 Then, the code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
 
