@@ -33,9 +33,9 @@ public class ActorProxyBuilder<T> {
   private DaprObjectSerializer objectSerializer;
 
   /**
-   * Channel for communication with Dapr.
+   * Client for communication with Dapr's Actor APIs.
    */
-  private final DaprChannel channel;
+  private final ActorClient actorClient;
 
   /**
    * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer} by default.
@@ -43,10 +43,10 @@ public class ActorProxyBuilder<T> {
    * {@link DefaultObjectSerializer} is not recommended for production scenarios.
    *
    * @param actorTypeClass Actor's type class.
-   * @param channel        Dapr's sidecar channel.
+   * @param actorClient    Dapr's sidecar client for Actor APIs.
    */
-  public ActorProxyBuilder(Class<T> actorTypeClass, DaprChannel channel) {
-    this(ActorUtils.findActorTypeName(actorTypeClass), actorTypeClass, channel);
+  public ActorProxyBuilder(Class<T> actorTypeClass, ActorClient actorClient) {
+    this(ActorUtils.findActorTypeName(actorTypeClass), actorTypeClass, actorClient);
   }
 
   /**
@@ -56,23 +56,23 @@ public class ActorProxyBuilder<T> {
    *
    * @param actorType      Actor's type.
    * @param actorTypeClass Actor's type class.
-   * @param channel        Dapr's sidecar channel.
+   * @param actorClient    Dapr's sidecar client for Actor APIs.
    */
-  public ActorProxyBuilder(String actorType, Class<T> actorTypeClass, DaprChannel channel) {
+  public ActorProxyBuilder(String actorType, Class<T> actorTypeClass, ActorClient actorClient) {
     if ((actorType == null) || actorType.isEmpty()) {
       throw new IllegalArgumentException("ActorType is required.");
     }
     if (actorTypeClass == null) {
       throw new IllegalArgumentException("ActorTypeClass is required.");
     }
-    if (channel == null) {
+    if (actorClient == null) {
       throw new IllegalArgumentException("Channel is required.");
     }
 
     this.actorType = actorType;
     this.objectSerializer = new DefaultObjectSerializer();
     this.clazz = actorTypeClass;
-    this.channel = channel;
+    this.actorClient = actorClient;
   }
 
   /**
@@ -105,7 +105,7 @@ public class ActorProxyBuilder<T> {
             this.actorType,
             actorId,
             this.objectSerializer,
-            this.channel.getDaprClient());
+            this.actorClient);
 
     if (this.clazz.equals(ActorProxy.class)) {
       // If users want to use the not strongly typed API, we respect that here.

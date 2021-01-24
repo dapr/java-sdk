@@ -12,16 +12,12 @@ import io.dapr.v1.DaprGrpc;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import reactor.core.publisher.Mono;
 
 /**
- * Holds a channel for Dapr sidecar communication. Channel should be reused.
+ * Holds a client for Dapr sidecar communication. ActorClient should be reused.
  */
-public class DaprChannel implements AutoCloseable {
-
-  /**
-   * Determine if channel is for GRPC clients or HTTP clients.
-   */
-  private final DaprApiProtocol apiProtocol;
+public class ActorClient implements DaprClient, AutoCloseable {
 
   /**
    * gRPC channel for communication with Dapr sidecar.
@@ -36,7 +32,7 @@ public class DaprChannel implements AutoCloseable {
   /**
    * Instantiates a new channel for Dapr sidecar communication.
    */
-  public DaprChannel() {
+  public ActorClient() {
     this(Properties.API_PROTOCOL.get());
   }
 
@@ -45,8 +41,8 @@ public class DaprChannel implements AutoCloseable {
    *
    * @param apiProtocol    Dapr's API protocol.
    */
-  private DaprChannel(DaprApiProtocol apiProtocol) {
-    this(apiProtocol,  buildManagedChannel(apiProtocol));
+  private ActorClient(DaprApiProtocol apiProtocol) {
+    this(apiProtocol, buildManagedChannel(apiProtocol));
   }
 
   /**
@@ -54,19 +50,17 @@ public class DaprChannel implements AutoCloseable {
    *
    * @param apiProtocol    Dapr's API protocol.
    */
-  private DaprChannel(DaprApiProtocol apiProtocol, ManagedChannel grpcManagedChannel) {
-    this.apiProtocol = apiProtocol;
+  private ActorClient(DaprApiProtocol apiProtocol, ManagedChannel grpcManagedChannel) {
     this.grpcManagedChannel = grpcManagedChannel;
     this.daprClient = buildDaprClient(apiProtocol, grpcManagedChannel);
   }
 
   /**
-   * Gets the Dapr client.
-   *
-   * @return the Dapr client.
+   * {@inheritDoc}
    */
-  DaprClient getDaprClient() {
-    return this.daprClient;
+  @Override
+  public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
+    return daprClient.invoke(actorType, actorId, methodName, jsonPayload);
   }
 
   /**

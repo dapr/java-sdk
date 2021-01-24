@@ -34,7 +34,7 @@ public class ActorMethodNameIT extends BaseIT {
 
     logger.debug("Creating proxy builder");
     ActorProxyBuilder<MyActor> proxyBuilder =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, newDaprActorChannel());
+        new ActorProxyBuilder("MyActorTest", MyActor.class, newActorClient());
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId("1");
     logger.debug("Building proxy");
@@ -49,7 +49,7 @@ public class ActorMethodNameIT extends BaseIT {
 
     logger.debug("Creating proxy builder 2");
     ActorProxyBuilder<ActorProxy> proxyBuilder2 =
-        new ActorProxyBuilder("MyActorTest", ActorProxy.class, newDaprActorChannel());
+        new ActorProxyBuilder("MyActorTest", ActorProxy.class, newActorClient());
     logger.debug("Building proxy 2");
     ActorProxy proxy2 = proxyBuilder2.build(actorId1);
 

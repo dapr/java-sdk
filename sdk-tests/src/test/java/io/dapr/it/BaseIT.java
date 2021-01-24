@@ -5,7 +5,7 @@
 
 package io.dapr.it;
 
-import io.dapr.actors.client.DaprChannel;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprApiProtocol;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.AfterClass;
@@ -117,9 +117,9 @@ public abstract class BaseIT {
     }
   }
 
-  protected DaprChannel newDaprActorChannel() {
-    DaprChannel channel = new DaprChannel();
-    TO_BE_CLOSED.add(channel);
-    return channel;
+  protected ActorClient newActorClient() {
+    ActorClient client = new ActorClient();
+    TO_BE_CLOSED.add(client);
+    return client;
   }
 }

@@ -7,7 +7,6 @@ package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.actors.client.DaprChannel;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.services.springboot.DemoActor;
 import io.dapr.it.actors.services.springboot.DemoActorService;
@@ -39,7 +38,7 @@ public class ActivationDeactivationIT extends BaseIT {
 
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     logger.debug("Creating proxy builder");
-    ActorProxyBuilder<DemoActor> proxyBuilder = new ActorProxyBuilder(DemoActor.class, newDaprActorChannel());
+    ActorProxyBuilder<DemoActor> proxyBuilder = new ActorProxyBuilder(DemoActor.class, newActorClient());
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     logger.debug("Building proxy");

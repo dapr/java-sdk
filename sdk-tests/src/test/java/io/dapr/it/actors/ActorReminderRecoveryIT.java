@@ -8,7 +8,6 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.actors.client.DaprChannel;
 import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
@@ -53,7 +52,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newDaprActorChannel());
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);

@@ -14,37 +14,37 @@ import org.junit.Test;
 
 public class ActorProxyBuilderTest {
 
-  private static DaprChannel daprChannel;
+  private static ActorClient actorClient;
 
   @BeforeClass
   public static void initClass() {
-    daprChannel = new DaprChannel();
+    actorClient = new ActorClient();
   }
 
   @AfterClass
   public static void tearDownClass() {
-    daprChannel.close();
+    actorClient.close();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorId() {
-    new ActorProxyBuilder("test", Object.class, daprChannel)
+    new ActorProxyBuilder("test", Object.class, actorClient)
         .build(null);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithEmptyActorType() {
-    new ActorProxyBuilder("", Object.class, daprChannel);
+    new ActorProxyBuilder("", Object.class, actorClient);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithNullActorType() {
-    new ActorProxyBuilder(null, Object.class, daprChannel);
+    new ActorProxyBuilder(null, Object.class, actorClient);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void buildWithNullSerializer() {
-    new ActorProxyBuilder("MyActor", Object.class, daprChannel)
+    new ActorProxyBuilder("MyActor", Object.class, actorClient)
       .withObjectSerializer(null)
       .build(new ActorId("100"));
   }
@@ -56,7 +56,7 @@ public class ActorProxyBuilderTest {
 
   @Test()
   public void build() {
-    ActorProxyBuilder<ActorProxy> builder = new ActorProxyBuilder("test", ActorProxy.class, daprChannel);
+    ActorProxyBuilder<ActorProxy> builder = new ActorProxyBuilder("test", ActorProxy.class, actorClient);
     ActorProxy actorProxy = builder.build(new ActorId("100"));
 
     Assert.assertNotNull(actorProxy);
@@ -66,7 +66,7 @@ public class ActorProxyBuilderTest {
 
   @Test()
   public void buildWithType() {
-    ActorProxyBuilder<MyActor> builder = new ActorProxyBuilder(MyActor.class, daprChannel);
+    ActorProxyBuilder<MyActor> builder = new ActorProxyBuilder(MyActor.class, actorClient);
     MyActor actorProxy = builder.build(new ActorId("100"));
 
     Assert.assertNotNull(actorProxy);
@@ -74,7 +74,7 @@ public class ActorProxyBuilderTest {
 
   @Test()
   public void buildWithTypeDefaultName() {
-    ActorProxyBuilder<ActorWithDefaultName> builder = new ActorProxyBuilder(ActorWithDefaultName.class, daprChannel);
+    ActorProxyBuilder<ActorWithDefaultName> builder = new ActorProxyBuilder(ActorWithDefaultName.class, actorClient);
     ActorWithDefaultName actorProxy = builder.build(new ActorId("100"));
 
     Assert.assertNotNull(actorProxy);

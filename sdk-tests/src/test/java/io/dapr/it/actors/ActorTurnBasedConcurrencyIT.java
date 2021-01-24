@@ -81,7 +81,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newDaprActorChannel());
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(ACTOR_ID);
     logger.debug("Building proxy");
