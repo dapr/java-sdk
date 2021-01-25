@@ -9,7 +9,7 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorMethod;
 import io.dapr.actors.ActorType;
 import io.dapr.actors.client.ActorProxy;
-import io.dapr.actors.client.ActorProxyForTestsImpl;
+import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
@@ -245,7 +245,7 @@ public class ActorNoStateTest {
 
     this.manager.activateActor(actorId).block();
 
-    return new ActorProxyForTestsImpl(
+    return new ActorProxyImplForTests(
       context.getActorTypeInformation().getName(),
       actorId,
       new DefaultObjectSerializer(),
@@ -271,13 +271,13 @@ public class ActorNoStateTest {
 
     this.manager.activateActor(actorId).block();
 
-    ActorProxyForTestsImpl proxy = new ActorProxyForTestsImpl(
+    ActorProxyImplForTests proxy = new ActorProxyImplForTests(
             context.getActorTypeInformation().getName(),
             actorId,
             new DefaultObjectSerializer(),
             daprClient);
     return (T) Proxy.newProxyInstance(
-            ActorProxyForTestsImpl.class.getClassLoader(),
+            ActorProxyImplForTests.class.getClassLoader(),
             new Class[]{clazz},
             proxy);
   }

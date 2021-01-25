@@ -51,7 +51,8 @@ public class ActorReminderRecoveryIT extends BaseIT {
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
-    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);

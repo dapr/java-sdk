@@ -27,26 +27,6 @@ public class DaprHttpBuilder {
   private static final Object LOCK = new Object();
 
   /**
-   * Read timeout used to build object.
-   */
-  private Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READ_TIMEOUT_SECONDS.get());
-
-  /**
-   * Sets the read timeout duration for the instance to be built.
-   *
-   * <p>Instead, set environment variable "DAPR_HTTP_CLIENT_READTIMEOUTSECONDS",
-   *   or system property "dapr.http.client.readtimeoutseconds".
-   *
-   * @param duration Read timeout duration.
-   * @return Same builder instance.
-   */
-  @Deprecated
-  public DaprHttpBuilder withReadTimeout(Duration duration) {
-    this.readTimeout = duration;
-    return this;
-  }
-
-  /**
    * Build an instance of the Http client based on the provided setup.
    *
    * @return an instance of {@link DaprHttp}
@@ -57,7 +37,7 @@ public class DaprHttpBuilder {
   }
 
   /**
-   * Creates and instance of the HTTP Client.
+   * Creates an instance of the HTTP Client.
    *
    * @return Instance of {@link DaprHttp}
    */
@@ -66,7 +46,8 @@ public class DaprHttpBuilder {
       synchronized (LOCK) {
         if (OK_HTTP_CLIENT.get() == null) {
           OkHttpClient.Builder builder = new OkHttpClient.Builder();
-          builder.readTimeout(this.readTimeout);
+          Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READ_TIMEOUT_SECONDS.get());
+          builder.readTimeout(readTimeout);
           OkHttpClient okHttpClient = builder.build();
           OK_HTTP_CLIENT.set(okHttpClient);
         }

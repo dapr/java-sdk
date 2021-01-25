@@ -5,11 +5,11 @@
 
 package io.dapr.it;
 
+import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprApiProtocol;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.AfterClass;
 
-import java.io.Closeable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -23,7 +23,7 @@ public abstract class BaseIT {
 
   private static final Queue<Stoppable> TO_BE_STOPPED = new LinkedList<>();
 
-  private static final Queue<Closeable> TO_BE_CLOSED = new LinkedList<>();
+  private static final Queue<AutoCloseable> TO_BE_CLOSED = new LinkedList<>();
 
   protected static DaprRun startDaprApp(
       String testName,
@@ -109,18 +109,17 @@ public abstract class BaseIT {
   @AfterClass
   public static void cleanUp() throws Exception {
     while (!TO_BE_CLOSED.isEmpty()) {
-      Closeable toBeClosed = TO_BE_CLOSED.remove();
-      toBeClosed.close();
+      TO_BE_CLOSED.remove().close();
     }
 
     while (!TO_BE_STOPPED.isEmpty()) {
-      Stoppable toBeStopped = TO_BE_STOPPED.remove();
-      toBeStopped.stop();
+      TO_BE_STOPPED.remove().stop();
     }
   }
 
-  protected static <T extends Closeable> T deferClose(T closeable) {
-    TO_BE_CLOSED.add(closeable);
-    return closeable;
+  protected ActorClient newActorClient() {
+    ActorClient client = new ActorClient();
+    TO_BE_CLOSED.add(client);
+    return client;
   }
 }

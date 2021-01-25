@@ -8,7 +8,7 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.actors.client.ActorProxy;
-import io.dapr.actors.client.ActorProxyForTestsImpl;
+import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
@@ -159,7 +159,7 @@ public class ThrowFromPreAndPostActorMethodsTest {
 
     this.manager.activateActor(actorId).block();
 
-    return new ActorProxyForTestsImpl(
+    return new ActorProxyImplForTests(
       context.getActorTypeInformation().getName(),
       actorId,
       new DefaultObjectSerializer(),

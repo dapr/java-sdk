@@ -6,6 +6,7 @@
 package io.dapr.examples.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
 
 import java.util.ArrayList;
@@ -30,7 +31,8 @@ public class DemoActorClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) throws InterruptedException {
-    try (ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class)) {
+    try (ActorClient client = new ActorClient()) {
+      ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class, client);
       List<Thread> threads = new ArrayList<>(NUM_ACTORS);
 
       // Creates multiple actors.

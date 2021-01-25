@@ -74,7 +74,8 @@ public class ActorStateIT extends BaseIT {
         String.format("%d-%b-%b", System.currentTimeMillis(), this.daprClientProtocol, this.serviceAppProtocol));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
-    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     // Validate conditional read works.
@@ -160,7 +161,7 @@ public class ActorStateIT extends BaseIT {
     runtime.switchToProtocol(this.daprClientProtocol);
 
     // Need new proxy builder because the proxy builder holds the channel.
-    proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     callWithRetry(() -> {
