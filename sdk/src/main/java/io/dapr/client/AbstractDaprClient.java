@@ -9,6 +9,8 @@ import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
+import io.dapr.client.domain.GetBulkSecretRequest;
+import io.dapr.client.domain.GetBulkSecretRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetSecretRequestBuilder;
@@ -393,6 +395,25 @@ abstract class AbstractDaprClient implements DaprClient {
   @Override
   public Mono<Map<String, String>> getSecret(String storeName, String secretName) {
     return this.getSecret(storeName, secretName, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, Map<String, String>>> getBulkSecret(String storeName) {
+    return this.getBulkSecret(storeName, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, Map<String, String>>> getBulkSecret(String storeName, Map<String, String> metadata) {
+    GetBulkSecretRequest request = new GetBulkSecretRequestBuilder(storeName)
+        .withMetadata(metadata)
+        .build();
+    return this.getBulkSecret(request).map(r -> r.getObject() == null ? Collections.EMPTY_MAP : r.getObject());
   }
 
 }

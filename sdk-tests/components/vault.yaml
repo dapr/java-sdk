@@ -10,6 +10,6 @@ spec:
   - name: skipVerify
     value : true
   - name: vaultTokenMountPath
-    value : "/tmp/.hashicorp_vault_token"
+    value : ".hashicorp_vault_token"
   - name: vaultKVPrefix
     value : "dapr"

@@ -7,6 +7,7 @@ package io.dapr.client;
 
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
@@ -463,6 +464,30 @@ class DaprClientProxy implements DaprClient {
   @Override
   public Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request) {
     return client.getSecret(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, Map<String, String>>> getBulkSecret(String storeName) {
+    return client.getBulkSecret(storeName);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, Map<String, String>>> getBulkSecret(String storeName, Map<String, String> metadata) {
+    return client.getBulkSecret(storeName, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request) {
+    return client.getBulkSecret(request);
   }
 
   /**

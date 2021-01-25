@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
@@ -589,6 +590,42 @@ public class DaprClientHttp extends AbstractDaprClient {
       })
       .map(m -> (Map<String, String>)m)
       .map(m -> new Response<>(context, m));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request) {
+    String secretStoreName = request.getStoreName();
+    Map<String, String> metadata = request.getMetadata();
+    Context context = request.getContext();
+    try {
+      if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret store name cannot be null or empty.");
+      }
+    } catch (Exception e) {
+      return DaprException.wrapMono(e);
+    }
+
+    Map<String, String> queryArgs = metadataToQueryArgs(metadata);
+    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, "bulk"};
+    return this.client
+        .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String)null, null, context)
+        .flatMap(response -> {
+          try {
+            Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
+            if (m == null) {
+              return Mono.just(Collections.EMPTY_MAP);
+            }
+
+            return Mono.just(m);
+          } catch (IOException e) {
+            return DaprException.wrapMono(e);
+          }
+        })
+        .map(m -> (Map<String, Map<String, String>>)m)
+        .map(m -> new Response<>(context, m));
   }
 
   /**

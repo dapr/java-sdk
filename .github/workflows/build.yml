@@ -26,7 +26,7 @@ jobs:
       DAPR_RUNTIME_VER: 1.0.0-rc.2
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/3dacfb672d55f1436c249057aaebbe597e1066f3/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF: 4678e477562e7e35a1d6ba04a9b17b6c9c00a025
+      DAPR_REF: f4327d91c3cd921b26077d99abe0f237c9a38f5d
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
@@ -91,8 +91,6 @@ jobs:
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-vault.yml up -d
         docker ps
-    - name: Setup Vault's test token
-      run: echo myroot > /tmp/.hashicorp_vault_token
     - name: Clean up files
       run: mvn clean
     - name: Build sdk
