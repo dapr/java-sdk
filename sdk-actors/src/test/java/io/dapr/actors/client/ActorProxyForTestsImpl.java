@@ -10,7 +10,7 @@ import io.dapr.serializer.DaprObjectSerializer;
 
 public class ActorProxyForTestsImpl extends ActorProxyImpl {
 
-  public ActorProxyForTestsImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, DaprClient daprClient) {
-    super(actorType, actorId, serializer, daprClient);
+  public ActorProxyForTestsImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, ActorClient actorClient) {
+    super(actorType, actorId, serializer, actorClient);
   }
 }

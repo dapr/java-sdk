@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 /**
  * Holds a client for Dapr sidecar communication. ActorClient should be reused.
  */
-public class ActorClient implements DaprClient, AutoCloseable {
+public class ActorClient implements AutoCloseable {
 
   /**
    * gRPC channel for communication with Dapr sidecar.
@@ -56,10 +56,15 @@ public class ActorClient implements DaprClient, AutoCloseable {
   }
 
   /**
-   * {@inheritDoc}
+   * Invokes an Actor method on Dapr.
+   *
+   * @param actorType   Type of actor.
+   * @param actorId     Actor Identifier.
+   * @param methodName  Method name to invoke.
+   * @param jsonPayload Serialized body.
+   * @return Asynchronous result with the Actor's response.
    */
-  @Override
-  public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
+  Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
     return daprClient.invoke(actorType, actorId, methodName, jsonPayload);
   }
 

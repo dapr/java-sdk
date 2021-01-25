@@ -41,7 +41,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
   /**
    * Client to talk to the Dapr's API.
    */
-  private final DaprClient daprClient;
+  private final ActorClient actorClient;
 
   /**
    * Creates a new instance of {@link ActorProxyImpl}.
@@ -49,12 +49,12 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * @param actorType  actor implementation type of the actor associated with the proxy object.
    * @param actorId    The actorId associated with the proxy
    * @param serializer Serializer and deserializer for method calls.
-   * @param daprClient Dapr client.
+   * @param actorClient Dapr client for Actor APIs.
    */
-  ActorProxyImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, DaprClient daprClient) {
+  ActorProxyImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, ActorClient actorClient) {
     this.actorType = actorType;
     this.actorId = actorId;
-    this.daprClient = daprClient;
+    this.actorClient = actorClient;
     this.serializer = serializer;
   }
 
@@ -77,7 +77,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public <T> Mono<T> invokeMethod(String methodName, Object data, TypeRef<T> type) {
-    return this.daprClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data))
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data))
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -95,7 +95,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public <T> Mono<T> invokeMethod(String methodName, TypeRef<T> type) {
-    return this.daprClient.invoke(actorType, actorId.toString(), methodName, null)
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null)
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -113,7 +113,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public Mono<Void> invokeMethod(String methodName) {
-    return this.daprClient.invoke(actorType, actorId.toString(), methodName, null).then();
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null).then();
   }
 
   /**
@@ -121,7 +121,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public Mono<Void> invokeMethod(String methodName, Object data) {
-    return this.daprClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data)).then();
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data)).then();
   }
 
   /**
