@@ -50,7 +50,7 @@ public class ActorProxyBuilderTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void buildWithNullChannel() {
+  public void buildWithNullClient() {
     new ActorProxyBuilder("MyActor", Object.class, null);
   }
 
