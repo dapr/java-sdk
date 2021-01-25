@@ -66,7 +66,7 @@ public class ActorProxyBuilder<T> {
       throw new IllegalArgumentException("ActorTypeClass is required.");
     }
     if (actorClient == null) {
-      throw new IllegalArgumentException("Channel is required.");
+      throw new IllegalArgumentException("ActorClient is required.");
     }
 
     this.actorType = actorType;
