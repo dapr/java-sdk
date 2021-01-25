@@ -1099,6 +1099,39 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void getBulkSecrets() {
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk")
+        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
+
+    Map<String, Map<String, String>> secrets = daprClientHttp.getBulkSecret(SECRET_STORE_NAME).block();
+
+    assertEquals(2, secrets.size());
+    assertEquals(1, secrets.get("one").size());
+    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+    assertEquals(2, secrets.get("two").size());
+    assertEquals("1", secrets.get("two").get("a"));
+    assertEquals("2", secrets.get("two").get("b"));
+  }
+
+  @Test
+  public void getBulkSecretsWithMetadata() {
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk?metadata.metakey=metavalue")
+        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
+
+    Map<String, Map<String, String>> secrets =
+        daprClientHttp.getBulkSecret(SECRET_STORE_NAME, Collections.singletonMap("metakey", "metavalue")).block();
+
+    assertEquals(2, secrets.size());
+    assertEquals(1, secrets.get("one").size());
+    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+    assertEquals(2, secrets.get("two").size());
+    assertEquals("1", secrets.get("two").get("a"));
+    assertEquals("2", secrets.get("two").get("b"));
+  }
+
+  @Test
   public void closeException() {
     DaprHttp daprHttp = Mockito.mock(DaprHttp.class);
     Mockito.doThrow(new RuntimeException()).when(daprHttp).close();

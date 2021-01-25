@@ -11,6 +11,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
@@ -55,9 +56,11 @@ import reactor.core.publisher.MonoSink;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -469,7 +472,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
     CommonProtos.StateItem.Builder stateBuilder = CommonProtos.StateItem.newBuilder();
     if (state.getEtag() != null) {
-      stateBuilder.setEtag(state.getEtag());
+      stateBuilder.setEtag(CommonProtos.Etag.newBuilder().setValue(state.getEtag()).build());
     }
     if (state.getMetadata() != null) {
       stateBuilder.putAllMetadata(state.getMetadata());
@@ -532,7 +535,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
         builder.putAllMetadata(metadata);
       }
       if (etag != null) {
-        builder.setEtag(etag);
+        builder.setEtag(CommonProtos.Etag.newBuilder().setValue(etag).build());
       }
 
       if (optionBuilder != null) {
@@ -624,6 +627,44 @@ public class DaprClientGrpc extends AbstractDaprClient {
             context,
             it -> asyncStub.getSecret(req, it)
     ).map(it -> new Response<>(context, it.getDataMap()));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request) {
+    try {
+      final String storeName = request.getStoreName();
+      final Map<String, String> metadata = request.getMetadata();
+      final Context context = request.getContext();
+      if ((storeName == null) || (storeName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Secret store name cannot be null or empty.");
+      }
+
+      DaprProtos.GetBulkSecretRequest.Builder builder = DaprProtos.GetBulkSecretRequest.newBuilder()
+          .setStoreName(storeName);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+
+      DaprProtos.GetBulkSecretRequest envelope = builder.build();
+
+      return this.<DaprProtos.GetBulkSecretResponse>createMono(context, it -> asyncStub.getBulkSecret(envelope, it))
+          .map(it -> {
+            Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
+            if (secretsMap == null) {
+              return Collections.EMPTY_MAP;
+            }
+            return secretsMap
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(s -> s.getKey(), s -> s.getValue().getSecretsMap()));
+          })
+          .map(s -> new Response<>(context, s));
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
   }
 
   /**

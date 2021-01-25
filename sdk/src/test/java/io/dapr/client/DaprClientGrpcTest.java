@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
@@ -1927,6 +1928,74 @@ public class DaprClientGrpcTest {
     assertEquals(expectedValue, result.get(expectedKey));
   }
 
+  @Test
+  public void getBulkSecrets() {
+    DaprProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
+        new HashMap<String, Map<String, String>>() {{
+          put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
+          put("two", new HashMap<String, String>() {{
+            put("a", "1");
+            put("b", "2");
+          }});
+        }});
+
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.GetBulkSecretRequest req = invocation.getArgument(0);
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals(0, req.getMetadataCount());
+
+      StreamObserver<DaprProtos.GetBulkSecretResponse> observer =
+          (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getBulkSecret(any(DaprProtos.GetBulkSecretRequest.class), any());
+
+    Map<String, Map<String, String>> secrets = client.getBulkSecret(SECRET_STORE_NAME).block();
+
+    assertEquals(2, secrets.size());
+    assertEquals(1, secrets.get("one").size());
+    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+    assertEquals(2, secrets.get("two").size());
+    assertEquals("1", secrets.get("two").get("a"));
+    assertEquals("2", secrets.get("two").get("b"));
+  }
+
+  @Test
+  public void getBulkSecretsWithMetadata() {
+    DaprProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
+        new HashMap<String, Map<String, String>>() {{
+          put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
+          put("two", new HashMap<String, String>() {{
+            put("a", "1");
+            put("b", "2");
+          }});
+        }});
+
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.GetBulkSecretRequest req = invocation.getArgument(0);
+      assertEquals(SECRET_STORE_NAME, req.getStoreName());
+      assertEquals(1, req.getMetadataCount());
+      assertEquals("metavalue", req.getMetadataOrThrow("metakey"));
+
+      StreamObserver<DaprProtos.GetBulkSecretResponse> observer =
+          (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getBulkSecret(any(DaprProtos.GetBulkSecretRequest.class), any());
+
+    Map<String, Map<String, String>> secrets = client.getBulkSecret(
+        SECRET_STORE_NAME, Collections.singletonMap("metakey", "metavalue")).block();
+
+    assertEquals(2, secrets.size());
+    assertEquals(1, secrets.get("one").size());
+    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+    assertEquals(2, secrets.get("two").size());
+    assertEquals("1", secrets.get("two").get("a"));
+    assertEquals("2", secrets.get("two").get("b"));
+  }
+
   /* If this test is failing, it means that a new value was added to StateOptions.Consistency
    * enum, without creating a mapping to one of the proto defined gRPC enums
    */
@@ -1990,6 +2059,16 @@ public class DaprClientGrpcTest {
 
   private DaprProtos.GetSecretResponse buildGetSecretResponse() {
     return DaprProtos.GetSecretResponse.newBuilder().build();
+  }
+
+  private DaprProtos.GetBulkSecretResponse buildGetBulkSecretResponse(Map<String, Map<String, String>> res) {
+    Map<String, DaprProtos.SecretResponse> map = res.entrySet().stream().collect(
+        Collectors.toMap(
+            e -> e.getKey(),
+            e -> DaprProtos.SecretResponse.newBuilder().putAllSecrets(e.getValue()).build()));
+    return DaprProtos.GetBulkSecretResponse.newBuilder()
+        .putAllData(map)
+        .build();
   }
 
   private StateOptions buildStateOptions(StateOptions.Consistency consistency, StateOptions.Concurrency concurrency) {

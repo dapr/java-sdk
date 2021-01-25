@@ -7,6 +7,7 @@ package io.dapr.client;
 
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
@@ -525,4 +526,29 @@ public interface DaprClient extends AutoCloseable {
    * @return Key-value pairs for the secret.
    */
   Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request);
+
+  /**
+   * Fetches all secrets from the configured vault.
+   *
+   * @param storeName Name of vault component in Dapr.
+   * @return Key-value pairs for all the secrets in the state store.
+   */
+  Mono<Map<String, Map<String, String>>> getBulkSecret(String storeName);
+
+  /**
+   * Fetches all secrets from the configured vault.
+   *
+   * @param storeName Name of vault component in Dapr.
+   * @param metadata Optional metadata.
+   * @return Key-value pairs for all the secrets in the state store.
+   */
+  Mono<Map<String, Map<String, String>>> getBulkSecret(String storeName, Map<String, String> metadata);
+
+  /**
+   * Fetches all secrets from the configured vault.
+   *
+   * @param request Request to fetch secret.
+   * @return Key-value pairs for the secret.
+   */
+  Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request);
 }
