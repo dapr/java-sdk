@@ -34,6 +34,7 @@ import io.grpc.stub.StreamObserver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1549,6 +1551,29 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void saveBulkStateTestNullEtag() {
+    List<State<?>> states = new ArrayList<State<?>>();
+    states.add(new State<String>("null_etag_value", "null_etag_key", null, (StateOptions)null));
+    states.add(new State<String>("empty_etag_value", "empty_etag_key", "", (StateOptions)null));
+
+    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).saveState(argument.capture(), any());
+
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    Mono<Void> result = client.saveBulkState(STATE_STORE_NAME, states);
+
+    result.block();
+    assertFalse(argument.getValue().getStates(0).hasEtag());
+    assertTrue(argument.getValue().getStates(1).hasEtag());
+    assertEquals("", argument.getValue().getStates(1).getEtag().getValue());
+  }
+
+  @Test
   public void saveStateExceptionThrownTest() {
     String key = "key1";
     String etag = "ETag1";
@@ -1619,6 +1644,26 @@ public class DaprClientGrpcTest {
     StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
     result.block();
+  }
+
+  @Test
+  public void saveStateTestNullEtag() {
+    String key = "key1";
+    String etag = null;
+    String value = "State value";
+    ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).saveState(argument.capture(), any());
+
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, options);
+
+    result.block();
+    assertFalse(argument.getValue().getStates(0).hasEtag());
   }
 
   @Test
@@ -1763,6 +1808,25 @@ public class DaprClientGrpcTest {
     Mono<Void> resultDelete = client.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
         keyRequest2.getOptions());
     resultDelete.block();
+  }
+
+  @Test
+  public void deleteStateNullEtag() {
+    String key = "key1";
+    String etag = null;
+    ArgumentCaptor<DaprProtos.DeleteStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.DeleteStateRequest.class);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).deleteState(argument.capture(), any());
+
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    Mono<Void> result = client.deleteState(STATE_STORE_NAME, key, etag, options);
+
+    result.block();
+    assertFalse(argument.getValue().hasEtag());
   }
 
   @Test
