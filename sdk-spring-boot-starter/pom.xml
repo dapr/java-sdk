@@ -13,7 +13,7 @@
   <artifactId>dapr-spring-boot-starter</artifactId>
   <packaging>jar</packaging>
   <name>${project.artifactId}</name>
-  <description>Dapr Springboot Starter</description>
+  <description>Dapr Spring Boot Starter</description>
 
   <repositories>
     <repository>
@@ -31,18 +31,6 @@
     <springboot.version>2.3.5.RELEASE</springboot.version>
   </properties>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${springboot.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>io.dapr</groupId>
@@ -52,11 +40,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
+      <version>${springboot.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-configuration-processor</artifactId>
+      <version>${springboot.version}</version>
       <scope>compile</scope>
       <optional>true</optional>
     </dependency>
