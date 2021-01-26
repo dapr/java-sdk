@@ -270,8 +270,8 @@
     <module>sdk</module>
     <module>sdk-actors</module>
     <module>sdk-springboot</module>
+    <module>sdk-spring-boot-starter</module>
     <module>examples</module>
-    <module>dapr-spring-boot-starter</module>
   </modules>
 
 </project>
