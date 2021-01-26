@@ -80,9 +80,25 @@ public class StateClient {
         retrievedMessagesMono.block().forEach(System.out::println);
   
         System.out.println("Deleting states...");
-  
+
+        System.out.println("Verify delete key request is aborted if an etag different from stored is passed.");
         // delete state API
-        Mono<Void> mono = client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME);
+        try {
+          Mono<Void> mono = client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, "100", null);
+          mono.block();
+        } catch (DaprException ex) {
+          if (ex.getErrorCode().equals(Status.Code.ABORTED.toString())) {
+            // Expected error due to etag mismatch.
+            System.out.println(String.format("Expected failure. %s ", ex.getMessage()));
+          } else {
+            System.out.println("Unexpected exception.");
+            throw ex;
+          }
+        }
+
+        System.out.println("Trying to delete again with correct etag.");
+        String storedEtag = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class).block().getEtag();
+        Mono<Void> mono = client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, storedEtag, null);
         mono.block();
   
         // Delete operation using transaction API
@@ -112,7 +128,7 @@ This example performs multiple operations:
 * `client.getState(...)` operation in order to retrieve back the persisted state using the same key. 
 * `client.executeStateTransaction(...)` operation in order to update existing state and add new state. 
 * `client.getBulkState(...)` operation in order to retrieve back the persisted states using the same keys.
-* `client.deleteState(...)` operation to remove  one of the persisted states. 
+* `client.deleteState(...)` operation to remove  one of the persisted states. An example of etag mismatch error if a different than current etag is added to request.
 * `client.executeStateTransaction(...)` operation in order to remove the other persisted state.
 
 Finally, the code tries to retrieve the deleted states, which should not be found. 
