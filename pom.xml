@@ -272,6 +272,7 @@
     <module>sdk-springboot</module>
     <module>sdk-spring-boot-starter</module>
     <module>examples</module>
+    <module>examples-boot-native</module>
   </modules>
 
 </project>
