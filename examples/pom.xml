@@ -173,7 +173,7 @@
               <goal>repackage</goal>
             </goals>
             <configuration>
-              <mainClass>io.dapr.springboot.DaprMainApplication</mainClass>
+              <mainClass>io.dapr.examples.DaprMainApplication</mainClass>
               <classifier>exec</classifier>
               <finalName>dapr-java-sdk-examples</finalName>
             </configuration>

@@ -139,4 +139,4 @@ Once running, the output should display the messages sent from invoker in the de
 
 Method have been remotely invoked and displaying the remote messages.
 
-For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java) Application implementation.
+For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java) Application implementation.

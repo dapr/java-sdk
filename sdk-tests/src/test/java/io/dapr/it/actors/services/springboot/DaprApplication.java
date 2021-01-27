@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Dapr's HTTP callback implementation via SpringBoot.
  */
-@SpringBootApplication(scanBasePackages = {"io.dapr.springboot", "io.dapr.it.actors.services.springboot"})
+@SpringBootApplication
 public class DaprApplication {
 
   /**

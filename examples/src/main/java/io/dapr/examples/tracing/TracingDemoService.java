@@ -5,7 +5,8 @@
 
 package io.dapr.examples.tracing;
 
-import io.dapr.springboot.DaprApplication;
+import io.dapr.examples.DaprApplication;
+import io.dapr.examples.OpenTelemetryInterceptor;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -14,7 +15,7 @@ import org.apache.commons.cli.Options;
 /**
  * Main method to invoke DemoService to test tracing.
  *
- * <p>Instrumentation is handled in {@link io.dapr.springboot.OpenTelemetryInterceptor}.
+ * <p>Instrumentation is handled in {@link OpenTelemetryInterceptor}.
  *
  * <p>1. Build and install jars:
  * mvn clean install

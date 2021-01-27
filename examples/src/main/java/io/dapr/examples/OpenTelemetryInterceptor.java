@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.springboot;
+package io.dapr.examples;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;

@@ -160,7 +160,7 @@ public class TracingDemoMiddleServiceController {
 }
 ```
 
-The request attribute `opentelemetry-context` in created by parsing the tracing headers in the [OpenTelemetryInterceptor](../../springboot/OpenTelemetryInterceptor.java) class. See the code below:
+The request attribute `opentelemetry-context` in created by parsing the tracing headers in the [OpenTelemetryInterceptor](../OpenTelemetryInterceptor.java) class. See the code below:
 
 ```java
 @Component

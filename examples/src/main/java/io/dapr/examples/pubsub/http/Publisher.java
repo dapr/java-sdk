@@ -9,9 +9,6 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Metadata;
 
-import java.io.IOException;
-import java.util.Collections;
-
 import static java.util.Collections.singletonMap;
 
 /**

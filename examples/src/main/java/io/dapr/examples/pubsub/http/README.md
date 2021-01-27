@@ -243,4 +243,4 @@ No message is consumed by the subscriber app and warnings messages are emitted f
 
 ```
 
-For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java) Application implementation.
+For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java) Application implementation.

@@ -10,7 +10,7 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.InvokeMethodRequestBuilder;
-import io.dapr.springboot.OpenTelemetryConfig;
+import io.dapr.examples.OpenTelemetryConfig;
 import io.dapr.utils.TypeRef;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;

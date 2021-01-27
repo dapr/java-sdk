@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.springboot;
+package io.dapr.examples;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
