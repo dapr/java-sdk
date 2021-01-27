@@ -9,6 +9,8 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.exceptions.DaprException;
+import io.grpc.Status;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -84,16 +86,28 @@ public class StateClient {
 
       System.out.println("Deleting states...");
 
+      System.out.println("Verify delete key request is aborted if an etag different from stored is passed.");
       // delete state API
-      Mono<Void> mono = client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME);
-      mono.block();
+      try {
+        client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, "100", null).block();
+      } catch (DaprException ex) {
+        if (ex.getErrorCode().equals(Status.Code.ABORTED.toString())) {
+          // Expected error due to etag mismatch.
+          System.out.println(String.format("Expected failure. %s ", ex.getMessage()));
+        } else {
+          System.out.println("Unexpected exception.");
+          throw ex;
+        }
+      }
 
+      System.out.println("Trying to delete again with correct etag.");
+      String storedEtag = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class).block().getEtag();
+      client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, storedEtag, null).block();
       // Delete operation using transaction API
       operationList.clear();
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.DELETE,
           new State<>(SECOND_KEY_NAME)));
-      mono = client.executeStateTransaction(STATE_STORE_NAME, operationList);
-      mono.block();
+      client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
 
       Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
