@@ -9,6 +9,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.InvokeMethodRequestBuilder;
+import io.dapr.examples.OpenTelemetryInterceptor;
 import io.dapr.utils.TypeRef;
 import io.opentelemetry.context.Context;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ import reactor.core.publisher.Mono;
 /**
  * SpringBoot Controller to handle service invocation.
  *
- * <p>Instrumentation is handled in {@link io.dapr.springboot.OpenTelemetryInterceptor}.
+ * <p>Instrumentation is handled in {@link OpenTelemetryInterceptor}.
  */
 @RestController
 public class TracingDemoMiddleServiceController {
