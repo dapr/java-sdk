@@ -8,6 +8,7 @@ package io.dapr.serializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
+import io.dapr.v1.CommonProtos;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -391,6 +392,19 @@ public class DefaultObjectSerializerTest {
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
+  }
+
+  @Test
+  public void serializeProtoTest() throws Exception {
+    CommonProtos.Etag valueToSerialize = CommonProtos.Etag.newBuilder().setValue("myValue").build();
+    String expectedSerializedBase64Value = "CgdteVZhbHVl";
+
+    byte[] serializedValue = SERIALIZER.serialize(valueToSerialize);
+    assertEquals(expectedSerializedBase64Value, Base64.getEncoder().encodeToString(serializedValue));
+    assertNotNull(serializedValue);
+    CommonProtos.Etag deserializedValue = SERIALIZER.deserialize(serializedValue, CommonProtos.Etag.class);
+    assertEquals(valueToSerialize.getValue(), deserializedValue.getValue());
+    assertEquals(valueToSerialize, deserializedValue);
   }
 
   @Test

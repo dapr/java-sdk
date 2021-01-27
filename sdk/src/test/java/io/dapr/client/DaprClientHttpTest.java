@@ -14,6 +14,7 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprException;
 import io.dapr.utils.TypeRef;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
@@ -189,13 +190,80 @@ public class DaprClientHttpTest {
     });
   }
 
+  @Test
+  public void invokeServiceDaprError() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+        .respond(500,
+            ResponseBody.create(
+                "{ \"errorCode\": \"MYCODE\", \"message\": \"My Message\"}",
+                MediaTypes.MEDIATYPE_JSON));
+
+    DaprException exception = assertThrows(DaprException.class, () -> {
+      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+    });
+
+    assertEquals("MYCODE", exception.getErrorCode());
+    assertEquals("MYCODE: My Message", exception.getMessage());
+  }
+
+  @Test
+  public void invokeServiceDaprErrorFromGRPC() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+        .respond(500,
+            ResponseBody.create(
+                "{ \"code\": 7 }",
+                MediaTypes.MEDIATYPE_JSON));
+
+    DaprException exception = assertThrows(DaprException.class, () -> {
+      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+    });
+
+    assertEquals("PERMISSION_DENIED", exception.getErrorCode());
+    assertEquals("PERMISSION_DENIED: HTTP status code: 500", exception.getMessage());
+  }
+
+  @Test
+  public void invokeServiceDaprErrorUnknownJSON() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+        .respond(500,
+            ResponseBody.create(
+                "{ \"anything\": 7 }",
+                MediaTypes.MEDIATYPE_JSON));
+
+    DaprException exception = assertThrows(DaprException.class, () -> {
+      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+    });
+
+    assertEquals("UNKNOWN", exception.getErrorCode());
+    assertEquals("UNKNOWN: { \"anything\": 7 }", exception.getMessage());
+  }
+
+  @Test
+  public void invokeServiceDaprErrorEmptyString() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+        .respond(500,
+            ResponseBody.create(
+                "",
+                MediaTypes.MEDIATYPE_JSON));
+
+    DaprException exception = assertThrows(DaprException.class, () -> {
+      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+    });
+
+    assertEquals("UNKNOWN", exception.getErrorCode());
+    assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
+  }
+
 
   @Test
   public void invokeServiceMethodNull() {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
-    String event = "{ \"message\": \"This is a test\" }";
 
     assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.invokeMethod("1", "", null, HttpExtension.POST, null, (Class)null).block());
@@ -337,7 +405,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingResponseNull() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
         .respond(new byte[0]);
@@ -348,7 +415,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingResponseObject() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("\"OK\"");
@@ -370,7 +436,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingResponseFloat() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("1.5");
@@ -381,7 +446,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingResponseChar() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("\"a\"");
@@ -392,7 +456,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingResponseByte() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("\"2\"");
@@ -403,7 +466,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingResponseLong() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("1");
@@ -414,7 +476,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingResponseInt() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("1");
@@ -425,7 +486,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingNullName() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond(EXPECTED_RESULT);
@@ -436,7 +496,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeBindingNullOpName() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond(EXPECTED_RESULT);
@@ -447,7 +506,6 @@ public class DaprClientHttpTest {
 
   @Test
   public void bindingNoHotMono() {
-    Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
         .respond(EXPECTED_RESULT);

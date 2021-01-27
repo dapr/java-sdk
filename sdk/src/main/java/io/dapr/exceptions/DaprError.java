@@ -5,9 +5,13 @@
 
 package io.dapr.exceptions;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import io.grpc.Status;
+
 /**
  * Represents an error message from Dapr.
  */
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class DaprError {
 
   /**
@@ -21,11 +25,19 @@ public class DaprError {
   private String message;
 
   /**
+   * Error code from gRPC.
+   */
+  private Integer code;
+
+  /**
    * Gets the error code.
    *
    * @return Error code.
    */
   public String getErrorCode() {
+    if ((errorCode == null) && (code != null)) {
+      return Status.fromCodeValue(code).getCode().name();
+    }
     return errorCode;
   }
 

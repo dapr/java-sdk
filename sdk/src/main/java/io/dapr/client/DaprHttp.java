@@ -5,7 +5,6 @@
 
 package io.dapr.client;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
@@ -308,14 +307,14 @@ public class DaprHttp implements AutoCloseable {
    * @param json Response body from Dapr.
    * @return DaprError or null if could not parse.
    */
-  private static DaprError parseDaprError(byte[] json) throws IOException {
+  private static DaprError parseDaprError(byte[] json) {
     if ((json == null) || (json.length == 0)) {
       return null;
     }
 
     try {
       return OBJECT_MAPPER.readValue(json, DaprError.class);
-    } catch (JsonParseException e) {
+    } catch (IOException e) {
       throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
     }
   }
@@ -347,14 +346,24 @@ public class DaprHttp implements AutoCloseable {
     @Override
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
       if (!response.isSuccessful()) {
-        DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
-        if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-          future.completeExceptionally(new DaprException(error));
+        try {
+          DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
+          if ((error != null) && (error.getErrorCode() != null)) {
+            if (error.getMessage() != null) {
+              future.completeExceptionally(new DaprException(error));
+            } else {
+              future.completeExceptionally(
+                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code()));
+            }
+            return;
+          }
+
+          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
+          return;
+        } catch (DaprException e) {
+          future.completeExceptionally(e);
           return;
         }
-
-        future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
-        return;
       }
 
       Map<String, String> mapHeaders = new HashMap<>();
