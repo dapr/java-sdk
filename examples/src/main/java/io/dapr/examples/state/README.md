@@ -84,8 +84,7 @@ public class StateClient {
         System.out.println("Verify delete key request is aborted if an etag different from stored is passed.");
         // delete state API
         try {
-          Mono<Void> mono = client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, "100", null);
-          mono.block();
+          client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, "100", null).block();
         } catch (DaprException ex) {
           if (ex.getErrorCode().equals(Status.Code.ABORTED.toString())) {
             // Expected error due to etag mismatch.
@@ -98,15 +97,13 @@ public class StateClient {
 
         System.out.println("Trying to delete again with correct etag.");
         String storedEtag = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class).block().getEtag();
-        Mono<Void> mono = client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, storedEtag, null);
-        mono.block();
+        client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, storedEtag, null).block();
   
         // Delete operation using transaction API
         operationList.clear();
         operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.DELETE,
             new State<>(SECOND_KEY_NAME)));
-        mono = client.executeStateTransaction(STATE_STORE_NAME, operationList);
-        mono.block();
+        client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
   
         Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getStates(STATE_STORE_NAME,
             Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
