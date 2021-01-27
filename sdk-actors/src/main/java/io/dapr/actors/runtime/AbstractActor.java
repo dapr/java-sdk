@@ -114,7 +114,7 @@ public abstract class AbstractActor {
     try {
       byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
       ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
-      return this.actorRuntimeContext.getDaprClient().registerActorReminder(
+      return this.actorRuntimeContext.getDaprClient().registerReminder(
             this.actorRuntimeContext.getActorTypeInformation().getName(),
             this.id.toString(),
             reminderName,
@@ -157,7 +157,7 @@ public abstract class AbstractActor {
       byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
       ActorTimerParams actorTimer = new ActorTimerParams(callback, data, dueTime, period);
 
-      return this.actorRuntimeContext.getDaprClient().registerActorTimer(
+      return this.actorRuntimeContext.getDaprClient().registerTimer(
           this.actorRuntimeContext.getActorTypeInformation().getName(),
           this.id.toString(),
           name,
@@ -174,7 +174,7 @@ public abstract class AbstractActor {
    * @return Asynchronous void response.
    */
   protected Mono<Void> unregisterTimer(String timerName) {
-    return this.actorRuntimeContext.getDaprClient().unregisterActorTimer(
+    return this.actorRuntimeContext.getDaprClient().unregisterTimer(
                 this.actorRuntimeContext.getActorTypeInformation().getName(),
                 this.id.toString(),
                 timerName);
@@ -187,7 +187,7 @@ public abstract class AbstractActor {
    * @return Asynchronous void response.
    */
   protected Mono<Void> unregisterReminder(String reminderName) {
-    return this.actorRuntimeContext.getDaprClient().unregisterActorReminder(
+    return this.actorRuntimeContext.getDaprClient().unregisterReminder(
           this.actorRuntimeContext.getActorTypeInformation().getName(),
           this.id.toString(),
           reminderName);

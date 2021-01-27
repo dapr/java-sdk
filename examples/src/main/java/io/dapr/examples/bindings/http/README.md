@@ -170,4 +170,4 @@ For bringing down the kafka cluster that was started in the beginning, run
 docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml down
 ```
 
-For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java)  Application implementation.
+For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java)  Application implementation.

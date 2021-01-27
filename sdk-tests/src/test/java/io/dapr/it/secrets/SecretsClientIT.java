@@ -9,8 +9,6 @@ import com.bettercloud.vault.Vault;
 import com.bettercloud.vault.VaultConfig;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprClientGrpc;
-import io.dapr.client.DaprClientHttp;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.After;
@@ -20,14 +18,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test Secrets Store APIs using Harshicorp's vault.
@@ -80,7 +79,7 @@ public class SecretsClientIT extends BaseIT {
   }
 
   @Before
-  public void setup() throws Exception {
+  public void setup() {
     if (this.useGrpc) {
       daprRun.switchToGRPC();
     } else {
@@ -88,11 +87,6 @@ public class SecretsClientIT extends BaseIT {
     }
 
     this.daprClient = new DaprClientBuilder().build();
-    if (this.useGrpc) {
-      assertEquals(DaprClientGrpc.class, this.daprClient.getClass());
-    } else {
-      assertEquals(DaprClientHttp.class, this.daprClient.getClass());
-    }
   }
 
   @After
@@ -112,6 +106,26 @@ public class SecretsClientIT extends BaseIT {
     assertEquals("The Metrics IV", data.get("title"));
   }
 
+  @Test
+  public void getBulkSecret() throws Exception {
+    String key1 = UUID.randomUUID().toString();
+    writeSecret(key1, new HashMap<>() {{
+      put("title", "The Metrics IV");
+      put("year", "2020");
+    }});
+    String key2 = UUID.randomUUID().toString();
+    writeSecret(key2, "name", "Jon Doe");
+
+    Map<String, Map<String, String>> data = daprClient.getBulkSecret(SECRETS_STORE_NAME).block();
+    // There can be other keys from other runs or test cases, so we are good with at least two.
+    assertTrue(data.size() >= 2);
+    assertEquals(2, data.get(key1).size());
+    assertEquals("The Metrics IV", data.get(key1).get("title"));
+    assertEquals("2020", data.get(key1).get("year"));
+    assertEquals(1, data.get(key2).size());
+    assertEquals("Jon Doe", data.get(key2).get("name"));
+  }
+
   @Test(expected = RuntimeException.class)
   public void getSecretKeyNotFound() {
     daprClient.getSecret(SECRETS_STORE_NAME, "unknownKey").block();
@@ -123,7 +137,10 @@ public class SecretsClientIT extends BaseIT {
   }
 
   private static void writeSecret(String secretName, String key, String value) throws Exception {
-    Map<String, Object> secrets = Collections.singletonMap(key, value);
+    writeSecret(secretName, Collections.singletonMap(key, value));
+  }
+
+  private static void writeSecret(String secretName, Map<String, Object> secrets) throws Exception {
     vault.logical().write("secret/" + PREFIX + "/" + secretName, secrets);
   }
 

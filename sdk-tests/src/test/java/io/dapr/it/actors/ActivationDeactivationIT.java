@@ -38,7 +38,7 @@ public class ActivationDeactivationIT extends BaseIT {
 
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     logger.debug("Creating proxy builder");
-    ActorProxyBuilder<DemoActor> proxyBuilder = deferClose(new ActorProxyBuilder(DemoActor.class));
+    ActorProxyBuilder<DemoActor> proxyBuilder = new ActorProxyBuilder(DemoActor.class, newActorClient());
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     logger.debug("Building proxy");

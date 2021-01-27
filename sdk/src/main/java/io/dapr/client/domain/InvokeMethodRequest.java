@@ -7,20 +7,16 @@ package io.dapr.client.domain;
 
 import io.opentelemetry.context.Context;
 
-import java.util.Map;
-
 /**
  * A request to invoke a service.
  */
-public class InvokeServiceRequest {
+public class InvokeMethodRequest {
 
   private String appId;
 
   private String method;
 
   private Object body;
-
-  private Map<String, String> metadata;
 
   private HttpExtension httpExtension;
 
@@ -50,14 +46,6 @@ public class InvokeServiceRequest {
 
   void setBody(Object body) {
     this.body = body;
-  }
-
-  public Map<String, String> getMetadata() {
-    return metadata;
-  }
-
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
   }
 
   public HttpExtension getHttpExtension() {

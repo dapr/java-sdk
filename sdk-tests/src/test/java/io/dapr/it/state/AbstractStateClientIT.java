@@ -18,12 +18,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
-import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Common test cases for Dapr client (GRPC and HTTP).
@@ -74,13 +71,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     Assert.assertNotNull(state);
     Assert.assertEquals("unknownKey", state.getKey());
     Assert.assertNull(state.getValue());
-    // gRPC returns empty eTag while HTTP returns null.
-    // TODO(artursouza): https://github.com/dapr/java-sdk/issues/405
-    Assert.assertTrue(state.getEtag() == null || state.getEtag().isEmpty());
+    Assert.assertNull(state.getEtag());
   }
 
   @Test
-  public void saveAndGetBulkStates() {
+  public void saveAndGetBulkState() {
     final String stateKeyOne = UUID.randomUUID().toString();
     final String stateKeyTwo = UUID.randomUUID().toString();
     final String stateKeyThree = "NotFound";
@@ -97,7 +92,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     //retrieves states in bulk.
     Mono<List<State<MyData>>> response =
-        daprClient.getStates(STATE_STORE_NAME, Arrays.asList(stateKeyOne, stateKeyTwo, stateKeyThree), MyData.class);
+        daprClient.getBulkState(STATE_STORE_NAME, Arrays.asList(stateKeyOne, stateKeyTwo, stateKeyThree), MyData.class);
     List<State<MyData>> result = response.block();
 
     //Assert that the response is the correct one
@@ -114,8 +109,8 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     assertEquals(stateKeyThree, result.stream().skip(2).findFirst().get().getKey());
     assertNull(result.stream().skip(2).findFirst().get().getValue());
-    assertEquals("", result.stream().skip(2).findFirst().get().getEtag());
-    assertNull("not found", result.stream().skip(2).findFirst().get().getError());
+    assertNull(result.stream().skip(2).findFirst().get().getEtag());
+    assertNull(result.stream().skip(2).findFirst().get().getError());
   }
 
   @Test
@@ -519,7 +514,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
         createState(stateKey, null, null, data));
 
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> saveResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> saveResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the save action
     saveResponse.block();
 
@@ -538,7 +533,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
         TransactionalStateOperation.OperationType.DELETE,
         createState(stateKey, null, null, data));
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> deleteResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> deleteResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the delete action
     deleteResponse.block();
 
@@ -568,7 +563,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     Assert.assertNotNull(daprClient);
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> saveResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> saveResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the save action
     saveResponse.block();
 
@@ -589,7 +584,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
         TransactionalStateOperation.OperationType.DELETE,
         createState(stateKey, null, null, data));
     //create of the deferred call to DAPR to execute the transaction
-    Mono<Void> deleteResponse = daprClient.executeTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
+    Mono<Void> deleteResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the delete action
     deleteResponse.block();
 

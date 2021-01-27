@@ -105,6 +105,8 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
 An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`. The `DemoActor` interface is used by the Actor runtime and also client. See how `DemoActor` interface can be annotated as Dapr Actor.
 
 ```java
+import io.dapr.actors.ActorMethod;
+
 /**
  * Example of implementation of an Actor.
  */
@@ -113,6 +115,7 @@ public interface DemoActor {
 
   void registerReminder();
 
+  @ActorMethod(name = "echo_message")
   String say(String something);
 
   void clock(String message);
@@ -123,7 +126,10 @@ public interface DemoActor {
 
 ```
 
-The `@ActorType` annotation indicates the Dapr Java SDK that this interface is an Actor Type, allowing a name for the type to be defined. Some methods can return a `Mono` object. In these cases, the `@ActorMethod` annotation is used to hint the Dapr Java SDK of the type encapsulated in the `Mono` object. You can read more about Java generic type erasure [here](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html).  
+The `@ActorType` annotation indicates the Dapr Java SDK that this interface is an Actor Type, allowing a name for the type to be defined. 
+
+The `@ActorMethod` annotation can be applied to an interface method to specify configuration for that method. In this example, the `say` method, is renamed to `echo_message` - this can be used when invoking an actor method implemented in a different programming language (like C# or Python) and the method name does not match Java's naming conventions.
+Some methods can return a `Mono` object. In these cases, the `@ActorMethod` annotation is used to hint the Dapr Java SDK of the type encapsulated in the `Mono` object. You can read more about Java generic type erasure [here](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html).  
 
 
 Now, execute the following script in order to run DemoActorService:
@@ -143,7 +149,8 @@ public class DemoActorClient {
   private static final int NUM_ACTORS = 3;
 
   public static void main(String[] args) throws InterruptedException {
-    try (ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class)) {
+    try (ActorClient client = new ActorClient()) {
+      ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class, client);
       ///...
       for (int i = 0; i < NUM_ACTORS; i++) {
         DemoActor actor = builder.build(ActorId.createRandom());
@@ -183,7 +190,7 @@ public class DemoActorClient {
 }
 ```
 
-First, the client defines how many actors it is going to create. The main method declares a `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. `ActorProxyBuilder` implements `Closeable`, which means it holds resources that need to be closed. In this example, we use the "try-resource" feature in Java.
+First, the client defines how many actors it is going to create. The main method declares a `ActorClient` and `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. `ActorClient` is reusable for different actor types and should be instantiated only once in your code. `ActorClient` also implements `AutoCloseable`, which means it holds resources that need to be closed. In this example, we use the "try-resource" feature in Java.
 
 Then, the code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
 

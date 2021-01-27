@@ -66,7 +66,7 @@ class DaprGrpcClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<byte[]> getActorState(String actorType, String actorId, String keyName) {
+  public Mono<byte[]> getState(String actorType, String actorId, String keyName) {
     return Mono.fromCallable(() -> {
       DaprProtos.GetActorStateRequest req =
           DaprProtos.GetActorStateRequest.newBuilder()
@@ -84,7 +84,7 @@ class DaprGrpcClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> saveActorStateTransactionally(
+  public Mono<Void> saveStateTransactionally(
       String actorType,
       String actorId,
       List<ActorStateOperation> operations) {
@@ -134,7 +134,7 @@ class DaprGrpcClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> registerActorReminder(
+  public Mono<Void> registerReminder(
       String actorType,
       String actorId,
       String reminderName,
@@ -160,7 +160,7 @@ class DaprGrpcClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> unregisterActorReminder(String actorType, String actorId, String reminderName) {
+  public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
     return Mono.fromCallable(() -> {
       DaprProtos.UnregisterActorReminderRequest req =
           DaprProtos.UnregisterActorReminderRequest.newBuilder()
@@ -179,7 +179,7 @@ class DaprGrpcClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> registerActorTimer(
+  public Mono<Void> registerTimer(
       String actorType,
       String actorId,
       String timerName,
@@ -206,7 +206,7 @@ class DaprGrpcClient implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> unregisterActorTimer(String actorType, String actorId, String timerName) {
+  public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
     return Mono.fromCallable(() -> {
       DaprProtos.UnregisterActorTimerRequest req =
           DaprProtos.UnregisterActorTimerRequest.newBuilder()

@@ -6,8 +6,8 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
+import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequestBuilder;
-import io.dapr.client.domain.GetStatesRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
@@ -26,6 +26,8 @@ import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
+import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -51,7 +54,7 @@ public class DaprClientHttpTest {
   private final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
-  private DaprClientHttp daprClientHttp;
+  private DaprClient daprClientHttp;
 
   private DaprHttp daprHttp;
 
@@ -63,6 +66,36 @@ public class DaprClientHttpTest {
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprClientHttp = new DaprClientProxy(new DaprClientHttp(daprHttp));
+  }
+
+  @Test
+  public void waitForSidecarTimeout() throws Exception {
+    int port = findFreePort();
+    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+    assertThrows(RuntimeException.class, () -> daprClientHttp.waitForSidecar(1).block());
+  }
+
+  @Test
+  public void waitForSidecarTimeoutOK() throws Exception {
+    try (ServerSocket serverSocket = new ServerSocket(0)) {
+      final int port = serverSocket.getLocalPort();
+      System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+      Thread t = new Thread(() -> {
+        try {
+            try (Socket socket = serverSocket.accept()) {
+            }
+        } catch (IOException e) {
+        }
+      });
+      t.start();
+      daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+      DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+      daprClientHttp.waitForSidecar(10000).block();
+    }
   }
 
   @Test
@@ -83,8 +116,7 @@ public class DaprClientHttpTest {
       .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname","A", event);
     assertNull(mono.block());
   }
@@ -92,11 +124,10 @@ public class DaprClientHttpTest {
   @Test
   public void publishEventIfTopicIsNullOrEmpty() {
     String event = "{ \"message\": \"This is a test\" }";
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
+
+    assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.publishEvent("mypubsubname", null, event).block());
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
+    assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.publishEvent("mypubsubname", "", event).block());
   }
 
@@ -106,8 +137,7 @@ public class DaprClientHttpTest {
         .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
         .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     daprClientHttp.publishEvent("mypubsubname", "", event);
     // Should not throw exception because did not call block() on mono above.
   }
@@ -118,10 +148,9 @@ public class DaprClientHttpTest {
       .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeService(null, "", "", null, null, (Class)null).block());
+
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.invokeMethod(null, "", "", null, null, (Class)null).block());
   }
 
   @Test
@@ -129,35 +158,34 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/invoke/41/method/badorder")
         .respond("INVALID JSON");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+
+    assertThrows(IllegalArgumentException.class, () -> {
       // null HttpMethod
-      daprClientHttp.invokeService("1", "2", "3", new HttpExtension(null, null), null, (Class)null).block();
+      daprClientHttp.invokeMethod("1", "2", "3", new HttpExtension(null), null, (Class)null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null HttpExtension
-      daprClientHttp.invokeService("1", "2", "3", null, null, (Class)null).block();
+      daprClientHttp.invokeMethod("1", "2", "3", null, null, (Class)null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty appId
-      daprClientHttp.invokeService("", "1", null, HttpExtension.GET, null, (Class)null).block();
+      daprClientHttp.invokeMethod("", "1", null, HttpExtension.GET, null, (Class)null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null appId, empty method
-      daprClientHttp.invokeService(null, "", null, HttpExtension.POST, null, (Class)null).block();
+      daprClientHttp.invokeMethod(null, "", null, HttpExtension.POST, null, (Class)null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // empty method
-      daprClientHttp.invokeService("1", "", null, HttpExtension.PUT, null, (Class)null).block();
+      daprClientHttp.invokeMethod("1", "", null, HttpExtension.PUT, null, (Class)null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       // null method
-      daprClientHttp.invokeService("1", null, null, HttpExtension.DELETE, null, (Class)null).block();
+      daprClientHttp.invokeMethod("1", null, null, HttpExtension.DELETE, null, (Class)null).block();
     });
     assertThrowsDaprException(JsonParseException.class, () -> {
       // invalid JSON response
-      daprClientHttp.invokeService("41", "badorder", null, HttpExtension.GET, null, String.class).block();
+      daprClientHttp.invokeMethod("41", "badorder", null, HttpExtension.GET, null, String.class).block();
     });
   }
 
@@ -168,10 +196,9 @@ public class DaprClientHttpTest {
       .post("http://127.0.0.1:3000/v1.0/publish/A")
       .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeService("1", "", null, HttpExtension.POST, null, (Class)null).block());
+
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.invokeMethod("1", "", null, HttpExtension.POST, null, (Class)null).block());
   }
 
   @Test
@@ -179,9 +206,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
         .respond("\"hello world\"");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<String> mono = daprClientHttp.invokeService("41", "neworder", null, HttpExtension.GET, null, String.class);
+
+    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
     assertEquals("hello world", mono.block());
   }
 
@@ -190,9 +216,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
         .respond(new byte[0]);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<String> mono = daprClientHttp.invokeService("41", "neworder", null, HttpExtension.GET, null, String.class);
+
+    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
     assertNull(mono.block());
   }
 
@@ -201,9 +226,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<byte[]> mono = daprClientHttp.invokeService("41", "neworder", null, HttpExtension.GET, byte[].class);
+
+    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, byte[].class);
     assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
@@ -213,9 +237,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<byte[]> mono = daprClientHttp.invokeService("41", "neworder", (byte[]) null, HttpExtension.GET, map);
+
+    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", (byte[]) null, HttpExtension.GET, map);
     String monoString = new String(mono.block());
     assertEquals(monoString, EXPECTED_RESULT);
   }
@@ -226,9 +249,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.invokeService("41", "neworder", HttpExtension.GET, map);
+
+    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", HttpExtension.GET, map);
     assertNull(mono.block());
   }
 
@@ -238,9 +260,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.invokeService("41", "neworder", "", HttpExtension.GET, map);
+
+    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
     assertNull(mono.block());
   }
 
@@ -250,12 +271,11 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder?test=1")
         .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Map<String, String> queryString = new HashMap<>();
     queryString.put("test", "1");
-    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString);
-    Mono<Void> mono = daprClientHttp.invokeService("41", "neworder", "", httpExtension, map);
+    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString, null);
+    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", httpExtension, map);
     assertNull(mono.block());
   }
 
@@ -265,9 +285,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
         .respond(500);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    daprClientHttp.invokeService("41", "neworder", "", HttpExtension.GET, map);
+
+    daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
     // No exception should be thrown because did not call block() on mono above.
   }
 
@@ -277,8 +296,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
         .respond("");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "");
     assertNull(mono.block());
   }
@@ -289,8 +307,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
         .respond("");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", null);
     assertNull(mono.block());
   }
@@ -300,18 +317,17 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
         .respond("NOT VALID JSON");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.invokeBinding(null, "myoperation", "").block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.invokeBinding("", "myoperation", "").block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.invokeBinding("topic", null, "").block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.invokeBinding("topic", "", "").block();
     });
     assertThrowsDaprException(JsonParseException.class, () -> {
@@ -325,8 +341,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
         .respond(new byte[0]);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
     assertNull(mono.block());
   }
@@ -337,8 +352,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("\"OK\"");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
     assertEquals("OK", mono.block());
   }
@@ -349,8 +363,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("1.5");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Double> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", map, double.class);
     assertEquals(1.5, mono.block(), 0.0001);
   }
@@ -361,8 +374,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("1.5");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Float> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, float.class);
     assertEquals(1.5, mono.block(), 0.0001);
   }
@@ -373,8 +385,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("\"a\"");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Character> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, char.class);
     assertEquals('a', (char)mono.block());
   }
@@ -385,8 +396,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("\"2\"");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Byte> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, byte.class);
     assertEquals((byte)0x2, (byte)mono.block());
   }
@@ -397,8 +407,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("1");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Long> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, long.class);
     assertEquals(1, (long)mono.block());
   }
@@ -409,8 +418,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond("1");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Integer> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, int.class);
     assertEquals(1, (int)mono.block());
   }
@@ -421,9 +429,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
+
+    assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.invokeBinding(null, "myoperation", "").block());
   }
 
@@ -433,9 +440,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
+
+    assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.invokeBinding("sample-topic", null, "").block());
   }
 
@@ -445,8 +451,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
         .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     daprClientHttp.invokeBinding(null, "", "");
     // No exception is thrown because did not call block() on mono above.
   }
@@ -456,28 +461,27 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
         .respond("NOT VALID JSON");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
-      daprClientHttp.getStates(STATE_STORE_NAME, null, String.class).block();
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getBulkState(STATE_STORE_NAME, null, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
-      daprClientHttp.getStates(STATE_STORE_NAME, new ArrayList<>(), String.class).block();
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getBulkState(STATE_STORE_NAME, new ArrayList<>(), String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
-      daprClientHttp.getStates(null, Arrays.asList("100", "200"), String.class).block();
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getBulkState(null, Arrays.asList("100", "200"), String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
-      daprClientHttp.getStates("", Arrays.asList("100", "200"), String.class).block();
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getBulkState("", Arrays.asList("100", "200"), String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
-      daprClientHttp.getStates(
-          new GetStatesRequestBuilder(STATE_STORE_NAME, "100").withParallelism(-1).build(),
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getBulkState(
+          new GetBulkStateRequestBuilder(STATE_STORE_NAME, "100").withParallelism(-1).build(),
           TypeRef.get(String.class)).block();
     });
     assertThrowsDaprException(JsonParseException.class, () -> {
-      daprClientHttp.getStates(
-          new GetStatesRequestBuilder(STATE_STORE_NAME, "100").build(),
+      daprClientHttp.getBulkState(
+          new GetBulkStateRequestBuilder(STATE_STORE_NAME, "100").build(),
           TypeRef.get(String.class)).block();
     });
   }
@@ -488,10 +492,9 @@ public class DaprClientHttpTest {
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
         .respond("[{\"key\": \"100\", \"data\": \"hello world\", \"etag\": \"1\"}," +
             "{\"key\": \"200\", \"error\": \"not found\"}]");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     List<State<String>> result =
-        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals("hello world", result.stream().findFirst().get().getValue());
@@ -509,10 +512,9 @@ public class DaprClientHttpTest {
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
         .respond("[{\"key\": \"100\", \"data\": 1234, \"etag\": \"1\"}," +
             "{\"key\": \"200\", \"error\": \"not found\"}]");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     List<State<Integer>> result =
-        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
+        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals(1234, (int)result.stream().findFirst().get().getValue());
@@ -531,10 +533,9 @@ public class DaprClientHttpTest {
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
         .respond("[{\"key\": \"100\", \"data\": true, \"etag\": \"1\"}," +
             "{\"key\": \"200\", \"error\": \"not found\"}]");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     List<State<Boolean>> result =
-        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
+        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
     assertNotNull(result);
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -555,12 +556,11 @@ public class DaprClientHttpTest {
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
         .respond("[{\"key\": \"100\", \"data\": \"" + base64Value + "\", \"etag\": \"1\"}," +
             "{\"key\": \"200\", \"error\": \"not found\"}]");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
     // So, users should use String instead of byte[].
     List<State<String>> result =
-        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals(base64Value, result.stream().findFirst().get().getValue());
@@ -580,12 +580,11 @@ public class DaprClientHttpTest {
         .respond("[{\"key\": \"100\", \"data\": " +
             "{ \"id\": \"" + object.id + "\", \"value\": \"" + object.value + "\"}, \"etag\": \"1\"}," +
             "{\"key\": \"200\", \"error\": \"not found\"}]");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
     // So, users should use String instead of byte[].
     List<State<MyObject>> result =
-        daprClientHttp.getStates(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
+        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
     assertEquals(object, result.stream().findFirst().get().getValue());
@@ -610,18 +609,17 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/keyBadPayload")
         .respond("NOT VALID");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getState(STATE_STORE_NAME, stateKeyNull, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getState(STATE_STORE_NAME, stateKeyEmpty, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getState(null, stateKeyValue, String.class).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getState("", stateKeyValue, String.class).block();
     });
     assertThrowsDaprException(JsonParseException.class, () -> {
@@ -639,10 +637,10 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond("\"" + EXPECTED_RESULT + "\"");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<State<String>> monoEmptyEtag = daprClientHttp.getState(STATE_STORE_NAME, stateEmptyEtag, String.class);
-    assertEquals(monoEmptyEtag.block().getKey(), "key");
+
+    State<String> monoEmptyEtag = daprClientHttp.getState(STATE_STORE_NAME, stateEmptyEtag, String.class).block();
+    assertEquals(monoEmptyEtag.getKey(), "key");
+    assertNull(monoEmptyEtag.getEtag());
   }
 
   @Test
@@ -650,12 +648,11 @@ public class DaprClientHttpTest {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("key_1", "val_1");
     mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?key_1=val_1")
+      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
       .respond("\"" + EXPECTED_RESULT + "\"");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, "key");
-    builder.withMetadata(metadata).withEtag("");
+    builder.withMetadata(metadata);
     Mono<Response<State<String>>> monoMetadata = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
     assertEquals(monoMetadata.block().getObject().getKey(), "key");
   }
@@ -666,10 +663,10 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond("\"" + EXPECTED_RESULT + "\"");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<State<String>> monoNullEtag = daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
-    assertEquals(monoNullEtag.block().getKey(), "key");
+
+    State<String> monoNullEtag = daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class).block();
+    assertEquals(monoNullEtag.getKey(), "key");
+    assertNull(monoNullEtag.getEtag());
   }
 
   @Test
@@ -678,8 +675,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
         .respond(500);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
     // No exception should be thrown since did not call block() on mono above.
   }
@@ -691,30 +687,27 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.saveStates(STATE_STORE_NAME, stateKeyValueList);
+
+    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
     assertNull(mono.block());
   }
 
   @Test
   public void saveStatesErrors() {
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
-        daprClientHttp.saveStates(null, null).block());
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
-        daprClientHttp.saveStates("", null).block());
+
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.saveBulkState(null, null).block());
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.saveBulkState("", null).block());
   }
 
   @Test
   public void saveStatesNull() {
     List<State<?>> stateKeyValueList = new ArrayList<>();
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.saveStates(STATE_STORE_NAME, null);
+
+    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, null);
     assertNull(mono.block());
-    Mono<Void> mono1 = daprClientHttp.saveStates(STATE_STORE_NAME, stateKeyValueList);
+    Mono<Void> mono1 = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
     assertNull(mono1.block());
   }
 
@@ -725,9 +718,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
         .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono1 = daprClientHttp.saveStates(STATE_STORE_NAME, stateKeyValueList);
+
+    Mono<Void> mono1 = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
     assertNull(mono1.block());
   }
 
@@ -738,9 +730,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.saveStates(STATE_STORE_NAME, stateKeyValueList);
+
+    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
     assertNull(mono.block());
   }
 
@@ -751,9 +742,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.saveStates(STATE_STORE_NAME, stateKeyValueList);
+
+    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
     assertNull(mono.block());
   }
 
@@ -763,8 +753,7 @@ public class DaprClientHttpTest {
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
       .respond(EXPECTED_RESULT);
     StateOptions stateOptions = mock(StateOptions.class);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Void> mono = daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
     assertNull(mono.block());
   }
@@ -775,8 +764,7 @@ public class DaprClientHttpTest {
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
         .respond(500);
     StateOptions stateOptions = mock(StateOptions.class);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
     // No exception should be thrown because we did not call block() on the mono above.
   }
@@ -790,8 +778,7 @@ public class DaprClientHttpTest {
     String key = "key1";
     String data = "my data";
     StateOptions stateOptions = mock(StateOptions.class);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
 
     State<String> stateKey = new State<>(data, key, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -800,7 +787,7 @@ public class DaprClientHttpTest {
     TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.DELETE,
         new State<>("deleteKey"));
-    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
         deleteOperation));
     assertNull(mono.block());
   }
@@ -814,8 +801,7 @@ public class DaprClientHttpTest {
     String key = "key1";
     String data = "my data";
     StateOptions stateOptions = mock(StateOptions.class);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
 
     State<String> stateKey = new State<>(data, key, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -824,7 +810,7 @@ public class DaprClientHttpTest {
     TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.DELETE,
         new State<>("deleteKey"));
-    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
         deleteOperation));
     assertNull(mono.block());
   }
@@ -838,8 +824,7 @@ public class DaprClientHttpTest {
     String key = "key1";
     String data = "my data";
     StateOptions stateOptions = mock(StateOptions.class);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
 
     State<String> stateKey = new State<>(data, key, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -848,7 +833,7 @@ public class DaprClientHttpTest {
     TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.DELETE,
         new State<>("deleteKey"));
-    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
         deleteOperation));
     assertNull(mono.block());
   }
@@ -862,8 +847,7 @@ public class DaprClientHttpTest {
     String key = "key1";
     String data = "my data";
     StateOptions stateOptions = mock(StateOptions.class);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
 
     State<String> stateKey = new State<>(data, key, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -875,7 +859,7 @@ public class DaprClientHttpTest {
     TransactionalStateOperation<String> nullStateOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.DELETE,
         null);
-    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME, Arrays.asList(
+    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(
         null,
         nullStateOperation,
         upsertOperation,
@@ -885,12 +869,11 @@ public class DaprClientHttpTest {
 
   @Test
   public void executeTransactionErrors() {
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
-        daprClientHttp.executeTransaction(null,  null).block());
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
-        daprClientHttp.executeTransaction("",  null).block());
+
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.executeStateTransaction(null,  null).block());
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.executeStateTransaction("",  null).block());
   }
 
   @Test
@@ -898,11 +881,10 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
         .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  null);
+
+    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME,  null);
     assertNull(mono.block());
-    mono = daprClientHttp.executeTransaction(STATE_STORE_NAME,  Collections.emptyList());
+    mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME,  Collections.emptyList());
     assertNull(mono.block());
   }
 
@@ -913,8 +895,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
     assertNull(mono.block());
   }
@@ -926,10 +907,9 @@ public class DaprClientHttpTest {
     StateOptions stateOptions = mock(StateOptions.class);
     State<String> stateKeyValue = new State<>("value", "key", "etag", stateOptions);
     mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?key_1=val_1")
+      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, stateKeyValue.getKey());
     builder.withMetadata(metadata).withEtag(stateKeyValue.getEtag()).withStateOptions(stateOptions);
     Mono<Response<Void>> monoMetadata = daprClientHttp.deleteState(builder.build());
@@ -943,8 +923,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
         .respond(500);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
     // No exception should be thrown because we did not call block() on the mono above.
   }
@@ -955,8 +934,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
     assertNull(mono.block());
   }
@@ -967,8 +945,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
     assertNull(mono.block());
   }
@@ -980,24 +957,23 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.deleteState(STATE_STORE_NAME, null, null, null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.deleteState(STATE_STORE_NAME, "", null, null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.deleteState(STATE_STORE_NAME, " ", null, null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.deleteState(null, "key", null, null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.deleteState("", "key", null, null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.deleteState(" ", "key", null, null).block();
     });
   }
@@ -1005,14 +981,28 @@ public class DaprClientHttpTest {
   @Test
   public void getSecrets() {
     mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-      .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
+
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
     });
     Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
+
+    assertEquals(1, secret.size());
+    assertEquals("mysecretvalue", secret.get("mysecretkey"));
+  }
+
+  @Test
+  public void getSecretsSpecialCharsInKey() {
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key%2Fone")
+        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
+    });
+    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key/one").block();
 
     assertEquals(1, secret.size());
     assertEquals("mysecretvalue", secret.get("mysecretkey"));
@@ -1023,9 +1013,8 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
       .respond("");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
     });
     Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
@@ -1038,8 +1027,7 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
         .respond(404);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     assertThrowsDaprException("UNKNOWN", () ->
         daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
     );
@@ -1053,8 +1041,7 @@ public class DaprClientHttpTest {
             ResponseBody.create("" +
                 "{\"errorCode\":\"ERR_SECRET_STORE_NOT_FOUND\"," +
                 "\"message\":\"error message\"}", MediaTypes.MEDIATYPE_JSON));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     assertThrowsDaprException("ERR_SECRET_STORE_NOT_FOUND", "ERR_SECRET_STORE_NOT_FOUND: error message", () ->
         daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
     );
@@ -1065,16 +1052,15 @@ public class DaprClientHttpTest {
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
         .respond("INVALID JSON");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
+
+    assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.getSecret(null, "key").block());
-    assertThrowsDaprException(IllegalArgumentException.class, () ->
+    assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.getSecret("", "key").block());
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
     });
-    assertThrowsDaprException(IllegalArgumentException.class, () -> {
+    assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getSecret(SECRET_STORE_NAME, "").block();
     });
     assertThrowsDaprException(JsonParseException.class, () -> {
@@ -1088,10 +1074,9 @@ public class DaprClientHttpTest {
       .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
       .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
     mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key?metakey=metavalue")
+      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key?metadata.metakey=metavalue")
       .respond("{ \"mysecretkey2\": \"mysecretvalue2\"}");
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprClientHttp = new DaprClientHttp(daprHttp);
+
     {
       Map<String, String> secret = daprClientHttp.getSecret(
         SECRET_STORE_NAME,
@@ -1114,17 +1099,50 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void closeException() {
-    DaprHttp daprHttp = Mockito.mock(DaprHttp.class);
-    Mockito.doThrow(new IllegalStateException()).when(daprHttp).close();
+  public void getBulkSecrets() {
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk")
+        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
 
-    // This method does not throw DaprException because IOException is expected by the Closeable interface.
-    daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrowsDaprException(IllegalStateException.class, () -> daprClientHttp.close());
+    Map<String, Map<String, String>> secrets = daprClientHttp.getBulkSecret(SECRET_STORE_NAME).block();
+
+    assertEquals(2, secrets.size());
+    assertEquals(1, secrets.get("one").size());
+    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+    assertEquals(2, secrets.get("two").size());
+    assertEquals("1", secrets.get("two").get("a"));
+    assertEquals("2", secrets.get("two").get("b"));
   }
 
   @Test
-  public void close() {
+  public void getBulkSecretsWithMetadata() {
+    mockInterceptor.addRule()
+        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk?metadata.metakey=metavalue")
+        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
+
+    Map<String, Map<String, String>> secrets =
+        daprClientHttp.getBulkSecret(SECRET_STORE_NAME, Collections.singletonMap("metakey", "metavalue")).block();
+
+    assertEquals(2, secrets.size());
+    assertEquals(1, secrets.get("one").size());
+    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+    assertEquals(2, secrets.get("two").size());
+    assertEquals("1", secrets.get("two").get("a"));
+    assertEquals("2", secrets.get("two").get("b"));
+  }
+
+  @Test
+  public void closeException() {
+    DaprHttp daprHttp = Mockito.mock(DaprHttp.class);
+    Mockito.doThrow(new RuntimeException()).when(daprHttp).close();
+
+    // This method does not throw DaprException because it already throws RuntimeException and does not call Dapr.
+    daprClientHttp = new DaprClientHttp(daprHttp);
+    assertThrows(RuntimeException.class, () -> daprClientHttp.close());
+  }
+
+  @Test
+  public void close() throws Exception {
     DaprHttp daprHttp = Mockito.mock(DaprHttp.class);
     Mockito.doNothing().when(daprHttp).close();
 

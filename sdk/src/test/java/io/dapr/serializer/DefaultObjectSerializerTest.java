@@ -12,9 +12,11 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
@@ -233,6 +235,17 @@ public class DefaultObjectSerializerTest {
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
+
+    try {
+      serializedValue = SERIALIZER.serialize(obj);
+      assertNotNull(serializedValue);
+      Type t = MyObjectTestToSerialize.class;
+      TypeRef<MyObjectTestToSerialize> tr = TypeRef.get(t);
+      MyObjectTestToSerialize deserializedValue = SERIALIZER.deserialize(serializedValue, tr);
+      assertEquals(obj, deserializedValue);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
   }
 
   @Test
@@ -420,6 +433,16 @@ public class DefaultObjectSerializerTest {
 
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), new TypeRef<List<MyObjectTestToSerialize>>(){});
+      assertEquals("The expected value is different than the actual result", expectedResult, result.get(0));
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+
+    try {
+      TypeRef<List<MyObjectTestToSerialize>> tr1 = new TypeRef<List<MyObjectTestToSerialize>>(){};
+      Type t = tr1.getType();
+      TypeRef<?> tr = TypeRef.get(t);
+      result = (List<MyObjectTestToSerialize>) SERIALIZER.deserialize(jsonToDeserialize.getBytes(), tr);
       assertEquals("The expected value is different than the actual result", expectedResult, result.get(0));
     } catch (IOException exception) {
       fail(exception.getMessage());
@@ -780,7 +803,7 @@ public class DefaultObjectSerializerTest {
   public void deserializeCloudEventEnvelopeData() throws Exception {
     
 
-    Function<String, String> deserializeData = (jsonData -> {
+    Function<String, Object> deserializeData = (jsonData -> {
       try {
         String payload = String.format("{\"data\": %s}", jsonData);
         return CloudEvent.deserialize(payload.getBytes()).getData();
@@ -789,26 +812,28 @@ public class DefaultObjectSerializerTest {
       }
     });
 
-    assertEquals("123",
-      deserializeData.apply("123"));
-    assertEquals("true",
-      deserializeData.apply("true"));
-    assertEquals("123.45",
-      deserializeData.apply("123.45"));
+    assertEquals(123,
+        deserializeData.apply("123"));
+    assertEquals(true,
+        deserializeData.apply("true"));
+    assertEquals(123.45,
+        deserializeData.apply("123.45"));
     assertEquals("AAEI",
-      deserializeData.apply(quote(Base64.getEncoder().encodeToString(new byte[] { 0, 1, 8}))));
+        deserializeData.apply(quote(Base64.getEncoder().encodeToString(new byte[]{0, 1, 8}))));
     assertEquals("hello world",
-      deserializeData.apply(quote("hello world")));
+        deserializeData.apply(quote("hello world")));
     assertEquals("\"hello world\"",
-      deserializeData.apply(quote("\\\"hello world\\\"")));
+        deserializeData.apply(quote("\\\"hello world\\\"")));
     assertEquals("\"hello world\"",
-      deserializeData.apply(new ObjectMapper().writeValueAsString("\"hello world\"")));
+        deserializeData.apply(new ObjectMapper().writeValueAsString("\"hello world\"")));
     assertEquals("hello world",
-      deserializeData.apply(new ObjectMapper().writeValueAsString("hello world")));
-    assertEquals("{\"id\":\"123:\",\"name\":\"Jon Doe\"}",
-      deserializeData.apply("{\"id\": \"123:\", \"name\": \"Jon Doe\"}"));
-    assertEquals("{\"id\": \"123:\", \"name\": \"Jon Doe\"}",
-      deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123:\", \"name\": \"Jon Doe\"}")));
+        deserializeData.apply(new ObjectMapper().writeValueAsString("hello world")));
+    assertEquals(new TreeMap<String, String>() {{
+      put("id", "123");
+      put("name", "Jon Doe");
+    }}, deserializeData.apply("{\"id\": \"123\", \"name\": \"Jon Doe\"}"));
+    assertEquals("{\"id\": \"123\", \"name\": \"Jon Doe\"}",
+        deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123\", \"name\": \"Jon Doe\"}")));
   }
 
   @Test

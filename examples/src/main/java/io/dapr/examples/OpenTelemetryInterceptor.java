@@ -3,15 +3,12 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.springboot;
+package io.dapr.examples;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -36,8 +33,6 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
           return carrier.getHeader(key);
       }
   };
-  @Autowired
-  Tracer tracer;
 
   @Override
   public boolean preHandle(
@@ -49,43 +44,15 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
       return true;
     }
 
-    Span span;
-    try {
-      Context context = textFormat.extract(Context.current(), request, HTTP_SERVLET_REQUEST_GETTER);
-      request.setAttribute("opentelemetry-context", context);
-      span = tracer.spanBuilder(request.getRequestURI()).setParent(context).startSpan();
-      span.setAttribute("handler", "pre");
-    } catch (Exception e) {
-      span = tracer.spanBuilder(request.getRequestURI()).startSpan();
-      span.setAttribute("handler", "pre");
-
-      span.addEvent(e.toString());
-      span.setAttribute("error", true);
-    }
-    request.setAttribute("opentelemetry-span", span);
+    Context context = textFormat.extract(Context.current(), request, HTTP_SERVLET_REQUEST_GETTER);
+    request.setAttribute("opentelemetry-context", context);
     return true;
   }
 
   @Override
   public void postHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler,
-      ModelAndView modelAndView) throws Exception {
-  }
-
-  @Override
-  public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
-                              Object handler, Exception exception) {
-    Object contextObject = request.getAttribute("opentelemetry-context");
-    Object spanObject = request.getAttribute("opentelemetry-span");
-    if ((contextObject == null) || (spanObject == null)) {
-      return;
-    }
-    Context context = (Context) contextObject;
-    Span span = (Span) spanObject;
-    span.setAttribute("handler", "afterCompletion");
-    final TextMapPropagator textFormat = OpenTelemetry.getGlobalPropagators().getTextMapPropagator();
-    textFormat.inject(context, response, HttpServletResponse::addHeader);
-    span.end();
+      ModelAndView modelAndView) {
   }
 
 }

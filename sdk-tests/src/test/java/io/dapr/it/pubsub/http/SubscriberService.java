@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Service for subscriber.
  */
-@SpringBootApplication(scanBasePackages = {"io.dapr.springboot", "io.dapr.it.pubsub.http"})
+@SpringBootApplication
 public class SubscriberService {
 
   public static final String SUCCESS_MESSAGE = "Completed initialization in";

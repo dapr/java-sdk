@@ -199,6 +199,11 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
     return System.getenv("DAPR_HTTP_PORT");
   }
 
+  @Override
+  public boolean dotNetMethod() {
+    return true;
+  }
+
   private void formatAndLog(boolean isEnter, String methodName) {
     Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
 

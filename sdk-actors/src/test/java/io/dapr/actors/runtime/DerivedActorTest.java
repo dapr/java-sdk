@@ -8,7 +8,7 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.actors.client.ActorProxy;
-import io.dapr.actors.client.ActorProxyForTestsImpl;
+import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
@@ -223,7 +223,7 @@ public class DerivedActorTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       "abcabc",
-      proxy.invokeActorMethod("stringInStringOut", "abc", String.class).block());
+      proxy.invokeMethod("stringInStringOut", "abc", String.class).block());
   }
 
   @Test
@@ -233,11 +233,11 @@ public class DerivedActorTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       false,
-      proxy.invokeActorMethod("stringInBooleanOut", "hello world", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
 
     Assert.assertEquals(
       true,
-      proxy.invokeActorMethod("stringInBooleanOut", "true", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
 
   @Test
@@ -247,14 +247,14 @@ public class DerivedActorTest {
     // stringInVoidOut() has not been invoked so this is false
     Assert.assertEquals(
       false,
-      actorProxy.invokeActorMethod("methodReturningVoidInvoked", Boolean.class).block());
+      actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    actorProxy.invokeActorMethod("stringInVoidOut", "hello world").block();
+    actorProxy.invokeMethod("stringInVoidOut", "hello world").block();
 
     Assert.assertEquals(
       true,
-      actorProxy.invokeActorMethod("methodReturningVoidInvoked", Boolean.class).block());
+      actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
   }
 
   @Test(expected = IllegalMonitorStateException.class)
@@ -262,7 +262,7 @@ public class DerivedActorTest {
     ActorProxy actorProxy = createActorProxyForActorChild();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    actorProxy.invokeActorMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
+    actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
   }
 
   @Test
@@ -271,7 +271,7 @@ public class DerivedActorTest {
     MyData d = new MyData("hi", 3);
 
     // this should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    MyData response = actorProxy.invokeActorMethod("classInClassOut", d, MyData.class).block();
+    MyData response = actorProxy.invokeMethod("classInClassOut", d, MyData.class).block();
 
     Assert.assertEquals(
       "hihi",
@@ -288,26 +288,26 @@ public class DerivedActorTest {
 
     Assert.assertEquals(
       "www",
-      actorProxy.invokeActorMethod("onlyImplementedInParentStringInStringOut", "w", String.class).block());
+      actorProxy.invokeMethod("onlyImplementedInParentStringInStringOut", "w", String.class).block());
 
     Assert.assertEquals(
       true,
-      actorProxy.invokeActorMethod("onlyImplementedInParentStringInBooleanOut", "icecream", Boolean.class).block());
+      actorProxy.invokeMethod("onlyImplementedInParentStringInBooleanOut", "icecream", Boolean.class).block());
 
     // onlyImplementedInParentStringInVoidOut() has not been invoked so this is false
     Assert.assertEquals(
       false,
-      actorProxy.invokeActorMethod("methodReturningVoidInvoked", Boolean.class).block());
+      actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
 
-    actorProxy.invokeActorMethod("onlyImplementedInParentStringInVoidOut", "icecream", Boolean.class).block();
+    actorProxy.invokeMethod("onlyImplementedInParentStringInVoidOut", "icecream", Boolean.class).block();
 
     // now it should return true.
     Assert.assertEquals(
       true,
-      actorProxy.invokeActorMethod("methodReturningVoidInvoked", Boolean.class).block());
+      actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
 
     MyData d = new MyData("hi", 3);
-    MyData response = actorProxy.invokeActorMethod("onlyImplementedInParentClassInClassOut", d, MyData.class).block();
+    MyData response = actorProxy.invokeMethod("onlyImplementedInParentClassInClassOut", d, MyData.class).block();
 
     Assert.assertEquals(
       "hihihi",
@@ -327,7 +327,7 @@ public class DerivedActorTest {
     // Mock daprClient for ActorProxy only, not for runtime.
     DaprClientStub daprClient = mock(DaprClientStub.class);
 
-    when(daprClient.invokeActorMethod(
+    when(daprClient.invoke(
       eq(context.getActorTypeInformation().getName()),
       eq(actorId.toString()),
       any(),
@@ -340,7 +340,7 @@ public class DerivedActorTest {
 
     this.manager.activateActor(actorId).block();
 
-    return new ActorProxyForTestsImpl(
+    return new ActorProxyImplForTests(
       context.getActorTypeInformation().getName(),
       actorId,
       new DefaultObjectSerializer(),
@@ -350,10 +350,10 @@ public class DerivedActorTest {
   private static <T extends AbstractActor> ActorRuntimeContext createContext() {
     DaprClient daprClient = mock(DaprClient.class);
 
-    when(daprClient.registerActorTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.registerActorReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorTimer(any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorReminder(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterTimer(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterReminder(any(), any(), any())).thenReturn(Mono.empty());
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),

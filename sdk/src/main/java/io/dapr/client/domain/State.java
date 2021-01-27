@@ -26,7 +26,7 @@ public class State<T> {
 
   /**
    * The ETag to be used
-   * Keep in mind that for some state stores (like reids) only numbers are supported.
+   * Keep in mind that for some state stores (like redis) only numbers are supported.
    */
   private final String etag;
 

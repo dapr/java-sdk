@@ -21,6 +21,6 @@ interface DaprClient {
    * @param jsonPayload Serialized body.
    * @return Asynchronous result with the Actor's response.
    */
-  Mono<byte[]> invokeActorMethod(String actorType, String actorId, String methodName, byte[] jsonPayload);
+  Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload);
 
 }

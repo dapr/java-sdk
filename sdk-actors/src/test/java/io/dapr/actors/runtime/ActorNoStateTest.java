@@ -6,9 +6,10 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorMethod;
 import io.dapr.actors.ActorType;
 import io.dapr.actors.client.ActorProxy;
-import io.dapr.actors.client.ActorProxyForTestsImpl;
+import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
@@ -43,6 +44,8 @@ public class ActorNoStateTest {
     Mono<MyData> classInClassOut(MyData input);
     Mono<String> registerBadCallbackName();
     String registerTimerAutoName();
+    @ActorMethod(name = "DotNetMethodASync")
+    Mono<Void> dotNetMethod();
   }
 
   @ActorType(name = "MyActor")
@@ -108,6 +111,11 @@ public class ActorNoStateTest {
     public String registerTimerAutoName() {
       return super.registerActorTimer("", "anything", "state", Duration.ofSeconds(1), Duration.ofSeconds(1)).block();
     }
+
+    @Override
+    public Mono<Void> dotNetMethod() {
+      return Mono.empty();
+    }
   }
 
   static class MyData {
@@ -139,7 +147,7 @@ public class ActorNoStateTest {
 
     Assert.assertEquals(
             proxy.getActorId().toString(),
-            proxy.invokeActorMethod("getMyId", String.class).block());
+            proxy.invokeMethod("getMyId", String.class).block());
   }
 
   @Test
@@ -149,7 +157,7 @@ public class ActorNoStateTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       "abcabc",
-      proxy.invokeActorMethod("stringInStringOut", "abc", String.class).block());
+      proxy.invokeMethod("stringInStringOut", "abc", String.class).block());
   }
 
   @Test
@@ -159,11 +167,11 @@ public class ActorNoStateTest {
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     Assert.assertEquals(
       false,
-      proxy.invokeActorMethod("stringInBooleanOut", "hello world", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
 
     Assert.assertEquals(
       true,
-      proxy.invokeActorMethod("stringInBooleanOut", "true", Boolean.class).block());
+      proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
 
   @Test(expected = IllegalMonitorStateException.class)
@@ -171,7 +179,13 @@ public class ActorNoStateTest {
     ActorProxy actorProxy = createActorProxy();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    actorProxy.invokeActorMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
+    actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
+  }
+
+  @Test
+  public void testMethodNameChange() {
+    MyActor actor = createActorProxy(MyActor.class);
+    actor.dotNetMethod();
   }
 
   @Test
@@ -180,7 +194,7 @@ public class ActorNoStateTest {
     MyData d = new MyData("hi", 3);
 
     // this should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    MyData response = actorProxy.invokeActorMethod("classInClassOut", d, MyData.class).block();
+    MyData response = actorProxy.invokeMethod("classInClassOut", d, MyData.class).block();
 
     Assert.assertEquals(
       "hihi",
@@ -218,7 +232,7 @@ public class ActorNoStateTest {
     // Mock daprClient for ActorProxy only, not for runtime.
     DaprClientStub daprClient = mock(DaprClientStub.class);
 
-    when(daprClient.invokeActorMethod(
+    when(daprClient.invoke(
       eq(context.getActorTypeInformation().getName()),
       eq(actorId.toString()),
       any(),
@@ -231,7 +245,7 @@ public class ActorNoStateTest {
 
     this.manager.activateActor(actorId).block();
 
-    return new ActorProxyForTestsImpl(
+    return new ActorProxyImplForTests(
       context.getActorTypeInformation().getName(),
       actorId,
       new DefaultObjectSerializer(),
@@ -244,7 +258,7 @@ public class ActorNoStateTest {
     // Mock daprClient for ActorProxy only, not for runtime.
     DaprClientStub daprClient = mock(DaprClientStub.class);
 
-    when(daprClient.invokeActorMethod(
+    when(daprClient.invoke(
             eq(context.getActorTypeInformation().getName()),
             eq(actorId.toString()),
             any(),
@@ -257,13 +271,13 @@ public class ActorNoStateTest {
 
     this.manager.activateActor(actorId).block();
 
-    ActorProxyForTestsImpl proxy = new ActorProxyForTestsImpl(
+    ActorProxyImplForTests proxy = new ActorProxyImplForTests(
             context.getActorTypeInformation().getName(),
             actorId,
             new DefaultObjectSerializer(),
             daprClient);
     return (T) Proxy.newProxyInstance(
-            ActorProxyForTestsImpl.class.getClassLoader(),
+            ActorProxyImplForTests.class.getClassLoader(),
             new Class[]{clazz},
             proxy);
   }
@@ -271,10 +285,10 @@ public class ActorNoStateTest {
   private static <T extends AbstractActor> ActorRuntimeContext createContext() {
     DaprClient daprClient = mock(DaprClient.class);
 
-    when(daprClient.registerActorTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.registerActorReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorTimer(any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorReminder(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterTimer(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterReminder(any(), any(), any())).thenReturn(Mono.empty());
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),

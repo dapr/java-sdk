@@ -5,6 +5,8 @@
 
 package io.dapr.actors.runtime;
 
+import io.dapr.actors.ActorMethod;
+
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,7 +37,12 @@ class ActorMethodInfoMap {
         if (methodInfo.getParameterCount() <= 1) {
           // If Actor class uses overloading, then one will win.
           // Document this behavior, so users know how to write their code.
-          methods.put(methodInfo.getName(), methodInfo);
+          String methodName = methodInfo.getName();
+          ActorMethod actorMethodAnnotation = methodInfo.getAnnotation(ActorMethod.class);
+          if ((actorMethodAnnotation != null) && !actorMethodAnnotation.name().isEmpty()) {
+            methodName = actorMethodAnnotation.name();
+          }
+          methods.put(methodName, methodInfo);
         }
       }
     }

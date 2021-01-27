@@ -5,6 +5,8 @@
 
 package io.dapr.config;
 
+import io.dapr.client.DaprApiProtocol;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -14,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 public class Properties {
 
   /**
-   * Dapr's default IP for HTTP and GRPC communication.
+   * Dapr's default IP for HTTP and gRPC communication.
    */
   private static final String DEFAULT_SIDECAR_IP = "127.0.0.1";
 
@@ -24,14 +26,19 @@ public class Properties {
   private static final Integer DEFAULT_HTTP_PORT = 3500;
 
   /**
-   * Dapr's default GRPC port.
+   * Dapr's default gRPC port.
    */
   private static final Integer DEFAULT_GRPC_PORT = 50001;
 
   /**
-   * Dapr's default GRPC port.
+   * Dapr's default use of gRPC or HTTP.
    */
-  private static final Boolean DEFAULT_GRPC_ENABLED = true;
+  private static final DaprApiProtocol DEFAULT_API_PROTOCOL = DaprApiProtocol.GRPC;
+
+  /**
+   * Dapr's default use of gRPC or HTTP for Dapr's method invocation APIs.
+   */
+  private static final DaprApiProtocol DEFAULT_API_METHOD_INVOCATION_PROTOCOL = DaprApiProtocol.HTTP;
 
   /**
    * Dapr's default String encoding: UTF-8.
@@ -68,12 +75,22 @@ public class Properties {
       DEFAULT_GRPC_PORT);
 
   /**
-   * Determines if Dapr client will use GRPC to talk to Dapr's side car.
+   * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.
    */
-  public static final Property<Boolean> USE_GRPC = new BooleanProperty(
-      "dapr.grpc.enabled",
-      "DAPR_GRPC_ENABLED",
-      DEFAULT_GRPC_ENABLED);
+  public static final Property<DaprApiProtocol> API_PROTOCOL = new GenericProperty<>(
+      "dapr.api.protocol",
+      "DAPR_API_PROTOCOL",
+      DEFAULT_API_PROTOCOL,
+      (s) -> DaprApiProtocol.valueOf(s.toUpperCase()));
+
+  /**
+   * Determines if Dapr client should use gRPC or HTTP for Dapr's service method invocation APIs.
+   */
+  public static final Property<DaprApiProtocol> API_METHOD_INVOCATION_PROTOCOL = new GenericProperty<>(
+      "dapr.api.methodInvocation.protocol",
+      "DAPR_API_METHOD_INVOCATION_PROTOCOL",
+      DEFAULT_API_METHOD_INVOCATION_PROTOCOL,
+      (s) -> DaprApiProtocol.valueOf(s.toUpperCase()));
 
   /**
    * API token for authentication between App and Dapr's side car.
@@ -95,8 +112,8 @@ public class Properties {
   /**
    * Dapr's timeout in seconds for HTTP client reads.
    */
-  public static final Property<Integer> HTTP_CLIENT_READTIMEOUTSECONDS = new IntegerProperty(
-      "dapr.http.client.readtimeoutseconds",
-      "DAPR_HTTP_CLIENT_READTIMEOUTSECONDS",
+  public static final Property<Integer> HTTP_CLIENT_READ_TIMEOUT_SECONDS = new IntegerProperty(
+      "dapr.http.client.readTimeoutSeconds",
+      "DAPR_HTTP_CLIENT_READ_TIMEOUT_SECONDS",
       DEFAULT_HTTP_CLIENT_READTIMEOUTSECONDS);
 }

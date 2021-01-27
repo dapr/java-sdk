@@ -3,16 +3,15 @@
  * Licensed under the MIT License.
  */
 
-package io.dapr.springboot;
+package io.dapr.examples;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * Dapr's HTTP callback implementation via SpringBoot.
- * Scanning package io.dapr.springboot is required.
  */
-@SpringBootApplication(scanBasePackages = {"io.dapr.springboot", "io.dapr.examples"})
+@SpringBootApplication
 public class DaprApplication {
 
   /**

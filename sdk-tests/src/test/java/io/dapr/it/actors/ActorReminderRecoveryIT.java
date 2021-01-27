@@ -22,7 +22,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 
-import static io.dapr.it.actors.MyActorTestUtils.*;
+import static io.dapr.it.actors.MyActorTestUtils.countMethodCalls;
+import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 
 public class ActorReminderRecoveryIT extends BaseIT {
 
@@ -49,7 +51,8 @@ public class ActorReminderRecoveryIT extends BaseIT {
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
-    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);
@@ -59,7 +62,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
   public void tearDown() {
     // call unregister
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeActorMethod("stopReminder", "myReminder").block();
+    proxy.invokeMethod("stopReminder", "myReminder").block();
   }
 
   /**
@@ -69,7 +72,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
   @Test
   public void reminderRecoveryTest() throws Exception {
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
-    proxy.invokeActorMethod("startReminder", "myReminder").block();
+    proxy.invokeMethod("startReminder", "myReminder").block();
 
     logger.debug("Pausing 7 seconds to allow reminder to fire");
     Thread.sleep(7000);
