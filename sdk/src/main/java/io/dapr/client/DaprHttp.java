@@ -5,13 +5,17 @@
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.propagation.HttpTraceContext;
 import io.opentelemetry.context.Context;
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -29,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class DaprHttp implements AutoCloseable {
 
@@ -153,7 +158,7 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API asynchronously without payload that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param pathSegments  Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters URL parameters
    * @param headers       HTTP headers.
    * @param context       OpenTelemetry's Context.
@@ -161,18 +166,18 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
       String method,
-      String urlString,
+      String[] pathSegments,
       Map<String, String> urlParameters,
       Map<String, String> headers,
       Context context) {
-    return this.invokeApi(method, urlString, urlParameters, (byte[]) null, headers, context);
+    return this.invokeApi(method, pathSegments, urlParameters, (byte[]) null, headers, context);
   }
 
   /**
    * Invokes an API asynchronously that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param pathSegments  Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
@@ -181,14 +186,14 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
       String method,
-      String urlString,
+      String[] pathSegments,
       Map<String, String> urlParameters,
       String content,
       Map<String, String> headers,
       Context context) {
 
     return this.invokeApi(
-        method, urlString, urlParameters, content == null
+        method, pathSegments, urlParameters, content == null
             ? EMPTY_BYTES
             : content.getBytes(StandardCharsets.UTF_8), headers, context);
   }
@@ -197,7 +202,7 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API asynchronously that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param pathSegments  Array of path segments ("/a/b/c" maps to ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
@@ -206,12 +211,14 @@ public class DaprHttp implements AutoCloseable {
    */
   public Mono<Response> invokeApi(
           String method,
-          String urlString,
+          String[] pathSegments,
           Map<String, String> urlParameters,
           byte[] content,
           Map<String, String> headers,
           Context context) {
-    return Mono.fromCallable(() -> doInvokeApi(method, urlString, urlParameters, content, headers, context));
+    // fromCallable() is needed so the invocation does not happen early, causing a hot mono.
+    return Mono.fromCallable(() -> doInvokeApi(method, pathSegments, urlParameters, content, headers, context))
+        .flatMap(f -> Mono.fromFuture(f));
   }
 
   /**
@@ -227,23 +234,22 @@ public class DaprHttp implements AutoCloseable {
    * Invokes an API that returns a text payload.
    *
    * @param method        HTTP method.
-   * @param urlString     url as String.
+   * @param pathSegments  Array of path segments (/a/b/c -> ["a", "b", "c"]).
    * @param urlParameters Parameters in the URL
    * @param content       payload to be posted.
    * @param headers       HTTP headers.
    * @param context       OpenTelemetry's Context.
-   * @return Response
+   * @return CompletableFuture for Response.
    */
-  @NotNull
-  private Response doInvokeApi(String method,
-                               String urlString,
+  private CompletableFuture<Response> doInvokeApi(String method,
+                               String[] pathSegments,
                                Map<String, String> urlParameters,
                                byte[] content, Map<String, String> headers,
-                               Context context) throws IOException {
+                               Context context) {
     final String requestId = UUID.randomUUID().toString();
     RequestBody body;
 
-    String contentType = headers != null ? headers.get("content-type") : null;
+    String contentType = headers != null ? headers.get(Metadata.CONTENT_TYPE) : null;
     MediaType mediaType = contentType == null ? MEDIA_TYPE_APPLICATION_JSON : MediaType.get(contentType);
     if (content == null) {
       body = mediaType.equals(MEDIA_TYPE_APPLICATION_JSON)
@@ -255,8 +261,10 @@ public class DaprHttp implements AutoCloseable {
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
     urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
         .host(this.hostname)
-        .port(this.port)
-        .addPathSegments(urlString);
+        .port(this.port);
+    for (String pathSegment : pathSegments) {
+      urlBuilder.addPathSegment(pathSegment);
+    }
     Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
         .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
 
@@ -288,23 +296,10 @@ public class DaprHttp implements AutoCloseable {
 
     Request request = requestBuilder.build();
 
-    try (okhttp3.Response response = this.httpClient.newCall(request).execute()) {
-      if (!response.isSuccessful()) {
-        DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
-        if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-          throw new DaprException(error);
-        }
 
-        throw new DaprException("UNKNOWN", "HTTP status code: " + response.code());
-      }
-
-      Map<String, String> mapHeaders = new HashMap<>();
-      byte[] result = getBodyBytesOrEmptyArray(response);
-      response.headers().forEach(pair -> {
-        mapHeaders.put(pair.getFirst(), pair.getSecond());
-      });
-      return new Response(result, mapHeaders, response.code());
-    }
+    CompletableFuture<Response> future = new CompletableFuture<>();
+    this.httpClient.newCall(request).enqueue(new ResponseFutureCallback(future));
+    return future;
   }
 
   /**
@@ -317,7 +312,12 @@ public class DaprHttp implements AutoCloseable {
     if ((json == null) || (json.length == 0)) {
       return null;
     }
-    return OBJECT_MAPPER.readValue(json, DaprError.class);
+
+    try {
+      return OBJECT_MAPPER.readValue(json, DaprError.class);
+    } catch (JsonParseException e) {
+      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
+    }
   }
 
   private static byte[] getBodyBytesOrEmptyArray(okhttp3.Response response) throws IOException {
@@ -327,6 +327,43 @@ public class DaprHttp implements AutoCloseable {
     }
 
     return EMPTY_BYTES;
+  }
+
+  /**
+   * Converts the okhttp3 response into the response object expected internally by the SDK.
+   */
+  private static class ResponseFutureCallback implements Callback {
+    private final CompletableFuture<Response> future;
+
+    public ResponseFutureCallback(CompletableFuture<Response> future) {
+      this.future = future;
+    }
+
+    @Override
+    public void onFailure(Call call, IOException e) {
+      future.completeExceptionally(e);
+    }
+
+    @Override
+    public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
+      if (!response.isSuccessful()) {
+        DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
+        if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
+          future.completeExceptionally(new DaprException(error));
+          return;
+        }
+
+        future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
+        return;
+      }
+
+      Map<String, String> mapHeaders = new HashMap<>();
+      byte[] result = getBodyBytesOrEmptyArray(response);
+      response.headers().forEach(pair -> {
+        mapHeaders.put(pair.getFirst(), pair.getSecond());
+      });
+      future.complete(new Response(result, mapHeaders, response.code()));
+    }
   }
 
 }

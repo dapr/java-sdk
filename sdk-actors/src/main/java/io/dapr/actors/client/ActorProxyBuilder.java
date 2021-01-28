@@ -7,28 +7,15 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorUtils;
-import io.dapr.client.DaprHttpBuilder;
-import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.v1.DaprGrpc;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 
-import java.io.Closeable;
 import java.lang.reflect.Proxy;
-
-import static io.dapr.exceptions.DaprException.throwIllegalArgumentException;
 
 /**
  * Builder to generate an ActorProxy instance. Builder can be reused for multiple instances.
  */
-public class ActorProxyBuilder<T> implements Closeable {
-
-  /**
-   * Determine if this builder will create GRPC clients instead of HTTP clients.
-   */
-  private final boolean useGrpc;
+public class ActorProxyBuilder<T> {
 
   /**
    * Actor's type.
@@ -46,14 +33,9 @@ public class ActorProxyBuilder<T> implements Closeable {
   private DaprObjectSerializer objectSerializer;
 
   /**
-   * Builds Dapr HTTP client.
+   * Client for communication with Dapr's Actor APIs.
    */
-  private DaprHttpBuilder daprHttpBuilder;
-
-  /**
-   * Channel for communication with Dapr.
-   */
-  private final ManagedChannel channel;
+  private final ActorClient actorClient;
 
   /**
    * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer} by default.
@@ -61,9 +43,10 @@ public class ActorProxyBuilder<T> implements Closeable {
    * {@link DefaultObjectSerializer} is not recommended for production scenarios.
    *
    * @param actorTypeClass Actor's type class.
+   * @param actorClient    Dapr's sidecar client for Actor APIs.
    */
-  public ActorProxyBuilder(Class<T> actorTypeClass) {
-    this(ActorUtils.findActorTypeName(actorTypeClass), actorTypeClass);
+  public ActorProxyBuilder(Class<T> actorTypeClass, ActorClient actorClient) {
+    this(ActorUtils.findActorTypeName(actorTypeClass), actorTypeClass, actorClient);
   }
 
   /**
@@ -73,21 +56,23 @@ public class ActorProxyBuilder<T> implements Closeable {
    *
    * @param actorType      Actor's type.
    * @param actorTypeClass Actor's type class.
+   * @param actorClient    Dapr's sidecar client for Actor APIs.
    */
-  public ActorProxyBuilder(String actorType, Class<T> actorTypeClass) {
+  public ActorProxyBuilder(String actorType, Class<T> actorTypeClass, ActorClient actorClient) {
     if ((actorType == null) || actorType.isEmpty()) {
-      throwIllegalArgumentException("ActorType is required.");
+      throw new IllegalArgumentException("ActorType is required.");
     }
     if (actorTypeClass == null) {
-      throwIllegalArgumentException("ActorTypeClass is required.");
+      throw new IllegalArgumentException("ActorTypeClass is required.");
+    }
+    if (actorClient == null) {
+      throw new IllegalArgumentException("ActorClient is required.");
     }
 
-    this.useGrpc = Properties.USE_GRPC.get();
     this.actorType = actorType;
     this.objectSerializer = new DefaultObjectSerializer();
     this.clazz = actorTypeClass;
-    this.daprHttpBuilder = new DaprHttpBuilder();
-    this.channel = buildManagedChannel();
+    this.actorClient = actorClient;
   }
 
   /**
@@ -98,7 +83,7 @@ public class ActorProxyBuilder<T> implements Closeable {
    */
   public ActorProxyBuilder<T> withObjectSerializer(DaprObjectSerializer objectSerializer) {
     if (objectSerializer == null) {
-      throwIllegalArgumentException("Serializer is required.");
+      throw new IllegalArgumentException("Serializer is required.");
     }
 
     this.objectSerializer = objectSerializer;
@@ -113,14 +98,14 @@ public class ActorProxyBuilder<T> implements Closeable {
    */
   public T build(ActorId actorId) {
     if (actorId == null) {
-      throwIllegalArgumentException("Cannot instantiate an Actor without Id.");
+      throw new IllegalArgumentException("Cannot instantiate an Actor without Id.");
     }
 
     ActorProxyImpl proxy = new ActorProxyImpl(
             this.actorType,
             actorId,
             this.objectSerializer,
-            buildDaprClient());
+            this.actorClient);
 
     if (this.clazz.equals(ActorProxy.class)) {
       // If users want to use the not strongly typed API, we respect that here.
@@ -133,45 +118,4 @@ public class ActorProxyBuilder<T> implements Closeable {
             proxy);
   }
 
-  /**
-   * Build an instance of the Client based on the provided setup.
-   *
-   * @return an instance of the setup Client
-   * @throws java.lang.IllegalStateException if any required field is missing
-   */
-  private DaprClient buildDaprClient() {
-    if (this.useGrpc) {
-      return new DaprGrpcClient(DaprGrpc.newFutureStub(this.channel));
-    }
-
-    return new DaprHttpClient(daprHttpBuilder.build());
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void close() {
-    if (channel != null && !channel.isShutdown()) {
-      channel.shutdown();
-    }
-  }
-
-  /**
-   * Creates a GRPC managed channel (or null, if not applicable).
-   *
-   * @return GRPC managed channel or null.
-   */
-  private static ManagedChannel buildManagedChannel() {
-    if (!Properties.USE_GRPC.get()) {
-      return null;
-    }
-
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throwIllegalArgumentException("Invalid port.");
-    }
-
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
-  }
 }

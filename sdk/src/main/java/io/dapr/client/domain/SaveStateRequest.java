@@ -14,18 +14,18 @@ import java.util.List;
  */
 public class SaveStateRequest {
 
-  private String stateStoreName;
+  private String storeName;
 
   private List<State<?>> states;
 
   private Context context;
 
-  public String getStateStoreName() {
-    return stateStoreName;
+  public String getStoreName() {
+    return storeName;
   }
 
-  void setStateStoreName(String stateStoreName) {
-    this.stateStoreName = stateStoreName;
+  void setStoreName(String storeName) {
+    this.storeName = storeName;
   }
 
   public List<State<?>> getStates() {

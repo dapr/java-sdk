@@ -95,7 +95,7 @@ public class BindingIT extends BaseIT {
       callWithRetry(() -> {
         System.out.println("Checking results ...");
         final List<String> messages =
-            client.invokeService(
+            client.invokeMethod(
                 daprRun.getAppName(),
                 "messages",
                 null,

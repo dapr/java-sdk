@@ -5,12 +5,11 @@
 
 package io.dapr.it;
 
+import io.dapr.actors.client.ActorClient;
+import io.dapr.client.DaprApiProtocol;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.AfterClass;
 
-import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -24,7 +23,7 @@ public abstract class BaseIT {
 
   private static final Queue<Stoppable> TO_BE_STOPPED = new LinkedList<>();
 
-  private static final Queue<Closeable> TO_BE_CLOSED = new LinkedList<>();
+  private static final Queue<AutoCloseable> TO_BE_CLOSED = new LinkedList<>();
 
   protected static DaprRun startDaprApp(
       String testName,
@@ -32,7 +31,7 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds) throws Exception {
-    return startDaprApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, true);
+    return startDaprApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, DaprApiProtocol.GRPC);
   }
 
   protected static DaprRun startDaprApp(
@@ -41,14 +40,15 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds,
-      boolean useGRPC) throws Exception {
-    return startDaprApp(testName, successMessage, serviceClass, useAppPort, true, maxWaitMilliseconds, useGRPC);
+      DaprApiProtocol protocol) throws Exception {
+    return startDaprApp(testName, successMessage, serviceClass, useAppPort, true, maxWaitMilliseconds, protocol);
   }
 
   protected static DaprRun startDaprApp(
       String testName,
       int maxWaitMilliseconds) throws Exception {
-    return startDaprApp(testName, "You're up and running!", null, false, true, maxWaitMilliseconds, true);
+    return startDaprApp(
+        testName, "You're up and running!", null, false, true, maxWaitMilliseconds, DaprApiProtocol.GRPC);
   }
 
   protected static DaprRun startDaprApp(
@@ -58,13 +58,13 @@ public abstract class BaseIT {
           Boolean useAppPort,
           Boolean useDaprPorts,
           int maxWaitMilliseconds,
-          boolean useGRPC) throws Exception {
+          DaprApiProtocol protocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
             () -> DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
             successMessage,
             maxWaitMilliseconds,
-            useGRPC).withServiceClass(serviceClass);
+            protocol).withServiceClass(serviceClass);
     DaprRun run = builder.build();
     TO_BE_STOPPED.add(run);
     DAPR_RUN_BUILDERS.put(run.getAppName(), builder);
@@ -79,7 +79,8 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds) throws Exception {
-    return startSplitDaprAndApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, true);
+    return startSplitDaprAndApp(
+        testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, DaprApiProtocol.GRPC);
   }
 
   protected static ImmutablePair<AppRun, DaprRun> startSplitDaprAndApp(
@@ -88,13 +89,13 @@ public abstract class BaseIT {
           Class serviceClass,
           Boolean useAppPort,
           int maxWaitMilliseconds,
-          boolean useGRPC) throws Exception {
+          DaprApiProtocol protocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
             () -> DaprPorts.build(useAppPort, true, true),
             successMessage,
             maxWaitMilliseconds,
-            useGRPC).withServiceClass(serviceClass);
+            protocol).withServiceClass(serviceClass);
     ImmutablePair<AppRun, DaprRun> runs = builder.splitBuild();
     TO_BE_STOPPED.add(runs.left);
     TO_BE_STOPPED.add(runs.right);
@@ -108,18 +109,17 @@ public abstract class BaseIT {
   @AfterClass
   public static void cleanUp() throws Exception {
     while (!TO_BE_CLOSED.isEmpty()) {
-      Closeable toBeClosed = TO_BE_CLOSED.remove();
-      toBeClosed.close();
+      TO_BE_CLOSED.remove().close();
     }
 
     while (!TO_BE_STOPPED.isEmpty()) {
-      Stoppable toBeStopped = TO_BE_STOPPED.remove();
-      toBeStopped.stop();
+      TO_BE_STOPPED.remove().stop();
     }
   }
 
-  protected static <T extends Closeable> T deferClose(T closeable) {
-    TO_BE_CLOSED.add(closeable);
-    return closeable;
+  protected ActorClient newActorClient() {
+    ActorClient client = new ActorClient();
+    TO_BE_CLOSED.add(client);
+    return client;
   }
 }

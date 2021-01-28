@@ -54,7 +54,7 @@ public class DaprHttpClientTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
-    Mono<byte[]> mono = DaprHttpClient.getActorState("DemoActor", "1", "order");
+    Mono<byte[]> mono = DaprHttpClient.getState("DemoActor", "1", "order");
     assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
@@ -67,7 +67,7 @@ public class DaprHttpClientTest {
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     List<ActorStateOperation> ops = Collections.singletonList(new ActorStateOperation("UPSERT", "key", "value"));
-    Mono<Void> mono = DaprHttpClient.saveActorStateTransactionally("DemoActor", "1", ops);
+    Mono<Void> mono = DaprHttpClient.saveStateTransactionally("DemoActor", "1", ops);
     assertNull(mono.block());
   }
 
@@ -79,7 +79,7 @@ public class DaprHttpClientTest {
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono =
-      DaprHttpClient.registerActorReminder(
+      DaprHttpClient.registerReminder(
           "DemoActor",
           "1",
           "reminder",
@@ -94,7 +94,7 @@ public class DaprHttpClientTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
-    Mono<Void> mono = DaprHttpClient.unregisterActorReminder("DemoActor", "1", "reminder");
+    Mono<Void> mono = DaprHttpClient.unregisterReminder("DemoActor", "1", "reminder");
     assertNull(mono.block());
   }
 
@@ -127,7 +127,7 @@ public class DaprHttpClientTest {
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono =
-      DaprHttpClient.registerActorTimer(
+      DaprHttpClient.registerTimer(
           "DemoActor",
           "1",
           "timer",
@@ -146,7 +146,7 @@ public class DaprHttpClientTest {
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
-    Mono<Void> mono = DaprHttpClient.unregisterActorTimer("DemoActor", "1", "timer");
+    Mono<Void> mono = DaprHttpClient.unregisterTimer("DemoActor", "1", "timer");
     assertNull(mono.block());
   }
 }

@@ -14,7 +14,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collections;
 
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
@@ -58,7 +57,7 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
     assertThrowsDaprException(
         "ERR_STATE_STORE_NOT_FOUND",
-        "ERR_STATE_STORE_NOT_FOUND: state store unknown%20state%20store is not found",
+        "ERR_STATE_STORE_NOT_FOUND: state store unknown state store is not found",
         () -> daprClient.getState("unknown state store", new State(stateKey), byte[].class).block());
   }
 
@@ -71,8 +70,8 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
     assertThrowsDaprException(
         "ERR_STATE_STORE_NOT_FOUND",
-        "ERR_STATE_STORE_NOT_FOUND: state store unknown%20state%20store is not found",
-        () -> daprClient.getStates(
+        "ERR_STATE_STORE_NOT_FOUND: state store unknown state store is not found",
+        () -> daprClient.getBulkState(
             "unknown state store",
             Collections.singletonList(stateKey),
             byte[].class).block());
@@ -82,10 +81,6 @@ public class HttpStateClientIT extends AbstractStateClientIT {
   public void publishPubSubNotFound() {
     DaprClient daprClient = buildDaprClient();
 
-    // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
-    assertThrowsDaprException(
-        "ERR_PUBSUB_NOT_FOUND",
-        "ERR_PUBSUB_NOT_FOUND: pubsub 'unknown%20pubsub' not found",
-        () -> daprClient.publishEvent("unknown pubsub", "mytopic", "payload").block());
+
   }
 }

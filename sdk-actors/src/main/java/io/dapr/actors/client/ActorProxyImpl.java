@@ -21,6 +21,8 @@ import java.lang.reflect.Method;
  */
 class ActorProxyImpl implements ActorProxy, InvocationHandler {
 
+  private static final String UNDEFINED_CLASS_NAME = "io.dapr.actors.Undefined";
+
   /**
    * Actor's identifier for this Actor instance.
    */
@@ -39,7 +41,7 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
   /**
    * Client to talk to the Dapr's API.
    */
-  private final DaprClient daprClient;
+  private final ActorClient actorClient;
 
   /**
    * Creates a new instance of {@link ActorProxyImpl}.
@@ -47,12 +49,12 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * @param actorType  actor implementation type of the actor associated with the proxy object.
    * @param actorId    The actorId associated with the proxy
    * @param serializer Serializer and deserializer for method calls.
-   * @param daprClient Dapr client.
+   * @param actorClient Dapr client for Actor APIs.
    */
-  ActorProxyImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, DaprClient daprClient) {
+  ActorProxyImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, ActorClient actorClient) {
     this.actorType = actorType;
     this.actorId = actorId;
-    this.daprClient = daprClient;
+    this.actorClient = actorClient;
     this.serializer = serializer;
   }
 
@@ -74,8 +76,8 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, Object data, TypeRef<T> type) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.serialize(data))
+  public <T> Mono<T> invokeMethod(String methodName, Object data, TypeRef<T> type) {
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data))
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -84,16 +86,16 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, Object data, Class<T> clazz) {
-    return this.invokeActorMethod(methodName, data, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(String methodName, Object data, Class<T> clazz) {
+    return this.invokeMethod(methodName, data, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, TypeRef<T> type) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null)
+  public <T> Mono<T> invokeMethod(String methodName, TypeRef<T> type) {
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null)
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -102,24 +104,24 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<T> invokeActorMethod(String methodName, Class<T> clazz) {
-    return this.invokeActorMethod(methodName, TypeRef.get(clazz));
+  public <T> Mono<T> invokeMethod(String methodName, Class<T> clazz) {
+    return this.invokeMethod(methodName, TypeRef.get(clazz));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeActorMethod(String methodName) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, null).then();
+  public Mono<Void> invokeMethod(String methodName) {
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null).then();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Void> invokeActorMethod(String methodName, Object data) {
-    return this.daprClient.invokeActorMethod(actorType, actorId.toString(), methodName, this.serialize(data)).then();
+  public Mono<Void> invokeMethod(String methodName, Object data) {
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data)).then();
   }
 
   /**
@@ -136,29 +138,33 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
       throw new UnsupportedOperationException("Actor methods can only have zero or one arguments.");
     }
 
+    ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
+    String methodName = method.getName();
+    if ((actorMethodAnnotation != null) && !actorMethodAnnotation.name().isEmpty()) {
+      methodName = actorMethodAnnotation.name();
+    }
+
     if (method.getParameterCount() == 0) {
       if (method.getReturnType().equals(Mono.class)) {
-        ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
-        if (actorMethodAnnotation == null) {
-          return invokeActorMethod(method.getName());
+        if ((actorMethodAnnotation == null) || UNDEFINED_CLASS_NAME.equals(actorMethodAnnotation.returns().getName())) {
+          return invokeMethod(methodName);
         }
 
-        return invokeActorMethod(method.getName(), actorMethodAnnotation.returns());
+        return invokeMethod(methodName, actorMethodAnnotation.returns());
       }
 
-      return invokeActorMethod(method.getName(), method.getReturnType()).block();
+      return invokeMethod(methodName, method.getReturnType()).block();
     }
 
     if (method.getReturnType().equals(Mono.class)) {
-      ActorMethod actorMethodAnnotation = method.getDeclaredAnnotation(ActorMethod.class);
-      if (actorMethodAnnotation == null) {
-        return invokeActorMethod(method.getName(), args[0]);
+      if ((actorMethodAnnotation == null) || UNDEFINED_CLASS_NAME.equals(actorMethodAnnotation.returns().getName())) {
+        return invokeMethod(methodName, args[0]);
       }
 
-      return invokeActorMethod(method.getName(), args[0], actorMethodAnnotation.returns());
+      return invokeMethod(methodName, args[0], actorMethodAnnotation.returns());
     }
 
-    return invokeActorMethod(method.getName(), args[0], method.getReturnType()).block();
+    return invokeMethod(methodName, args[0], method.getReturnType()).block();
   }
 
   /**

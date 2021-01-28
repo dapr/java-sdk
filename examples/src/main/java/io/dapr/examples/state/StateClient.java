@@ -9,6 +9,8 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.exceptions.DaprException;
+import io.grpc.Status;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -46,6 +48,10 @@ public class StateClient {
    */
   public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
+      System.out.println("Waiting for Dapr sidecar ...");
+      client.waitForSidecar(10000).block();
+      System.out.println("Dapr sidecar is ready.");
+
       String message = args.length == 0 ? " " : args[0];
 
       MyClass myClass = new MyClass();
@@ -70,28 +76,40 @@ public class StateClient {
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
               new State<>(secondState, SECOND_KEY_NAME, "")));
 
-      client.executeTransaction(STATE_STORE_NAME, operationList).block();
+      client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
 
       // get multiple states
-      Mono<List<State<MyClass>>> retrievedMessagesMono = client.getStates(STATE_STORE_NAME,
+      Mono<List<State<MyClass>>> retrievedMessagesMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
       System.out.println("Retrieved messages using bulk get:");
       retrievedMessagesMono.block().forEach(System.out::println);
 
       System.out.println("Deleting states...");
 
+      System.out.println("Verify delete key request is aborted if an etag different from stored is passed.");
       // delete state API
-      Mono<Void> mono = client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME);
-      mono.block();
+      try {
+        client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, "100", null).block();
+      } catch (DaprException ex) {
+        if (ex.getErrorCode().equals(Status.Code.ABORTED.toString())) {
+          // Expected error due to etag mismatch.
+          System.out.println(String.format("Expected failure. %s ", ex.getMessage()));
+        } else {
+          System.out.println("Unexpected exception.");
+          throw ex;
+        }
+      }
 
+      System.out.println("Trying to delete again with correct etag.");
+      String storedEtag = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class).block().getEtag();
+      client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME, storedEtag, null).block();
       // Delete operation using transaction API
       operationList.clear();
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.DELETE,
           new State<>(SECOND_KEY_NAME)));
-      mono = client.executeTransaction(STATE_STORE_NAME, operationList);
-      mono.block();
+      client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
 
-      Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getStates(STATE_STORE_NAME,
+      Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
       System.out.println("Trying to retrieve deleted states: ");
       retrievedDeletedMessageMono.block().forEach(System.out::println);

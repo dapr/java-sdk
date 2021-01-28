@@ -3,7 +3,9 @@
 In this sample, we'll create two java applications: a service application, which exposes two methods, and a client application which will invoke the methods from the service using Dapr.
 This sample includes:
 
-* TracingDemoService (Exposes the method to be remotely accessed)
+* TracingDemoService (Exposes the methods to be remotely accessed)
+* TracingDemoServiceController (Implements two methods: `echo` and `sleep`)
+* TracingDemoMiddleServiceController (Implements two methods: `proxy_echo` and `proxy_sleep`)
 * InvokeClient (Invokes the exposed methods from TracingDemoService)
 
 Also consider [getting started with observability in Dapr](https://github.com/dapr/quickstarts/tree/master/observability).
@@ -54,7 +56,7 @@ CONTAINER ID        IMAGE                  COMMAND                  CREATED     
 
 If Zipkin is not working, [install the newest version of Dapr Cli and initialize it](https://github.com/dapr/cli#install-dapr-on-your-local-machine-self-hosted).
 
-### Running the Demo service sample
+### Running the Demo service app
 
 The Demo service application exposes two methods that can be remotely invoked. In this example, the service code has two parts:
 
@@ -82,11 +84,11 @@ This Rest Controller exposes the `echo` and `sleep` methods. The `echo` method r
 public class TracingDemoServiceController {
   ///...
   @PostMapping(path = "/echo")
-  public Mono<String> handleMethod(@RequestBody(required = false) byte[] body,
+  public Mono<String> handleMethod(@RequestBody(required = false) String body,
                                    @RequestHeader Map<String, String> headers) {
     return Mono.fromSupplier(() -> {
       try {
-        String message = body == null ? "" : new String(body, StandardCharsets.UTF_8);
+        String message = body == null ? "" : body;
 
         Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
@@ -95,7 +97,7 @@ public class TracingDemoServiceController {
 
         // Handles the request by printing message.
         System.out.println(
-          "Server: " + message + " @ " + utcNowAsString + " and metadata: " + metadataString);
+            "Server: " + message + " @ " + utcNowAsString + " and metadata: " + metadataString);
 
         return utcNowAsString;
       } catch (Exception e) {
@@ -130,15 +132,67 @@ dapr run --app-id tracingdemo --app-port 3000 -- java -jar target/dapr-java-sdk-
 
 Once running, the TracingDemoService is now ready to be invoked by Dapr.
 
+### Running the Demo middle service app
 
-### Running the InvokeClient sample
+This service will handle the `proxy_echo` and `proxy_sleep` methods and invoke the corresponding methods in the service above.
+In the code below, the `opentelemetry-context` attribute is used to propagate the tracing context among service invocations in multiple layers.
 
-This sample code uses the Dapr SDK for invoking two remote methods (`echo` and `sleep`). It is also instrumented with OpenTelemetry. See the code snippet below:
+```java
+@RestController
+public class TracingDemoMiddleServiceController {
+  // ...
+  @PostMapping(path = "/proxy_echo")
+  public Mono<byte[]> echo(
+      @RequestAttribute(name = "opentelemetry-context") Context context,
+      @RequestBody(required = false) String body) {
+    InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(INVOKE_APP_ID, "echo");
+    InvokeServiceRequest request
+        = builder.withBody(body).withHttpExtension(HttpExtension.POST).withContext(context).build();
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).map(r -> r.getObject());
+  }
+  // ...
+  @PostMapping(path = "/proxy_sleep")
+  public Mono<Void> sleep(@RequestAttribute(name = "opentelemetry-context") Context context) {
+    InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(INVOKE_APP_ID, "sleep");
+    InvokeServiceRequest request = builder.withHttpExtension(HttpExtension.POST).withContext(context).build();
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).then();
+  }
+}
+```
+
+The request attribute `opentelemetry-context` in created by parsing the tracing headers in the [OpenTelemetryInterceptor](../OpenTelemetryInterceptor.java) class. See the code below:
+
+```java
+@Component
+public class OpenTelemetryInterceptor implements HandlerInterceptor {
+  // ...
+  @Override
+  public boolean preHandle(
+      HttpServletRequest request, HttpServletResponse response, Object handler) {
+    final TextMapPropagator textFormat = OpenTelemetry.getGlobalPropagators().getTextMapPropagator();
+    // ...
+    Context context = textFormat.extract(Context.current(), request, HTTP_SERVLET_REQUEST_GETTER);
+    request.setAttribute("opentelemetry-context", context);
+    return true;
+  }
+  // ...
+}
+```
+
+Use the follow command to execute the service:
+
+```sh
+dapr run --app-id tracingdemoproxy --app-port 3001   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3001
+```
+
+### Running the InvokeClient app
+
+This sample code uses the Dapr SDK for invoking two remote methods (`proxy_echo` and `proxy_sleep`). It is also instrumented with OpenTelemetry. See the code snippet below:
 
 ```java
 public class InvokeClient {
 
-private static final String SERVICE_APP_ID = "invokedemo";
+private static final String SERVICE_APP_ID = "tracingdemoproxy";
 ///...
   public static void main(String[] args) throws Exception {
     Tracer tracer = OpenTelemetryConfig.createTracer(InvokeClient.class.getCanonicalName());
@@ -147,7 +201,7 @@ private static final String SERVICE_APP_ID = "invokedemo";
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         try (Scope scope = tracer.withSpan(span)) {
-          InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "echo");
+          InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_echo");
           InvokeServiceRequest request
               = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
           client.invokeService(request, TypeRef.get(byte[].class))
@@ -156,10 +210,10 @@ private static final String SERVICE_APP_ID = "invokedemo";
                 return r;
               })
               .flatMap(r -> {
-                InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "sleep")
+                InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
                     .withHttpExtension(HttpExtension.POST)
                     .withContext(r.getContext()).build();
-                return client.invokeService(sleepRequest, TypeRef.get(Void.class));
+                return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
               }).block();
         }
       }
@@ -175,7 +229,7 @@ private static final String SERVICE_APP_ID = "invokedemo";
 }
 ```
 
-The class knows the app id for the remote application. It uses `invokeService` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
+The class knows the app id for the remote application. It uses `invokeMethod` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 ```sh

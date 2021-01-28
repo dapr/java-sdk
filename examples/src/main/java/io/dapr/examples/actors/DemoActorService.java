@@ -6,7 +6,7 @@
 package io.dapr.examples.actors;
 
 import io.dapr.actors.runtime.ActorRuntime;
-import io.dapr.springboot.DaprApplication;
+import io.dapr.examples.DaprApplication;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;

@@ -8,6 +8,7 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.client.DaprApiProtocol;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
@@ -22,7 +23,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @RunWith(Parameterized.class)
 public class ActorStateIT extends BaseIT {
@@ -36,14 +39,19 @@ public class ActorStateIT extends BaseIT {
    */
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] { { false, false }, { false, true }, { true, false }, { true, true } });
+    return Arrays.asList(new Object[][] {
+        { DaprApiProtocol.HTTP, DaprApiProtocol.HTTP },
+        { DaprApiProtocol.HTTP, DaprApiProtocol.GRPC },
+        { DaprApiProtocol.GRPC, DaprApiProtocol.HTTP },
+        { DaprApiProtocol.GRPC, DaprApiProtocol.GRPC },
+    });
   }
 
   @Parameterized.Parameter(0)
-  public boolean useGrpc;
+  public DaprApiProtocol daprClientProtocol;
 
   @Parameterized.Parameter(1)
-  public boolean useGrpcInService;
+  public DaprApiProtocol serviceAppProtocol;
 
   @Test
   public void writeReadState() throws Exception {
@@ -55,39 +63,36 @@ public class ActorStateIT extends BaseIT {
       StatefulActorService.class,
       true,
       60000,
-      useGrpcInService);
+      serviceAppProtocol);
 
-    if (this.useGrpc) {
-      runtime.switchToGRPC();
-    } else {
-      runtime.switchToHTTP();
-    }
+    runtime.switchToProtocol(this.daprClientProtocol);
 
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
     ActorId actorId = new ActorId(
-        String.format("%d-%b-%b", System.currentTimeMillis(), this.useGrpc, this.useGrpcInService));
+        String.format("%d-%b-%b", System.currentTimeMillis(), this.daprClientProtocol, this.serviceAppProtocol));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
-    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     // Validate conditional read works.
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not present yet ... ");
-      String result = proxy.invokeActorMethod("readMessage", String.class).block();
+      String result = proxy.invokeMethod("readMessage", String.class).block();
       assertNull(result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeMessage ... ");
-      proxy.invokeActorMethod("writeMessage", message).block();
+      proxy.invokeMethod("writeMessage", message).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is probably still cached ... ");
-      String result = proxy.invokeActorMethod("readMessage", String.class).block();
+      String result = proxy.invokeMethod("readMessage", String.class).block();
       assertEquals(message, result);
     }, 5000);
 
@@ -96,45 +101,45 @@ public class ActorStateIT extends BaseIT {
     mydata.value = "My data value.";
     callWithRetry(() -> {
       logger.debug("Invoking writeData with object ... ");
-      proxy.invokeActorMethod("writeData", mydata).block();
+      proxy.invokeMethod("writeData", mydata).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readData where data is probably still cached ... ");
-      StatefulActor.MyData result = proxy.invokeActorMethod("readData", StatefulActor.MyData.class).block();
+      StatefulActor.MyData result = proxy.invokeMethod("readData", StatefulActor.MyData.class).block();
       assertEquals(mydata.value, result.value);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeName ... ");
-      proxy.invokeActorMethod("writeName", name).block();
+      proxy.invokeMethod("writeName", name).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readName where data is probably still cached ... ");
-      String result = proxy.invokeActorMethod("readName", String.class).block();
+      String result = proxy.invokeMethod("readName", String.class).block();
       assertEquals(name, result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeName with empty content... ");
-      proxy.invokeActorMethod("writeName", "").block();
+      proxy.invokeMethod("writeName", "").block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readName where empty content is probably still cached ... ");
-      String result = proxy.invokeActorMethod("readName", String.class).block();
+      String result = proxy.invokeMethod("readName", String.class).block();
       assertEquals("", result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeBytes ... ");
-      proxy.invokeActorMethod("writeBytes", bytes).block();
+      proxy.invokeMethod("writeBytes", bytes).block();
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readBytes where data is probably still cached ... ");
-      byte[] result = proxy.invokeActorMethod("readBytes", byte[].class).block();
+      byte[] result = proxy.invokeMethod("readBytes", byte[].class).block();
       assertArrayEquals(bytes, result);
     }, 5000);
 
@@ -151,40 +156,36 @@ public class ActorStateIT extends BaseIT {
         StatefulActorService.class,
         true,
         60000,
-        useGrpcInService);
+        serviceAppProtocol);
 
-    if (this.useGrpc) {
-      run2.switchToGRPC();
-    } else {
-      run2.switchToHTTP();
-    }
+    runtime.switchToProtocol(this.daprClientProtocol);
 
     // Need new proxy builder because the proxy builder holds the channel.
-    proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached ... ");
-      String result = newProxy.invokeActorMethod("readMessage", String.class).block();
+      String result = newProxy.invokeMethod("readMessage", String.class).block();
       assertEquals(message, result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readData where data is not cached ... ");
-      StatefulActor.MyData result = newProxy.invokeActorMethod("readData", StatefulActor.MyData.class).block();
+      StatefulActor.MyData result = newProxy.invokeMethod("readData", StatefulActor.MyData.class).block();
       assertEquals(mydata.value, result.value);
     }, 5000);
     logger.debug("Finished testing actor string state.");
 
     callWithRetry(() -> {
       logger.debug("Invoking readName where empty content is not cached ... ");
-      String result = newProxy.invokeActorMethod("readName", String.class).block();
+      String result = newProxy.invokeMethod("readName", String.class).block();
       assertEquals("", result);
     }, 5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readBytes where content is not cached ... ");
-      byte[] result = newProxy.invokeActorMethod("readBytes", byte[].class).block();
+      byte[] result = newProxy.invokeMethod("readBytes", byte[].class).block();
       assertArrayEquals(bytes, result);
     }, 5000);
   }

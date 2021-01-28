@@ -54,7 +54,7 @@ public class MyActorTestUtils {
    * @return List of call log.
    */
   static List<MethodEntryTracker> fetchMethodCallLogs(ActorProxy proxy) {
-    ArrayList<String> logs = proxy.invokeActorMethod("getCallLog", ArrayList.class).block();
+    ArrayList<String> logs = proxy.invokeMethod("getCallLog", ArrayList.class).block();
     ArrayList<MethodEntryTracker> trackers = new ArrayList<MethodEntryTracker>();
     for(String t : logs) {
       String[] toks = t.split("\\|");

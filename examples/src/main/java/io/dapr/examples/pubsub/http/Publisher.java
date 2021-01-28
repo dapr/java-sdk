@@ -7,9 +7,9 @@ package io.dapr.examples.pubsub.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.domain.Metadata;
 
-import java.io.IOException;
-import java.util.Collections;
+import static java.util.Collections.singletonMap;
 
 /**
  * Message publisher.
@@ -22,12 +22,16 @@ import java.util.Collections;
  */
 public class Publisher {
 
-  //Number of messages to be sent: 10
+  //Number of messages to be sent.
   private static final int NUM_MESSAGES = 10;
+
+  //Time-to-live for messages published.
+  private static final String MESSAGE_TTL_IN_SECONDS = "1000";
+
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
 
-  //The name of the pubseb
+  //The name of the pubsub
   private static final String PUBSUB_NAME = "messagebus";
 
   /**
@@ -41,7 +45,11 @@ public class Publisher {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d", i);
         //Publishing messages
-        client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
+        client.publishEvent(
+            PUBSUB_NAME,
+            TOPIC_NAME,
+            message,
+            singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
         System.out.println("Published message: " + message);
 
         try {
@@ -52,14 +60,6 @@ public class Publisher {
           return;
         }
       }
-
-      //Publishing a single bite: Example of non-string based content published
-      client.publishEvent(
-          PUBSUB_NAME,
-          TOPIC_NAME,
-          new byte[]{1},
-          Collections.singletonMap("content-type", "application/octet-stream")).block();
-      System.out.println("Published one byte.");
 
       // This is an example, so for simplicity we are just exiting here.
       // Normally a dapr app would be a web service and not exit main.

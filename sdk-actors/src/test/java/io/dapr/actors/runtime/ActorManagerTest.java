@@ -287,10 +287,10 @@ public class ActorManagerTest {
   private static <T extends AbstractActor> ActorRuntimeContext createContext(Class<T> clazz) {
     DaprClient daprClient = mock(DaprClient.class);
 
-    when(daprClient.registerActorTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.registerActorReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorTimer(any(), any(), any())).thenReturn(Mono.empty());
-    when(daprClient.unregisterActorReminder(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerTimer(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.registerReminder(any(), any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterTimer(any(), any(), any())).thenReturn(Mono.empty());
+    when(daprClient.unregisterReminder(any(), any(), any())).thenReturn(Mono.empty());
 
     return new ActorRuntimeContext(
       mock(ActorRuntime.class),

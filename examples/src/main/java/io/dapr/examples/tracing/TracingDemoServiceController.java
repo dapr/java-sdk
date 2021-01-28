@@ -6,6 +6,7 @@
 package io.dapr.examples.tracing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.examples.OpenTelemetryInterceptor;
 import io.opentelemetry.api.trace.Tracer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -24,7 +24,7 @@ import java.util.TimeZone;
 /**
  * SpringBoot Controller to handle service invocation.
  *
- * <p>Instrumentation is handled in {@link io.dapr.springboot.OpenTelemetryInterceptor}.
+ * <p>Instrumentation is handled in {@link OpenTelemetryInterceptor}.
  */
 @RestController
 public class TracingDemoServiceController {
@@ -53,11 +53,11 @@ public class TracingDemoServiceController {
    * @return A message containing the time.
    */
   @PostMapping(path = "/echo")
-  public Mono<String> handleMethod(@RequestBody(required = false) byte[] body,
+  public Mono<String> handleMethod(@RequestBody(required = false) String body,
                                    @RequestHeader Map<String, String> headers) {
     return Mono.fromSupplier(() -> {
       try {
-        String message = body == null ? "" : new String(body, StandardCharsets.UTF_8);
+        String message = body == null ? "" : body;
 
         Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());

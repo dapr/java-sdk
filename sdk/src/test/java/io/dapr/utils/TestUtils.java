@@ -9,6 +9,9 @@ import io.dapr.exceptions.DaprException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+
 public final class TestUtils {
 
   private TestUtils() {}
@@ -45,5 +48,12 @@ public final class TestUtils {
     Assertions.assertEquals(expectedType, daprException.getCause().getClass());
     Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
+  }
+
+  public static int findFreePort() throws IOException {
+    try (ServerSocket socket = new ServerSocket(0)) {
+      socket.setReuseAddress(true);
+      return socket.getLocalPort();
+    }
   }
 }

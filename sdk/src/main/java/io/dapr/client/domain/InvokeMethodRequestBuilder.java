@@ -7,14 +7,10 @@ package io.dapr.client.domain;
 
 import io.opentelemetry.context.Context;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Builds a request to invoke a service.
  */
-public class InvokeServiceRequestBuilder {
+public class InvokeMethodRequestBuilder {
 
   private final String appId;
 
@@ -24,38 +20,31 @@ public class InvokeServiceRequestBuilder {
 
   private Object body;
 
-  private Map<String, String> metadata = new HashMap<>();
-
   private HttpExtension httpExtension = HttpExtension.NONE;
 
   private Context context;
 
-  public InvokeServiceRequestBuilder(String appId, String method) {
+  public InvokeMethodRequestBuilder(String appId, String method) {
     this.appId = appId;
     this.method = method;
   }
 
-  public InvokeServiceRequestBuilder withContentType(String contentType) {
+  public InvokeMethodRequestBuilder withContentType(String contentType) {
     this.contentType = contentType;
     return this;
   }
 
-  public InvokeServiceRequestBuilder withBody(Object body) {
+  public InvokeMethodRequestBuilder withBody(Object body) {
     this.body = body;
     return this;
   }
 
-  public InvokeServiceRequestBuilder withMetadata(Map<String, String> metadata) {
-    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
-    return this;
-  }
-
-  public InvokeServiceRequestBuilder withHttpExtension(HttpExtension httpExtension) {
+  public InvokeMethodRequestBuilder withHttpExtension(HttpExtension httpExtension) {
     this.httpExtension = httpExtension;
     return this;
   }
 
-  public InvokeServiceRequestBuilder withContext(Context context) {
+  public InvokeMethodRequestBuilder withContext(Context context) {
     this.context = context;
     return this;
   }
@@ -64,14 +53,13 @@ public class InvokeServiceRequestBuilder {
    * Builds a request object.
    * @return Request object.
    */
-  public InvokeServiceRequest build() {
-    InvokeServiceRequest request = new InvokeServiceRequest();
+  public InvokeMethodRequest build() {
+    InvokeMethodRequest request = new InvokeMethodRequest();
     request.setAppId(this.appId);
     request.setContentType(contentType);
     request.setMethod(this.method);
     request.setBody(this.body);
     request.setHttpExtension(this.httpExtension);
-    request.setMetadata(this.metadata);
     request.setContext(this.context);
     return request;
   }

@@ -54,7 +54,7 @@ public class DaprGrpcClientTest {
       assertArrayEquals(payload, argument.getData().toByteArray());
       return true;
     }))).thenReturn(settableFuture);
-    Mono<byte[]> result = client.invokeActorMethod(ACTOR_TYPE, ACTOR_ID, methodName, payload);
+    Mono<byte[]> result = client.invoke(ACTOR_TYPE, ACTOR_ID, methodName, payload);
     assertArrayEquals(response, result.block());
   }
 
@@ -73,7 +73,7 @@ public class DaprGrpcClientTest {
       assertArrayEquals(new byte[0], argument.getData().toByteArray());
       return true;
     }))).thenReturn(settableFuture);
-    Mono<byte[]> result = client.invokeActorMethod(ACTOR_TYPE, ACTOR_ID, methodName, null);
+    Mono<byte[]> result = client.invoke(ACTOR_TYPE, ACTOR_ID, methodName, null);
     assertArrayEquals(response, result.block());
   }
 
@@ -91,7 +91,7 @@ public class DaprGrpcClientTest {
       assertArrayEquals(new byte[0], argument.getData().toByteArray());
       return true;
     }))).thenReturn(settableFuture);
-    Mono<byte[]> result = client.invokeActorMethod(ACTOR_TYPE, ACTOR_ID, methodName, null);
+    Mono<byte[]> result = client.invoke(ACTOR_TYPE, ACTOR_ID, methodName, null);
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -114,7 +114,7 @@ public class DaprGrpcClientTest {
       assertArrayEquals(new byte[0], argument.getData().toByteArray());
       return true;
     }))).thenReturn(settableFuture);
-    client.invokeActorMethod(ACTOR_TYPE, ACTOR_ID, methodName, null);
+    client.invoke(ACTOR_TYPE, ACTOR_ID, methodName, null);
     // No exception thrown because Mono is ignored here.
   }
 

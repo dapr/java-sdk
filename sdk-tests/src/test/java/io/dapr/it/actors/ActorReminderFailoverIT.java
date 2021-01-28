@@ -20,7 +20,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 
-import static io.dapr.it.actors.MyActorTestUtils.*;
+import static io.dapr.it.actors.MyActorTestUtils.countMethodCalls;
+import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static org.junit.Assert.assertNotEquals;
 
 public class ActorReminderFailoverIT extends BaseIT {
@@ -61,7 +63,8 @@ public class ActorReminderFailoverIT extends BaseIT {
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
-    ActorProxyBuilder<ActorProxy> proxyBuilder = deferClose(new ActorProxyBuilder(actorType, ActorProxy.class));
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);
@@ -71,7 +74,7 @@ public class ActorReminderFailoverIT extends BaseIT {
   public void tearDown() {
     // call unregister
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeActorMethod("stopReminder", "myReminder").block();
+    proxy.invokeMethod("stopReminder", "myReminder").block();
   }
 
   /**
@@ -83,7 +86,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     clientAppRun.use();
 
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
-    proxy.invokeActorMethod("startReminder", "myReminder").block();
+    proxy.invokeMethod("startReminder", "myReminder").block();
 
     logger.debug("Pausing 7 seconds to allow reminder to fire");
     Thread.sleep(7000);
@@ -92,7 +95,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     validateMethodCalls(logs, METHOD_NAME, 3);
 
     int originalActorHostIdentifier = Integer.parseInt(
-        proxy.invokeActorMethod("getIdentifier", String.class).block());
+        proxy.invokeMethod("getIdentifier", String.class).block());
     if (originalActorHostIdentifier == firstAppRun.getHttpPort()) {
       firstAppRun.stop();
     }
@@ -110,7 +113,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     validateMethodCalls(newLogs2, METHOD_NAME, countMethodCalls(newLogs, METHOD_NAME) + 4);
 
     int newActorHostIdentifier = Integer.parseInt(
-        proxy.invokeActorMethod("getIdentifier", String.class).block());
+        proxy.invokeMethod("getIdentifier", String.class).block());
     assertNotEquals(originalActorHostIdentifier, newActorHostIdentifier);
   }
 

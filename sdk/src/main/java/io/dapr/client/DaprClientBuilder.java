@@ -14,8 +14,6 @@ import io.grpc.ManagedChannelBuilder;
 
 import java.io.Closeable;
 
-import static io.dapr.exceptions.DaprException.throwIllegalArgumentException;
-
 /**
  * A builder for the DaprClient,
  * Currently only and HTTP Client will be supported.
@@ -26,7 +24,12 @@ public class DaprClientBuilder {
   /**
    * Determine if this builder will create GRPC clients instead of HTTP clients.
    */
-  private final boolean useGrpc;
+  private final DaprApiProtocol apiProtocol;
+
+  /**
+   * Determine if this builder will use HTTP client for service method invocation APIs.
+   */
+  private final DaprApiProtocol methodInvocationApiProtocol;
 
   /**
    * Builder for Dapr's HTTP Client.
@@ -52,7 +55,8 @@ public class DaprClientBuilder {
   public DaprClientBuilder() {
     this.objectSerializer = new DefaultObjectSerializer();
     this.stateSerializer = new DefaultObjectSerializer();
-    this.useGrpc = Properties.USE_GRPC.get();
+    this.apiProtocol = Properties.API_PROTOCOL.get();
+    this.methodInvocationApiProtocol = Properties.API_METHOD_INVOCATION_PROTOCOL.get();
     this.daprHttpBuilder = new DaprHttpBuilder();
   }
 
@@ -65,11 +69,11 @@ public class DaprClientBuilder {
    */
   public DaprClientBuilder withObjectSerializer(DaprObjectSerializer objectSerializer) {
     if (objectSerializer == null) {
-      throwIllegalArgumentException("Object serializer is required");
+      throw new IllegalArgumentException("Object serializer is required");
     }
 
     if (objectSerializer.getContentType() == null || objectSerializer.getContentType().isEmpty()) {
-      throwIllegalArgumentException("Content Type should not be null or empty");
+      throw new IllegalArgumentException("Content Type should not be null or empty");
     }
 
     this.objectSerializer = objectSerializer;
@@ -85,7 +89,7 @@ public class DaprClientBuilder {
    */
   public DaprClientBuilder withStateSerializer(DaprObjectSerializer stateSerializer) {
     if (stateSerializer == null) {
-      throwIllegalArgumentException("State serializer is required");
+      throw new IllegalArgumentException("State serializer is required");
     }
 
     this.stateSerializer = stateSerializer;
@@ -99,11 +103,30 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   public DaprClient build() {
-    if (this.useGrpc) {
-      return buildDaprClientGrpc();
+    if (this.apiProtocol != this.methodInvocationApiProtocol) {
+      return new DaprClientProxy(buildDaprClient(this.apiProtocol), buildDaprClient(this.methodInvocationApiProtocol));
     }
 
-    return buildDaprClientHttp();
+    return buildDaprClient(this.apiProtocol);
+  }
+
+  /**
+   * Creates an instance of a Dapr Client based on the chosen protocol.
+   *
+   * @param protocol Dapr API's protocol.
+   * @return the GRPC Client.
+   * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
+   */
+  private DaprClient buildDaprClient(DaprApiProtocol protocol) {
+    if (protocol == null) {
+      throw new IllegalStateException("Protocol is required.");
+    }
+
+    switch (protocol) {
+      case GRPC: return buildDaprClientGrpc();
+      case HTTP: return buildDaprClientHttp();
+      default: throw new IllegalStateException("Unsupported protocol: " + protocol.name());
+    }
   }
 
   /**
@@ -115,7 +138,7 @@ public class DaprClientBuilder {
   private DaprClient buildDaprClientGrpc() {
     int port = Properties.GRPC_PORT.get();
     if (port <= 0) {
-      throwIllegalArgumentException("Invalid port.");
+      throw new IllegalArgumentException("Invalid port.");
     }
     ManagedChannel channel = ManagedChannelBuilder.forAddress(
         Properties.SIDECAR_IP.get(), port).usePlaintext().build();
@@ -124,8 +147,8 @@ public class DaprClientBuilder {
         channel.shutdown();
       }
     };
-    DaprGrpc.DaprFutureStub stub = DaprGrpc.newFutureStub(channel);
-    return new DaprClientGrpc(closeableChannel, stub, this.objectSerializer, this.stateSerializer);
+    DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
+    return new DaprClientGrpc(closeableChannel, asyncStub, this.objectSerializer, this.stateSerializer);
   }
 
   /**

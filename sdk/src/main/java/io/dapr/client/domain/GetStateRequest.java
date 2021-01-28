@@ -15,24 +15,22 @@ import java.util.Map;
  */
 public class GetStateRequest {
 
-  private String stateStoreName;
+  private String storeName;
 
   private String key;
 
   private Map<String, String> metadata;
 
-  private String etag;
-
   private StateOptions stateOptions;
 
   private Context context;
 
-  public String getStateStoreName() {
-    return stateStoreName;
+  public String getStoreName() {
+    return storeName;
   }
 
-  void setStateStoreName(String stateStoreName) {
-    this.stateStoreName = stateStoreName;
+  void setStoreName(String storeName) {
+    this.storeName = storeName;
   }
 
   public String getKey() {
@@ -41,14 +39,6 @@ public class GetStateRequest {
 
   void setKey(String key) {
     this.key = key;
-  }
-
-  public String getEtag() {
-    return etag;
-  }
-
-  void setEtag(String etag) {
-    this.etag = etag;
   }
 
   public StateOptions getStateOptions() {
