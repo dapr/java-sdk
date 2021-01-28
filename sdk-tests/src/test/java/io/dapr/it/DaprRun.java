@@ -140,18 +140,28 @@ public class DaprRun implements Stoppable {
       System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.ports.getGrpcPort()));
     }
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
+    System.getProperties().setProperty(
+        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
+        DaprApiProtocol.GRPC.name());
   }
 
   public void switchToGRPC() {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
+    System.getProperties().setProperty(
+        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
+        DaprApiProtocol.GRPC.name());
   }
 
   public void switchToHTTP() {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
+    System.getProperties().setProperty(
+        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
+        DaprApiProtocol.HTTP.name());
   }
 
   public void switchToProtocol(DaprApiProtocol protocol) {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), protocol.name());
+    System.getProperties().setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol.name());
   }
 
   public int getGrpcPort() {

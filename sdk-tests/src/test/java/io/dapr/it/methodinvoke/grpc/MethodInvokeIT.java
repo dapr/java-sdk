@@ -139,7 +139,11 @@ public class MethodInvokeIT extends BaseIT {
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
 
             assertEquals("UNKNOWN", exception.getErrorCode());
-            assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
+            if (this.useGrpc) {
+                assertEquals("UNKNOWN: ", exception.getMessage());
+            } else {
+                assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
+            }
         }
     }
 }
