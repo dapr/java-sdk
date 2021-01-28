@@ -22,8 +22,6 @@ import static org.mockito.Mockito.*;
 
 public class DaprGrpcClientTest {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
   private static final String ACTOR_TYPE = "MyActorType";
 
   private static final String ACTOR_ID = "1234567890";

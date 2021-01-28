@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package daprtests;
+
+option java_outer_classname = "MethodInvokeServiceProtos";
+option java_package = "io.dapr.it";
+
+service MethodInvokeService {
+  rpc PostMessage (PostMessageRequest) returns (PostMessageResponse) {}
+  rpc DeleteMessage (DeleteMessageRequest) returns (DeleteMessageResponse) {}
+  rpc GetMessages (GetMessagesRequest) returns (GetMessagesResponse) {}
+  rpc Sleep (SleepRequest) returns (SleepResponse) {}
+}
+
+message PostMessageRequest {
+  int32 id = 1;
+  string message = 2;
+}
+
+message PostMessageResponse {
+}
+
+message DeleteMessageRequest {
+  int32 id = 1;
+}
+
+message DeleteMessageResponse {
+}
+
+message GetMessagesRequest {
+}
+
+message GetMessagesResponse {
+  map<int32, string> messages = 1;
+}
+
+message SleepRequest {
+  int32 seconds = 1;
+}
+
+message SleepResponse {
+}
