@@ -123,6 +123,8 @@ public class ObjectSerializer {
         if (method != null) {
           return (T) method.invoke(null, content);
         }
+      } catch (NoSuchMethodException e) {
+        // It was a best effort. Skip this try.
       } catch (Exception e) {
         throw new IOException(e);
       }
