@@ -29,8 +29,8 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
-import io.opentelemetry.context.Context;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.util.ArrayList;

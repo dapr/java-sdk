@@ -10,10 +10,7 @@ import com.google.protobuf.ByteString;
 import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
-import io.opentelemetry.context.Context;
 import reactor.core.publisher.Mono;
-
-import java.util.concurrent.Callable;
 
 /**
  * A DaprClient over GRPC for Actor.

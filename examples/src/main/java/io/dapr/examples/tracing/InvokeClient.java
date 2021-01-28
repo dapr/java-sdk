@@ -12,11 +12,13 @@ import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.examples.OpenTelemetryConfig;
 import io.dapr.utils.TypeRef;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+
+import static io.dapr.examples.OpenTelemetryConfig.getReactorContext;
 
 /**
  * 1. Build and install jars:
@@ -39,15 +41,18 @@ public class InvokeClient {
    * @param args Messages to be sent as request for the invoke API.
    */
   public static void main(String[] args) throws Exception {
-    Tracer tracer = OpenTelemetryConfig.createTracer(InvokeClient.class.getCanonicalName());
+    final OpenTelemetry openTelemetry = OpenTelemetryConfig.createOpenTelemetry();
+    final Tracer tracer = openTelemetry.getTracer(InvokeClient.class.getCanonicalName());
 
     Span span = tracer.spanBuilder("Example's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         try (Scope scope = span.makeCurrent()) {
           InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_echo");
-          InvokeMethodRequest request
-              = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
+          InvokeMethodRequest request = builder
+              .withBody(message)
+              .withHttpExtension(HttpExtension.POST)
+              .withContext(getReactorContext()).build();
           client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
                 System.out.println(new String(r.getObject()));
@@ -73,5 +78,6 @@ public class InvokeClient {
   private static void shutdown() {
     OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
   }
+
 
 }

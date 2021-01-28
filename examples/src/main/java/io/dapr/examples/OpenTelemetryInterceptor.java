@@ -9,6 +9,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -20,6 +21,10 @@ import java.util.Collections;
 
 @Component
 public class OpenTelemetryInterceptor implements HandlerInterceptor {
+
+  @Autowired
+  private OpenTelemetry openTelemetry;
+
   private static final TextMapPropagator.Getter<HttpServletRequest> HTTP_SERVLET_REQUEST_GETTER =
       new TextMapPropagator.Getter<>() {
         @Override
@@ -37,7 +42,7 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
   @Override
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
-    final TextMapPropagator textFormat = OpenTelemetry.getGlobalPropagators().getTextMapPropagator();
+    final TextMapPropagator textFormat = openTelemetry.getPropagators().getTextMapPropagator();
     // preHandle is called twice for asynchronous request. For more information, read:
     // https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/servlet/AsyncHandlerInterceptor.html
     if (request.getDispatcherType() == DispatcherType.ASYNC) {
