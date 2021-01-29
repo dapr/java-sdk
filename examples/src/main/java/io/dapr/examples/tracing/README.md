@@ -145,16 +145,20 @@ public class TracingDemoMiddleServiceController {
   public Mono<byte[]> echo(
       @RequestAttribute(name = "opentelemetry-context") Context context,
       @RequestBody(required = false) String body) {
-    InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(INVOKE_APP_ID, "echo");
-    InvokeServiceRequest request
-        = builder.withBody(body).withHttpExtension(HttpExtension.POST).withContext(context).build();
+    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "echo");
+    InvokeMethodRequest request = builder
+        .withBody(body)
+        .withHttpExtension(HttpExtension.POST)
+        .withContext(getReactorContext(context)).build();
     return client.invokeMethod(request, TypeRef.get(byte[].class)).map(r -> r.getObject());
   }
   // ...
   @PostMapping(path = "/proxy_sleep")
   public Mono<Void> sleep(@RequestAttribute(name = "opentelemetry-context") Context context) {
-    InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(INVOKE_APP_ID, "sleep");
-    InvokeServiceRequest request = builder.withHttpExtension(HttpExtension.POST).withContext(context).build();
+    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "sleep");
+    InvokeMethodRequest request = builder
+        .withHttpExtension(HttpExtension.POST)
+        .withContext(getReactorContext(context)).build();
     return client.invokeMethod(request, TypeRef.get(byte[].class)).then();
   }
 }
@@ -174,6 +178,29 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
     Context context = textFormat.extract(Context.current(), request, HTTP_SERVLET_REQUEST_GETTER);
     request.setAttribute("opentelemetry-context", context);
     return true;
+  }
+  // ...
+}
+```
+
+Then, `getReactorContext()` method is used to convert the OpenTelemetry's context to Reactor's context in the [OpenTelemetryConfig](../OpenTelemetryConfig.java) class:
+
+```java
+@Configuration
+@EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class})
+public class OpenTelemetryConfig {
+  // ...
+  public static reactor.util.context.Context getReactorContext(Context context) {
+    Map<String, String> map = new HashMap<>();
+    TextMapPropagator.Setter<Map<String, String>> setter =
+        (carrier, key, value) -> map.put(key, value);
+
+    GlobalOpenTelemetry.getPropagators().getTextMapPropagator().inject(context, map, setter);
+    reactor.util.context.Context reactorContext = reactor.util.context.Context.empty();
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+      reactorContext = reactorContext.put(entry.getKey(), entry.getValue());
+    }
+    return reactorContext;
   }
   // ...
 }

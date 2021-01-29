@@ -10,9 +10,6 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.propagation.HttpTraceContext;
-import io.opentelemetry.context.Context;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -23,6 +20,7 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -50,12 +48,6 @@ public class DaprHttp implements AutoCloseable {
    * Dapr's http default scheme.
    */
   private static final String DEFAULT_HTTP_SCHEME = "http";
-
-  /**
-   * Sets the headers for OpenTelemetry SDK.
-   */
-  private static final HttpTraceContext.Setter<Request.Builder> OPENTELEMETRY_SETTER =
-      (requestBuilder, key, value) -> requestBuilder.addHeader(key, value);
 
   /**
    * HTTP Methods supported.
@@ -271,7 +263,8 @@ public class DaprHttp implements AutoCloseable {
         .url(urlBuilder.build())
         .addHeader(HEADER_DAPR_REQUEST_ID, requestId);
     if (context != null) {
-      OpenTelemetry.getGlobalPropagators().getTextMapPropagator().inject(context, requestBuilder, OPENTELEMETRY_SETTER);
+      context.stream().forEach(
+          entry -> requestBuilder.addHeader(entry.getKey().toString(), entry.getValue().toString()));
     }
     if (HttpMethods.GET.name().equals(method)) {
       requestBuilder.get();

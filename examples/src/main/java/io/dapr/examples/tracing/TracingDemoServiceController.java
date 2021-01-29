@@ -7,8 +7,6 @@ package io.dapr.examples.tracing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.examples.OpenTelemetryInterceptor;
-import io.opentelemetry.api.trace.Tracer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -38,12 +36,6 @@ public class TracingDemoServiceController {
    * Format to output date and time.
    */
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-
-  /**
-   * OpenTelemetry's tracer.
-   */
-  @Autowired
-  private Tracer tracer;
 
   /**
    * Handles the 'echo' method invocation.

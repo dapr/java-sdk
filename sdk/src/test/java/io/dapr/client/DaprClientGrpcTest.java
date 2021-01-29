@@ -17,6 +17,8 @@ import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -38,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
