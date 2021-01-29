@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
@@ -108,6 +109,9 @@ public class DaprClientGrpcTelemetryTest {
               tracestate = "INVALID";
               expectGrpcTraceBin = false;
             }},
+        },
+        {
+            null
         }
     });
   }
@@ -129,6 +133,13 @@ public class DaprClientGrpcTelemetryTest {
       public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
           Metadata metadata,
           ServerCallHandler<ReqT, RespT> serverCallHandler) {
+        if (scenario == null) {
+          assertNull(metadata.get(TRACEPARENT_KEY));
+          assertNull(metadata.get(TRACESTATE_KEY));
+          assertNull(metadata.get(GRPC_TRACE_BIN_KEY));
+          return serverCallHandler.startCall(serverCall, metadata);
+        }
+
         assertEquals(scenario.traceparent, metadata.get(TRACEPARENT_KEY));
         assertEquals(scenario.tracestate, metadata.get(TRACESTATE_KEY));
         assertTrue((metadata.get(GRPC_TRACE_BIN_KEY) != null) == scenario.expectGrpcTraceBin);
@@ -157,12 +168,15 @@ public class DaprClientGrpcTelemetryTest {
 
   @Test
   public void invokeServiceVoidWithTracingTest() {
-    Context context = Context.empty();
-    if (scenario.traceparent != null) {
-      context = context.put("traceparent", scenario.traceparent);
-    }
-    if (scenario.tracestate != null) {
-      context = context.put("tracestate", scenario.tracestate);
+    Context context = null;
+    if (scenario != null) {
+      context = Context.empty();
+      if (scenario.traceparent != null) {
+        context = context.put("traceparent", scenario.traceparent);
+      }
+      if (scenario.tracestate != null) {
+        context = context.put("tracestate", scenario.tracestate);
+      }
     }
     InvokeMethodRequest req = new InvokeMethodRequestBuilder("appId", "method")
         .withBody("request")

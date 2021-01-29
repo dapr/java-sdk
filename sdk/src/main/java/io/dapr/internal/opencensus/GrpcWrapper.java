@@ -17,6 +17,7 @@ import io.grpc.MethodDescriptor;
 import reactor.util.context.Context;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -63,7 +64,7 @@ public final class GrpcWrapper {
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
           @Override
           public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-            Map<String, Object> map = context
+            Map<String, Object> map = (context == null ? Context.empty() : context)
                 .stream()
                 .filter(e -> (e.getKey() != null) && (e.getValue() != null))
                 .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue()));

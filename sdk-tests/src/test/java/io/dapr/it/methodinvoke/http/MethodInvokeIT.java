@@ -58,7 +58,7 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.SUCCESS_MESSAGE,
           MethodInvokeService.class,
           true,
-          60000);
+          30000);
 
         if (this.useGrpc) {
             daprRun.switchToGRPC();
