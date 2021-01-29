@@ -3,8 +3,10 @@ package io.dapr.it.methodinvoke.http;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import io.dapr.it.MethodInvokeServiceProtos;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.runners.Parameterized.Parameter;
@@ -55,7 +58,7 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.SUCCESS_MESSAGE,
           MethodInvokeService.class,
           true,
-          60000);
+          30000);
 
         if (this.useGrpc) {
             daprRun.switchToGRPC();
@@ -141,6 +144,19 @@ public class MethodInvokeIT extends BaseIT {
             long delay = System.currentTimeMillis() - started;
             assertTrue(delay <= 200);  // 200 ms is a reasonable delay if the request timed out.
             assertEquals("Timeout on blocking read for 10 MILLISECONDS", message);
+        }
+    }
+
+    @Test
+    public void testInvokeException() throws Exception {
+        try (DaprClient client = new DaprClientBuilder().build()) {
+            MethodInvokeServiceProtos.SleepRequest req = MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
+            DaprException exception = assertThrows(DaprException.class, () ->
+                client.invokeMethod(daprRun.getAppName(), "sleep", -9, HttpExtension.POST).block());
+
+            assertEquals("UNKNOWN", exception.getErrorCode());
+            assertNotNull(exception.getMessage());
+            assertTrue(exception.getMessage().contains("Internal Server Error"));
         }
     }
 }

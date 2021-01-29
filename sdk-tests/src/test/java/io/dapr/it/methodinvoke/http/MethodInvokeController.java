@@ -82,6 +82,9 @@ public class MethodInvokeController {
 
     @PostMapping(path = "/sleep")
     public void sleep(@RequestBody int seconds) throws InterruptedException {
+        if (seconds < 0) {
+            throw new IllegalArgumentException("Sleep time cannot be negative.");
+        }
         Thread.sleep(seconds * 1000);
     }
 }

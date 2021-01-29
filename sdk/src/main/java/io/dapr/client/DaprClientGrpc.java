@@ -26,6 +26,7 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
+import io.dapr.internal.opencensus.GrpcWrapper;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
@@ -38,29 +39,17 @@ import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
 import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
-import io.grpc.Metadata.Key;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
-import io.opencensus.implcore.trace.propagation.PropagationComponentImpl;
-import io.opencensus.implcore.trace.propagation.TraceContextFormat;
-import io.opencensus.trace.SpanContext;
-import io.opencensus.trace.propagation.BinaryFormat;
-import io.opencensus.trace.propagation.SpanContextParseException;
-import io.opencensus.trace.propagation.TextFormat;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.propagation.TextMapPropagator;
-import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -72,18 +61,6 @@ import java.util.stream.Collectors;
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientGrpc extends AbstractDaprClient {
-
-  private static final TextMapPropagator.Setter<Map<String, String>> MAP_SETTER =
-      (mapper, key, value) -> {
-        if (mapper != null) {
-          mapper.put(key, value);
-        }
-      };
-
-  /**
-   * Binary formatter to generate grpc-trace-bin.
-   */
-  private static final BinaryFormat OPENCENSUS_BINARY_FORMAT = new PropagationComponentImpl().getBinaryFormat();
 
   /**
    * The GRPC managed channel to be used.
@@ -112,7 +89,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprObjectSerializer stateSerializer) {
     super(objectSerializer, stateSerializer);
     this.channel = closeableChannel;
-    this.asyncStub = populateWithInterceptors(asyncStub);
+    this.asyncStub = intercept(asyncStub);
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -175,10 +152,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
         }
       }
 
-      return this.<Empty>createMono(
-              context,
-              it -> asyncStub.publishEvent(envelopeBuilder.build(), it)
-      ).thenReturn(new Response<>(context, null));
+      return this.<Empty>createMono(it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it))
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -204,10 +179,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
       // gRPC to gRPC does not handle metadata in Dapr runtime proto.
       // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
 
-      return this.<CommonProtos.InvokeResponse>createMono(
-              context,
-              it -> asyncStub.invokeService(envelope, it)
-      ).flatMap(
+      return this.<CommonProtos
+          .InvokeResponse>createMono(it -> intercept(context, asyncStub).invokeService(envelope, it))
+          .flatMap(
               it -> {
                 try {
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
@@ -251,10 +225,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
-      return this.<DaprProtos.InvokeBindingResponse>createMono(
-              context,
-              it -> asyncStub.invokeBinding(envelope, it)
-      ).flatMap(
+      return this.<DaprProtos.InvokeBindingResponse>createMono(it -> intercept(context, asyncStub)
+          .invokeBinding(envelope, it))
+          .flatMap(
               it -> {
                 try {
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
@@ -298,10 +271,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetStateRequest envelope = builder.build();
 
-      return this.<DaprProtos.GetStateResponse>createMono(
-              context,
-              it -> asyncStub.getState(envelope, it)
-      ).map(
+      return this.<DaprProtos.GetStateResponse>createMono(it -> intercept(context, asyncStub).getState(envelope, it))
+          .map(
               it -> {
                 try {
                   return buildStateKeyValue(it, key, options, type);
@@ -346,10 +317,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkStateRequest envelope = builder.build();
 
-      return this.<DaprProtos.GetBulkStateResponse>createMono(
-              context,
-              it -> asyncStub.getBulkState(envelope, it)
-      ).map(
+      return this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+          .getBulkState(envelope, it))
+          .map(
               it ->
                 it
                   .getItemsList()
@@ -430,10 +400,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.ExecuteStateTransactionRequest req = builder.build();
 
-      return this.<Empty>createMono(
-              context,
-              it -> asyncStub.executeStateTransaction(req, it)
-      ).thenReturn(new Response<>(context, null));
+      return this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it))
+          .thenReturn(new Response<>(context, null));
     } catch (Exception e) {
       return DaprException.wrapMono(e);
     }
@@ -458,10 +426,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.SaveStateRequest req = builder.build();
 
-      return this.<Empty>createMono(
-              context,
-              it -> asyncStub.saveState(req, it)
-      ).thenReturn(new Response<>(context, null));
+      return this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -544,10 +510,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.DeleteStateRequest req = builder.build();
 
-      return this.<Empty>createMono(
-              context,
-              it -> asyncStub.deleteState(req, it)
-      ).thenReturn(new Response<>(context, null));
+      return this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
+          .thenReturn(new Response<>(context, null));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -623,10 +587,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
     DaprProtos.GetSecretRequest req = requestBuilder.build();
 
-    return this.<DaprProtos.GetSecretResponse>createMono(
-            context,
-            it -> asyncStub.getSecret(req, it)
-    ).map(it -> new Response<>(context, it.getDataMap()));
+    return this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(context, asyncStub).getSecret(req, it))
+        .map(it -> new Response<>(context, it.getDataMap()));
   }
 
   /**
@@ -650,7 +612,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkSecretRequest envelope = builder.build();
 
-      return this.<DaprProtos.GetBulkSecretResponse>createMono(context, it -> asyncStub.getBulkSecret(envelope, it))
+      return this.<DaprProtos.GetBulkSecretResponse>createMono(it -> intercept(context, asyncStub)
+          .getBulkSecret(envelope, it))
           .map(it -> {
             Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
             if (secretsMap == null) {
@@ -688,33 +651,23 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub populateWithInterceptors(DaprGrpc.DaprStub client) {
+  private static DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
     ClientInterceptor interceptor = new ClientInterceptor() {
       @Override
       public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-              MethodDescriptor<ReqT, RespT> methodDescriptor,
-              CallOptions callOptions,
-              Channel channel) {
+          MethodDescriptor<ReqT, RespT> methodDescriptor,
+          CallOptions callOptions,
+          Channel channel) {
         ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
           @Override
-          public void start(final Listener<RespT> responseListener, final Metadata headers) {
-            // Dapr only supports "grpc-trace-bin" for GRPC and OpenTelemetry SDK does not support that yet:
-            // https://github.com/open-telemetry/opentelemetry-specification/issues/639
-            // This should be the only use of OpenCensus SDK: populate "grpc-trace-bin".
-            Context context = Context.current();
-            SpanContext opencensusSpanContext = extractOpenCensusSpanContext(context);
-            if (opencensusSpanContext != null) {
-              byte[] grpcTraceBin = OPENCENSUS_BINARY_FORMAT.toByteArray(opencensusSpanContext);
-              headers.put(Key.of(Headers.GRPC_TRACE_BIN, Metadata.BINARY_BYTE_MARSHALLER), grpcTraceBin);
-            }
-
+          public void start(final Listener<RespT> responseListener, final Metadata metadata) {
             String daprApiToken = Properties.API_TOKEN.get();
             if (daprApiToken != null) {
-              headers.put(Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
+              metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
             }
 
-            super.start(responseListener, headers);
+            super.start(responseListener, metadata);
           }
         };
       }
@@ -723,47 +676,18 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
-   * Extracts the context from OpenTelemetry and creates a SpanContext for OpenCensus.
+   * Populates GRPC client with interceptors for telemetry.
    *
-   * @param openTelemetryContext Context from OpenTelemetry.
-   * @return SpanContext for OpenCensus.
+   * @param context Reactor's context.
+   * @param client GRPC client for Dapr.
+   * @return Client after adding interceptors.
    */
-  private static SpanContext extractOpenCensusSpanContext(Context openTelemetryContext) {
-    Map<String, String> map = new HashMap<>();
-    OpenTelemetry.getGlobalPropagators().getTextMapPropagator().inject(
-        openTelemetryContext, map, MAP_SETTER);
-
-    if (!map.containsKey("traceparent")) {
-      // Trying to extract context without this key will throw an "expected" exception, so we avoid it here.
-      return null;
-    }
-
-    try {
-      return new TraceContextFormat()
-          .extract(map, new TextFormat.Getter<Map<String, String>>() {
-            @Nullable
-            @Override
-            public String get(Map<String, String> map, String key) {
-              return map.get(key);
-            }
-          });
-    } catch (SpanContextParseException e) {
-      throw new DaprException(e);
-    }
+  private static DaprGrpc.DaprStub intercept(Context context, DaprGrpc.DaprStub client) {
+    return GrpcWrapper.intercept(context, client);
   }
 
-  private static Runnable wrap(Context context, Runnable runnable) {
-    if (context == null) {
-      return DaprException.wrap(runnable);
-    }
-
-    return DaprException.wrap(context.wrap(runnable));
-  }
-
-  private <T> Mono<T> createMono(Context context, Consumer<StreamObserver<T>> consumer) {
-    return Mono.create(
-            sink -> wrap(context, () -> consumer.accept(createStreamObserver(sink))).run()
-    );
+  private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
+    return Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {

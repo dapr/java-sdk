@@ -5,12 +5,19 @@
 
 package io.dapr.serializer;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedOutputStream;
+import com.google.protobuf.MessageLite;
+import com.google.protobuf.Parser;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
+import io.dapr.v1.CommonProtos;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -23,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -391,6 +399,32 @@ public class DefaultObjectSerializerTest {
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
+  }
+
+  @Test
+  public void serializeProtoTest() throws Exception {
+    CommonProtos.Etag valueToSerialize = CommonProtos.Etag.newBuilder().setValue("myValue").build();
+    String expectedSerializedBase64Value = "CgdteVZhbHVl";
+
+    byte[] serializedValue = SERIALIZER.serialize(valueToSerialize);
+    assertEquals(expectedSerializedBase64Value, Base64.getEncoder().encodeToString(serializedValue));
+    assertNotNull(serializedValue);
+    CommonProtos.Etag deserializedValue = SERIALIZER.deserialize(serializedValue, CommonProtos.Etag.class);
+    assertEquals(valueToSerialize.getValue(), deserializedValue.getValue());
+    assertEquals(valueToSerialize, deserializedValue);
+  }
+
+  @Test
+  public void serializeFakeProtoTest() throws Exception {
+    FakeProtoClass valueToSerialize = new FakeProtoClass();
+    String expectedSerializedBase64Value = "AQ==";
+
+    byte[] serializedValue = SERIALIZER.serialize(valueToSerialize);
+    assertEquals(expectedSerializedBase64Value, Base64.getEncoder().encodeToString(serializedValue));
+    assertNotNull(serializedValue);
+
+    // Tries to parse as JSON since FakeProtoClass does not have `parseFrom()` static method.
+    assertThrows(JsonParseException.class, () -> SERIALIZER.deserialize(serializedValue, FakeProtoClass.class));
   }
 
   @Test
@@ -853,5 +887,64 @@ public class DefaultObjectSerializerTest {
     }
 
     return "\"" + content + "\"";
+  }
+
+  /**
+   * Class that simulates a proto class implementing MessageLite but does not have `parseFrom()` static method.
+   */
+  public static final class FakeProtoClass implements MessageLite {
+    @Override
+    public void writeTo(CodedOutputStream codedOutputStream) throws IOException {
+    }
+
+    @Override
+    public int getSerializedSize() {
+      return 0;
+    }
+
+    @Override
+    public Parser<? extends MessageLite> getParserForType() {
+      return null;
+    }
+
+    @Override
+    public ByteString toByteString() {
+      return null;
+    }
+
+    @Override
+    public byte[] toByteArray() {
+      return new byte[]{0x1};
+    }
+
+    @Override
+    public void writeTo(OutputStream outputStream) throws IOException {
+
+    }
+
+    @Override
+    public void writeDelimitedTo(OutputStream outputStream) throws IOException {
+
+    }
+
+    @Override
+    public Builder newBuilderForType() {
+      return null;
+    }
+
+    @Override
+    public Builder toBuilder() {
+      return null;
+    }
+
+    @Override
+    public MessageLite getDefaultInstanceForType() {
+      return null;
+    }
+
+    @Override
+    public boolean isInitialized() {
+      return false;
+    }
   }
 }

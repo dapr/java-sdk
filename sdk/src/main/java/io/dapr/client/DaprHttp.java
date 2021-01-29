@@ -5,15 +5,11 @@
 
 package io.dapr.client;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.propagation.HttpTraceContext;
-import io.opentelemetry.context.Context;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -24,6 +20,7 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,12 +48,6 @@ public class DaprHttp implements AutoCloseable {
    * Dapr's http default scheme.
    */
   private static final String DEFAULT_HTTP_SCHEME = "http";
-
-  /**
-   * Sets the headers for OpenTelemetry SDK.
-   */
-  private static final HttpTraceContext.Setter<Request.Builder> OPENTELEMETRY_SETTER =
-      (requestBuilder, key, value) -> requestBuilder.addHeader(key, value);
 
   /**
    * HTTP Methods supported.
@@ -272,7 +263,8 @@ public class DaprHttp implements AutoCloseable {
         .url(urlBuilder.build())
         .addHeader(HEADER_DAPR_REQUEST_ID, requestId);
     if (context != null) {
-      OpenTelemetry.getGlobalPropagators().getTextMapPropagator().inject(context, requestBuilder, OPENTELEMETRY_SETTER);
+      context.stream().forEach(
+          entry -> requestBuilder.addHeader(entry.getKey().toString(), entry.getValue().toString()));
     }
     if (HttpMethods.GET.name().equals(method)) {
       requestBuilder.get();
@@ -308,14 +300,14 @@ public class DaprHttp implements AutoCloseable {
    * @param json Response body from Dapr.
    * @return DaprError or null if could not parse.
    */
-  private static DaprError parseDaprError(byte[] json) throws IOException {
+  private static DaprError parseDaprError(byte[] json) {
     if ((json == null) || (json.length == 0)) {
       return null;
     }
 
     try {
       return OBJECT_MAPPER.readValue(json, DaprError.class);
-    } catch (JsonParseException e) {
+    } catch (IOException e) {
       throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
     }
   }
@@ -347,14 +339,24 @@ public class DaprHttp implements AutoCloseable {
     @Override
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
       if (!response.isSuccessful()) {
-        DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
-        if ((error != null) && (error.getErrorCode() != null) && (error.getMessage() != null)) {
-          future.completeExceptionally(new DaprException(error));
+        try {
+          DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
+          if ((error != null) && (error.getErrorCode() != null)) {
+            if (error.getMessage() != null) {
+              future.completeExceptionally(new DaprException(error));
+            } else {
+              future.completeExceptionally(
+                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code()));
+            }
+            return;
+          }
+
+          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
+          return;
+        } catch (DaprException e) {
+          future.completeExceptionally(e);
           return;
         }
-
-        future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
-        return;
       }
 
       Map<String, String> mapHeaders = new HashMap<>();

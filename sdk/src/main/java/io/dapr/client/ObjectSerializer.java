@@ -10,10 +10,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.MessageLite;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 /**
  * Serializes and deserializes an internal object.
@@ -52,6 +54,11 @@ public class ObjectSerializer {
     // Have this check here to be consistent with deserialization (see deserialize() method below).
     if (state instanceof byte[]) {
       return (byte[]) state;
+    }
+
+    // Proto buffer class is serialized directly.
+    if (state instanceof MessageLite) {
+      return ((MessageLite) state).toByteArray();
     }
 
     // Not string, not primitive, so it is a complex type: we use JSON for that.
@@ -94,7 +101,7 @@ public class ObjectSerializer {
     }
 
     if (content == null) {
-      return (T) null;
+      return null;
     }
 
     // Deserialization of GRPC response fails without this check since it does not come as base64 encoded byte[].
@@ -103,11 +110,24 @@ public class ObjectSerializer {
     }
 
     if (content.length == 0) {
-      return (T) null;
+      return null;
     }
 
     if (javaType.hasRawClass(CloudEvent.class)) {
       return (T) CloudEvent.deserialize(content);
+    }
+
+    if (javaType.isTypeOrSubTypeOf(MessageLite.class)) {
+      try {
+        Method method = javaType.getRawClass().getDeclaredMethod("parseFrom", byte[].class);
+        if (method != null) {
+          return (T) method.invoke(null, content);
+        }
+      } catch (NoSuchMethodException e) {
+        // It was a best effort. Skip this try.
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
     }
 
     return OBJECT_MAPPER.readValue(content, javaType);

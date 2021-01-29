@@ -20,7 +20,7 @@ public class DaprRun implements Stoppable {
 
   private static final String DAPR_SUCCESS_MESSAGE = "You're up and running!";
 
-  private static final String DAPR_RUN = "dapr run --app-id %s --components-path ./components";
+  private static final String DAPR_RUN = "dapr run --app-id %s --app-protocol %s --components-path ./components";
 
   // the arg in -Dexec.args is the app's port
   private static final String DAPR_COMMAND =
@@ -45,11 +45,12 @@ public class DaprRun implements Stoppable {
                   String successMessage,
                   Class serviceClass,
                   int maxWaitMilliseconds,
-                  DaprApiProtocol protocol) {
+                  DaprApiProtocol protocol,
+                  DaprApiProtocol appProtocol) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
     this.appName = serviceClass == null ? testName : String.format("%s_%s", testName, serviceClass.getSimpleName());
     this.startCommand =
-        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, protocol));
+        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, protocol, appProtocol));
     this.listCommand = new Command(
       this.appName,
       "dapr list");
@@ -139,18 +140,28 @@ public class DaprRun implements Stoppable {
       System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.ports.getGrpcPort()));
     }
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
+    System.getProperties().setProperty(
+        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
+        DaprApiProtocol.GRPC.name());
   }
 
   public void switchToGRPC() {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
+    System.getProperties().setProperty(
+        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
+        DaprApiProtocol.GRPC.name());
   }
 
   public void switchToHTTP() {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
+    System.getProperties().setProperty(
+        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
+        DaprApiProtocol.HTTP.name());
   }
 
   public void switchToProtocol(DaprApiProtocol protocol) {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), protocol.name());
+    System.getProperties().setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol.name());
   }
 
   public int getGrpcPort() {
@@ -170,16 +181,17 @@ public class DaprRun implements Stoppable {
   }
 
   private static String buildDaprCommand(
-      String appName, Class serviceClass, DaprPorts ports, DaprApiProtocol protocol) {
-    StringBuilder stringBuilder = new StringBuilder(String.format(DAPR_RUN, appName))
-        .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
-        .append(ports.getHttpPort() != null ? " --dapr-http-port " + ports.getHttpPort() : "")
-        .append(ports.getGrpcPort() != null ? " --dapr-grpc-port " + ports.getGrpcPort() : "")
-        .append(serviceClass == null ? "" :
-            String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
-                ports.getAppPort() != null ? ports.getAppPort().toString() : "",
-                Properties.API_PROTOCOL.getName(), protocol,
-                Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol));
+      String appName, Class serviceClass, DaprPorts ports, DaprApiProtocol protocol, DaprApiProtocol appProtocol) {
+    StringBuilder stringBuilder =
+        new StringBuilder(String.format(DAPR_RUN, appName, appProtocol.toString().toLowerCase()))
+            .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
+            .append(ports.getHttpPort() != null ? " --dapr-http-port " + ports.getHttpPort() : "")
+            .append(ports.getGrpcPort() != null ? " --dapr-grpc-port " + ports.getGrpcPort() : "")
+            .append(serviceClass == null ? "" :
+                String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
+                    ports.getAppPort() != null ? ports.getAppPort().toString() : "",
+                    Properties.API_PROTOCOL.getName(), protocol,
+                    Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol));
     return stringBuilder.toString();
   }
 
@@ -210,17 +222,21 @@ public class DaprRun implements Stoppable {
 
     private DaprApiProtocol protocol;
 
+    private DaprApiProtocol appProtocol;
+
     Builder(
         String testName,
         Supplier<DaprPorts> portsSupplier,
         String successMessage,
         int maxWaitMilliseconds,
-        DaprApiProtocol protocol) {
+        DaprApiProtocol protocol,
+        DaprApiProtocol appProtocol) {
       this.testName = testName;
       this.portsSupplier = portsSupplier;
       this.successMessage = successMessage;
       this.maxWaitMilliseconds = maxWaitMilliseconds;
       this.protocol = protocol;
+      this.appProtocol = appProtocol;
     }
 
     public Builder withServiceClass(Class serviceClass) {
@@ -235,7 +251,8 @@ public class DaprRun implements Stoppable {
               this.successMessage,
               this.serviceClass,
               this.maxWaitMilliseconds,
-              this.protocol);
+              this.protocol,
+              this.appProtocol);
     }
 
     /**
@@ -257,7 +274,8 @@ public class DaprRun implements Stoppable {
               DAPR_SUCCESS_MESSAGE,
               null,
               this.maxWaitMilliseconds,
-              this.protocol);
+              this.protocol,
+              this.appProtocol);
 
       return new ImmutablePair<>(appRun, daprRun);
     }
