@@ -7,6 +7,17 @@ name: Auto Validate Examples
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+      - release-*
+    tags:
+      - v*
+
+  pull_request:
+    branches:
+    - master
+    - release-*
 jobs:
   validate:
     runs-on: ubuntu-latest
