@@ -94,9 +94,20 @@ public class DemoServiceController {
 
 Use the follow command to execute the demo service example:
 
+<!-- STEP
+name: Run demo service
+expected_stdout_lines: 
+  - '== APP == Server: "message one"'
+  - '== APP == Server: "message two"'
+background: true
+sleep: 5
+-->
+
 ```sh
 dapr run --app-id invokedemo --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.DemoService -p 3000
 ```
+
+<!-- END_STEP -->
 
 Once running, the ExposerService is now ready to be invoked by Dapr.
 
@@ -130,9 +141,23 @@ public static void main(String[] args) throws Exception {
 The class knows the app id for the remote application. It uses the the static `Dapr.getInstance().invokeMethod` method to invoke the remote method defining the parameters: The verb, application id, method name, and proper data and metadata, as well as the type of the expected return type. The returned payload for this method invocation is plain text and not a [JSON String](https://www.w3schools.com/js/js_json_datatypes.asp), so we expect `byte[]` to get the raw response and not try to deserialize it.
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
+
+<!-- STEP
+name: Run demo client
+expected_stdout_lines: 
+  - '== APP == "message one" received'
+  - '== APP == "message two" received'
+  - '== APP == Done'
+background: true
+sleep: 5
+-->
+
 ```sh
-dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient "message one" "message two"
+dapr run --app-id invokeclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.http.InvokeClient "message one" "message two"
 ```
+
+<!-- END_STEP -->
+
 Once running, the output should display the messages sent from invoker in the demo service output as follows:
 
 ![exposeroutput](../../../../../../resources/img/exposer-service.png)
@@ -140,3 +165,18 @@ Once running, the output should display the messages sent from invoker in the de
 Method have been remotely invoked and displaying the remote messages.
 
 For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java) Application implementation.
+
+### Cleanup
+
+To stop the apps run (or press CTRL+C):
+
+<!-- STEP
+name: Cleanup
+-->
+
+```bash
+dapr stop --app-id invokedemo
+dapr stop --app-id invokeclient
+```
+
+<!-- END_STEP -->

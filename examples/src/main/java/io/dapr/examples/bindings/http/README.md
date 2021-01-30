@@ -45,9 +45,23 @@ cd examples
 
 ### Setting Kafka locally
 
-Before getting into the application code, follow these steps in order to setup a local instance of Kafka. This is needed for the local instances. Steps are:
+Before getting into the application code, follow these steps in order to set up a local instance of Kafka. This is needed for the local instances. Steps are:
 
-1. Run `docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d` to run the container locally
+1. To run container locally run: 
+
+<!-- STEP
+name: Setup kafka container
+expected_stderr_lines:
+  - 'Creating network "http_default" with the default driver'
+sleep: 5
+-->
+
+```bash
+docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d
+```
+
+<!-- END_STEP -->
+
 2. Run `docker ps` to see the container running locally: 
 
 ```bash
@@ -93,9 +107,23 @@ public class InputBindingController {
 ```
 
  Execute the follow script in order to run the Input Binding example:
-```sh
+
+<!-- STEP
+name: Run input binding
+expected_stdout_lines:
+  - '== APP == Received message through binding: {"message":"Message #0"}'
+  - '== APP == Received message through binding: "Message #1"'
+  - '== APP == Received message through binding: {"message":"Message #2"}'
+  - '== APP == Received message through binding: "Message #3"'
+background: true
+sleep: 5
+-->
+
+```bash
 dapr run --components-path ./components/bindings --app-id inputbinding --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
 ```
+
+<!-- END_STEP -->
 
 ### Running the Output binding sample
 
@@ -114,10 +142,10 @@ public class OutputBindingExample{
   
         int count = 0;
         while (!Thread.currentThread().isInterrupted()) {
-          String message = "Message #" + (count++);
+          String message = "Message #" + (count);
   
-          // Randomly decides between a class type or string type to be sent.
-          if (Math.random() >= 0.5) {
+          // On even number, send class message
+          if (count % 2 == 0) {
             // This is an example of sending data in a user-defined object.  The input binding will receive:
             //   {"message":"hello"}
             MyClass myClass = new MyClass();
@@ -129,6 +157,7 @@ public class OutputBindingExample{
             System.out.println("sending a plain string: " + message);
             client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message).block();
           }
+          count++;
   
           try {
             Thread.sleep((long) (10000 * Math.random()));
@@ -149,9 +178,22 @@ This example binds two events: A user-defined data object (using the `myClass` o
 
 Use the follow command to execute the Output Binding example:
 
-```sh
+<!-- STEP
+name: Run output binding
+expected_stdout_lines:
+  - '== APP == sending a class with message: Message #0'
+  - '== APP == sending a plain string: Message #1'
+  - '== APP == sending a class with message: Message #2'
+  - '== APP == sending a plain string: Message #3'
+background: true
+sleep: 30
+-->
+
+```bash
 dapr run --components-path ./components/bindings --app-id outputbinding -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
 ```
+
+<!-- END_STEP -->
 
 Once running, the OutputBindingExample should print the output as follows:
 
@@ -165,9 +207,29 @@ Once running, the InputBindingExample should print the output as follows:
 
 Events have been retrieved from the binding.
 
+To stop both apps, press `CTRL+C` or run:
+
+<!-- STEP
+name: Cleanup apps
+-->
+
+```bash
+dapr stop --app-id inputbinding
+dapr stop --app-id outputbinding
+```
+
+<!-- END_STEP -->
+
 For bringing down the kafka cluster that was started in the beginning, run
-```sh
+
+<!-- STEP
+name: Cleanup Kafka containers
+-->
+
+```bash
 docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml down
 ```
+
+<!-- END_STEP -->
 
 For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java)  Application implementation.

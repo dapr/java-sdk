@@ -93,7 +93,7 @@ public class StateClient {
       } catch (DaprException ex) {
         if (ex.getErrorCode().equals(Status.Code.ABORTED.toString())) {
           // Expected error due to etag mismatch.
-          System.out.println(String.format("Expected failure. %s ", ex.getMessage()));
+          System.out.println(String.format("Expected failure. %s", ex.getErrorCode()));
         } else {
           System.out.println("Unexpected exception.");
           throw ex;
@@ -111,7 +111,7 @@ public class StateClient {
 
       Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getBulkState(STATE_STORE_NAME,
           Arrays.asList(FIRST_KEY_NAME, SECOND_KEY_NAME), MyClass.class);
-      System.out.println("Trying to retrieve deleted states: ");
+      System.out.println("Trying to retrieve deleted states:");
       retrievedDeletedMessageMono.block().forEach(System.out::println);
 
       // This is an example, so for simplicity we are just exiting here.

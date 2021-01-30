@@ -50,7 +50,22 @@ cd examples
 
 Before getting into the application code, follow these steps in order to set up a local instance of Vault. This is needed for the local instances. Steps are:
 
-1. Run `docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml up -d` to run the container locally
+1. To run the vault container locally run: 
+<!-- Docker is writing output to stderr ... -->
+
+<!-- STEP
+name: Start vault
+expected_stderr_lines:
+  - 'Creating network "secrets_default" with the default driver'
+sleep: 10 
+-->
+
+```bash
+docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml up -d
+``` 
+
+<!-- END_STEP -->
+
 2. Run `docker ps` to see the container running locally: 
 
 ```bash
@@ -68,19 +83,54 @@ export VAULT_ADDR=http://127.0.0.1:8200/
 ```
 
 Login to Hashicorp's Vault:
+
+<!-- STEP
+name: Vault login
+expected_stdout_lines:
+  - "Success! You are now authenticated. The token information displayed below"
+  - "token                myroot"
+env:
+  VAULT_ADDR: "http://127.0.0.1:8200/"
+-->
+
 ```bash
 vault login myroot
 ```
 
-Create secret (replace `[my favorite movie]` with a title of our choice):
+<!-- END_STEP -->
+
+Create secret (replace `$MY_FAVORITE_MOVIE` with a title of our choice):
+
+<!-- STEP
+name: Create movie vault secret
+expected_stdout_lines:
+  - "version          1"
+env:
+  VAULT_ADDR: "http://127.0.0.1:8200/"
+  MY_FAVORITE_MOVIE: "Star Wars"
+-->
+
 ```bash
-vault kv put secret/dapr/movie title="[my favorite movie]"
+vault kv put secret/dapr/movie title="$MY_FAVORITE_MOVIE"
 ```
 
+<!-- END_STEP -->
+
 Create random secret:
+
+<!-- STEP
+name: Create random vault secret
+expected_stdout_lines:
+  - "version          1"
+env:
+  VAULT_ADDR: "http://127.0.0.1:8200/"
+-->
+
 ```bash
 vault kv put secret/dapr/randomKey testVal="value"
 ```
+
+<!-- END_STEP -->
 
 In the command above, `secret` means the secret engine in Hashicorp's Vault.
 Then, `dapr` is the prefix as defined in `< repo dir >/examples/components/hashicorp_vault.yaml`.
@@ -133,19 +183,44 @@ The secret store's name **must** match the component's name defined in `< repo d
 The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
  Execute the following script in order to run the example:
-```sh
-dapr run --components-path ./components/secrets  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+
+<!-- STEP
+name: Validate normal run
+expected_stdout_lines:
+  - '== APP == {"title":"Star Wars"}'
+  - '== APP == {"testVal":"value"}'
+env:
+  VAULT_ADDR: "http://127.0.0.1:8200/"
+background: true
+sleep: 5
+-->
+
+```bash
+dapr run --components-path ./components/secrets --app-id secrets1 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
 ```
+
+<!-- END_STEP -->
 
 Once running, the program should print the output as follows:
 
 ```
-== APP == {"title":"[my favorite movie]"}
+== APP == {"title":"$MY_FAVORITE_MOVIE"}
 
 == APP == {"testVal":"value"}
 ```
 
-To close the app, press CTRL+c.
+To close the app either press `CTRL+C` or run
+
+<!-- STEP
+name: Cleanup first app
+-->
+
+```bash
+dapr stop --app-id secrets1
+```
+
+<!-- END_STEP -->
+
 
 The example's `config.yaml` is as follows: 
 ```yaml
@@ -164,22 +239,55 @@ spec:
 The configuration defines, that the only allowed secret is `movie` and all other secrets are denied. 
 
 Execute the following script in order to run this example with additional secret scoping: 
+
+<!-- STEP
+name: Validate error on querying random secret
+expected_stdout_lines:
+  - '== APP == {"title":"Star Wars"}'
+  - '== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "vault"'
+env:
+  VAULT_ADDR: "http://127.0.0.1:8200/"
+background: true
+sleep: 5
+-->
+
 ```sh
-dapr run --components-path ./components/secrets --config ./src/main/java/io/dapr/examples/secrets/config.yaml  -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+dapr run --components-path ./components/secrets --config ./src/main/java/io/dapr/examples/secrets/config.yaml --app-id secrets2 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
 ```
+
+<!-- END_STEP --> 
+
 Once running, the program should print the output as follows:
 
 ```
-== APP == {"title":"[my favorite movie]"}
+== APP == {"title":"$MY_FAVORITE_MOVIE"}
 
-== APP == java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: PERMISSION_DENIED: Access denied by policy to get randomKey from vault
+== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "vault"
 ``` 
 
-To close the app, press CTRL+c.
+To close the app either press `CTRL+C` or run
+
+<!-- STEP
+name: Cleanup second app
+-->
+
+```bash
+dapr stop --app-id secrets2
+```
+
+<!-- END_STEP -->
+
 
 To clean up and bring the vault container down, run
+
+<!-- STEP
+name: Cleanup vault container
+-->
+
 ```sh
 docker-compose -f ./src/main/java/io/dapr/examples/secrets/docker-compose-vault.yml down
 ```
+
+<!-- END_STEP -->
 
 Thanks for playing.
