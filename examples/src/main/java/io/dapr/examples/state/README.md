@@ -166,7 +166,42 @@ dapr run --components-path ./components/state --app-id state_example -- java -ja
 
 Once running, the OutputBindingExample should print the output as follows:
 
-![stateouput](../../../../../resources/img/state.png)
+```txt
+== APP == Waiting for Dapr sidecar ...
+
+== APP == Dapr sidecar is ready.
+
+== APP == Saving class with message: my message
+
+== APP == Retrieved class message from state: my message
+
+== APP == Updating previous state and adding another state 'test state'... 
+
+== APP == Saving updated class with message: my message updated
+
+== APP == Retrieved messages using bulk get:
+
+== APP == StateKeyValue{value=my message updated, key='myKey', etag='2', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == StateKeyValue{value=test message, key='myKey2', etag='1', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == Deleting states...
+
+== APP == Verify delete key request is aborted if an etag different from stored is passed.
+
+== APP == Expected failure. ABORTED: failed deleting state with key myKey: possible etag mismatch. error from state store: ERR Error running script (call to f_9b5da7354cb61e2ca9faff50f6c43b81c73c0b94): @user_script:1: user_script:1: failed to delete Tailmad-Fang||myKey 
+
+== APP == Trying to delete again with correct etag.
+
+== APP == Trying to retrieve deleted states: 
+
+== APP == StateKeyValue{value=null, key='myKey', etag='null', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == StateKeyValue{value=null, key='myKey2', etag='null', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == Done
+
+```
 
 ### Cleanup
 
