@@ -54,10 +54,10 @@ public class DemoServiceController {
         String metadataString = headers == null ? "" : OBJECT_MAPPER.writeValueAsString(headers);
 
         // Handles the request by printing message.
-        System.out.println(
-            "Server: " + message + " @ " + utcNowAsString + " and metadata: " + metadataString);
+        System.out.println("Server: " + message);
+        System.out.println("@ " + utcNowAsString + " and metadata: " + metadataString);
 
-        return utcNowAsString;
+        return message + " received";
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

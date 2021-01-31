@@ -41,10 +41,10 @@ public class OutputBindingExample {
 
       int count = 0;
       while (!Thread.currentThread().isInterrupted()) {
-        String message = "Message #" + (count++);
+        String message = "Message #" + (count);
 
-        // Randomly decides between a class type or string type to be sent.
-        if (Math.random() >= 0.5) {
+        // On even number, send class message
+        if (count % 2 == 0) {
           // This is an example of sending data in a user-defined object.  The input binding will receive:
           //   {"message":"hello"}
           MyClass myClass = new MyClass();
@@ -56,6 +56,7 @@ public class OutputBindingExample {
           System.out.println("sending a plain string: " + message);
           client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message).block();
         }
+        count++;
 
         try {
           Thread.sleep((long) (10000 * Math.random()));

@@ -1,0 +1,134 @@
+# ------------------------------------------------------------
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+# ------------------------------------------------------------
+
+name: Auto Validate Examples
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - release-*
+    tags:
+      - v*
+
+  pull_request:
+    branches:
+    - master
+    - release-*
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      GOVER: 1.15.0
+      GOOS: linux
+      GOARCH: amd64
+      GOPROXY: https://proxy.golang.org
+      JDK_VER: 13.0.x
+      DAPR_CLI_VER: 1.0.0-rc.4
+      DAPR_RUNTIME_VER: 1.0.0-rc.3
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/3dacfb672d55f1436c249057aaebbe597e1066f3/install/install.sh
+      DAPR_CLI_REF:
+      DAPR_REF:
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JDK_VER }}
+      - name: Set up Dapr CLI
+        run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash -s ${{ env.DAPR_CLI_VER }}
+      - name: Set up Go ${{ env.GOVER }}
+        if: env.DAPR_REF != '' || env.DAPR_CLI_REF != ''
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GOVER }}
+      - name: Checkout Dapr CLI repo to override dapr command.
+        uses: actions/checkout@v2
+        if: env.DAPR_CLI_REF != ''
+        with:
+          repository: dapr/cli
+          ref: ${{ env.DAPR_CLI_REF }}
+          path: cli
+      - name: Checkout Dapr repo to override daprd.
+        uses: actions/checkout@v2
+        if: env.DAPR_REF != ''
+        with:
+          repository: dapr/dapr
+          ref: ${{ env.DAPR_REF }}
+          path: dapr
+      - name: Build and override dapr cli with referenced commit.
+        if: env.DAPR_CLI_REF != ''
+        run: |
+          cd cli
+          make
+          sudo cp dist/linux_amd64/release/dapr /usr/local/bin/dapr
+          cd ..
+      - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+        run: |
+          dapr uninstall --all
+          dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
+      - name: Build and override daprd with referenced commit.
+        if: env.DAPR_REF != ''
+        run: |
+          cd dapr
+          make
+          mkdir -p $HOME/.dapr/bin/
+          cp dist/linux_amd64/release/daprd $HOME/.dapr/bin/daprd
+          cd ..
+      - name: Override placement service.
+        if: env.DAPR_REF != ''
+        run: |
+          docker stop dapr_placement
+          cd dapr
+          ./dist/linux_amd64/release/placement &
+      - name: Install utilities dependencies
+        run: |
+          echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
+          pip3 install setuptools wheel
+          pip3 install mechanical-markdown
+      - name: Install Vault CLI
+        run: |
+          # From the installtion page of vault https://learn.hashicorp.com/tutorials/vault/getting-started-install?in=vault/getting-started
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+          sudo apt-get update
+          sudo apt-get install vault
+          # Verify vault is installed
+          vault -h
+      - name: Clean up files
+        run: mvn clean
+      - name: Build sdk
+        run: mvn compile -q
+      - name: Install jars
+        run: mvn install -q
+      - name: Validate invoke http example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/invoke/http/README.md
+      - name: Validate invoke grpc example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md
+      - name: Validate expection handling example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/exception/README.md
+      - name: Validate state example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/state/README.md
+      - name: Validate pubsub HTTP example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/pubsub/http/README.md
+      - name: Validate bindings HTTP example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/bindings/http/README.md
+      - name: Validate secrets example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/secrets/README.md

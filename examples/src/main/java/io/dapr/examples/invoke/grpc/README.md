@@ -73,9 +73,20 @@ In the `GrpcHelloWorldDaprService` class, the `onInvoke` method is the most impo
 
 Now run the service code:
 
-```sh
+<!-- STEP
+name: Run demo service
+expected_stdout_lines:
+  - '== APP == Server: "Message #0"'
+  - '== APP == Server: "Message #1"'
+background: true
+sleep: 1
+-->
+
+```bash
 dapr run --app-id hellogrpc --app-port 5000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldService -p 5000
 ```
+
+<!-- END_STEP -->
 
 The `app-id` argument is used to identify this service in Dapr's runtime. The `app-port` determines which port Dapr's runtime should call into this service.  The `protocol` argument informs Dapr which protocol it should use to invoke the application: `grpc` or `http`(default).
 
@@ -117,10 +128,37 @@ Finally, it will go through in an infinite loop and invoke the `say` method ever
 
 Finally, open a new command line terminal and run the client code to send some messages.
 
-```sh
-dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
+<!-- STEP
+name: Run demo client
+expected_stdout_lines:
+  - '== APP == Sending message: Message #0'
+  - '== APP == Message sent: Message #0'
+  - '== APP == Sending message: Message #1'
+  - '== APP == Message sent: Message #1'
+background: true
+sleep: 10
+-->
+
+```bash
+dapr run --app-id invokegrpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
 ```
 
-Once the messages are sent, use `CTRL+C` to exit Dapr.
+<!-- END_STEP -->
+
+### Cleanup
+
+To stop the apps run (or press CTRL+C):
+
+<!-- STEP
+name: Cleanup
+-->
+
+```bash
+dapr stop --app-id hellogrpc
+dapr stop --app-id invokegrpc
+```
+
+<!-- END_STEP -->
 
 Thanks for playing.
+

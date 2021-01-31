@@ -24,7 +24,7 @@ Then build the Maven project:
 mvn install
 ```
 
-Then get into the examples directory:
+Then change into the `examples` directory:
 ```sh
 cd examples
 ```
@@ -133,11 +133,86 @@ Finally, the code tries to retrieve the deleted states, which should not be foun
 The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
 ### Running the example
+<!-- STEP
+name: Check state example
+expected_stdout_lines:
+  - "== APP == Waiting for Dapr sidecar ..."
+  - "== APP == Dapr sidecar is ready."    
+  - "== APP == Saving class with message: my message"
+  - "== APP == Retrieved class message from state: my message"
+  - "== APP == Updating previous state and adding another state 'test state'... "
+  - "== APP == Saving updated class with message: my message updated"
+  - "== APP == Retrieved messages using bulk get:"
+  - "== APP == StateKeyValue{value=my message updated, key='myKey', etag='2', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == StateKeyValue{value=test message, key='myKey2', etag='1', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == Deleting states..."
+  - "== APP == Verify delete key request is aborted if an etag different from stored is passed."
+  - "== APP == Expected failure. ABORTED"
+  - "== APP == Trying to delete again with correct etag."
+  - "== APP == Trying to retrieve deleted states:"
+  - "== APP == StateKeyValue{value=null, key='myKey', etag='null', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == StateKeyValue{value=null, key='myKey2', etag='null', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == Done"
+background: true
+sleep: 5 
+-->
 
 Run this example with the following command:
-```sh
-dapr run --components-path ./components/state -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
+```bash
+dapr run --components-path ./components/state --app-id state_example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
+
+<!-- END_STEP -->
+
 Once running, the OutputBindingExample should print the output as follows:
 
-![stateouput](../../../../../resources/img/state.png)
+```txt
+== APP == Waiting for Dapr sidecar ...
+
+== APP == Dapr sidecar is ready.
+
+== APP == Saving class with message: my message
+
+== APP == Retrieved class message from state: my message
+
+== APP == Updating previous state and adding another state 'test state'... 
+
+== APP == Saving updated class with message: my message updated
+
+== APP == Retrieved messages using bulk get:
+
+== APP == StateKeyValue{value=my message updated, key='myKey', etag='2', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == StateKeyValue{value=test message, key='myKey2', etag='1', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == Deleting states...
+
+== APP == Verify delete key request is aborted if an etag different from stored is passed.
+
+== APP == Expected failure. ABORTED: failed deleting state with key myKey: possible etag mismatch. error from state store: ERR Error running script (call to f_9b5da7354cb61e2ca9faff50f6c43b81c73c0b94): @user_script:1: user_script:1: failed to delete Tailmad-Fang||myKey 
+
+== APP == Trying to delete again with correct etag.
+
+== APP == Trying to retrieve deleted states: 
+
+== APP == StateKeyValue{value=null, key='myKey', etag='null', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == StateKeyValue{value=null, key='myKey2', etag='null', metadata={'{}'}, error='null', options={'null'}}
+
+== APP == Done
+
+```
+
+### Cleanup
+
+To close the app either press `CTRL+C` or run
+
+<!-- STEP
+name: Cleanup
+-->
+
+```bash
+dapr stop --app-id state_example
+```
+
+<!-- END_STEP -->
