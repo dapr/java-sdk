@@ -391,7 +391,7 @@ public class DaprClientHttp extends AbstractDaprClient {
         byte[] data = this.stateSerializer.serialize(state.getValue());
         // Custom serializer, so everything is byte[].
         operations.add(new TransactionalStateOperation<>(operation.getOperation(),
-            new State<>(data, state.getKey(), state.getEtag(), state.getMetadata(), state.getOptions())));
+            new State<>(state.getKey(), data, state.getEtag(), state.getMetadata(), state.getOptions())));
       }
       TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
       byte[] serializedOperationBody = INTERNAL_SERIALIZER.serialize(req);
@@ -438,7 +438,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
         byte[] data = this.stateSerializer.serialize(state.getValue());
         // Custom serializer, so everything is byte[].
-        internalStateObjects.add(new State<>(data, state.getKey(), state.getEtag(), state.getMetadata(),
+        internalStateObjects.add(new State<>(state.getKey(), data, state.getEtag(), state.getMetadata(),
                 state.getOptions()));
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
@@ -513,7 +513,7 @@ public class DaprClientHttp extends AbstractDaprClient {
     if (response.getHeaders() != null && response.getHeaders().containsKey("Etag")) {
       etag = response.getHeaders().get("Etag");
     }
-    return new State<>(value, requestedKey, etag, stateOptions);
+    return new State<>(requestedKey, value, etag, stateOptions);
   }
 
   /**
@@ -546,7 +546,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       // This is not a high priority since GRPC is the default (and recommended) client implementation.
       byte[] data = node.path("data").toString().getBytes(Properties.STRING_CHARSET.get());
       T value = stateSerializer.deserialize(data, type);
-      result.add(new State<>(value, key, etag));
+      result.add(new State<>(key, value, etag));
     }
 
     return result;

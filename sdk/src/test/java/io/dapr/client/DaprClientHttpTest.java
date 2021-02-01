@@ -657,10 +657,10 @@ public class DaprClientHttpTest {
   @Test
   public void getState() {
     StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("value", "key", "etag", stateOptions);
-    State<String> stateKeyNull = new State<>("value", null, "etag", stateOptions);
-    State<String> stateKeyEmpty = new State<>("value", "", "etag", stateOptions);
-    State<String> stateKeyBadPayload = new State<>("value", "keyBadPayload", "etag", stateOptions);
+    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
+    State<String> stateKeyNull = new State<>(null, "value", "etag", stateOptions);
+    State<String> stateKeyEmpty = new State<>("", "value", "etag", stateOptions);
+    State<String> stateKeyBadPayload = new State<>("keyBadPayload", "value", "etag", stateOptions);
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
         .respond("\"" + EXPECTED_RESULT + "\"");
@@ -691,7 +691,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void getStatesEmptyEtag() {
-    State<String> stateEmptyEtag = new State<>("value", "key", "", null);
+    State<String> stateEmptyEtag = new State<>("key", "value", "", null);
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond("\"" + EXPECTED_RESULT + "\"");
@@ -717,7 +717,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void getStatesNullEtag() {
-    State<String> stateNullEtag = new State<>("value", "key", null, null);
+    State<String> stateNullEtag = new State<>("key", "value", null, null);
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond("\"" + EXPECTED_RESULT + "\"");
@@ -729,7 +729,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void getStatesNoHotMono() {
-    State<String> stateNullEtag = new State<>("value", "key", null, null);
+    State<String> stateNullEtag = new State<>("key", "value", null, null);
     mockInterceptor.addRule()
         .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
         .respond(500);
@@ -740,7 +740,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void saveStates() {
-    State<String> stateKeyValue = new State<>("value", "key", "etag", null);
+    State<String> stateKeyValue = new State<>("key", "value", "etag", null);
     List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
@@ -783,7 +783,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void saveStatesEtagNull() {
-    State<String> stateKeyValue = new State<>("value", "key", null, null);
+    State<String> stateKeyValue = new State<>("key", "value", null, null);
     List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
@@ -795,7 +795,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void saveStatesEtagEmpty() {
-    State<String> stateKeyValue = new State<>("value", "key", "", null);
+    State<String> stateKeyValue = new State<>("key", "value", "", null);
     List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
@@ -838,7 +838,7 @@ public class DaprClientHttpTest {
     StateOptions stateOptions = mock(StateOptions.class);
 
 
-    State<String> stateKey = new State<>(data, key, etag, stateOptions);
+    State<String> stateKey = new State<>(key, data, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
@@ -861,7 +861,7 @@ public class DaprClientHttpTest {
     StateOptions stateOptions = mock(StateOptions.class);
 
 
-    State<String> stateKey = new State<>(data, key, etag, stateOptions);
+    State<String> stateKey = new State<>(key, data, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
@@ -884,7 +884,7 @@ public class DaprClientHttpTest {
     StateOptions stateOptions = mock(StateOptions.class);
 
 
-    State<String> stateKey = new State<>(data, key, etag, stateOptions);
+    State<String> stateKey = new State<>(key, data, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
@@ -907,7 +907,7 @@ public class DaprClientHttpTest {
     StateOptions stateOptions = mock(StateOptions.class);
 
 
-    State<String> stateKey = new State<>(data, key, etag, stateOptions);
+    State<String> stateKey = new State<>(key, data, etag, stateOptions);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
@@ -949,7 +949,7 @@ public class DaprClientHttpTest {
   @Test
   public void deleteState() {
     StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("value", "key", "etag", stateOptions);
+    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);
@@ -963,7 +963,7 @@ public class DaprClientHttpTest {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("key_1", "val_1");
     StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("value", "key", "etag", stateOptions);
+    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
       .respond(EXPECTED_RESULT);
@@ -977,7 +977,7 @@ public class DaprClientHttpTest {
   @Test
   public void deleteStateNoHotMono() {
     StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("value", "key", "etag", stateOptions);
+    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
     mockInterceptor.addRule()
         .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
         .respond(500);
@@ -988,7 +988,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void deleteStateNullEtag() {
-    State<String> stateKeyValue = new State<>("value", "key", null, null);
+    State<String> stateKeyValue = new State<>("key", "value", null, null);
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);
@@ -999,7 +999,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void deleteStateEmptyEtag() {
-    State<String> stateKeyValue = new State<>("value", "key", "", null);
+    State<String> stateKeyValue = new State<>("key", "value", "", null);
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);
@@ -1010,8 +1010,8 @@ public class DaprClientHttpTest {
 
   @Test
   public void deleteStateIllegalArgumentException() {
-    State<String> stateKeyValueNull = new State<>("value", null, "etag", null);
-    State<String> stateKeyValueEmpty = new State<>("value", "", "etag", null);
+    State<String> stateKeyValueNull = new State<>(null, "value", "etag", null);
+    State<String> stateKeyValueEmpty = new State<>("", "value", "etag", null);
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
       .respond(EXPECTED_RESULT);

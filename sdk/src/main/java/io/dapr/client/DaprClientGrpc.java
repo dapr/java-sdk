@@ -354,7 +354,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     if (etag.equals("")) {
       etag = null;
     }
-    return new State<>(value, key, etag, item.getMetadataMap(), null);
+    return new State<>(key, value, etag, item.getMetadataMap(), null);
   }
 
   private <T> State<T> buildStateKeyValue(
@@ -369,7 +369,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     if (etag.equals("")) {
       etag = null;
     }
-    return new State<>(value, requestedKey, etag, response.getMetadataMap(), stateOptions);
+    return new State<>(requestedKey, value, etag, response.getMetadataMap(), stateOptions);
   }
 
   /**

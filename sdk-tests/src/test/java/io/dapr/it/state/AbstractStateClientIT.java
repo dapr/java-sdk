@@ -140,7 +140,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the action
-    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null),
         MyData.class);
     //execute the retrieve of the state
     State<MyData> myDataResponse = response.block();
@@ -168,7 +168,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null),
         MyData.class);
     //execute the retrieve of the state
     State<MyData> myDataResponse = response.block();
@@ -183,7 +183,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     deleteResponse.block();
 
     //Create deferred action to retrieve the state
-    response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null), MyData.class);
     //execute the retrieve of the state
     myDataResponse = response.block();
 
@@ -209,7 +209,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null),
         MyData.class);
     //execute the action for retrieve the state and the etag
     State<MyData> myDataResponse = response.block();
@@ -231,7 +231,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
 
-    response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null), MyData.class);
     //retrive the data wihout any etag
     myDataResponse = response.block();
 
@@ -263,7 +263,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to retrieve the state
-    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null),
         MyData.class);
     //execute the action for retrieve the state and the etag
     State<MyData> myDataResponse = response.block();
@@ -285,7 +285,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
 
-    response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null), MyData.class);
+    response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null), MyData.class);
     //retrive the data wihout any etag
     myDataResponse = response.block();
 
@@ -314,7 +314,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to get the state with the etag
-    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null),
         MyData.class);
     //execute the get state
     State<MyData> myDataResponse = response.block();
@@ -355,7 +355,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
     //Create deferred action to get the state with the etag
-    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<MyData>(stateKey, null, null),
+    Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null),
         MyData.class);
     //execute the get state
     State<MyData> myDataResponse = response.block();
@@ -602,7 +602,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
   }
 
   private <T> State<T> createState(String stateKey, String etag, StateOptions options, T data) {
-    return new State<>(data, stateKey, etag, options);
+    return new State<>(stateKey, data, etag, options);
   }
 
   protected abstract DaprClient buildDaprClient();
