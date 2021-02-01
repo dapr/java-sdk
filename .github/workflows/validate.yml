@@ -132,3 +132,7 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/secrets/README.md
+      - name: Validate unit testing example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/unittesting/README.md

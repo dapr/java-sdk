@@ -67,9 +67,9 @@ public class StateClient {
         // execute transaction
         List<TransactionalStateOperation<?>> operationList = new ArrayList<>();
         operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
-                new State<>(myClass, FIRST_KEY_NAME, "")));
+            new State<>(FIRST_KEY_NAME, myClass, "")));
         operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
-                new State<>(secondState, SECOND_KEY_NAME, "")));
+            new State<>(SECOND_KEY_NAME, secondState, "")));
   
         client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
   
