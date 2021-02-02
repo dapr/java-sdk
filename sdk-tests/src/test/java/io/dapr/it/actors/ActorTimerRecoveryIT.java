@@ -17,11 +17,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class ActorTimerRecoveryIT extends BaseIT {
@@ -60,8 +63,12 @@ public class ActorTimerRecoveryIT extends BaseIT {
     logger.debug("Pausing 7 seconds to allow timer to fire");
     Thread.sleep(7000);
 
-    List<MethodEntryTracker> logs = fetchMethodCallLogs(proxy);
-    validateMethodCalls(logs, METHOD_NAME, 3);
+    final List<MethodEntryTracker> logs = new ArrayList<>();
+    callWithRetry(() -> {
+      logs.clear();
+      logs.addAll(fetchMethodCallLogs(proxy));
+      validateMethodCalls(logs, METHOD_NAME, 3);
+    }, 5000);
 
     // Restarts app only.
     runs.left.stop();
@@ -69,8 +76,12 @@ public class ActorTimerRecoveryIT extends BaseIT {
 
     logger.debug("Pausing 10 seconds to allow timer to fire");
     Thread.sleep(10000);
-    List<MethodEntryTracker> newLogs = fetchMethodCallLogs(proxy);
-    validateMethodCalls(newLogs, METHOD_NAME, 3);
+    final List<MethodEntryTracker> newLogs = new ArrayList<>();
+    callWithRetry(() -> {
+      newLogs.clear();
+      newLogs.addAll(fetchMethodCallLogs(proxy));
+      validateMethodCalls(newLogs, METHOD_NAME, 3);
+    }, 5000);
 
     // Check that the restart actually happened by confirming the old logs are not in the new logs.
     for (MethodEntryTracker oldLog: logs) {
