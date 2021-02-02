@@ -116,7 +116,7 @@ expected_stdout_lines:
   - '== APP == Received message through binding: {"message":"Message #2"}'
   - '== APP == Received message through binding: "Message #3"'
 background: true
-sleep: 5
+sleep: 10
 -->
 
 ```bash
