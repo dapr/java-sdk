@@ -31,6 +31,7 @@ public class SubscriberController {
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
+        System.out.println("Subscriber got: " + cloudEvent.getData());
         System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
       } catch (Exception e) {
         throw new RuntimeException(e);

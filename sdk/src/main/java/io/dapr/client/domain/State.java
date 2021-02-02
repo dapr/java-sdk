@@ -81,13 +81,12 @@ public class State<T> {
   /**
    * Create an immutable state.
    * This Constructor CAN be used anytime you want the state to be saved.
-   *
-   * @param value   - The value of the state.
    * @param key     - The key of the state.
+   * @param value   - The value of the state.
    * @param etag    - The etag of the state - for some state stores (like redis) only numbers are supported.
    * @param options - REQUIRED when saving a state.
    */
-  public State(T value, String key, String etag, StateOptions options) {
+  public State(String key, T value, String etag, StateOptions options) {
     this.value = value;
     this.key = key;
     this.etag = etag;
@@ -99,14 +98,13 @@ public class State<T> {
   /**
    * Create an immutable state.
    * This Constructor CAN be used anytime you want the state to be saved.
-   *
-   * @param value   - The value of the state.
    * @param key     - The key of the state.
+   * @param value   - The value of the state.
    * @param etag    - The etag of the state - for some state stores (like redis) only numbers are supported.
    * @param metadata - The metadata of the state.
    * @param options - REQUIRED when saving a state.
    */
-  public State(T value, String key, String etag, Map<String, String> metadata, StateOptions options) {
+  public State(String key, T value, String etag, Map<String, String> metadata, StateOptions options) {
     this.value = value;
     this.key = key;
     this.etag = etag;
@@ -118,12 +116,11 @@ public class State<T> {
   /**
    * Create an immutable state.
    * This Constructor CAN be used anytime you want the state to be saved.
-   *
-   * @param value   - The value of the state.
    * @param key     - The key of the state.
+   * @param value   - The value of the state.
    * @param etag    - The etag of the state - some state stores (like redis) only numbers are supported.
    */
-  public State(T value, String key, String etag) {
+  public State(String key, T value, String etag) {
     this.value = value;
     this.key = key;
     this.etag = etag;
@@ -255,8 +252,8 @@ public class State<T> {
   @Override
   public String toString() {
     return "StateKeyValue{"
-        + "value=" + value
-        + ", key='" + key + "'"
+        + "key='" + key + "'"
+        + ", value=" + value
         + ", etag='" + etag + "'"
         + ", metadata={'" + (metadata != null ? metadata.toString() : null) + "'}"
         + ", error='" + error + "'"

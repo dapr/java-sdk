@@ -146,10 +146,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
       Map<String, String> metadata = request.getMetadata();
       if (metadata != null) {
         envelopeBuilder.putAllMetadata(metadata);
-        String contentType = metadata.get(io.dapr.client.domain.Metadata.CONTENT_TYPE);
-        if (contentType != null) {
-          envelopeBuilder.setDataContentType(contentType);
-        }
       }
 
       return this.<Empty>createMono(it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it))
@@ -354,7 +350,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     if (etag.equals("")) {
       etag = null;
     }
-    return new State<>(value, key, etag, item.getMetadataMap(), null);
+    return new State<>(key, value, etag, item.getMetadataMap(), null);
   }
 
   private <T> State<T> buildStateKeyValue(
@@ -369,7 +365,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     if (etag.equals("")) {
       etag = null;
     }
-    return new State<>(value, requestedKey, etag, response.getMetadataMap(), stateOptions);
+    return new State<>(requestedKey, value, etag, response.getMetadataMap(), stateOptions);
   }
 
   /**

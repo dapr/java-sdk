@@ -354,7 +354,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Void> saveState(String storeName, String key, String etag, Object value, StateOptions options) {
-    State<?> state = new State<>(value, key, etag, options);
+    State<?> state = new State<>(key, value, etag, options);
     return this.saveBulkState(storeName, Collections.singletonList(state));
   }
 

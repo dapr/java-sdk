@@ -60,9 +60,36 @@ The Dapr client is also within a try-with-resource block to properly close the c
 ### Running the example
 
 Run this example with the following command:
-```sh
-dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
+
+<!-- STEP
+name: Run exception example 
+expected_stdout_lines:
+  - '== APP == Error code: INVALID_ARGUMENT'
+  - '== APP == Error message: INVALID_ARGUMENT: state store Unknown state store is not found'
+background: true
+sleep: 5
+-->
+
+```bash
+dapr run --app-id exception_example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
 ```
+
+<!-- END_STEP -->
+
 Once running, the OutputBindingExample should print the output as follows:
 
 ![stateouput](../../../../../resources/img/exception.png)
+
+### Cleanup
+
+To stop the app run (or press `CTRL+C`):
+
+<!-- STEP
+name: Cleanup
+-->
+
+```bash
+dapr stop --app-id exception_example
+```
+
+<!-- END_STEP -->
