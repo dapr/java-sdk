@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * mvn clean install
  * 2. cd [repo root]/examples
  * 3. send a message to be saved as state:
- * java -jar examples/target/dapr-java-sdk-examples-exec.jar \
+ * java -jar target/dapr-java-sdk-examples-exec.jar \
  *     org.junit.platform.console.ConsoleLauncher --select-class=io.dapr.examples.unittesting.DaprExampleTest
  */
 public class DaprExampleTest {

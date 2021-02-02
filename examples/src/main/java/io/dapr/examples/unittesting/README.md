@@ -131,7 +131,7 @@ sleep: 3
 
 Run this example with the following command:
 ```bash
-java -jar examples/target/dapr-java-sdk-examples-exec.jar org.junit.platform.console.ConsoleLauncher --select-class=io.dapr.examples.unittesting.DaprExampleTest
+java -jar target/dapr-java-sdk-examples-exec.jar org.junit.platform.console.ConsoleLauncher --select-class=io.dapr.examples.unittesting.DaprExampleTest
 ```
 
 <!-- END_STEP -->
