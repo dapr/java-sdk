@@ -252,8 +252,8 @@ public class State<T> {
   @Override
   public String toString() {
     return "StateKeyValue{"
-        + "value=" + value
-        + ", key='" + key + "'"
+        + "key='" + key + "'"
+        + ", value=" + value
         + ", etag='" + etag + "'"
         + ", metadata={'" + (metadata != null ? metadata.toString() : null) + "'}"
         + ", error='" + error + "'"

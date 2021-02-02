@@ -143,15 +143,15 @@ expected_stdout_lines:
   - "== APP == Updating previous state and adding another state 'test state'... "
   - "== APP == Saving updated class with message: my message updated"
   - "== APP == Retrieved messages using bulk get:"
-  - "== APP == StateKeyValue{value=my message updated, key='myKey', etag='2', metadata={'{}'}, error='null', options={'null'}}"
-  - "== APP == StateKeyValue{value=test message, key='myKey2', etag='1', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}"
   - "== APP == Deleting states..."
   - "== APP == Verify delete key request is aborted if an etag different from stored is passed."
   - "== APP == Expected failure. ABORTED"
   - "== APP == Trying to delete again with correct etag."
   - "== APP == Trying to retrieve deleted states:"
-  - "== APP == StateKeyValue{value=null, key='myKey', etag='null', metadata={'{}'}, error='null', options={'null'}}"
-  - "== APP == StateKeyValue{value=null, key='myKey2', etag='null', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}"
+  - "== APP == StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}"
   - "== APP == Done"
 background: true
 sleep: 5 
@@ -181,9 +181,9 @@ Once running, the OutputBindingExample should print the output as follows:
 
 == APP == Retrieved messages using bulk get:
 
-== APP == StateKeyValue{value=my message updated, key='myKey', etag='2', metadata={'{}'}, error='null', options={'null'}}
+== APP == StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}
 
-== APP == StateKeyValue{value=test message, key='myKey2', etag='1', metadata={'{}'}, error='null', options={'null'}}
+== APP == StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}
 
 == APP == Deleting states...
 
@@ -195,9 +195,9 @@ Once running, the OutputBindingExample should print the output as follows:
 
 == APP == Trying to retrieve deleted states: 
 
-== APP == StateKeyValue{value=null, key='myKey', etag='null', metadata={'{}'}, error='null', options={'null'}}
+== APP == StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
 
-== APP == StateKeyValue{value=null, key='myKey2', etag='null', metadata={'{}'}, error='null', options={'null'}}
+== APP == StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
 
 == APP == Done
 

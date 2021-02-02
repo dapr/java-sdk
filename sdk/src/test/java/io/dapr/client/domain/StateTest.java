@@ -34,8 +34,8 @@ public class StateTest {
     assertEquals(ETAG, state.getEtag());
     assertEquals("value", state.getValue());
     String expected = "StateKeyValue{"
-        + "value=value"
-        + ", key='" + KEY + "'"
+        + "key='" + KEY + "'"
+        + ", value=value"
         + ", etag='" + ETAG + "'"
         + ", metadata={'null'}"
         + ", error='null'"
@@ -54,8 +54,8 @@ public class StateTest {
     assertEquals(KEY, state.getKey());
     assertEquals(ETAG, state.getEtag());
     String expected = "StateKeyValue{"
-        + "value=null"
-        + ", key='" + KEY + "'"
+        + "key='" + KEY + "'"
+        + ", value=null"
         + ", etag='" + ETAG + "'"
         + ", metadata={'null'}"
         + ", error='null'"
@@ -73,8 +73,8 @@ public class StateTest {
     assertEquals(KEY, state.getKey());
     assertEquals(ETAG, state.getEtag());
     String expected = "StateKeyValue{"
-        + "value=value"
-        + ", key='" + KEY + "'"
+        + "key='" + KEY + "'"
+        + ", value=value"
         + ", etag='" + ETAG + "'"
         + ", metadata={'null'}"
         + ", error='null'"
