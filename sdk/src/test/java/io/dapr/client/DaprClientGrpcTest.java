@@ -17,8 +17,6 @@ import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -40,7 +38,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -1556,8 +1553,8 @@ public class DaprClientGrpcTest {
   @Test
   public void saveBulkStateTestNullEtag() {
     List<State<?>> states = new ArrayList<State<?>>();
-    states.add(new State<String>("null_etag_value", "null_etag_key", null, (StateOptions)null));
-    states.add(new State<String>("empty_etag_value", "empty_etag_key", "", (StateOptions)null));
+    states.add(new State<String>("null_etag_key", "null_etag_value", null, (StateOptions)null));
+    states.add(new State<String>("empty_etag_key", "empty_etag_value", "", (StateOptions)null));
 
     ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
@@ -1741,11 +1738,11 @@ public class DaprClientGrpcTest {
   }
 
   private <T> State<T> buildStateKey(T value, String key, String etag, StateOptions options) {
-    return new State<>(value, key, etag, options);
+    return new State<>(key, value, etag, options);
   }
 
   private <T> State<T> buildStateKey(T value, String key, String etag, Map<String, String> metadata, StateOptions options) {
-    return new State<>(value, key, etag, metadata, options);
+    return new State<>(key, value, etag, metadata, options);
   }
 
   /**
