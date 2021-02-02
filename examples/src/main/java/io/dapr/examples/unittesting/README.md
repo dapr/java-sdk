@@ -116,9 +116,6 @@ The second test uses a mock implementation of the factory method and checks the 
 <!-- STEP
 name: Check state example
 expected_stdout_lines:
-  - "DaprExampleTest"
-  - "testGetState()"    
-  - "testInvokeActor()"
   - "[         2 tests found           ]"
   - "[         0 tests skipped         ]"
   - "[         2 tests started         ]"
@@ -126,7 +123,7 @@ expected_stdout_lines:
   - "[         2 tests successful      ]"
   - "[         0 tests failed          ]"
 background: true
-sleep: 3 
+sleep: 5
 -->
 
 Run this example with the following command:
