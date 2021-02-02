@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
@@ -66,7 +67,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
    * @throws Exception This test is not expected to throw.  Thrown exceptions are bugs.
    */
   @Test
-  public void actorTest1() throws Exception {
+  public void invokeOneActorMethodReminderAndTimer() throws Exception {
     System.out.println("Starting test 'actorTest1'");
 
     startDaprApp(
@@ -76,7 +77,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
       true,
       60000);
 
-    Thread.sleep(3000);
+    Thread.sleep(5000);
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
@@ -87,13 +88,12 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logger.debug("Building proxy");
     ActorProxy proxy = proxyBuilder.build(actorId1);
 
+    final AtomicInteger expectedSayMethodInvocations = new AtomicInteger();
     logger.debug("Invoking Say from Proxy");
-    callWithRetry(() -> {
-      logger.debug("Invoking Say from Proxy");
-      String sayResponse = proxy.invokeMethod("say", "message", String.class).block();
-      logger.debug("asserting not null response: [" + sayResponse + "]");
-      assertNotNull(sayResponse);
-    }, 60000);
+    String sayResponse = proxy.invokeMethod("say", "message", String.class).block();
+    logger.debug("asserting not null response: [" + sayResponse + "]");
+    assertNotNull(sayResponse);
+    expectedSayMethodInvocations.incrementAndGet();
 
     logger.debug("Invoking actor method 'startTimer' which will register a timer");
     proxy.invokeMethod("startTimer", "myTimer").block();
@@ -111,6 +111,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
       String reversedString = new StringBuilder(msg).reverse().toString();
       String output = proxy.invokeMethod("say", "message" + i, String.class).block();
       assertTrue(reversedString.equals(output));
+      expectedSayMethodInvocations.incrementAndGet();
     });
 
     logger.debug("Calling method to register reminder named " + REMINDER_NAME);
@@ -135,6 +136,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     // make some more actor method calls and sleep a bit to see if the timer fires (it should not)
     sayMessages.parallelStream().forEach( i -> {
       proxy.invokeMethod("say", "message" + i, String.class).block();
+      expectedSayMethodInvocations.incrementAndGet();
     });
 
     logger.debug("Pausing 5 seconds to allow time for timer and reminders to fire if there is a bug.  They should not since we have unregistered them.");
@@ -144,6 +146,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logs = fetchMethodCallLogs(proxy);
     validateEventNotObserved(logs, "stopTimer", TIMER_METHOD_NAME);
     validateEventNotObserved(logs, "stopReminder", REMINDER_METHOD_NAME);
+    validateMethodCalls(logs, "say", expectedSayMethodInvocations.get());
 
   }
 
