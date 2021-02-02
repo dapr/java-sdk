@@ -133,8 +133,7 @@ public class PubSubIT extends BaseIT {
       client.publishEvent(
           PUBSUB_NAME,
           TOPIC_NAME,
-          new byte[]{1},
-          Collections.singletonMap("content-type", "application/octet-stream")).block();
+          new byte[]{1}).block();
       System.out.println("Published one byte.");
 
       Thread.sleep(3000);

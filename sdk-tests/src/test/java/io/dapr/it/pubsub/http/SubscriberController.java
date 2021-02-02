@@ -47,7 +47,8 @@ public class SubscriberController {
     return Mono.fromRunnable(() -> {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
-        System.out.println("Testing topic Subscriber got message: " + message);
+        String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
+        System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesReceivedTestingTopic.add(envelope.getData());
       } catch (Exception e) {
         throw new RuntimeException(e);
