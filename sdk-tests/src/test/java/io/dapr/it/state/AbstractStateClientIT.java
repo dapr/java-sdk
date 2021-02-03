@@ -9,8 +9,8 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
@@ -20,7 +20,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Common test cases for Dapr client (GRPC and HTTP).
@@ -53,11 +57,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //Assert that the response is the correct one
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
   }
 
   @Test
@@ -68,10 +72,10 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     State<String> state = (State<String>)
         daprClient.getState(STATE_STORE_NAME, new State(stateKey), String.class).block();
-    Assert.assertNotNull(state);
-    Assert.assertEquals("unknownKey", state.getKey());
-    Assert.assertNull(state.getValue());
-    Assert.assertNull(state.getEtag());
+    assertNotNull(state);
+    assertEquals("unknownKey", state.getKey());
+    assertNull(state.getValue());
+    assertNull(state.getEtag());
   }
 
   @Test
@@ -146,8 +150,8 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //review that the update was success action
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
 
   @Test
@@ -174,8 +178,8 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //review that the state was saved correctly
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //create deferred action to delete the state
     Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, null, null);
@@ -188,7 +192,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     myDataResponse = response.block();
 
     //review that the action does not return any value, because the state was deleted
-    Assert.assertNull(myDataResponse.getValue());
+    assertNull(myDataResponse.getValue());
   }
 
 
@@ -215,11 +219,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //review that the etag is not empty
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     String firstETag = myDataResponse.getEtag();
 
@@ -236,13 +240,13 @@ public abstract class AbstractStateClientIT extends BaseIT {
     myDataResponse = response.block();
 
     //review that state value changes
-    Assert.assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getEtag());
     //review that the etag changes after an update
-    Assert.assertNotEquals(firstETag, myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A2", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
+    assertNotEquals(firstETag, myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A2", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
 
 
@@ -269,11 +273,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //review that the etag is not empty
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     String firstETag = myDataResponse.getEtag();
 
@@ -290,13 +294,13 @@ public abstract class AbstractStateClientIT extends BaseIT {
     myDataResponse = response.block();
 
     //review that state value changes
-    Assert.assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getEtag());
     //review that the etag changes after an update
-    Assert.assertNotEquals(firstETag, myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A2", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
+    assertNotEquals(firstETag, myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A2", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
 
   @Test
@@ -319,11 +323,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     //execute the get state
     State<MyData> myDataResponse = response.block();
 
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the etag
     Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), null);
@@ -335,7 +339,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     myDataResponse = response.block();
 
     //Review that the response is null, because the state was deleted
-    Assert.assertNull(myDataResponse.getValue());
+    assertNull(myDataResponse.getValue());
   }
 
 
@@ -360,11 +364,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     //execute the get state
     State<MyData> myDataResponse = response.block();
 
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //Create deferred action to delete an state sending the incorrect etag
     Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, "99999999999", null);
@@ -376,7 +380,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     myDataResponse = response.block();
 
     //Review that the response is null, because the state was deleted
-    Assert.assertNull(myDataResponse.getValue());
+    assertNull(myDataResponse.getValue());
   }
 
   @Test(expected = RuntimeException.class)
@@ -406,11 +410,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     //execute the retrieve of the state using options
     State<MyData> myDataResponse = response.block();
 
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //change data to be udpated
     data.setPropertyA("data in property A2");
@@ -431,12 +435,12 @@ public abstract class AbstractStateClientIT extends BaseIT {
     response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions), MyData.class);
     State<MyData> myLastDataResponse = response.block();
 
-    Assert.assertNotNull(myLastDataResponse.getEtag());
-    Assert.assertNotNull(myLastDataResponse.getKey());
-    Assert.assertNotNull(myLastDataResponse.getValue());
-    Assert.assertNotNull(myDataResponse.getEtag(), myLastDataResponse.getEtag());
-    Assert.assertEquals("data in property A2", myLastDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B2", myLastDataResponse.getValue().getPropertyB());
+    assertNotNull(myLastDataResponse.getEtag());
+    assertNotNull(myLastDataResponse.getKey());
+    assertNotNull(myLastDataResponse.getValue());
+    assertNotNull(myDataResponse.getEtag(), myLastDataResponse.getEtag());
+    assertEquals("data in property A2", myLastDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B2", myLastDataResponse.getValue().getPropertyB());
   }
 
   @Test()
@@ -465,11 +469,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     //execute the retrieve of the state using options
     State<MyData> myDataResponse = response.block();
 
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
     //change data to be udpated
     data.setPropertyA("data in property A2");
@@ -490,12 +494,12 @@ public abstract class AbstractStateClientIT extends BaseIT {
     response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions), MyData.class);
     State<MyData> myLastDataResponse = response.block();
 
-    Assert.assertNotNull(myLastDataResponse.getEtag());
-    Assert.assertNotNull(myLastDataResponse.getKey());
-    Assert.assertNotNull(myLastDataResponse.getValue());
-    Assert.assertNotNull(myDataResponse.getEtag(), myLastDataResponse.getEtag());
-    Assert.assertEquals("last write", myLastDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property B2", myLastDataResponse.getValue().getPropertyB());
+    assertNotNull(myLastDataResponse.getEtag());
+    assertNotNull(myLastDataResponse.getKey());
+    assertNotNull(myLastDataResponse.getValue());
+    assertNotNull(myDataResponse.getEtag(), myLastDataResponse.getEtag());
+    assertEquals("last write", myLastDataResponse.getValue().getPropertyA());
+    assertEquals("data in property B2", myLastDataResponse.getValue().getPropertyB());
   }
 
   @Test
@@ -525,10 +529,10 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<String> myDataResponse = response.block();
 
     //Assert that the response is the correct one
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("my state 3", myDataResponse.getValue());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("my state 3", myDataResponse.getValue());
     operation = createTransactionalStateOperation(
         TransactionalStateOperation.OperationType.DELETE,
         createState(stateKey, null, null, data));
@@ -541,7 +545,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<String> deletedData = response.block();
 
     //Review that the response is null, because the state was deleted
-    Assert.assertNull(deletedData.getValue());
+    assertNull(deletedData.getValue());
   }
 
   @Test
@@ -561,7 +565,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
         TransactionalStateOperation.OperationType.UPSERT,
         createState(stateKey, null, null, data));
 
-    Assert.assertNotNull(daprClient);
+    assertNotNull(daprClient);
     //create of the deferred call to DAPR to execute the transaction
     Mono<Void> saveResponse = daprClient.executeStateTransaction(STATE_STORE_NAME, Collections.singletonList(operation));
     //execute the save action
@@ -574,11 +578,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //Assert that the response is the correct one
-    Assert.assertNotNull(myDataResponse.getEtag());
-    Assert.assertNotNull(myDataResponse.getKey());
-    Assert.assertNotNull(myDataResponse.getValue());
-    Assert.assertEquals("data in property AA", myDataResponse.getValue().getPropertyA());
-    Assert.assertEquals("data in property BA", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse.getEtag());
+    assertNotNull(myDataResponse.getKey());
+    assertNotNull(myDataResponse.getValue());
+    assertEquals("data in property AA", myDataResponse.getValue().getPropertyA());
+    assertEquals("data in property BA", myDataResponse.getValue().getPropertyB());
 
     operation = createTransactionalStateOperation(
         TransactionalStateOperation.OperationType.DELETE,
@@ -592,7 +596,17 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> deletedData = response.block();
 
     //Review that the response is null, because the state was deleted
-    Assert.assertNull(deletedData.getValue());
+    assertNull(deletedData.getValue());
+  }
+
+  @Test
+  public void testInvalidEtag() {
+    DaprClient daprClient = buildDaprClient();
+    DaprException exception = assertThrows(DaprException.class,
+        () -> daprClient.saveState(STATE_STORE_NAME, "myKey", "badEtag", "value", null).block());
+    assertNotNull(exception.getMessage());
+    // This will assert that eTag is parsed correctly and is not corrupted. The quotation from runtime helps here.
+    assertTrue(exception.getMessage().contains("\"badEtag\""));
   }
 
   private <T> TransactionalStateOperation<T> createTransactionalStateOperation(
