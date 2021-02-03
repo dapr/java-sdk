@@ -267,7 +267,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.GetStateRequest envelope = builder.build();
 
       return Mono.subscriberContext().flatMap(
-          context -> this.<DaprProtos.GetStateResponse>createMono(it -> intercept(context, asyncStub).getState(envelope, it))
+          context ->
+              this.<DaprProtos.GetStateResponse>createMono(
+                  it -> intercept(context, asyncStub).getState(envelope, it)
+              )
       ).map(
           it -> {
             try {
