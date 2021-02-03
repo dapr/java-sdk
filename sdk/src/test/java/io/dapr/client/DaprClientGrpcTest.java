@@ -17,7 +17,6 @@ import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
@@ -1355,7 +1354,7 @@ public class DaprClientGrpcTest {
     DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, key);
     builder.withEtag(etag).withStateOptions(options).withMetadata(metadata);
     DeleteStateRequest request = builder.build();
-    Mono<Response<Void>> result = client.deleteState(request);
+    Mono<Void> result = client.deleteState(request);
     result.block();
   }
 
@@ -1456,7 +1455,7 @@ public class DaprClientGrpcTest {
     ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(STATE_STORE_NAME)
         .withTransactionalStates(upsertOperation)
         .build();
-    Mono<Response<Void>> result = client.executeStateTransaction(request);
+    Mono<Void> result = client.executeStateTransaction(request);
 
     assertThrowsDaprException(
         IOException.class,
@@ -1491,7 +1490,7 @@ public class DaprClientGrpcTest {
         .withTransactionalStates(upsertOperation, deleteOperation)
         .withMetadata(metadata)
         .build();
-    Mono<Response<Void>> result = client.executeStateTransaction(request);
+    Mono<Void> result = client.executeStateTransaction(request);
     result.block();
   }
 

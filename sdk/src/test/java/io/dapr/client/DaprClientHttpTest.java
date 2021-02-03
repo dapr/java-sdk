@@ -9,7 +9,6 @@ import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
@@ -970,8 +969,8 @@ public class DaprClientHttpTest {
 
     DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, stateKeyValue.getKey());
     builder.withMetadata(metadata).withEtag(stateKeyValue.getEtag()).withStateOptions(stateOptions);
-    Mono<Response<Void>> monoMetadata = daprClientHttp.deleteState(builder.build());
-    assertNull(monoMetadata.block().getObject());
+    Mono<Void> monoMetadata = daprClientHttp.deleteState(builder.build());
+    assertNull(monoMetadata.block());
   }
 
   @Test

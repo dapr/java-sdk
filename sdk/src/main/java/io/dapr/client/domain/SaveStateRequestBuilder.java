@@ -5,8 +5,6 @@
 
 package io.dapr.client.domain;
 
-import reactor.util.context.Context;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,8 +18,6 @@ public class SaveStateRequestBuilder {
   private final String storeName;
 
   private List<State<?>> states = new ArrayList<>();
-
-  private Context context;
 
   public SaveStateRequestBuilder(String storeName) {
     this.storeName = storeName;
@@ -37,11 +33,6 @@ public class SaveStateRequestBuilder {
     return this;
   }
 
-  public SaveStateRequestBuilder withContext(Context context) {
-    this.context = context;
-    return this;
-  }
-
   /**
    * Builds a request object.
    * @return Request object.
@@ -50,7 +41,6 @@ public class SaveStateRequestBuilder {
     SaveStateRequest request = new SaveStateRequest();
     request.setStoreName(this.storeName);
     request.setStates(this.states);
-    request.setContext(this.context);
     return request;
   }
 }

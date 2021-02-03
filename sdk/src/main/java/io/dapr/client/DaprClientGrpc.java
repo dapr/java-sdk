@@ -19,7 +19,6 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -132,12 +131,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> publishEvent(PublishEventRequest request) {
+  public Mono<Void> publishEvent(PublishEventRequest request) {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
       Object data = request.getData();
-      Context context = request.getContext();
       DaprProtos.PublishEventRequest.Builder envelopeBuilder = DaprProtos.PublishEventRequest.newBuilder()
           .setTopic(topic)
           .setPubsubName(pubsubName)
@@ -148,8 +146,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
         envelopeBuilder.putAllMetadata(metadata);
       }
 
-      return this.<Empty>createMono(it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it))
-          .thenReturn(new Response<>(context, null));
+      return Mono.subscriberContext().flatMap(
+              context ->
+                  this.<Empty>createMono(
+                      it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
+                  )
+      ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -196,13 +198,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
+  public <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
     try {
       final String name = request.getName();
       final String operation = request.getOperation();
       final Object data = request.getData();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Binding name cannot be null or empty.");
       }
@@ -222,9 +223,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
-      return this.<DaprProtos.InvokeBindingResponse>createMono(it -> intercept(context, asyncStub)
-          .invokeBinding(envelope, it))
-          .flatMap(
+      return Mono.subscriberContext().flatMap(
+              context -> this.<DaprProtos.InvokeBindingResponse>createMono(
+                  it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+              )
+      ).flatMap(
               it -> {
                 try {
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
@@ -232,7 +235,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
                   throw DaprException.propagate(e);
                 }
               }
-      ).map(r -> new Response<>(context, r));
+      );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -290,13 +293,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
+  public <T> Mono<List<State<T>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
     try {
       final String stateStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
       final int parallelism = request.getParallelism();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -317,9 +319,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkStateRequest envelope = builder.build();
 
-      return this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
-          .getBulkState(envelope, it))
-          .map(
+      return Mono.subscriberContext().flatMap(
+              context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+                  .getBulkState(envelope, it)
+              )
+      ).map(
               it ->
                 it
                   .getItemsList()
@@ -332,7 +336,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
                     }
                   })
                   .collect(Collectors.toList())
-      ).map(s -> new Response<>(context, s));
+      );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -376,12 +380,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> executeStateTransaction(ExecuteStateTransactionRequest request) {
+  public Mono<Void> executeStateTransaction(ExecuteStateTransactionRequest request) {
     try {
       final String stateStoreName = request.getStateStoreName();
       final List<TransactionalStateOperation<?>> operations = request.getOperations();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -400,8 +403,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.ExecuteStateTransactionRequest req = builder.build();
 
-      return this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it))
-          .thenReturn(new Response<>(context, null));
+      return Mono.subscriberContext().flatMap(
+          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it))
+      ).then();
     } catch (Exception e) {
       return DaprException.wrapMono(e);
     }
@@ -411,11 +415,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> saveBulkState(SaveStateRequest request) {
+  public Mono<Void> saveBulkState(SaveStateRequest request) {
     try {
       final String stateStoreName = request.getStoreName();
       final List<State<?>> states = request.getStates();
-      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -426,8 +429,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.SaveStateRequest req = builder.build();
 
-      return this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
-          .thenReturn(new Response<>(context, null));
+      return Mono.subscriberContext().flatMap(
+          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
+      ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -468,14 +472,13 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> deleteState(DeleteStateRequest request) {
+  public Mono<Void> deleteState(DeleteStateRequest request) {
     try {
       final String stateStoreName = request.getStateStoreName();
       final String key = request.getKey();
       final StateOptions options = request.getStateOptions();
       final String etag = request.getEtag();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
 
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
@@ -510,8 +513,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.DeleteStateRequest req = builder.build();
 
-      return this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
-          .thenReturn(new Response<>(context, null));
+      return Mono.subscriberContext().flatMap(
+          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
+      ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -562,11 +566,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request) {
+  public Mono<Map<String, String>> getSecret(GetSecretRequest request) {
     String secretStoreName = request.getStoreName();
     String key = request.getKey();
     Map<String, String> metadata = request.getMetadata();
-    Context context = request.getContext();
     try {
       if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Secret store name cannot be null or empty.");
@@ -587,19 +590,19 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
     DaprProtos.GetSecretRequest req = requestBuilder.build();
 
-    return this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(context, asyncStub).getSecret(req, it))
-        .map(it -> new Response<>(context, it.getDataMap()));
+    return Mono.subscriberContext().flatMap(
+        context -> this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(context, asyncStub).getSecret(req, it))
+    ).map(DaprProtos.GetSecretResponse::getDataMap);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request) {
+  public Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request) {
     try {
       final String storeName = request.getStoreName();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
       if ((storeName == null) || (storeName.trim().isEmpty())) {
         throw new IllegalArgumentException("Secret store name cannot be null or empty.");
       }
@@ -612,19 +615,21 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkSecretRequest envelope = builder.build();
 
-      return this.<DaprProtos.GetBulkSecretResponse>createMono(it -> intercept(context, asyncStub)
-          .getBulkSecret(envelope, it))
-          .map(it -> {
-            Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
-            if (secretsMap == null) {
-              return Collections.EMPTY_MAP;
-            }
-            return secretsMap
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(s -> s.getKey(), s -> s.getValue().getSecretsMap()));
-          })
-          .map(s -> new Response<>(context, s));
+      return Mono.subscriberContext().flatMap(
+          context ->
+            this.<DaprProtos.GetBulkSecretResponse>createMono(
+              it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
+            )
+      ).map(it -> {
+        Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
+        if (secretsMap == null) {
+          return Collections.emptyMap();
+        }
+        return secretsMap
+          .entrySet()
+          .stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
+      });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }

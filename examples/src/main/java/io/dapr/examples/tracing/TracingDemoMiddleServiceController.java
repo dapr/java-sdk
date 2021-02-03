@@ -52,8 +52,8 @@ public class TracingDemoMiddleServiceController {
     InvokeMethodRequest request = builder
         .withBody(body)
         .withHttpExtension(HttpExtension.POST)
-        .withContext(getReactorContext(context)).build();
-    return client.invokeMethod(request, TypeRef.get(byte[].class));
+        .build();
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context));
   }
 
   /**
@@ -67,8 +67,8 @@ public class TracingDemoMiddleServiceController {
     InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "sleep");
     InvokeMethodRequest request = builder
         .withHttpExtension(HttpExtension.POST)
-        .withContext(getReactorContext(context)).build();
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).then();
+        .build();
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context)).then();
   }
 
 }

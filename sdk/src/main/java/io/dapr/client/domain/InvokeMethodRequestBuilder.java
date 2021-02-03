@@ -5,8 +5,6 @@
 
 package io.dapr.client.domain;
 
-import reactor.util.context.Context;
-
 /**
  * Builds a request to invoke a service.
  */
@@ -21,8 +19,6 @@ public class InvokeMethodRequestBuilder {
   private Object body;
 
   private HttpExtension httpExtension = HttpExtension.NONE;
-
-  private Context context;
 
   public InvokeMethodRequestBuilder(String appId, String method) {
     this.appId = appId;
@@ -44,11 +40,6 @@ public class InvokeMethodRequestBuilder {
     return this;
   }
 
-  public InvokeMethodRequestBuilder withContext(Context context) {
-    this.context = context;
-    return this;
-  }
-
   /**
    * Builds a request object.
    * @return Request object.
@@ -60,7 +51,6 @@ public class InvokeMethodRequestBuilder {
     request.setMethod(this.method);
     request.setBody(this.body);
     request.setHttpExtension(this.httpExtension);
-    request.setContext(this.context);
     return request;
   }
 

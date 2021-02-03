@@ -52,7 +52,7 @@ public class InvokeClient {
           InvokeMethodRequest request = builder
               .withBody(message)
               .withHttpExtension(HttpExtension.POST)
-              .withContext(getReactorContext()).build();
+              .build();
           client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
                 System.out.println(new String(r));
@@ -63,7 +63,7 @@ public class InvokeClient {
                     .withHttpExtension(HttpExtension.POST)
                     .build();
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
-              }).block();
+              }).subscriberContext(getReactorContext()).block();
         }
       }
 

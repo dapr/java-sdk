@@ -5,8 +5,6 @@
 
 package io.dapr.client.domain;
 
-import reactor.util.context.Context;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +14,6 @@ public final class ExecuteStateTransactionRequestBuilder {
   private final String storeName;
   private List<TransactionalStateOperation<?>> transactionalStates;
   private Map<String, String> metadata;
-  private Context context;
 
   public ExecuteStateTransactionRequestBuilder(String storeName) {
     this.storeName = storeName;
@@ -39,12 +36,7 @@ public final class ExecuteStateTransactionRequestBuilder {
     return this;
   }
 
-  public ExecuteStateTransactionRequestBuilder withContext(Context context) {
-    this.context = context;
-    return this;
-  }
-
   public ExecuteStateTransactionRequest build() {
-    return new ExecuteStateTransactionRequest(storeName, transactionalStates, metadata, context);
+    return new ExecuteStateTransactionRequest(storeName, transactionalStates, metadata);
   }
 }

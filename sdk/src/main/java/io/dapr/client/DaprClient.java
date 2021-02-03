@@ -15,7 +15,6 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -67,7 +66,9 @@ public interface DaprClient extends AutoCloseable {
    * @param request the request for the publish event.
    * @return a Mono plan of a Dapr's void response.
    */
-  Mono<Response<Void>> publishEvent(PublishEventRequest request);
+  default Mono<Void> publishEvent(PublishEventRequest request) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Invoke a service method, using serialization.
@@ -306,7 +307,9 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>     The type of the return
    * @return a Mono plan of type T.
    */
-  <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type);
+  default <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Retrieve a State based on their key.
@@ -418,7 +421,9 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>     The Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type);
+  default <T> Mono<List<State<T>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
+    throw new UnsupportedOperationException();
+  }
 
   /** Execute a transaction.
    *
@@ -435,7 +440,9 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to execute transaction.
    * @return  a Mono plan of type Response Void
    */
-  Mono<Response<Void>> executeStateTransaction(ExecuteStateTransactionRequest request);
+  default Mono<Void> executeStateTransaction(ExecuteStateTransactionRequest request) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Save/Update a list of states.
@@ -452,7 +459,9 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to save states.
    * @return a Mono plan of type Void.
    */
-  Mono<Response<Void>> saveBulkState(SaveStateRequest request);
+  default Mono<Void> saveBulkState(SaveStateRequest request) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Save/Update a state.
@@ -502,7 +511,9 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to delete a state.
    * @return a Mono plan of type Void.
    */
-  Mono<Response<Void>> deleteState(DeleteStateRequest request);
+  default Mono<Void> deleteState(DeleteStateRequest request) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Fetches a secret from the configured vault.
@@ -529,7 +540,9 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to fetch secret.
    * @return Key-value pairs for the secret.
    */
-  Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request);
+  default Mono<Map<String, String>> getSecret(GetSecretRequest request) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Fetches all secrets from the configured vault.
@@ -554,5 +567,7 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to fetch secret.
    * @return Key-value pairs for the secret.
    */
-  Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request);
+  default Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request) {
+    throw new UnsupportedOperationException();
+  }
 }
