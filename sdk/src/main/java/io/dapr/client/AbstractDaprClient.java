@@ -289,7 +289,7 @@ abstract class AbstractDaprClient implements DaprClient {
     GetStateRequest request = new GetStateRequestBuilder(storeName, key)
         .withStateOptions(options)
         .build();
-    return this.getState(request, type).map(r -> r.getObject());
+    return this.getState(request, type);
   }
 
 

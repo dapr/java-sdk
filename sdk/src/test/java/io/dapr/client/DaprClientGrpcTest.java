@@ -976,10 +976,10 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
-    Mono<Response<State<MyObject>>> result = client.getState(request, TypeRef.get(MyObject.class));
-    Response<State<MyObject>> res = result.block();
+    Mono<State<MyObject>> result = client.getState(request, TypeRef.get(MyObject.class));
+    State<MyObject> res = result.block();
     assertNotNull(res);
-    assertEquals(expectedState, res.getObject());
+    assertEquals(expectedState, res);
   }
 
   @Test
@@ -1070,6 +1070,37 @@ public class DaprClientGrpcTest {
     assertNull(result.stream().skip(1).findFirst().get().getValue());
     assertNull(result.stream().skip(1).findFirst().get().getEtag());
     assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  }
+
+  @Test
+  public void getStateContext() throws IOException {
+    String etag = "ETag1";
+    String key = "key1";
+    String expectedValue = "hello world";
+    StateOptions options = buildStateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("key_1", "val_1");
+    State<String> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), options);
+    DaprProtos.GetStateResponse responseEnvelope = DaprProtos.GetStateResponse.newBuilder()
+        .setData(serialize(expectedValue))
+        .setEtag(etag)
+        .build();
+    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, key);
+    builder.withMetadata(metadata).withStateOptions(options);
+    GetStateRequest request = builder.build();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
+
+    Mono<State<String>> result = client.getState(request, TypeRef.STRING).subscriberContext(
+        it -> it.put("grpc-trace-bin", "foobar".getBytes(StandardCharsets.UTF_8))
+    );
+    State<String> res = result.block();
+    assertNotNull(res);
+    assertEquals(expectedState, res);
   }
 
   @Test

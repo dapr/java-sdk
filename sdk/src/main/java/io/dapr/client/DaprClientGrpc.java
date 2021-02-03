@@ -241,13 +241,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
+  public <T> Mono<State<T>> getState(GetStateRequest request, TypeRef<T> type) {
     try {
       final String stateStoreName = request.getStoreName();
       final String key = request.getKey();
       final StateOptions options = request.getStateOptions();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
 
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
@@ -267,16 +266,17 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetStateRequest envelope = builder.build();
 
-      return this.<DaprProtos.GetStateResponse>createMono(it -> intercept(context, asyncStub).getState(envelope, it))
-          .map(
-              it -> {
-                try {
-                  return buildStateKeyValue(it, key, options, type);
-                } catch (IOException ex) {
-                  throw DaprException.propagate(ex);
-                }
-              }
-      ).map(s -> new Response<>(context, s));
+      return Mono.subscriberContext().flatMap(
+          context -> this.<DaprProtos.GetStateResponse>createMono(it -> intercept(context, asyncStub).getState(envelope, it))
+      ).map(
+          it -> {
+            try {
+              return buildStateKeyValue(it, key, options, type);
+            } catch (IOException ex) {
+              throw DaprException.propagate(ex);
+            }
+          }
+      );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }

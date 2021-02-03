@@ -382,7 +382,9 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>     The Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type);
+  default <T> Mono<State<T>> getState(GetStateRequest request, TypeRef<T> type) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Retrieve bulk States based on their keys.

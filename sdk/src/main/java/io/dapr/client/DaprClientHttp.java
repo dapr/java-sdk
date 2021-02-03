@@ -315,7 +315,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
+  public <T> Mono<State<T>> getState(GetStateRequest request, TypeRef<T> type) {
     try {
       final String stateStoreName = request.getStoreName();
       final String key = request.getKey();
@@ -343,12 +343,11 @@ public class DaprClientHttp extends AbstractDaprClient {
           .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryParams, null, context)
           .flatMap(s -> {
             try {
-              return Mono.just(buildState(s, key, options, type));
+              return Mono.justOrEmpty(buildState(s, key, options, type));
             } catch (Exception ex) {
               return DaprException.wrapMono(ex);
             }
-          })
-          .map(r -> new Response<>(context, r));
+          });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }

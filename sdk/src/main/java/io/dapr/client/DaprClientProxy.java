@@ -342,7 +342,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
+  public <T> Mono<State<T>> getState(GetStateRequest request, TypeRef<T> type) {
     return client.getState(request, type);
   }
 

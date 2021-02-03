@@ -711,8 +711,8 @@ public class DaprClientHttpTest {
 
     GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, "key");
     builder.withMetadata(metadata);
-    Mono<Response<State<String>>> monoMetadata = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
-    assertEquals(monoMetadata.block().getObject().getKey(), "key");
+    Mono<State<String>> monoMetadata = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
+    assertEquals(monoMetadata.block().getKey(), "key");
   }
 
   @Test
