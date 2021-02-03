@@ -156,7 +156,7 @@ public class DaprClientHttp extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
-  public <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
+  public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
       final String appId = invokeMethodRequest.getAppId();
       final String method = invokeMethodRequest.getMethod();
@@ -186,7 +186,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       headers.putAll(httpExtension.getHeaders());
       Mono<DaprHttp.Response> response = this.client.invokeApi(httpMethod, pathSegments,
           httpExtension.getQueryString(), serializedRequestBody, headers, context);
-      return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
+      return response.flatMap(r -> getMono(type, r));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }

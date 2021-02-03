@@ -178,12 +178,13 @@ public class DaprClientGrpcTelemetryTest {
         context = context.put("tracestate", scenario.tracestate);
       }
     }
+    final Context contextCopy = context;
     InvokeMethodRequest req = new InvokeMethodRequestBuilder("appId", "method")
         .withBody("request")
         .withHttpExtension(HttpExtension.NONE)
-        .withContext(context)
         .build();
-    Mono<Response<Void>> result = this.client.invokeMethod(req, TypeRef.get(Void.class));
+    Mono<Void> result = this.client.invokeMethod(req, TypeRef.get(Void.class))
+        .subscriberContext(it -> it.putAll(contextCopy == null ? Context.empty() : contextCopy));
     result.block();
   }
 

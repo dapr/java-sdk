@@ -55,13 +55,13 @@ public class InvokeClient {
               .withContext(getReactorContext()).build();
           client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
-                System.out.println(new String(r.getObject()));
+                System.out.println(new String(r));
                 return r;
               })
               .flatMap(r -> {
                 InvokeMethodRequest sleepRequest = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
                     .withHttpExtension(HttpExtension.POST)
-                    .withContext(r.getContext()).build();
+                    .build();
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
               }).block();
         }

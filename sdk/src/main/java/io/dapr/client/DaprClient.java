@@ -221,7 +221,9 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>                  The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
    */
-  <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
+  default <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Invokes a Binding operation.

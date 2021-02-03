@@ -105,7 +105,7 @@ abstract class AbstractDaprClient implements DaprClient {
         .withContentType(objectSerializer.getContentType())
         .build();
 
-    return this.invokeMethod(req, type).map(r -> r.getObject());
+    return this.invokeMethod(req, type);
   }
 
   /**

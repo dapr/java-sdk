@@ -159,13 +159,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
+  public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
       String appId = invokeMethodRequest.getAppId();
       String method = invokeMethodRequest.getMethod();
       Object body = invokeMethodRequest.getBody();
       HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
-      Context context = invokeMethodRequest.getContext();
       DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
           httpExtension,
           appId,
@@ -175,9 +174,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
       // gRPC to gRPC does not handle metadata in Dapr runtime proto.
       // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
 
-      return this.<CommonProtos
-          .InvokeResponse>createMono(it -> intercept(context, asyncStub).invokeService(envelope, it))
-          .flatMap(
+      return Mono.subscriberContext().flatMap(
+              context -> this.<CommonProtos.InvokeResponse>createMono(
+                  it -> intercept(context, asyncStub).invokeService(envelope, it)
+              )
+          ).flatMap(
               it -> {
                 try {
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
@@ -185,7 +186,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
                   throw DaprException.propagate(e);
                 }
               }
-      ).map(r -> new Response<>(context, r));
+      );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }

@@ -222,7 +222,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
+  public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     return methodInvocationOverrideClient.invokeMethod(invokeMethodRequest, type);
   }
 

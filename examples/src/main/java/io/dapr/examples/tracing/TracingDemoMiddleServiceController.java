@@ -53,7 +53,7 @@ public class TracingDemoMiddleServiceController {
         .withBody(body)
         .withHttpExtension(HttpExtension.POST)
         .withContext(getReactorContext(context)).build();
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).map(r -> r.getObject());
+    return client.invokeMethod(request, TypeRef.get(byte[].class));
   }
 
   /**
