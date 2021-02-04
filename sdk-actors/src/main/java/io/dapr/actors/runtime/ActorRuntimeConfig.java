@@ -6,24 +6,25 @@
 package io.dapr.actors.runtime;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Represents the configuration for the Actor Runtime.
  */
 public class ActorRuntimeConfig {
 
-  private Collection<String> registeredActorTypes = new ArrayList<>();
+  private List<String> registeredActorTypes = new CopyOnWriteArrayList<>();
 
-  private Duration actorIdleTimeout;
+  private volatile Duration actorIdleTimeout;
 
-  private Duration actorScanInterval;
+  private volatile Duration actorScanInterval;
 
-  private Duration drainOngoingCallTimeout;
+  private volatile Duration drainOngoingCallTimeout;
 
-  private Boolean drainBalancedActors;
+  private volatile Boolean drainBalancedActors;
 
   /**
    * Instantiates a new config for the Actor Runtime.
