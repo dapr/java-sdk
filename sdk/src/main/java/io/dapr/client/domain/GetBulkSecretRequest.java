@@ -5,8 +5,6 @@
 
 package io.dapr.client.domain;
 
-import reactor.util.context.Context;
-
 import java.util.Map;
 
 /**
@@ -17,8 +15,6 @@ public class GetBulkSecretRequest {
   private String storeName;
 
   private Map<String, String> metadata;
-
-  private Context context;
 
   public String getStoreName() {
     return storeName;
@@ -34,13 +30,5 @@ public class GetBulkSecretRequest {
 
   void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
-  }
-
-  public Context getContext() {
-    return context;
-  }
-
-  void setContext(Context context) {
-    this.context = context;
   }
 }

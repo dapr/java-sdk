@@ -8,7 +8,6 @@ package io.dapr.client;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.InvokeMethodRequestBuilder;
-import io.dapr.client.domain.Response;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
@@ -178,12 +177,13 @@ public class DaprClientGrpcTelemetryTest {
         context = context.put("tracestate", scenario.tracestate);
       }
     }
+    final Context contextCopy = context;
     InvokeMethodRequest req = new InvokeMethodRequestBuilder("appId", "method")
         .withBody("request")
         .withHttpExtension(HttpExtension.NONE)
-        .withContext(context)
         .build();
-    Mono<Response<Void>> result = this.client.invokeMethod(req, TypeRef.get(Void.class));
+    Mono<Void> result = this.client.invokeMethod(req, TypeRef.get(Void.class))
+        .subscriberContext(it -> it.putAll(contextCopy == null ? Context.empty() : contextCopy));
     result.block();
   }
 

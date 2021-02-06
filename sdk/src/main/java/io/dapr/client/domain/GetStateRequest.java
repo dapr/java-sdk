@@ -5,8 +5,6 @@
 
 package io.dapr.client.domain;
 
-import reactor.util.context.Context;
-
 import java.util.Collections;
 import java.util.Map;
 
@@ -22,8 +20,6 @@ public class GetStateRequest {
   private Map<String, String> metadata;
 
   private StateOptions stateOptions;
-
-  private Context context;
 
   public String getStoreName() {
     return storeName;
@@ -47,14 +43,6 @@ public class GetStateRequest {
 
   void setStateOptions(StateOptions stateOptions) {
     this.stateOptions = stateOptions;
-  }
-
-  public Context getContext() {
-    return context;
-  }
-
-  void setContext(Context context) {
-    this.context = context;
   }
 
   public Map<String, String> getMetadata() {

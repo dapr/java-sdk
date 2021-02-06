@@ -5,8 +5,6 @@
 
 package io.dapr.client.domain;
 
-import reactor.util.context.Context;
-
 import java.util.Map;
 
 /**
@@ -21,8 +19,6 @@ public class PublishEventRequest {
   private Object data;
 
   private Map<String, String> metadata;
-
-  private Context context;
 
   public String getPubsubName() {
     return pubsubName;
@@ -54,13 +50,5 @@ public class PublishEventRequest {
 
   void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
-  }
-
-  public Context getContext() {
-    return context;
-  }
-
-  void setContext(Context context) {
-    this.context = context;
   }
 }
