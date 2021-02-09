@@ -4,7 +4,7 @@ metadata:
   name: vault
 spec:
   type: secretstores.hashicorp.vault
-  version: 1
+  version: v1
   metadata:
   - name: vaultAddr
     value: "http://127.0.0.1:8200"

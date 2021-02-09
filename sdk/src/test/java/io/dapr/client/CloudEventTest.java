@@ -149,4 +149,26 @@ public class CloudEventTest {
     assertEquals("AQI=", cloudEvent.getData());
     assertArrayEquals(expected, OBJECT_MAPPER.convertValue(cloudEvent.getData(), byte[].class));
   }
+
+  @Test
+  public void deserializeBinaryData() throws Exception {
+    String content = "{\n" +
+        "    \"specversion\" : \"1.0\",\n" +
+        "    \"type\" : \"com.github.pull_request.opened\",\n" +
+        "    \"source\" : \"https://github.com/cloudevents/spec/pull\",\n" +
+        "    \"subject\" : \"123\",\n" +
+        "    \"id\" : \"A234-1234-1234\",\n" +
+        "    \"time\" : \"2018-04-05T17:31:00Z\",\n" +
+        "    \"comexampleextension1\" : \"value\",\n" +
+        "    \"comexampleothervalue\" : 5,\n" +
+        "    \"datacontenttype\" : \"application/octet-stream\",\n" +
+        "    \"data_base64\" : \"AQI=\"\n" +
+        "}";
+
+    byte[] expected = new byte[]{ 0x1, 0x2 };
+    CloudEvent cloudEvent = CloudEvent.deserialize(content.getBytes());
+    assertEquals("application/octet-stream", cloudEvent.getDatacontenttype());
+    assertNull(cloudEvent.getData());
+    assertArrayEquals(expected, cloudEvent.getBinaryData());
+  }
 }

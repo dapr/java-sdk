@@ -5,17 +5,23 @@
 
 package io.dapr.it.pubsub.http;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.TypeRef;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,11 +30,17 @@ import java.util.List;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class PubSubIT extends BaseIT {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  private static final TypeRef<List<CloudEvent>> CLOUD_EVENT_LIST_TYPE_REF = new TypeRef<>() {};
 
   //Number of messages to be sent: 10
   private static final int NUM_MESSAGES = 10;
@@ -39,6 +51,8 @@ public class PubSubIT extends BaseIT {
   private static final String ANOTHER_TOPIC_NAME = "anothertopic";
   // Topic used for TTL test
   private static final String TTL_TOPIC_NAME = "ttltopic";
+  // Topic to test binary data
+  private static final String BINARY_TOPIC_NAME = "binarytopic";
 
   /**
    * Parameters for this test.
@@ -112,8 +126,25 @@ public class PubSubIT extends BaseIT {
       daprRun.switchToHTTP();
     }
 
+    DaprObjectSerializer serializer = new DaprObjectSerializer() {
+      @Override
+      public byte[] serialize(Object o) throws JsonProcessingException {
+        return OBJECT_MAPPER.writeValueAsBytes(o);
+      }
+
+      @Override
+      public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
+        return (T) OBJECT_MAPPER.readValue(data, OBJECT_MAPPER.constructType(type.getType()));
+      }
+
+      @Override
+      public String getContentType() {
+        return "application/json";
+      }
+    };
+
     // Send a batch of messages on one topic
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TOPIC_NAME);
         //Publishing messages
@@ -140,30 +171,109 @@ public class PubSubIT extends BaseIT {
 
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + TOPIC_NAME);
-        final List<String> messages = client.invokeMethod(daprRun.getAppName(), "messages/testingtopic", null, HttpExtension.GET, List.class).block();
+        final List<CloudEvent> messages = client.invokeMethod(
+            daprRun.getAppName(),
+            "messages/testingtopic",
+            null,
+            HttpExtension.GET,
+            CLOUD_EVENT_LIST_TYPE_REF).block();
         assertEquals(11, messages.size());
         for (int i = 0; i < NUM_MESSAGES; i++) {
-          assertTrue(messages.toString(), messages.contains(String.format("This is message #%d on topic %s", i, TOPIC_NAME)));
+          final int messageId = i;
+          assertTrue(messages
+              .stream()
+              .filter(m -> m.getData() != null)
+              .map(m -> m.getData())
+              .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_NAME)))
+              .count() == 1);
         }
 
-        boolean foundByte = false;
-        for (String message : messages) {
-          if ((message.getBytes().length == 1) && (message.getBytes()[0] == 1)) {
-            foundByte = true;
-          }
-        }
-        assertTrue(foundByte);
+        assertTrue(messages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .map(m -> m.getData())
+            .filter(m -> "AQ==".equals(m))
+            .count() == 1);
 
       }, 2000);
 
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + ANOTHER_TOPIC_NAME);
-        final List<String> messages = client.invokeMethod(daprRun.getAppName(), "messages/anothertopic", null, HttpExtension.GET, List.class).block();
+        final List<CloudEvent> messages = client.invokeMethod(
+            daprRun.getAppName(),
+            "messages/anothertopic",
+            null,
+            HttpExtension.GET,
+            CLOUD_EVENT_LIST_TYPE_REF).block();
         assertEquals(10, messages.size());
 
         for (int i = 0; i < NUM_MESSAGES; i++) {
-          assertTrue(messages.contains(String.format("This is message #%d on topic %s", i, ANOTHER_TOPIC_NAME)));
+          final int messageId = i;
+          assertTrue(messages
+              .stream()
+              .filter(m -> m.getData() != null)
+              .map(m -> m.getData())
+              .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, ANOTHER_TOPIC_NAME)))
+              .count() == 1);
         }
+      }, 2000);
+    }
+  }
+
+  @Test
+  public void testPubSubBinary() throws Exception {
+    System.out.println("Working Directory = " + System.getProperty("user.dir"));
+
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName(),
+        SubscriberService.SUCCESS_MESSAGE,
+        SubscriberService.class,
+        true,
+        60000));
+    // At this point, it is guaranteed that the service above is running and all ports being listened to.
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      daprRun.switchToHTTP();
+    }
+
+    DaprObjectSerializer serializer = new DaprObjectSerializer() {
+      @Override
+      public byte[] serialize(Object o) {
+        return (byte[])o;
+      }
+
+      @Override
+      public <T> T deserialize(byte[] data, TypeRef<T> type) {
+        return (T) data;
+      }
+
+      @Override
+      public String getContentType() {
+        return "application/octet-stream";
+      }
+    };
+    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
+      client.publishEvent(
+          PUBSUB_NAME,
+          BINARY_TOPIC_NAME,
+          new byte[]{1}).block();
+      System.out.println("Published one byte.");
+    }
+
+    Thread.sleep(3000);
+
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + BINARY_TOPIC_NAME);
+        final List<CloudEvent> messages = client.invokeMethod(
+            daprRun.getAppName(),
+            "messages/binarytopic",
+            null,
+            HttpExtension.GET, CLOUD_EVENT_LIST_TYPE_REF).block();
+        assertEquals(1, messages.size());
+        assertNull(messages.get(0).getData());
+        assertArrayEquals(new byte[]{1}, messages.get(0).getBinaryData());
       }, 2000);
     }
   }
