@@ -549,14 +549,14 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeServiceWithHttpExtensionTest() throws IOException {
     HttpExtension httpExtension = new HttpExtension(
-        DaprHttp.HttpMethods.GET, Collections.singletonMap("test", "1"), null);
+        DaprHttp.HttpMethods.GET, Collections.singletonMap("test", Arrays.asList("1", "ab/c")), null);
     CommonProtos.InvokeRequest message = CommonProtos.InvokeRequest.newBuilder()
         .setMethod("method")
         .setData(getAny("request"))
         .setContentType("application/json")
         .setHttpExtension(CommonProtos.HTTPExtension.newBuilder()
             .setVerb(CommonProtos.HTTPExtension.Verb.GET)
-            .putQuerystring("test", "1").build())
+            .setQuerystring("test=1&test=ab%2Fc").build())
         .build();
     DaprProtos.InvokeServiceRequest request = DaprProtos.InvokeServiceRequest.newBuilder()
         .setId("appId")

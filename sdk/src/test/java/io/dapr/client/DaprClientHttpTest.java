@@ -336,11 +336,12 @@ public class DaprClientHttpTest {
   public void invokeServiceWithRequestAndQueryString() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder?test=1")
+        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder?param1=1&param2=a&param2=b%2Fc")
         .respond(EXPECTED_RESULT);
 
-    Map<String, String> queryString = new HashMap<>();
-    queryString.put("test", "1");
+    Map<String, List<String>> queryString = new HashMap<>();
+    queryString.put("param1", Collections.singletonList("1"));
+    queryString.put("param2", Arrays.asList("a", "b/c"));
     HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString, null);
     Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", httpExtension, map);
     assertNull(mono.block());

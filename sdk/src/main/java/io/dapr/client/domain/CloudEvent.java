@@ -112,7 +112,7 @@ public final class CloudEvent {
     this.type = type;
     this.specversion = specversion;
     this.datacontenttype = "application/octet-stream";
-    this.binaryData = binaryData;
+    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);;
   }
 
     
@@ -232,7 +232,7 @@ public final class CloudEvent {
    * @return Cloud event's binary data.
    */
   public byte[] getBinaryData() {
-    return binaryData;
+    return this.binaryData == null ? null : Arrays.copyOf(this.binaryData, this.binaryData.length);
   }
 
   /**
@@ -240,7 +240,7 @@ public final class CloudEvent {
    * @param binaryData Cloud event's binary data.
    */
   public void setBinaryData(byte[] binaryData) {
-    this.binaryData = binaryData;
+    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);
   }
 
   /**

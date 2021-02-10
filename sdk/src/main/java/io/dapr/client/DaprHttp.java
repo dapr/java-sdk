@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -158,7 +159,7 @@ public class DaprHttp implements AutoCloseable {
   public Mono<Response> invokeApi(
       String method,
       String[] pathSegments,
-      Map<String, String> urlParameters,
+      Map<String, List<String>> urlParameters,
       Map<String, String> headers,
       Context context) {
     return this.invokeApi(method, pathSegments, urlParameters, (byte[]) null, headers, context);
@@ -178,7 +179,7 @@ public class DaprHttp implements AutoCloseable {
   public Mono<Response> invokeApi(
       String method,
       String[] pathSegments,
-      Map<String, String> urlParameters,
+      Map<String, List<String>> urlParameters,
       String content,
       Map<String, String> headers,
       Context context) {
@@ -203,7 +204,7 @@ public class DaprHttp implements AutoCloseable {
   public Mono<Response> invokeApi(
           String method,
           String[] pathSegments,
-          Map<String, String> urlParameters,
+          Map<String, List<String>> urlParameters,
           byte[] content,
           Map<String, String> headers,
           Context context) {
@@ -234,7 +235,7 @@ public class DaprHttp implements AutoCloseable {
    */
   private CompletableFuture<Response> doInvokeApi(String method,
                                String[] pathSegments,
-                               Map<String, String> urlParameters,
+                               Map<String, List<String>> urlParameters,
                                byte[] content, Map<String, String> headers,
                                Context context) {
     final String requestId = UUID.randomUUID().toString();
@@ -257,7 +258,10 @@ public class DaprHttp implements AutoCloseable {
       urlBuilder.addPathSegment(pathSegment);
     }
     Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
-        .forEach(urlParameter -> urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameter.getValue()));
+        .forEach(urlParameter ->
+            Optional.ofNullable(urlParameter.getValue()).orElse(Collections.emptyList()).stream()
+              .forEach(urlParameterValue ->
+                  urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameterValue)));
 
     Request.Builder requestBuilder = new Request.Builder()
         .url(urlBuilder.build())

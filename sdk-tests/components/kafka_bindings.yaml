@@ -1,5 +1,5 @@
 apiVersion: dapr.io/v1alpha1
-kind: ComponentX
+kind: Component
 metadata:
   name: sample123
 spec:
