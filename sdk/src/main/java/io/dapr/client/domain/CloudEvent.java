@@ -6,10 +6,13 @@
 package io.dapr.client.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.annotation.PropertyKey;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -55,6 +58,12 @@ public final class CloudEvent {
   private Object data;
 
   /**
+   * Cloud event specs says binary data should be in data_base64.
+   */
+  @JsonProperty("data_base64")
+  private byte[] binaryData;
+
+  /**
    * Instantiates a CloudEvent.
    */
   public CloudEvent() {
@@ -82,6 +91,28 @@ public final class CloudEvent {
     this.specversion = specversion;
     this.datacontenttype = datacontenttype;
     this.data = data;
+  }
+
+  /**
+   * Instantiates a CloudEvent.
+   * @param id              Identifier of the message being processed.
+   * @param source          Source for this event.
+   * @param type            Type of event.
+   * @param specversion     Version of the event spec.
+   * @param binaryData      Payload.
+   */
+  public CloudEvent(
+      String id,
+      String source,
+      String type,
+      String specversion,
+      byte[] binaryData) {
+    this.id = id;
+    this.source = source;
+    this.type = type;
+    this.specversion = specversion;
+    this.datacontenttype = "application/octet-stream";
+    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);;
   }
 
     
@@ -197,6 +228,22 @@ public final class CloudEvent {
   }
 
   /**
+   * Gets the cloud event's binary data.
+   * @return Cloud event's binary data.
+   */
+  public byte[] getBinaryData() {
+    return this.binaryData == null ? null : Arrays.copyOf(this.binaryData, this.binaryData.length);
+  }
+
+  /**
+   * Sets the cloud event's binary data.
+   * @param binaryData Cloud event's binary data.
+   */
+  public void setBinaryData(byte[] binaryData) {
+    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
@@ -213,7 +260,8 @@ public final class CloudEvent {
         && Objects.equals(type, that.type)
         && Objects.equals(specversion, that.specversion)
         && Objects.equals(datacontenttype, that.datacontenttype)
-        && Objects.equals(data, that.data);
+        && Objects.equals(data, that.data)
+        && Arrays.equals(binaryData, that.binaryData);
   }
 
   /**
@@ -221,6 +269,6 @@ public final class CloudEvent {
    */
   @Override
   public int hashCode() {
-    return Objects.hash(id, source, type, specversion, datacontenttype, data);
+    return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData);
   }
 }

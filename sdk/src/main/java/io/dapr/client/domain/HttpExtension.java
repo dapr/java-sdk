@@ -6,9 +6,12 @@
 package io.dapr.client.domain;
 
 import io.dapr.client.DaprHttp;
+import okhttp3.HttpUrl;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * HTTP Extension class.
@@ -60,9 +63,9 @@ public final class HttpExtension {
   private DaprHttp.HttpMethods method;
 
   /**
-   * HTTP querystring.
+   * HTTP query params.
    */
-  private Map<String, String> queryString;
+  private Map<String, List<String>> queryParams;
 
   /**
    * HTTP headers.
@@ -72,19 +75,21 @@ public final class HttpExtension {
   /**
    * Construct a HttpExtension object.
    * @param method      Required value denoting the HttpMethod.
-   * @param queryString map for the queryString the HTTP call.
+   * @param queryParams map for the query parameters the HTTP call.
    * @param headers     map to set HTTP headers.
    * @see io.dapr.client.DaprHttp.HttpMethods for supported methods.
    * @throws IllegalArgumentException on null method or queryString.
    */
-  public HttpExtension(DaprHttp.HttpMethods method, Map<String, String> queryString, Map<String, String> headers) {
+  public HttpExtension(DaprHttp.HttpMethods method,
+      Map<String, List<String>> queryParams,
+      Map<String, String> headers) {
     if (method == null) {
       throw new IllegalArgumentException("HttpExtension method cannot be null");
     }
 
     this.method = method;
-    this.queryString = Collections.unmodifiableMap(queryString == null ? Collections.EMPTY_MAP : queryString);
-    this.headers = Collections.unmodifiableMap(headers == null ? Collections.EMPTY_MAP : headers);
+    this.queryParams = Collections.unmodifiableMap(queryParams == null ? Collections.emptyMap() : queryParams);
+    this.headers = Collections.unmodifiableMap(headers == null ? Collections.emptyMap() : headers);
   }
 
   /**
@@ -101,11 +106,31 @@ public final class HttpExtension {
     return method;
   }
 
-  public Map<String, String> getQueryString() {
-    return queryString;
+  public Map<String, List<String>> getQueryParams() {
+    return queryParams;
   }
 
   public Map<String, String> getHeaders() {
     return headers;
+  }
+
+  /**
+   * Encodes the query string for the HTTP request.
+   * @return Encoded HTTP query string.
+   */
+  public String encodeQueryString() {
+    if ((this.queryParams == null) || (this.queryParams.isEmpty())) {
+      return "";
+    }
+
+    HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
+    // Setting required values but we only need query params in the end.
+    urlBuilder.scheme("http").host("localhost");
+    Optional.ofNullable(this.queryParams).orElse(Collections.emptyMap()).entrySet().stream()
+        .forEach(urlParameter ->
+            Optional.ofNullable(urlParameter.getValue()).orElse(Collections.emptyList()).stream()
+                .forEach(urlParameterValue ->
+                    urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameterValue)));
+    return urlBuilder.build().encodedQuery();
   }
 }

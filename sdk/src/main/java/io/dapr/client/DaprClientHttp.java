@@ -29,7 +29,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -142,7 +141,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "publish", pubsubName, topic };
 
-      Map<String, String> queryArgs = metadataToQueryArgs(metadata);
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
       return Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(
             DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedEvent, headers, context
@@ -185,7 +184,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       headers.putAll(httpExtension.getHeaders());
       Mono<DaprHttp.Response> response = Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(httpMethod, pathSegments,
-              httpExtension.getQueryString(), serializedRequestBody, headers, context)
+              httpExtension.getQueryParams(), serializedRequestBody, headers, context)
       );
       return response.flatMap(r -> getMono(type, r));
     } catch (Exception ex) {
@@ -294,7 +293,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "bulk"};
 
-      Map<String, String> queryArgs = metadataToQueryArgs(metadata);
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
       return Mono.subscriberContext().flatMap(
               context -> this.client
                   .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, requestBody, null, context)
@@ -333,9 +332,10 @@ public class DaprClientHttp extends AbstractDaprClient {
           .map(o -> o.getStateOptionsAsMap())
           .orElse(Collections.emptyMap());
 
-      final Map<String, String> queryParams = new HashMap<>();
+      final Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.putAll(metadataToQueryArgs(metadata));
-      queryParams.putAll(optionsMap);
+      queryParams.putAll(optionsMap.entrySet().stream().collect(
+          Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
 
@@ -478,12 +478,13 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
 
       Map<String, String> optionsMap = Optional.ofNullable(options)
-          .map(stateOptions -> stateOptions.getStateOptionsAsMap())
+          .map(o -> o.getStateOptionsAsMap())
           .orElse(Collections.emptyMap());
 
-      final Map<String, String> queryParams = new HashMap<>();
+      final Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.putAll(metadataToQueryArgs(metadata));
-      queryParams.putAll(optionsMap);
+      queryParams.putAll(optionsMap.entrySet().stream().collect(
+          Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
 
@@ -572,7 +573,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(e);
     }
 
-    Map<String, String> queryArgs = metadataToQueryArgs(metadata);
+    Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
     String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, key};
 
     return Mono.subscriberContext().flatMap(
@@ -608,7 +609,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(e);
     }
 
-    Map<String, String> queryArgs = metadataToQueryArgs(metadata);
+    Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
     String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, "bulk"};
 
     return Mono.subscriberContext().flatMap(
@@ -638,19 +639,19 @@ public class DaprClientHttp extends AbstractDaprClient {
   }
 
   /**
-   * Converts metadata map into HTTP headers.
+   * Converts metadata map into Query params.
    * @param metadata metadata map
-   * @return HTTP headers
+   * @return Query params
    */
-  private static Map<String, String> metadataToQueryArgs(Map<String, String> metadata) {
+  private static Map<String, List<String>> metadataToQueryArgs(Map<String, String> metadata) {
     if (metadata == null) {
-      return Collections.EMPTY_MAP;
+      return Collections.emptyMap();
     }
 
     return metadata
         .entrySet()
         .stream()
         .filter(e -> e.getKey() != null)
-        .collect(Collectors.toMap(e -> METADATA_PREFIX + e.getKey(), e -> e.getValue()));
+        .collect(Collectors.toMap(e -> METADATA_PREFIX + e.getKey(), e -> Collections.singletonList(e.getValue())));
   }
 }

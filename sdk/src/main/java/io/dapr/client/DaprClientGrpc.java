@@ -40,6 +40,7 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
+import okhttp3.HttpUrl;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
@@ -47,8 +48,10 @@ import reactor.util.context.Context;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -550,8 +553,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
       requestBuilder.setData(Any.newBuilder().build());
     }
     CommonProtos.HTTPExtension.Builder httpExtensionBuilder = CommonProtos.HTTPExtension.newBuilder();
+
     httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.valueOf(httpExtension.getMethod().toString()))
-        .putAllQuerystring(httpExtension.getQueryString());
+        .setQuerystring(httpExtension.encodeQueryString());
     requestBuilder.setHttpExtension(httpExtensionBuilder.build());
 
     requestBuilder.setContentType(objectSerializer.getContentType());
