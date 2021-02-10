@@ -75,7 +75,7 @@ public final class HttpExtension {
   /**
    * Construct a HttpExtension object.
    * @param method      Required value denoting the HttpMethod.
-   * @param queryParams map for the queryString the HTTP call.
+   * @param queryParams map for the query parameters the HTTP call.
    * @param headers     map to set HTTP headers.
    * @see io.dapr.client.DaprHttp.HttpMethods for supported methods.
    * @throws IllegalArgumentException on null method or queryString.

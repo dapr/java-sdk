@@ -111,8 +111,6 @@ public class PubSubIT extends BaseIT {
 
   @Test
   public void testPubSub() throws Exception {
-    System.out.println("Working Directory = " + System.getProperty("user.dir"));
-
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -222,8 +220,6 @@ public class PubSubIT extends BaseIT {
 
   @Test
   public void testPubSubBinary() throws Exception {
-    System.out.println("Working Directory = " + System.getProperty("user.dir"));
-
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -280,8 +276,6 @@ public class PubSubIT extends BaseIT {
 
   @Test
   public void testPubSubTTLMetadata() throws Exception {
-    System.out.println("Working Directory = " + System.getProperty("user.dir"));
-
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
