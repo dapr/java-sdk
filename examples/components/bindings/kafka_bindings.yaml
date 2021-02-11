@@ -4,7 +4,7 @@ metadata:
   name: sample123
 spec:
   type: bindings.kafka
-  version: 1
+  version: v1
   metadata:
   # Kafka broker connection setting
   - name: brokers
