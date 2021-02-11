@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -15,7 +15,6 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -97,7 +96,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> publishEvent(PublishEventRequest request) {
+  public Mono<Void> publishEvent(PublishEventRequest request) {
     return client.publishEvent(request);
   }
 
@@ -222,7 +221,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
+  public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     return methodInvocationOverrideClient.invokeMethod(invokeMethodRequest, type);
   }
 
@@ -286,7 +285,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
+  public <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
     return client.invokeBinding(request, type);
   }
 
@@ -342,7 +341,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
+  public <T> Mono<State<T>> getState(GetStateRequest request, TypeRef<T> type) {
     return client.getState(request, type);
   }
 
@@ -366,7 +365,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
+  public <T> Mono<List<State<T>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
     return client.getBulkState(request, type);
   }
 
@@ -382,7 +381,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> executeStateTransaction(ExecuteStateTransactionRequest request) {
+  public Mono<Void> executeStateTransaction(ExecuteStateTransactionRequest request) {
     return client.executeStateTransaction(request);
   }
 
@@ -398,7 +397,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> saveBulkState(SaveStateRequest request) {
+  public Mono<Void> saveBulkState(SaveStateRequest request) {
     return client.saveBulkState(request);
   }
 
@@ -438,7 +437,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> deleteState(DeleteStateRequest request) {
+  public Mono<Void> deleteState(DeleteStateRequest request) {
     return client.deleteState(request);
   }
 
@@ -462,7 +461,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request) {
+  public Mono<Map<String, String>> getSecret(GetSecretRequest request) {
     return client.getSecret(request);
   }
 
@@ -486,7 +485,7 @@ class DaprClientProxy implements DaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request) {
+  public Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request) {
     return client.getBulkSecret(request);
   }
 

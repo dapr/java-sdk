@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -105,7 +105,7 @@ abstract class AbstractDaprClient implements DaprClient {
         .withContentType(objectSerializer.getContentType())
         .build();
 
-    return this.invokeMethod(req, type).map(r -> r.getObject());
+    return this.invokeMethod(req, type);
   }
 
   /**
@@ -235,7 +235,7 @@ abstract class AbstractDaprClient implements DaprClient {
         .withData(data)
         .withMetadata(metadata)
         .build();
-    return this.invokeBinding(request, type).map(r -> r.getObject());
+    return this.invokeBinding(request, type);
   }
 
 
@@ -289,7 +289,7 @@ abstract class AbstractDaprClient implements DaprClient {
     GetStateRequest request = new GetStateRequestBuilder(storeName, key)
         .withStateOptions(options)
         .build();
-    return this.getState(request, type).map(r -> r.getObject());
+    return this.getState(request, type);
   }
 
 
@@ -307,7 +307,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<List<State<T>>> getBulkState(String storeName, List<String> keys, TypeRef<T> type) {
-    return this.getBulkState(new GetBulkStateRequestBuilder(storeName, keys).build(), type).map(r -> r.getObject());
+    return this.getBulkState(new GetBulkStateRequestBuilder(storeName, keys).build(), type);
   }
 
   /**
@@ -386,7 +386,7 @@ abstract class AbstractDaprClient implements DaprClient {
     GetSecretRequest request = new GetSecretRequestBuilder(storeName, key)
         .withMetadata(metadata)
         .build();
-    return getSecret(request).map(r -> r.getObject() == null ? new HashMap<>() : r.getObject());
+    return getSecret(request).defaultIfEmpty(Collections.emptyMap());
   }
 
   /**
@@ -413,7 +413,7 @@ abstract class AbstractDaprClient implements DaprClient {
     GetBulkSecretRequest request = new GetBulkSecretRequestBuilder(storeName)
         .withMetadata(metadata)
         .build();
-    return this.getBulkSecret(request).map(r -> r.getObject() == null ? Collections.EMPTY_MAP : r.getObject());
+    return this.getBulkSecret(request).defaultIfEmpty(Collections.emptyMap());
   }
 
 }

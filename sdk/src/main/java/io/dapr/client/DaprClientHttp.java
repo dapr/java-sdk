@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -17,7 +17,6 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -30,7 +29,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -127,13 +125,12 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> publishEvent(PublishEventRequest request) {
+  public Mono<Void> publishEvent(PublishEventRequest request) {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
       Object data = request.getData();
       Map<String, String> metadata = request.getMetadata();
-      Context context = request.getContext();
 
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
@@ -144,10 +141,12 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "publish", pubsubName, topic };
 
-      Map<String, String> queryArgs = metadataToQueryArgs(metadata);
-      return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedEvent, headers, context)
-          .thenReturn(new Response<>(context, null));
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
+      return Mono.subscriberContext().flatMap(
+          context -> this.client.invokeApi(
+            DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedEvent, headers, context
+          )
+      ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -156,14 +155,13 @@ public class DaprClientHttp extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
-  public <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
+  public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
       final String appId = invokeMethodRequest.getAppId();
       final String method = invokeMethodRequest.getMethod();
       final Object request = invokeMethodRequest.getBody();
       final HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
       final String contentType = invokeMethodRequest.getContentType();
-      final Context context = invokeMethodRequest.getContext();
       if (httpExtension == null) {
         throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
       }
@@ -184,9 +182,11 @@ public class DaprClientHttp extends AbstractDaprClient {
         headers.put("content-type", contentType);
       }
       headers.putAll(httpExtension.getHeaders());
-      Mono<DaprHttp.Response> response = this.client.invokeApi(httpMethod, pathSegments,
-          httpExtension.getQueryString(), serializedRequestBody, headers, context);
-      return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
+      Mono<DaprHttp.Response> response = Mono.subscriberContext().flatMap(
+          context -> this.client.invokeApi(httpMethod, pathSegments,
+              httpExtension.getQueryParams(), serializedRequestBody, headers, context)
+      );
+      return response.flatMap(r -> getMono(type, r));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -209,13 +209,12 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
+  public <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
     try {
       final String name = request.getName();
       final String operation = request.getOperation();
       final Object data = request.getData();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Binding name cannot be null or empty.");
       }
@@ -255,9 +254,11 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "bindings", name };
 
-      Mono<DaprHttp.Response> response = this.client.invokeApi(
-              httpMethod, pathSegments, null, payload, null, context);
-      return response.flatMap(r -> getMono(type, r)).map(r -> new Response<>(context, r));
+      Mono<DaprHttp.Response> response = Mono.subscriberContext().flatMap(
+          context -> this.client.invokeApi(
+              httpMethod, pathSegments, null, payload, null, context)
+      );
+      return response.flatMap(r -> getMono(type, r));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -267,13 +268,12 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
+  public <T> Mono<List<State<T>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type) {
     try {
       final String stateStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
       final int parallelism = request.getParallelism();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -293,17 +293,17 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "bulk"};
 
-      Map<String, String> queryArgs = metadataToQueryArgs(metadata);
-      return this.client
-          .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, requestBody, null, context)
-          .flatMap(s -> {
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
+      return Mono.subscriberContext().flatMap(
+              context -> this.client
+                  .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, requestBody, null, context)
+          ).flatMap(s -> {
             try {
               return Mono.just(buildStates(s, type));
             } catch (Exception ex) {
               return DaprException.wrapMono(ex);
             }
-          })
-          .map(r -> new Response<>(context, r));
+          });
 
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -315,13 +315,12 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type) {
+  public <T> Mono<State<T>> getState(GetStateRequest request, TypeRef<T> type) {
     try {
       final String stateStoreName = request.getStoreName();
       final String key = request.getKey();
       final StateOptions options = request.getStateOptions();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
 
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
@@ -331,24 +330,25 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
       Map<String, String> optionsMap = Optional.ofNullable(options)
           .map(o -> o.getStateOptionsAsMap())
-          .orElse(Collections.EMPTY_MAP);
+          .orElse(Collections.emptyMap());
 
-      final Map<String, String> queryParams = new HashMap<>();
+      final Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.putAll(metadataToQueryArgs(metadata));
-      queryParams.putAll(optionsMap);
+      queryParams.putAll(optionsMap.entrySet().stream().collect(
+          Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
 
-      return this.client
+      return Mono.subscriberContext().flatMap(
+        context -> this.client
           .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryParams, null, context)
-          .flatMap(s -> {
-            try {
-              return Mono.just(buildState(s, key, options, type));
-            } catch (Exception ex) {
-              return DaprException.wrapMono(ex);
-            }
-          })
-          .map(r -> new Response<>(context, r));
+      ).flatMap(s -> {
+        try {
+          return Mono.justOrEmpty(buildState(s, key, options, type));
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -358,12 +358,11 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> executeStateTransaction(ExecuteStateTransactionRequest request) {
+  public Mono<Void> executeStateTransaction(ExecuteStateTransactionRequest request) {
     try {
       final String stateStoreName = request.getStateStoreName();
       final List<TransactionalStateOperation<?>> operations = request.getOperations();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -398,9 +397,11 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "transaction"};
 
-      return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedOperationBody, null, context)
-          .thenReturn(new Response<>(context, null));
+      return Mono.subscriberContext().flatMap(
+          context -> this.client.invokeApi(
+              DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedOperationBody, null, context
+          )
+      ).then();
     } catch (Exception e) {
       return DaprException.wrapMono(e);
     }
@@ -410,11 +411,10 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> saveBulkState(SaveStateRequest request) {
+  public Mono<Void> saveBulkState(SaveStateRequest request) {
     try {
       final String stateStoreName = request.getStoreName();
       final List<State<?>> states = request.getStates();
-      final Context context = request.getContext();
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
       }
@@ -445,9 +445,10 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName};
 
-      return this.client.invokeApi(
-          DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedStateBody, null, context)
-          .thenReturn(new Response<>(context, null));
+      return Mono.subscriberContext().flatMap(
+          context -> this.client.invokeApi(
+              DaprHttp.HttpMethods.POST.name(), pathSegments, null, serializedStateBody, null, context)
+      ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -457,14 +458,13 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Void>> deleteState(DeleteStateRequest request) {
+  public Mono<Void> deleteState(DeleteStateRequest request) {
     try {
       final String stateStoreName = request.getStateStoreName();
       final String key = request.getKey();
       final StateOptions options = request.getStateOptions();
       final String etag = request.getEtag();
       final Map<String, String> metadata = request.getMetadata();
-      final Context context = request.getContext();
 
       if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("State store name cannot be null or empty.");
@@ -478,18 +478,20 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
 
       Map<String, String> optionsMap = Optional.ofNullable(options)
-          .map(stateOptions -> stateOptions.getStateOptionsAsMap())
-          .orElse(Collections.EMPTY_MAP);
+          .map(o -> o.getStateOptionsAsMap())
+          .orElse(Collections.emptyMap());
 
-      final Map<String, String> queryParams = new HashMap<>();
+      final Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.putAll(metadataToQueryArgs(metadata));
-      queryParams.putAll(optionsMap);
+      queryParams.putAll(optionsMap.entrySet().stream().collect(
+          Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
 
-      return this.client.invokeApi(
+      return Mono.subscriberContext().flatMap(
+          context -> this.client.invokeApi(
               DaprHttp.HttpMethods.DELETE.name(), pathSegments, queryParams, headers, context)
-          .thenReturn(new Response<>(context, null));
+      ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -556,11 +558,10 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request) {
+  public Mono<Map<String, String>> getSecret(GetSecretRequest request) {
     String secretStoreName = request.getStoreName();
     String key = request.getKey();
     Map<String, String> metadata = request.getMetadata();
-    Context context = request.getContext();
     try {
       if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Secret store name cannot be null or empty.");
@@ -572,11 +573,13 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(e);
     }
 
-    Map<String, String> queryArgs = metadataToQueryArgs(metadata);
+    Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
     String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, key};
-    return this.client
-      .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String)null, null, context)
-      .flatMap(response -> {
+
+    return Mono.subscriberContext().flatMap(
+          context -> this.client
+              .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String)null, null, context)
+      ).flatMap(response -> {
         try {
           Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
           if (m == null) {
@@ -588,18 +591,16 @@ public class DaprClientHttp extends AbstractDaprClient {
           return DaprException.wrapMono(e);
         }
       })
-      .map(m -> (Map<String, String>)m)
-      .map(m -> new Response<>(context, m));
+      .map(m -> (Map<String, String>)m);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request) {
+  public Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request) {
     String secretStoreName = request.getStoreName();
     Map<String, String> metadata = request.getMetadata();
-    Context context = request.getContext();
     try {
       if ((secretStoreName == null) || (secretStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Secret store name cannot be null or empty.");
@@ -608,11 +609,13 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(e);
     }
 
-    Map<String, String> queryArgs = metadataToQueryArgs(metadata);
+    Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
     String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, "bulk"};
-    return this.client
-        .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String)null, null, context)
-        .flatMap(response -> {
+
+    return Mono.subscriberContext().flatMap(
+            context -> this.client
+                .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String)null, null, context)
+        ).flatMap(response -> {
           try {
             Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
             if (m == null) {
@@ -624,8 +627,7 @@ public class DaprClientHttp extends AbstractDaprClient {
             return DaprException.wrapMono(e);
           }
         })
-        .map(m -> (Map<String, Map<String, String>>)m)
-        .map(m -> new Response<>(context, m));
+        .map(m -> (Map<String, Map<String, String>>)m);
   }
 
   /**
@@ -637,19 +639,19 @@ public class DaprClientHttp extends AbstractDaprClient {
   }
 
   /**
-   * Converts metadata map into HTTP headers.
+   * Converts metadata map into Query params.
    * @param metadata metadata map
-   * @return HTTP headers
+   * @return Query params
    */
-  private static Map<String, String> metadataToQueryArgs(Map<String, String> metadata) {
+  private static Map<String, List<String>> metadataToQueryArgs(Map<String, String> metadata) {
     if (metadata == null) {
-      return Collections.EMPTY_MAP;
+      return Collections.emptyMap();
     }
 
     return metadata
         .entrySet()
         .stream()
         .filter(e -> e.getKey() != null)
-        .collect(Collectors.toMap(e -> METADATA_PREFIX + e.getKey(), e -> e.getValue()));
+        .collect(Collectors.toMap(e -> METADATA_PREFIX + e.getKey(), e -> Collections.singletonList(e.getValue())));
   }
 }

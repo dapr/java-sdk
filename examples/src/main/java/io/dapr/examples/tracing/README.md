@@ -147,19 +147,19 @@ public class TracingDemoMiddleServiceController {
       @RequestBody(required = false) String body) {
     InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "echo");
     InvokeMethodRequest request = builder
-        .withBody(body)
-        .withHttpExtension(HttpExtension.POST)
-        .withContext(getReactorContext(context)).build();
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).map(r -> r.getObject());
+      .withBody(body)
+      .withHttpExtension(HttpExtension.POST)
+      .build();
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context));
   }
   // ...
   @PostMapping(path = "/proxy_sleep")
   public Mono<Void> sleep(@RequestAttribute(name = "opentelemetry-context") Context context) {
     InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "sleep");
     InvokeMethodRequest request = builder
-        .withHttpExtension(HttpExtension.POST)
-        .withContext(getReactorContext(context)).build();
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).then();
+      .withHttpExtension(HttpExtension.POST)
+      .build();
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context)).then();
   }
 }
 ```
@@ -222,26 +222,29 @@ public class InvokeClient {
 private static final String SERVICE_APP_ID = "tracingdemoproxy";
 ///...
   public static void main(String[] args) throws Exception {
-    Tracer tracer = OpenTelemetryConfig.createTracer(InvokeClient.class.getCanonicalName());
+    final OpenTelemetry openTelemetry = OpenTelemetryConfig.createOpenTelemetry();
+    final Tracer tracer = openTelemetry.getTracer(InvokeClient.class.getCanonicalName());
 
     Span span = tracer.spanBuilder("Example's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
-        try (Scope scope = tracer.withSpan(span)) {
-          InvokeServiceRequestBuilder builder = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_echo");
-          InvokeServiceRequest request
-              = builder.withBody(message).withHttpExtension(HttpExtension.POST).withContext(Context.current()).build();
-          client.invokeService(request, TypeRef.get(byte[].class))
-              .map(r -> {
-                System.out.println(new String(r.getObject()));
-                return r;
-              })
-              .flatMap(r -> {
-                InvokeServiceRequest sleepRequest = new InvokeServiceRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
-                    .withHttpExtension(HttpExtension.POST)
-                    .withContext(r.getContext()).build();
-                return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
-              }).block();
+        try (Scope scope = span.makeCurrent()) {
+          InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_echo");
+          InvokeMethodRequest request = builder
+            .withBody(message)
+            .withHttpExtension(HttpExtension.POST)
+            .build();
+          client.invokeMethod(request, TypeRef.get(byte[].class))
+            .map(r -> {
+              System.out.println(new String(r));
+              return r;
+            })
+            .flatMap(r -> {
+              InvokeMethodRequest sleepRequest = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
+                .withHttpExtension(HttpExtension.POST)
+                .build();
+              return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
+            }).subscriberContext(getReactorContext()).block();
         }
       }
 

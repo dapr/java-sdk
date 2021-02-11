@@ -4,7 +4,7 @@ metadata:
   name: messagebus
 spec:
   type: pubsub.redis
-  version: 1
+  version: v1
   metadata:
   - name: redisHost
     value: localhost:6379

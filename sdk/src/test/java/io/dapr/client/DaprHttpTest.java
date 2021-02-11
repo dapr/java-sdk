@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 package io.dapr.client;
@@ -19,7 +19,9 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -141,8 +143,8 @@ public class DaprHttpTest {
     Map<String, String> headers = new HashMap<>();
     headers.put("header", "value");
     headers.put("header1", "value1");
-    Map<String, String> urlParameters = new HashMap<>();
-    urlParameters.put("orderId", "41");
+    Map<String, List<String>> urlParameters = new HashMap<>();
+    urlParameters.put("orderId", Collections.singletonList("41"));
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3500/v1.0/state/order?orderId=41")
       .respond(serializer.serialize(EXPECTED_RESULT));

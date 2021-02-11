@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,8 +22,6 @@ public class InvokeBindingRequestBuilder {
 
   private Map<String, String> metadata = new HashMap<>();
 
-  private Context context;
-
   public InvokeBindingRequestBuilder(String name, String operation) {
     this.name = name;
     this.operation = operation;
@@ -41,11 +37,6 @@ public class InvokeBindingRequestBuilder {
     return this;
   }
 
-  public InvokeBindingRequestBuilder withContext(Context context) {
-    this.context = context;
-    return this;
-  }
-
   /**
    * Builds a request object.
    * @return Request object.
@@ -56,7 +47,6 @@ public class InvokeBindingRequestBuilder {
     request.setOperation(this.operation);
     request.setData(this.data);
     request.setMetadata(this.metadata);
-    request.setContext(this.context);
     return request;
   }
 

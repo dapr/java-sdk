@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -52,18 +52,18 @@ public class InvokeClient {
           InvokeMethodRequest request = builder
               .withBody(message)
               .withHttpExtension(HttpExtension.POST)
-              .withContext(getReactorContext()).build();
+              .build();
           client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
-                System.out.println(new String(r.getObject()));
+                System.out.println(new String(r));
                 return r;
               })
               .flatMap(r -> {
                 InvokeMethodRequest sleepRequest = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
                     .withHttpExtension(HttpExtension.POST)
-                    .withContext(r.getContext()).build();
+                    .build();
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
-              }).block();
+              }).subscriberContext(getReactorContext()).block();
         }
       }
 

@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.Collections;
 import java.util.Map;
@@ -23,8 +21,6 @@ public class GetStateRequestBuilder {
 
   private StateOptions stateOptions;
 
-  private Context context;
-
   public GetStateRequestBuilder(String storeName, String key) {
     this.storeName = storeName;
     this.key = key;
@@ -40,11 +36,6 @@ public class GetStateRequestBuilder {
     return this;
   }
 
-  public GetStateRequestBuilder withContext(Context context) {
-    this.context = context;
-    return this;
-  }
-
   /**
    * Builds a request object.
    * @return Request object.
@@ -55,7 +46,6 @@ public class GetStateRequestBuilder {
     request.setKey(this.key);
     request.setMetadata(this.metadata);
     request.setStateOptions(this.stateOptions);
-    request.setContext(this.context);
     return request;
   }
 

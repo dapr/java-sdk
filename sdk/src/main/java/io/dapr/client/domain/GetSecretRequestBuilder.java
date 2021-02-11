@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.Collections;
 import java.util.Map;
@@ -21,8 +19,6 @@ public class GetSecretRequestBuilder {
 
   private Map<String, String> metadata;
 
-  private Context context;
-
   public GetSecretRequestBuilder(String storeName, String key) {
     this.storeName = storeName;
     this.key = key;
@@ -30,11 +26,6 @@ public class GetSecretRequestBuilder {
 
   public GetSecretRequestBuilder withMetadata(Map<String, String> metadata) {
     this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
-    return this;
-  }
-
-  public GetSecretRequestBuilder withContext(Context context) {
-    this.context = context;
     return this;
   }
 
@@ -47,7 +38,6 @@ public class GetSecretRequestBuilder {
     request.setStoreName(this.storeName);
     request.setKey(this.key);
     request.setMetadata(this.metadata);
-    request.setContext(this.context);
     return request;
   }
 

@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.Collections;
 import java.util.Map;
@@ -24,8 +22,6 @@ public class DeleteStateRequest {
   private String etag;
 
   private StateOptions stateOptions;
-
-  private Context context;
 
   public String getStateStoreName() {
     return stateStoreName;
@@ -57,14 +53,6 @@ public class DeleteStateRequest {
 
   void setStateOptions(StateOptions stateOptions) {
     this.stateOptions = stateOptions;
-  }
-
-  public Context getContext() {
-    return context;
-  }
-
-  void setContext(Context context) {
-    this.context = context;
   }
 
   public Map<String, String> getMetadata() {

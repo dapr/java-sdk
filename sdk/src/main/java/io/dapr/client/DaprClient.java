@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -15,7 +15,6 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -67,7 +66,7 @@ public interface DaprClient extends AutoCloseable {
    * @param request the request for the publish event.
    * @return a Mono plan of a Dapr's void response.
    */
-  Mono<Response<Void>> publishEvent(PublishEventRequest request);
+  Mono<Void> publishEvent(PublishEventRequest request);
 
   /**
    * Invoke a service method, using serialization.
@@ -221,7 +220,7 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>                  The Type of the return, use byte[] to skip serialization.
    * @return A Mono Plan of type T.
    */
-  <T> Mono<Response<T>> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
+  <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type);
 
   /**
    * Invokes a Binding operation.
@@ -304,7 +303,7 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>     The type of the return
    * @return a Mono plan of type T.
    */
-  <T> Mono<Response<T>> invokeBinding(InvokeBindingRequest request, TypeRef<T> type);
+  <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type);
 
   /**
    * Retrieve a State based on their key.
@@ -382,7 +381,7 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>     The Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<Response<State<T>>> getState(GetStateRequest request, TypeRef<T> type);
+  <T> Mono<State<T>> getState(GetStateRequest request, TypeRef<T> type);
 
   /**
    * Retrieve bulk States based on their keys.
@@ -414,7 +413,7 @@ public interface DaprClient extends AutoCloseable {
    * @param <T>     The Type of the return.
    * @return A Mono Plan for the requested State.
    */
-  <T> Mono<Response<List<State<T>>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type);
+  <T> Mono<List<State<T>>> getBulkState(GetBulkStateRequest request, TypeRef<T> type);
 
   /** Execute a transaction.
    *
@@ -431,7 +430,7 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to execute transaction.
    * @return  a Mono plan of type Response Void
    */
-  Mono<Response<Void>> executeStateTransaction(ExecuteStateTransactionRequest request);
+  Mono<Void> executeStateTransaction(ExecuteStateTransactionRequest request);
 
   /**
    * Save/Update a list of states.
@@ -448,7 +447,7 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to save states.
    * @return a Mono plan of type Void.
    */
-  Mono<Response<Void>> saveBulkState(SaveStateRequest request);
+  Mono<Void> saveBulkState(SaveStateRequest request);
 
   /**
    * Save/Update a state.
@@ -498,7 +497,7 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to delete a state.
    * @return a Mono plan of type Void.
    */
-  Mono<Response<Void>> deleteState(DeleteStateRequest request);
+  Mono<Void> deleteState(DeleteStateRequest request);
 
   /**
    * Fetches a secret from the configured vault.
@@ -525,7 +524,7 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to fetch secret.
    * @return Key-value pairs for the secret.
    */
-  Mono<Response<Map<String, String>>> getSecret(GetSecretRequest request);
+  Mono<Map<String, String>> getSecret(GetSecretRequest request);
 
   /**
    * Fetches all secrets from the configured vault.
@@ -550,5 +549,5 @@ public interface DaprClient extends AutoCloseable {
    * @param request Request to fetch secret.
    * @return Key-value pairs for the secret.
    */
-  Mono<Response<Map<String, Map<String, String>>>> getBulkSecret(GetBulkSecretRequest request);
+  Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request);
 }

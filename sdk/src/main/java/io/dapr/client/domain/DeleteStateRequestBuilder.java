@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.Collections;
 import java.util.Map;
@@ -24,8 +22,6 @@ public class DeleteStateRequestBuilder {
   private String etag;
 
   private StateOptions stateOptions;
-
-  private Context context;
 
   public DeleteStateRequestBuilder(String stateStoreName, String key) {
     this.stateStoreName = stateStoreName;
@@ -47,11 +43,6 @@ public class DeleteStateRequestBuilder {
     return this;
   }
 
-  public DeleteStateRequestBuilder withContext(Context context) {
-    this.context = context;
-    return this;
-  }
-
   /**
    * Builds a request object.
    * @return Request object.
@@ -63,7 +54,6 @@ public class DeleteStateRequestBuilder {
     request.setMetadata(metadata);
     request.setEtag(this.etag);
     request.setStateOptions(this.stateOptions);
-    request.setContext(this.context);
     return request;
   }
 

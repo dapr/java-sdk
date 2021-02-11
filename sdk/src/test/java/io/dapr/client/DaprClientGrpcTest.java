@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -17,7 +17,6 @@ import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.Response;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
@@ -550,14 +549,14 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeServiceWithHttpExtensionTest() throws IOException {
     HttpExtension httpExtension = new HttpExtension(
-        DaprHttp.HttpMethods.GET, Collections.singletonMap("test", "1"), null);
+        DaprHttp.HttpMethods.GET, Collections.singletonMap("test", Arrays.asList("1", "ab/c")), null);
     CommonProtos.InvokeRequest message = CommonProtos.InvokeRequest.newBuilder()
         .setMethod("method")
         .setData(getAny("request"))
         .setContentType("application/json")
         .setHttpExtension(CommonProtos.HTTPExtension.newBuilder()
             .setVerb(CommonProtos.HTTPExtension.Verb.GET)
-            .putQuerystring("test", "1").build())
+            .setQuerystring("test=1&test=ab%2Fc").build())
         .build();
     DaprProtos.InvokeServiceRequest request = DaprProtos.InvokeServiceRequest.newBuilder()
         .setId("appId")
@@ -976,10 +975,10 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
-    Mono<Response<State<MyObject>>> result = client.getState(request, TypeRef.get(MyObject.class));
-    Response<State<MyObject>> res = result.block();
+    Mono<State<MyObject>> result = client.getState(request, TypeRef.get(MyObject.class));
+    State<MyObject> res = result.block();
     assertNotNull(res);
-    assertEquals(expectedState, res.getObject());
+    assertEquals(expectedState, res);
   }
 
   @Test
@@ -1324,7 +1323,7 @@ public class DaprClientGrpcTest {
     DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, key);
     builder.withEtag(etag).withStateOptions(options).withMetadata(metadata);
     DeleteStateRequest request = builder.build();
-    Mono<Response<Void>> result = client.deleteState(request);
+    Mono<Void> result = client.deleteState(request);
     result.block();
   }
 
@@ -1425,7 +1424,7 @@ public class DaprClientGrpcTest {
     ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(STATE_STORE_NAME)
         .withTransactionalStates(upsertOperation)
         .build();
-    Mono<Response<Void>> result = client.executeStateTransaction(request);
+    Mono<Void> result = client.executeStateTransaction(request);
 
     assertThrowsDaprException(
         IOException.class,
@@ -1460,7 +1459,7 @@ public class DaprClientGrpcTest {
         .withTransactionalStates(upsertOperation, deleteOperation)
         .withMetadata(metadata)
         .build();
-    Mono<Response<Void>> result = client.executeStateTransaction(request);
+    Mono<Void> result = client.executeStateTransaction(request);
     result.block();
   }
 

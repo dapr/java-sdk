@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.Map;
 
@@ -21,8 +19,6 @@ public class InvokeBindingRequest {
   private Object data;
 
   private Map<String, String> metadata;
-
-  private Context context;
 
   public String getName() {
     return name;
@@ -54,13 +50,5 @@ public class InvokeBindingRequest {
 
   void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
-  }
-
-  public Context getContext() {
-    return context;
-  }
-
-  void setContext(Context context) {
-    this.context = context;
   }
 }

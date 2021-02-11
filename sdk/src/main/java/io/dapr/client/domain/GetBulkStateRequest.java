@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.List;
 import java.util.Map;
@@ -22,8 +20,6 @@ public class GetBulkStateRequest {
   private Map<String, String> metadata;
 
   private int parallelism;
-
-  private Context context;
 
   public String getStoreName() {
     return storeName;
@@ -47,14 +43,6 @@ public class GetBulkStateRequest {
 
   void setParallelism(int parallelism) {
     this.parallelism = parallelism;
-  }
-
-  public Context getContext() {
-    return context;
-  }
-
-  void setContext(Context context) {
-    this.context = context;
   }
 
   public Map<String, String> getMetadata() {

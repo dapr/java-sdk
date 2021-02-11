@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -18,9 +18,8 @@ import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Contains methods to register actor types. Registering the types allows the
@@ -66,7 +65,7 @@ public class ActorRuntime implements Closeable {
   /**
    * Map of ActorType --> ActorManager.
    */
-  private final Map<String, ActorManager> actorManagers;
+  private final ConcurrentMap<String, ActorManager> actorManagers;
 
   /**
    * The default constructor. This should not be called directly.
@@ -100,7 +99,7 @@ public class ActorRuntime implements Closeable {
     }
 
     this.config = new ActorRuntimeConfig();
-    this.actorManagers = Collections.synchronizedMap(new HashMap<>());
+    this.actorManagers = new ConcurrentHashMap<>();
     this.daprClient = daprClient;
     this.channel = channel;
   }
@@ -138,7 +137,7 @@ public class ActorRuntime implements Closeable {
    * @throws IOException If cannot serialize config.
    */
   public byte[] serializeConfig() throws IOException {
-    return this.INTERNAL_SERIALIZER.serialize(this.config);
+    return INTERNAL_SERIALIZER.serialize(this.config);
   }
 
   /**
@@ -207,17 +206,18 @@ public class ActorRuntime implements Closeable {
 
     ActorTypeInformation<T> actorTypeInfo = ActorTypeInformation.create(clazz);
 
-    ActorRuntimeContext<T> context = new ActorRuntimeContext<>(
-          this,
-          objectSerializer,
-          actorFactory,
-          actorTypeInfo,
-          this.daprClient,
-          new DaprStateAsyncProvider(this.daprClient, stateSerializer));
-
-    // Create ActorManagers, override existing entry if registered again.
-    this.actorManagers.put(actorTypeInfo.getName(), new ActorManager<T>(context));
-    this.config.addRegisteredActorType(actorTypeInfo.getName());
+    // Create ActorManager, if not yet registered.
+    this.actorManagers.computeIfAbsent(actorTypeInfo.getName(), (k) -> {
+      ActorRuntimeContext<T> context = new ActorRuntimeContext<>(
+              this,
+              objectSerializer,
+              actorFactory,
+              actorTypeInfo,
+              this.daprClient,
+              new DaprStateAsyncProvider(this.daprClient, stateSerializer));
+      this.config.addRegisteredActorType(actorTypeInfo.getName());
+      return new ActorManager<T>(context);
+    });
   }
 
   /**

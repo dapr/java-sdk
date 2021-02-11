@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
@@ -22,22 +22,28 @@ import java.util.List;
 @RestController
 public class SubscriberController {
 
-  private static final List<Object> messagesReceivedTestingTopic = new ArrayList();
-  private static final List<Object> messagesReceivedAnotherTopic = new ArrayList();
-  private static final List<Object> messagesReceivedTTLTopic = new ArrayList();
+  private static final List<CloudEvent> messagesReceivedTestingTopic = new ArrayList();
+  private static final List<CloudEvent> messagesReceivedBinaryTopic = new ArrayList();
+  private static final List<CloudEvent> messagesReceivedAnotherTopic = new ArrayList();
+  private static final List<CloudEvent> messagesReceivedTTLTopic = new ArrayList();
 
   @GetMapping(path = "/messages/testingtopic")
-  public List<Object> getMessagesReceivedTestingTopic() {
+  public List<CloudEvent> getMessagesReceivedTestingTopic() {
     return messagesReceivedTestingTopic;
   }
 
+  @GetMapping(path = "/messages/binarytopic")
+  public List<CloudEvent> getMessagesReceivedBinaryTopic() {
+    return messagesReceivedBinaryTopic;
+  }
+
   @GetMapping(path = "/messages/anothertopic")
-  public List<Object> getMessagesReceivedAnotherTopic() {
+  public List<CloudEvent> getMessagesReceivedAnotherTopic() {
     return messagesReceivedAnotherTopic;
   }
 
   @GetMapping(path = "/messages/ttltopic")
-  public List<Object> getMessagesReceivedTTLTopic() {
+  public List<CloudEvent> getMessagesReceivedTTLTopic() {
     return messagesReceivedTTLTopic;
   }
 
@@ -49,7 +55,22 @@ public class SubscriberController {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
         System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
-        messagesReceivedTestingTopic.add(envelope.getData());
+        messagesReceivedTestingTopic.add(envelope);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "binarytopic", pubsubName = "messagebus")
+  @PostMapping(path = "/route2")
+  public Mono<Void> handleBinaryMessage(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
+        String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
+        System.out.println("Binary topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        messagesReceivedBinaryTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -57,13 +78,13 @@ public class SubscriberController {
   }
 
   @Topic(name = "anothertopic", pubsubName = "messagebus")
-  @PostMapping(path = "/route2")
+  @PostMapping(path = "/route3")
   public Mono<Void> handleMessageAnotherTopic(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         System.out.println("Another topic Subscriber got message: " + message);
-        messagesReceivedAnotherTopic.add(envelope.getData());
+        messagesReceivedAnotherTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -71,13 +92,13 @@ public class SubscriberController {
   }
 
   @Topic(name = "ttltopic", pubsubName = "messagebus")
-  @PostMapping(path = "/route3")
+  @PostMapping(path = "/route4")
   public Mono<Void> handleMessageTTLTopic(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         System.out.println("TTL topic Subscriber got message: " + message);
-        messagesReceivedTTLTopic.add(envelope.getData());
+        messagesReceivedTTLTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

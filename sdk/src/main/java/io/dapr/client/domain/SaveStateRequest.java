@@ -1,11 +1,9 @@
 /*
- * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
  * Licensed under the MIT License.
  */
 
 package io.dapr.client.domain;
-
-import reactor.util.context.Context;
 
 import java.util.List;
 
@@ -17,8 +15,6 @@ public class SaveStateRequest {
   private String storeName;
 
   private List<State<?>> states;
-
-  private Context context;
 
   public String getStoreName() {
     return storeName;
@@ -34,13 +30,5 @@ public class SaveStateRequest {
 
   void setStates(List<State<?>> states) {
     this.states = states;
-  }
-
-  public Context getContext() {
-    return context;
-  }
-
-  void setContext(Context context) {
-    this.context = context;
   }
 }
