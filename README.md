@@ -17,6 +17,11 @@ This is the Dapr SDK for Java, including the following features:
 ### Getting Started
 
 #### Pre-Requisites
+* JDK 8 or above:
+    * [Oracle's JDK 15](https://www.oracle.com/java/technologies/javase-jdk15-downloads.html)
+    * [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
+    * [Oracle's JDK 8](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html)
+    * [OpenJDK](https://openjdk.java.net/)
 * Java IDE installed:
     * [IntelliJ](https://www.jetbrains.com/idea/download/)
     * [Eclipse](https://www.eclipse.org/downloads/)
@@ -55,36 +60,29 @@ For a Maven project, add the following to your `pom.xml` file:
     ...
   </repositories>
   ...
-  <dependencyManagement>
-      <dependencies>
-        ...
-         <!-- Dapr's core SDK with all features, except Actors. -->
-        <dependency>
-          <groupId>io.dapr</groupId>
-          <artifactId>dapr-sdk</artifactId>
-          <version>1.0.0-rc-2</version>
-        </dependency>
-        <!-- Dapr's SDK for Actors (optional). -->
-        <dependency>
-          <groupId>io.dapr</groupId>
-          <artifactId>dapr-sdk-actors</artifactId>
-          <version>1.0.0-rc-2</version>
-        </dependency>
-        <!-- Dapr's SDK integration with SpringBoot (optional). -->
-        <dependency>
-          <groupId>io.dapr</groupId>
-          <artifactId>dapr-sdk-springboot</artifactId>
-          <version>1.0.0-rc-2</version>
-        </dependency>
-        <!-- If needed, resolve version conflict of okhttp3. -->
-        <dependency>
-          <groupId>com.squareup.okhttp3</groupId>
-          <artifactId>okhttp</artifactId>
-          <version>4.2.2</version> <!-- version required by Dapr's sdk -->
-        </dependency>
-        ...
-      </dependencies>
-  </dependencyManagement>
+  <dependencies>
+    ...
+     <!-- Dapr's core SDK with all features, except Actors. -->
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <!-- Dapr's SDK for Actors (optional). -->
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <!-- Dapr's SDK integration with SpringBoot (optional). -->
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    ...
+  </dependencies>
+  ...
 </project>
 ```
 
@@ -108,16 +106,11 @@ repositories {
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.0.0-rc-2')
+    compile('io.dapr:dapr-sdk:1.0.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.0.0-rc-2')
+    compile('io.dapr:dapr-sdk-actors:1.0.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.0.0-rc-2')
-
-    // If needed, force conflict resolution for okhttp3.
-    configurations.all {
-        resolutionStrategy.force 'com.squareup.okhttp3:okhttp:4.2.2'
-    }
+    compile('io.dapr:dapr-sdk-springboot:1.0.0')
 }
 ```
 
@@ -189,9 +182,11 @@ This SDK provides a basic serialization for request/response objects but also fo
     ```
     * When building a new instance of [ActorProxy](https://dapr.github.io/java-sdk/io/dapr/actors/client/ActorProxy.html) to invoke an Actor instance, use the same serializer as when registering the Actor Type:
     ```java
-    ActorProxy actor = (new ActorProxyBuilder("DemoActor"))
-        .withObjectSerializer(new MyObjectSerializer()) // for request/response objects.
-        .build();
+    try (ActorClient actorClient = new ActorClient()) {
+      DemoActor actor = (new ActorProxyBuilder(DemoActor.class, actorClient))
+          .withObjectSerializer(new MyObjectSerializer()) // for request/response objects.
+          .build(new ActorId("100"));
+    }
     ```
 
 
@@ -201,17 +196,14 @@ This SDK provides a basic serialization for request/response objects but also fo
 
 **In Visual Studio Code, consider [debugging in Visual Studio Code](https://docs.dapr.io/developing-applications/ides/vscode-debugging/).**
 
-If you have a Java application or an issue on this SDK that needs to be debugged, run Dapr using a dummy command and start the application from your IDE (IntelliJ, for example).
+If you need to debug your Application, run Dapr sidecar separately and then start the application from your IDE (IntelliJ, for example).
 For Linux and MacOS:
 
 ```sh
-dapr run --app-id testapp --app-port 3000 --dapr-http-port 3500 --dapr-grpc-port 5001 -- cat
+dapr run --app-id testapp --app-port 3000 --dapr-http-port 3500 --dapr-grpc-port 5001
 ```
 
-For Windows:
-```sh
-dapr run --app-id testapp --app-port 3000 --dapr-http-port 3500 --dapr-grpc-port 5001 -- waitfor FOREVER
-```
+> Note: confirm the correct port that the app will listen to and that the Dapr ports above are free, changing the ports if necessary.
 
 When running your Java application from IDE, make sure the following environment variables are set, so the Java SDK knows how to connect to Dapr's sidecar:
 ```
@@ -221,25 +213,23 @@ DAPR_GRPC_PORT=5001
 
 Now you can go to your IDE (like Eclipse, for example) and debug your Java application, using port `3500` to call Dapr while also listening to port `3000` to expose Dapr's callback endpoint.
 
-Calls to Dapr's APIs on `http://127.0.0.1:3500/*` should work now and trigger breakpoints in your code.
-
 #### Exception handling
 
-All exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extends from `RuntimeException`, making it compatible with Project Reactor. See [example](./examples/src/main/java/io/dapr/examples/exception) for more details.
+Most exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extends from `RuntimeException`, making it compatible with Project Reactor. See [example](./examples/src/main/java/io/dapr/examples/exception) for more details.
 
 ### Development
 
 #### Update proto files
 
-Change the properties below in [pom.xml](./pom.xml) to point to the desired reference URL in Git. Avoid pointing to master branch since it can change over time and create unpredictable behavior in the build.
+Change the properties below in [pom.xml](./pom.xml) to point to the desired reference URL in Git. Avoid pointing to `master` branch since it can change over time and create unpredictable behavior in the build.
 
 ```xml
 <project>
   ...
   <properties>
     ...
-    <dapr.proto.url>https://raw.githubusercontent.com/dapr/dapr/v0.4.0/pkg/proto/dapr/dapr.proto</dapr.proto.url>
-    <dapr.client.proto.url>https://raw.githubusercontent.com/dapr/dapr/v0.4.0/pkg/proto/daprclient/daprclient.proto</dapr.client.proto.url>
+    <dapr.proto.url>https://raw.githubusercontent.com/dapr/dapr/v1.0.0/pkg/proto/dapr/dapr.proto</dapr.proto.url>
+    <dapr.client.proto.url>https://raw.githubusercontent.com/dapr/dapr/v1.0.0/pkg/proto/daprclient/daprclient.proto</dapr.client.proto.url>
     ...
   </properties>
   ...
