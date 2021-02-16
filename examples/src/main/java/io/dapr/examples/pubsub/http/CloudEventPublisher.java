@@ -7,7 +7,11 @@ package io.dapr.examples.pubsub.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.Metadata;
+import io.dapr.client.domain.PublishEventRequestBuilder;
+
+import java.util.UUID;
 
 import static java.util.Collections.singletonMap;
 
@@ -18,9 +22,9 @@ import static java.util.Collections.singletonMap;
  * 2. cd [repo root]/examples
  * 3. Run the program:
  * dapr run --components-path ./components/pubsub --app-id publisher -- \
- *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher
+ *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.CloudEventPublisher
  */
-public class Publisher {
+public class CloudEventPublisher {
 
   //Number of messages to be sent.
   private static final int NUM_MESSAGES = 10;
@@ -40,16 +44,23 @@ public class Publisher {
    * @throws Exception A startup Exception.
    */
   public static void main(String[] args) throws Exception {
+    //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
     try (DaprClient client = new DaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
-        String message = String.format("This is message #%d", i);
+        CloudEvent cloudEvent = new CloudEvent();
+        cloudEvent.setId(UUID.randomUUID().toString());
+        cloudEvent.setType("example");
+        cloudEvent.setSpecversion("1");
+        cloudEvent.setDatacontenttype("text/plain");
+        cloudEvent.setData(String.format("This is message #%d", i));
+
         //Publishing messages
         client.publishEvent(
-            PUBSUB_NAME,
-            TOPIC_NAME,
-            message,
-            singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
-        System.out.println("Published message: " + message);
+            new PublishEventRequestBuilder(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
+                .withContentType(CloudEvent.CONTENT_TYPE)
+                .withMetadata(singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))
+                .build()).block();
+        System.out.println("Published cloud event with message: " + cloudEvent.getData());
 
         try {
           Thread.sleep((long) (1000 * Math.random()));

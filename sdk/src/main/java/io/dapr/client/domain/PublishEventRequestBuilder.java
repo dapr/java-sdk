@@ -20,6 +20,8 @@ public class PublishEventRequestBuilder {
 
   private final Object data;
 
+  private String contentType;
+
   private Map<String, String> metadata = new HashMap<>();
 
   /**
@@ -32,6 +34,11 @@ public class PublishEventRequestBuilder {
     this.pubsubName = pubsubName;
     this.topic = topic;
     this.data = data;
+  }
+
+  public PublishEventRequestBuilder withContentType(String contentType) {
+    this.contentType = contentType;
+    return this;
   }
 
   public PublishEventRequestBuilder withMetadata(Map<String, String> metadata) {
@@ -48,6 +55,7 @@ public class PublishEventRequestBuilder {
     request.setPubsubName(this.pubsubName);
     request.setTopic(this.topic);
     request.setData(this.data);
+    request.setContentType(this.contentType);
     request.setMetadata(this.metadata);
     return request;
   }

@@ -9,6 +9,7 @@ import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
@@ -101,8 +102,8 @@ public class DaprClientHttpTest {
   @Test
   public void publishEventInvokation() {
     mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
-      .respond(EXPECTED_RESULT);
+        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
+        .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
@@ -113,11 +114,27 @@ public class DaprClientHttpTest {
   @Test
   public void publishEvent() {
     mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
-      .respond(EXPECTED_RESULT);
+        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
+        .header("content-type", "application/json")
+        .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
 
     Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname","A", event);
+    assertNull(mono.block());
+  }
+
+  @Test
+  public void publishEventContentTypeOverride() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
+        .header("content-type", "text/plain")
+        .respond(EXPECTED_RESULT);
+    String event = "{ \"message\": \"This is a test\" }";
+
+    Mono<Void> mono = daprClientHttp.publishEvent(
+        new PublishEventRequestBuilder("mypubsubname","A", event)
+            .withContentType("text/plain")
+            .build());
     assertNull(mono.block());
   }
 

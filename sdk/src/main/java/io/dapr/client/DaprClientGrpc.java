@@ -40,7 +40,6 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
-import okhttp3.HttpUrl;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
@@ -48,10 +47,8 @@ import reactor.util.context.Context;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -143,7 +140,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
           .setTopic(topic)
           .setPubsubName(pubsubName)
           .setData(ByteString.copyFrom(objectSerializer.serialize(data)));
-      envelopeBuilder.setDataContentType(objectSerializer.getContentType());
+
+      // Content-type can be overwritten on a per-request basis.
+      // It allows CloudEvents to be handled differently, for example.
+      String contentType = request.getContentType();
+      if (contentType == null || contentType.isEmpty()) {
+        contentType = objectSerializer.getContentType();
+      }
+      envelopeBuilder.setDataContentType(contentType);
+
       Map<String, String> metadata = request.getMetadata();
       if (metadata != null) {
         envelopeBuilder.putAllMetadata(metadata);
