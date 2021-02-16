@@ -17,6 +17,8 @@ import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
@@ -35,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
@@ -212,10 +215,46 @@ public class DaprClientGrpcTest {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest -> {
+      if (!"application/json".equals(publishEventRequest.getDataContentType())) {
+        return false;
+      }
+
+      if (!"{\"id\":1,\"value\":\"Event\"}".equals(new String(publishEventRequest.getData().toByteArray())) &&
+          !"{\"value\":\"Event\",\"id\":1}".equals(new String(publishEventRequest.getData().toByteArray()))) {
+        return false;
+      }
+      return true;
+    }), any());
 
     MyObject event = new MyObject(1, "Event");
     Mono<Void> result = client.publishEvent("pubsubname", "topic", event);
+    result.block();
+  }
+
+  @Test
+  public void publishEventContentTypeOverrideTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).publishEvent(ArgumentMatchers.argThat(publishEventRequest -> {
+      if (!"text/plain".equals(publishEventRequest.getDataContentType())) {
+        return false;
+      }
+
+      if (!"\"hello\"".equals(new String(publishEventRequest.getData().toByteArray()))) {
+        return false;
+      }
+      return true;
+    }), any());
+
+
+    Mono<Void> result = client.publishEvent(
+        new PublishEventRequestBuilder("pubsubname", "topic", "hello")
+            .withContentType("text/plain")
+            .build());
     result.block();
   }
 
