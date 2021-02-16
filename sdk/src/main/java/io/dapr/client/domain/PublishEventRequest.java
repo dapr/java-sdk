@@ -18,6 +18,8 @@ public class PublishEventRequest {
 
   private Object data;
 
+  private String contentType;
+
   private Map<String, String> metadata;
 
   public String getPubsubName() {
@@ -42,6 +44,14 @@ public class PublishEventRequest {
 
   void setData(Object data) {
     this.data = data;
+  }
+
+  public String getContentType() {
+    return this.contentType;
+  }
+
+  void setContentType(String contentType) {
+    this.contentType = contentType;
   }
 
   public Map<String, String> getMetadata() {

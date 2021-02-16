@@ -96,14 +96,15 @@ dapr run --components-path ./components/pubsub --app-id subscriber --app-port 30
 
 The other component is the publisher. It is a simple java application with a main method that uses the Dapr HTTP Client to publish 10 messages to an specific topic.
 
-In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:  
+In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
+Dapr sidecar will automatically wrap the payload received into a CloudEvent object, which will later on parsed by the subscriber.
 ```java
 public class Publisher {
-    private static final int NUM_MESSAGES = 10;
-    private static final String TOPIC_NAME = "testingtopic";
-    private static final String PUBSUB_NAME = "messagebus";
+  private static final int NUM_MESSAGES = 10;
+  private static final String TOPIC_NAME = "testingtopic";
+  private static final String PUBSUB_NAME = "messagebus";
 
-///...
+  ///...
   public static void main(String[] args) throws Exception {
       //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
       try (DaprClient client = new DaprClientBuilder().build()) {
@@ -114,28 +115,41 @@ public class Publisher {
           System.out.println("Published message: " + message);
           //...
         }
+        ///...
       }
   }
-///...
 }
 ```
 
-This example also pushes a non-string content event, the follow code in same `Publisher` main method publishes a bite:
+The `CloudEventPublisher.java` file shows how the same can be accomplished if the application must send a CloudEvent object instead of relying on Dapr's automatic CloudEvent "wrapping".
+In this case, the app MUST override the content-type parameter via `withContentType()`, so Dapr sidecar knows that the payload is already a CloudEvent object.
 
 ```java
 public class Publisher {
-///...
-    public static void main(String[] args) throws Exception {
-///...
-    //Publishing a single bite: Example of non-string based content published
-    client.publishEvent(
-        TOPIC_NAME,
-        new byte[] { 1 },
-        Collections.singletonMap("content-type", "application/octet-stream")).block();
-    System.out.println("Published one byte.");
-    System.out.println("Done.");
+  ///...
+  public static void main(String[] args) throws Exception {
+    //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        CloudEvent cloudEvent = new CloudEvent();
+        cloudEvent.setId(UUID.randomUUID().toString());
+        cloudEvent.setType("example");
+        cloudEvent.setSpecversion("1");
+        cloudEvent.setDatacontenttype("text/plain");
+        cloudEvent.setData(String.format("This is message #%d", i));
+
+        //Publishing messages
+        client.publishEvent(
+            new PublishEventRequestBuilder(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
+                .withContentType(CloudEvent.CONTENT_TYPE)
+                .withMetadata(singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))
+                .build()).block();
+        System.out.println("Published cloud event with message: " + cloudEvent.getData());
+        //...
+      }
+      //...
+    }
   }
-///...
 }
 ```
 

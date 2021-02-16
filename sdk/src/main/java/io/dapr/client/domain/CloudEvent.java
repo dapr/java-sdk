@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.annotation.PropertyKey;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -19,6 +18,11 @@ import java.util.Objects;
  * A cloud event in Dapr.
  */
 public final class CloudEvent {
+
+  /**
+   * Mime type used for CloudEvent.
+   */
+  public static final String CONTENT_TYPE = "application/cloudevents+json";
 
   /**
    * Shared Json serializer/deserializer as per Jackson's documentation.

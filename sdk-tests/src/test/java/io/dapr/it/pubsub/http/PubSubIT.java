@@ -12,6 +12,7 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
+import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import static io.dapr.it.Retry.callWithRetry;
@@ -158,6 +160,12 @@ public class PubSubIT extends BaseIT {
         System.out.println(String.format("Published message: '%s' to topic '%s' pubsub_name '%s'", message, ANOTHER_TOPIC_NAME, PUBSUB_NAME));
       }
 
+      //Publishing an object.
+      MyObject object = new MyObject();
+      object.setId("123");
+      client.publishEvent(PUBSUB_NAME, TOPIC_NAME, object).block();
+      System.out.println("Published one object.");
+
       //Publishing a single byte: Example of non-string based content published
       client.publishEvent(
           PUBSUB_NAME,
@@ -165,17 +173,32 @@ public class PubSubIT extends BaseIT {
           new byte[]{1}).block();
       System.out.println("Published one byte.");
 
+      CloudEvent cloudEvent = new CloudEvent();
+      cloudEvent.setId("1234");
+      cloudEvent.setData("message from cloudevent");
+      cloudEvent.setSource("test");
+      cloudEvent.setSpecversion("1");
+      cloudEvent.setType("myevent");
+      cloudEvent.setDatacontenttype("text/plain");
+
+      //Publishing a cloud event.
+      client.publishEvent(new PublishEventRequestBuilder(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
+          .withContentType("application/cloudevents+json")
+          .build()).block();
+      System.out.println("Published one cloud event.");
+
       Thread.sleep(3000);
 
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + TOPIC_NAME);
+        // Validate text payload.
         final List<CloudEvent> messages = client.invokeMethod(
             daprRun.getAppName(),
             "messages/testingtopic",
             null,
             HttpExtension.GET,
             CLOUD_EVENT_LIST_TYPE_REF).block();
-        assertEquals(11, messages.size());
+        assertEquals(13, messages.size());
         for (int i = 0; i < NUM_MESSAGES; i++) {
           final int messageId = i;
           assertTrue(messages
@@ -186,6 +209,16 @@ public class PubSubIT extends BaseIT {
               .count() == 1);
         }
 
+        // Validate object payload.
+        assertTrue(messages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .filter(m -> m.getData() instanceof LinkedHashMap)
+            .map(m -> (LinkedHashMap)m.getData())
+            .filter(m -> "123".equals(m.get("id")))
+            .count() == 1);
+
+        // Validate byte payload.
         assertTrue(messages
             .stream()
             .filter(m -> m.getData() != null)
@@ -193,6 +226,13 @@ public class PubSubIT extends BaseIT {
             .filter(m -> "AQ==".equals(m))
             .count() == 1);
 
+        // Validate cloudevent payload.
+        assertTrue(messages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .map(m -> m.getData())
+            .filter(m -> "message from cloudevent".equals(m))
+            .count() == 1);
       }, 2000);
 
       callWithRetry(() -> {
@@ -329,5 +369,17 @@ public class PubSubIT extends BaseIT {
     }
 
     daprRun.stop();
+  }
+
+  public static class MyObject {
+    private String id;
+
+    public String getId() {
+      return this.id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
   }
 }
