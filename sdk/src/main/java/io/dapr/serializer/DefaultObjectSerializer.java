@@ -5,6 +5,7 @@
 
 package io.dapr.serializer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.ObjectSerializer;
 import io.dapr.utils.TypeRef;
 
@@ -14,6 +15,13 @@ import java.io.IOException;
  * Default serializer/deserializer for request/response objects and for state objects too.
  */
 public class DefaultObjectSerializer extends ObjectSerializer implements DaprObjectSerializer {
+  public DefaultObjectSerializer() {
+    super();
+  }
+
+  public DefaultObjectSerializer(ObjectMapper objectMapper) {
+    super(objectMapper);
+  }
 
   /**
    * {@inheritDoc}
