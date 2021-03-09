@@ -7,6 +7,7 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
+import io.dapr.client.ObjectSerializer;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -56,7 +57,7 @@ class DaprStateAsyncProvider {
   DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
     this.daprClient = daprClient;
     this.stateSerializer = stateSerializer;
-    this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
+    this.isStateSerializerDefault = ObjectSerializer.class.isAssignableFrom(stateSerializer.getClass());
   }
 
   <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {

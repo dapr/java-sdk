@@ -7,6 +7,7 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
+import io.dapr.client.ObjectSerializer;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -30,6 +31,17 @@ public class DaprStateAsyncProviderTest {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final double EPSILON = 1e-10;
+
+  class CustomJsonSerializer extends ObjectSerializer implements DaprObjectSerializer{
+      CustomJsonSerializer() {
+        super(DaprStateAsyncProviderTest.OBJECT_MAPPER);
+      }
+
+    @Override
+    public String getContentType() {
+      return "application/json";
+    }
+  }
 
   /**
    * Class used to test JSON serialization.
@@ -124,7 +136,7 @@ public class DaprStateAsyncProviderTest {
             })))
         .thenReturn(Mono.empty());
 
-    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
+    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, new CustomJsonSerializer());
     provider.apply("MyActor",
         new ActorId("123"),
         createInsertChange("name", "Jon Doe"),
@@ -135,6 +147,49 @@ public class DaprStateAsyncProviderTest {
 
     verify(daprClient).saveStateTransactionally(eq("MyActor"), eq("123"), any());
   }
+
+  @Test
+  public void happyCaseApplyWithCustomJsonSerializer() {
+    DaprClient daprClient = mock(DaprClient.class);
+    when(daprClient
+            .saveStateTransactionally(
+                    eq("MyActor"),
+                    eq("123"),
+                    argThat(operations -> {
+                      if (operations == null) {
+                        return false;
+                      }
+
+                      if (operations.size() != 1) {
+                        return false;
+                      }
+                      ActorStateOperation operation = operations.get(0);
+                        if (operation.getOperationType() == null) {
+                          return false;
+                        }
+                        if (operation.getKey() == null) {
+                          return false;
+                        }
+
+                        String opName = operation.getOperationType();
+                        String key = operation.getKey();
+                        Object value = operation.getValue();
+
+                        return "upsert".equals(opName) &&
+                                "object".equals(key) &&
+                                "{\"id\":1000,\"name\":\"Roxane\"}".equals(value);
+                    })))
+            .thenReturn(Mono.empty());
+
+    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
+    provider.apply("MyActor",
+            new ActorId("123"),
+            createInsertChange("object", new Customer().setId(1000).setName("Roxane")))
+            .block();
+
+    verify(daprClient).saveStateTransactionally(eq("MyActor"), eq("123"), any());
+  }
+
 
   @Test
   public void happyCaseLoad() throws Exception {
