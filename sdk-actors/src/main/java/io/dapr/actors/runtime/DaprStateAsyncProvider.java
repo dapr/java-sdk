@@ -46,7 +46,7 @@ class DaprStateAsyncProvider {
   /**
    * Flag determining if state serializer is the default serializer instead of user provided.
    */
-  private final boolean isStateSerializerDefault;
+  private final boolean isStateSerializerJson;
 
   /**
    * Instantiates a new Actor's state provider.
@@ -57,7 +57,7 @@ class DaprStateAsyncProvider {
   DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
     this.daprClient = daprClient;
     this.stateSerializer = stateSerializer;
-    this.isStateSerializerDefault = ObjectSerializer.class.isAssignableFrom(stateSerializer.getClass());
+    this.isStateSerializerJson = DefaultObjectSerializer.JSON_CONTENT_TYPE.equals(stateSerializer.getContentType());
   }
 
   <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
@@ -70,7 +70,7 @@ class DaprStateAsyncProvider {
         }
 
         T response = this.stateSerializer.deserialize(s, type);
-        if (this.isStateSerializerDefault && (response instanceof byte[])) {
+        if (this.isStateSerializerJson && (response instanceof byte[])) {
           if (s.length == 0) {
             return Mono.empty();
           }
@@ -139,7 +139,7 @@ class DaprStateAsyncProvider {
         try {
           byte[] data = this.stateSerializer.serialize(stateChange.getValue());
           if (data != null) {
-            if (this.isStateSerializerDefault && !(stateChange.getValue() instanceof byte[])) {
+            if (this.isStateSerializerJson && !(stateChange.getValue() instanceof byte[])) {
               // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
               value = new String(data, CHARSET);
             } else {

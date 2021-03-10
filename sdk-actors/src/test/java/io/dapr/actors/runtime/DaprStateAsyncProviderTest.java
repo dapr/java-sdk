@@ -39,7 +39,7 @@ public class DaprStateAsyncProviderTest {
 
     @Override
     public String getContentType() {
-      return "application/json";
+      return DefaultObjectSerializer.JSON_CONTENT_TYPE;
     }
   }
 

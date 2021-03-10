@@ -15,6 +15,8 @@ import java.io.IOException;
  */
 public class DefaultObjectSerializer extends ObjectSerializer implements DaprObjectSerializer {
 
+  public static final String JSON_CONTENT_TYPE = "application/json";
+
   /**
    * {@inheritDoc}
    */
@@ -36,6 +38,6 @@ public class DefaultObjectSerializer extends ObjectSerializer implements DaprObj
    */
   @Override
   public String getContentType() {
-    return "application/json";
+    return JSON_CONTENT_TYPE;
   }
 }
