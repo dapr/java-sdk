@@ -66,18 +66,15 @@ public class InvokeClient {
               }).subscriberContext(getReactorContext()).block();
         }
       }
-
-      // This is an example, so for simplicity we are just exiting here.
-      // Normally a dapr app would be a web service and not exit main.
-      System.out.println("Done");
     }
     span.end();
     shutdown();
+    System.out.println("Done");
   }
 
-  private static void shutdown() {
+  private static void shutdown() throws Exception {
     OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
+    Validation.validate();
   }
-
 
 }

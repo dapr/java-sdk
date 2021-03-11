@@ -126,9 +126,18 @@ The instrumentation for the service happens via the `OpenTelemetryIterceptor` cl
 
 Use the follow command to execute the service:
 
-```sh
+<!-- STEP
+name: Run demo service
+expected_stdout_lines:
+background: true
+sleep: 20
+-->
+
+```bash
 dapr run --app-id tracingdemo --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3000
 ```
+
+<!-- END_STEP -->
 
 Once running, the TracingDemoService is now ready to be invoked by Dapr.
 
@@ -208,9 +217,18 @@ public class OpenTelemetryConfig {
 
 Use the follow command to execute the service:
 
-```sh
+<!-- STEP
+name: Run proxy service
+expected_stdout_lines:
+background: true
+sleep: 20
+-->
+
+```bash
 dapr run --app-id tracingdemoproxy --app-port 3001   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.TracingDemoService -p 3001
 ```
+
+<!-- END_STEP -->
 
 ### Running the InvokeClient app
 
@@ -247,13 +265,10 @@ private static final String SERVICE_APP_ID = "tracingdemoproxy";
             }).subscriberContext(getReactorContext()).block();
         }
       }
-
-      // This is an example, so for simplicity we are just exiting here.
-      // Normally a dapr app would be a web service and not exit main.
-      System.out.println("Done");
     }
     span.end();
     shutdown();
+    System.out.println("Done");
   }
 ///...
 }
@@ -262,9 +277,21 @@ private static final String SERVICE_APP_ID = "tracingdemoproxy";
 The class knows the app id for the remote application. It uses `invokeMethod` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
-```sh
+
+<!-- STEP
+name: Run demo client
+expected_stdout_lines:
+  - '== APP == Done'
+background: true
+sleep: 20
+-->
+
+```bash
 dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
 ```
+
+<!-- END_STEP -->
+
 Once running, the output should display the messages sent from invoker in the demo service output as follows:
 
 ![exposeroutput](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/exposer-service.png)

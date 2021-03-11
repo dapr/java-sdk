@@ -112,6 +112,10 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/invoke/grpc/README.md
+      - name: Validate tracing example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/tracing/README.md
       - name: Validate expection handling example
         working-directory: ./examples
         run: |
