@@ -197,13 +197,29 @@ dapr run --components-path ./components/bindings --app-id outputbinding -- java 
 
 Once running, the OutputBindingExample should print the output as follows:
 
-![publisheroutput](../../../../../../resources/img/outputbinding.png)
+```txt
+== APP == sending a class with message: Message #0
+
+== APP == sending a plain string: Message #1
+
+== APP == sending a class with message: Message #2
+
+== APP == sending a plain string: Message #3
+```
 
 Events have been sent.
 
 Once running, the InputBindingExample should print the output as follows:
 
-![publisherinput](../../../../../../resources/img/inputbinding.png)
+```txt
+== APP == Received message through binding: {"message":"Message #0"}
+
+== APP == Received message through binding: "Message #1"
+
+== APP == Received message through binding: {"message":"Message #2"}
+
+== APP == Received message through binding: "Message #3"
+```
 
 Events have been retrieved from the binding.
 
