@@ -174,7 +174,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
       return null;
     }
 
-    JsonNode node = getObjectMapper().readTree(value);
+    JsonNode node = OBJECT_MAPPER.readTree(value);
     String callback = node.get("callback").asText();
     Duration dueTime = extractDurationOrNull(node, "dueTime");
     Duration period = extractDurationOrNull(node, "period");
@@ -195,7 +195,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
       return null;
     }
 
-    JsonNode node = getObjectMapper().readTree(value);
+    JsonNode node = OBJECT_MAPPER.readTree(value);
     Duration dueTime = extractDurationOrNull(node, "dueTime");
     Duration period = extractDurationOrNull(node, "period");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
