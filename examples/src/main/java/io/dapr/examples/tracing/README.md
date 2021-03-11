@@ -265,9 +265,13 @@ Execute the follow script in order to run the InvokeClient example, passing two 
 ```sh
 dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
 ```
-Once running, the output should display the messages sent from invoker in the demo service output as follows:
+Open the `tracingdemo` console and check the output as follows:
 
-![exposeroutput](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/exposer-service.png)
+```txt
+== APP == Server: "\"message one\"" @ 2021-03-10 22:10:23.598 and metadata: {"user-agent":"okhttp/4.9.0","host":"127.0.0.1:3000","content-type":"application/json; charset=utf-8","content-length":"17","connection":"Keep-Alive","x-daprrequestid":"00d801df-2773-4b9d-b389-12d0a93d6b90","accept-encoding":"gzip","x-forwarded-for":"192.168.1.15","x-forwarded-host":"X","forwarded":"for=192.168.1.15;by=192.168.1.15;host=X","traceparent":"00-4659182fd55c552b84fa291e3157d215-d0145c33df26c04d-01"}
+
+== APP == Server: "\"message two\"" @ 2021-03-10 22:10:24.690 and metadata: {"user-agent":"okhttp/4.9.0","host":"127.0.0.1:3000","content-type":"application/json; charset=utf-8","content-length":"17","forwarded":"for=192.168.1.15;by=192.168.1.15;host=X","connection":"Keep-Alive","accept-encoding":"gzip","x-forwarded-host":"X","x-daprrequestid":"7ef1e4d5-fab5-4375-98cc-0268d22504f0","x-forwarded-for":"192.168.1.15","traceparent":"00-4659182fd55c552b84fa291e3157d215-92beb2b9df7e1450-01"}
+```
 
 Method have been remotely invoked and displaying the remote messages.
 

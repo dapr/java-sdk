@@ -78,7 +78,39 @@ dapr run --app-id exception_example -- java -jar target/dapr-java-sdk-examples-e
 
 Once running, the OutputBindingExample should print the output as follows:
 
-![stateouput](../../../../../resources/img/exception.png)
+```txt
+== APP == Error code: INVALID_ARGUMENT
+
+== APP == Error message: INVALID_ARGUMENT: state store Unknown state store is not found
+
+== APP == io.dapr.exceptions.DaprException: INVALID_ARGUMENT: state store Unknown state store is not found
+
+== APP == 	at io.dapr.exceptions.DaprException.propagate(DaprException.java:168)
+
+== APP == 	at io.dapr.client.DaprClientGrpc$2.onError(DaprClientGrpc.java:716)
+
+== APP == 	at io.grpc.stub.ClientCalls$StreamObserverToCallListenerAdapter.onClose(ClientCalls.java:478)
+
+== APP == 	at io.grpc.internal.DelayedClientCall$DelayedListener$3.run(DelayedClientCall.java:464)
+
+== APP == 	at io.grpc.internal.DelayedClientCall$DelayedListener.delayOrExecute(DelayedClientCall.java:428)
+
+== APP == 	at io.grpc.internal.DelayedClientCall$DelayedListener.onClose(DelayedClientCall.java:461)
+
+== APP == 	at io.grpc.internal.ClientCallImpl.closeObserver(ClientCallImpl.java:617)
+
+== APP == 	at io.grpc.internal.ClientCallImpl.access$300(ClientCallImpl.java:70)
+
+== APP == 	at io.grpc.internal.ClientCallImpl$ClientStreamListenerImpl$1StreamClosed.runInternal(ClientCallImpl.java:803)
+
+== APP == 	at io.grpc.internal.ClientCallImpl$ClientStreamListenerImpl$1StreamClosed.runInContext(ClientCallImpl.java:782)
+
+== APP == 	at io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
+
+== APP == 	at io.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:123)
+...
+
+```
 
 ### Cleanup
 

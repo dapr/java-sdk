@@ -158,11 +158,16 @@ dapr run --app-id invokeclient -- java -jar target/dapr-java-sdk-examples-exec.j
 
 <!-- END_STEP -->
 
-Once running, the output should display the messages sent from invoker in the demo service output as follows:
+Finally, the console for `invokeclient` should output:
 
-![exposeroutput](../../../../../../resources/img/exposer-service.png)
+```text
+== APP == "message one" received
 
-Method have been remotely invoked and displaying the remote messages.
+== APP == "message two" received
+
+== APP == Done
+
+```
 
 For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java) Application implementation.
 
