@@ -145,7 +145,7 @@ public class DaprStateAsyncProviderTest {
             })))
         .thenReturn(Mono.empty());
 
-    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, new CustomJsonSerializer());
+    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
     provider.apply("MyActor",
         new ActorId("123"),
         createInsertChange("name", "Jon Doe"),
@@ -190,7 +190,7 @@ public class DaprStateAsyncProviderTest {
                     })))
             .thenReturn(Mono.empty());
 
-    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
+    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, new CustomJsonSerializer());
     provider.apply("MyActor",
             new ActorId("123"),
             createInsertChange("object", new Customer().setId(1000).setName("Roxane")))

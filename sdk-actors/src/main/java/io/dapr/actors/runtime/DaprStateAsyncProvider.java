@@ -7,10 +7,8 @@ package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
-import io.dapr.client.ObjectSerializer;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -28,6 +26,9 @@ class DaprStateAsyncProvider {
    */
   private static final Charset CHARSET = Properties.STRING_CHARSET.get();
 
+  /**
+   * Marker to identify Json serializers.
+   */
   public static final String JSON_CONTENT_TYPE = "application/json";
 
   /**
