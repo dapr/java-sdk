@@ -28,6 +28,8 @@ class DaprStateAsyncProvider {
    */
   private static final Charset CHARSET = Properties.STRING_CHARSET.get();
 
+  public static final String JSON_CONTENT_TYPE = "application/json";
+
   /**
    * Handles special serialization cases.
    */
@@ -57,7 +59,7 @@ class DaprStateAsyncProvider {
   DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
     this.daprClient = daprClient;
     this.stateSerializer = stateSerializer;
-    this.isStateSerializerJson = DefaultObjectSerializer.JSON_CONTENT_TYPE.equals(stateSerializer.getContentType());
+    this.isStateSerializerJson = JSON_CONTENT_TYPE.equals(stateSerializer.getContentType());
   }
 
   <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {

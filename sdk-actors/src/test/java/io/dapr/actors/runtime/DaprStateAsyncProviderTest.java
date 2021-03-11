@@ -15,6 +15,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -28,18 +29,26 @@ public class DaprStateAsyncProviderTest {
 
   private static final DaprObjectSerializer SERIALIZER = new DefaultObjectSerializer();
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
 
   private static final double EPSILON = 1e-10;
 
-  class CustomJsonSerializer extends ObjectSerializer implements DaprObjectSerializer{
-      CustomJsonSerializer() {
-        super(DaprStateAsyncProviderTest.OBJECT_MAPPER);
-      }
+  class CustomJsonSerializer implements DaprObjectSerializer{
+    private final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    @Override
+    public byte[] serialize(Object o) throws IOException {
+      return OBJECT_MAPPER.writeValueAsBytes(o);
+    }
+
+    @Override
+    public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
+      return OBJECT_MAPPER.readValue(data, OBJECT_MAPPER.constructType(type.getType()));
+    }
 
     @Override
     public String getContentType() {
-      return DefaultObjectSerializer.JSON_CONTENT_TYPE;
+      return "application/json";
     }
   }
 

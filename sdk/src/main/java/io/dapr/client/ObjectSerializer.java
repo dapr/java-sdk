@@ -22,22 +22,17 @@ import java.lang.reflect.Method;
  */
 public class ObjectSerializer {
 
-  private final ObjectMapper objectMapper;
+  /**
+   * Shared Json serializer/deserializer as per Jackson's documentation.
+   */
+  protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   /**
    * Default constructor to avoid class from being instantiated outside package but still inherited.
    */
   protected ObjectSerializer() {
-    objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
-  }
-
-  /**
-   * Default constructor to avoid class from being instantiated outside package but still inherited.
-   */
-  protected ObjectSerializer(ObjectMapper mapper) {
-    objectMapper = mapper;
   }
 
   /**
@@ -67,7 +62,7 @@ public class ObjectSerializer {
     }
 
     // Not string, not primitive, so it is a complex type: we use JSON for that.
-    return getObjectMapper().writeValueAsBytes(state);
+    return OBJECT_MAPPER.writeValueAsBytes(state);
   }
 
   /**
@@ -80,7 +75,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be deserialized.
    */
   public <T> T deserialize(byte[] content, TypeRef<T> type) throws IOException {
-    return deserialize(content, getObjectMapper().constructType(type.getType()));
+    return deserialize(content, OBJECT_MAPPER.constructType(type.getType()));
   }
 
   /**
@@ -93,7 +88,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be deserialized.
    */
   public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
-    return deserialize(content, getObjectMapper().constructType(clazz));
+    return deserialize(content, OBJECT_MAPPER.constructType(clazz));
   }
 
   private <T> T deserialize(byte[] content, JavaType javaType) throws IOException {
@@ -135,7 +130,7 @@ public class ObjectSerializer {
       }
     }
 
-    return getObjectMapper().readValue(content, javaType);
+    return OBJECT_MAPPER.readValue(content, javaType);
   }
 
   /**
@@ -146,7 +141,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be parsed.
    */
   public JsonNode parseNode(byte[] content) throws IOException {
-    return  getObjectMapper().readTree(content);
+    return  OBJECT_MAPPER.readTree(content);
   }
 
   /**
@@ -158,7 +153,7 @@ public class ObjectSerializer {
    * @return Result as corresponding type.
    * @throws IOException if cannot deserialize primitive time.
    */
-  private <T> T deserializePrimitives(byte[] content, JavaType javaType) throws IOException {
+  private static <T> T deserializePrimitives(byte[] content, JavaType javaType) throws IOException {
     if ((content == null) || (content.length == 0)) {
       if (javaType.hasRawClass(boolean.class)) {
         return (T) Boolean.FALSE;
@@ -195,13 +190,6 @@ public class ObjectSerializer {
       return null;
     }
 
-    return getObjectMapper().readValue(content, javaType);
-  }
-
-  /**
-   * Shared Json serializer/deserializer as per Jackson's documentation.
-   */
-  protected ObjectMapper getObjectMapper() {
-    return objectMapper;
+    return OBJECT_MAPPER.readValue(content, javaType);
   }
 }
