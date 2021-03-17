@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -25,11 +26,6 @@ class DaprStateAsyncProvider {
    * Dapr's charset.
    */
   private static final Charset CHARSET = Properties.STRING_CHARSET.get();
-
-  /**
-   * Marker to identify Json serializers.
-   */
-  public static final String JSON_CONTENT_TYPE = "application/json";
 
   /**
    * Handles special serialization cases.
@@ -49,7 +45,7 @@ class DaprStateAsyncProvider {
   /**
    * Flag determining if state serializer is the default serializer instead of user provided.
    */
-  private final boolean isStateSerializerJson;
+  private final boolean isStateSerializerDefault;
 
   /**
    * Instantiates a new Actor's state provider.
@@ -60,7 +56,7 @@ class DaprStateAsyncProvider {
   DaprStateAsyncProvider(DaprClient daprClient, DaprObjectSerializer stateSerializer) {
     this.daprClient = daprClient;
     this.stateSerializer = stateSerializer;
-    this.isStateSerializerJson = JSON_CONTENT_TYPE.equals(stateSerializer.getContentType());
+    this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
   }
 
   <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
@@ -73,7 +69,7 @@ class DaprStateAsyncProvider {
         }
 
         T response = this.stateSerializer.deserialize(s, type);
-        if (this.isStateSerializerJson && (response instanceof byte[])) {
+        if (this.isStateSerializerDefault && (response instanceof byte[])) {
           if (s.length == 0) {
             return Mono.empty();
           }
@@ -142,7 +138,7 @@ class DaprStateAsyncProvider {
         try {
           byte[] data = this.stateSerializer.serialize(stateChange.getValue());
           if (data != null) {
-            if (this.isStateSerializerJson && !(stateChange.getValue() instanceof byte[])) {
+            if (this.isStateSerializerDefault && !(stateChange.getValue() instanceof byte[])) {
               // DefaultObjectSerializer is a JSON serializer, so we just pass it on.
               value = new String(data, CHARSET);
             } else {
