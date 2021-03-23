@@ -58,6 +58,7 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
   public void postHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler,
       ModelAndView modelAndView) {
+    // There is no global context to be changed in post handle since it is done in preHandle on a new call.
   }
 
 }

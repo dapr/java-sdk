@@ -18,13 +18,21 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Class used to verify that traces are present as expected.
+ *
+ * Checks for the main span and then checks for its child span for `sleep` API call.
  */
 public final class Validation {
 
   private static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
 
+  /**
+   * JSON Path for main span Id.
+   */
   public static final String JSONPATH_MAIN_SPAN_ID = "$..[?(@.name == \"%s\")]['id']";
 
+  /**
+   * JSON Path for child span Id where duration is greater than 1s.
+   */
   public static final String JSONPATH_SLEEP_SPAN_ID =
       "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='%s')]['id']";
 
@@ -34,8 +42,8 @@ public final class Validation {
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
     urlBuilder.scheme("http")
         .host("localhost")
-        .port(9411);
-    urlBuilder.addPathSegments("api/v2/traces");
+        .port(9411)
+        .addPathSegments("api/v2/traces");
     Request.Builder requestBuilder = new Request.Builder()
         .url(urlBuilder.build());
     requestBuilder.method("GET", null);
