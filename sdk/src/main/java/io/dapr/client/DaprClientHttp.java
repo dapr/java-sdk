@@ -350,7 +350,7 @@ public class DaprClientHttp extends AbstractDaprClient {
           .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryParams, null, context)
       ).flatMap(s -> {
         try {
-          return Mono.justOrEmpty(buildState(s, key, options, type));
+          return buildState(s, key, options, type);
         } catch (Exception ex) {
           return DaprException.wrapMono(ex);
         }
@@ -513,15 +513,18 @@ public class DaprClientHttp extends AbstractDaprClient {
    * @return A State instance
    * @throws IOException If there's a issue deserializing the response.
    */
-  private <T> State<T> buildState(
+  private <T> Mono<State<T>> buildState(
       DaprHttp.Response response, String requestedKey, StateOptions stateOptions, TypeRef<T> type) throws IOException {
     // The state is in the body directly, so we use the state serializer here.
     T value = stateSerializer.deserialize(response.getBody(), type);
+    if (value == null) {
+      return Mono.empty();
+    }
     String etag = null;
     if (response.getHeaders() != null && response.getHeaders().containsKey("Etag")) {
       etag = response.getHeaders().get("Etag");
     }
-    return new State<>(requestedKey, value, etag, stateOptions);
+    return Mono.just(new State<>(requestedKey, value, etag, stateOptions));
   }
 
   /**

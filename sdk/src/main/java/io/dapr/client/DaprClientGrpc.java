@@ -283,7 +283,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
               this.<DaprProtos.GetStateResponse>createMono(
                   it -> intercept(context, asyncStub).getState(envelope, it)
               )
-      ).map(
+      ).flatMap(
           it -> {
             try {
               return buildStateKeyValue(it, key, options, type);
@@ -369,7 +369,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     return new State<>(key, value, etag, item.getMetadataMap(), null);
   }
 
-  private <T> State<T> buildStateKeyValue(
+  private <T> Mono<State<T>> buildStateKeyValue(
       DaprProtos.GetStateResponse response,
       String requestedKey,
       StateOptions stateOptions,
@@ -377,11 +377,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
     ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
     T value = stateSerializer.deserialize(data, type);
+    if (value == null) {
+      return Mono.empty();
+    }
     String etag = response.getEtag();
     if (etag.equals("")) {
       etag = null;
     }
-    return new State<>(requestedKey, value, etag, response.getMetadataMap(), stateOptions);
+    return Mono.just(new State<>(requestedKey, value, etag, response.getMetadataMap(), stateOptions));
   }
 
   /**
