@@ -376,10 +376,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       TypeRef<T> type) throws IOException {
     ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
-    if (value == null) {
+    if (data == null || data.length == 0) {
       return Mono.empty();
     }
+    T value = stateSerializer.deserialize(data, type);
     String etag = response.getEtag();
     if (etag.equals("")) {
       etag = null;

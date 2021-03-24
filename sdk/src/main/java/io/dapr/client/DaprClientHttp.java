@@ -516,10 +516,10 @@ public class DaprClientHttp extends AbstractDaprClient {
   private <T> Mono<State<T>> buildState(
       DaprHttp.Response response, String requestedKey, StateOptions stateOptions, TypeRef<T> type) throws IOException {
     // The state is in the body directly, so we use the state serializer here.
-    T value = stateSerializer.deserialize(response.getBody(), type);
-    if (value == null) {
+    if (response.getBody() == null || response.getBody().length == 0) {
       return Mono.empty();
     }
+    T value = stateSerializer.deserialize(response.getBody(), type);
     String etag = null;
     if (response.getHeaders() != null && response.getHeaders().containsKey("Etag")) {
       etag = response.getHeaders().get("Etag");
