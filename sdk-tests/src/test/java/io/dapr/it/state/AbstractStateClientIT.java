@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -249,6 +250,52 @@ public abstract class AbstractStateClientIT extends BaseIT {
     assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
 
+  @Test
+  public void saveUpdateAndGetNullStateWithEtag() {
+    // The key use to store the state and be updated using etags
+    final String stateKey = UUID.randomUUID().toString();
+    DaprClient daprClient = buildDaprClient();
+    MyData data = new MyData();
+    data.setPropertyA("data in property A");
+    data.setPropertyB("data in property B");
+
+    // Get state to validate case for key not found.
+    State<MyData> stateNotFound = daprClient.getState(STATE_STORE_NAME, stateKey, MyData.class).block();
+    assertEquals(stateKey, stateNotFound.getKey());
+    assertNull(stateNotFound.getValue());
+    assertNull(stateNotFound.getEtag());
+    assertNull(stateNotFound.getOptions());
+    assertNull(stateNotFound.getError());
+    assertEquals(0, stateNotFound.getMetadata().size());
+
+    // Set non null value
+    daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null).block();
+
+    // Get state to validate case for key with value.
+    State<MyData> stateFound = daprClient.getState(STATE_STORE_NAME, stateKey, MyData.class).block();
+    assertEquals(stateKey, stateFound.getKey());
+    assertNotNull(stateFound.getValue());
+    assertEquals("data in property A", stateFound.getValue().getPropertyA());
+    assertEquals("data in property B", stateFound.getValue().getPropertyB());
+    assertNotNull(stateFound.getEtag());
+    assertFalse(stateFound.getEtag().isEmpty());
+    assertNull(stateFound.getOptions());
+    assertNull(stateFound.getError());
+    assertEquals(0, stateFound.getMetadata().size());
+
+    // Set to null value
+    daprClient.saveState(STATE_STORE_NAME, stateKey, null, null, null).block();
+
+    // Get state to validate case for key not found.
+    State<MyData> stateNullValue = daprClient.getState(STATE_STORE_NAME, stateKey, MyData.class).block();
+    assertEquals(stateKey, stateNullValue.getKey());
+    assertNull(stateNullValue.getValue());
+    assertNotNull(stateNullValue.getEtag());
+    assertFalse(stateNullValue.getEtag().isEmpty());
+    assertNull(stateNullValue.getOptions());
+    assertNull(stateNullValue.getError());
+    assertEquals(0, stateNullValue.getMetadata().size());
+  }
 
   @Test(expected = RuntimeException.class)
   public void saveUpdateAndGetStateWithWrongEtag() {
