@@ -660,6 +660,17 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> shutdown() {
+    return Mono.subscriberContext().flatMap(
+            context -> this.<Empty>createMono(
+                    it -> intercept(context, asyncStub).shutdown(Empty.getDefaultInstance(), it))
+    ).then();
+  }
+
+  /**
    * Populates GRPC client with interceptors.
    *
    * @param client GRPC client for Dapr.
