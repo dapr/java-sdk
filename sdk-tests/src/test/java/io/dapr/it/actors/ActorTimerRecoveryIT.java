@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +25,6 @@ import java.util.UUID;
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class ActorTimerRecoveryIT extends BaseIT {
@@ -72,6 +72,11 @@ public class ActorTimerRecoveryIT extends BaseIT {
 
     // Restarts app only.
     runs.left.stop();
+
+    // Pause a bit to let placements settle.
+    logger.info("Pausing 10 seconds to let placements settle.");
+    Thread.sleep(Duration.ofSeconds(10).toMillis());
+
     runs.left.start();
 
     logger.debug("Pausing 10 seconds to allow timer to fire");
