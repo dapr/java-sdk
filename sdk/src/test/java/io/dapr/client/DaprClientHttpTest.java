@@ -1270,7 +1270,7 @@ public class DaprClientHttpTest {
   @Test
   public void shutdown() throws Exception {
     mockInterceptor.addRule()
-            .get("http://127.0.0.1:3000/v1.0/shutdown")
+            .post("http://127.0.0.1:3000/v1.0/shutdown")
             .respond(204);
 
     final Mono<Void> mono = daprClientHttp.shutdown();

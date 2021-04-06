@@ -651,7 +651,7 @@ public class DaprClientHttp extends AbstractDaprClient {
   public Mono<Void> shutdown() {
     String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "shutdown" };
     return Mono.subscriberContext().flatMap(
-            context -> client.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+            context -> client.invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments,
                     null, null, context))
             .then();
   }
