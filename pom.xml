@@ -44,7 +44,8 @@
     <junit-jupiter-engine.version>5.7.0</junit-jupiter-engine.version>
 
 
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.1.0-rc.1/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.1.0-rc.1/dapr/proto
+    </dapr.proto.baseurl>
 
     <!--plugins-->
     <download-maven-plugin.version>1.6.0</download-maven-plugin.version>
@@ -392,6 +393,12 @@
           <version>${maven-site-plugin.version}</version>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${maven-javadoc-plugin.version}</version>
+        </plugin>
+
       </plugins>
     </pluginManagement>
 
@@ -418,7 +425,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>${maven-javadoc-plugin.version}</version>
         <reportSets>
           <reportSet>
             <id>aggregate</id>
