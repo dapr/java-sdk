@@ -499,4 +499,12 @@ class DaprClientProxy implements DaprClient {
       methodInvocationOverrideClient.close();
     }
   }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> shutdown() {
+    return client.shutdown();
+  }
 }

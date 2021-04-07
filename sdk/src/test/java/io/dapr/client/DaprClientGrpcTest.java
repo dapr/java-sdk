@@ -2142,6 +2142,19 @@ public class DaprClientGrpcTest {
     }
   }
 
+  @Test
+  public void shutdownTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).shutdown(any(Empty.class), any());
+
+    Mono<Void> result = client.shutdown();
+    result.block();
+  }
+
   private <T> DaprProtos.GetStateResponse buildFutureGetStateEnvelop(T value, String etag) throws IOException {
     return buildGetStateResponse(value, etag);
   }
