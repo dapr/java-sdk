@@ -238,6 +238,41 @@ Once running, the Subscriber should print the output as follows:
 
 Messages have been retrieved from the topic.
 
+### Tracing
+
+Dapr handles tracing in PubSub automatically. Open Zipkin on [http://localhost:9411/zipkin](http://localhost:9411/zipkin). You should see a screen like the one below:
+
+![zipking-landing](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-pubsub-landing.png)
+
+Click on the search icon to see the latest query results. You should see a tracing diagram similar to the one below:
+
+![zipking-landing](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-pubsub-result.png)
+
+Once you click on the tracing event, you will see the details of the call stack starting in the client and then showing the service API calls right below.
+
+![zipking-details](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-pubsub-details.png)
+
+If you would like to add a tracing span as a parent of the span created by Dapr, change the publisher to handle that. See `PublisherWithTracing.java` to see the difference and run it with:
+
+<!-- STEP
+name: Run Publisher
+expected_stdout_lines:
+  - '== APP == Published message: This is message #0'
+  - '== APP == Published message: This is message #1'
+background: true
+sleep: 15
+-->
+
+```bash
+dapr run --components-path ./components/pubsub --app-id publisher_tracing -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.PublisherWithTracing
+```
+
+<!-- END_STEP -->
+
+Now, repeat the search on Zipkin website. All the publisher and subscriber spans are under the same parent span, like in the screen below:
+
+![zipking-details-custom-span](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-pubsub-details-custom-span.png)
+
 ### Message expiration (Optional)
 
 Optionally, you can see how Dapr can automatically drop expired messages on behalf of the subscriber.
