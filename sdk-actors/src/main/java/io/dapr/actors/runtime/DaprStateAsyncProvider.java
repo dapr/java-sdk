@@ -14,7 +14,9 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
@@ -30,6 +32,8 @@ class DaprStateAsyncProvider {
    * Marker to identify Json serializers.
    */
   public static final String JSON_CONTENT_TYPE = "application/json";
+
+  public static final Pattern BASE64 = Pattern.compile("^[A-Za-z0-9+/]+={0,2}$");
 
   /**
    * Handles special serialization cases.
@@ -73,7 +77,9 @@ class DaprStateAsyncProvider {
         }
 
         T response = this.stateSerializer.deserialize(s, type);
-        if (this.isStateSerializerJson && (response instanceof byte[])) {
+
+        if (this.isStateSerializerJson && (response instanceof byte[])
+                && !BASE64.matcher(new String((byte[])response, StandardCharsets.UTF_8)).find()) {
           if (s.length == 0) {
             return Mono.empty();
           }
