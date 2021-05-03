@@ -77,7 +77,6 @@ class DaprStateAsyncProvider {
         }
 
         T response = this.stateSerializer.deserialize(s, type);
-
         if (this.isStateSerializerJson && (response instanceof byte[])
                 && !BASE64.matcher(new String((byte[])response, StandardCharsets.UTF_8)).find()) {
           if (s.length == 0) {

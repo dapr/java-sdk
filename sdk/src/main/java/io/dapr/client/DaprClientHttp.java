@@ -395,7 +395,7 @@ public class DaprClientHttp extends AbstractDaprClient {
         }
         byte[] data = this.stateSerializer.serialize(state.getValue());
         // Custom serializer, so everything is byte[].
-        operations.add(new TransactionalStateOperation<>(operation.getOperation(),
+        internalOperationObjects.add(new TransactionalStateOperation<>(operation.getOperation(),
             new State<>(state.getKey(), data, state.getEtag(), state.getMetadata(), state.getOptions())));
       }
       TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
@@ -642,6 +642,18 @@ public class DaprClientHttp extends AbstractDaprClient {
   @Override
   public void close() {
     client.close();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Void> shutdown() {
+    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "shutdown" };
+    return Mono.subscriberContext().flatMap(
+            context -> client.invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments,
+                    null, null, context))
+            .then();
   }
 
   /**

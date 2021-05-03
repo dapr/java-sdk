@@ -200,18 +200,54 @@ Use the follow command to execute the DemoActorClient:
 dapr run --components-path ./components/actors --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
 ```
 
-Once running, the `DemoActorClient` logs will start displaying the different steps: 
-First, we can see actors being activated:
-![actordemo1](../../../../../resources/img/demo-actor-client1.png)
+Once running, the `demoactorservice` logs will start displaying the different steps: 
+First, we can see actors being activated and the `say` method being invoked:
+```text
+== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-1] INFO  io.dapr.actors.ActorTrace - Actor:b7b8e745-bc1b-44ff-a0d3-c9a71f68956c Activating ...
 
-Then we can see the `registerReminder` in action. `DemoActorClient` console displays the actors handling reminders:
-![actordemo2](../../../../../resources/img/demo-actor-client2.png)
+== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-2] INFO  io.dapr.actors.ActorTrace - Actor:d0455670-557b-4ff5-ab4c-8743aca9a423 Activating ...
 
-After invoking `incrementAndGet`, the code invokes `say` method (you'll see these messages 10 times per each of the 3 actors):
-![actordemo2](../../../../../resources/img/demo-actor-client3.png)
+== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-10] INFO  io.dapr.actors.ActorTrace - Actor:56d741b6-b685-45df-974b-9e94efb3e7b4 Activating ...
 
-On the other hand, the console for `DemoActorService` is also responding to the remote invocations:
-![actordemo2](../../../../../resources/img/demo-actor-service.png)
+== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-10] INFO  io.dapr.actors.ActorTrace - Actor:56d741b6-b685-45df-974b-9e94efb3e7b4 Activated
+
+== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-1] INFO  io.dapr.actors.ActorTrace - Actor:b7b8e745-bc1b-44ff-a0d3-c9a71f68956c Activated
+
+== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-2] INFO  io.dapr.actors.ActorTrace - Actor:d0455670-557b-4ff5-ab4c-8743aca9a423 Activated
+
+== APP == Server say method for actor 56d741b6-b685-45df-974b-9e94efb3e7b4: Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 said message #1 @ 2021-03-10 21:08:29.170
+
+== APP == Server say method for actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c: Actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c said message #1 @ 2021-03-10 21:08:29.170
+
+== APP == Server say method for actor d0455670-557b-4ff5-ab4c-8743aca9a423: Actor d0455670-557b-4ff5-ab4c-8743aca9a423 said message #1 @ 2021-03-10 21:08:29.170
+```
+
+Then we can see reminders and timers in action:
+```text
+== APP == Server timer for actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c: ping! @ 2021-03-10 21:08:32.945
+
+== APP == Server timer for actor d0455670-557b-4ff5-ab4c-8743aca9a423: ping! @ 2021-03-10 21:08:32.945
+
+== APP == Server timer for actor 56d741b6-b685-45df-974b-9e94efb3e7b4: ping! @ 2021-03-10 21:08:32.945
+
+== APP == Server reminded actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c of: myremind for 1251123938 @ 2021-03-10 21:08:33.007
+
+```
+
+Finally, the console for `demoactorclient` got the service responses:
+```text
+== APP == Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 got a reply: 2021-03-10 21:08:29.170
+
+== APP == Actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c got a reply: 2021-03-10 21:08:29.170
+
+== APP == Actor d0455670-557b-4ff5-ab4c-8743aca9a423 got a reply: 2021-03-10 21:08:29.170
+
+== APP == Actor d0455670-557b-4ff5-ab4c-8743aca9a423 got a reply: 2021-03-10 21:08:29.292
+
+== APP == Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 got a reply: 2021-03-10 21:08:29.752
+
+== APP == Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 got a reply: 2021-03-10 21:08:29.804
+```
 
 For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java) Application implementation.
 

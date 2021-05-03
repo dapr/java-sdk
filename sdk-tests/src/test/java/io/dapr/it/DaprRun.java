@@ -68,31 +68,16 @@ public class DaprRun implements Stoppable {
     this.stop();
     // Wait for the previous run to kill the prior process.
     long timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
-    callWithRetry(() -> {
-      System.out.println("Checking if previous run for Dapr application has stopped ...");
-      try {
-        this.listCommand.run();
-        throw new RuntimeException("Previous run for app has not stopped yet!");
-      } catch (IllegalStateException e) {
-        // Success because we the list command did not find the app id.
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }, timeLeft);
+    System.out.println("Checking if previous run for Dapr application has stopped ...");
+    checkRunState(timeLeft, false);
 
     System.out.println("Starting dapr application ...");
     this.startCommand.run();
     this.started.set(true);
 
     timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
-    callWithRetry(() -> {
-      System.out.println("Checking if Dapr application has started ...");
-      try {
-        this.listCommand.run();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }, timeLeft);
+    System.out.println("Checking if Dapr application has started ...");
+    checkRunState(timeLeft, true);
 
     if (this.ports.getAppPort() != null) {
       timeLeft = this.maxWaitMilliseconds - (System.currentTimeMillis() - start);
@@ -178,6 +163,25 @@ public class DaprRun implements Stoppable {
 
   public String getAppName() {
     return appName;
+  }
+
+  public void checkRunState(long timeout, boolean shouldBeRunning) throws InterruptedException {
+    callWithRetry(() -> {
+      try {
+        this.listCommand.run();
+
+        if (!shouldBeRunning) {
+          throw new RuntimeException("Previous run for app has not stopped yet!");
+        }
+      } catch (IllegalStateException e) {
+        // Bad case if the app is supposed to be running.
+        if (shouldBeRunning) {
+          throw e;
+        }
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }, timeout);
   }
 
   private static String buildDaprCommand(
