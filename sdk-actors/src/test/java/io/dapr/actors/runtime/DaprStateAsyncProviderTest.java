@@ -14,6 +14,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -26,8 +27,6 @@ import static org.mockito.Mockito.*;
 public class DaprStateAsyncProviderTest {
 
   private static final DaprObjectSerializer SERIALIZER = new DefaultObjectSerializer();
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final double EPSILON = 1e-10;
 
@@ -72,6 +71,28 @@ public class DaprStateAsyncProviderTest {
       return Objects.hash(id, name);
     }
 
+  }
+
+  class CustomJsonSerializer implements DaprObjectSerializer{
+    private final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    @Override
+    public byte[] serialize(Object o) throws IOException {
+      return OBJECT_MAPPER.writeValueAsBytes(o);
+    }
+
+    @Override
+    public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
+      if (data.length == 0) {
+        return null;
+      }
+      return OBJECT_MAPPER.readValue(data, OBJECT_MAPPER.constructType(type.getType()));
+    }
+
+    @Override
+    public String getContentType() {
+      return "application/json";
+    }
   }
 
   @Test
@@ -195,6 +216,32 @@ public class DaprStateAsyncProviderTest {
         provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
     Assert.assertNull(
         provider.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
+
+    DaprStateAsyncProvider providerWithCustomJsonSerializer = new DaprStateAsyncProvider(daprClient, new CustomJsonSerializer());
+
+    Assert.assertEquals("Jon Doe",
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
+    Assert.assertEquals(98021,
+            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
+    Assert.assertEquals(98,
+            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
+    Assert.assertEquals(98,
+            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
+    Assert.assertEquals(46.55,
+            (double) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block(),
+            EPSILON);
+    Assert.assertEquals(true,
+            (boolean) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block());
+    Assert.assertEquals(new Customer().setId(1000).setName("Roxane"),
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
+    Assert.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertNull(
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertArrayEquals("A".getBytes(),
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
+    Assert.assertNull(
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
   }
 
   @Test
