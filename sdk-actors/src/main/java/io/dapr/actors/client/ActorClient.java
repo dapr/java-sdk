@@ -14,6 +14,9 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Holds a client for Dapr sidecar communication. ActorClient should be reused.
  */
@@ -65,7 +68,25 @@ public class ActorClient implements AutoCloseable {
    * @return Asynchronous result with the Actor's response.
    */
   Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    return daprClient.invoke(actorType, actorId, methodName, jsonPayload);
+    return invoke(actorType, actorId, methodName, jsonPayload, Collections.emptyMap());
+  }
+
+  /**
+   * Invokes an Actor method on Dapr.
+   *
+   * @param actorType   Type of actor.
+   * @param actorId     Actor Identifier.
+   * @param methodName  Method name to invoke.
+   * @param jsonPayload Serialized body.
+   * @param headers     Request headers.
+   * @return Asynchronous result with the Actor's response.
+   */
+  Mono<byte[]> invoke(String actorType,
+                      String actorId,
+                      String methodName,
+                      byte[] jsonPayload,
+                      Map<String, String> headers) {
+    return daprClient.invoke(actorType, actorId, methodName, jsonPayload, headers);
   }
 
   /**

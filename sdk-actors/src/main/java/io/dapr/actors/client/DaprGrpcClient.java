@@ -23,6 +23,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
@@ -50,6 +52,18 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
+    return invoke(actorType, actorId, methodName, jsonPayload, Collections.emptyMap());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<byte[]> invoke(String actorType,
+                             String actorId,
+                             String methodName,
+                             byte[] jsonPayload,
+                             Map<String, String> headers) {
     DaprProtos.InvokeActorRequest req =
         DaprProtos.InvokeActorRequest.newBuilder()
             .setActorType(actorType)

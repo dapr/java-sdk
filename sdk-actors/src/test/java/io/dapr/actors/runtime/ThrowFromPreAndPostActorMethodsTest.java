@@ -15,9 +15,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -159,11 +161,15 @@ public class ThrowFromPreAndPostActorMethodsTest {
 
     this.manager.activateActor(actorId).block();
 
+    ActorRuntime actorRuntime = mock(ActorRuntime.class);
+    when(actorRuntime.getActorReentrancyId(anyString(), anyString())).thenReturn(Mono.just(Optional.empty()));
+
     return new ActorProxyImplForTests(
       context.getActorTypeInformation().getName(),
       actorId,
       new DefaultObjectSerializer(),
-      daprClient);
+      daprClient,
+      actorRuntime);
   }
 
   private static <T extends AbstractActor> ActorRuntimeContext createContext() {

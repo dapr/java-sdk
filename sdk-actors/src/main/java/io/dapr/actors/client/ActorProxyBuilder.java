@@ -7,6 +7,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorUtils;
+import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 
@@ -36,6 +37,11 @@ public class ActorProxyBuilder<T> {
    * Client for communication with Dapr's Actor APIs.
    */
   private final ActorClient actorClient;
+
+  /**
+   * ActorRuntime used for referencing {@link io.dapr.actors.runtime.ActorManager}s and Reentrancy IDs.
+   */
+  private ActorRuntime actorRuntime;
 
   /**
    * Instantiates a new builder for a given Actor type, using {@link DefaultObjectSerializer} by default.
@@ -91,6 +97,21 @@ public class ActorProxyBuilder<T> {
   }
 
   /**
+   * Sets the {@link ActorRuntime} for the builder.
+   *
+   * @param actorRuntime to be used in the final {@link ActorProxy}
+   * @return this
+   */
+  public ActorProxyBuilder<T> withActorRuntime(ActorRuntime actorRuntime) {
+    if (actorRuntime == null) {
+      throw new IllegalArgumentException(("ActorRuntime is required."));
+    }
+
+    this.actorRuntime = actorRuntime;
+    return this;
+  }
+
+  /**
    * Instantiates a new ActorProxy.
    *
    * @param actorId Actor's identifier.
@@ -101,11 +122,22 @@ public class ActorProxyBuilder<T> {
       throw new IllegalArgumentException("Cannot instantiate an Actor without Id.");
     }
 
-    ActorProxyImpl proxy = new ActorProxyImpl(
-            this.actorType,
-            actorId,
-            this.objectSerializer,
-            this.actorClient);
+    ActorProxyImpl proxy;
+    if (actorRuntime == null) {
+      proxy = new ActorProxyImpl(
+          this.actorType,
+          actorId,
+          this.objectSerializer,
+          this.actorClient);
+    } else {
+      proxy = new ActorProxyImpl(
+          this.actorType,
+          actorId,
+          this.objectSerializer,
+          this.actorClient,
+          this.actorRuntime
+      );
+    }
 
     if (this.clazz.equals(ActorProxy.class)) {
       // If users want to use the not strongly typed API, we respect that here.

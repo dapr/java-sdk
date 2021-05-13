@@ -15,9 +15,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -344,7 +346,8 @@ public class DerivedActorTest {
       context.getActorTypeInformation().getName(),
       actorId,
       new DefaultObjectSerializer(),
-      daprClient);
+      daprClient,
+      context.getActorRuntime());
   }
 
   private static <T extends AbstractActor> ActorRuntimeContext createContext() {
@@ -355,8 +358,12 @@ public class DerivedActorTest {
     when(daprClient.unregisterTimer(any(), any(), any())).thenReturn(Mono.empty());
     when(daprClient.unregisterReminder(any(), any(), any())).thenReturn(Mono.empty());
 
+    ActorRuntime runtimeMock = mock(ActorRuntime.class);
+
+    when(runtimeMock.getActorReentrancyId(anyString(), anyString())).thenReturn(Mono.just(Optional.empty()));
+
     return new ActorRuntimeContext(
-      mock(ActorRuntime.class),
+      runtimeMock,
       new DefaultObjectSerializer(),
       new DefaultActorFactory<T>(),
       ActorTypeInformation.create(ActorChild.class),

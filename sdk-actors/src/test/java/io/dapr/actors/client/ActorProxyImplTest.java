@@ -7,19 +7,32 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorMethod;
+import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ActorProxyImplTest {
+
+  private ActorRuntime actorRuntime;
+
+  @Before
+  public void setup() {
+    actorRuntime = mock(ActorRuntime.class);
+
+    when(actorRuntime.getActorReentrancyId(anyString(), anyString())).thenReturn(Mono.just(Optional.empty()));
+  }
 
   @Test()
   public void constructorActorProxyTest() {
@@ -29,7 +42,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         serializer,
-        daprClient);
+        daprClient,
+        actorRuntime);
     Assert.assertEquals(actorProxy.getActorId().toString(), "100");
     Assert.assertEquals(actorProxy.getActorType(), "myActorType");
   }
@@ -47,7 +61,8 @@ public class ActorProxyImplTest {
             "myActorType",
             new ActorId("100"),
             new DefaultObjectSerializer(),
-            daprClient);
+            daprClient,
+            actorRuntime);
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
     MyData myData = result.block();
@@ -69,7 +84,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     MyData myData = (MyData) actorProxy.invoke(actorProxy, Actor.class.getMethod("getData"), null);
     Assert.assertNotNull(myData);
@@ -90,7 +106,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<MyData> res = (Mono<MyData>) actorProxy.invoke(actorProxy, Actor.class.getMethod("getDataMono"), null);
     Assert.assertNotNull(res);
@@ -113,7 +130,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     String res = (String) actorProxy.invoke(
         actorProxy,
@@ -136,7 +154,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<String> res = (Mono<String>) actorProxy.invoke(
         actorProxy,
@@ -159,7 +178,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Object myData = actorProxy.invoke(actorProxy, Actor.class.getMethod("doSomething"), null);
     Assert.assertNull(myData);
@@ -177,7 +197,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<Void> myData = (Mono<Void>)actorProxy.invoke(actorProxy, Actor.class.getMethod("doSomethingMono"), null);
     Assert.assertNotNull(myData);
@@ -196,7 +217,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<Void> myData = (Mono<Void>)actorProxy.invoke(
         actorProxy,
@@ -215,7 +237,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<Void> myData = (Mono<Void>)actorProxy.invoke(
         actorProxy,
@@ -238,7 +261,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Object res = actorProxy.invoke(
         actorProxy,
@@ -258,7 +282,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
     MyData myData = result.block();
@@ -275,7 +300,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
 
@@ -296,7 +322,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     MyData saveData = new MyData();
     saveData.setPropertyA("valueA");
@@ -320,7 +347,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     MyData saveData = new MyData();
     saveData.setPropertyA("valueA");
@@ -344,7 +372,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     MyData saveData = new MyData();
     saveData.setPropertyA("valueA");
@@ -366,7 +395,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     MyData saveData = new MyData();
     saveData.setPropertyA("valueA");
@@ -395,7 +425,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<Void> result = actorProxy.invokeMethod("getData", saveData);
     Void emptyResponse = result.block();
@@ -418,7 +449,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<Void> result = actorProxy.invokeMethod("getData", saveData);
     Void emptyResponse = result.doOnError(Throwable::printStackTrace).block();
@@ -435,7 +467,8 @@ public class ActorProxyImplTest {
         "myActorType",
         new ActorId("100"),
         new DefaultObjectSerializer(),
-        daprClient);
+        daprClient,
+        actorRuntime);
 
     Mono<Void> result = actorProxy.invokeMethod("getData");
     Void emptyResponse = result.block();

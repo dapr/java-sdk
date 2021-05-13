@@ -8,16 +8,19 @@ package io.dapr.springboot;
 
 import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.serializer.DefaultObjectSerializer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * SpringBoot Controller to handle callback APIs for Dapr.
@@ -71,17 +74,24 @@ public class DaprController {
 
   /**
    * Handles API to invoke an actor's method.
-   * @param type Actor type.
+   * @param type Actor type.±
    * @param id Actor Id.
    * @param method Actor method.
    * @param body Raw request body.
+   * @param headers Request headers.
    * @return Raw response body.
    */
   @PutMapping(path = "/actors/{type}/{id}/method/{method}")
   public Mono<byte[]> invokeActorMethod(@PathVariable("type") String type,
                                         @PathVariable("id") String id,
                                         @PathVariable("method") String method,
-                                        @RequestBody(required = false) byte[] body) {
+                                        @RequestBody(required = false) byte[] body,
+                                        @RequestHeader(required = false) HttpHeaders headers) {
+    final List<String> reentrancyId = headers.get("Dapr-Reentrancy-Id");
+    if (reentrancyId != null && !reentrancyId.isEmpty()) {
+      System.out.println("Setting reentrancy Id: " + reentrancyId.get(0));
+      return ActorRuntime.getInstance().invoke(type, id, method, body, reentrancyId.get(0));
+    }
     return ActorRuntime.getInstance().invoke(type, id, method, body);
   }
 

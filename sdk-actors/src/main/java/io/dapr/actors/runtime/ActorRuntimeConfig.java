@@ -5,6 +5,9 @@
 
 package io.dapr.actors.runtime;
 
+import io.dapr.actors.config.ActorReentrancyConfig;
+
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +28,8 @@ public class ActorRuntimeConfig {
   private volatile Duration drainOngoingCallTimeout;
 
   private volatile Boolean drainBalancedActors;
+
+  private volatile ActorReentrancyConfig actorReentrancyConfig;
 
   /**
    * Instantiates a new config for the Actor Runtime.
@@ -135,4 +140,24 @@ public class ActorRuntimeConfig {
     return this;
   }
 
+  /**
+   * Gets the {@code ActorReentrancyConfig} which defines all reentrancy options.
+   *
+   * @return the full {@code ActorReentrancyConfig}
+   */
+  public ActorReentrancyConfig getActorReentrancyConfig() {
+    return actorReentrancyConfig;
+  }
+
+  /**
+   * Sets the {@code ActorReentrancyConfig}.
+   *
+   * @param enabled boolean stating if reentrancy is enabled
+   * @param maxStackDepth optional integer that sets the max stack depth for reentrancy, can be null
+   * @return This instance.
+   */
+  public ActorRuntimeConfig setActorReentrancyConfig(boolean enabled, @Nullable Integer maxStackDepth) {
+    this.actorReentrancyConfig = new ActorReentrancyConfig(enabled, maxStackDepth);
+    return this;
+  }
 }

@@ -244,9 +244,9 @@ public abstract class AbstractActor {
    * Resets the cached state of this Actor.
    */
   void rollback() {
-    if (!this.started) {
-      throw new IllegalStateException("Cannot reset state before starting call.");
-    }
+    //    if (!this.started) {
+    //      throw new IllegalStateException("Cannot reset state before starting call.");
+    //    }
 
     this.resetState();
     this.started = false;
@@ -294,9 +294,9 @@ public abstract class AbstractActor {
    */
   Mono<Void> onPreActorMethodInternal(ActorMethodContext actorMethodContext) {
     return Mono.fromRunnable(() -> {
-      if (this.started) {
-        throw new IllegalStateException("Cannot invoke a method before completing previous call.");
-      }
+      //      if (this.started) {
+      //        throw new IllegalStateException("Cannot invoke a method before completing previous call.");
+      //      }
 
       this.started = true;
     }).then(this.onPreActorMethod(actorMethodContext));
@@ -311,7 +311,7 @@ public abstract class AbstractActor {
   Mono<Void> onPostActorMethodInternal(ActorMethodContext actorMethodContext) {
     return Mono.fromRunnable(() -> {
       if (!this.started) {
-        throw new IllegalStateException("Cannot complete a method before starting a call.");
+        //         throw new IllegalStateException("Cannot complete a method before starting a call.");
       }
     }).then(this.onPostActorMethod(actorMethodContext))
           .then(this.saveState())

@@ -6,6 +6,7 @@
 package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.runtime.reentrancy.ActorReentrancyContext;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -14,6 +15,7 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -42,6 +44,11 @@ class ActorManager<T extends AbstractActor> {
   private final Map<ActorId, T> activeActors;
 
   /**
+   * Context for tracking actor reentrancy.
+   */
+  private final ActorReentrancyContext actorReentrancyContext;
+
+  /**
    * Instantiates a new manager for a given actor referenced in the runtimeContext.
    *
    * @param runtimeContext Runtime context for the Actor.
@@ -50,6 +57,7 @@ class ActorManager<T extends AbstractActor> {
     this.runtimeContext = runtimeContext;
     this.actorMethods = new ActorMethodInfoMap(runtimeContext.getActorTypeInformation().getInterfaces());
     this.activeActors = Collections.synchronizedMap(new HashMap<>());
+    this.actorReentrancyContext = new ActorReentrancyContext();
   }
 
   /**
@@ -177,6 +185,20 @@ class ActorManager<T extends AbstractActor> {
     }).thenReturn(true);
   }
 
+  Mono<Optional<String>> getReentrancyId(String actorId, String actorType) {
+    return Mono.just(actorReentrancyContext.getReentrancyId(actorId, actorType));
+  }
+
+  Mono<Void> trackReentrantRequest(String actorId, String actorType, String reentrancyID) {
+    actorReentrancyContext.trackReentrancy(actorId, actorType, reentrancyID);
+    return Mono.empty();
+  }
+
+  Mono<Void> releaseReentrantRequest(String actorId, String actorType, String reentrancyId) {
+    actorReentrancyContext.releaseReentrancy(actorId, actorType, reentrancyId);
+    return Mono.empty();
+  }
+
   /**
    * Invokes a given method in the Actor.
    *
@@ -219,6 +241,16 @@ class ActorManager<T extends AbstractActor> {
         if (method.getReturnType().equals(Mono.class)) {
           return invokeMonoMethod(actor, method, input);
         }
+
+        final Optional<String> reentrancyId = actorReentrancyContext.getReentrancyId(actorId.toString(),
+            runtimeContext.getActorTypeInformation().getName());
+
+        if (reentrancyId.isPresent()) {
+          System.out.println("Reentrancy ID: " + reentrancyId.get());
+        } else {
+          System.out.println("No reentrancy ID");
+        }
+
 
         return invokeMethod(actor, method, input);
       } catch (Exception e) {

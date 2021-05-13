@@ -7,6 +7,8 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorMethod;
+import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.actors.runtime.ActorRuntimeContext;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -15,6 +17,8 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.Optional;
 
 /**
  * Implements a proxy client for an Actor's instance.
@@ -43,6 +47,8 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   private final ActorClient actorClient;
 
+  private final ActorRuntime actorRuntime;
+
   /**
    * Creates a new instance of {@link ActorProxyImpl}.
    *
@@ -52,10 +58,27 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    * @param actorClient Dapr client for Actor APIs.
    */
   ActorProxyImpl(String actorType, ActorId actorId, DaprObjectSerializer serializer, ActorClient actorClient) {
+    this(actorType, actorId, serializer, actorClient, ActorRuntime.getInstance());
+  }
+
+  /**
+   * Creates a new instance of {@link ActorProxyImpl}.
+   *
+   * @param actorType  actor implementation type of the actor associated with the proxy object.
+   * @param actorId    The actorId associated with the proxy
+   * @param serializer Serializer and deserializer for method calls.
+   * @param actorClient Dapr client for Actor APIs.
+   */
+  ActorProxyImpl(String actorType,
+                 ActorId actorId,
+                 DaprObjectSerializer serializer,
+                 ActorClient actorClient,
+                 ActorRuntime actorRuntime) {
     this.actorType = actorType;
     this.actorId = actorId;
     this.actorClient = actorClient;
     this.serializer = serializer;
+    this.actorRuntime = actorRuntime;
   }
 
   /**
@@ -77,6 +100,18 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public <T> Mono<T> invokeMethod(String methodName, Object data, TypeRef<T> type) {
+    final Object reentrancyId = actorRuntime.getActorReentrancyId(actorId.toString(), actorType).block();
+
+    if (reentrancyId != null) {
+      final Optional rawOptional = (Optional) reentrancyId;
+      if (rawOptional.isPresent() && rawOptional.get() instanceof String) {
+        return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data),
+            Collections.singletonMap("Dapr-Reentrancy-Id", (String) rawOptional.get()))
+            .filter(s -> s.length > 0)
+            .map(s -> deserialize(s, type));
+      }
+    }
+
     return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data))
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));

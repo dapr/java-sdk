@@ -7,6 +7,8 @@ package io.dapr.actors.client;
 
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
  */
@@ -23,4 +25,9 @@ interface DaprClient {
    */
   Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload);
 
+  Mono<byte[]> invoke(String actorType,
+                      String actorId,
+                      String methodName,
+                      byte[] jsonPayload,
+                      Map<String, String> headers);
 }
