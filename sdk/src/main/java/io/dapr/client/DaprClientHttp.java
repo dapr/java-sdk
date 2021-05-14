@@ -521,7 +521,7 @@ public class DaprClientHttp extends AbstractDaprClient {
     if (response.getHeaders() != null && response.getHeaders().containsKey("Etag")) {
       etag = response.getHeaders().get("Etag");
     }
-    return new State<>(requestedKey, value, etag, stateOptions);
+    return new State<>(requestedKey, value, etag, Collections.emptyMap(), stateOptions);
   }
 
   /**
