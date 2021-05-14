@@ -550,4 +550,11 @@ public interface DaprClient extends AutoCloseable {
    * @return Key-value pairs for the secret.
    */
   Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request);
+
+  /**
+   * Gracefully shutdown the dapr runtime.
+   *
+   * @return a Mono plan of type Void.
+   */
+  Mono<Void> shutdown();
 }

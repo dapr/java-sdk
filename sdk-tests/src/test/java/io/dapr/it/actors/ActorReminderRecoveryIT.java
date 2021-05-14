@@ -12,7 +12,6 @@ import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.MyActorService;
-import io.dapr.it.state.GRPCStateClientIT;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.After;
 import org.junit.Before;
@@ -20,7 +19,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -98,12 +97,18 @@ public class ActorReminderRecoveryIT extends BaseIT {
     // Restarts runtime only.
     logger.info("Stopping Dapr sidecar");
     runs.right.stop();
+
+    // Pause a bit to let placements settle.
+    logger.info("Pausing 10 seconds to let placements settle.");
+    Thread.sleep(Duration.ofSeconds(10).toMillis());
+
     logger.info("Starting Dapr sidecar");
     runs.right.start();
     logger.info("Dapr sidecar started");
 
     logger.info("Pausing 7 seconds to allow sidecar to be healthy");
     Thread.sleep(7000);
+
     callWithRetry(() -> {
       logger.info("Fetching logs for " + METHOD_NAME);
       List<MethodEntryTracker> newLogs = fetchMethodCallLogs(proxy);
