@@ -111,17 +111,3 @@ Once running, the OutputBindingExample should print the output as follows:
 ...
 
 ```
-
-### Cleanup
-
-To stop the app run (or press `CTRL+C`):
-
-<!-- STEP
-name: Cleanup
--->
-
-```bash
-dapr stop --app-id exception_example
-```
-
-<!-- END_STEP -->
