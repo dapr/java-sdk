@@ -334,6 +334,7 @@ name: Cleanup
 -->
 
 ```bash
+dapr stop --app-id publisher
 dapr stop --app-id subscriber
 ```
 
