@@ -209,19 +209,6 @@ Once running, the program should print the output as follows:
 == APP == {"testVal":"value"}
 ```
 
-To close the app either press `CTRL+C` or run
-
-<!-- STEP
-name: Cleanup first app
--->
-
-```bash
-dapr stop --app-id secrets1
-```
-
-<!-- END_STEP -->
-
-
 The example's `config.yaml` is as follows: 
 ```yaml
 apiVersion: dapr.io/v1alpha1
@@ -264,19 +251,6 @@ Once running, the program should print the output as follows:
 
 == APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "vault"
 ``` 
-
-To close the app either press `CTRL+C` or run
-
-<!-- STEP
-name: Cleanup second app
--->
-
-```bash
-dapr stop --app-id secrets2
-```
-
-<!-- END_STEP -->
-
 
 To clean up and bring the vault container down, run
 

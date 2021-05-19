@@ -202,17 +202,3 @@ Once running, the OutputBindingExample should print the output as follows:
 == APP == Done
 
 ```
-
-### Cleanup
-
-To close the app either press `CTRL+C` or run
-
-<!-- STEP
-name: Cleanup
--->
-
-```bash
-dapr stop --app-id state_example
-```
-
-<!-- END_STEP -->
