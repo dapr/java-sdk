@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Topic;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.beans.factory.config.EmbeddedValueResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -26,6 +28,12 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
+  private final EmbeddedValueResolver embeddedValueResolver;
+
+  DaprBeanPostProcessor(ConfigurableBeanFactory beanFactory) {
+    embeddedValueResolver = new EmbeddedValueResolver(beanFactory);
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -35,7 +43,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       return null;
     }
 
-    subscribeToTopics(bean.getClass());
+    subscribeToTopics(bean.getClass(), embeddedValueResolver);
 
     return bean;
   }
@@ -52,12 +60,12 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
    * Subscribe to topics based on {@link Topic} annotations on the given class and any of ancestor classes.
    * @param clazz Controller class where {@link Topic} is expected.
    */
-  private static void subscribeToTopics(Class clazz) {
+  private static void subscribeToTopics(Class clazz, EmbeddedValueResolver embeddedValueResolver) {
     if (clazz == null) {
       return;
     }
 
-    subscribeToTopics(clazz.getSuperclass());
+    subscribeToTopics(clazz.getSuperclass(), embeddedValueResolver);
     for (Method method : clazz.getDeclaredMethods()) {
       Topic topic = method.getAnnotation(Topic.class);
       if (topic == null) {
@@ -71,8 +79,8 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
         route = mapping.path()[0];
       }
 
-      String topicName = topic.name();
-      String pubSubName = topic.pubsubName();
+      String topicName = embeddedValueResolver.resolveStringValue(topic.name());
+      String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
           TypeReference<HashMap<String, String>> typeRef
