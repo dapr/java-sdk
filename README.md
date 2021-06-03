@@ -17,7 +17,7 @@ This is the Dapr SDK for Java, including the following features:
 ### Getting Started
 
 #### Pre-Requisites
-* JDK 11 or above:
+* JDK 11 or above - the published jars are compatible with Java 8:
     * [Oracle's JDK 15](https://www.oracle.com/java/technologies/javase-jdk15-downloads.html)
     * [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
     * [OpenJDK](https://openjdk.java.net/)
