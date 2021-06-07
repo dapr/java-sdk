@@ -44,21 +44,6 @@ For a Maven project, add the following to your `pom.xml` file:
 ```xml
 <project>
   ...
-  <repositories>
-    ...
-    <!-- BEGIN: Dapr's repositories -->
-    <repository>
-      <id>oss-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </repository>
-    <repository>
-      <id>oss-release</id>
-      <url>https://oss.sonatype.org/content/repositories/releases/</url>
-    </repository>
-    <!-- END: Dapr's repositories -->
-    ...
-  </repositories>
-  ...
   <dependencies>
     ...
      <!-- Dapr's core SDK with all features, except Actors. -->
@@ -88,20 +73,6 @@ For a Maven project, add the following to your `pom.xml` file:
 For a Gradle project, add the following to your `build.gradle` file:
 
 ```
-repositories {
-    ...
-    // Dapr repositories
-    maven {
-      url "https://oss.sonatype.org/content/repositories/snapshots"
-	  mavenContent {
-	    snapshotsOnly()
-	  }
-    }
-    maven {
-	  url "https://oss.sonatype.org/content/repositories/releases/"
-    }
-}
-...
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
