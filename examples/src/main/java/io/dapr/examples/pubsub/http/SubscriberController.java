@@ -26,6 +26,11 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
+  /*
+    If 'myAppProperty' doesn't exist, default to 'messagebus' - behavior is the same as what can
+    be used in Spring's @Value annotation
+    https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations
+   */
   @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent cloudEvent) {

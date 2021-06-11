@@ -53,8 +53,10 @@ public class Subscriber {
 
 This Spring Controller handles the message endpoint, Printing the message which is received as the POST body. 
 
-The topic subscription in Dapr is handled automatically via the `@Topic` annotation - which also supports Spring expressions if you wish to dynamically configure it.
-See the code snippet below:
+The topic subscription in Dapr is handled automatically via the `@Topic` annotation - which also supports the same expressions that can be used in 
+[Spring's @Value annotations](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations).
+
+The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support (if `myAppProperty` doesn't exist as a property, the value defaults to the string: `messagebus`). 
 
 ```java
 @RestController
