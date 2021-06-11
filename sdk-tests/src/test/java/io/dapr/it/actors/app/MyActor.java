@@ -29,6 +29,8 @@ public interface MyActor {
 
   String getIdentifier();
 
+  void throwException();
+
   @ActorMethod(name = "DotNetMethodAsync")
   boolean dotNetMethod();
 }

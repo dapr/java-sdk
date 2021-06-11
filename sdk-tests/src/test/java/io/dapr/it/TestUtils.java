@@ -33,4 +33,13 @@ public final class TestUtils {
     Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
   }
+
+  public static <T extends Throwable> void assertThrowsDaprExceptionSubstring(
+      String expectedErrorCode,
+      String expectedErrorMessageSubstring,
+      Executable executable) {
+    DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
+    Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
+    Assertions.assertTrue(daprException.getMessage().contains(expectedErrorMessageSubstring));
+  }
 }
