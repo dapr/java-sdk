@@ -200,6 +200,11 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
   }
 
   @Override
+  public void throwException() {
+    throw new ArithmeticException();
+  }
+
+  @Override
   public boolean dotNetMethod() {
     return true;
   }
