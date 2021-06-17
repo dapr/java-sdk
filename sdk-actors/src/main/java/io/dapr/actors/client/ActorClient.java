@@ -105,7 +105,7 @@ public class ActorClient implements AutoCloseable {
    */
   private static DaprClient buildDaprClient(DaprApiProtocol apiProtocol, Channel grpcManagedChannel) {
     switch (apiProtocol) {
-      case GRPC: return new DaprGrpcClient(DaprGrpc.newFutureStub(grpcManagedChannel));
+      case GRPC: return new DaprGrpcClient(DaprGrpc.newStub(grpcManagedChannel));
       case HTTP: return new DaprHttpClient(new DaprHttpBuilder().build());
       default: throw new IllegalStateException("Unsupported protocol: " + apiProtocol.name());
     }
