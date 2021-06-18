@@ -77,7 +77,7 @@ public class SubscriberController {
     });
   }
 
-  @Topic(name = "anothertopic", pubsubName = "messagebus")
+  @Topic(name = "#{'another'.concat('topic')}", pubsubName = "${pubsubName:messagebus}")
   @PostMapping(path = "/route3")
   public Mono<Void> handleMessageAnotherTopic(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {

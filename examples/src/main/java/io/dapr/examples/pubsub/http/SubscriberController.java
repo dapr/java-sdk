@@ -26,7 +26,7 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic", pubsubName = "messagebus")
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent cloudEvent) {
     return Mono.fromRunnable(() -> {
