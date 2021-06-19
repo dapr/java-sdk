@@ -245,6 +245,89 @@ public class DaprStateAsyncProviderTest {
   }
 
   @Test
+  public void happyCaseLoadBackwardCompatibility() throws Exception {
+    DaprClient daprClient = mock(DaprClient.class);
+    when(daprClient
+            .getState(any(), any(), eq("name")))
+            .thenReturn(Mono.just("\"Sm9uIERvZQ==\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("zipcode")))
+            .thenReturn(Mono.just("\"OTgwMjE=\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("goals")))
+            .thenReturn(Mono.just("\"OTg=\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("balance")))
+            .thenReturn(Mono.just("\"NDYuNTU=\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("active")))
+            .thenReturn(Mono.just("\"dHJ1ZQ==\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("customer")))
+            .thenReturn(Mono.just("\"eyAiaWQiOiAxMDAwLCAibmFtZSI6ICJSb3hhbmUifQ==\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("anotherCustomer")))
+            .thenReturn(Mono.just("\"eyAiaWQiOiAyMDAwLCAibmFtZSI6ICJNYXgifQ==\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("nullCustomer")))
+            .thenReturn(Mono.empty());
+    when(daprClient
+            .getState(any(), any(), eq("bytes")))
+            .thenReturn(Mono.just("\"QQ==\"".getBytes()));
+    when(daprClient
+            .getState(any(), any(), eq("emptyBytes")))
+            .thenReturn(Mono.just(new byte[0]));
+
+    DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
+
+    Assert.assertEquals("Jon Doe",
+            provider.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
+    Assert.assertEquals(98021,
+            (int) provider.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
+    Assert.assertEquals(98,
+            (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
+    Assert.assertEquals(46.55,
+            (double) provider.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block(),
+            EPSILON);
+    Assert.assertEquals(true,
+            (boolean) provider.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block());
+    Assert.assertEquals(new Customer().setId(1000).setName("Roxane"),
+            provider.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
+    Assert.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
+            provider.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertNull(
+            provider.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertArrayEquals("A".getBytes(),
+            provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
+    Assert.assertNull(
+            provider.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
+
+    DaprStateAsyncProvider providerWithCustomJsonSerializer = new DaprStateAsyncProvider(daprClient, new CustomJsonSerializer());
+
+//    Assert.assertEquals("Jon Doe",
+//            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
+    Assert.assertEquals(98021,
+            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
+    Assert.assertEquals(98,
+            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
+    Assert.assertEquals(46.55,
+            (double) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block(),
+            EPSILON);
+    Assert.assertEquals(true,
+            (boolean) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block());
+    Assert.assertEquals(new Customer().setId(1000).setName("Roxane"),
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
+    Assert.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertNull(
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertArrayEquals("A".getBytes(),
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
+    Assert.assertNull(
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
+  }
+
+  @Test
   public void happyCaseContains() {
     DaprClient daprClient = mock(DaprClient.class);
 

@@ -15,6 +15,8 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 
 /**
  * State Provider to interact with Dapr runtime to handle state.
@@ -72,7 +74,13 @@ class DaprStateAsyncProvider {
           return Mono.empty();
         }
 
-        T response = this.stateSerializer.deserialize(s, type);
+        T response;
+        try {
+          response = this.stateSerializer.deserialize(s, type);
+        } catch (IOException ex) {
+          byte[] data = Arrays.copyOfRange(s, 1, s.length - 1);
+          response = this.stateSerializer.deserialize(Base64.getDecoder().decode(data), type);
+        }
         if (this.isStateSerializerJson && (response instanceof byte[])) {
           if (s.length == 0) {
             return Mono.empty();
