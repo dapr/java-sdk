@@ -51,13 +51,18 @@ public class Subscriber {
 ```
 `DaprApplication.start()` Method will run an Spring Boot application that registers the `SubscriberController`, which exposes the message retrieval as a POST request. The Dapr's sidecar is the one that performs the actual call to the controller, based on the pubsub features.
 
-This Spring Controller handles the message endpoint, Printing the message which is received as the POST body. The topic subscription in Dapr is handled automatically via the `@Topic` annotation. See the code snippet below:
+This Spring Controller handles the message endpoint, printing the message which is received as the POST body. 
+
+The subscription's topic in Dapr is handled automatically via the `@Topic` annotation - which also supports the same expressions in 
+[Spring's @Value annotations](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations).
+
+The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support. In this case, `myAppProperty` is a Java property that does not exist, so the expression resolves to the default value (`messagebus`). 
 
 ```java
 @RestController
 public class SubscriberController {
   ///...
-  @Topic(name = "testingtopic", pubsubName = "messagebus")
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) byte[] body,
                                    @RequestHeader Map<String, String> headers) {
