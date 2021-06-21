@@ -213,36 +213,10 @@ public class DaprStateAsyncProviderTest {
         provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
     Assert.assertNull(
         provider.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
-
-    DaprStateAsyncProvider providerWithCustomJsonSerializer = new DaprStateAsyncProvider(daprClient, new CustomJsonSerializer());
-
-    Assert.assertEquals("Jon Doe",
-            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
-    Assert.assertEquals(98021,
-            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
-    Assert.assertEquals(98,
-            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
-    Assert.assertEquals(98,
-            (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
-    Assert.assertEquals(46.55,
-            (double) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block(),
-            EPSILON);
-    Assert.assertEquals(true,
-            (boolean) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block());
-    Assert.assertEquals(new Customer().setId(1000).setName("Roxane"),
-            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
-    Assert.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
-            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
-    Assert.assertNull(
-            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
-    Assert.assertArrayEquals("A".getBytes(),
-            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
-    Assert.assertNull(
-            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
   }
 
   @Test
-  public void happyCaseLoadBackwardCompatibility() throws Exception {
+  public void happyCaseLoadForCustomSerializer() throws Exception {
     DaprClient daprClient = mock(DaprClient.class);
     when(daprClient
             .getState(any(), any(), eq("name")))
