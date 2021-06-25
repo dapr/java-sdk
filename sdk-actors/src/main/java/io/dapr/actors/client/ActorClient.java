@@ -5,6 +5,7 @@
 
 package io.dapr.actors.client;
 
+import io.dapr.actors.runtime.ActorInvocationContext;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
@@ -68,25 +69,25 @@ public class ActorClient implements AutoCloseable {
    * @return Asynchronous result with the Actor's response.
    */
   Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
-    return invoke(actorType, actorId, methodName, jsonPayload, Collections.emptyMap());
+    return invoke(actorType, actorId, methodName, jsonPayload, new ActorInvocationContext());
   }
 
   /**
    * Invokes an Actor method on Dapr.
    *
-   * @param actorType   Type of actor.
-   * @param actorId     Actor Identifier.
-   * @param methodName  Method name to invoke.
-   * @param jsonPayload Serialized body.
-   * @param headers     Request headers.
+   * @param actorType             Type of actor.
+   * @param actorId               Actor Identifier.
+   * @param methodName            Method name to invoke.
+   * @param jsonPayload           Serialized body.
+   * @param invocationContext     Additional information associated with this invocation.
    * @return Asynchronous result with the Actor's response.
    */
   Mono<byte[]> invoke(String actorType,
                       String actorId,
                       String methodName,
                       byte[] jsonPayload,
-                      Map<String, String> headers) {
-    return daprClient.invoke(actorType, actorId, methodName, jsonPayload, headers);
+                      ActorInvocationContext invocationContext) {
+    return daprClient.invoke(actorType, actorId, methodName, jsonPayload, invocationContext);
   }
 
   /**

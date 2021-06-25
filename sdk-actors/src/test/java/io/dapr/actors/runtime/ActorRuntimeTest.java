@@ -17,16 +17,20 @@ import reactor.core.publisher.Mono;
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.mock;
 
 public class ActorRuntimeTest {
 
   private static final String ACTOR_NAME = "MyGreatActor";
+  private static AtomicReference<ActorRuntime> CURRENT_RUNTIME = new AtomicReference<>(null);
 
   public interface MyActor {
     String say();
+    String getReentrancyId();
     int count();
   }
 
@@ -76,6 +80,22 @@ public class ActorRuntimeTest {
 
       this.count++;
       return "Nothing to say.";
+    }
+
+    public String getReentrancyId() {
+      final ActorRuntime runtime = CURRENT_RUNTIME.get();
+
+      if (runtime != null) {
+        final Optional<String> reentrancyId = runtime.getActorReentrancyId("reentrantActor", ACTOR_NAME).block();
+
+        if (reentrancyId != null && reentrancyId.isPresent()) {
+          return reentrancyId.get();
+        }
+      } else {
+        return "No runtime set.";
+      }
+
+      return "Not Reentrant";
     }
 
     public int count() {
@@ -158,6 +178,20 @@ public class ActorRuntimeTest {
   }
 
   @Test
+  public void setReetrancyConfig() throws Exception {
+    this.runtime.getConfig().setActorReentrancyConfig(true, 32);
+    Assert.assertEquals("{\"entities\":[],\"reentrancy\":{\"enabled\":true,\"maxStackDepth\":32}}",
+        new String(this.runtime.serializeConfig()));
+  }
+
+  @Test
+  public void setReetrancyConfigWithoutMaxStackDepth() throws Exception {
+    this.runtime.getConfig().setActorReentrancyConfig(true, null);
+    Assert.assertEquals("{\"entities\":[],\"reentrancy\":{\"enabled\":true}}",
+        new String(this.runtime.serializeConfig()));
+  }
+
+  @Test
   public void invokeActor() throws Exception {
     String actorId = UUID.randomUUID().toString();
     this.runtime.registerActor(MyActorImpl.class);
@@ -165,6 +199,34 @@ public class ActorRuntimeTest {
     byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
     String message = ACTOR_STATE_SERIALIZER.deserialize(response, String.class);
     Assert.assertEquals("Nothing to say.", message);
+  }
+
+  @Test
+  public void invokeActorWithReentrancy() throws Exception {
+    this.runtime.registerActor(MyActorImpl.class);
+
+    try {
+      CURRENT_RUNTIME.set(runtime);
+      byte[] response = this.runtime.invoke(ACTOR_NAME, "reentrantActor", "getReentrancyId", null, "1").block();
+      String message = ACTOR_STATE_SERIALIZER.deserialize(response, String.class);
+      Assert.assertEquals("1", message);
+    } finally {
+      CURRENT_RUNTIME.set(null);
+    }
+  }
+
+  @Test
+  public void invokeActorWithoutReentrancy() throws Exception {
+    this.runtime.registerActor(MyActorImpl.class);
+
+    try {
+      CURRENT_RUNTIME.set(runtime);
+      byte[] response = this.runtime.invoke(ACTOR_NAME, "reentrantActor", "getReentrancyId", null).block();
+      String message = ACTOR_STATE_SERIALIZER.deserialize(response, String.class);
+      Assert.assertEquals("Not Reentrant", message);
+    } finally {
+      CURRENT_RUNTIME.set(null);
+    }
   }
 
   @Test(expected = IllegalArgumentException.class)

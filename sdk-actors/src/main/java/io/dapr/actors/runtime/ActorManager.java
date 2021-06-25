@@ -242,16 +242,6 @@ class ActorManager<T extends AbstractActor> {
           return invokeMonoMethod(actor, method, input);
         }
 
-        final Optional<String> reentrancyId = actorReentrancyContext.getReentrancyId(actorId.toString(),
-            runtimeContext.getActorTypeInformation().getName());
-
-        if (reentrancyId.isPresent()) {
-          System.out.println("Reentrancy ID: " + reentrancyId.get());
-        } else {
-          System.out.println("No reentrancy ID");
-        }
-
-
         return invokeMethod(actor, method, input);
       } catch (Exception e) {
         return Mono.error(e);
@@ -330,13 +320,18 @@ class ActorManager<T extends AbstractActor> {
                 this.runtimeContext.getActorTypeInformation().getName()));
       }
 
+      final Optional<String> reentrancyId = getReentrancyId(actorId.toString(), actor.getType()).block();
+      if (reentrancyId != null) {
+        reentrancyId.ifPresent(context::addReentrancyId);
+      }
+
       return actor.onPreActorMethodInternal(context)
           .then((Mono<Object>) func.apply(actor))
           .switchIfEmpty(
               actor.onPostActorMethodInternal(context))
           .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
           .onErrorMap(throwable -> {
-            actor.rollback();
+            actor.rollback(context);
             return throwable;
           })
           .map(o -> (T) o);

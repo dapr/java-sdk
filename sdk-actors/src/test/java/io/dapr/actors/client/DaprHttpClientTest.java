@@ -4,6 +4,7 @@
  */
 package io.dapr.actors.client;
 
+import io.dapr.actors.runtime.ActorInvocationContext;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpProxy;
 import io.dapr.config.Properties;
@@ -12,9 +13,12 @@ import okhttp3.ResponseBody;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MediaTypes;
 import okhttp3.mock.MockInterceptor;
+import okhttp3.mock.Rule;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertEquals;
@@ -39,11 +43,28 @@ public class DaprHttpClientTest {
   public void invokeActorMethod() {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/method/Payment")
+        .not()
+        .hasHeader("Dapr-Reentrancy-Id")
         .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono =
         DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());
+    assertEquals(new String(mono.block()), EXPECTED_RESULT);
+  }
+
+  @Test
+  public void invokeActorMethodWithReentrancy() {
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/method/Payment")
+        .hasHeader("Dapr-Reentrancy-Id")
+        .respond(EXPECTED_RESULT);
+    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttpClient = new DaprHttpClient(daprHttp);
+    ActorInvocationContext invocationContext = new ActorInvocationContext();
+    invocationContext.addHeader("Dapr-Reentrancy-Id", UUID.randomUUID().toString());
+    Mono<byte[]> mono =
+        DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes(), invocationContext);
     assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 

@@ -7,6 +7,7 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorMethod;
+import io.dapr.actors.runtime.ActorInvocationContext;
 import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.actors.runtime.ActorRuntimeContext;
 import io.dapr.exceptions.DaprException;
@@ -100,19 +101,9 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public <T> Mono<T> invokeMethod(String methodName, Object data, TypeRef<T> type) {
-    final Object reentrancyId = actorRuntime.getActorReentrancyId(actorId.toString(), actorType).block();
+    final ActorInvocationContext invocationContext = getActorInvocationContext();
 
-    if (reentrancyId != null) {
-      final Optional rawOptional = (Optional) reentrancyId;
-      if (rawOptional.isPresent() && rawOptional.get() instanceof String) {
-        return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data),
-            Collections.singletonMap("Dapr-Reentrancy-Id", (String) rawOptional.get()))
-            .filter(s -> s.length > 0)
-            .map(s -> deserialize(s, type));
-      }
-    }
-
-    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data))
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data), invocationContext)
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -130,7 +121,9 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public <T> Mono<T> invokeMethod(String methodName, TypeRef<T> type) {
-    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null)
+    final ActorInvocationContext invocationContext = getActorInvocationContext();
+
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null, invocationContext)
           .filter(s -> s.length > 0)
           .map(s -> deserialize(s, type));
   }
@@ -148,7 +141,9 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public Mono<Void> invokeMethod(String methodName) {
-    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null).then();
+    final ActorInvocationContext invocationContext = getActorInvocationContext();
+
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, null, invocationContext).then();
   }
 
   /**
@@ -156,7 +151,10 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
    */
   @Override
   public Mono<Void> invokeMethod(String methodName, Object data) {
-    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data)).then();
+    final ActorInvocationContext invocationContext = getActorInvocationContext();
+
+    return this.actorClient.invoke(actorType, actorId.toString(), methodName, this.serialize(data), invocationContext)
+        .then();
   }
 
   /**
@@ -234,5 +232,16 @@ class ActorProxyImpl implements ActorProxy, InvocationHandler {
       DaprException.wrap(e);
       return null;
     }
+  }
+
+  private ActorInvocationContext getActorInvocationContext() {
+    final ActorInvocationContext invocationContext = new ActorInvocationContext();
+
+    final Optional<String> reentrancyId = actorRuntime.getActorReentrancyId(actorId.toString(), actorType).block();
+    if (reentrancyId != null) {
+      reentrancyId.ifPresent(s -> invocationContext.addHeader("Dapr-Reentrancy-Id", s));
+    }
+
+    return invocationContext;
   }
 }

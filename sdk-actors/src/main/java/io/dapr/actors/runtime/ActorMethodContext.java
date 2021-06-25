@@ -5,6 +5,9 @@
 
 package io.dapr.actors.runtime;
 
+import javax.annotation.Nullable;
+import java.util.Optional;
+
 /**
  * Contains information about the method that is invoked by actor runtime.
  */
@@ -19,6 +22,12 @@ public class ActorMethodContext {
    * Call type to be used.
    */
   private final ActorCallType callType;
+
+  /**
+   * ReentrancyId, if present.
+   */
+  @Nullable
+  private String reentrancyId;
 
   /**
    * Constructs a new instance of {@link ActorMethodContext}, representing a call for an Actor.
@@ -47,6 +56,22 @@ public class ActorMethodContext {
    */
   public ActorCallType getCallType() {
     return this.callType;
+  }
+
+  /**
+   * Get the ReentrancyId.
+   * @return the ReentrancyId.
+   */
+  public String getReentrancyId() {
+    return this.reentrancyId;
+  }
+
+  /**
+   * Set the ReentrancyId.
+   * @param reentrancyId to be stored.
+   */
+  public void addReentrancyId(final String reentrancyId) {
+    this.reentrancyId = reentrancyId;
   }
 
   /**

@@ -333,6 +333,7 @@ public class DerivedActorTest {
       eq(context.getActorTypeInformation().getName()),
       eq(actorId.toString()),
       any(),
+      any(),
       any()))
       .thenAnswer(invocationOnMock ->
         this.manager.invokeMethod(
