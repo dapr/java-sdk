@@ -89,7 +89,6 @@ public class DaprController {
                                         @RequestHeader(required = false) HttpHeaders headers) {
     final List<String> reentrancyId = headers.get("Dapr-Reentrancy-Id");
     if (reentrancyId != null && !reentrancyId.isEmpty()) {
-      System.out.println("Setting reentrancy Id: " + reentrancyId.get(0));
       return ActorRuntime.getInstance().invoke(type, id, method, body, reentrancyId.get(0));
     }
     return ActorRuntime.getInstance().invoke(type, id, method, body);

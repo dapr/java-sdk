@@ -61,7 +61,8 @@ public abstract class BaseIT {
         true,
         maxWaitMilliseconds,
         protocol,
-        HTTP);
+        HTTP,
+        null);
   }
 
   protected static DaprRun startDaprApp(
@@ -80,7 +81,8 @@ public abstract class BaseIT {
         true,
         maxWaitMilliseconds,
         protocol,
-        appProtocol);
+        appProtocol,
+        null);
   }
 
   protected static DaprRun startDaprApp(
@@ -94,7 +96,8 @@ public abstract class BaseIT {
         true,
         maxWaitMilliseconds,
         GRPC,
-        HTTP);
+        HTTP,
+        null);
   }
 
   protected static DaprRun startDaprApp(
@@ -105,14 +108,17 @@ public abstract class BaseIT {
           Boolean useDaprPorts,
           int maxWaitMilliseconds,
           DaprApiProtocol protocol,
-          DaprApiProtocol appProtocol) throws Exception {
+          DaprApiProtocol appProtocol,
+          String configFilePath) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
             () -> DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
             successMessage,
             maxWaitMilliseconds,
             protocol,
-            appProtocol).withServiceClass(serviceClass);
+            appProtocol)
+        .withServiceClass(serviceClass)
+        .withConfig(configFilePath);
     DaprRun run = builder.build();
     TO_BE_STOPPED.add(run);
     DAPR_RUN_BUILDERS.put(run.getAppName(), builder);

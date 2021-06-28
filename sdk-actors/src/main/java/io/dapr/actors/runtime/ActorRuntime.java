@@ -15,7 +15,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -328,7 +327,21 @@ public class ActorRuntime implements Closeable {
     return actorManager;
   }
 
+  /**
+   * Get the ReentrancyId of a request, if present. For cases where we are calling an actor
+   * from a client application, it is not required to have the actor registered. If this is the
+   * case, we simply return an empty optional and let the Dapr runtime assign the Id during its
+   * invoke.
+   *
+   * @param actorId Id of actor to check for a ReentrancyId.
+   * @param actorType type of actor to check for a ReentrancyId.
+   * @return the ReentrancyId if present, else an empty {@link Optional}.
+   */
   public Mono<Optional<String>> getActorReentrancyId(String actorId, String actorType) {
+    if (!actorManagers.containsKey(actorType)) {
+      return Mono.just(Optional.empty());
+    }
+
     return this.getActorManager(actorType).getReentrancyId(actorId, actorType);
   }
 

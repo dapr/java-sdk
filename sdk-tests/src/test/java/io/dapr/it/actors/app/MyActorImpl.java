@@ -7,9 +7,12 @@ package io.dapr.it.actors.app;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
+import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
 import io.dapr.actors.runtime.Remindable;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientHttp;
 import io.dapr.it.actors.MethodEntryTracker;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
@@ -18,10 +21,12 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 @ActorType(name = "MyActorTest")
 public class MyActorImpl extends AbstractActor implements MyActor, Remindable<String> {
@@ -188,6 +193,12 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
     return stringList;
   }
 
+  @Override
+  public void clearCallLog() {
+    System.out.println("Clearing call log.");
+    this.callLog.clear();
+  }
+
   /*
     Return an identifier so we can tell the difference between apps hosting the actor if it moves.
     Here we use the dapr http port.  Process id would be better but the available approaches
@@ -207,6 +218,28 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
   @Override
   public boolean dotNetMethod() {
     return true;
+  }
+
+  @Override
+  public void reentrantCall(String actorIdToken) {
+    this.formatAndLog(true, "reentrantCall");
+
+    try (io.dapr.actors.client.ActorClient client = new io.dapr.actors.client.ActorClient()) {
+      final ActorProxyBuilder<MyActor> builder = new ActorProxyBuilder<>("MyActorTest", MyActor.class, client);
+      final String[] actorIds = actorIdToken.split(",");
+      if (actorIds.length == 0 || actorIds[0].isEmpty()) {
+        final MyActor actor = builder.build(getId());
+        actor.say("Last call in chain");
+      } else {
+        final ActorId id = new ActorId(actorIds[0]);
+        final MyActor actor = builder.build(id);
+
+        final String nextToken = Arrays.stream(actorIds).skip(1).collect(Collectors.joining(","));
+        actor.reentrantCall(nextToken);
+      }
+    } finally {
+      this.formatAndLog(false, "reentrantCall");
+    }
   }
 
   private void formatAndLog(boolean isEnter, String methodName) {
