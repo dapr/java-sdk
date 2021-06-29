@@ -4,26 +4,32 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "dependabot"
   - package-ecosystem: "maven"
     directory: "/sdk"
     schedule:
       interval: "weekly"
+    target-branch: "dependabot"
   - package-ecosystem: "maven"
     directory: "/sdk-actors"
     schedule:
       interval: "weekly"
+    target-branch: "dependabot"
   - package-ecosystem: "maven"
     directory: "/sdk-autogen"
     schedule:
       interval: "weekly"
+    target-branch: "dependabot"
   - package-ecosystem: "maven"
     directory: "/sdk-springboot"
     schedule:
       interval: "weekly"
+    target-branch: "dependabot"
   - package-ecosystem: "maven"
     directory: "/sdk-tests"
     schedule:
       interval: "weekly"
+    target-branch: "dependabot"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
