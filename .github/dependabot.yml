@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "maven"
+    directory: "/sdk"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "maven"
+    directory: "/sdk-actors"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "maven"
+    directory: "/sdk-autogen"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "maven"
+    directory: "/sdk-springboot"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "maven"
+    directory: "/sdk-tests"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
