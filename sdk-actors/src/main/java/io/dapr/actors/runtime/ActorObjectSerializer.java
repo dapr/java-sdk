@@ -136,6 +136,9 @@ public class ActorObjectSerializer extends ObjectSerializer {
       if (config.getDrainBalancedActors() != null) {
         generator.writeBooleanField("drainBalancedActors", config.getDrainBalancedActors());
       }
+      if (config.getRemindersStoragePartitions() != null) {
+        generator.writeNumberField("remindersStoragePartitions", config.getRemindersStoragePartitions());
+      }
       generator.writeEndObject();
       generator.close();
       writer.flush();
