@@ -53,7 +53,6 @@ public class ActorObjectSerializer extends ObjectSerializer {
     return super.serialize(state);
   }
 
-
   /**
    * Faster serialization for params of Actor's timer.
    *
@@ -216,7 +215,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
   private static Duration extractDurationOrNull(JsonNode node, String name) {
     JsonNode valueNode = node.get(name);
     if (valueNode == null) {
-      return  null;
+      return null;
     }
 
     return DurationUtils.convertDurationFromDaprFormat(valueNode.asText());
