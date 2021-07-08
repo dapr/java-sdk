@@ -31,7 +31,8 @@ public class ActorRuntimeConfig {
   /**
    * Instantiates a new config for the Actor Runtime.
    */
-  ActorRuntimeConfig() {}
+  ActorRuntimeConfig() {
+  }
 
   /**
    * Adds a registered actor to the list of registered actors.
