@@ -150,8 +150,8 @@ public class ActorRuntimeConfig {
   /**
    * Sets the number of storage partitions for Actor reminders.
    *
-   * @param actorScanInterval The number of storage partitions for Actor
-   *                          reminders.
+   * @param remindersStoragePartitions The number of storage partitions for Actor
+   *                                   reminders.
    * @return This instance.
    */
   public ActorRuntimeConfig setRemindersStoragePartitions(Integer remindersStoragePartitions) {

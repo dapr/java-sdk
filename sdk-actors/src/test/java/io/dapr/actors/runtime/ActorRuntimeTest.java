@@ -157,7 +157,7 @@ public class ActorRuntimeTest {
   @Test
   public void setRemindersStoragePartitions() throws Exception {
     this.runtime.getConfig().setRemindersStoragePartitions(12);
-    Assert.assertEquals("{\"entities\":[],\"remindersStoragePartitions\": 12\"}",
+    Assert.assertEquals("{\"entities\":[],\"remindersStoragePartitions\":12}",
         new String(this.runtime.serializeConfig()));
   }
 
