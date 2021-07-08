@@ -94,11 +94,12 @@ public class ActorRuntimeTest {
 
   @BeforeClass
   public static void beforeAll() throws Exception {
-    constructor = (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
-        .filter(c -> c.getParameters().length == 2).map(c -> {
-          c.setAccessible(true);
-          return c;
-        }).findFirst().get();
+    constructor =
+        (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
+            .filter(c -> c.getParameters().length == 2).map(c -> {
+              c.setAccessible(true);
+              return c;
+            }).findFirst().get();
   }
 
   @Before
@@ -114,17 +115,20 @@ public class ActorRuntimeTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void registerActorNullFactory() {
-    this.runtime.registerActor(MyActorImpl.class, null, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    this.runtime.registerActor(MyActorImpl.class, null, new DefaultObjectSerializer(),
+        new DefaultObjectSerializer());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void registerActorNullSerializer() {
-    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(), null, new DefaultObjectSerializer());
+    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(), null,
+        new DefaultObjectSerializer());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void registerActorNullStateSerializer() {
-    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(), new DefaultObjectSerializer(), null);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(),
+        new DefaultObjectSerializer(), null);
   }
 
   @Test
@@ -144,7 +148,8 @@ public class ActorRuntimeTest {
   @Test
   public void setDrainBalancedActors() throws Exception {
     this.runtime.getConfig().setDrainBalancedActors(true);
-    Assert.assertEquals("{\"entities\":[],\"drainBalancedActors\":true}", new String(this.runtime.serializeConfig()));
+    Assert.assertEquals("{\"entities\":[],\"drainBalancedActors\":true}",
+        new String(this.runtime.serializeConfig()));
   }
 
   @Test

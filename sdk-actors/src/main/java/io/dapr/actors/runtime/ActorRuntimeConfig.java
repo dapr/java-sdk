@@ -31,8 +31,7 @@ public class ActorRuntimeConfig {
   /**
    * Instantiates a new config for the Actor Runtime.
    */
-  ActorRuntimeConfig() {
-  }
+  ActorRuntimeConfig() {}
 
   /**
    * Adds a registered actor to the list of registered actors.
@@ -150,8 +149,7 @@ public class ActorRuntimeConfig {
   /**
    * Sets the number of storage partitions for Actor reminders.
    *
-   * @param remindersStoragePartitions The number of storage partitions for Actor
-   *                                   reminders.
+   * @param remindersStoragePartitions The number of storage partitions for Actor reminders.
    * @return This instance.
    */
   public ActorRuntimeConfig setRemindersStoragePartitions(Integer remindersStoragePartitions) {
