@@ -6,6 +6,7 @@
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
+import io.dapr.actors.runtime.ActorInvocationContext;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
@@ -23,6 +24,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
@@ -50,6 +53,18 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<byte[]> invoke(String actorType, String actorId, String methodName, byte[] jsonPayload) {
+    return invoke(actorType, actorId, methodName, jsonPayload, new ActorInvocationContext());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<byte[]> invoke(String actorType,
+                             String actorId,
+                             String methodName,
+                             byte[] jsonPayload,
+                             ActorInvocationContext invocationContext) {
     DaprProtos.InvokeActorRequest req =
         DaprProtos.InvokeActorRequest.newBuilder()
             .setActorType(actorType)

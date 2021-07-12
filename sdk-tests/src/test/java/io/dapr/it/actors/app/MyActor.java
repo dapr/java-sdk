@@ -27,10 +27,14 @@ public interface MyActor {
 
   ArrayList<String> getCallLog();
 
+  void clearCallLog();
+
   String getIdentifier();
 
   void throwException();
 
   @ActorMethod(name = "DotNetMethodAsync")
   boolean dotNetMethod();
+
+  void reentrantCall(String actorIdToken);
 }

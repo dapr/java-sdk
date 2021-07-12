@@ -7,8 +7,10 @@ package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.services.springboot.DemoActor;
+import io.dapr.it.actors.services.springboot.DemoActorImpl;
 import io.dapr.it.actors.services.springboot.DemoActorService;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -35,6 +37,8 @@ public class ActivationDeactivationIT extends BaseIT {
         DemoActorService.class,
         true,
         60000);
+
+    ActorRuntime.getInstance().registerActor(DemoActorImpl.class);
 
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     logger.debug("Creating proxy builder");

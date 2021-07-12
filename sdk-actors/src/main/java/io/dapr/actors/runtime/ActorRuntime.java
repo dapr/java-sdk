@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -250,6 +251,32 @@ public class ActorRuntime implements Closeable {
   }
 
   /**
+   * Invokes the specified method for the actor, this is mainly used for cross
+   * language invocation.
+   *
+   * @param actorTypeName   Actor type name to invoke the method for.
+   * @param actorId         Actor id for the actor for which method will be invoked.
+   * @param actorMethodName Method name on actor type which will be invoked.
+   * @param payload         RAW payload for the actor method.
+   * @param reentrancyId    Id used to match reentrant requests.
+   * @return Response for the actor method.
+   */
+  public Mono<byte[]> invoke(String actorTypeName,
+                             String actorId,
+                             String actorMethodName,
+                             byte[] payload,
+                             String reentrancyId) {
+    ActorId id = new ActorId(actorId);
+
+    return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
+        .flatMap(m -> m.activateActor(id).thenReturn(m))
+        .flatMap(m -> ((ActorManager)m).trackReentrantRequest(actorId, actorTypeName, reentrancyId).thenReturn(m))
+        .flatMap(m -> ((ActorManager)m).invokeMethod(id, actorMethodName, payload))
+        .doOnTerminate(() -> this.getActorManager(actorTypeName)
+            .releaseReentrantRequest(actorId, actorTypeName, reentrancyId));
+  }
+
+  /**
    * Fires a reminder for the Actor.
    *
    * @param actorTypeName Actor type name to invoke the method for.
@@ -298,6 +325,24 @@ public class ActorRuntime implements Closeable {
     }
 
     return actorManager;
+  }
+
+  /**
+   * Get the ReentrancyId of a request, if present. For cases where we are calling an actor
+   * from a client application, it is not required to have the actor registered. If this is the
+   * case, we simply return an empty optional and let the Dapr runtime assign the Id during its
+   * invoke.
+   *
+   * @param actorId Id of actor to check for a ReentrancyId.
+   * @param actorType type of actor to check for a ReentrancyId.
+   * @return the ReentrancyId if present, else an empty {@link Optional}.
+   */
+  public Mono<Optional<String>> getActorReentrancyId(String actorId, String actorType) {
+    if (!actorManagers.containsKey(actorType)) {
+      return Mono.just(Optional.empty());
+    }
+
+    return this.getActorManager(actorType).getReentrancyId(actorId, actorType);
   }
 
   /**

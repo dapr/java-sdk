@@ -8,10 +8,12 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.actors.runtime.DaprClientHttpUtils;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.it.BaseIT;
+import io.dapr.it.actors.app.MyActorImpl;
 import io.dapr.it.actors.app.MyActorService;
 import org.junit.After;
 import org.junit.Assert;
@@ -81,6 +83,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
+    ActorRuntime.getInstance().registerActor(MyActorImpl.class);
     ActorProxyBuilder<ActorProxy> proxyBuilder =
         new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     logger.debug("Creating actorId");

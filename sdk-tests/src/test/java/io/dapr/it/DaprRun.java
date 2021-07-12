@@ -10,6 +10,8 @@ import io.dapr.config.Properties;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -46,11 +48,13 @@ public class DaprRun implements Stoppable {
                   Class serviceClass,
                   int maxWaitMilliseconds,
                   DaprApiProtocol protocol,
-                  DaprApiProtocol appProtocol) {
+                  DaprApiProtocol appProtocol,
+                  String configFilePath) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
     this.appName = serviceClass == null ? testName : String.format("%s_%s", testName, serviceClass.getSimpleName());
     this.startCommand =
-        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, protocol, appProtocol));
+        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports,
+            protocol, appProtocol, configFilePath));
     this.listCommand = new Command(
       this.appName,
       "dapr list");
@@ -185,12 +189,17 @@ public class DaprRun implements Stoppable {
   }
 
   private static String buildDaprCommand(
-      String appName, Class serviceClass, DaprPorts ports, DaprApiProtocol protocol, DaprApiProtocol appProtocol) {
+      String appName, Class serviceClass, DaprPorts ports,
+      DaprApiProtocol protocol, DaprApiProtocol appProtocol, String configFilePath) {
+    Path currentRelativePath = Paths.get("");
+    String s = currentRelativePath.toAbsolutePath().toString();
+    System.out.println("Current absolute path is: " + s);
     StringBuilder stringBuilder =
         new StringBuilder(String.format(DAPR_RUN, appName, appProtocol.toString().toLowerCase()))
             .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
             .append(ports.getHttpPort() != null ? " --dapr-http-port " + ports.getHttpPort() : "")
             .append(ports.getGrpcPort() != null ? " --dapr-grpc-port " + ports.getGrpcPort() : "")
+            .append(configFilePath != null ? " --config " + configFilePath : "")
             .append(serviceClass == null ? "" :
                 String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
                     ports.getAppPort() != null ? ports.getAppPort().toString() : "",
@@ -228,6 +237,8 @@ public class DaprRun implements Stoppable {
 
     private DaprApiProtocol appProtocol;
 
+    private String configFilePath;
+
     Builder(
         String testName,
         Supplier<DaprPorts> portsSupplier,
@@ -248,6 +259,11 @@ public class DaprRun implements Stoppable {
       return this;
     }
 
+    public Builder withConfig(String configFilePath) {
+      this.configFilePath = configFilePath;
+      return this;
+    }
+
     DaprRun build() {
       return new DaprRun(
               this.testName,
@@ -256,7 +272,8 @@ public class DaprRun implements Stoppable {
               this.serviceClass,
               this.maxWaitMilliseconds,
               this.protocol,
-              this.appProtocol);
+              this.appProtocol,
+              this.configFilePath);
     }
 
     /**
@@ -279,7 +296,8 @@ public class DaprRun implements Stoppable {
               null,
               this.maxWaitMilliseconds,
               this.protocol,
-              this.appProtocol);
+              this.appProtocol,
+              this.configFilePath);
 
       return new ImmutablePair<>(appRun, daprRun);
     }

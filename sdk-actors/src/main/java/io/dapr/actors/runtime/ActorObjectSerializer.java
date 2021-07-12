@@ -136,6 +136,17 @@ public class ActorObjectSerializer extends ObjectSerializer {
       if (config.getDrainBalancedActors() != null) {
         generator.writeBooleanField("drainBalancedActors", config.getDrainBalancedActors());
       }
+
+      if (config.getActorReentrancyConfig() != null) {
+        generator.writeFieldName("reentrancy");
+        generator.writeStartObject();
+        generator.writeBooleanField("enabled", config.getActorReentrancyConfig().getEnabled());
+
+        if (config.getActorReentrancyConfig().getMaxStackDepth() != null) {
+          generator.writeNumberField("maxStackDepth", config.getActorReentrancyConfig().getMaxStackDepth());
+        }
+        generator.writeEndObject();
+      }
       generator.writeEndObject();
       generator.close();
       writer.flush();

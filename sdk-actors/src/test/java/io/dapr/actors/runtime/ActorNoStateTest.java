@@ -18,9 +18,11 @@ import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Proxy;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -236,6 +238,7 @@ public class ActorNoStateTest {
       eq(context.getActorTypeInformation().getName()),
       eq(actorId.toString()),
       any(),
+      any(),
       any()))
       .thenAnswer(invocationOnMock ->
         this.manager.invokeMethod(
@@ -245,11 +248,15 @@ public class ActorNoStateTest {
 
     this.manager.activateActor(actorId).block();
 
+    ActorRuntime actorRuntime = mock(ActorRuntime.class);
+    when(actorRuntime.getActorReentrancyId(anyString(), anyString())).thenReturn(Mono.just(Optional.empty()));
+
     return new ActorProxyImplForTests(
       context.getActorTypeInformation().getName(),
       actorId,
       new DefaultObjectSerializer(),
-      daprClient);
+      daprClient,
+      actorRuntime);
   }
 
   private <T> T createActorProxy(Class<T> clazz) {
@@ -262,6 +269,7 @@ public class ActorNoStateTest {
             eq(context.getActorTypeInformation().getName()),
             eq(actorId.toString()),
             any(),
+            any(),
             any()))
             .thenAnswer(invocationOnMock ->
                     this.manager.invokeMethod(
@@ -271,11 +279,15 @@ public class ActorNoStateTest {
 
     this.manager.activateActor(actorId).block();
 
+    ActorRuntime actorRuntime = mock(ActorRuntime.class);
+    when(actorRuntime.getActorReentrancyId(anyString(), anyString())).thenReturn(Mono.just(Optional.empty()));
+
     ActorProxyImplForTests proxy = new ActorProxyImplForTests(
             context.getActorTypeInformation().getName(),
             actorId,
             new DefaultObjectSerializer(),
-            daprClient);
+            daprClient,
+            actorRuntime);
     return (T) Proxy.newProxyInstance(
             ActorProxyImplForTests.class.getClassLoader(),
             new Class[]{clazz},
