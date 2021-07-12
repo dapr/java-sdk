@@ -27,6 +27,7 @@ public class ActorRuntimeTest {
 
   public interface MyActor {
     String say();
+
     int count();
   }
 
@@ -93,14 +94,12 @@ public class ActorRuntimeTest {
 
   @BeforeClass
   public static void beforeAll() throws Exception {
-    constructor = (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
-      .filter(c -> c.getParameters().length == 2)
-      .map(c -> {
-        c.setAccessible(true);
-        return c;
-      })
-      .findFirst()
-      .get();
+    constructor =
+        (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
+            .filter(c -> c.getParameters().length == 2).map(c -> {
+              c.setAccessible(true);
+              return c;
+            }).findFirst().get();
   }
 
   @Before
@@ -116,17 +115,20 @@ public class ActorRuntimeTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void registerActorNullFactory() {
-    this.runtime.registerActor(MyActorImpl.class, null, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    this.runtime.registerActor(MyActorImpl.class, null, new DefaultObjectSerializer(),
+        new DefaultObjectSerializer());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void registerActorNullSerializer() {
-    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(), null, new DefaultObjectSerializer());
+    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(), null,
+        new DefaultObjectSerializer());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void registerActorNullStateSerializer() {
-    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(), new DefaultObjectSerializer(), null);
+    this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(),
+        new DefaultObjectSerializer(), null);
   }
 
   @Test
@@ -154,6 +156,13 @@ public class ActorRuntimeTest {
   public void setDrainOngoingCallTimeout() throws Exception {
     this.runtime.getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(123));
     Assert.assertEquals("{\"entities\":[],\"drainOngoingCallTimeout\":\"0h2m3s0ms\"}",
+        new String(this.runtime.serializeConfig()));
+  }
+
+  @Test
+  public void setRemindersStoragePartitions() throws Exception {
+    this.runtime.getConfig().setRemindersStoragePartitions(12);
+    Assert.assertEquals("{\"entities\":[],\"remindersStoragePartitions\":12}",
         new String(this.runtime.serializeConfig()));
   }
 
@@ -194,10 +203,8 @@ public class ActorRuntimeTest {
     deactivateCall.block();
 
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
-      .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
-      .doOnSuccess(s -> Assert.fail())
-      .onErrorReturn("".getBytes())
-      .block();
+        .doOnError(e -> Assert.assertTrue(e.getMessage().contains("Could not find actor")))
+        .doOnSuccess(s -> Assert.fail()).onErrorReturn("".getBytes()).block();
   }
 
   @Test

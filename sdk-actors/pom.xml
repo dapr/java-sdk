@@ -74,6 +74,7 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-testing</artifactId>
+      <version>1.39.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
