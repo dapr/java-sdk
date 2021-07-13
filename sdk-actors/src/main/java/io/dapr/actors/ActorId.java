@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * The ActorId represents the identity of an actor within an actor service.
  */
-public class ActorId extends Object implements Comparable<ActorId> {
+public class ActorId implements Comparable<ActorId> {
 
   /**
    * The ID of the actor as a String.
@@ -20,7 +20,7 @@ public class ActorId extends Object implements Comparable<ActorId> {
   /**
    * An error message for an invalid constructor arg.
    */
-  private final String errorMsg = "actor needs to be initialized with an id!";
+  private static final String errorMsg = "actor needs to be initialized with an id!";
 
   /**
    * Initializes a new instance of the ActorId class with the id passed in.
