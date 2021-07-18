@@ -31,19 +31,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.1.0</version>
+      <version>1.2.0</version>
     </dependency>
     // Dapr's SDK for Actors (optional).
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.1.0</version>
+      <version>1.2.0</version>
     </dependency>
     // Dapr's SDK integration with SpringBoot (optional).
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.1.0</version>
+      <version>1.2.0</version>
     </dependency>
     ...
   </dependencies>
@@ -56,11 +56,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.1.0')
+    compile('io.dapr:dapr-sdk:1.2.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.1.0')
+    compile('io.dapr:dapr-sdk-actors:1.2.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.1.0')
+    compile('io.dapr:dapr-sdk-springboot:1.2.0')
 }
 ```
 
@@ -127,11 +127,13 @@ import io.dapr.client.domain.Metadata;
 import static java.util.Collections.singletonMap;
 
 try (DaprClient client = (new DaprClientBuilder()).build()) {
-  client.publishEvent(PUBSUB_NAME,TOPIC_NAME,message,singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+  client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message, singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
 }
 ```
 
 ##### Subscribe to messages
+
+```java
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
@@ -140,7 +142,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-```java
 @RestController
 public class SubscriberController {
 
@@ -172,7 +173,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 
 try (DaprClient client = (new DaprClientBuilder()).build()) {
-  // sending a class with message
+  // sending a class with message; BINDING_OPERATION="create"
   client.invokeBinding(BINDING_NAME, BINDING_OPERATION, myClass).block();
 
   // sending a plain string
