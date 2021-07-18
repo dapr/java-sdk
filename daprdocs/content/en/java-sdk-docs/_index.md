@@ -11,6 +11,7 @@ description: Java SDK packages for developing Dapr applications
 - [Dapr CLI]({{< ref install-dapr-cli.md >}}) installed
 - Initialized [Dapr environment]({{< ref install-dapr-selfhost.md >}})
 - JDK 11 or above - the published jars are compatible with Java 8:
+    - [AdoptOpenJDK 11 - LTS](https://adoptopenjdk.net/)
     - [Oracle's JDK 15](https://www.oracle.com/java/technologies/javase-downloads.html)
     - [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
     - [OpenJDK](https://openjdk.java.net/)
@@ -70,7 +71,23 @@ The Java SDK allows you to interface with all of the [Dapr building blocks]({{< 
 ### Invoke a service
 
 ```java
-// Java Example here
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+
+try (DaprClient client = (new DaprClientBuilder()).build()) {
+  // invoke a 'GET' method (HTTP) skipping serialization: \say with a Mono<byte[]> return type
+  // for gRPC set HttpExtension.NONE parameters below
+  response = client.invokeMethod(SERVICE_TO_INVOKE, METHOD_TO_INVOKE, "{\"name\":\"World!\"}", HttpExtension.GET, byte[].class).block();
+
+  // invoke a 'POST' method (HTTP) skipping serialization: to \say with a Mono<byte[]> return type     
+  response = client.invokeMethod(SERVICE_TO_INVOKE, METHOD_TO_INVOKE, "{\"id\":\"100\", \"FirstName\":\"Value\", \"LastName\":\"Value\"}", HttpExtension.POST, byte[].class).block();
+
+  System.out.println(new String(response));
+
+  // invoke a 'POST' method (HTTP) with serialization: \employees with a Mono<Employee> return type      
+  Employee newEmployee = new Employee("Nigel", "Guitarist");
+  Employee employeeResponse = client.invokeMethod(SERVICE_TO_INVOKE, "employees", newEmployee, HttpExtension.POST, Employee.class).block();
+}
 ```
 
 - For a full guide on service invocation visit [How-To: Invoke a service]({{< ref howto-invoke-discover-services.md >}}).
@@ -79,7 +96,21 @@ The Java SDK allows you to interface with all of the [Dapr building blocks]({{< 
 ### Save & get application state
 
 ```java
-// Java Example here
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.domain.State;
+import reactor.core.publisher.Mono;
+
+try (DaprClient client = (new DaprClientBuilder()).build()) {
+  // Save state
+  client.saveState(STATE_STORE_NAME, FIRST_KEY_NAME, myClass).block();
+
+  // Get state
+  Mono<State<MyClass>> retrievedMessageMono = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class);
+
+  // Delete state
+  client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME).block();
+}
 ```
 
 - For a full list of state operations visit [How-To: Get & save state]({{< ref howto-get-save-state.md >}}).
@@ -90,13 +121,45 @@ The Java SDK allows you to interface with all of the [Dapr building blocks]({{< 
 ##### Publish messages
 
 ```java
-// Java Example here
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.domain.Metadata;
+import static java.util.Collections.singletonMap;
+
+try (DaprClient client = (new DaprClientBuilder()).build()) {
+  client.publishEvent(PUBSUB_NAME,TOPIC_NAME,message,singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+}
 ```
 
 ##### Subscribe to messages
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.Topic;
+import io.dapr.client.domain.CloudEvent;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 ```java
-// Java Example here
+@RestController
+public class SubscriberController {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
+  @PostMapping(path = "/testingtopic")
+  public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent cloudEvent) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.println("Subscriber got: " + cloudEvent.getData());
+        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+}
 ```
 
 - For a full list of state operations visit [How-To: Publish & subscribe]({{< ref howto-publish-subscribe.md >}}).
@@ -105,7 +168,16 @@ The Java SDK allows you to interface with all of the [Dapr building blocks]({{< 
 ### Interact with output bindings
 
 ```java
-// Java Example here
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+
+try (DaprClient client = (new DaprClientBuilder()).build()) {
+  // sending a class with message
+  client.invokeBinding(BINDING_NAME, BINDING_OPERATION, myClass).block();
+
+  // sending a plain string
+  client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message).block();
+}
 ```
 
 - For a full guide on output bindings visit [How-To: Use bindings]({{< ref howto-bindings.md >}}).
@@ -114,7 +186,15 @@ The Java SDK allows you to interface with all of the [Dapr building blocks]({{< 
 ### Retrieve secrets
 
 ```java
-// Java Example here
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import java.util.Map;
+
+try (DaprClient client = (new DaprClientBuilder()).build()) {
+  Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
+  System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+}
 ```
 
 - For a full guide on secrets visit [How-To: Retrieve secrets]({{< ref howto-secrets.md >}}).
@@ -123,8 +203,27 @@ The Java SDK allows you to interface with all of the [Dapr building blocks]({{< 
 ### Actors
 
 ```java
-// Java Example here
+import io.dapr.actors.ActorMethod;
+import io.dapr.actors.ActorType;
+import reactor.core.publisher.Mono;
+
+@ActorType(name = "DemoActor")
+public interface DemoActor {
+
+  void registerReminder();
+
+  @ActorMethod(name = "echo_message")
+  String say(String something);
+
+  void clock(String message);
+
+  @ActorMethod(returns = Integer.class)
+  Mono<Integer> incrementAndGet(int delta);
+}
 ```
+
+- For a full guide on actors visit [How-To: Use virtual actors in Dapr]({{< ref howto-actors.md >}}).
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/actors) for code samples and instructions to try actors
 
 ## Related links
 - [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)
