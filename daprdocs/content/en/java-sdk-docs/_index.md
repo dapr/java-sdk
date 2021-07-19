@@ -31,19 +31,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.2.0</version>
+      <version>1.1.0</version>
     </dependency>
     // Dapr's SDK for Actors (optional).
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.2.0</version>
+      <version>1.1.0</version>
     </dependency>
     // Dapr's SDK integration with SpringBoot (optional).
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.2.0</version>
+      <version>1.1.0</version>
     </dependency>
     ...
   </dependencies>
@@ -56,11 +56,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.2.0')
+    compile('io.dapr:dapr-sdk:1.1.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.2.0')
+    compile('io.dapr:dapr-sdk-actors:1.1.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.2.0')
+    compile('io.dapr:dapr-sdk-springboot:1.1.0')
 }
 ```
 
@@ -106,7 +106,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
   client.saveState(STATE_STORE_NAME, FIRST_KEY_NAME, myClass).block();
 
   // Get state
-  Mono<State<MyClass>> retrievedMessageMono = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class);
+  State<MyClass> retrievedMessage = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class).block();
 
   // Delete state
   client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME).block();
@@ -202,6 +202,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/secrets) for code samples and instructions to try out retrieving secrets
 
 ### Actors
+An actor is an isolated, independent unit of compute and state with single-threaded execution. Dapr provides an actor implementation based on the [Virtual Actor pattern](https://www.microsoft.com/en-us/research/project/orleans-virtual-actors/), which provides a single-threaded programming model and where actors are garbage collected when not in use. With Dapr's implementaiton, you write your Dapr actors according to the Actor model, and Dapr leverages the scalability and reliability that the underlying platform provides. 
 
 ```java
 import io.dapr.actors.ActorMethod;
