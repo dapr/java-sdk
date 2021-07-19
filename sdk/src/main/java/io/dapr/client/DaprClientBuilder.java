@@ -16,7 +16,7 @@ import java.io.Closeable;
 
 /**
  * A builder for the DaprClient,
- * Currently only and HTTP Client will be supported.
+ * Currently only gRPC and HTTP Client will be supported.
  */
 public class DaprClientBuilder {
 
