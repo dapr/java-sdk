@@ -17,7 +17,7 @@ The `examples` directory contains code samples for users to run to try out speci
 
 ## Docs
 
-The `daprdocs` directory contains the markdown files that are rendered into the [Dapr Docs](https://docs.dapr.io) website. When the documentation website is built this repo is cloned and configured so that its contents are rendered with the docs content. When writing docs keep in mind:
+The `daprdocs` directory contains the markdown files that are rendered into the [Dapr Docs](https://docs.dapr.io) website. When the documentation website is built, this repo is cloned and configured so that its contents are rendered with the docs content. When writing docs, keep in mind:
 
    - All rules in the [docs guide]({{< ref contributing-docs.md >}}) should be followed in addition to these.
    - All files and directories should be prefixed with `java-` to ensure all file/directory names are globally unique across all Dapr documentation.
