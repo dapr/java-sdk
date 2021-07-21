@@ -33,7 +33,6 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,6 +90,7 @@ abstract class AbstractDaprClient implements DaprClient {
   /**
    * {@inheritDoc}
    */
+  @Override
   public <T> Mono<T> invokeMethod(
       String appId,
       String methodName,

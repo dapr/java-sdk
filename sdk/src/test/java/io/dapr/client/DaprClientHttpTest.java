@@ -743,6 +743,19 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void getStateWithStateOptions() {
+    StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+    mockInterceptor.addRule()
+      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?consistency=strong&concurrency=first-write")
+      .respond("\"" + EXPECTED_RESULT + "\"");
+
+    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, "key");
+    builder.withStateOptions(stateOptions);
+    Mono<State<String>> monoOptions = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
+    assertEquals(monoOptions.block().getKey(), "key");
+  }
+
+  @Test
   public void getStatesNullEtag() {
     State<String> stateNullEtag = new State<>("key", "value", null, null);
     mockInterceptor.addRule()

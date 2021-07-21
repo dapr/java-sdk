@@ -71,7 +71,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   private DaprGrpc.DaprStub asyncStub;
 
-
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *

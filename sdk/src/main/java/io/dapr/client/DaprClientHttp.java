@@ -161,6 +161,7 @@ public class DaprClientHttp extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Override
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
       final String appId = invokeMethodRequest.getAppId();
