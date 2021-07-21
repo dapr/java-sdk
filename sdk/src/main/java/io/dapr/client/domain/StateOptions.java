@@ -52,15 +52,12 @@ public class StateOptions {
    */
   @JsonIgnore
   public Map<String, String> getStateOptionsAsMap() {
-    Map<String, String> mapOptions = null;
-    if (this != null) {
-      mapOptions = new HashMap<>();
-      if (this.getConsistency() != null) {
-        mapOptions.put("consistency", this.getConsistency().getValue());
-      }
-      if (this.getConcurrency() != null) {
-        mapOptions.put("concurrency", this.getConcurrency().getValue());
-      }
+    Map<String, String> mapOptions = new HashMap<>();
+    if (this.getConsistency() != null) {
+      mapOptions.put("consistency", this.getConsistency().getValue());
+    }
+    if (this.getConcurrency() != null) {
+      mapOptions.put("concurrency", this.getConcurrency().getValue());
     }
     return Collections.unmodifiableMap(Optional.ofNullable(mapOptions).orElse(Collections.EMPTY_MAP));
   }
@@ -128,6 +125,7 @@ public class StateOptions {
   }
 
   public static class StateOptionDurationDeserializer extends StdDeserializer<Duration> {
+
     public StateOptionDurationDeserializer(Class<?> vc) {
       super(vc);
     }

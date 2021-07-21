@@ -118,7 +118,6 @@ public final class CloudEvent {
     this.datacontenttype = "application/octet-stream";
     this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);;
   }
-
     
   /**
    * Deserialize a message topic from Dapr.

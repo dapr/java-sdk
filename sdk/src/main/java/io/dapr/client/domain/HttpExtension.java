@@ -18,7 +18,6 @@ import java.util.Optional;
  * This class is only needed if the app you are calling is listening on HTTP.
  * It contains properties that represent data that may be populated for an HTTP receiver.
  */
-
 public final class HttpExtension {
   /**
    * Convenience HttpExtension object for {@link io.dapr.client.DaprHttp.HttpMethods#NONE} with empty queryString.

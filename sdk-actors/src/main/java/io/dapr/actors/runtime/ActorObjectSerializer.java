@@ -53,7 +53,6 @@ public class ActorObjectSerializer extends ObjectSerializer {
     return super.serialize(state);
   }
 
-
   /**
    * Faster serialization for params of Actor's timer.
    *
@@ -136,6 +135,9 @@ public class ActorObjectSerializer extends ObjectSerializer {
       if (config.getDrainBalancedActors() != null) {
         generator.writeBooleanField("drainBalancedActors", config.getDrainBalancedActors());
       }
+      if (config.getRemindersStoragePartitions() != null) {
+        generator.writeNumberField("remindersStoragePartitions", config.getRemindersStoragePartitions());
+      }
       generator.writeEndObject();
       generator.close();
       writer.flush();
@@ -213,7 +215,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
   private static Duration extractDurationOrNull(JsonNode node, String name) {
     JsonNode valueNode = node.get(name);
     if (valueNode == null) {
-      return  null;
+      return null;
     }
 
     return DurationUtils.convertDurationFromDaprFormat(valueNode.asText());

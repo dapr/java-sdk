@@ -29,6 +29,7 @@
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
+    <grpc.version>1.39.0</grpc.version>
   </properties>
 
   <dependencies>
@@ -74,6 +75,7 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-testing</artifactId>
+      <version>${grpc.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
