@@ -30,20 +30,20 @@ For a Maven project, add the following to your `pom.xml` file:
      // Dapr's core SDK with all features, except Actors. 
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk</artifactId>
-      <version>1.1.0</version>
+      <artifactId>dapr-sdk</artifacetId>
+      <version>{{% dapr-version sdk="java" %}}</version>
     </dependency>
     // Dapr's SDK for Actors (optional).
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.1.0</version>
+      <version>{{% dapr-version sdk="java" %}}</version>
     </dependency>
     // Dapr's SDK integration with SpringBoot (optional).
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.1.0</version>
+      <version>{{% dapr-version sdk="java" %}}</version>
     </dependency>
     ...
   </dependencies>
@@ -52,15 +52,16 @@ For a Maven project, add the following to your `pom.xml` file:
 ```
 
 For a Gradle project, add the following to your `build.gradle` file:
+
 ```java
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.1.0')
+    compile('io.dapr:dapr-sdk:{{% dapr-version sdk="java" %}}')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.1.0')
+    compile('io.dapr:dapr-sdk-actors:{{% dapr-version sdk="java" %}}')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.1.0')
+    compile('io.dapr:dapr-sdk-springboot:{{% dapr-version sdk="java" %}}')
 }
 ```
 
