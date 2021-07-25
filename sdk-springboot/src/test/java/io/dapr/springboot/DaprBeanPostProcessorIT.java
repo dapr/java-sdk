@@ -34,6 +34,21 @@ public class DaprBeanPostProcessorIT implements WithAssertions {
             assertThat(subscribedTopic.getMetadata()).isEmpty();
         });
     }
+    @Test
+    void shouldBindTopicWithPostMappingByValue() {
+        // Arrange
+
+        // Act
+        DaprTopicSubscription[] subscribedTopics = daprRuntime.listSubscribedTopics();
+
+        // Assert
+        assertThat(subscribedTopics).anySatisfy(subscribedTopic -> {
+            assertThat(subscribedTopic.getRoute()).isEqualTo("/path-3");
+            assertThat(subscribedTopic.getPubsubName()).isEqualTo("pubsubName");
+            assertThat(subscribedTopic.getTopic()).isEqualTo("topic-3");
+            assertThat(subscribedTopic.getMetadata()).isEmpty();
+        });
+    }
 
     @Test
     void shouldBindTopicWithMetadata() {
@@ -61,6 +76,12 @@ class PubsubController {
     @PostMapping(path = "/path-2")
     @Topic(pubsubName = "pubsubName", name = "topic-2", metadata = "{ \"priority\": \"high\" }")
     public ResponseEntity<Void> method2() {
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/path-3")
+    @Topic(pubsubName = "pubsubName", name = "topic-3")
+    public ResponseEntity<Void> method3() {
         return ResponseEntity.ok().build();
     }
 }
