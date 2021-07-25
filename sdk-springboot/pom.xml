@@ -89,12 +89,6 @@
           <version>5.2.10.RELEASE</version>
           <scope>compile</scope>
       </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
-      <version>5.2.10.RELEASE</version>
-      <scope>compile</scope>
-    </dependency>
       <dependency>
           <groupId>org.springframework</groupId>
           <artifactId>spring-context</artifactId>
