@@ -13,6 +13,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 else
   sed -i "s/<version>.*<\/version>\$/<version>${DAPR_JAVA_SDK_VERSION}<\/version>/g" README.md
   sed -i "s/compile('io.dapr:\(.*\):.*')/compile('io.dapr:\\1:${DAPR_JAVA_SDK_VERSION}')/g" README.md
+  sed -i "s/<version>.*<\/version>\$/<version>${DAPR_JAVA_SDK_VERSION}<\/version>/g" daprdocs/content/en/java-sdk-docs/_index.md
+  sed -i "s/compile('io.dapr:\(.*\):.*')/compile('io.dapr:\\1:${DAPR_JAVA_SDK_VERSION}')/g" daprdocs/content/en/java-sdk-docs/_index.md
 fi
 
 rm -rf docs
