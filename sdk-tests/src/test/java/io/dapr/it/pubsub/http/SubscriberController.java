@@ -26,10 +26,17 @@ public class SubscriberController {
   private static final List<CloudEvent> messagesReceivedBinaryTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedAnotherTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTTLTopic = new ArrayList();
+  private static final List<CloudEvent<PubSubIT.MyObject>> typedMessagesReceivedTopic = new ArrayList<>();
 
   @GetMapping(path = "/messages/testingtopic")
   public List<CloudEvent> getMessagesReceivedTestingTopic() {
     return messagesReceivedTestingTopic;
+  }
+
+  @GetMapping(path = "/messages/typedtestingtopic")
+  public List<CloudEvent<PubSubIT.MyObject>> getMessagesReceivedTypedTestingTopic() {
+    System.out.println("Returning " + typedMessagesReceivedTopic.size() + " messages from typedtestingtopic: " + typedMessagesReceivedTopic);
+    return typedMessagesReceivedTopic;
   }
 
   @GetMapping(path = "/messages/binarytopic")
@@ -56,6 +63,21 @@ public class SubscriberController {
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
         System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesReceivedTestingTopic.add(envelope);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "typedtestingtopic", pubsubName = "messagebus")
+  @PostMapping(path = "/route1b")
+  public Mono<Void> handleMessageTyped(@RequestBody(required = false) CloudEvent<PubSubIT.MyObject> envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        String id = envelope.getData() == null ? "" : envelope.getData().getId();
+        String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
+        System.out.println("Testing typed topic Subscriber got message with ID: " + id + "; Content-type: " + contentType);
+        typedMessagesReceivedTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
