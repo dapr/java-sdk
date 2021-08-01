@@ -28,7 +28,7 @@ public class SubscriberController {
    */
   @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
-  public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent cloudEvent) {
+  public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         System.out.println("Subscriber got: " + cloudEvent.getData());
