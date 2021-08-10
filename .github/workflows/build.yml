@@ -99,7 +99,7 @@ jobs:
     - name: Unit tests
       run: mvn test -q
     - name: Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2.0.2
     - name: Install jars
       run: mvn install -q
     - name: Integration tests
