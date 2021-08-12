@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class SubscriberController {
 
   @GetMapping(path = "/messages/{topic}")
   public List<CloudEvent<?>> getMessagesByTopic(@PathVariable("topic") String topic) {
-    return messagesByTopic.get(topic);
+    return messagesByTopic.getOrDefault(topic, Collections.emptyList());
   }
 
   @Topic(name = "testingtopic", pubsubName = "messagebus")
