@@ -26,6 +26,8 @@ public class ActorRuntimeConfig {
 
   private volatile Boolean drainBalancedActors;
 
+  private volatile Integer remindersStoragePartitions;
+
   /**
    * Instantiates a new config for the Actor Runtime.
    */
@@ -34,6 +36,7 @@ public class ActorRuntimeConfig {
 
   /**
    * Adds a registered actor to the list of registered actors.
+   * 
    * @param actorTypeName Actor type that was registered.
    * @return This instance.
    */
@@ -132,6 +135,26 @@ public class ActorRuntimeConfig {
    */
   public ActorRuntimeConfig setDrainBalancedActors(Boolean drainBalancedActors) {
     this.drainBalancedActors = drainBalancedActors;
+    return this;
+  }
+
+  /**
+   * Gets the number of storage partitions for Actor reminders.
+   *
+   * @return The number of Actor reminder storage partitions.
+   */
+  public Integer getRemindersStoragePartitions() {
+    return remindersStoragePartitions;
+  }
+
+  /**
+   * Sets the number of storage partitions for Actor reminders.
+   *
+   * @param remindersStoragePartitions The number of storage partitions for Actor reminders.
+   * @return This instance.
+   */
+  public ActorRuntimeConfig setRemindersStoragePartitions(Integer remindersStoragePartitions) {
+    this.remindersStoragePartitions = remindersStoragePartitions;
     return this;
   }
 
