@@ -228,7 +228,7 @@ public class DaprStateAsyncProviderTest {
             .getState(any(), any(), eq("name")))
             .thenReturn(Mono.just("\"Sm9uIERvZQ==\"".getBytes()));
     when(daprClient
-            .getState(any(), any(), eq("quotes_name")))
+            .getState(any(), any(), eq("quotesName")))
             .thenReturn(Mono.just("\"IlwiSm9uIERvZVwiIg==\"".getBytes()));
     when(daprClient
             .getState(any(), any(), eq("zipcode")))
@@ -266,7 +266,7 @@ public class DaprStateAsyncProviderTest {
     Assert.assertEquals("Jon Doe",
             providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
     Assert.assertEquals("\"Jon Doe\"",
-            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "quotes_name", TypeRef.STRING).block());
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "quotesName", TypeRef.STRING).block());
     Assert.assertEquals(98021,
             (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
     Assert.assertEquals(98,
