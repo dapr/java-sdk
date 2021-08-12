@@ -5,6 +5,7 @@
 
 package io.dapr.actors.runtime;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.actors.ActorId;
 import io.dapr.client.ObjectSerializer;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -16,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -74,7 +76,6 @@ public class DaprStateAsyncProviderTest {
   }
 
   class CustomJsonSerializer extends ObjectSerializer implements DaprObjectSerializer{
-
 
     @Override
     public byte[] serialize(Object o) throws IOException {
@@ -161,6 +162,9 @@ public class DaprStateAsyncProviderTest {
         .getState(any(), any(), eq("name")))
         .thenReturn(Mono.just(SERIALIZER.serialize("Jon Doe")));
     when(daprClient
+            .getState(any(), any(), eq("quotes_name")))
+            .thenReturn(Mono.just(SERIALIZER.serialize("\"Jon Doe\"")));
+    when(daprClient
         .getState(any(), any(), eq("zipcode")))
         .thenReturn(Mono.just(SERIALIZER.serialize(98021)));
     when(daprClient
@@ -192,6 +196,8 @@ public class DaprStateAsyncProviderTest {
 
     Assert.assertEquals("Jon Doe",
         provider.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
+    Assert.assertEquals("\"Jon Doe\"",
+        provider.load("MyActor", new ActorId("123"), "quotes_name", TypeRef.STRING).block());
     Assert.assertEquals(98021,
         (int) provider.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
     Assert.assertEquals(98,
@@ -222,6 +228,9 @@ public class DaprStateAsyncProviderTest {
             .getState(any(), any(), eq("name")))
             .thenReturn(Mono.just("\"Sm9uIERvZQ==\"".getBytes()));
     when(daprClient
+            .getState(any(), any(), eq("quotes_name")))
+            .thenReturn(Mono.just("\"IlwiSm9uIERvZVwiIg==\"".getBytes()));
+    when(daprClient
             .getState(any(), any(), eq("zipcode")))
             .thenReturn(Mono.just("\"OTgwMjE=\"".getBytes()));
     when(daprClient
@@ -240,6 +249,9 @@ public class DaprStateAsyncProviderTest {
             .getState(any(), any(), eq("anotherCustomer")))
             .thenReturn(Mono.just("\"eyAiaWQiOiAyMDAwLCAibmFtZSI6ICJNYXgifQ==\"".getBytes()));
     when(daprClient
+            .getState(any(), any(), eq("quotesCustomer")))
+            .thenReturn(Mono.just("\"eyJpZCI6MTAwMCwibmFtZSI6IlwiUm94YW5lXCIifQ==\"".getBytes()));
+    when(daprClient
             .getState(any(), any(), eq("nullCustomer")))
             .thenReturn(Mono.empty());
     when(daprClient
@@ -253,6 +265,8 @@ public class DaprStateAsyncProviderTest {
 
     Assert.assertEquals("Jon Doe",
             providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
+    Assert.assertEquals("\"Jon Doe\"",
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "quotes_name", TypeRef.STRING).block());
     Assert.assertEquals(98021,
             (int) providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
     Assert.assertEquals(98,
@@ -266,6 +280,8 @@ public class DaprStateAsyncProviderTest {
             providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
     Assert.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
             providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
+    Assert.assertEquals(new Customer().setId(1000).setName("\"Roxane\""),
+            providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "quotesCustomer", TypeRef.get(Customer.class)).block());
     Assert.assertNull(
             providerWithCustomJsonSerializer.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
     Assert.assertArrayEquals("A".getBytes(),
