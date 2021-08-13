@@ -28,7 +28,7 @@ public class DaprRun implements Stoppable {
 
   private static final String DAPR_SUCCESS_MESSAGE = "You're up and running!";
 
-  private static final String DAPR_RUN = "dapr run --app-id %s --app-protocol %s --components-path ./components";
+  private static final String DAPR_RUN = "dapr run --app-id %s --app-protocol %s --config configuration.yaml --components-path ./components";
 
   // the arg in -Dexec.args is the app's port
   private static final String DAPR_COMMAND =
