@@ -16,8 +16,9 @@ import java.util.Objects;
 
 /**
  * A cloud event in Dapr.
+ * @param <T> The type of the payload.
  */
-public final class CloudEvent {
+public final class CloudEvent<T> {
 
   /**
    * Mime type used for CloudEvent.
@@ -59,7 +60,7 @@ public final class CloudEvent {
   /**
    * Cloud event specs says data can be a JSON object or string.
    */
-  private Object data;
+  private T data;
 
   /**
    * Cloud event specs says binary data should be in data_base64.
@@ -88,7 +89,7 @@ public final class CloudEvent {
       String type,
       String specversion,
       String datacontenttype,
-      Object data) {
+      T data) {
     this.id = id;
     this.source = source;
     this.type = type;
@@ -126,7 +127,7 @@ public final class CloudEvent {
    * @return Message (can be null if input is null)
    * @throws IOException If cannot parse.
    */
-  public static CloudEvent deserialize(byte[] payload) throws IOException {
+  public static CloudEvent<?> deserialize(byte[] payload) throws IOException {
     if (payload == null) {
       return null;
     }
@@ -218,7 +219,7 @@ public final class CloudEvent {
    * Gets the cloud event data.
    * @return Cloud event's data. As per specs, data can be a JSON object or string.
    */
-  public Object getData() {
+  public T getData() {
     return data;
   }
 
@@ -226,7 +227,7 @@ public final class CloudEvent {
    * Sets the cloud event data. As per specs, data can be a JSON object or string.
    * @param data Cloud event's data. As per specs, data can be a JSON object or string.
    */
-  public void setData(Object data) {
+  public void setData(T data) {
     this.data = data;
   }
 
@@ -257,7 +258,7 @@ public final class CloudEvent {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CloudEvent that = (CloudEvent) o;
+    CloudEvent<?> that = (CloudEvent<?>) o;
     return Objects.equals(id, that.id)
         && Objects.equals(source, that.source)
         && Objects.equals(type, that.type)
