@@ -47,7 +47,7 @@ public class CloudEventPublisher {
     //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
     try (DaprClient client = new DaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
-        CloudEvent cloudEvent = new CloudEvent();
+        CloudEvent<String> cloudEvent = new CloudEvent<>();
         cloudEvent.setId(UUID.randomUUID().toString());
         cloudEvent.setType("example");
         cloudEvent.setSpecversion("1");
