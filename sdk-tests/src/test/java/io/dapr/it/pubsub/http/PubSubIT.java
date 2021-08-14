@@ -43,6 +43,7 @@ public class PubSubIT extends BaseIT {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final TypeRef<List<CloudEvent>> CLOUD_EVENT_LIST_TYPE_REF = new TypeRef<>() {};
+  private static final TypeRef<List<CloudEvent<MyObject>>> CLOUD_EVENT_MYOBJECT_LIST_TYPE_REF = new TypeRef<>() {};
 
   //Number of messages to be sent: 10
   private static final int NUM_MESSAGES = 10;
@@ -50,6 +51,7 @@ public class PubSubIT extends BaseIT {
   private static final String PUBSUB_NAME = "messagebus";
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
+  private static final String TYPED_TOPIC_NAME = "typedtestingtopic";
   private static final String ANOTHER_TOPIC_NAME = "anothertopic";
   // Topic used for TTL test
   private static final String TTL_TOPIC_NAME = "ttltopic";
@@ -166,6 +168,9 @@ public class PubSubIT extends BaseIT {
       client.publishEvent(PUBSUB_NAME, TOPIC_NAME, object).block();
       System.out.println("Published one object.");
 
+      client.publishEvent(PUBSUB_NAME, TYPED_TOPIC_NAME, object).block();
+      System.out.println("Published another object.");
+
       //Publishing a single byte: Example of non-string based content published
       client.publishEvent(
           PUBSUB_NAME,
@@ -233,6 +238,25 @@ public class PubSubIT extends BaseIT {
             .map(m -> m.getData())
             .filter(m -> "message from cloudevent".equals(m))
             .count() == 1);
+      }, 2000);
+
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + TYPED_TOPIC_NAME);
+        // Validate object payload.
+        final List<CloudEvent<MyObject>> messages = client.invokeMethod(
+                daprRun.getAppName(),
+                "messages/typedtestingtopic",
+                null,
+                HttpExtension.GET,
+                CLOUD_EVENT_MYOBJECT_LIST_TYPE_REF).block();
+
+        assertTrue(messages
+                .stream()
+                .filter(m -> m.getData() != null)
+                .filter(m -> m.getData() instanceof MyObject)
+                .map(m -> (MyObject)m.getData())
+                .filter(m -> "123".equals(m.getId()))
+                .count() == 1);
       }, 2000);
 
       callWithRetry(() -> {
