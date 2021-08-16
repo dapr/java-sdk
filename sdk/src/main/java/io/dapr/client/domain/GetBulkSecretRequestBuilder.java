@@ -10,7 +10,10 @@ import java.util.Map;
 
 /**
  * Builds a request to fetch all secrets of a secret store.
+ * Deprecated in favor of @see{@link GetBulkSecretRequest}.
+ * Deprecated since SDK version 1.3.0, slated for Removal in SDK version 1.5.0.
  */
+@Deprecated
 public class GetBulkSecretRequestBuilder {
 
   private final String storeName;
@@ -28,13 +31,12 @@ public class GetBulkSecretRequestBuilder {
 
   /**
    * Builds a request object.
+   *
    * @return Request object.
    */
   public GetBulkSecretRequest build() {
-    GetBulkSecretRequest request = new GetBulkSecretRequest();
-    request.setStoreName(this.storeName);
-    request.setMetadata(this.metadata);
-    return request;
+    GetBulkSecretRequest request = new GetBulkSecretRequest(storeName);
+    return request.setMetadata(this.metadata);
   }
 
 }

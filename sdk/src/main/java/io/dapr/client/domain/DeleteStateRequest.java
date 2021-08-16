@@ -13,9 +13,9 @@ import java.util.Map;
  */
 public class DeleteStateRequest {
 
-  private String stateStoreName;
+  private final String stateStoreName;
 
-  private String key;
+  private final String key;
 
   private Map<String, String> metadata;
 
@@ -23,43 +23,43 @@ public class DeleteStateRequest {
 
   private StateOptions stateOptions;
 
-  public String getStateStoreName() {
-    return stateStoreName;
+  public DeleteStateRequest(String storeName, String key) {
+    this.stateStoreName = storeName;
+    this.key = key;
   }
 
-  void setStateStoreName(String stateStoreName) {
-    this.stateStoreName = stateStoreName;
+  public String getStateStoreName() {
+    return stateStoreName;
   }
 
   public String getKey() {
     return key;
   }
 
-  void setKey(String key) {
-    this.key = key;
-  }
-
   public String getEtag() {
     return etag;
   }
 
-  void setEtag(String etag) {
+  public DeleteStateRequest setEtag(String etag) {
     this.etag = etag;
+    return this;
   }
 
   public StateOptions getStateOptions() {
     return stateOptions;
   }
 
-  void setStateOptions(StateOptions stateOptions) {
+  public DeleteStateRequest setStateOptions(StateOptions stateOptions) {
     this.stateOptions = stateOptions;
+    return this;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata == null ? Collections.emptyMap() : metadata;
+  public DeleteStateRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 }

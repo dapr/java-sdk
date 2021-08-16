@@ -10,6 +10,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Deprecated in favor of @see{@link ExecuteStateTransactionRequest}.
+ * Deprecated since SDK version 1.3.0, slated for Removal in SDK version 1.5.0.
+ */
+@Deprecated
 public final class ExecuteStateTransactionRequestBuilder {
   private final String storeName;
   private List<TransactionalStateOperation<?>> transactionalStates;
@@ -37,6 +42,7 @@ public final class ExecuteStateTransactionRequestBuilder {
   }
 
   public ExecuteStateTransactionRequest build() {
-    return new ExecuteStateTransactionRequest(storeName, transactionalStates, metadata);
+    return new ExecuteStateTransactionRequest(storeName)
+        .setMetadata(metadata).setOperations(transactionalStates);
   }
 }

@@ -10,7 +10,10 @@ import java.util.Map;
 
 /**
  * Builds a request to publish an event.
+ * Deprecated in favor of @see{@link GetSecretRequest}.
+ * Deprecated since SDK version 1.3.0, slated for Removal in SDK version 1.5.0
  */
+@Deprecated
 public class GetSecretRequestBuilder {
 
   private final String storeName;
@@ -31,14 +34,12 @@ public class GetSecretRequestBuilder {
 
   /**
    * Builds a request object.
+   *
    * @return Request object.
    */
   public GetSecretRequest build() {
-    GetSecretRequest request = new GetSecretRequest();
-    request.setStoreName(this.storeName);
-    request.setKey(this.key);
-    request.setMetadata(this.metadata);
-    return request;
+    GetSecretRequest request = new GetSecretRequest(storeName, key);
+    return request.setMetadata(this.metadata);
   }
 
 }

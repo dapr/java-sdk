@@ -5,6 +5,7 @@
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -12,43 +13,42 @@ import java.util.Map;
  */
 public class InvokeBindingRequest {
 
-  private String name;
+  private final String name;
 
-  private String operation;
+  private final String operation;
 
   private Object data;
 
   private Map<String, String> metadata;
 
-  public String getName() {
-    return name;
+  public InvokeBindingRequest(String bindingName, String operation) {
+    this.name = bindingName;
+    this.operation = operation;
   }
 
-  void setName(String name) {
-    this.name = name;
+  public String getName() {
+    return name;
   }
 
   public String getOperation() {
     return operation;
   }
 
-  void setOperation(String operation) {
-    this.operation = operation;
-  }
-
   public Object getData() {
     return data;
   }
 
-  void setData(Object data) {
+  public InvokeBindingRequest setData(Object data) {
     this.data = data;
+    return this;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
+  public InvokeBindingRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 }
