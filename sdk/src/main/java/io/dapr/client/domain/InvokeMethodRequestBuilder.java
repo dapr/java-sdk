@@ -8,7 +8,7 @@ package io.dapr.client.domain;
 /**
  * Builds a request to invoke a service.
  * Deprecated in favor of @see{@link InvokeMethodRequest}.
- * Deprecated since SDK version 1.3.0, slated for Removal in SDK version 1.5.0
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0
  */
 @Deprecated
 public class InvokeMethodRequestBuilder {

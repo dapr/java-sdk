@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * A request to save states to state store.
  * Deprecated in favor of @see{@link SaveStateRequest}.
- * Deprecated since SDK version 1.3.0, slated for Removal in SDK version 1.5.0
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0
  */
 @Deprecated
 public class SaveStateRequestBuilder {

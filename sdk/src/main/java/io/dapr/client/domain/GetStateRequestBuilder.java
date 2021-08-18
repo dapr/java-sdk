@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Builds a request to request state.
  * Deprecated in favor of @see{@link GetStateRequest}.
- * Deprecated since SDK version 1.3.0, slated for Removal in SDK version 1.5.0
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0
  */
 @Deprecated
 public class GetStateRequestBuilder {
