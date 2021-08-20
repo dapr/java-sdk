@@ -5,6 +5,7 @@
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -12,23 +13,24 @@ import java.util.Map;
  */
 public class GetBulkSecretRequest {
 
-  private String storeName;
+  private final String storeName;
 
   private Map<String, String> metadata;
 
-  public String getStoreName() {
-    return storeName;
+  public GetBulkSecretRequest(String storeName) {
+    this.storeName = storeName;
   }
 
-  void setStoreName(String storeName) {
-    this.storeName = storeName;
+  public String getStoreName() {
+    return storeName;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
+  public GetBulkSecretRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 }

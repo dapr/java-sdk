@@ -48,11 +48,9 @@ public class TracingDemoMiddleServiceController {
   public Mono<byte[]> echo(
       @RequestAttribute(name = "opentelemetry-context") Context context,
       @RequestBody(required = false) String body) {
-    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "echo");
-    InvokeMethodRequest request = builder
-        .withBody(body)
-        .withHttpExtension(HttpExtension.POST)
-        .build();
+    InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "echo")
+        .setBody(body)
+        .setHttpExtension(HttpExtension.POST);
     return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context));
   }
 
@@ -64,10 +62,8 @@ public class TracingDemoMiddleServiceController {
    */
   @PostMapping(path = "/proxy_sleep")
   public Mono<Void> sleep(@RequestAttribute(name = "opentelemetry-context") Context context) {
-    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "sleep");
-    InvokeMethodRequest request = builder
-        .withHttpExtension(HttpExtension.POST)
-        .build();
+    InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "sleep")
+        .setHttpExtension(HttpExtension.POST);
     return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context)).then();
   }
 

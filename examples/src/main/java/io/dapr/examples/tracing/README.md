@@ -154,20 +154,16 @@ public class TracingDemoMiddleServiceController {
   public Mono<byte[]> echo(
       @RequestAttribute(name = "opentelemetry-context") Context context,
       @RequestBody(required = false) String body) {
-    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "echo");
-    InvokeMethodRequest request = builder
-      .withBody(body)
-      .withHttpExtension(HttpExtension.POST)
-      .build();
+    InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "echo")
+        .setBody(body)
+        .setHttpExtension(HttpExtension.POST);
     return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context));
   }
   // ...
   @PostMapping(path = "/proxy_sleep")
   public Mono<Void> sleep(@RequestAttribute(name = "opentelemetry-context") Context context) {
-    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(INVOKE_APP_ID, "sleep");
-    InvokeMethodRequest request = builder
-      .withHttpExtension(HttpExtension.POST)
-      .build();
+    InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "sleep")
+            .setHttpExtension(HttpExtension.POST);
     return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context)).then();
   }
 }
@@ -247,20 +243,17 @@ private static final String SERVICE_APP_ID = "tracingdemoproxy";
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         try (Scope scope = span.makeCurrent()) {
-          InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_echo");
-          InvokeMethodRequest request = builder
-            .withBody(message)
-            .withHttpExtension(HttpExtension.POST)
-            .build();
+          InvokeMethodRequest request = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_echo")
+              .setBody(message)
+              .setHttpExtension(HttpExtension.POST);
           client.invokeMethod(request, TypeRef.get(byte[].class))
             .map(r -> {
               System.out.println(new String(r));
               return r;
             })
             .flatMap(r -> {
-              InvokeMethodRequest sleepRequest = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
-                .withHttpExtension(HttpExtension.POST)
-                .build();
+              InvokeMethodRequest sleepRequest = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_sleep")
+                  .setHttpExtension(HttpExtension.POST);
               return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
             }).subscriberContext(getReactorContext()).block();
         }

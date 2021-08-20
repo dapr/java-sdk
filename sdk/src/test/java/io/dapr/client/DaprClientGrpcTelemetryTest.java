@@ -178,10 +178,9 @@ public class DaprClientGrpcTelemetryTest {
       }
     }
     final Context contextCopy = context;
-    InvokeMethodRequest req = new InvokeMethodRequestBuilder("appId", "method")
-        .withBody("request")
-        .withHttpExtension(HttpExtension.NONE)
-        .build();
+    InvokeMethodRequest req = new InvokeMethodRequest("appId", "method")
+        .setBody("request")
+        .setHttpExtension(HttpExtension.NONE);
     Mono<Void> result = this.client.invokeMethod(req, TypeRef.get(Void.class))
         .subscriberContext(it -> it.putAll(contextCopy == null ? Context.empty() : contextCopy));
     result.block();

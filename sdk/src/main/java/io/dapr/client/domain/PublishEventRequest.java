@@ -5,6 +5,8 @@
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -12,53 +14,55 @@ import java.util.Map;
  */
 public class PublishEventRequest {
 
-  private String pubsubName;
+  private final String pubsubName;
 
-  private String topic;
+  private final String topic;
 
-  private Object data;
+  private final Object data;
 
   private String contentType;
 
-  private Map<String, String> metadata;
+  private Map<String, String> metadata = new HashMap<>();
+
+  /**
+   * Constructor for PublishEventRequest.
+   * @param pubsubName name of the pubsub
+   * @param topic name of the topic in the pubsub
+   * @param data data to published
+   */
+  public PublishEventRequest(String pubsubName, String topic, Object data) {
+    this.pubsubName = pubsubName;
+    this.topic = topic;
+    this.data = data;
+  }
 
   public String getPubsubName() {
     return pubsubName;
-  }
-
-  void setPubsubName(String pubsubName) {
-    this.pubsubName = pubsubName;
   }
 
   public String getTopic() {
     return topic;
   }
 
-  void setTopic(String topic) {
-    this.topic = topic;
-  }
-
   public Object getData() {
     return data;
-  }
-
-  void setData(Object data) {
-    this.data = data;
   }
 
   public String getContentType() {
     return this.contentType;
   }
 
-  void setContentType(String contentType) {
+  public PublishEventRequest setContentType(String contentType) {
     this.contentType = contentType;
+    return this;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
+  public PublishEventRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 }
