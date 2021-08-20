@@ -5,6 +5,7 @@
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -18,27 +19,33 @@ public class ExecuteStateTransactionRequest {
   /**
    * Transactional operations list.
    */
-  private final List<TransactionalStateOperation<?>> operations;
+  private List<TransactionalStateOperation<?>> operations;
 
   /**
    * Metadata used for transactional operations.
    */
-  private final Map<String, String> metadata;
+  private Map<String, String> metadata;
 
-  ExecuteStateTransactionRequest(String stateStoreName,
-                                        List<TransactionalStateOperation<?>> operations,
-                                        Map<String, String> metadata) {
+  public ExecuteStateTransactionRequest(String stateStoreName) {
     this.stateStoreName = stateStoreName;
-    this.operations = operations;
-    this.metadata = metadata;
   }
 
   public String getStateStoreName() {
     return stateStoreName;
   }
 
+  public ExecuteStateTransactionRequest setOperations(List<TransactionalStateOperation<?>> operations) {
+    this.operations = operations == null ? null : Collections.unmodifiableList(operations);
+    return this;
+  }
+
   public List<TransactionalStateOperation<?>> getOperations() {
     return operations;
+  }
+
+  public ExecuteStateTransactionRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 
   public Map<String, String> getMetadata() {
