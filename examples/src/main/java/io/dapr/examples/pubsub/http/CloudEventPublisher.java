@@ -9,6 +9,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.Metadata;
+import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.PublishEventRequestBuilder;
 
 import java.util.UUID;
@@ -56,10 +57,9 @@ public class CloudEventPublisher {
 
         //Publishing messages
         client.publishEvent(
-            new PublishEventRequestBuilder(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
-                .withContentType(CloudEvent.CONTENT_TYPE)
-                .withMetadata(singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))
-                .build()).block();
+            new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
+                .setContentType(CloudEvent.CONTENT_TYPE)
+                .setMetadata(singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))).block();
         System.out.println("Published cloud event with message: " + cloudEvent.getData());
 
         try {

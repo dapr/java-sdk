@@ -7,7 +7,10 @@ package io.dapr.client.domain;
 
 /**
  * Builds a request to invoke a service.
+ * Deprecated in favor of @see{@link InvokeMethodRequest}.
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0
  */
+@Deprecated
 public class InvokeMethodRequestBuilder {
 
   private final String appId;
@@ -42,16 +45,14 @@ public class InvokeMethodRequestBuilder {
 
   /**
    * Builds a request object.
+   *
    * @return Request object.
    */
   public InvokeMethodRequest build() {
-    InvokeMethodRequest request = new InvokeMethodRequest();
-    request.setAppId(this.appId);
-    request.setContentType(contentType);
-    request.setMethod(this.method);
-    request.setBody(this.body);
-    request.setHttpExtension(this.httpExtension);
-    return request;
+    InvokeMethodRequest request = new InvokeMethodRequest(appId, method);
+    return request.setBody(this.body)
+        .setContentType(contentType)
+        .setHttpExtension(this.httpExtension);
   }
 
 }

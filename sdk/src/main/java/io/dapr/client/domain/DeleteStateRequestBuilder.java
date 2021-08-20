@@ -10,7 +10,10 @@ import java.util.Map;
 
 /**
  * Builds a request to delete a state by key.
+ * Deprecated in favor of @see{@link DeleteStateRequest}.
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0.
  */
+@Deprecated
 public class DeleteStateRequestBuilder {
 
   private final String stateStoreName;
@@ -45,12 +48,11 @@ public class DeleteStateRequestBuilder {
 
   /**
    * Builds a request object.
+   *
    * @return Request object.
    */
   public DeleteStateRequest build() {
-    DeleteStateRequest request = new DeleteStateRequest();
-    request.setStateStoreName(this.stateStoreName);
-    request.setKey(this.key);
+    DeleteStateRequest request = new DeleteStateRequest(this.stateStoreName, this.key);
     request.setMetadata(metadata);
     request.setEtag(this.etag);
     request.setStateOptions(this.stateOptions);

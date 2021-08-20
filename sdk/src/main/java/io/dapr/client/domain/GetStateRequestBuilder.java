@@ -10,7 +10,10 @@ import java.util.Map;
 
 /**
  * Builds a request to request state.
+ * Deprecated in favor of @see{@link GetStateRequest}.
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0
  */
+@Deprecated
 public class GetStateRequestBuilder {
 
   private final String storeName;
@@ -38,15 +41,13 @@ public class GetStateRequestBuilder {
 
   /**
    * Builds a request object.
+   *
    * @return Request object.
    */
   public GetStateRequest build() {
-    GetStateRequest request = new GetStateRequest();
-    request.setStoreName(this.storeName);
-    request.setKey(this.key);
-    request.setMetadata(this.metadata);
-    request.setStateOptions(this.stateOptions);
-    return request;
+    GetStateRequest request = new GetStateRequest(storeName, key);
+    return request.setMetadata(this.metadata)
+        .setStateOptions(this.stateOptions);
   }
 
 }
