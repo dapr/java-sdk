@@ -252,9 +252,8 @@ public class DaprClientGrpcTest {
 
 
     Mono<Void> result = client.publishEvent(
-        new PublishEventRequestBuilder("pubsubname", "topic", "hello")
-            .withContentType("text/plain")
-            .build());
+        new PublishEventRequest("pubsubname", "topic", "hello")
+            .setContentType("text/plain"));
     result.block();
   }
 
@@ -1004,9 +1003,9 @@ public class DaprClientGrpcTest {
         .setData(serialize(expectedValue))
         .setEtag(etag)
         .build();
-    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, key);
-    builder.withMetadata(metadata).withStateOptions(options);
-    GetStateRequest request = builder.build();
+    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, key)
+        .setMetadata(metadata)
+        .setStateOptions(options);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
@@ -1065,10 +1064,9 @@ public class DaprClientGrpcTest {
       client.getBulkState(STATE_STORE_NAME, Collections.emptyList(), String.class).block();
     });
     // negative parallelism
-    GetBulkStateRequest req = new GetBulkStateRequestBuilder(STATE_STORE_NAME, Collections.singletonList("100"))
-        .withMetadata(new HashMap<>())
-        .withParallelism(-1)
-        .build();
+    GetBulkStateRequest req = new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100"))
+        .setMetadata(new HashMap<>())
+        .setParallelism(-1);
     assertThrows(IllegalArgumentException.class, () -> client.getBulkState(req, TypeRef.BOOLEAN).block());
   }
 
@@ -1359,9 +1357,10 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
-    DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, key);
-    builder.withEtag(etag).withStateOptions(options).withMetadata(metadata);
-    DeleteStateRequest request = builder.build();
+    DeleteStateRequest request = new DeleteStateRequest(STATE_STORE_NAME, key);
+    request.setEtag(etag)
+        .setStateOptions(options)
+        .setMetadata(metadata);
     Mono<Void> result = client.deleteState(request);
     result.block();
   }
@@ -1460,9 +1459,8 @@ public class DaprClientGrpcTest {
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
-    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(STATE_STORE_NAME)
-        .withTransactionalStates(upsertOperation)
-        .build();
+    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequest(STATE_STORE_NAME)
+        .setOperations(Collections.singletonList(upsertOperation));
     Mono<Void> result = client.executeStateTransaction(request);
 
     assertThrowsDaprException(
@@ -1494,10 +1492,9 @@ public class DaprClientGrpcTest {
         new State<>("testKey"));
     Map<String, String> metadata = new HashMap<>();
     metadata.put("testKey", "testValue");
-    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(STATE_STORE_NAME)
-        .withTransactionalStates(upsertOperation, deleteOperation)
-        .withMetadata(metadata)
-        .build();
+    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequest(STATE_STORE_NAME)
+        .setOperations(Arrays.asList(upsertOperation, deleteOperation))
+        .setMetadata(metadata);
     Mono<Void> result = client.executeStateTransaction(request);
     result.block();
   }

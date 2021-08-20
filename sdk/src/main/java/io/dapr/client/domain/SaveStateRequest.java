@@ -5,6 +5,8 @@
 
 package io.dapr.client.domain;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -12,23 +14,29 @@ import java.util.List;
  */
 public class SaveStateRequest {
 
-  private String storeName;
+  private final String storeName;
 
   private List<State<?>> states;
 
-  public String getStoreName() {
-    return storeName;
+  public SaveStateRequest(String storeName) {
+    this.storeName = storeName;
   }
 
-  void setStoreName(String storeName) {
-    this.storeName = storeName;
+  public String getStoreName() {
+    return storeName;
   }
 
   public List<State<?>> getStates() {
     return states;
   }
 
-  void setStates(List<State<?>> states) {
-    this.states = states;
+  public SaveStateRequest setStates(List<State<?>> states) {
+    this.states = states == null ? null : Collections.unmodifiableList(states);
+    return this;
+  }
+
+  public SaveStateRequest setStates(State<?>... states) {
+    this.states = Collections.unmodifiableList(Arrays.asList(states));
+    return this;
   }
 }

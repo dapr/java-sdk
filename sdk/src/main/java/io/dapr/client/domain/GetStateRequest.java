@@ -13,43 +13,42 @@ import java.util.Map;
  */
 public class GetStateRequest {
 
-  private String storeName;
+  private final String storeName;
 
-  private String key;
+  private final String key;
 
   private Map<String, String> metadata;
 
   private StateOptions stateOptions;
 
-  public String getStoreName() {
-    return storeName;
+  public GetStateRequest(String storeName, String key) {
+    this.storeName = storeName;
+    this.key = key;
   }
 
-  void setStoreName(String storeName) {
-    this.storeName = storeName;
+  public String getStoreName() {
+    return storeName;
   }
 
   public String getKey() {
     return key;
   }
 
-  void setKey(String key) {
-    this.key = key;
-  }
-
   public StateOptions getStateOptions() {
     return stateOptions;
   }
 
-  void setStateOptions(StateOptions stateOptions) {
+  public GetStateRequest setStateOptions(StateOptions stateOptions) {
     this.stateOptions = stateOptions;
+    return this;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata == null ? Collections.emptyMap() : metadata;
+  public GetStateRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 }

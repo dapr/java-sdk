@@ -10,9 +10,9 @@ package io.dapr.client.domain;
  */
 public class InvokeMethodRequest {
 
-  private String appId;
+  private final String appId;
 
-  private String method;
+  private final String method;
 
   private Object body;
 
@@ -20,43 +20,43 @@ public class InvokeMethodRequest {
 
   private String contentType;
 
-  public String getAppId() {
-    return appId;
+  public InvokeMethodRequest(String appId, String method) {
+    this.appId = appId;
+    this.method = method;
   }
 
-  void setAppId(String appId) {
-    this.appId = appId;
+  public String getAppId() {
+    return appId;
   }
 
   public String getMethod() {
     return method;
   }
 
-  void setMethod(String method) {
-    this.method = method;
-  }
-
   public Object getBody() {
     return body;
   }
 
-  void setBody(Object body) {
+  public InvokeMethodRequest setBody(Object body) {
     this.body = body;
+    return this;
   }
 
   public HttpExtension getHttpExtension() {
     return httpExtension;
   }
 
-  void setHttpExtension(HttpExtension httpExtension) {
+  public InvokeMethodRequest setHttpExtension(HttpExtension httpExtension) {
     this.httpExtension = httpExtension;
+    return this;
   }
 
   public String getContentType() {
     return contentType;
   }
 
-  void setContentType(String contentType) {
+  public InvokeMethodRequest setContentType(String contentType) {
     this.contentType = contentType;
+    return this;
   }
 }

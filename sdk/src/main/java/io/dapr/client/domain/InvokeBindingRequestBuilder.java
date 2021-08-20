@@ -11,7 +11,10 @@ import java.util.Map;
 
 /**
  * Builds a request to publish an event.
+ * Deprecated in favor of @see{@link InvokeBindingRequest}.
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0
  */
+@Deprecated
 public class InvokeBindingRequestBuilder {
 
   private final String name;
@@ -39,15 +42,13 @@ public class InvokeBindingRequestBuilder {
 
   /**
    * Builds a request object.
+   *
    * @return Request object.
    */
   public InvokeBindingRequest build() {
-    InvokeBindingRequest request = new InvokeBindingRequest();
-    request.setName(this.name);
-    request.setOperation(this.operation);
-    request.setData(this.data);
-    request.setMetadata(this.metadata);
-    return request;
+    InvokeBindingRequest request = new InvokeBindingRequest(name, operation);
+    return request.setData(this.data)
+        .setMetadata(this.metadata);
   }
 
 }

@@ -48,20 +48,17 @@ public class InvokeClient {
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         try (Scope scope = span.makeCurrent()) {
-          InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_echo");
-          InvokeMethodRequest request = builder
-              .withBody(message)
-              .withHttpExtension(HttpExtension.POST)
-              .build();
+          InvokeMethodRequest request = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_echo")
+              .setBody(message)
+              .setHttpExtension(HttpExtension.POST);
           client.invokeMethod(request, TypeRef.get(byte[].class))
               .map(r -> {
                 System.out.println(new String(r));
                 return r;
               })
               .flatMap(r -> {
-                InvokeMethodRequest sleepRequest = new InvokeMethodRequestBuilder(SERVICE_APP_ID, "proxy_sleep")
-                    .withHttpExtension(HttpExtension.POST)
-                    .build();
+                InvokeMethodRequest sleepRequest = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_sleep")
+                    .setHttpExtension(HttpExtension.POST);
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
               }).subscriberContext(getReactorContext()).block();
         }
