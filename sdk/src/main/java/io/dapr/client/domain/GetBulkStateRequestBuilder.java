@@ -12,7 +12,10 @@ import java.util.Map;
 
 /**
  * Builds a request to request states.
+ * Deprecated in favor of @see{@link GetBulkStateRequest}.
+ * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0.
  */
+@Deprecated
 public class GetBulkStateRequestBuilder {
 
   private final String storeName;
@@ -45,15 +48,13 @@ public class GetBulkStateRequestBuilder {
 
   /**
    * Builds a request object.
+   *
    * @return Request object.
    */
   public GetBulkStateRequest build() {
-    GetBulkStateRequest request = new GetBulkStateRequest();
-    request.setStoreName(this.storeName);
-    request.setKeys(this.keys);
-    request.setMetadata(this.metadata);
-    request.setParallelism(this.parallelism);
-    return request;
+    GetBulkStateRequest request = new GetBulkStateRequest(storeName, keys);
+    return request.setMetadata(this.metadata)
+        .setParallelism(this.parallelism);
   }
 
 }
