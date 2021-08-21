@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Handles Dapr annotations in Springboot Controllers.
+ * Handles Dapr annotations in Spring Controllers.
  */
 @Component
 public class DaprBeanPostProcessor implements BeanPostProcessor {
@@ -77,6 +77,8 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
 
       if (mapping != null && mapping.path() != null && mapping.path().length >= 1) {
         route = mapping.path()[0];
+      } else if (mapping != null && mapping.value() != null && mapping.value().length >= 1) {
+        route = mapping.value()[0];
       }
 
       String topicName = embeddedValueResolver.resolveStringValue(topic.name());

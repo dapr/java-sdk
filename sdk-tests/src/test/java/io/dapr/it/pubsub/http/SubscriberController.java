@@ -35,7 +35,7 @@ public class SubscriberController {
   }
 
   @Topic(name = "testingtopic", pubsubName = "messagebus")
-  @PostMapping(path = "/route1")
+  @PostMapping("/route1")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {
       try {
