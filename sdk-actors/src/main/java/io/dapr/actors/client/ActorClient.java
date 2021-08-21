@@ -51,8 +51,18 @@ public class ActorClient implements AutoCloseable {
    * @param apiProtocol    Dapr's API protocol.
    */
   private ActorClient(DaprApiProtocol apiProtocol, ManagedChannel grpcManagedChannel) {
+    this(grpcManagedChannel, buildDaprClient(apiProtocol, grpcManagedChannel));
+  }
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   *
+   * @param grpcManagedChannel gRPC channel for communication with Dapr sidecar, if done via gRPC.
+   * @param daprClient Dapr's client for actors.
+   */
+  protected ActorClient(ManagedChannel grpcManagedChannel, DaprClient daprClient) {
     this.grpcManagedChannel = grpcManagedChannel;
-    this.daprClient = buildDaprClient(apiProtocol, grpcManagedChannel);
+    this.daprClient = daprClient;
   }
 
   /**

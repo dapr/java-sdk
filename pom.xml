@@ -270,6 +270,7 @@
     <module>sdk</module>
     <module>sdk-actors</module>
     <module>sdk-springboot</module>
+    <module>sdk-testing</module>
     <module>examples</module>
   </modules>
 
