@@ -20,12 +20,15 @@
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
+    <maven-deploy-plugin.version>2.7</maven-deploy-plugin.version>
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
+
     <gpg.skip>true</gpg.skip>
     <spotbugs.version>4.0.0-RC1</spotbugs.version>
     <spotbugs.fail>true</spotbugs.fail>
+    <springboot.version>2.3.5.RELEASE</springboot.version>
   </properties>
 
   <distributionManagement>
@@ -65,6 +68,12 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>5.7.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>3.11.2</version>
@@ -76,23 +85,23 @@
   <build>
     <plugins>
       <plugin>
-	<groupId>org.jacoco</groupId>
-	<artifactId>jacoco-maven-plugin</artifactId>
-	<version>0.8.6</version>
-	<executions>
-	  <execution>
-	    <goals>
-	      <goal>prepare-agent</goal>
-	    </goals>
-	  </execution>
-	  <execution>
-	    <id>report</id>
-	    <phase>test</phase>
-	    <goals>
-	      <goal>report</goal>
-	    </goals>
-	  </execution>
-	</executions>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.6</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
