@@ -15,7 +15,7 @@ import java.util.Map;
  * Deprecated in favor of @see{@link GetBulkStateRequest}.
  * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0.
  */
-@Deprecated
+
 public class GetBulkStateRequestBuilder {
 
   private final String storeName;

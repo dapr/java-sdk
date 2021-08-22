@@ -15,7 +15,7 @@ import java.util.List;
  * Deprecated in favor of @see{@link SaveStateRequest}.
  * Deprecated since SDK version 1.3.0, slated for removal in SDK version 1.5.0
  */
-@Deprecated
+
 public class SaveStateRequestBuilder {
 
   private final String storeName;
