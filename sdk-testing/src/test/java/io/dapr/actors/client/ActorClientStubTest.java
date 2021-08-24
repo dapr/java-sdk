@@ -39,7 +39,7 @@ public class ActorClientStubTest {
             mock.invoke("MyActor", "100", "setName", "\"My Name\"".getBytes(StandardCharsets.UTF_8)))
         .thenReturn(Mono.just("".getBytes(StandardCharsets.UTF_8)));
 
-    ActorProxyBuilder<MyActor> builder = new ActorProxyBuilder(MyActor.class, mock);
+    ActorProxyBuilder<MyActor> builder = new ActorProxyBuilder<>(MyActor.class, mock);
     MyActor actor = builder.build(new ActorId("100"));
 
     String result = actor.getName();
