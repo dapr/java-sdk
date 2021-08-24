@@ -65,6 +65,17 @@ dependencies {
 }
 ```
 
+If you are also using Spring Boot, you may run into a common issue where the OkHttp version that the Dapr SDK uses conflicts with the one specified in the Spring Boot _Bill of Materials_.
+You can fix this by specifying a compatible OkHttp version in your project to match the version that the Dapr SDK uses:
+
+```xml
+<dependency>
+  <groupId>com.squareup.okhttp3</groupId>
+  <artifactId>okhttp</artifactId>
+  <version>4.9.0</version>
+</dependency>
+```
+
 ## Building blocks
 
 The Java SDK allows you to interface with all of the [Dapr building blocks]({{< ref building-blocks >}}).
