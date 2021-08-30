@@ -102,7 +102,7 @@ jobs:
     - name: Unit tests
       run: mvn test -q
     - name: Codecov
-      uses: codecov/codecov-action@v2.0.2
+      uses: codecov/codecov-action@v2.0.3
     - name: Install jars
       run: mvn install -q
     - name: Integration tests
