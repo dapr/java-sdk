@@ -8,8 +8,7 @@ package io.dapr.actors.client;
 import reactor.core.publisher.Mono;
 
 /**
- * Stub implementation of ActorClient to enable unit testing in apps.
- * <p>This class is needed because ActorClient is a class and not an interface.</p>
+ * Stub implementation of ActorClient to facilitate unit testing in apps.
  */
 public class ActorClientStub extends ActorClient {
 
