@@ -123,6 +123,11 @@
       <artifactId>dapr-sdk</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-testing</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

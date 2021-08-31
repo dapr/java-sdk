@@ -49,16 +49,6 @@ This example will simulate an application code via the App class:
       this.actorProxyFactory = (actorId) -> new ActorProxyBuilder<>(MyActor.class, actorClient).build(actorId);
     }
 
-    /**
-     * Example of constructor that can be used for test code.
-     * @param client Dapr client.
-     * @param actorProxyFactory Factory method to create actor proxy instances.
-     */
-    public MyApp(DaprClient client, Function<ActorId, MyActor> actorProxyFactory) {
-      this.daprClient = client;
-      this.actorProxyFactory = actorProxyFactory;
-    }
-
     public String getState() {
       return daprClient.getState("appid", "statekey", String.class).block().getValue();
     }
@@ -96,14 +86,17 @@ The first test validates the `getState()` method while mocking `DaprClient`:
   }
 ```
 
-The second test uses a mock implementation of the factory method and checks the actor invocation by mocking the `MyActor` interface:
+The second test uses a mock implementation of the ActorClient class and sets up the expectation of invoking an actor method.
+The `ActorClientStub` class makes mocking easier by making the `invoke()` method public.
+It is available as part of the `dapr-sdk-testing` artifact in Maven.
 ```java
   @Test
   public void testInvokeActor() {
-    MyActor actorMock = Mockito.mock(MyActor.class);
-    Mockito.when(actorMock.hello()).thenReturn("hello world");
+    ActorClientStub actorClientMock = Mockito.mock(ActorClientStub.class);
+    Mockito.when(actorClientMock.invoke("MyActor", "myactorId", "hello", null))
+    .thenReturn(Mono.just("\"hello world\"".getBytes(StandardCharsets.UTF_8)));
 
-    MyApp app = new MyApp(null, actorId -> actorMock);
+    MyApp app = new MyApp(null, actorClientMock);
 
     String value = app.invokeActor();
 

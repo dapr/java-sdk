@@ -8,6 +8,7 @@ package io.dapr.examples.unittesting;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.actors.client.ActorClient;
+import io.dapr.actors.client.ActorClientStub;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.State;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,16 +52,6 @@ public class DaprExampleTest {
       this.actorProxyFactory = (actorId) -> new ActorProxyBuilder<>(MyActor.class, actorClient).build(actorId);
     }
 
-    /**
-     * Example of constructor that can be used for test code.
-     * @param client Dapr client.
-     * @param actorProxyFactory Factory method to create actor proxy instances.
-     */
-    public MyApp(DaprClient client, Function<ActorId, MyActor> actorProxyFactory) {
-      this.daprClient = client;
-      this.actorProxyFactory = actorProxyFactory;
-    }
-
     public String getState() {
       return daprClient.getState("appid", "statekey", String.class).block().getValue();
     }
@@ -85,10 +77,11 @@ public class DaprExampleTest {
 
   @Test
   public void testInvokeActor() {
-    MyActor actorMock = Mockito.mock(MyActor.class);
-    Mockito.when(actorMock.hello()).thenReturn("hello world");
+    ActorClientStub actorClientMock = Mockito.mock(ActorClientStub.class);
+    Mockito.when(actorClientMock.invoke("MyActor", "myactorId", "hello", null))
+        .thenReturn(Mono.just("\"hello world\"".getBytes(StandardCharsets.UTF_8)));
 
-    MyApp app = new MyApp(null, actorId -> actorMock);
+    MyApp app = new MyApp(null, actorClientMock);
 
     String value = app.invokeActor();
 
