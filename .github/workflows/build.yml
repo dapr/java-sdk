@@ -130,7 +130,7 @@ jobs:
       run: |
         echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
     - name: Publish to ossrh
-      if: env.DEPLOY_OSSRH == 'true'
+      if: env.DEPLOY_OSSRH == 'true' && env.JDK_VER == '11'
       run: |
         echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
         export GPG_TTY=$(tty)
