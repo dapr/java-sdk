@@ -57,11 +57,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.3.0')
+    compile('io.dapr:dapr-sdk:1.2.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.3.0')
+    compile('io.dapr:dapr-sdk-actors:1.2.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.3.0')
+    compile('io.dapr:dapr-sdk-springboot:1.2.0')
 }
 ```
 
