@@ -27,7 +27,7 @@ import java.util.function.BiFunction;
 @RestController
 public class SubscriberController {
 
-  private final Map<String, List<CloudEvent<?>>> messagesByTopic = new HashMap<>();
+  private final Map<String, List<CloudEvent<?>>> messagesByTopic = Collections.synchronizedMap(new HashMap<>());
 
   @GetMapping(path = "/messages/{topic}")
   public List<CloudEvent<?>> getMessagesByTopic(@PathVariable("topic") String topic) {
