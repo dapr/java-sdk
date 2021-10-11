@@ -23,13 +23,16 @@ import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -49,6 +52,12 @@ public class DaprHttp implements AutoCloseable {
    * Dapr's http default scheme.
    */
   private static final String DEFAULT_HTTP_SCHEME = "http";
+
+  /**
+   * Context entries allowed to be in HTTP Headers.
+   */
+  private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList("grpc-trace-bin", "traceparent", "tracestate")));
 
   /**
    * HTTP Methods supported.
@@ -267,8 +276,9 @@ public class DaprHttp implements AutoCloseable {
         .url(urlBuilder.build())
         .addHeader(HEADER_DAPR_REQUEST_ID, requestId);
     if (context != null) {
-      context.stream().forEach(
-          entry -> requestBuilder.addHeader(entry.getKey().toString(), entry.getValue().toString()));
+      context.stream()
+          .filter(entry -> ALLOWED_CONTEXT_IN_HEADERS.contains(entry.getKey().toString().toLowerCase()))
+          .forEach(entry -> requestBuilder.addHeader(entry.getKey().toString(), entry.getValue().toString()));
     }
     if (HttpMethods.GET.name().equals(method)) {
       requestBuilder.get();
