@@ -14,6 +14,7 @@ import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.State;
@@ -36,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -386,6 +388,28 @@ public class DaprClientHttpTest {
 
     daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
     // No exception should be thrown because did not call block() on mono above.
+  }
+
+  @Test
+  public void invokeServiceWithContext() {
+    String traceparent = "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01";
+    String tracestate = "congo=ucfJifl5GOE,rojo=00f067aa0ba902b7";
+    Context context = Context.empty()
+        .put("traceparent", traceparent)
+        .put("tracestate", tracestate)
+        .put("not_added", "xyz");
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+        .header("traceparent", traceparent)
+        .header("tracestate", tracestate)
+        .respond(new byte[0]);
+
+    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
+        .setBody("request")
+        .setHttpExtension(HttpExtension.POST);
+    Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
+        .subscriberContext(it -> it.putAll(context));
+    result.block();
   }
 
   @Test
