@@ -30,10 +30,6 @@ jobs:
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.4.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
-      OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
-      OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
-      GPG_KEY: ${{ secrets.GPG_KEY }}
-      GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -117,22 +113,40 @@ jobs:
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
-    - name: Get pom parent version
-      run: |
-        PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-        echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
-    - name: Is SNAPSHOT release ?
-      if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
-      run: |
-        echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
-    - name: Is Release or RC version ?
-      if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
-      run: |
-        echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
-    - name: Publish to ossrh
-      if: env.DEPLOY_OSSRH == 'true' && env.JDK_VER == '11'
-      run: |
-        echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
-        export GPG_TTY=$(tty)
-        gpg --batch --import private-key.gpg
-        mvn -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      JDK_VER: 11
+      OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
+      OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
+      GPG_KEY: ${{ secrets.GPG_KEY }}
+      GPG_PWD: ${{ secrets.GPG_PWD }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v2.3.1
+        with:
+          distribution: 'adopt'
+          java-version: ${{ env.JDK_VER }}
+      - name: Get pom parent version
+        run: |
+          PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
+      - name: Is SNAPSHOT release ?
+        if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Is Release or RC version ?
+        if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Install jars
+        if: env.DEPLOY_OSSRH == 'true'
+        run: mvn clean install -q
+      - name: Publish to ossrh
+        if: env.DEPLOY_OSSRH == 'true'
+        run: |
+          echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
+          export GPG_TTY=$(tty)
+          gpg --batch --import private-key.gpg
+          mvn -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
