@@ -14,6 +14,24 @@ public class ActorReminderParamsTest {
 
   private static final ActorObjectSerializer SERIALIZER = new ActorObjectSerializer();
 
+  @Test
+  public void noRepetition() {
+    // this is ok
+    ActorReminderParams info = new ActorReminderParams(null, Duration.ZERO.plusMinutes(1), Duration.ZERO.plusMillis(-1), null);
+  }
+
+  @Test
+  public void validRepetition() {
+    Integer validRepetition = 2;
+    ActorReminderParams info = new ActorReminderParams(null, Duration.ZERO.plusMinutes(1), Duration.ZERO.plusMillis(-1), validRepetition);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void outOfRangeRepetition() {
+    Integer invalidRepetition = -1;
+    ActorReminderParams info = new ActorReminderParams(null, Duration.ZERO.plusMinutes(1), Duration.ZERO.plusMinutes(-10), invalidRepetition);
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void outOfRangeDueTime() {
     ActorReminderParams info = new ActorReminderParams(null, Duration.ZERO.plusSeconds(-10), Duration.ZERO.plusMinutes(1));

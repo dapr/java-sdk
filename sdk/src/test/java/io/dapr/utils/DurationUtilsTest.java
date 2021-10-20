@@ -32,6 +32,24 @@ public class DurationUtilsTest {
   }
 
   @Test
+  public void convertRepeatedDurationBothWays() {
+    String s = "R10/PT10S";
+    DurationUtils.RepeatedDuration d1 = DurationUtils.convertDurationWithRepetitionFromISO8601Format(s);
+
+    String t = DurationUtils.convertDurationWithRepetitionToISO8601Format(d1);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
+  public void convertRepeatedDurationWithoutRepetitionBothWays() {
+    String s = "PT10S";
+    DurationUtils.RepeatedDuration d1 = DurationUtils.convertDurationWithRepetitionFromISO8601Format(s);
+
+    String t = DurationUtils.convertDurationWithRepetitionToISO8601Format(d1);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
   public void negativeDuration() {
     Duration d = Duration.ofSeconds(-99);
     String t = DurationUtils.convertDurationToDaprFormat(d);

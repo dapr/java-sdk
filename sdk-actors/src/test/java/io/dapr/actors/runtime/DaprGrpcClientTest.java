@@ -158,7 +158,7 @@ public class DaprGrpcClientTest {
       assertEquals(ACTOR_ID, argument.getActorId());
       assertEquals(reminderName, argument.getName());
       assertEquals(DurationUtils.convertDurationToDaprFormat(params.getDueTime()), argument.getDueTime());
-      assertEquals(DurationUtils.convertDurationToDaprFormat(params.getPeriod()), argument.getPeriod());
+      assertEquals(params.getPeriod().toString(), argument.getPeriod());
       return true;
     }))).thenReturn(settableFuture);
     Mono<Void> result = client.registerReminder(ACTOR_TYPE, ACTOR_ID, reminderName, params);

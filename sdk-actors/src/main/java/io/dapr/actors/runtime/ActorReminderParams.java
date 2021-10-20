@@ -18,6 +18,11 @@ final class ActorReminderParams {
   private static final Duration MIN_TIME_PERIOD = Duration.ofMillis(-1);
 
   /**
+   * Minimum repetitions
+   */
+  private static final Integer MIN_REPETITIONS = 0;
+
+  /**
    * Data to be passed in as part of the reminder trigger.
    */
   private final byte[] data;
@@ -33,6 +38,11 @@ final class ActorReminderParams {
   private final Duration period;
 
   /**
+   * Amount of times the reminder should be executed
+   */
+  private final Integer repetitions;
+
+  /**
    * Instantiates a new instance for the params of a reminder.
    *
    * @param data    Data to be passed in as part of the reminder trigger.
@@ -40,11 +50,25 @@ final class ActorReminderParams {
    * @param period  Interval between triggers.
    */
   ActorReminderParams(byte[] data, Duration dueTime, Duration period) {
+    this(data, dueTime, period, null);
+  }
+
+  /**
+   * Instantiates a new instance for the params of a reminder.
+   *
+   * @param data        Data to be passed in as part of the reminder trigger.
+   * @param dueTime     Time the reminder is due for the 1st time.
+   * @param period      Interval between triggers.
+   * @param repetitions Amount of times the reminder should be executed.
+   */
+  ActorReminderParams(byte[] data, Duration dueTime, Duration period, Integer repetitions) {
     validateDueTime("DueTime", dueTime);
     validatePeriod("Period", period);
+    validateRepetitions("Repetitions", repetitions);
     this.data = data;
     this.dueTime = dueTime;
     this.period = period;
+    this.repetitions = repetitions;
   }
 
   /**
@@ -75,6 +99,15 @@ final class ActorReminderParams {
   }
 
   /**
+   * Gets the amount of times the reminder should be executed
+   *
+   * @return Amount of times the reminder should be executed
+   */
+  public Integer getRepetitions() {
+    return repetitions;
+  }
+
+  /**
    * Validates due time is valid, throws {@link IllegalArgumentException}.
    *
    * @param argName Name of the argument passed in.
@@ -98,6 +131,20 @@ final class ActorReminderParams {
     if (value.compareTo(MIN_TIME_PERIOD) < 0) {
       String message = String.format(
             "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, MIN_TIME_PERIOD);
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  /**
+   * Validates amount of repetitions is valid, throws {@link IllegalArgumentException}.
+   *
+   * @param argName Name of the argument passed in.
+   * @param value   Vale being checked.
+   */
+  private void validateRepetitions(String argName, Integer value) {
+    if (value != null && value < 0) {
+      String message = String.format(
+              "argName: %s - specified value must be greater than %s", argName, MIN_REPETITIONS);
       throw new IllegalArgumentException(message);
     }
   }

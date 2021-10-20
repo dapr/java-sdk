@@ -88,6 +88,22 @@ public class DaprHttpClientTest {
   }
 
   @Test
+  public void registerActorReminderWithRepetition() {
+    mockInterceptor.addRule()
+            .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/reminders/reminder")
+            .respond(EXPECTED_RESULT);
+    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttpClient = new DaprHttpClient(daprHttp);
+    Mono<Void> mono =
+            DaprHttpClient.registerReminder(
+                    "DemoActor",
+                    "1",
+                    "reminder",
+                    new ActorReminderParams("".getBytes(), Duration.ofSeconds(1), Duration.ofSeconds(2), 2));
+    assertNull(mono.block());
+  }
+
+  @Test
   public void unregisterActorReminder() {
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/reminders/reminder")

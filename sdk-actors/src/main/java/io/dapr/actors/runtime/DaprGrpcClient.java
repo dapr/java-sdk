@@ -147,7 +147,7 @@ class DaprGrpcClient implements DaprClient {
               .setName(reminderName)
               .setData(ByteString.copyFrom(reminderParams.getData()))
               .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
-              .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()))
+              .setPeriod(DurationUtils.convertDurationWithRepetitionToISO8601Format(new DurationUtils.RepeatedDuration(reminderParams.getPeriod(), reminderParams.getRepetitions())))
               .build();
 
       ListenableFuture<Empty> futureResponse = client.registerActorReminder(req);
