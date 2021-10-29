@@ -16,17 +16,6 @@
   <name>dapr-sdk-actors</name>
   <description>SDK for Actors on Dapr</description>
 
-  <repositories>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>jcenter</id>
-      <name>jcenter</name>
-      <url>https://jcenter.bintray.com/</url>
-    </repository>
-  </repositories>
-
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
     <grpc.version>1.39.0</grpc.version>
