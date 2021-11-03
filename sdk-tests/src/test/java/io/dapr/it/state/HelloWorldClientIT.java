@@ -26,7 +26,7 @@ public class HelloWorldClientIT extends BaseIT {
         2000
     );
     ManagedChannel channel =
-      ManagedChannelBuilder.forAddress("127.0.0.1", daprRun.getGrpcPort()).usePlaintext().build();
+      ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), daprRun.getGrpcPort()).usePlaintext().build();
     DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
     String key = "mykey";
