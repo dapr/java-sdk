@@ -4,20 +4,6 @@
  */
 package io.dapr.actors.runtime;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.time.Duration;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpProxy;
 import io.dapr.config.Properties;
@@ -30,7 +16,20 @@ import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import okhttp3.mock.RuleAnswer;
 import okio.Buffer;
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class DaprHttpClientTest {
 

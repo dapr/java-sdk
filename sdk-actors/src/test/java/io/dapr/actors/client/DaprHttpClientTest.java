@@ -4,12 +4,6 @@
  */
 package io.dapr.actors.client;
 
-import static io.dapr.actors.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpProxy;
 import io.dapr.config.Properties;
@@ -18,7 +12,12 @@ import okhttp3.ResponseBody;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MediaTypes;
 import okhttp3.mock.MockInterceptor;
+import org.junit.Before;
+import org.junit.Test;
 import reactor.core.publisher.Mono;
+
+import static io.dapr.actors.TestUtils.assertThrowsDaprException;
+import static org.junit.Assert.assertEquals;
 
 public class DaprHttpClientTest {
 
