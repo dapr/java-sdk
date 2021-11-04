@@ -6,6 +6,7 @@ package io.dapr.client;
 
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
+import reactor.util.context.Context;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
@@ -16,7 +17,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 
 public class DaprHttpTest {
