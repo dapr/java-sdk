@@ -72,9 +72,9 @@ public abstract class AbstractActor {
     this.actorRuntimeContext = runtimeContext;
     this.id = id;
     this.actorStateManager = new ActorStateManager(
-          runtimeContext.getStateProvider(),
-          runtimeContext.getActorTypeInformation().getName(),
-          id);
+        runtimeContext.getStateProvider(),
+        runtimeContext.getActorTypeInformation().getName(),
+        id);
     this.actorTrace = runtimeContext.getActorTrace();
     this.started = false;
   }
@@ -117,18 +117,18 @@ public abstract class AbstractActor {
    * @return Asynchronous void response.
    */
   protected <T> Mono<Void> registerReminder(
-        String reminderName,
-        T state,
-        Duration dueTime,
-        Duration period) {
+      String reminderName,
+      T state,
+      Duration dueTime,
+      Duration period) {
     try {
       byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
       ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
       return this.actorRuntimeContext.getDaprClient().registerReminder(
-            this.actorRuntimeContext.getActorTypeInformation().getName(),
-            this.id.toString(),
-            reminderName,
-            params);
+          this.actorRuntimeContext.getActorTypeInformation().getName(),
+          this.id.toString(),
+          reminderName,
+          params);
     } catch (IOException e) {
       return Mono.error(e);
     }
@@ -232,9 +232,9 @@ public abstract class AbstractActor {
    */
   protected Mono<Void> unregisterTimer(String timerName) {
     return this.actorRuntimeContext.getDaprClient().unregisterTimer(
-                this.actorRuntimeContext.getActorTypeInformation().getName(),
-                this.id.toString(),
-                timerName);
+        this.actorRuntimeContext.getActorTypeInformation().getName(),
+        this.id.toString(),
+        timerName);
   }
 
   /**
@@ -245,9 +245,9 @@ public abstract class AbstractActor {
    */
   protected Mono<Void> unregisterReminder(String reminderName) {
     return this.actorRuntimeContext.getDaprClient().unregisterReminder(
-          this.actorRuntimeContext.getActorTypeInformation().getName(),
-          this.id.toString(),
-          reminderName);
+        this.actorRuntimeContext.getActorTypeInformation().getName(),
+        this.id.toString(),
+        reminderName);
   }
 
   /**
@@ -326,8 +326,8 @@ public abstract class AbstractActor {
       this.actorTrace.writeInfo(TRACE_TYPE, this.id.toString(), "Activating ...");
       this.resetState();
     }).then(this.onActivate())
-          .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Activated"))
-          .then(this.saveState());
+        .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Activated"))
+        .then(this.saveState());
   }
 
   /**
@@ -339,8 +339,8 @@ public abstract class AbstractActor {
     this.actorTrace.writeInfo(TRACE_TYPE, this.id.toString(), "Deactivating ...");
 
     return Mono.fromRunnable(() -> this.resetState())
-          .then(this.onDeactivate())
-          .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Deactivated"));
+        .then(this.onDeactivate())
+        .then(this.doWriteInfo(TRACE_TYPE, this.id.toString(), "Deactivated"));
   }
 
   /**
@@ -371,10 +371,10 @@ public abstract class AbstractActor {
         throw new IllegalStateException("Cannot complete a method before starting a call.");
       }
     }).then(this.onPostActorMethod(actorMethodContext))
-          .then(this.saveState())
-          .then(Mono.fromRunnable(() -> {
-            this.started = false;
-          }));
+        .then(this.saveState())
+        .then(Mono.fromRunnable(() -> {
+          this.started = false;
+        }));
   }
 
   /**
