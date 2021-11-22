@@ -90,6 +90,26 @@ public class DurationUtils {
   }
 
   /**
+   * This method uses the default {@link Duration#parse(CharSequence)} and {@link Duration#toString()} methods that supports the ISO-8601 standard.
+   * It does however not support repetitions. Therefore this method will parse the repetitions as well.
+   *
+   * @param repeatedDuration {@link RepeatedDuration} to parse to ISO-8601 format.
+   * @return String containing the parsed {@link RepeatedDuration} to the ISO-8601 format, possibly with repetitions.
+   */
+  public static String convertRepeatedDurationToIso8601RepetitionFormat(RepeatedDuration repeatedDuration) {
+    StringBuilder sb = new StringBuilder();
+
+    if (repeatedDuration.getRepetitions().isPresent()) {
+      sb.append(String.format("R%d/", repeatedDuration.getRepetitions().get()));
+    }
+
+    // Duration.ToString() returns the ISO-8601 representation of the duration.
+    sb.append(repeatedDuration.getDuration().toString());
+
+    return sb.toString();
+  }
+
+  /**
    * Helper to get the "days" part of the Duration.  For example if the duration is 26 hours, this returns 1.
    *
    * @param d Duration
