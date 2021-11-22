@@ -13,7 +13,10 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import io.dapr.actors.RepeatedDuration;
+
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * Represents the timer set on an Actor, to be called once after due time and then every period.
@@ -38,7 +41,13 @@ final class ActorTimerParams {
   /**
    * Period at which the timer will be triggered.
    */
-  private final Duration period;
+  private final RepeatedDuration period;
+
+  /**
+   * Time at which or time interval after which the timer will be expired and deleted.
+   * If ttl is omitted, no restrictions are applied.
+   */
+  private final RepeatedDuration ttl;
 
   /**
    * Instantiates a new Actor Timer.
@@ -52,10 +61,43 @@ final class ActorTimerParams {
                    byte[] data,
                    Duration dueTime,
                    Duration period) {
+    this(callback, data, dueTime, new RepeatedDuration(period), null);
+  }
+
+  /**
+   * Instantiates a new Actor Timer.
+   *
+   * @param callback The name of the method to be called for this timer.
+   * @param data     Data to be passed in as part of the reminder trigger.
+   * @param dueTime  Time the reminder is due for the 1st time.
+   * @param period   Interval between triggers.
+   */
+  ActorTimerParams(String callback,
+                   byte[] data,
+                   Duration dueTime,
+                   RepeatedDuration period) {
+    this(callback, data, dueTime, period, null);
+  }
+
+  /**
+   * Instantiates a new Actor Timer.
+   *
+   * @param callback The name of the method to be called for this timer.
+   * @param data     Data to be passed in as part of the reminder trigger.
+   * @param dueTime  Time the reminder is due for the 1st time.
+   * @param period   Interval between triggers.
+   * @param ttl      Time at which or time interval after which the reminder will be expired and deleted.
+   */
+  ActorTimerParams(String callback,
+                   byte[] data,
+                   Duration dueTime,
+                   RepeatedDuration period,
+                   RepeatedDuration ttl) {
     this.callback = callback;
     this.data = data;
     this.dueTime = dueTime;
     this.period = period;
+    this.ttl = ttl;
   }
 
   /**
@@ -82,7 +124,7 @@ final class ActorTimerParams {
    * @return Periodic time as Duration when timer will be invoked.
    */
   public Duration getPeriod() {
-    return this.period;
+    return this.period.getDuration();
   }
 
   /**
@@ -94,4 +136,13 @@ final class ActorTimerParams {
     return this.data;
   }
 
+  /**
+   * Gets the time at which or time interval after which the timer will be expired and deleted.
+   * This is an optional field and may return <code>null</code>.
+   *
+   * @return Time at which or time interval after which the timer will be expired and deleted, or <code>null</code>.
+   */
+  public Optional<RepeatedDuration> getTtl() {
+    return Optional.ofNullable(this.ttl);
+  }
 }
