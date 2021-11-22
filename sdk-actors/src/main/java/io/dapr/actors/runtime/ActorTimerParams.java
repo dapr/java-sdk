@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
-import io.dapr.actors.RepeatedDuration;
+import io.dapr.utils.RepeatedDuration;
 
 import java.time.Duration;
 import java.util.Optional;

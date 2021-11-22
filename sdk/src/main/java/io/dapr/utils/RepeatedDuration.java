@@ -1,4 +1,4 @@
-package io.dapr.actors;
+package io.dapr.utils;
 
 import java.time.Duration;
 import java.util.Optional;

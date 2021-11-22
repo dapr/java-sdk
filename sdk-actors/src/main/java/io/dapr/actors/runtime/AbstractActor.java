@@ -16,7 +16,7 @@ package io.dapr.actors.runtime;
 import com.google.common.base.Strings;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
-import io.dapr.actors.RepeatedDuration;
+import io.dapr.utils.RepeatedDuration;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;

@@ -1,6 +1,6 @@
 package io.dapr.actors.runtime;
 
-import io.dapr.actors.RepeatedDuration;
+import io.dapr.utils.RepeatedDuration;
 import org.junit.Assert;
 import org.junit.Test;
 
