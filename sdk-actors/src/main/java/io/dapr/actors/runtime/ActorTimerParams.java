@@ -17,37 +17,36 @@ import java.time.Duration;
 
 /**
  * Represents the timer set on an Actor, to be called once after due time and then every period.
- *
  */
 final class ActorTimerParams {
 
   /**
    * Name of the method to be called for this timer.
    */
-  private String callback;
+  private final String callback;
 
   /**
    * State to be sent in the timer.
    */
-  private byte[] data;
+  private final byte[] data;
 
   /**
    * Due time for the timer's first trigger.
    */
-  private Duration dueTime;
+  private final Duration dueTime;
 
   /**
    * Period at which the timer will be triggered.
    */
-  private Duration period;
+  private final Duration period;
 
   /**
    * Instantiates a new Actor Timer.
    *
-   * @param callback  The name of the method to be called for this timer.
-   * @param data      The state to be used by the callback method
-   * @param dueTime   The time when timer is first due.
-   * @param period    The periodic time when timer will be invoked.
+   * @param callback The name of the method to be called for this timer.
+   * @param data     The state to be used by the callback method
+   * @param dueTime  The time when timer is first due.
+   * @param period   The periodic time when timer will be invoked.
    */
   ActorTimerParams(String callback,
                    byte[] data,
@@ -87,9 +86,9 @@ final class ActorTimerParams {
   }
 
   /**
-   * Gets state containing information to be used by the callback method, or null.
+   * Gets state containing information to be used by the callback method, or <code>null</code>.
    *
-   * @return State containing information to be used by the callback method, or null.
+   * @return State containing information to be used by the callback method, or <code>null</code>.
    */
   public byte[] getData() {
     return this.data;
