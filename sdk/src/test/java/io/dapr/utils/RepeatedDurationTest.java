@@ -1,6 +1,5 @@
 package io.dapr.utils;
 
-import io.dapr.utils.RepeatedDuration;
 import org.junit.Test;
 
 import java.time.Duration;
