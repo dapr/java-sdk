@@ -15,7 +15,9 @@ package io.dapr.utils;
 
 import java.time.Duration;
 
-public class DurationUtils {
+public final class DurationUtils {
+
+  private DurationUtils() {}
 
   /**
    * Converts time from the String format used by Dapr into a Duration.
