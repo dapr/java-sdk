@@ -79,7 +79,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
       generator.writeStartObject();
       generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(timer.getDueTime()));
       generator.writeStringField("period",
-          DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(timer.getRepeatedPeriod()));
+          DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(timer.getPeriod()));
       generator.writeStringField("callback", timer.getCallback());
 
       if (timer.getTtl().isPresent()) {

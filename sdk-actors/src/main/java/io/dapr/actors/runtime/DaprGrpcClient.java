@@ -202,7 +202,7 @@ class DaprGrpcClient implements DaprClient {
           .setCallback(timerParams.getCallback())
           .setData(ByteString.copyFrom(timerParams.getData()))
           .setDueTime(convertDurationToDaprFormat(timerParams.getDueTime()))
-          .setPeriod(convertRepeatedDurationToIso8601RepetitionFormat(timerParams.getRepeatedPeriod()));
+          .setPeriod(convertRepeatedDurationToIso8601RepetitionFormat(timerParams.getPeriod()));
 
       timerParams.getTtl()
           .ifPresent(value -> reqBuilder.setTtl(convertRepeatedDurationToIso8601RepetitionFormat(value)));
