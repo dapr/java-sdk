@@ -13,7 +13,10 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import io.dapr.utils.RepeatedDuration;
+
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * Parameters for Actor Reminder.
@@ -38,7 +41,26 @@ final class ActorReminderParams {
   /**
    * Interval between triggers.
    */
-  private final Duration period;
+  private final RepeatedDuration period;
+
+  /**
+   * Time at which or time interval after which the reminder will be expired and deleted.
+   * If ttl is omitted, no restrictions are applied.
+   */
+  private final RepeatedDuration ttl;
+
+  /**
+   * Instantiates a new instance for the params of a reminder.
+   *
+   * @param data    Data to be passed in as part of the reminder trigger.
+   * @param dueTime Time the reminder is due for the 1st time.
+   * @param period  Interval between triggers.
+   * @deprecated As of release 1.4, replace with {@link #ActorReminderParams(byte[], Duration, RepeatedDuration)}
+   */
+  @Deprecated
+  ActorReminderParams(byte[] data, Duration dueTime, Duration period) {
+    this(data, dueTime, new RepeatedDuration(period, null));
+  }
 
   /**
    * Instantiates a new instance for the params of a reminder.
@@ -47,12 +69,25 @@ final class ActorReminderParams {
    * @param dueTime Time the reminder is due for the 1st time.
    * @param period  Interval between triggers.
    */
-  ActorReminderParams(byte[] data, Duration dueTime, Duration period) {
+  ActorReminderParams(byte[] data, Duration dueTime, RepeatedDuration period) {
+    this(data, dueTime, period, null);
+  }
+
+  /**
+   * Instantiates a new instance for the params of a reminder.
+   *
+   * @param data    Data to be passed in as part of the reminder trigger.
+   * @param dueTime Time the reminder is due for the 1st time.
+   * @param period  Interval between triggers.
+   * @param ttl     Time at which or time interval after which the reminder will be expired and deleted.
+   */
+  ActorReminderParams(byte[] data, Duration dueTime, RepeatedDuration period, RepeatedDuration ttl) {
     validateDueTime("DueTime", dueTime);
-    validatePeriod("Period", period);
+    validatePeriod("Period", period.getDuration());
     this.data = data;
     this.dueTime = dueTime;
     this.period = period;
+    this.ttl = ttl;
   }
 
   /**
@@ -70,7 +105,7 @@ final class ActorReminderParams {
    * @return Interval between triggers.
    */
   Duration getPeriod() {
-    return period;
+    return period.getDuration();
   }
 
   /**
@@ -80,6 +115,15 @@ final class ActorReminderParams {
    */
   byte[] getData() {
     return data;
+  }
+
+  /**
+   * Gets the time at which or time interval after which the reminder will be expired and deleted.
+   *
+   * @return Time at which or time interval after which the reminder will be expired and deleted.
+   */
+  Optional<RepeatedDuration> getTtl() {
+    return Optional.ofNullable(ttl);
   }
 
   /**
