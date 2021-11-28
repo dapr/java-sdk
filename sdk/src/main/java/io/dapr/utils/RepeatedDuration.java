@@ -8,10 +8,13 @@ package io.dapr.utils;
 import java.time.Duration;
 import java.util.Optional;
 
+/**
+ * Represents a duration with an optional amount of repetitions.
+ */
 public final class RepeatedDuration {
 
   /**
-   * The minimum amount of repetitions TTL and Period can have.
+   * The minimum amount of repetitions.
    */
   private static final Integer MIN_AMOUNT_REPETITIONS = 1;
 
@@ -27,7 +30,7 @@ public final class RepeatedDuration {
   private final Integer repetitions;
 
   /**
-   * Instantiates a new instance for a repeated duration.
+   * Instantiates a new instance of a repeated duration.
    *
    * @param duration The interval until an action.
    */
@@ -39,7 +42,7 @@ public final class RepeatedDuration {
    * Instantiates a new instance for a repeated duration.
    *
    * @param duration    The interval until an action.
-   * @param repetitions The amount of times to invoke the action. May be <code>null</code>.
+   * @param repetitions The amount of times to invoke the action.
    */
   public RepeatedDuration(Duration duration, Integer repetitions) {
     validateDuration(duration);
@@ -73,10 +76,20 @@ public final class RepeatedDuration {
     }
   }
 
+  /**
+   * Gets the {@link Duration}.
+   *
+   * @return The {@link Duration}.
+   */
   public Duration getDuration() {
     return duration;
   }
 
+  /**
+   * Gets the amount of repetitions.
+   *
+   * @return The amount of repetitions as {@link Optional<Integer>}.
+   */
   public Optional<Integer> getRepetitions() {
     return Optional.ofNullable(repetitions);
   }

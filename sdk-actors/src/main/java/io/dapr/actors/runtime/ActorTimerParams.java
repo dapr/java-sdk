@@ -57,7 +57,9 @@ final class ActorTimerParams {
    * @param data     The state to be used by the callback method
    * @param dueTime  The time when timer is first due.
    * @param period   The periodic time when timer will be invoked.
+   * @deprecated As of release 1.4, replace with {@link #ActorTimerParams(String, byte[], Duration, RepeatedDuration)}
    */
+  @Deprecated
   ActorTimerParams(String callback,
                    byte[] data,
                    Duration dueTime,
