@@ -100,9 +100,15 @@ public final class DurationUtils {
    *
    * @param repeatedDuration {@link RepeatedDuration} to parse to ISO-8601 format.
    * @return String containing the parsed {@link RepeatedDuration} to the ISO-8601 format, possibly with repetitions.
+   *         Negative duration results in an empty string, meaning fire only once.
    */
   public static String convertRepeatedDurationToIso8601RepetitionFormat(RepeatedDuration repeatedDuration) {
     StringBuilder sb = new StringBuilder();
+
+    if (repeatedDuration.getDuration().isNegative()) {
+      // Negative duration results in fire only once.
+      return sb.toString();
+    }
 
     repeatedDuration.getRepetitions()
         .ifPresent(value -> sb.append(String.format("R%d/", value)));

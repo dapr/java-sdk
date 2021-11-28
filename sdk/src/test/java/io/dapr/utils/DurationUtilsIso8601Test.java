@@ -90,4 +90,16 @@ public class DurationUtilsIso8601Test {
   public void emptyInputResultsInIllegalArgumentException() {
     DurationUtils.convertIso8601StringToRepeatedDuration(null);
   }
+
+  @Test
+  public void negativeDurationShouldReturnEmptyString() {
+    // Arrange
+    RepeatedDuration input = new RepeatedDuration(Duration.ZERO.minusMinutes(1));
+
+    // Act
+    String result = DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(input);
+
+    // Assert
+    Assert.assertEquals("", result);
+  }
 }
