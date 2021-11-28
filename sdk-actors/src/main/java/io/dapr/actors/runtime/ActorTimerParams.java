@@ -40,6 +40,7 @@ final class ActorTimerParams {
 
   /**
    * Period at which the timer will be triggered.
+   * The number of repetition can also be configured in order to limit the total number of callback invocations.
    */
   private final RepeatedDuration period;
 
@@ -122,9 +123,21 @@ final class ActorTimerParams {
    * Gets the periodic time when timer will be invoked.
    *
    * @return Periodic time as Duration when timer will be invoked.
+   * @deprecated As of release 1.4, replaced by {@link #getRepeatedPeriod()}
    */
+  @Deprecated
   public Duration getPeriod() {
     return this.period.getDuration();
+  }
+
+  /**
+   * Gets the periodic time when timer will be invoked.
+   * Possibly contains repetitions to limit the  the total number of callback invocations.
+   *
+   * @return Periodic time as {@link RepeatedDuration} when timer will be invoked.
+   */
+  public RepeatedDuration getRepeatedPeriod() {
+    return this.period;
   }
 
   /**

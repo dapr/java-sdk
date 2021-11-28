@@ -19,7 +19,8 @@ import java.time.Duration;
 
 public final class DurationUtils {
 
-  private DurationUtils() {}
+  private DurationUtils() {
+  }
 
   /**
    * Converts time from the String format used by Dapr into a Duration.
@@ -113,8 +114,8 @@ public final class DurationUtils {
   }
 
   /**
-   * This method uses the default {@link Duration#parse(CharSequence)} method that supports parsing of an ISO-8601 string.
-   * In addition to the default implementation, this method allows for repetitions as well as the Dapr time.Duration format.
+   * This method uses the {@link Duration#parse(CharSequence)} method that supports parsing of an ISO-8601 string.
+   * In addition to the default implementation, this method allows for repetitions as well as the Dapr format.
    * Example inputs: 'R4/PT2H', 'P3DT2H', '4h15m50s60ms'
    *
    * @param value The value in ISO-8601 format to convert to a {@link RepeatedDuration}.
@@ -134,7 +135,7 @@ public final class DurationUtils {
     }
 
     if (splitOnRepetition[0].charAt(0) != 'R') {
-      throw new IllegalArgumentException("Value does not follow the ISO-8601 standard");
+      throw new IllegalArgumentException(String.format("Value: '%s' does not follow the ISO-8601 standard", value));
     }
 
     Integer repetitions = Integer.parseInt(splitOnRepetition[0].substring(1));

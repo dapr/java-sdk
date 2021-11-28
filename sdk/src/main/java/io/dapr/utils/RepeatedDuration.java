@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Microsoft Corporation and Dapr Contributors.
+ * Licensed under the MIT License.
+ */
+
 package io.dapr.utils;
 
 import java.time.Duration;
@@ -22,18 +27,18 @@ public final class RepeatedDuration {
   private final Integer repetitions;
 
   /**
-   * Instantiates a new instance for a repeated duration
+   * Instantiates a new instance for a repeated duration.
    *
-   * @param duration The interval until an action
+   * @param duration The interval until an action.
    */
   public RepeatedDuration(Duration duration) {
     this(duration, null);
   }
 
   /**
-   * Instantiates a new instance for a repeated duration
+   * Instantiates a new instance for a repeated duration.
    *
-   * @param duration    The interval until an action
+   * @param duration    The interval until an action.
    * @param repetitions The amount of times to invoke the action. May be <code>null</code>.
    */
   public RepeatedDuration(Duration duration, Integer repetitions) {

@@ -28,7 +28,8 @@ public class ActorTimerParamsTest {
   public void ttlRepetitionsNotRequired() throws IOException {
     // Arrange
     ActorTimerParams params =
-        new ActorTimerParams("callback", new byte[1], Duration.ZERO, new RepeatedDuration(Duration.ZERO));
+        new ActorTimerParams("callback", new byte[1], Duration.ZERO, new RepeatedDuration(Duration.ZERO),
+            new RepeatedDuration(Duration.ZERO));
 
     // Act
     byte[] serialized = SERIALIZER.serialize(params);
