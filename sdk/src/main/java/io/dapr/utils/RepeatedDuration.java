@@ -13,7 +13,7 @@ public final class RepeatedDuration {
   /**
    * The minimum amount of repetitions TTL and Period can have.
    */
-  private static final Integer MIN_AMOUNT_REPETITIONS = 0;
+  private static final Integer MIN_AMOUNT_REPETITIONS = 1;
 
   /**
    * The duration.

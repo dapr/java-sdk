@@ -13,6 +13,11 @@ public class RepeatedDurationTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
+  public void repetitionsMustBeGreaterThanZero() {
+    new RepeatedDuration(Duration.ZERO, 0);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
   public void durationCanNotBeNull() {
     new RepeatedDuration(null);
   }
