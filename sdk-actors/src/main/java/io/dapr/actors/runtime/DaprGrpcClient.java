@@ -19,7 +19,6 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.config.Properties;
-import io.dapr.utils.DurationUtils;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
@@ -29,6 +28,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.dapr.utils.DurationUtils.convertDurationToDaprFormat;
+import static io.dapr.utils.DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat;
 
 /**
  * A DaprClient over HTTP for Actor's runtime.
@@ -154,8 +156,8 @@ class DaprGrpcClient implements DaprClient {
               .setActorId(actorId)
               .setName(reminderName)
               .setData(ByteString.copyFrom(reminderParams.getData()))
-              .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
-              .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()))
+              .setDueTime(convertDurationToDaprFormat(reminderParams.getDueTime()))
+              .setPeriod(convertDurationToDaprFormat(reminderParams.getPeriod()))
               .build();
 
       ListenableFuture<Empty> futureResponse = client.registerActorReminder(req);
@@ -193,18 +195,19 @@ class DaprGrpcClient implements DaprClient {
       String timerName,
       ActorTimerParams timerParams) {
     return Mono.fromCallable(() -> {
-      DaprProtos.RegisterActorTimerRequest req =
-          DaprProtos.RegisterActorTimerRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(timerName)
-              .setCallback(timerParams.getCallback())
-              .setData(ByteString.copyFrom(timerParams.getData()))
-              .setDueTime(DurationUtils.convertDurationToDaprFormat(timerParams.getDueTime()))
-              .setPeriod(DurationUtils.convertDurationToDaprFormat(timerParams.getPeriod()))
-              .build();
+      DaprProtos.RegisterActorTimerRequest.Builder reqBuilder = DaprProtos.RegisterActorTimerRequest.newBuilder()
+          .setActorType(actorType)
+          .setActorId(actorId)
+          .setName(timerName)
+          .setCallback(timerParams.getCallback())
+          .setData(ByteString.copyFrom(timerParams.getData()))
+          .setDueTime(convertDurationToDaprFormat(timerParams.getDueTime()))
+          .setPeriod(convertRepeatedDurationToIso8601RepetitionFormat(timerParams.getRepeatedPeriod()));
 
-      ListenableFuture<Empty> futureResponse = client.registerActorTimer(req);
+      timerParams.getTtl()
+          .ifPresent(value -> reqBuilder.setTtl(convertRepeatedDurationToIso8601RepetitionFormat(value)));
+
+      ListenableFuture<Empty> futureResponse = client.registerActorTimer(reqBuilder.build());
       futureResponse.get();
       return null;
     });

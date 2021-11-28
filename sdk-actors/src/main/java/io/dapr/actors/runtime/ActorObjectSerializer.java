@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.client.ObjectSerializer;
 import io.dapr.utils.DurationUtils;
+import io.dapr.utils.RepeatedDuration;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -77,11 +78,19 @@ public class ActorObjectSerializer extends ObjectSerializer {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
       generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(timer.getDueTime()));
-      generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(timer.getPeriod()));
+      generator.writeStringField("period",
+          DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(timer.getRepeatedPeriod()));
       generator.writeStringField("callback", timer.getCallback());
+
+      if (timer.getTtl().isPresent()) {
+        generator.writeStringField("ttl",
+            DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(timer.getTtl().get()));
+      }
+
       if (timer.getData() != null) {
         generator.writeBinaryField("data", timer.getData());
       }
+
       generator.writeEndObject();
       generator.close();
       writer.flush();
@@ -187,10 +196,11 @@ public class ActorObjectSerializer extends ObjectSerializer {
     JsonNode node = OBJECT_MAPPER.readTree(value);
     String callback = node.get("callback").asText();
     Duration dueTime = extractDurationOrNull(node, "dueTime");
-    Duration period = extractDurationOrNull(node, "period");
+    RepeatedDuration period = extractRepeatedDurationOrNull(node, "period");
+    RepeatedDuration ttl = extractRepeatedDurationOrNull(node, "ttl");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
-    return new ActorTimerParams(callback, data, dueTime, period);
+    return new ActorTimerParams(callback, data, dueTime, period, ttl);
   }
 
   /**
@@ -227,5 +237,21 @@ public class ActorObjectSerializer extends ObjectSerializer {
     }
 
     return DurationUtils.convertDurationFromDaprFormat(valueNode.asText());
+  }
+
+  /**
+   * Extracts {@link RepeatedDuration} or null.
+   *
+   * @param node Node that contains the attribute.
+   * @param name Attribute name.
+   * @return Parsed {@link RepeatedDuration} or null.
+   */
+  private static RepeatedDuration extractRepeatedDurationOrNull(JsonNode node, String name) {
+    JsonNode valueNode = node.get(name);
+    if (valueNode == null) {
+      return null;
+    }
+
+    return DurationUtils.convertIso8601StringToRepeatedDuration(valueNode.asText());
   }
 }

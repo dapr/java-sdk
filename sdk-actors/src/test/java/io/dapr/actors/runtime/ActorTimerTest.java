@@ -41,7 +41,7 @@ public class ActorTimerTest {
       period);
     byte[] s = new ActorObjectSerializer().serialize(timer);
 
-    String expected = "{\"period\":\"1h0m3s0ms\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
+    String expected = "{\"period\":\"PT1H3S\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
     // Deep comparison via JsonNode.equals method.
     Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }

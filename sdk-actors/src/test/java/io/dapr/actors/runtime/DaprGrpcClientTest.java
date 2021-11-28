@@ -210,7 +210,7 @@ public class DaprGrpcClientTest {
       assertEquals(timerName, argument.getName());
       assertEquals(callback, argument.getCallback());
       assertEquals(DurationUtils.convertDurationToDaprFormat(params.getDueTime()), argument.getDueTime());
-      assertEquals(DurationUtils.convertDurationToDaprFormat(params.getPeriod()), argument.getPeriod());
+      assertEquals(DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(params.getRepeatedPeriod()), argument.getPeriod());
       return true;
     }))).thenReturn(settableFuture);
     Mono<Void> result = client.registerTimer(ACTOR_TYPE, ACTOR_ID, timerName, params);

@@ -115,7 +115,7 @@ public class DaprHttpClientTest {
         @Override
         public Response.Builder respond(Request request) {
           String expectedBody = "{\"dueTime\":\"0h0m5s0ms\"," +
-              "\"period\":\"0h0m10s0ms\"," +
+              "\"period\":\"PT10S\"," +
               "\"callback\":\"mycallback\"," +
               "\"data\":\""+ Base64.getEncoder().encodeToString(data.getBytes()) +"\"}";
           String body = "";
