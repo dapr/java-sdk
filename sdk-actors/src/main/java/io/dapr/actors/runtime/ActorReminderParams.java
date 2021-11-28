@@ -91,6 +91,34 @@ final class ActorReminderParams {
   }
 
   /**
+   * Validates due time is valid, throws {@link IllegalArgumentException}.
+   *
+   * @param argName Name of the argument passed in.
+   * @param value   Vale being checked.
+   */
+  private static void validateDueTime(String argName, Duration value) {
+    if (value.compareTo(Duration.ZERO) < 0) {
+      String message = String.format(
+          "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, Duration.ZERO);
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  /**
+   * Validates reminder period is valid, throws {@link IllegalArgumentException}.
+   *
+   * @param argName Name of the argument passed in.
+   * @param value   Vale being checked.
+   */
+  private static void validatePeriod(String argName, Duration value) throws IllegalArgumentException {
+    if (value.compareTo(MIN_TIME_PERIOD) < 0) {
+      String message = String.format(
+          "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, MIN_TIME_PERIOD);
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  /**
    * Gets the time the reminder is due for the 1st time.
    *
    * @return Time the reminder is due for the 1st time.
@@ -124,33 +152,5 @@ final class ActorReminderParams {
    */
   Optional<RepeatedDuration> getTtl() {
     return Optional.ofNullable(ttl);
-  }
-
-  /**
-   * Validates due time is valid, throws {@link IllegalArgumentException}.
-   *
-   * @param argName Name of the argument passed in.
-   * @param value   Vale being checked.
-   */
-  private static void validateDueTime(String argName, Duration value) {
-    if (value.compareTo(Duration.ZERO) < 0) {
-      String message = String.format(
-            "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, Duration.ZERO);
-      throw new IllegalArgumentException(message);
-    }
-  }
-
-  /**
-   * Validates reminder period is valid, throws {@link IllegalArgumentException}.
-   *
-   * @param argName Name of the argument passed in.
-   * @param value   Vale being checked.
-   */
-  private static void validatePeriod(String argName, Duration value) throws IllegalArgumentException {
-    if (value.compareTo(MIN_TIME_PERIOD) < 0) {
-      String message = String.format(
-            "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, MIN_TIME_PERIOD);
-      throw new IllegalArgumentException(message);
-    }
   }
 }
