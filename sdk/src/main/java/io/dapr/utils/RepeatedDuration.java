@@ -88,7 +88,7 @@ public final class RepeatedDuration {
   /**
    * Gets the amount of repetitions.
    *
-   * @return The amount of repetitions as {@link Optional<Integer>}.
+   * @return The amount of repetitions as {@link Optional}.
    */
   public Optional<Integer> getRepetitions() {
     return Optional.ofNullable(repetitions);

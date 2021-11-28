@@ -153,4 +153,14 @@ final class ActorReminderParams {
   Optional<RepeatedDuration> getTtl() {
     return Optional.ofNullable(ttl);
   }
+
+  /**
+   * Gets the periodic time when the reminder will be invoked.
+   * Possibly contains repetitions to limit the the total number of callback invocations.
+   *
+   * @return Periodic time as {@link RepeatedDuration} when reminder will be invoked.
+   */
+  public RepeatedDuration getRepeatedPeriod() {
+    return period;
+  }
 }

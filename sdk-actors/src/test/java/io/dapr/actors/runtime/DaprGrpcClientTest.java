@@ -19,6 +19,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.utils.DurationUtils;
+import io.dapr.utils.RepeatedDuration;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import org.junit.Before;
@@ -158,7 +159,8 @@ public class DaprGrpcClientTest {
     ActorReminderParams params = new ActorReminderParams(
         "hello world".getBytes(),
         Duration.ofSeconds(1),
-        Duration.ofSeconds(2)
+        new RepeatedDuration(Duration.ofSeconds(2)),
+        new RepeatedDuration(Duration.ofSeconds(2), 1)
     );
 
     when(grpcStub.registerActorReminder(argThat(argument -> {
@@ -166,7 +168,8 @@ public class DaprGrpcClientTest {
       assertEquals(ACTOR_ID, argument.getActorId());
       assertEquals(reminderName, argument.getName());
       assertEquals(DurationUtils.convertDurationToDaprFormat(params.getDueTime()), argument.getDueTime());
-      assertEquals(DurationUtils.convertDurationToDaprFormat(params.getPeriod()), argument.getPeriod());
+      assertEquals(DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(params.getRepeatedPeriod()), argument.getPeriod());
+      assertEquals(DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(params.getTtl().get()), argument.getTtl());
       return true;
     }))).thenReturn(settableFuture);
     Mono<Void> result = client.registerReminder(ACTOR_TYPE, ACTOR_ID, reminderName, params);
@@ -201,7 +204,8 @@ public class DaprGrpcClientTest {
         callback,
         "hello world".getBytes(),
         Duration.ofSeconds(1),
-        Duration.ofSeconds(2)
+        new RepeatedDuration(Duration.ofSeconds(2)),
+        new RepeatedDuration(Duration.ofSeconds(2), 4)
     );
 
     when(grpcStub.registerActorTimer(argThat(argument -> {
@@ -211,6 +215,7 @@ public class DaprGrpcClientTest {
       assertEquals(callback, argument.getCallback());
       assertEquals(DurationUtils.convertDurationToDaprFormat(params.getDueTime()), argument.getDueTime());
       assertEquals(DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(params.getPeriod()), argument.getPeriod());
+      assertEquals(DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(params.getTtl().get()), argument.getTtl());
       return true;
     }))).thenReturn(settableFuture);
     Mono<Void> result = client.registerTimer(ACTOR_TYPE, ACTOR_ID, timerName, params);

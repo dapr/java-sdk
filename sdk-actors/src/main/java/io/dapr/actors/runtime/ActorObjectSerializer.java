@@ -110,10 +110,18 @@ public class ActorObjectSerializer extends ObjectSerializer {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
       generator.writeStringField("dueTime", DurationUtils.convertDurationToDaprFormat(reminder.getDueTime()));
-      generator.writeStringField("period", DurationUtils.convertDurationToDaprFormat(reminder.getPeriod()));
+      generator.writeStringField("period",
+          DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(reminder.getRepeatedPeriod()));
+
+      if (reminder.getTtl().isPresent()) {
+        generator.writeStringField("ttl",
+            DurationUtils.convertRepeatedDurationToIso8601RepetitionFormat(reminder.getTtl().get()));
+      }
+
       if (reminder.getData() != null) {
         generator.writeBinaryField("data", reminder.getData());
       }
+
       generator.writeEndObject();
       generator.close();
       writer.flush();
@@ -217,10 +225,11 @@ public class ActorObjectSerializer extends ObjectSerializer {
 
     JsonNode node = OBJECT_MAPPER.readTree(value);
     Duration dueTime = extractDurationOrNull(node, "dueTime");
-    Duration period = extractDurationOrNull(node, "period");
+    RepeatedDuration period = extractRepeatedDurationOrNull(node, "period");
+    RepeatedDuration ttl = extractRepeatedDurationOrNull(node, "ttl");
     byte[] data = node.get("data") != null ? node.get("data").binaryValue() : null;
 
-    return new ActorReminderParams(data, dueTime, period);
+    return new ActorReminderParams(data, dueTime, period, ttl);
   }
 
   /**

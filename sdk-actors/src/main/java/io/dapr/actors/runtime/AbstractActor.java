@@ -121,9 +121,47 @@ public abstract class AbstractActor {
       T state,
       Duration dueTime,
       Duration period) {
+    return this.registerReminder(reminderName, state, dueTime, new RepeatedDuration(period));
+  }
+
+  /**
+   * Registers a reminder for this Actor.
+   *
+   * @param reminderName Name of the reminder.
+   * @param state        State to be send along with reminder triggers.
+   * @param dueTime      Due time for the first trigger.
+   * @param period       Frequency for the triggers.
+   * @param <T>          Type of the state object.
+   * @return Asynchronous void response.
+   */
+  protected <T> Mono<Void> registerReminder(
+      String reminderName,
+      T state,
+      Duration dueTime,
+      RepeatedDuration period) {
+    return this.registerReminder(reminderName, state, dueTime, period, null);
+  }
+
+  /**
+   * Registers a reminder for this Actor.
+   *
+   * @param reminderName Name of the reminder.
+   * @param state        State to be send along with reminder triggers.
+   * @param dueTime      Due time for the first trigger.
+   * @param period       Frequency for the triggers.
+   * @param ttl          The time at which or time interval after which the reminder will be expired and deleted.
+   * @param <T>          Type of the state object.
+   * @return Asynchronous void response.
+   */
+  protected <T> Mono<Void> registerReminder(
+      String reminderName,
+      T state,
+      Duration dueTime,
+      RepeatedDuration period,
+      RepeatedDuration ttl) {
     try {
       byte[] data = this.actorRuntimeContext.getObjectSerializer().serialize(state);
-      ActorReminderParams params = new ActorReminderParams(data, dueTime, period);
+      ActorReminderParams params = new ActorReminderParams(data, dueTime, period, ttl);
       return this.actorRuntimeContext.getDaprClient().registerReminder(
           this.actorRuntimeContext.getActorTypeInformation().getName(),
           this.id.toString(),

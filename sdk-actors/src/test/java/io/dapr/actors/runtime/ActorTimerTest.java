@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.utils.RepeatedDuration;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,14 +35,19 @@ public class ActorTimerTest {
       .plusHours(1)
       .plusSeconds(3);
 
+    Duration ttl = Duration.ZERO
+      .plusHours(4)
+      .plusSeconds(2);
+
     ActorTimerParams timer = new ActorTimerParams(
       "myfunction",
       null,
       dueTime,
-      period);
+      new RepeatedDuration(period),
+      new RepeatedDuration(ttl, 4));
     byte[] s = new ActorObjectSerializer().serialize(timer);
 
-    String expected = "{\"period\":\"PT1H3S\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
+    String expected = "{\"period\":\"PT1H3S\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\", \"ttl\": \"R4/PT4H2S\"}";
     // Deep comparison via JsonNode.equals method.
     Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }

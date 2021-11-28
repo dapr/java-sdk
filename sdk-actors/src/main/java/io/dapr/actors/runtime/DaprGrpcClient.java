@@ -150,17 +150,18 @@ class DaprGrpcClient implements DaprClient {
       String reminderName,
       ActorReminderParams reminderParams) {
     return Mono.fromCallable(() -> {
-      DaprProtos.RegisterActorReminderRequest req =
-          DaprProtos.RegisterActorReminderRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(reminderName)
-              .setData(ByteString.copyFrom(reminderParams.getData()))
-              .setDueTime(convertDurationToDaprFormat(reminderParams.getDueTime()))
-              .setPeriod(convertDurationToDaprFormat(reminderParams.getPeriod()))
-              .build();
+      DaprProtos.RegisterActorReminderRequest.Builder reqBuilder = DaprProtos.RegisterActorReminderRequest.newBuilder()
+          .setActorType(actorType)
+          .setActorId(actorId)
+          .setName(reminderName)
+          .setData(ByteString.copyFrom(reminderParams.getData()))
+          .setDueTime(convertDurationToDaprFormat(reminderParams.getDueTime()))
+          .setPeriod(convertRepeatedDurationToIso8601RepetitionFormat(reminderParams.getRepeatedPeriod()));
 
-      ListenableFuture<Empty> futureResponse = client.registerActorReminder(req);
+      reminderParams.getTtl()
+          .ifPresent(value -> reqBuilder.setTtl(convertRepeatedDurationToIso8601RepetitionFormat(value)));
+
+      ListenableFuture<Empty> futureResponse = client.registerActorReminder(reqBuilder.build());
       futureResponse.get();
       return null;
     });
