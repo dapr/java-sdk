@@ -106,7 +106,7 @@ final class ActorTimerParams {
    *
    * @return The name of the method for this timer.
    */
-  public String getCallback() {
+  String getCallback() {
     return this.callback;
   }
 
@@ -115,7 +115,7 @@ final class ActorTimerParams {
    *
    * @return Time as Duration when timer is first due.
    */
-  public Duration getDueTime() {
+  Duration getDueTime() {
     return this.dueTime;
   }
 
@@ -126,7 +126,7 @@ final class ActorTimerParams {
    * @deprecated As of release 1.4, replaced by {@link #getRepeatedPeriod()}
    */
   @Deprecated
-  public Duration getPeriod() {
+  Duration getPeriod() {
     return this.period.getDuration();
   }
 
@@ -136,7 +136,7 @@ final class ActorTimerParams {
    *
    * @return Periodic time as {@link RepeatedDuration} when timer will be invoked.
    */
-  public RepeatedDuration getRepeatedPeriod() {
+  RepeatedDuration getRepeatedPeriod() {
     return this.period;
   }
 
@@ -145,7 +145,7 @@ final class ActorTimerParams {
    *
    * @return State containing information to be used by the callback method, or <code>null</code>.
    */
-  public byte[] getData() {
+  byte[] getData() {
     return this.data;
   }
 
@@ -155,7 +155,7 @@ final class ActorTimerParams {
    *
    * @return Time at which or time interval after which the timer will be expired and deleted, or <code>null</code>.
    */
-  public Optional<RepeatedDuration> getTtl() {
+  Optional<RepeatedDuration> getTtl() {
     return Optional.ofNullable(this.ttl);
   }
 }
