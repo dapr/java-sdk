@@ -6,8 +6,8 @@
 package io.dapr.config;
 
 import io.dapr.client.DaprApiProtocol;
+import io.dapr.utils.NetworkUtils;
 
-import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -19,7 +19,7 @@ public class Properties {
   /**
    * Dapr's default IP for HTTP and gRPC communication.
    */
-  private static final String DEFAULT_SIDECAR_IP = InetAddress.getLoopbackAddress().getHostAddress();
+  private static final String DEFAULT_SIDECAR_IP = NetworkUtils.getLocalHostAddress();
 
   /**
    * Dapr's default HTTP port.

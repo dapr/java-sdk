@@ -17,6 +17,7 @@ import org.junit.Test;
 import reactor.core.publisher.Mono;
 
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
+import static io.dapr.actors.TestUtils.getSidecarIpForHttpUrl;
 import static org.junit.Assert.assertEquals;
 
 public class DaprHttpClientTest {
@@ -27,13 +28,14 @@ public class DaprHttpClientTest {
 
   private MockInterceptor mockInterceptor;
 
-  private String sidecarIP;
+  private String sidecarIp, sidecarIpForHttpUrl;
 
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
   @Before
   public void setUp() {
-    sidecarIP = Properties.SIDECAR_IP.get();
+    sidecarIp = Properties.SIDECAR_IP.get();
+    sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -41,9 +43,9 @@ public class DaprHttpClientTest {
   @Test
   public void invokeActorMethod() {
     mockInterceptor.addRule()
-        .post("http://" + sidecarIP + ":3000/v1.0/actors/DemoActor/1/method/Payment")
+        .post("http://" + sidecarIpForHttpUrl + ":3000/v1.0/actors/DemoActor/1/method/Payment")
         .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(sidecarIP, 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono =
         DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());
@@ -53,12 +55,12 @@ public class DaprHttpClientTest {
   @Test
   public void invokeActorMethodError() {
     mockInterceptor.addRule()
-        .post("http://" + sidecarIP + ":3000/v1.0/actors/DemoActor/1/method/Payment")
+        .post("http://" + sidecarIpForHttpUrl + ":3000/v1.0/actors/DemoActor/1/method/Payment")
         .respond(404,
             ResponseBody.create("" +
                 "{\"errorCode\":\"ERR_SOMETHING\"," +
                 "\"message\":\"error message\"}", MediaTypes.MEDIATYPE_JSON));
-    DaprHttp daprHttp = new DaprHttpProxy(sidecarIP, 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono =
         DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());

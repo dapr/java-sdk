@@ -8,6 +8,7 @@ package io.dapr.actors;
 import io.dapr.exceptions.DaprException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
+import org.apache.commons.validator.routines.InetAddressValidator;
 
 public final class TestUtils {
 
@@ -45,5 +46,14 @@ public final class TestUtils {
     Assertions.assertEquals(expectedType, daprException.getCause().getClass());
     Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
+  }
+
+  public static String getSidecarIpForHttpUrl(String sidecarIp) {
+    if(InetAddressValidator.getInstance().isValidInet6Address(sidecarIp)) {
+      return "[" + sidecarIp + "]";
+    }
+    else {
+      return sidecarIp;
+    }
   }
 }

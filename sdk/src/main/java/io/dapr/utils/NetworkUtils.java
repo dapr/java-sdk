@@ -6,8 +6,10 @@
 package io.dapr.utils;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 /**
  * Utility methods for network, internal to Dapr SDK.
@@ -38,5 +40,20 @@ public final class NetworkUtils {
         throw new RuntimeException(e);
       }
     }, timeoutInMilliseconds);
+  }
+
+  /**
+   * Tries to retrieve address for localhost.
+   * Falls back to loopback address if UnknownHostException.
+   * @return The IP for localhost or loopback address
+   */
+  public static String getLocalHostAddress() {
+    String hostAddress;
+    try {
+      hostAddress = InetAddress.getLocalHost().getHostAddress();
+    } catch (UnknownHostException e) {
+      hostAddress = InetAddress.getLoopbackAddress().getHostAddress();
+    }
+    return hostAddress;
   }
 }

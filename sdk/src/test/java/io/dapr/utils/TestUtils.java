@@ -8,6 +8,7 @@ package io.dapr.utils;
 import io.dapr.exceptions.DaprException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
+import org.apache.commons.validator.routines.InetAddressValidator;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -54,6 +55,15 @@ public final class TestUtils {
     try (ServerSocket socket = new ServerSocket(0)) {
       socket.setReuseAddress(true);
       return socket.getLocalPort();
+    }
+  }
+
+  public static String getSidecarIpForHttpUrl(String sidecarIp) {
+    if(InetAddressValidator.getInstance().isValidInet6Address(sidecarIp)) {
+      return "[" + sidecarIp + "]";
+    }
+    else {
+      return sidecarIp;
     }
   }
 }
