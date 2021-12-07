@@ -1,0 +1,49 @@
+name: Run Jazzer against Dapr SDK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - class: DaprClientBuilder
+            package: io.dapr.client
+            methods: 'withObjectSerializer withStateSerializer'
+            version: 1.3.1
+          - class: DaprClientGrpc
+            package: io.dapr.client
+            methods: 'waitForSidecar publishEvent invokeMethod'
+            version: 1.3.1
+          - class: DaprClientHttp
+            package: io.dapr.client
+            methods: 'waitForSidecar publishEvent invokeMethod'
+            version: 1.3.1
+          - class: DaprHttp
+            package: io.dapr.client
+            methods: 'invokeApi publishEvent invokeMethod'
+            version: 1.3.1
+          - class: ObjectSerializer
+            package: io.dapr.client
+            methods: 'serialize deserialize'
+            version: 1.3.1
+        
+    steps:
+    - uses: actions/checkout@v2
+    - name: git-bash
+      run: |
+         chmod +x ./jazzer.sh
+         ./jazzer.sh --version ${{matrix.version}} --package ${{matrix.package}} --class ${{matrix.class}} --methods ${{matrix.methods}} --keep-going=1
+      shell: bash
+
+    - name: Upload Crash
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        name: artifacts
+        path: ./fuzzing
