@@ -105,6 +105,25 @@ public class DaprHttpTest {
   }
 
   @Test
+  public void invokeMethodIPv6() throws IOException {
+    Map<String, String> headers = new HashMap<>();
+    headers.put("content-type", "text/html");
+    headers.put("header1", "value1");
+    System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
+    sidecarIp = Properties.SIDECAR_IP.get();
+    sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);
+    mockInterceptor.addRule()
+        .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+        .respond(serializer.serialize(EXPECTED_RESULT));
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
+    Mono<DaprHttp.Response> mono =
+        daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, (byte[]) null, headers, Context.empty());
+    DaprHttp.Response response = mono.block();
+    String body = serializer.deserialize(response.getBody(), String.class);
+    assertEquals(EXPECTED_RESULT, body);
+  }
+
+  @Test
   public void invokePostMethod() throws IOException {
     mockInterceptor.addRule()
       .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")

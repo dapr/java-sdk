@@ -129,16 +129,10 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void publishEventInvocationipV6() {
-    //TODO: remove println debugging statements
-    System.out.println("sidecar ip by property name: " + System.getProperty(Properties.SIDECAR_IP.getName()));
-    System.out.println("sidecar ip by property environment: " + System.getProperty(Properties.SIDECAR_IP.getEnvName()));
-    System.out.println("sidecar ip is: " + sidecarIp);
+  public void publishEventInvocationIPv6() {
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
     sidecarIp = Properties.SIDECAR_IP.get();
     sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);
-    System.out.println("sidecar ip forced into IPv6 is: " + sidecarIp);
-    System.out.println("sidecar ip in URL form is: " + sidecarIpForHttpUrl);
     mockInterceptor.addRule()
             .post("http://" + sidecarIpForHttpUrl + ":3000/v1.0/publish/mypubsubname/A")
             .respond(EXPECTED_RESULT);
