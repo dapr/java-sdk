@@ -54,6 +54,7 @@ public class DaprHttpClientTest {
 
   @Test
   public void invokeActorMethodIPv6() {
+    String prevSidecarIp = sidecarIp;
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
     sidecarIp = Properties.SIDECAR_IP.get();
     sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);
@@ -62,6 +63,7 @@ public class DaprHttpClientTest {
         .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
+    System.setProperty(Properties.SIDECAR_IP.getName(), prevSidecarIp);
     Mono<byte[]> mono =
         DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());
     assertEquals(new String(mono.block()), EXPECTED_RESULT);

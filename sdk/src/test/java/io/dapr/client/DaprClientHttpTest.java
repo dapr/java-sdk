@@ -130,6 +130,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void publishEventInvocationIPv6() {
+    String prevSidecarIp = sidecarIp;
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
     sidecarIp = Properties.SIDECAR_IP.get();
     sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);
@@ -139,6 +140,7 @@ public class DaprClientHttpTest {
     String event = "{ \"message\": \"This is a test\" }";
     daprHttp = new DaprHttp(sidecarIp, 3000, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+    System.setProperty(Properties.SIDECAR_IP.getName(), prevSidecarIp);
     Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname", "A", event, null);
     assertNull(mono.block());
   }
