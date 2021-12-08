@@ -48,12 +48,11 @@ public final class TestUtils {
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
   }
 
-  public static String getSidecarIpForHttpUrl(String sidecarIp) {
+  public static String getSidecarIpForHttpUrl(final String sidecarIp) {
+    String retSidecarIp = sidecarIp;
     if(InetAddressValidator.getInstance().isValidInet6Address(sidecarIp)) {
-      return "[" + sidecarIp + "]";
+      retSidecarIp = "[" + sidecarIp + "]";
     }
-    else {
-      return sidecarIp;
-    }
+    return retSidecarIp;
   }
 }
