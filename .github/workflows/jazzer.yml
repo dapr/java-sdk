@@ -40,6 +40,7 @@ jobs:
          chmod +x ./jazzer.sh
          ./jazzer.sh --version ${{matrix.version}} --package ${{matrix.package}} --class ${{matrix.class}} --methods ${{matrix.methods}} --keep-going=1
       shell: bash
+      working-directory: .github/workflows
 
     - name: Upload Crash
       uses: actions/upload-artifact@v1
