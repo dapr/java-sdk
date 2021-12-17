@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Comment analyzer
-        uses: actions/github-script@v1
+        uses: actions/github-script@v5
         with:
           github-token: ${{secrets.DAPR_BOT_TOKEN}}
           script: |
