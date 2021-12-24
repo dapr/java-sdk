@@ -27,7 +27,12 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -514,5 +519,53 @@ class DaprClientProxy implements DaprClient {
   @Override
   public Mono<Void> shutdown() {
     return client.shutdown();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(String storeName, String key) {
+    return client.getConfiguration(storeName, key);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(GetConfigurationRequest request) {
+    return client.getConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfigurations(String storeName, String... keys) {
+    return client.getConfigurations(storeName, keys);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request) {
+    return client.getConfigurations(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<List<ConfigurationItem>> subscribeToConfigurations(String storeName, String... keys) {
+     return client.subscribeToConfigurations(storeName, keys);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<List<ConfigurationItem>> subscribeToConfigurations(SubscribeConfigurationRequest request) {
+    return client.subscribeToConfigurations(request);
   }
 }

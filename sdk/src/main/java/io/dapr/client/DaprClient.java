@@ -27,7 +27,12 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -565,4 +570,55 @@ public interface DaprClient extends AutoCloseable {
    * @return a Mono plan of type Void.
    */
   Mono<Void> shutdown();
+
+  /**
+   * Retrieve a configuration based on a provided key
+   *
+   * @param storeName Name of the configuration store
+   * @param key key of the configuration item which is to be retrieved
+   * @return Mono of the Configuration Item
+   */
+  Mono<ConfigurationItem> getConfiguration(String storeName, String key);
+
+  /**
+   * Retrieve a configuration based on a provided request object
+   *
+   * @param request request for retrieving Configuration for a single key
+   * @return Mono of the Configuration Item
+   */
+  Mono<ConfigurationItem> getConfiguration(GetConfigurationRequest request);
+
+  /**
+   * Retrieve List of configurations based on a provided variable number of keys
+   *
+   * @param storeName Name of the configuration store
+   * @param keys keys of the configurations which are to be retrieved
+   * @return Mono of List of ConfigurationItems
+   */
+  Mono<List<ConfigurationItem>> getConfigurations(String storeName, String... keys);
+
+  /**
+   * Retrieve List of configurations based on a provided configuration request object
+   * @param request request for retrieving Configurations for a list keys
+   * @return Mono of List of ConfigurationItems
+   */
+  Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request);
+
+  /**
+   * Subscribe to the keys for any change
+   *
+   * @param storeName Name of the configuration store
+   * @param keys keys of the configurations which are to be subscribed
+   * @return Flux of List of configuration items
+   */
+  Flux<List<ConfigurationItem>> subscribeToConfigurations(String storeName, String... keys);
+
+  /**
+   * Subscribe to the keys for any change
+   *
+   * @param request request for subscribing to any change for the given keys in request
+   * @return Flux of List of configuration items
+   */
+  Flux<List<ConfigurationItem>> subscribeToConfigurations(SubscribeConfigurationRequest request);
+
 }

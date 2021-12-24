@@ -37,8 +37,13 @@ import io.dapr.client.domain.SaveStateRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
@@ -416,4 +421,31 @@ abstract class AbstractDaprClient implements DaprClient {
     return this.getBulkSecret(request).defaultIfEmpty(Collections.emptyMap());
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(String storeName, String key) {
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, key);
+    return this.getConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfigurations(String storeName, String... keys) {
+    List<String> listOfKeys = Flux.just(keys).collectList().block();
+    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, listOfKeys);
+    return this.getConfigurations(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Flux<List<ConfigurationItem>> subscribeToConfigurations(String storeName, String... keys) {
+    List<String> listOfKeys = Flux.just(keys).collectList().block();
+    SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
+    return this.subscribeToConfigurations(request);
+  }
 }

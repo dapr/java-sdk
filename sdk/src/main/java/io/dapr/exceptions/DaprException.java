@@ -15,6 +15,7 @@ package io.dapr.exceptions;
 
 import io.grpc.StatusRuntimeException;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.Callable;
@@ -152,6 +153,23 @@ public class DaprException extends RuntimeException {
     }
 
     return Mono.empty();
+  }
+
+  /**
+   * Wraps an exception into DaprException (if not already DaprException).
+   *
+   * @param exception Exception to be wrapped.
+   * @param <T> Flux's response type.
+   * @return Flux containing DaprException.
+   */
+  public static <T> Flux<T> wrapFlux(Exception exception) {
+    try {
+      wrap(exception);
+    } catch (Exception e) {
+      return Flux.error(e);
+    }
+
+    return Flux.empty();
   }
 
   /**

@@ -31,6 +31,10 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
@@ -48,6 +52,8 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
@@ -678,6 +684,143 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
+   *{@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(GetConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final String key = request.getKey();
+
+      if((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
+      }
+      if((key == null) || (key.trim().isEmpty())) {
+        throw new IllegalArgumentException("Key cannot be null or empty.");
+      }
+      DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
+          .setStoreName(configurationStoreName)
+          .addKeys(key);
+
+      DaprProtos.GetConfigurationRequest envelop = builder.build();
+
+      return Mono.subscriberContext().flatMap(
+          context ->
+              this.<DaprProtos.GetConfigurationResponse>createMono(
+                  it -> intercept(context, asyncStub).getConfigurationAlpha1(envelop, it)
+              )
+      ).map(
+          it -> {
+            try {
+              return buildConfigurationItem(it.getItems(0));
+            } catch (IOException ex) {
+              throw DaprException.propagate(ex);
+            }
+          }
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final List<String> keys = request.getKeys();
+      if((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
+      }
+      DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
+          .setStoreName(configurationStoreName);
+
+      DaprProtos.GetConfigurationRequest tempEnvelop = null;
+      if(keys.isEmpty() || keys == null) {
+        tempEnvelop = builder.build();
+      }
+      else {
+        tempEnvelop = builder.addAllKeys(keys).build();
+      }
+      DaprProtos.GetConfigurationRequest envelop = tempEnvelop;
+      return Mono.subscriberContext().flatMap(
+          context ->
+            this.<DaprProtos.GetConfigurationResponse>createMono(
+                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelop, it)
+            )
+      ).map(
+          it ->
+              it.getItemsList().stream()
+                  .map(b -> {
+                    try {
+                      return buildConfigurationItem(b);
+                    } catch (Exception e) {
+                      throw DaprException.propagate(e);
+                    }
+              }).collect(Collectors.toList())
+      );
+
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<List<ConfigurationItem>> subscribeToConfigurations(SubscribeConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final List<String> keys = request.getKeys();
+      if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
+      }
+      if (keys == null || keys.isEmpty()) {
+        throw new IllegalArgumentException("Keys can not be null or empty.");
+      }
+      DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
+          .setStoreName(configurationStoreName)
+          .addAllKeys(keys);
+      DaprProtos.SubscribeConfigurationRequest envelop = builder.build();
+      return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
+          it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelop, it)
+      ).map(
+          it ->
+              it.getItemsList().stream()
+                  .map(item -> {
+                    try {
+                      return buildConfigurationItem(item);
+                    } catch (Exception ex) {
+                      throw DaprException.propagate(ex);
+                    }
+                  }).collect(Collectors.toList())
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * Build a new Configuration Item from provided parameter
+   *
+   * @param configurationItem CommonProtos.ConfigurationItem
+   * @return io.dapr.client.domain.ConfigurationItem
+   * @throws IOException
+   */
+  private ConfigurationItem buildConfigurationItem(
+      CommonProtos.ConfigurationItem configurationItem) throws IOException {
+    return new ConfigurationItem(
+        configurationItem.getKey(),
+        configurationItem.getValue(),
+        configurationItem.getVersion(),
+        configurationItem.getMetadataMap()
+    );
+  }
+
+  /**
    * Populates GRPC client with interceptors.
    *
    * @param client GRPC client for Dapr.
@@ -720,6 +863,29 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
     return Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+  }
+
+  private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
+    return Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink) {
+    return new StreamObserver<T>() {
+      @Override
+      public void onNext(T value) {
+        sink.next(value);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        sink.error(DaprException.propagate(new ExecutionException(t)));
+      }
+
+      @Override
+      public void onCompleted() {
+        sink.complete();
+      }
+    };
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {

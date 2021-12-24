@@ -30,12 +30,17 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.TransactionalStateRequest;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -663,6 +668,30 @@ public class DaprClientHttp extends AbstractDaprClient {
             context -> client.invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments,
                     null, null, context))
             .then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(GetConfigurationRequest request) {
+    throw new DaprException("501", "Implementation not supported");
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request) {
+    throw new DaprException("501", "Implementation not supported");
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<List<ConfigurationItem>> subscribeToConfigurations(SubscribeConfigurationRequest request) {
+    throw new DaprException("501", "Implementation not supported");
   }
 
   /**
