@@ -1,7 +1,7 @@
 package io.dapr.examples.configuration.grpc;
 
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.DaprPreviewClientBuilder;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 
@@ -15,13 +15,14 @@ public class SubscribeConfigurationClient {
   private static List<String> k = new ArrayList<>(Arrays.asList("myconfig2","myconfig3", "myconfig4"));
 
   public static void main(String[] args) throws Exception {
-    try (DaprClient client = (new DaprClientBuilder()).build()) {
+    try (DaprPreviewClient client = (new DaprPreviewClientBuilder()).build()) {
+      System.out.println("Using preview client...");
       subscribeConfigurationRequestWithIterator(client);
       subscribeConfigurationRequestDemoWithSubscribe(client);
     }
   }
 
-  public static void subscribeConfigurationRequestWithIterator(DaprClient client) {
+  public static void subscribeConfigurationRequestWithIterator(DaprPreviewClient client) {
     System.out.println("Subscribing to keys: " + k.toString());
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(configurationStoreName, k);
     Iterator<List<ConfigurationItem>> itr = client.subscribeToConfigurations(req).toIterable().iterator();
@@ -31,7 +32,7 @@ public class SubscribeConfigurationClient {
     }
   }
 
-  public static void subscribeConfigurationRequestDemoWithSubscribe(DaprClient client) {
+  public static void subscribeConfigurationRequestDemoWithSubscribe(DaprPreviewClient client) {
     System.out.println("Subscribing to keys using subscribe method: " + k.toString());
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(configurationStoreName, k);
     client.subscribeToConfigurations(req)

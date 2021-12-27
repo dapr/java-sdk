@@ -41,6 +41,7 @@ import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.DaprPreviewClient;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
@@ -57,7 +58,7 @@ import java.util.Map;
  * @see io.dapr.client.DaprClientGrpc
  * @see io.dapr.client.DaprClientHttp
  */
-abstract class AbstractDaprClient implements DaprClient {
+abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
 
   /**
    * A utility class for serialize and deserialize the transient objects.

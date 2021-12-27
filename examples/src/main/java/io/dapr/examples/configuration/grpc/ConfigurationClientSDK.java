@@ -1,7 +1,7 @@
 package io.dapr.examples.configuration.grpc;
 
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.DaprPreviewClientBuilder;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -15,7 +15,8 @@ public class ConfigurationClientSDK {
   private static String key = "configgrpc||myconfig";
 
   public static void main(String[] args) throws Exception {
-    try (DaprClient client = (new DaprClientBuilder()).build()) {
+    try (DaprPreviewClient client = (new DaprPreviewClientBuilder()).build()) {
+      System.out.println("Using preview client...");
       usingConfigurationrequest(client);
       usingParameters(client);
       usingVarargs(client);
@@ -26,7 +27,7 @@ public class ConfigurationClientSDK {
     }
   }
 
-  public static void usingConfigurationrequest(DaprClient client) {
+  public static void usingConfigurationrequest(DaprPreviewClient client) {
     System.out.println("trying to fetch using Configuration request...");
     GetConfigurationRequest request = new GetConfigurationRequest(configurationStoreName, key);
     try {
@@ -37,7 +38,7 @@ public class ConfigurationClientSDK {
     }
   }
 
-  public static void usingParameters(DaprClient client) {
+  public static void usingParameters(DaprPreviewClient client) {
     System.out.println("trying to fetch using Configuration parameters...");
     key = "myconfig2";
     try {
@@ -48,7 +49,7 @@ public class ConfigurationClientSDK {
     }
   }
 
-  public static void usingVarargs(DaprClient client) {
+  public static void usingVarargs(DaprPreviewClient client) {
     System.out.println("trying to fetch using Varargs...");
     try {
       Mono<List<ConfigurationItem>> items = client.getConfigurations(configurationStoreName, "configgrpc||myconfig", "myconfig2", "myconfig3");
@@ -58,7 +59,7 @@ public class ConfigurationClientSDK {
     }
   }
 
-  public static void usingBulkCofigreq(DaprClient client) {
+  public static void usingBulkCofigreq(DaprPreviewClient client) {
     System.out.println("trying to fetch using usingBulkCofigreq...");
     List<String> keys = new ArrayList<>();
     keys.add("myconfig2");
@@ -74,7 +75,7 @@ public class ConfigurationClientSDK {
     }
   }
 
-  public static void getAllUsingCofigreq(DaprClient client) {
+  public static void getAllUsingCofigreq(DaprPreviewClient client) {
     System.out.println("trying to fetch using getAllUsingCofigreq...");
     GetBulkConfigurationRequest req = new GetBulkConfigurationRequest(configurationStoreName, null);
     try {
@@ -85,7 +86,7 @@ public class ConfigurationClientSDK {
     }
   }
 
-  public static void getAllUsingVarargs(DaprClient client) {
+  public static void getAllUsingVarargs(DaprPreviewClient client) {
     System.out.println("trying to fetch using getAllUsingVarargs...");
     try {
       Mono<List<ConfigurationItem>> items = client.getConfigurations(configurationStoreName);
@@ -95,7 +96,7 @@ public class ConfigurationClientSDK {
     }
   }
 
-  public static void errorUsingParameters(DaprClient client) {
+  public static void errorUsingParameters(DaprPreviewClient client) {
     try {
       Mono<ConfigurationItem> item = client.getConfiguration(configurationStoreName, "");
       System.out.println("Retrieved value from configurationstore, Value -> "+ item.block().getValue() + " : key ->" + item.block().getKey());
