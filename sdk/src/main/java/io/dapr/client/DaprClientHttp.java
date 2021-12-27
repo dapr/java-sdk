@@ -15,10 +15,13 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
@@ -28,12 +31,9 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.TransactionalStateRequest;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
-import io.dapr.client.domain.GetBulkConfigurationRequest;
-import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -683,6 +683,14 @@ public class DaprClientHttp extends AbstractDaprClient {
    */
   @Override
   public Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request) {
+    throw new DaprException("501", "Implementation not supported");
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getAllConfigurations(GetBulkConfigurationRequest request) {
     throw new DaprException("501", "Implementation not supported");
   }
 

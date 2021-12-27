@@ -17,10 +17,13 @@ import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
@@ -30,11 +33,8 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
-import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
-import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
@@ -692,10 +692,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       final String configurationStoreName = request.getStoreName();
       final String key = request.getKey();
 
-      if((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
+      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
-      if((key == null) || (key.trim().isEmpty())) {
+      if ((key == null) || (key.trim().isEmpty())) {
         throw new IllegalArgumentException("Key cannot be null or empty.");
       }
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
@@ -703,20 +703,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
           .addKeys(key);
 
       DaprProtos.GetConfigurationRequest envelop = builder.build();
-
-      return Mono.subscriberContext().flatMap(
-          context ->
-              this.<DaprProtos.GetConfigurationResponse>createMono(
-                  it -> intercept(context, asyncStub).getConfigurationAlpha1(envelop, it)
-              )
-      ).map(
-          it -> {
-            try {
-              return buildConfigurationItem(it.getItems(0));
-            } catch (IOException ex) {
-              throw DaprException.propagate(ex);
-            }
-          }
+      return this.getConfigurationAlpha1(envelop).map(
+          it -> it.get(0)
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -731,40 +719,61 @@ public class DaprClientGrpc extends AbstractDaprClient {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
-      if((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
+      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
+      }
+      if (keys.isEmpty() || keys == null) {
+        throw new IllegalArgumentException("Keys can not be empty or null");
+      }
+      DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
+          .setStoreName(configurationStoreName).addAllKeys(keys);
+
+      DaprProtos.GetConfigurationRequest envelop = builder.build();
+      return this.getConfigurationAlpha1(envelop);
+
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getAllConfigurations(GetBulkConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName);
 
-      DaprProtos.GetConfigurationRequest tempEnvelop = null;
-      if(keys.isEmpty() || keys == null) {
-        tempEnvelop = builder.build();
-      }
-      else {
-        tempEnvelop = builder.addAllKeys(keys).build();
-      }
-      DaprProtos.GetConfigurationRequest envelop = tempEnvelop;
-      return Mono.subscriberContext().flatMap(
-          context ->
-            this.<DaprProtos.GetConfigurationResponse>createMono(
-                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelop, it)
-            )
-      ).map(
-          it ->
-              it.getItemsList().stream()
-                  .map(b -> {
-                    try {
-                      return buildConfigurationItem(b);
-                    } catch (Exception e) {
-                      throw DaprException.propagate(e);
-                    }
-              }).collect(Collectors.toList())
-      );
+      DaprProtos.GetConfigurationRequest envelop = builder.build();
+      return this.getConfigurationAlpha1(envelop);
 
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelop) {
+    return Mono.subscriberContext().flatMap(
+        context ->
+            this.<DaprProtos.GetConfigurationResponse>createMono(
+                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelop, it)
+            )
+    ).map(
+        it ->
+            it.getItemsList().stream()
+                .map(b -> {
+                  try {
+                    return buildConfigurationItem(b);
+                  } catch (Exception e) {
+                    throw DaprException.propagate(e);
+                  }
+                }).collect(Collectors.toList())
+    );
   }
 
   /**
@@ -804,11 +813,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
-   * Build a new Configuration Item from provided parameter
+   * Build a new Configuration Item from provided parameter.
    *
    * @param configurationItem CommonProtos.ConfigurationItem
    * @return io.dapr.client.domain.ConfigurationItem
-   * @throws IOException
+   * @throws IOException throws IOException
    */
   private ConfigurationItem buildConfigurationItem(
       CommonProtos.ConfigurationItem configurationItem) throws IOException {
@@ -869,25 +878,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
     return Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
   }
 
-  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink) {
-    return new StreamObserver<T>() {
-      @Override
-      public void onNext(T value) {
-        sink.next(value);
-      }
-
-      @Override
-      public void onError(Throwable t) {
-        sink.error(DaprException.propagate(new ExecutionException(t)));
-      }
-
-      @Override
-      public void onCompleted() {
-        sink.complete();
-      }
-    };
-  }
-
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
     return new StreamObserver<T>() {
       @Override
@@ -903,6 +893,25 @@ public class DaprClientGrpc extends AbstractDaprClient {
       @Override
       public void onCompleted() {
         sink.success();
+      }
+    };
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink) {
+    return new StreamObserver<T>() {
+      @Override
+      public void onNext(T value) {
+        sink.next(value);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        sink.error(DaprException.propagate(new ExecutionException(t)));
+      }
+
+      @Override
+      public void onCompleted() {
+        sink.complete();
       }
     };
   }

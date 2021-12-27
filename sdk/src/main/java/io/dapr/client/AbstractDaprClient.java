@@ -13,14 +13,17 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
+import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkSecretRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetBulkStateRequestBuilder;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetSecretRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
@@ -36,12 +39,8 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.SaveStateRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
-import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
-import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
-import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
@@ -435,10 +434,52 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  public Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata) {
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, key);
+    request.setMetadata(metadata);
+    return this.getConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public Mono<List<ConfigurationItem>> getConfigurations(String storeName, String... keys) {
-    List<String> listOfKeys = Flux.just(keys).collectList().block();
+    List<String> listOfKeys = Flux.just(keys).filter(key -> !key.trim().isEmpty()).collectList().block();
     GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, listOfKeys);
     return this.getConfigurations(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfigurations(
+      String storeName,
+      List<String> keys,
+      Map<String, String> metadata) {
+    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, keys);
+    request.setMetadata(metadata);
+    return this.getConfigurations(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getAllConfigurations(String storeName) {
+    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, null);
+    return this.getAllConfigurations(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getAllConfigurations(String storeName, Map<String, String> metadata) {
+    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, null);
+    request.setMetadata(metadata);
+    return this.getAllConfigurations(request);
   }
 
   /**
@@ -447,6 +488,18 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   public Flux<List<ConfigurationItem>> subscribeToConfigurations(String storeName, String... keys) {
     List<String> listOfKeys = Flux.just(keys).collectList().block();
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
+    return this.subscribeToConfigurations(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Flux<List<ConfigurationItem>> subscribeToConfigurations(
+      String storeName,
+      List<String> keys,
+      Map<String, String> metadata) {
+    SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, keys);
+    request.setMetadata(metadata);
     return this.subscribeToConfigurations(request);
   }
 }
