@@ -104,7 +104,7 @@ Create secret (replace `$MY_FAVORITE_MOVIE` with a title of our choice):
 <!-- STEP
 name: Create movie vault secret
 expected_stdout_lines:
-  - "version          1"
+  - "version            1"
 env:
   VAULT_ADDR: "http://127.0.0.1:8200/"
   MY_FAVORITE_MOVIE: "Star Wars"
@@ -121,7 +121,7 @@ Create random secret:
 <!-- STEP
 name: Create random vault secret
 expected_stdout_lines:
-  - "version          1"
+  - "version            1"
 env:
   VAULT_ADDR: "http://127.0.0.1:8200/"
 -->

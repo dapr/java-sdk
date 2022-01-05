@@ -1,7 +1,15 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package io.dapr.client;
 
@@ -23,13 +31,16 @@ import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -49,6 +60,12 @@ public class DaprHttp implements AutoCloseable {
    * Dapr's http default scheme.
    */
   private static final String DEFAULT_HTTP_SCHEME = "http";
+
+  /**
+   * Context entries allowed to be in HTTP Headers.
+   */
+  private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList("grpc-trace-bin", "traceparent", "tracestate")));
 
   /**
    * HTTP Methods supported.
@@ -267,8 +284,9 @@ public class DaprHttp implements AutoCloseable {
         .url(urlBuilder.build())
         .addHeader(HEADER_DAPR_REQUEST_ID, requestId);
     if (context != null) {
-      context.stream().forEach(
-          entry -> requestBuilder.addHeader(entry.getKey().toString(), entry.getValue().toString()));
+      context.stream()
+          .filter(entry -> ALLOWED_CONTEXT_IN_HEADERS.contains(entry.getKey().toString().toLowerCase()))
+          .forEach(entry -> requestBuilder.addHeader(entry.getKey().toString(), entry.getValue().toString()));
     }
     if (HttpMethods.GET.name().equals(method)) {
       requestBuilder.get();

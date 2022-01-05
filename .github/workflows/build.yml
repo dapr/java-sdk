@@ -16,25 +16,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 11, 13, 15, 16 ]
     env:
       GOVER: 1.15.0
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
-      JDK_VER: 13.0.x
-      DAPR_CLI_VER: 1.3.0-rc.1
-      DAPR_RUNTIME_VER: 1.3.0-rc.1
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.3.0-rc.1/install/install.sh
+      JDK_VER: ${{ matrix.java }}
+      DAPR_CLI_VER: 1.5.1
+      DAPR_RUNTIME_VER: 1.5.1
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.4.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
-      OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
-      OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
-      GPG_KEY: ${{ secrets.GPG_KEY }}
-      GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up OpenJDK ${{ env.JDK_VER }}
-      uses: actions/setup-java@v2.2.0
+      uses: actions/setup-java@v2.4.0
       with:
         distribution: 'adopt'
         java-version: ${{ env.JDK_VER }}
@@ -99,7 +98,7 @@ jobs:
     - name: Unit tests
       run: mvn test -q
     - name: Codecov
-      uses: codecov/codecov-action@v2.0.2
+      uses: codecov/codecov-action@v2.1.0
     - name: Install jars
       run: mvn install -q
     - name: Integration tests
@@ -114,22 +113,41 @@ jobs:
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
-    - name: Get pom parent version
-      run: |
-        PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-        echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
-    - name: Is SNAPSHOT release ?
-      if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
-      run: |
-        echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
-    - name: Is Release or RC version ?
-      if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
-      run: |
-        echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
-    - name: Publish to ossrh
-      if: env.DEPLOY_OSSRH == 'true'
-      run: |
-        echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
-        export GPG_TTY=$(tty)
-        gpg --batch --import private-key.gpg
-        mvn -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      JDK_VER: 11
+      OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
+      OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
+      GPG_KEY: ${{ secrets.GPG_KEY }}
+      GPG_PWD: ${{ secrets.GPG_PWD }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v2.4.0
+        with:
+          distribution: 'adopt'
+          java-version: ${{ env.JDK_VER }}
+      - name: Get pom parent version
+        run: |
+          PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
+      - name: Is SNAPSHOT release ?
+        if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Is Release or RC version ?
+        if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Install jars
+        if: env.DEPLOY_OSSRH == 'true'
+        run: mvn clean install -q
+      - name: Publish to ossrh
+        if: env.DEPLOY_OSSRH == 'true'
+        run: |
+          echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
+          export GPG_TTY=$(tty)
+          gpg --batch --import private-key.gpg
+          mvn -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples

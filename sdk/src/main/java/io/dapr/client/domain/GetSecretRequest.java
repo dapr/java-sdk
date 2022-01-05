@@ -1,10 +1,19 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -12,9 +21,14 @@ import java.util.Map;
  */
 public class GetSecretRequest {
 
-  private String storeName;
+  private final String storeName;
 
-  private String key;
+  private final String key;
+
+  public GetSecretRequest(String storeName, String key) {
+    this.storeName = storeName;
+    this.key = key;
+  }
 
   private Map<String, String> metadata;
 
@@ -22,23 +36,16 @@ public class GetSecretRequest {
     return storeName;
   }
 
-  void setStoreName(String storeName) {
-    this.storeName = storeName;
-  }
-
   public String getKey() {
     return key;
-  }
-
-  void setKey(String key) {
-    this.key = key;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
+  public GetSecretRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 }

@@ -1,7 +1,15 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package io.dapr.client;
 
@@ -252,9 +260,8 @@ public class DaprClientGrpcTest {
 
 
     Mono<Void> result = client.publishEvent(
-        new PublishEventRequestBuilder("pubsubname", "topic", "hello")
-            .withContentType("text/plain")
-            .build());
+        new PublishEventRequest("pubsubname", "topic", "hello")
+            .setContentType("text/plain"));
     result.block();
   }
 
@@ -1004,9 +1011,9 @@ public class DaprClientGrpcTest {
         .setData(serialize(expectedValue))
         .setEtag(etag)
         .build();
-    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, key);
-    builder.withMetadata(metadata).withStateOptions(options);
-    GetStateRequest request = builder.build();
+    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, key)
+        .setMetadata(metadata)
+        .setStateOptions(options);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
@@ -1065,10 +1072,9 @@ public class DaprClientGrpcTest {
       client.getBulkState(STATE_STORE_NAME, Collections.emptyList(), String.class).block();
     });
     // negative parallelism
-    GetBulkStateRequest req = new GetBulkStateRequestBuilder(STATE_STORE_NAME, Collections.singletonList("100"))
-        .withMetadata(new HashMap<>())
-        .withParallelism(-1)
-        .build();
+    GetBulkStateRequest req = new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100"))
+        .setMetadata(new HashMap<>())
+        .setParallelism(-1);
     assertThrows(IllegalArgumentException.class, () -> client.getBulkState(req, TypeRef.BOOLEAN).block());
   }
 
@@ -1359,9 +1365,10 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
 
-    DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, key);
-    builder.withEtag(etag).withStateOptions(options).withMetadata(metadata);
-    DeleteStateRequest request = builder.build();
+    DeleteStateRequest request = new DeleteStateRequest(STATE_STORE_NAME, key);
+    request.setEtag(etag)
+        .setStateOptions(options)
+        .setMetadata(metadata);
     Mono<Void> result = client.deleteState(request);
     result.block();
   }
@@ -1460,9 +1467,8 @@ public class DaprClientGrpcTest {
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
         stateKey);
-    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(STATE_STORE_NAME)
-        .withTransactionalStates(upsertOperation)
-        .build();
+    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequest(STATE_STORE_NAME)
+        .setOperations(Collections.singletonList(upsertOperation));
     Mono<Void> result = client.executeStateTransaction(request);
 
     assertThrowsDaprException(
@@ -1494,10 +1500,9 @@ public class DaprClientGrpcTest {
         new State<>("testKey"));
     Map<String, String> metadata = new HashMap<>();
     metadata.put("testKey", "testValue");
-    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(STATE_STORE_NAME)
-        .withTransactionalStates(upsertOperation, deleteOperation)
-        .withMetadata(metadata)
-        .build();
+    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequest(STATE_STORE_NAME)
+        .setOperations(Arrays.asList(upsertOperation, deleteOperation))
+        .setMetadata(metadata);
     Mono<Void> result = client.executeStateTransaction(request);
     result.block();
   }

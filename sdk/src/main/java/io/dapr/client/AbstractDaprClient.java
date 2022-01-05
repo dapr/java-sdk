@@ -1,7 +1,15 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package io.dapr.client;
 
@@ -11,6 +19,7 @@ import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkSecretRequestBuilder;
+import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetSecretRequestBuilder;
@@ -82,8 +91,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Void> publishEvent(String pubsubName, String topicName, Object data, Map<String, String> metadata) {
-    PublishEventRequest req = new PublishEventRequestBuilder(pubsubName, topicName,
-            data).withMetadata(metadata).build();
+    PublishEventRequest req = new PublishEventRequest(pubsubName, topicName, data)
+        .setMetadata(metadata);
     return this.publishEvent(req).then();
   }
 
@@ -98,12 +107,10 @@ abstract class AbstractDaprClient implements DaprClient {
       HttpExtension httpExtension,
       Map<String, String> metadata,
       TypeRef<T> type) {
-    InvokeMethodRequestBuilder builder = new InvokeMethodRequestBuilder(appId, methodName);
-    InvokeMethodRequest req = builder
-        .withBody(data)
-        .withHttpExtension(httpExtension)
-        .withContentType(objectSerializer.getContentType())
-        .build();
+    InvokeMethodRequest req = new InvokeMethodRequest(appId, methodName)
+        .setBody(data)
+        .setHttpExtension(httpExtension)
+        .setContentType(objectSerializer.getContentType());
 
     return this.invokeMethod(req, type);
   }
@@ -231,10 +238,9 @@ abstract class AbstractDaprClient implements DaprClient {
   @Override
   public <T> Mono<T> invokeBinding(
           String bindingName, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
-    InvokeBindingRequest request = new InvokeBindingRequestBuilder(bindingName, operation)
-        .withData(data)
-        .withMetadata(metadata)
-        .build();
+    InvokeBindingRequest request = new InvokeBindingRequest(bindingName, operation)
+        .setData(data)
+        .setMetadata(metadata);
     return this.invokeBinding(request, type);
   }
 
@@ -286,9 +292,8 @@ abstract class AbstractDaprClient implements DaprClient {
   @Override
   public <T> Mono<State<T>> getState(
           String storeName, String key, StateOptions options, TypeRef<T> type) {
-    GetStateRequest request = new GetStateRequestBuilder(storeName, key)
-        .withStateOptions(options)
-        .build();
+    GetStateRequest request = new GetStateRequest(storeName, key)
+        .setStateOptions(options);
     return this.getState(request, type);
   }
 
@@ -307,7 +312,7 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public <T> Mono<List<State<T>>> getBulkState(String storeName, List<String> keys, TypeRef<T> type) {
-    return this.getBulkState(new GetBulkStateRequestBuilder(storeName, keys).build(), type);
+    return this.getBulkState(new GetBulkStateRequest(storeName, keys), type);
   }
 
   /**
@@ -324,9 +329,8 @@ abstract class AbstractDaprClient implements DaprClient {
   @Override
   public Mono<Void> executeStateTransaction(String storeName,
                                             List<TransactionalStateOperation<?>> operations) {
-    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequestBuilder(storeName)
-        .withTransactionalStates(operations)
-        .build();
+    ExecuteStateTransactionRequest request = new ExecuteStateTransactionRequest(storeName)
+        .setOperations(operations);
     return executeStateTransaction(request).then();
   }
 
@@ -335,9 +339,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Void> saveBulkState(String storeName, List<State<?>> states) {
-    SaveStateRequest request = new SaveStateRequestBuilder(storeName)
-        .withStates(states)
-        .build();
+    SaveStateRequest request = new SaveStateRequest(storeName)
+        .setStates(states);
     return this.saveBulkState(request).then();
   }
 
@@ -371,10 +374,9 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Void> deleteState(String storeName, String key, String etag, StateOptions options) {
-    DeleteStateRequest request = new DeleteStateRequestBuilder(storeName, key)
-        .withEtag(etag)
-        .withStateOptions(options)
-        .build();
+    DeleteStateRequest request = new DeleteStateRequest(storeName, key)
+        .setEtag(etag)
+        .setStateOptions(options);
     return deleteState(request).then();
   }
 
@@ -383,9 +385,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Map<String, String>> getSecret(String storeName, String key, Map<String, String> metadata) {
-    GetSecretRequest request = new GetSecretRequestBuilder(storeName, key)
-        .withMetadata(metadata)
-        .build();
+    GetSecretRequest request = new GetSecretRequest(storeName, key)
+        .setMetadata(metadata);
     return getSecret(request).defaultIfEmpty(Collections.emptyMap());
   }
 
@@ -410,9 +411,8 @@ abstract class AbstractDaprClient implements DaprClient {
    */
   @Override
   public Mono<Map<String, Map<String, String>>> getBulkSecret(String storeName, Map<String, String> metadata) {
-    GetBulkSecretRequest request = new GetBulkSecretRequestBuilder(storeName)
-        .withMetadata(metadata)
-        .build();
+    GetBulkSecretRequest request = new GetBulkSecretRequest(storeName)
+        .setMetadata(metadata);
     return this.getBulkSecret(request).defaultIfEmpty(Collections.emptyMap());
   }
 

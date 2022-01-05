@@ -1,16 +1,29 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.DeleteStateRequestBuilder;
+import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetBulkStateRequestBuilder;
+import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -32,6 +45,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -142,9 +156,8 @@ public class DaprClientHttpTest {
     String event = "{ \"message\": \"This is a test\" }";
 
     Mono<Void> mono = daprClientHttp.publishEvent(
-        new PublishEventRequestBuilder("mypubsubname","A", event)
-            .withContentType("text/plain")
-            .build());
+        new PublishEventRequest("mypubsubname","A", event)
+            .setContentType("text/plain"));
     assertNull(mono.block());
   }
 
@@ -386,6 +399,28 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void invokeServiceWithContext() {
+    String traceparent = "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01";
+    String tracestate = "congo=ucfJifl5GOE,rojo=00f067aa0ba902b7";
+    Context context = Context.empty()
+        .put("traceparent", traceparent)
+        .put("tracestate", tracestate)
+        .put("not_added", "xyz");
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+        .header("traceparent", traceparent)
+        .header("tracestate", tracestate)
+        .respond(new byte[0]);
+
+    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
+        .setBody("request")
+        .setHttpExtension(HttpExtension.POST);
+    Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
+        .subscriberContext(it -> it.putAll(context));
+    result.block();
+  }
+
+  @Test
   public void invokeBinding() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
@@ -561,12 +596,12 @@ public class DaprClientHttpTest {
     });
     assertThrows(IllegalArgumentException.class, () -> {
       daprClientHttp.getBulkState(
-          new GetBulkStateRequestBuilder(STATE_STORE_NAME, "100").withParallelism(-1).build(),
+          new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100")).setParallelism(-1),
           TypeRef.get(String.class)).block();
     });
     assertThrowsDaprException(JsonParseException.class, () -> {
       daprClientHttp.getBulkState(
-          new GetBulkStateRequestBuilder(STATE_STORE_NAME, "100").build(),
+          new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100")),
           TypeRef.get(String.class)).block();
     });
   }
@@ -736,9 +771,9 @@ public class DaprClientHttpTest {
       .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
       .respond("\"" + EXPECTED_RESULT + "\"");
 
-    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, "key");
-    builder.withMetadata(metadata);
-    Mono<State<String>> monoMetadata = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
+    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, "key");
+    request.setMetadata(metadata);
+    Mono<State<String>> monoMetadata = daprClientHttp.getState(request, TypeRef.get(String.class));
     assertEquals(monoMetadata.block().getKey(), "key");
   }
 
@@ -749,9 +784,9 @@ public class DaprClientHttpTest {
       .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?consistency=strong&concurrency=first-write")
       .respond("\"" + EXPECTED_RESULT + "\"");
 
-    GetStateRequestBuilder builder = new GetStateRequestBuilder(STATE_STORE_NAME, "key");
-    builder.withStateOptions(stateOptions);
-    Mono<State<String>> monoOptions = daprClientHttp.getState(builder.build(), TypeRef.get(String.class));
+    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, "key");
+    request.setStateOptions(stateOptions);
+    Mono<State<String>> monoOptions = daprClientHttp.getState(request, TypeRef.get(String.class));
     assertEquals(monoOptions.block().getKey(), "key");
   }
 
@@ -1039,9 +1074,11 @@ public class DaprClientHttpTest {
       .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
       .respond(EXPECTED_RESULT);
 
-    DeleteStateRequestBuilder builder = new DeleteStateRequestBuilder(STATE_STORE_NAME, stateKeyValue.getKey());
-    builder.withMetadata(metadata).withEtag(stateKeyValue.getEtag()).withStateOptions(stateOptions);
-    Mono<Void> monoMetadata = daprClientHttp.deleteState(builder.build());
+    DeleteStateRequest request = new DeleteStateRequest(STATE_STORE_NAME, stateKeyValue.getKey());
+    request.setMetadata(metadata)
+        .setEtag(stateKeyValue.getEtag())
+        .setStateOptions(stateOptions);
+    Mono<Void> monoMetadata = daprClientHttp.deleteState(request);
     assertNull(monoMetadata.block());
   }
 
