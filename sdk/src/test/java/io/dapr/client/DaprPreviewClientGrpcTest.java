@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -47,8 +48,8 @@ public class DaprPreviewClientGrpcTest {
 		closeable = mock(Closeable.class);
 		daprStub = mock(DaprGrpc.DaprStub.class);
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
-		previewClient = new DaprPreviewClientProxy(new DaprClientGrpc(
-				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer()));
+		previewClient = new DaprClientGrpc(
+				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
 		serializer = new ObjectSerializer();
 		doNothing().when(closeable).close();
 	}
@@ -224,6 +225,35 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
 
 		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfigurations(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+		assertTrue(itr.hasNext());
+		assertEquals("configkey1", itr.next().get(0).getKey());
+		assertFalse(itr.hasNext());
+	}
+
+	@Test
+	public void subscribeConfigurationTestWithMetadata() {
+		Map<String, String> metadata = new HashMap<>();
+		metadata.put("meta1", "value1");
+		DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
+				.addItems(CommonProtos.ConfigurationItem.newBuilder()
+						.setKey("configkey1")
+						.setValue("configvalue1")
+						.setVersion("1")
+						.putAllMetadata(metadata)
+						.build())
+				.build();
+
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer = (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+			observer.onNext(responseEnvelope);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+
+		Map<String, String> reqMetadata = new HashMap<>();
+		List<String> keys = Arrays.asList("configkey1");
+
+		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfigurations(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
 		assertTrue(itr.hasNext());
 		assertEquals("configkey1", itr.next().get(0).getKey());
 		assertFalse(itr.hasNext());

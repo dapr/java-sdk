@@ -30,11 +30,6 @@ public class DaprPreviewClientBuilder {
   private final DaprApiProtocol apiProtocol;
 
   /**
-   * Determine if this builder will use HTTP client for service method invocation APIs.
-   */
-  private final DaprApiProtocol methodInvocationApiProtocol;
-
-  /**
    * Builder for Dapr's HTTP Client.
    */
   private final DaprHttpBuilder daprHttpBuilder;
@@ -59,7 +54,6 @@ public class DaprPreviewClientBuilder {
     this.objectSerializer = new DefaultObjectSerializer();
     this.stateSerializer = new DefaultObjectSerializer();
     this.apiProtocol = Properties.API_PROTOCOL.get();
-    this.methodInvocationApiProtocol = Properties.API_METHOD_INVOCATION_PROTOCOL.get();
     this.daprHttpBuilder = new DaprHttpBuilder();
   }
 
@@ -106,11 +100,6 @@ public class DaprPreviewClientBuilder {
    * @throws IllegalStateException if any required field is missing
    */
   public DaprPreviewClient build() {
-    if (this.apiProtocol != this.methodInvocationApiProtocol) {
-      return new DaprPreviewClientProxy(buildDaprPreviewClient(this.apiProtocol),
-          buildDaprPreviewClient(this.methodInvocationApiProtocol));
-    }
-
     return buildDaprPreviewClient(this.apiProtocol);
   }
 

@@ -61,7 +61,7 @@ name: Run ConfigurationClient example
 -->
 
 ```bash
-dapr run --app-id configgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.grpc.ConfigurationClient
+dapr run --components-path ./components/configuration --app-id configgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.grpc.ConfigurationClient
 ```
 
 <!-- END_STEP -->

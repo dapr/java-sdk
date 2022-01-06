@@ -45,10 +45,12 @@ public class DaprPreviewClientHttpTest {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    daprPreviewClientHttp = new DaprPreviewClientProxy(new DaprClientHttp(daprHttp));
-    daprPreviewClientHttpXML = new DaprPreviewClientProxy(
-        new DaprClientHttp(daprHttp, new DaprPreviewClientHttpTest.XmlSerializer(),
-            new DaprPreviewClientHttpTest.XmlSerializer()));
+    daprPreviewClientHttp = new DaprClientHttp(daprHttp);
+    daprPreviewClientHttpXML = new DaprClientHttp(
+        daprHttp,
+        new DaprPreviewClientHttpTest.XmlSerializer(),
+        new DaprPreviewClientHttpTest.XmlSerializer()
+    );
   }
 
   @Test
