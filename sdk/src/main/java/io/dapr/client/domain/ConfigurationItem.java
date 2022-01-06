@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class ConfigurationItem {
@@ -33,7 +34,21 @@ public class ConfigurationItem {
     this.key = key;
     this.value = value;
     this.version = version;
-    this.metadata = metadata;
+    this.metadata = Collections.unmodifiableMap(metadata);
+  }
+
+  /**
+   * Constructor for a configuration Item.
+   *
+   * @param key key of the configuration item
+   * @param value value for the provided key
+   * @param version version of the configuration item
+   */
+  public ConfigurationItem(String key, String value, String version) {
+    this.key = key;
+    this.value = value;
+    this.version = version;
+    this.metadata = null;
   }
 
   public String getKey() {

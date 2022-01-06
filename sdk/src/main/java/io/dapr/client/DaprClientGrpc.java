@@ -691,6 +691,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     try {
       final String configurationStoreName = request.getStoreName();
       final String key = request.getKey();
+      final Map<String, String> metadata = request.getMetadata();
 
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
@@ -701,9 +702,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName)
           .addKeys(key);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
 
-      DaprProtos.GetConfigurationRequest envelop = builder.build();
-      return this.getConfigurationAlpha1(envelop).map(
+      DaprProtos.GetConfigurationRequest envelope = builder.build();
+      return this.getConfigurationAlpha1(envelope).map(
           it -> it.get(0)
       );
     } catch (Exception ex) {
@@ -718,18 +722,23 @@ public class DaprClientGrpc extends AbstractDaprClient {
   public Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
+      final Map<String, String> metadata = request.getMetadata();
       final List<String> keys = request.getKeys();
+
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
-      if (keys.isEmpty() || keys == null) {
+      if (keys.isEmpty()) {
         throw new IllegalArgumentException("Keys can not be empty or null");
       }
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName).addAllKeys(keys);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
 
-      DaprProtos.GetConfigurationRequest envelop = builder.build();
-      return this.getConfigurationAlpha1(envelop);
+      DaprProtos.GetConfigurationRequest envelope = builder.build();
+      return this.getConfigurationAlpha1(envelope);
 
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -743,25 +752,30 @@ public class DaprClientGrpc extends AbstractDaprClient {
   public Mono<List<ConfigurationItem>> getAllConfigurations(GetBulkConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
+      final Map<String, String> metadata = request.getMetadata();
+
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
 
-      DaprProtos.GetConfigurationRequest envelop = builder.build();
-      return this.getConfigurationAlpha1(envelop);
+      DaprProtos.GetConfigurationRequest envelope = builder.build();
+      return this.getConfigurationAlpha1(envelope);
 
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
   }
 
-  private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelop) {
+  private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
     return Mono.subscriberContext().flatMap(
         context ->
             this.<DaprProtos.GetConfigurationResponse>createMono(
-                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelop, it)
+                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelope, it)
             )
     ).map(
         it ->
@@ -784,18 +798,24 @@ public class DaprClientGrpc extends AbstractDaprClient {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
+      final Map<String, String> metadata = request.getMetadata();
+
       if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
       }
-      if (keys == null || keys.isEmpty()) {
+      if (keys.isEmpty()) {
         throw new IllegalArgumentException("Keys can not be null or empty.");
       }
       DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName)
           .addAllKeys(keys);
-      DaprProtos.SubscribeConfigurationRequest envelop = builder.build();
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+
+      DaprProtos.SubscribeConfigurationRequest envelope = builder.build();
       return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
-          it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelop, it)
+          it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelope, it)
       ).map(
           it ->
               it.getItemsList().stream()

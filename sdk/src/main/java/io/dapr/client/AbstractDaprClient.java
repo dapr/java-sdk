@@ -46,9 +46,11 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Abstract class with convenient methods common between client implementations.
@@ -445,7 +447,9 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public Mono<List<ConfigurationItem>> getConfigurations(String storeName, String... keys) {
-    List<String> listOfKeys = Flux.just(keys).filter(key -> !key.trim().isEmpty()).collectList().block();
+    List<String> listOfKeys = Arrays.stream(keys)
+        .filter(key -> !key.trim().isEmpty())
+        .collect(Collectors.toList());
     GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, listOfKeys);
     return this.getConfigurations(request);
   }
@@ -486,7 +490,9 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   public Flux<List<ConfigurationItem>> subscribeToConfigurations(String storeName, String... keys) {
-    List<String> listOfKeys = Flux.just(keys).collectList().block();
+    List<String> listOfKeys = Arrays.stream(keys)
+        .filter(key -> !key.trim().isEmpty())
+        .collect(Collectors.toList());
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
     return this.subscribeToConfigurations(request);
   }

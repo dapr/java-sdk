@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ public class SubscribeConfigurationRequest {
 
   public SubscribeConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
-    this.keys = Collections.unmodifiableList(keys);
+    this.keys = keys == null ? Collections.EMPTY_LIST : Collections.unmodifiableList(keys);
   }
 
   public SubscribeConfigurationRequest setMetadata(Map<String, String> metadata) {

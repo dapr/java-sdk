@@ -28,7 +28,7 @@ public class GetConfigurationRequest {
   }
 
   public GetConfigurationRequest setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    this.metadata = metadata == null ? Collections.EMPTY_MAP : Collections.unmodifiableMap(metadata);
     return this;
   }
 

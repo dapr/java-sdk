@@ -3,6 +3,16 @@
 This example provides the different capabilities provided by Dapr Java SDK for Configuration. For further information about Configuration APIs please refer to [this link](https://docs.dapr.io/developing-applications/building-blocks/configuration/)
 **This API is available in Preview Mode**.
 
+### Using the ConfigurationAPI
+
+The java SDK exposes several methods for this -
+* `client.getConfiguration(...)` for getting a configuration for a single key.
+* `client.getConfigurations(...)` for getting a configurations by passing a variable no. of arguments or list of argumets.
+* `client.getAllConfigurations(...)` for getting all configurations.
+* `client.subscribeToConfigurations(...)` for subscribing to a list of keys for any change.
+
+The code uses the `DaprPreviewClient` created by the `DaprPreviewClientBuilder`.
+
 ## Pre-requisites
 
 * [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
@@ -24,59 +34,63 @@ Then build the Maven project:
 # make sure you are in the `java-sdk` directory.
 mvn install
 ```
+## Store few dummy configurations in configurationstore
+<!-- STEP
+name: Set configuration value
+expected_stdout_lines:
+  - "OK"
+timeout_seconds: 20
+-->
+
+```bash
+docker exec dapr_redis redis-cli MSET myconfig1 "val1||1" myconfig2 "val2||1" myconfig3 "val3||1"
+```
+<!-- END_STEP -->
+
+### Running the example
 
 Get into the examples' directory:
 ```sh
 cd examples
 ```
 
-### Using the ConfigurationAPI
+Use the following command to run this example-
 
-The java SDK exposes several methods for this -
-* `client.getConfiguration(...)` for getting a configuration for a single key.
-* `client.getConfigurations(...)` for getting a configurations by passing a variable no. of arguments or list of argumets.
-* `client.getAllConfigurations(...)` for getting all configurations.
-* `client.subscribeToConfigurations(...)` for subscribing to a list of keys for any change.
-
-### Running the example
-The code uses the `DaprPreviewClient` created by the `DaprPreviewClientBuilder`.
+<!-- STEP
+name: Run ConfigurationClient example
+-->
 
 ```bash
 dapr run --app-id configgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.grpc.ConfigurationClient
 ```
 
+<!-- END_STEP -->
+
 ### Sample output
 ```
 == APP == Using preview client...
-== APP == *******trying to retrieve configuration a key********
-== APP == Value ->"value2" key ->myconfig2
+== APP == *******trying to retrieve configuration given a single key********
+== APP == Value ->val1 key ->myconfig1
 == APP == *******trying to retrieve configurations for a variable no. of keys********
-== APP == "wookie-pravin" : key ->configgrpc||myconfig
-== APP == "value2" : key ->myconfig2
-== APP == "value3" : key ->myconfig3
+== APP == val1 : key ->myconfig1
+== APP == val3 : key ->myconfig3
 == APP == *******trying to retrieve configurations for a list of keys********
-== APP == "value2" : key ->myconfig2
-== APP == "value3" : key ->myconfig3
-== APP == "value4" : key ->myconfig4
-== APP == "value5" : key ->myconfig5
+== APP == val1 : key ->myconfig1
+== APP == val2 : key ->myconfig2
+== APP == val3 : key ->myconfig3
 == APP == *****Retrieving all configurations*******
-== APP == "value4" : key ->myconfig4
-== APP == "wookie-pravin" : key ->configgrpc||myconfig
-== APP == "value2" : key ->myconfig2
-== APP == "value6" : key ->"myconfig6"
-== APP == "value5" : key ->myconfig5
-== APP == "value3" : key ->myconfig3
-== APP == *****Subscribing to keys: [myconfig2, myconfig3, myconfig4] *****
-DEBU[0030] Refreshing all mDNS addresses.                app_id=configgrpc instance=LAPTOP-OS4MBC7R scope=dapr.contrib type=log ver=1.5.1
-DEBU[0030] no mDNS apps to refresh.                      app_id=configgrpc instance=LAPTOP-OS4MBC7R scope=dapr.contrib type=log ver=1.5.1
-DEBU[0060] Refreshing all mDNS addresses.                app_id=configgrpc instance=LAPTOP-OS4MBC7R scope=dapr.contrib type=log ver=1.5.1
-DEBU[0060] no mDNS apps to refresh.                      app_id=configgrpc instance=LAPTOP-OS4MBC7R scope=dapr.contrib type=log ver=1.5.1
-== APP == "new-value" : key ->myconfig2
+== APP == val3 : key ->myconfig3
+== APP == val2 : key ->myconfig2
+== APP == val1 : key ->myconfig1
+== APP == *****Subscribing to keys using subscribe method: [myconfig1, myconfig3, myconfig2] *****
+== APP == update_myconfigvalue1 : key ->myconfig1
+== APP == update_myconfigvalue2 : key ->myconfig2
+== APP == update_myconfigvalue3 : key ->myconfig3
 
 ```
 ### Cleanup
 
-To stop the apps run (or press CTRL+C):
+To stop the app, run (or press CTRL+C):
 
 <!-- STEP
 name: Cleanup
@@ -87,6 +101,4 @@ dapr stop --app-id configgrpc
 ```
 
 <!-- END_STEP -->
-
-Thanks for playing.
 

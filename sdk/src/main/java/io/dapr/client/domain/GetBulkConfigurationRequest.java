@@ -25,7 +25,7 @@ public class GetBulkConfigurationRequest {
 
   public GetBulkConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
-    this.keys = keys == null ? Collections.unmodifiableList(new ArrayList<>()) : Collections.unmodifiableList(keys);
+    this.keys = keys == null ? Collections.EMPTY_LIST : Collections.unmodifiableList(keys);
   }
 
   public GetBulkConfigurationRequest setMetadata(Map<String, String> metadata) {
