@@ -97,31 +97,6 @@ public interface DaprPreviewClient extends AutoCloseable {
   Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request);
 
   /**
-   * Retrieve List of configurations based on a provided configuration request object.
-   *
-   * @param storeName Name of the configuration store
-   * @return Mono of List of ConfigurationItems
-   */
-  Mono<List<ConfigurationItem>> getAllConfigurations(String storeName);
-
-  /**
-   * Retrieve List of configurations based on a provided configuration request object.
-   *
-   * @param storeName Name of the configuration store
-   * @param metadata  optional metadata
-   * @return Mono of List of ConfigurationItems
-   */
-  Mono<List<ConfigurationItem>> getAllConfigurations(String storeName, Map<String, String> metadata);
-
-  /**
-   * Retrieve List of configurations based on a provided configuration request object.
-   *
-   * @param request request for retrieving Configurations for a list keys
-   * @return Mono of List of ConfigurationItems
-   */
-  Mono<List<ConfigurationItem>> getAllConfigurations(GetBulkConfigurationRequest request);
-
-  /**
    * Subscribe to the keys for any change.
    *
    * @param storeName Name of the configuration store

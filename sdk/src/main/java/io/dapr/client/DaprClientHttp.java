@@ -690,14 +690,6 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getAllConfigurations(GetBulkConfigurationRequest request) {
-    throw new DaprException("501", "Implementation not supported");
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
   public Flux<List<ConfigurationItem>> subscribeToConfigurations(SubscribeConfigurationRequest request) {
     throw new DaprException("501", "Implementation not supported");
   }

@@ -97,10 +97,6 @@ public class DaprPreviewClientGrpcTest {
 		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.getConfigurations("", "key1").block();
 		});
-		//Empty store name
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getAllConfigurations("").block();
-		});
 		// Empty key
 		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.getConfiguration(CONFIG_STORE_NAME, "").block();
@@ -183,36 +179,6 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals(2, cis.size());
 		assertEquals("configkey1", cis.stream().findFirst().get().getKey());
 		assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
-	}
-
-	@Test
-	public void getAllConfigurationTest() {
-		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(getMultipleMockResponse());
-			observer.onCompleted();
-			return null;
-		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
-
-		List<ConfigurationItem> cis = previewClient.getAllConfigurations(CONFIG_STORE_NAME).block();
-		assertEquals(2, cis.size());
-	}
-
-	@Test
-	public void getAllConfigurationWithMetadataTest() {
-		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(getMultipleMockResponse());
-			observer.onCompleted();
-			return null;
-		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
-
-		Map<String, String> reqMetadata = new HashMap<>();
-		reqMetadata.put("meta1", "value1");
-		List<ConfigurationItem> cis = previewClient.getAllConfigurations(CONFIG_STORE_NAME, reqMetadata).block();
-		assertEquals(2, cis.size());
 	}
 
 	@Test

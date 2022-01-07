@@ -470,25 +470,6 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
-  @Override
-  public Mono<List<ConfigurationItem>> getAllConfigurations(String storeName) {
-    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, null);
-    return this.getAllConfigurations(request);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<List<ConfigurationItem>> getAllConfigurations(String storeName, Map<String, String> metadata) {
-    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, null);
-    request.setMetadata(metadata);
-    return this.getAllConfigurations(request);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
   public Flux<List<ConfigurationItem>> subscribeToConfigurations(String storeName, String... keys) {
     List<String> listOfKeys = Arrays.stream(keys)
         .filter(key -> !key.trim().isEmpty())

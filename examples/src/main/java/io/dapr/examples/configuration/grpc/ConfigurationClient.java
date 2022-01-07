@@ -46,7 +46,6 @@ public class ConfigurationClient {
       getConfigurationForaSingleKey(client);
       getConfigurationsUsingVarargs(client);
       getConfigurations(client);
-      getAllConfigurations(client);
       subscribeConfigurationRequestWithSubscribe(client);
     }
   }
@@ -104,21 +103,6 @@ public class ConfigurationClient {
   }
 
   /**
-   * Gets all configurations.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getAllConfigurations(DaprPreviewClient client) {
-    System.out.println("*****Retrieving all configurations*******");
-    try {
-      Mono<List<ConfigurationItem>> items = client.getAllConfigurations(CONFIG_STORE_NAME);
-      items.block().forEach(ConfigurationClient::print);
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
-    }
-  }
-
-  /**
    * Subscribe to a list of keys.Optional to above iterator way of retrieving the changes
    *
    * @param client DaprPreviewClient object
@@ -142,12 +126,16 @@ public class ConfigurationClient {
       e.printStackTrace();
     }
     Runnable updateKeys = () -> {
-      executeDockerCommand();
+      int i = 1;
+      while (i <= 3) {
+        executeDockerCommand(i);
+        i++;
+      }
     };
     new Thread(updateKeys).start();
     try {
       // To ensure main thread does not die before outFlux subscribe gets called
-      Thread.sleep(3000);
+      Thread.sleep(10000);
       disposableAtomicReference.get().dispose();
     } catch (InterruptedException e) {
       e.printStackTrace();
@@ -158,13 +146,11 @@ public class ConfigurationClient {
     System.out.println(item.getValue() + " : key ->" + item.getKey());
   }
 
-  private static void executeDockerCommand() {
+  private static void executeDockerCommand(int postfix) {
     String[] command = new String[] {
         "docker", "exec", "dapr_redis", "redis-cli",
-        "MSET",
-        "myconfig1", "update_myconfigvalue1||2",
-        "myconfig2", "update_myconfigvalue2||2",
-        "myconfig3", "update_myconfigvalue3||2"
+        "SET",
+        "myconfig" + postfix, "update_myconfigvalue" + postfix + "||2"
     };
     ProcessBuilder processBuilder = new ProcessBuilder(command);
     Process process = null;

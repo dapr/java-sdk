@@ -745,32 +745,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<List<ConfigurationItem>> getAllConfigurations(GetBulkConfigurationRequest request) {
-    try {
-      final String configurationStoreName = request.getStoreName();
-      final Map<String, String> metadata = request.getMetadata();
-
-      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
-      }
-      DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
-          .setStoreName(configurationStoreName);
-      if (metadata != null) {
-        builder.putAllMetadata(metadata);
-      }
-
-      DaprProtos.GetConfigurationRequest envelope = builder.build();
-      return this.getConfigurationAlpha1(envelope);
-
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
-  }
-
   private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
     return Mono.subscriberContext().flatMap(
         context ->

@@ -96,13 +96,6 @@ public class DaprPreviewClientHttpTest {
   }
 
   @Test
-  public void getAllConfigurations() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.getAllConfigurations(CONFIG_STORE_NAME).block();
-    });
-  }
-
-  @Test
   public void subscribeConfigurations() {
     assertThrows(DaprException.class, () -> {
       daprPreviewClientHttp.subscribeToConfigurations(CONFIG_STORE_NAME, "key1", "key2");

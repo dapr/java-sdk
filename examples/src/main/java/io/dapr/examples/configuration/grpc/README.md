@@ -8,7 +8,6 @@ This example provides the different capabilities provided by Dapr Java SDK for C
 The java SDK exposes several methods for this -
 * `client.getConfiguration(...)` for getting a configuration for a single key.
 * `client.getConfigurations(...)` for getting a configurations by passing a variable no. of arguments or list of argumets.
-* `client.getAllConfigurations(...)` for getting all configurations.
 * `client.subscribeToConfigurations(...)` for subscribing to a list of keys for any change.
 
 The code uses the `DaprPreviewClient` created by the `DaprPreviewClientBuilder`.
@@ -61,25 +60,18 @@ name: Run ConfigurationClient example
 expected_stdout_lines:
   - "== APP == Using preview client..."
   - "== APP == *******trying to retrieve configuration given a single key********"
-  - "== APP == Value ->update_myconfigvalue1 key ->myconfig1"
+  - "== APP == Value ->val1 key ->myconfig1"
   - "== APP == *******trying to retrieve configurations for a variable no. of keys********"
-  - "== APP == update_myconfigvalue1 : key ->myconfig1"
-  - "== APP == update_myconfigvalue3 : key ->myconfig3"
+  - "== APP == val1 : key ->myconfig1"
+  - "== APP == val3 : key ->myconfig3"
   - "== APP == *******trying to retrieve configurations for a list of keys********"
-  - "== APP == update_myconfigvalue1 : key ->myconfig1"
-  - "== APP == update_myconfigvalue2 : key ->myconfig2"
-  - "== APP == update_myconfigvalue3 : key ->myconfig3"
-  - "== APP == *****Retrieving all configurations*******"
-  - "== APP == update_myconfigvalue1 : key ->myconfig1"
-  - "== APP == update_myconfigvalue2 : key ->myconfig2"
-  - "== APP == update_myconfigvalue3 : key ->myconfig3"
-  - "== APP == myconfigvalue1 : key ->myconfigkey1"
-  - "== APP == myconfigvalue2 : key ->myconfigkey2"
-  - "== APP == myconfigvalue3 : key ->myconfigkey3"
+  - "== APP == val1 : key ->myconfig1"
+  - "== APP == val2 : key ->myconfig2"
+  - "== APP == val3 : key ->myconfig3"
   - "== APP == *****Subscribing to keys using subscribe method: [myconfig1, myconfig3, myconfig2] *****"
-  - "== APP == update_myconfigvalue3 : key ->myconfig3"
-  - "== APP == update_myconfigvalue2 : key ->myconfig2"
   - "== APP == update_myconfigvalue1 : key ->myconfig1"
+  - "== APP == update_myconfigvalue2 : key ->myconfig2"
+  - "== APP == update_myconfigvalue3 : key ->myconfig3"
 background: true
 sleep: 5
 -->
@@ -102,10 +94,6 @@ dapr run --components-path ./components/configuration --app-id configgrpc --log-
 == APP == val1 : key ->myconfig1
 == APP == val2 : key ->myconfig2
 == APP == val3 : key ->myconfig3
-== APP == *****Retrieving all configurations*******
-== APP == val3 : key ->myconfig3
-== APP == val2 : key ->myconfig2
-== APP == val1 : key ->myconfig1
 == APP == *****Subscribing to keys using subscribe method: [myconfig1, myconfig3, myconfig2] *****
 == APP == update_myconfigvalue1 : key ->myconfig1
 == APP == update_myconfigvalue2 : key ->myconfig2
