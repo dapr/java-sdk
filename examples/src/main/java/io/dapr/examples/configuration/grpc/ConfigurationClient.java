@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ConfigurationClient {
 
-  private static final String CONFIG_STORE_NAME = "redisconfigstore";
+  private static final String CONFIG_STORE_NAME = "configstore";
 
   private static final List<String> keys = new ArrayList<>(Arrays.asList("myconfig1", "myconfig3", "myconfig2"));
 

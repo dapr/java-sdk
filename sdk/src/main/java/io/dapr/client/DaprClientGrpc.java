@@ -780,13 +780,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     ).map(
         it ->
             it.getItemsList().stream()
-                .map(b -> {
-                  try {
-                    return buildConfigurationItem(b);
-                  } catch (Exception e) {
-                    throw DaprException.propagate(e);
-                  }
-                }).collect(Collectors.toList())
+                .map(this::buildConfigurationItem).collect(Collectors.toList())
     );
   }
 
@@ -819,13 +813,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       ).map(
           it ->
               it.getItemsList().stream()
-                  .map(item -> {
-                    try {
-                      return buildConfigurationItem(item);
-                    } catch (Exception ex) {
-                      throw DaprException.propagate(ex);
-                    }
-                  }).collect(Collectors.toList())
+                  .map(this::buildConfigurationItem).collect(Collectors.toList())
       );
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
@@ -837,10 +825,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
    *
    * @param configurationItem CommonProtos.ConfigurationItem
    * @return io.dapr.client.domain.ConfigurationItem
-   * @throws IOException throws IOException
    */
   private ConfigurationItem buildConfigurationItem(
-      CommonProtos.ConfigurationItem configurationItem) throws IOException {
+      CommonProtos.ConfigurationItem configurationItem) {
     return new ConfigurationItem(
         configurationItem.getKey(),
         configurationItem.getValue(),

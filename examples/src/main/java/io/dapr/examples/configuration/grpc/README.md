@@ -58,6 +58,30 @@ Use the following command to run this example-
 
 <!-- STEP
 name: Run ConfigurationClient example
+expected_stdout_lines:
+  - "== APP == Using preview client..."
+  - "== APP == *******trying to retrieve configuration given a single key********"
+  - "== APP == Value ->update_myconfigvalue1 key ->myconfig1"
+  - "== APP == *******trying to retrieve configurations for a variable no. of keys********"
+  - "== APP == update_myconfigvalue1 : key ->myconfig1"
+  - "== APP == update_myconfigvalue3 : key ->myconfig3"
+  - "== APP == *******trying to retrieve configurations for a list of keys********"
+  - "== APP == update_myconfigvalue1 : key ->myconfig1"
+  - "== APP == update_myconfigvalue2 : key ->myconfig2"
+  - "== APP == update_myconfigvalue3 : key ->myconfig3"
+  - "== APP == *****Retrieving all configurations*******"
+  - "== APP == update_myconfigvalue1 : key ->myconfig1"
+  - "== APP == update_myconfigvalue2 : key ->myconfig2"
+  - "== APP == update_myconfigvalue3 : key ->myconfig3"
+  - "== APP == myconfigvalue1 : key ->myconfigkey1"
+  - "== APP == myconfigvalue2 : key ->myconfigkey2"
+  - "== APP == myconfigvalue3 : key ->myconfigkey3"
+  - "== APP == *****Subscribing to keys using subscribe method: [myconfig1, myconfig3, myconfig2] *****"
+  - "== APP == update_myconfigvalue3 : key ->myconfig3"
+  - "== APP == update_myconfigvalue2 : key ->myconfig2"
+  - "== APP == update_myconfigvalue1 : key ->myconfig1"
+background: true
+sleep: 5
 -->
 
 ```bash
