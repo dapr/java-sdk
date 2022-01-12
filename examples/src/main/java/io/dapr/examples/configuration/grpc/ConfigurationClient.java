@@ -13,10 +13,9 @@ limitations under the License.
 
 package io.dapr.examples.configuration.grpc;
 
+import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
-import io.dapr.client.DaprPreviewClientBuilder;
 import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import reactor.core.Disposable;
@@ -41,7 +40,7 @@ public class ConfigurationClient {
    * @throws Exception throws Exception
    */
   public static void main(String[] args) throws Exception {
-    try (DaprPreviewClient client = (new DaprPreviewClientBuilder()).build()) {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
       getConfigurationForaSingleKey(client);
       getConfigurationsUsingVarargs(client);
@@ -57,9 +56,8 @@ public class ConfigurationClient {
    */
   public static void getConfigurationForaSingleKey(DaprPreviewClient client) {
     System.out.println("*******trying to retrieve configuration given a single key********");
-    GetConfigurationRequest request = new GetConfigurationRequest(CONFIG_STORE_NAME, keys.get(0));
     try {
-      Mono<ConfigurationItem> item = client.getConfiguration(request);
+      Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, keys.get(0));
       System.out.println("Value ->" + item.block().getValue() + " key ->" + item.block().getKey());
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
@@ -75,7 +73,7 @@ public class ConfigurationClient {
     System.out.println("*******trying to retrieve configurations for a variable no. of keys********");
     try {
       Mono<List<ConfigurationItem>> items =
-          client.getConfigurations(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
+          client.getConfiguration(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
       items.block().forEach(ConfigurationClient::print);
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
@@ -93,9 +91,9 @@ public class ConfigurationClient {
     keys.add("myconfig1");
     keys.add("myconfig2");
     keys.add("myconfig3");
-    GetBulkConfigurationRequest req = new GetBulkConfigurationRequest(CONFIG_STORE_NAME, keys);
+    GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
     try {
-      Mono<List<ConfigurationItem>> items = client.getConfigurations(req);
+      Mono<List<ConfigurationItem>> items = client.getConfiguration(req);
       items.block().forEach(ConfigurationClient::print);
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
@@ -112,7 +110,7 @@ public class ConfigurationClient {
     AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, keys);
     Runnable subscribeTask = () -> {
-      Flux<List<ConfigurationItem>> outFlux = client.subscribeToConfigurations(req);
+      Flux<List<ConfigurationItem>> outFlux = client.subscribeToConfiguration(req);
       disposableAtomicReference.set(outFlux
           .subscribe(
               cis -> cis.forEach(ConfigurationClient::print)

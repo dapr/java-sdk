@@ -18,7 +18,6 @@ import com.google.common.base.Strings;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -674,24 +673,16 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<ConfigurationItem> getConfiguration(GetConfigurationRequest request) {
-    throw new DaprException("501", "Implementation not supported");
+  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+    return DaprException.wrapMono(new UnsupportedOperationException());
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request) {
-    throw new DaprException("501", "Implementation not supported");
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Flux<List<ConfigurationItem>> subscribeToConfigurations(SubscribeConfigurationRequest request) {
-    throw new DaprException("501", "Implementation not supported");
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+    return DaprException.wrapFlux(new UnsupportedOperationException());
   }
 
   /**

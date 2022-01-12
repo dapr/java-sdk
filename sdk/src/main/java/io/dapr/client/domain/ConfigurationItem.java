@@ -48,7 +48,7 @@ public class ConfigurationItem {
     this.key = key;
     this.value = value;
     this.version = version;
-    this.metadata = null;
+    this.metadata = Collections.emptyMap();
   }
 
   public String getKey() {

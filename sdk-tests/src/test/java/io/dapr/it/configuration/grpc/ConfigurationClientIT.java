@@ -5,8 +5,8 @@
 
 package io.dapr.it.configuration.grpc;
 
+import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
-import io.dapr.client.DaprPreviewClientBuilder;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
@@ -54,7 +54,7 @@ public class ConfigurationClientIT extends BaseIT {
     public static void init() throws Exception {
         daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
         daprRun.switchToGRPC();
-        daprPreviewClient = new DaprPreviewClientBuilder().build();
+        daprPreviewClient = new DaprClientBuilder().buildPreviewClient();
     }
 
     @AfterClass
@@ -83,7 +83,7 @@ public class ConfigurationClientIT extends BaseIT {
 
     @Test
     public void getConfigurations() {
-        List<ConfigurationItem> cis = daprPreviewClient.getConfigurations(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
+        List<ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
         assertTrue(cis.size() == 2);
         assertEquals(cis.get(0).getKey(), "myconfigkey1");
         assertEquals(cis.get(1).getValue(), "myconfigvalue2");
@@ -94,7 +94,7 @@ public class ConfigurationClientIT extends BaseIT {
         List<String> listOfKeys = new ArrayList<>();
         Map<String, String> metadata = new HashMap<>();
         assertThrows(IllegalArgumentException.class, () -> {
-            daprPreviewClient.getConfigurations(CONFIG_STORE_NAME, listOfKeys, metadata).block();
+            daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, listOfKeys, metadata).block();
         });
     }
 
@@ -104,7 +104,7 @@ public class ConfigurationClientIT extends BaseIT {
         AtomicReference<Disposable> disposable = new AtomicReference<>();
         Runnable subscribeTask = () -> {
             Flux<List<ConfigurationItem>> outFlux = daprPreviewClient
-                    .subscribeToConfigurations(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
+                    .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
             disposable.set(outFlux.subscribe(update -> {
                 updatedValues.add(update.get(0).getValue());
             }));

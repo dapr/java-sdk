@@ -19,12 +19,12 @@ import java.util.Map;
 
 public class GetConfigurationRequest {
   private final String storeName;
-  private final String key;
+  private final List<String> keys;
   private Map<String, String> metadata;
 
-  public GetConfigurationRequest(String storeName, String key) {
+  public GetConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
-    this.key = key;
+    this.keys = keys == null ? Collections.EMPTY_LIST : Collections.unmodifiableList(keys);
   }
 
   public GetConfigurationRequest setMetadata(Map<String, String> metadata) {
@@ -36,8 +36,8 @@ public class GetConfigurationRequest {
     return storeName;
   }
 
-  public String getKey() {
-    return key;
+  public List<String> getKeys() {
+    return keys;
   }
 
   public Map<String, String> getMetadata() {

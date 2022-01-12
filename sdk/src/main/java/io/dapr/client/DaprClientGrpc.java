@@ -20,7 +20,6 @@ import com.google.protobuf.Empty;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -684,47 +683,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
-   *{@inheritDoc}
-   */
-  @Override
-  public Mono<ConfigurationItem> getConfiguration(GetConfigurationRequest request) {
-    try {
-      final String configurationStoreName = request.getStoreName();
-      final String key = request.getKey();
-      final Map<String, String> metadata = request.getMetadata();
-
-      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
-      }
-      if ((key == null) || (key.trim().isEmpty())) {
-        throw new IllegalArgumentException("Key cannot be null or empty.");
-      }
-      DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
-          .setStoreName(configurationStoreName)
-          .addKeys(key);
-      if (metadata != null) {
-        builder.putAllMetadata(metadata);
-      }
-
-      DaprProtos.GetConfigurationRequest envelope = builder.build();
-      return this.getConfigurationAlpha1(envelope).map(
-          it -> it.get(0)
-      );
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
-  }
-
-  /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfigurations(GetBulkConfigurationRequest request) {
+  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final Map<String, String> metadata = request.getMetadata();
       final List<String> keys = request.getKeys();
-
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
@@ -762,7 +728,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<List<ConfigurationItem>> subscribeToConfigurations(SubscribeConfigurationRequest request) {
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();

@@ -7,7 +7,6 @@ package io.dapr.client;
 
 
 import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.config.Properties;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -20,8 +19,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +39,6 @@ public class DaprPreviewClientGrpcTest {
 	private Closeable closeable;
 	private DaprGrpc.DaprStub daprStub;
 	private DaprPreviewClient previewClient;
-	private ObjectSerializer serializer;
 
 	@Before
 	public void setup() throws IOException {
@@ -52,7 +47,6 @@ public class DaprPreviewClientGrpcTest {
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
 		previewClient = new DaprClientGrpc(
 				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
-		serializer = new ObjectSerializer();
 		doNothing().when(closeable).close();
 	}
 
@@ -64,46 +58,12 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	public void waitForSidecarTimeout() throws Exception {
-		int port = findFreePort();
-		System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
-		assertThrows(RuntimeException.class, () -> previewClient.waitForSidecar(1).block());
-	}
-
-	@Test
-	public void waitForSidecarTimeoutOK() throws Exception {
-		try (ServerSocket serverSocket = new ServerSocket(0)) {
-			final int port = serverSocket.getLocalPort();
-			System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
-			Thread t = new Thread(() -> {
-				try {
-					try (Socket socket = serverSocket.accept()) {
-					}
-				} catch (IOException e) {
-				}
-			});
-			t.start();
-			previewClient.waitForSidecar(10000).block();
-		}
-	}
-
-	@Test
-	public void getConfigurationIllegalArgumentExceptionTest() {
-		// Empty Store name
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfiguration("", "key1").block();
-		});
-		//Empty store name
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfigurations("", "key1").block();
-		});
-		// Empty key
+	public void getConfigurationTestErrorScenario() {
 		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.getConfiguration(CONFIG_STORE_NAME, "").block();
 		});
-		// Empty key
 		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfigurations(CONFIG_STORE_NAME, "").block();
+			previewClient.getConfiguration("", "key").block();
 		});
 	}
 
@@ -151,7 +111,7 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
 
-		List<ConfigurationItem> cis = previewClient.getConfigurations(CONFIG_STORE_NAME, "configkey1","configkey2").block();
+		List<ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
 		assertEquals(2, cis.size());
 		assertEquals("configkey1", cis.stream().findFirst().get().getKey());
 		assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
@@ -175,7 +135,7 @@ public class DaprPreviewClientGrpcTest {
 		Map<String, String> reqMetadata = new HashMap<>();
 		reqMetadata.put("meta1", "value1");
 		List<String> keys = Arrays.asList("configkey1","configkey2");
-		List<ConfigurationItem> cis = previewClient.getConfigurations(CONFIG_STORE_NAME, keys, reqMetadata).block();
+		List<ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
 		assertEquals(2, cis.size());
 		assertEquals("configkey1", cis.stream().findFirst().get().getKey());
 		assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
@@ -202,7 +162,7 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
 
-		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfigurations(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
 		assertTrue(itr.hasNext());
 		assertEquals("configkey1", itr.next().get(0).getKey());
 		assertFalse(itr.hasNext());
@@ -232,7 +192,7 @@ public class DaprPreviewClientGrpcTest {
 		Map<String, String> reqMetadata = new HashMap<>();
 		List<String> keys = Arrays.asList("configkey1");
 
-		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfigurations(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
+		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
 		assertTrue(itr.hasNext());
 		assertEquals("configkey1", itr.next().get(0).getKey());
 		assertFalse(itr.hasNext());
@@ -249,15 +209,11 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
 
 		assertThrowsDaprException(ExecutionException.class, () -> {
-			previewClient.subscribeToConfigurations(CONFIG_STORE_NAME, "key").blockFirst();
+			previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "key").blockFirst();
 		});
 
 		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.subscribeToConfigurations("", "key").blockFirst();
-		});
-
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.subscribeToConfigurations("store", "").blockFirst();
+			previewClient.subscribeToConfiguration("", "key").blockFirst();
 		});
 	}
 

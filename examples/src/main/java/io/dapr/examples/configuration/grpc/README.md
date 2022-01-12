@@ -6,11 +6,8 @@ This example provides the different capabilities provided by Dapr Java SDK for C
 ### Using the ConfigurationAPI
 
 The java SDK exposes several methods for this -
-* `client.getConfiguration(...)` for getting a configuration for a single key.
-* `client.getConfigurations(...)` for getting a configurations by passing a variable no. of arguments or list of argumets.
+* `client.getConfiguration(...)` for getting a configuration for a single/multiple keys.
 * `client.subscribeToConfigurations(...)` for subscribing to a list of keys for any change.
-
-The code uses the `DaprPreviewClient` created by the `DaprPreviewClientBuilder`.
 
 ## Pre-requisites
 

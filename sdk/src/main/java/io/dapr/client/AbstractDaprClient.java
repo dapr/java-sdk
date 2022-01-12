@@ -15,28 +15,17 @@ package io.dapr.client;
 
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
-import io.dapr.client.domain.GetBulkConfigurationRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
-import io.dapr.client.domain.GetBulkSecretRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequest;
-import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
-import io.dapr.client.domain.GetSecretRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
-import io.dapr.client.domain.InvokeBindingRequestBuilder;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.SaveStateRequest;
-import io.dapr.client.domain.SaveStateRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -428,8 +417,8 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public Mono<ConfigurationItem> getConfiguration(String storeName, String key) {
-    GetConfigurationRequest request = new GetConfigurationRequest(storeName, key);
-    return this.getConfiguration(request);
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
+    return this.getConfiguration(request).map(data -> data.get(0));
   }
 
   /**
@@ -437,8 +426,18 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata) {
-    GetConfigurationRequest request = new GetConfigurationRequest(storeName, key);
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
     request.setMetadata(metadata);
+    return this.getConfiguration(request).map(data -> data.get(0));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfiguration(String storeName, String... keys) {
+    List<String> listOfKeys = filterEmptyKeys(keys);
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, listOfKeys);
     return this.getConfiguration(request);
   }
 
@@ -446,47 +445,39 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfigurations(String storeName, String... keys) {
-    List<String> listOfKeys = Arrays.stream(keys)
-        .filter(key -> !key.trim().isEmpty())
-        .collect(Collectors.toList());
-    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, listOfKeys);
-    return this.getConfigurations(request);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<List<ConfigurationItem>> getConfigurations(
+  public Mono<List<ConfigurationItem>> getConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {
-    GetBulkConfigurationRequest request = new GetBulkConfigurationRequest(storeName, keys);
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, keys);
     request.setMetadata(metadata);
-    return this.getConfigurations(request);
+    return this.getConfiguration(request);
   }
 
   /**
    * {@inheritDoc}
    */
-  public Flux<List<ConfigurationItem>> subscribeToConfigurations(String storeName, String... keys) {
-    List<String> listOfKeys = Arrays.stream(keys)
-        .filter(key -> !key.trim().isEmpty())
-        .collect(Collectors.toList());
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys) {
+    List<String> listOfKeys = filterEmptyKeys(keys);
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
-    return this.subscribeToConfigurations(request);
+    return this.subscribeToConfiguration(request);
   }
 
   /**
    * {@inheritDoc}
    */
-  public Flux<List<ConfigurationItem>> subscribeToConfigurations(
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, keys);
     request.setMetadata(metadata);
-    return this.subscribeToConfigurations(request);
+    return this.subscribeToConfiguration(request);
+  }
+
+  private List<String> filterEmptyKeys(String... keys) {
+    return Arrays.stream(keys)
+        .filter(key -> !key.trim().isEmpty())
+        .collect(Collectors.toList());
   }
 }
