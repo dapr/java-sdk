@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2022 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,11 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Generic client interface for preview or alpha APIs in Dapr, regardless of GRPC or HTTP.
+ *
+ * @see io.dapr.client.DaprClientBuilder for information on how to make instance for this interface.
+ */
 public interface DaprPreviewClient extends AutoCloseable {
 
   /**

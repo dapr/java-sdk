@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2022 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,9 @@ package io.dapr.client.domain;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * A configuration item from Dapr's configuration store.
+ */
 public class ConfigurationItem {
   private final String key;
   private final String value;
