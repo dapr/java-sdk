@@ -51,10 +51,9 @@
     <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
   </module>
 
-  <module name="Header">
+  <module name="RegexpHeader">
     <property name="fileExtensions" value="java"/>
-    <!-- We just validate the top 2 lines so this attribute's value does not blow away. -->
-    <property name="header"  value='/*\n * Copyright 2021 The Dapr Authors\n * Licensed under the Apache License, Version 2.0 (the "License");\n'/>
+    <property name="headerFile" value=".java_header"/>
   </module>
 
   <module name="TreeWalker">
