@@ -13,37 +13,33 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
 import io.dapr.client.domain.GetBulkSecretRequest;
-import io.dapr.client.domain.GetBulkSecretRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequest;
-import io.dapr.client.domain.GetBulkStateRequestBuilder;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
-import io.dapr.client.domain.GetSecretRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
-import io.dapr.client.domain.InvokeBindingRequestBuilder;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.SaveStateRequest;
-import io.dapr.client.domain.SaveStateRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Abstract class with convenient methods common between client implementations.
@@ -52,7 +48,7 @@ import java.util.Map;
  * @see io.dapr.client.DaprClientGrpc
  * @see io.dapr.client.DaprClientHttp
  */
-abstract class AbstractDaprClient implements DaprClient {
+abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
 
   /**
    * A utility class for serialize and deserialize the transient objects.
@@ -416,4 +412,72 @@ abstract class AbstractDaprClient implements DaprClient {
     return this.getBulkSecret(request).defaultIfEmpty(Collections.emptyMap());
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(String storeName, String key) {
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
+    return this.getConfiguration(request).map(data -> data.get(0));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata) {
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
+    request.setMetadata(metadata);
+    return this.getConfiguration(request).map(data -> data.get(0));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfiguration(String storeName, String... keys) {
+    List<String> listOfKeys = filterEmptyKeys(keys);
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, listOfKeys);
+    return this.getConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfiguration(
+      String storeName,
+      List<String> keys,
+      Map<String, String> metadata) {
+    GetConfigurationRequest request = new GetConfigurationRequest(storeName, keys);
+    request.setMetadata(metadata);
+    return this.getConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys) {
+    List<String> listOfKeys = filterEmptyKeys(keys);
+    SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
+    return this.subscribeToConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(
+      String storeName,
+      List<String> keys,
+      Map<String, String> metadata) {
+    SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, keys);
+    request.setMetadata(metadata);
+    return this.subscribeToConfiguration(request);
+  }
+
+  private List<String> filterEmptyKeys(String... keys) {
+    return Arrays.stream(keys)
+        .filter(key -> !key.trim().isEmpty())
+        .collect(Collectors.toList());
+  }
 }
