@@ -118,6 +118,16 @@ public class DaprClientBuilder {
   }
 
   /**
+   * Build an instance of the Client based on the provided setup.
+   *
+   * @return an instance of the setup Client
+   * @throws IllegalStateException if any required field is missing
+   */
+  public DaprPreviewClient buildPreviewClient() {
+    return (DaprPreviewClient) buildDaprClient(this.apiProtocol);
+  }
+
+  /**
    * Creates an instance of a Dapr Client based on the chosen protocol.
    *
    * @param protocol Dapr API's protocol.

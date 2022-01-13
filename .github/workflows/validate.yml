@@ -150,3 +150,7 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
+      - name: Validate Configuration API example
+        working-directory: ./examples
+        run: |
+            mm.py ./src/main/java/io/dapr/examples/configuration/grpc/README.md
