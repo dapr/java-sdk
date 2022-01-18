@@ -29,6 +29,12 @@ public class GetStateRequest {
 
   private StateOptions stateOptions;
 
+  /**
+   * Constructor for GetStateRequest.
+   *
+   * @param storeName Name of the State Store
+   * @param key       key of the state object
+   */
   public GetStateRequest(String storeName, String key) {
     this.storeName = storeName;
     this.key = key;

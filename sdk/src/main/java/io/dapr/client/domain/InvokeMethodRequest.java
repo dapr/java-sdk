@@ -28,6 +28,12 @@ public class InvokeMethodRequest {
 
   private String contentType;
 
+  /**
+   * Constructor for InvokeMethodRequest.
+   *
+   * @param appId   AppId/ServiceId
+   * @param method  MethodName to be invoked
+   */
   public InvokeMethodRequest(String appId, String method) {
     this.appId = appId;
     this.method = method;

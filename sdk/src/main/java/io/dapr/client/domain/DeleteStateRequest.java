@@ -31,6 +31,12 @@ public class DeleteStateRequest {
 
   private StateOptions stateOptions;
 
+  /**
+   * Instantiate DeleteStateRequest.
+   *
+   * @param storeName Name of the state store
+   * @param key Key present in the state store
+   */
   public DeleteStateRequest(String storeName, String key) {
     this.stateStoreName = storeName;
     this.key = key;

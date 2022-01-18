@@ -26,6 +26,11 @@ public class SaveStateRequest {
 
   private List<State<?>> states;
 
+  /**
+   * Constructor for SaveStaterequest.
+   *
+   * @param storeName name of the State Store
+   */
   public SaveStateRequest(String storeName) {
     this.storeName = storeName;
   }

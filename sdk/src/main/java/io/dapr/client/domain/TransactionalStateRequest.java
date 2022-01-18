@@ -17,6 +17,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A class to represent request for TransactionalState.
+ * @param <T> Type of TransactionalStateOperation
+ */
 public class TransactionalStateRequest<T> {
 
   /**

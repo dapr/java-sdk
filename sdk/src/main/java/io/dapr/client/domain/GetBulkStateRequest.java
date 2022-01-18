@@ -31,6 +31,12 @@ public class GetBulkStateRequest {
 
   private int parallelism = 1;
 
+  /**
+   * Constructor for GetBulkStateRequest.
+   *
+   * @param storeName Name of the state store
+   * @param keys      keys for the state objects
+   */
   public GetBulkStateRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
     this.keys = keys == null ? null : Collections.unmodifiableList(keys);
