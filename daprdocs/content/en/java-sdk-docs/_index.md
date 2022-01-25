@@ -72,7 +72,7 @@ You can fix this by specifying a compatible OkHttp version in your project to ma
 <dependency>
   <groupId>com.squareup.okhttp3</groupId>
   <artifactId>okhttp</artifactId>
-  <version>1.3.1</version>
+  <version>1.4.0</version>
 </dependency>
 ```
 
