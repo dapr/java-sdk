@@ -160,7 +160,7 @@ final class ActorReminderParams {
    *
    * @return Periodic time as {@link RepeatedDuration} when reminder will be invoked.
    */
-  public RepeatedDuration getRepeatedPeriod() {
+  RepeatedDuration getRepeatedPeriod() {
     return period;
   }
 }
