@@ -19,7 +19,7 @@ public class Properties {
   /**
    * Dapr's default IP for HTTP and gRPC communication.
    */
-  private static final String DEFAULT_SIDECAR_IP = NetworkUtils.getLocalHostAddress();
+  private static final String DEFAULT_SIDECAR_IP = NetworkUtils.getHostLoopbackAddress();
 
   /**
    * Dapr's default HTTP port.

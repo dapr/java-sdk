@@ -47,13 +47,7 @@ public final class NetworkUtils {
    * Falls back to loopback address if UnknownHostException.
    * @return The IP for localhost or loopback address
    */
-  public static String getLocalHostAddress() {
-    String hostAddress;
-    try {
-      hostAddress = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      hostAddress = InetAddress.getLoopbackAddress().getHostAddress();
-    }
-    return hostAddress;
+  public static String getHostLoopbackAddress() {
+    return InetAddress.getLoopbackAddress().getHostAddress();
   }
 }
