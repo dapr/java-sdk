@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.it.state;
 
 import com.google.protobuf.ByteString;
+import io.dapr.config.Properties;
 import io.dapr.v1.CommonProtos.StateItem;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprGrpc.DaprBlockingStub;

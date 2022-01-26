@@ -15,6 +15,7 @@ package io.dapr.it.state;
 
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import io.dapr.config.Properties;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
