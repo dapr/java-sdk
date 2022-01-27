@@ -69,7 +69,7 @@ public final class TestUtils {
   public static String getSidecarIpForHttpUrl(final String sidecarIp) {
     String retSidecarIp = sidecarIp;
     if(InetAddressValidator.getInstance().isValidInet6Address(sidecarIp)) {
-      retSidecarIp = "[" + sidecarIp + "]";
+      retSidecarIp = "[" + sidecarIp + "]"; // per URL spec https://url.spec.whatwg.org/#host-writing
     }
     return retSidecarIp;
   }
