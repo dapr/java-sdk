@@ -25,6 +25,12 @@ public class SubscribeConfigurationRequest {
   private final List<String> keys;
   private Map<String, String> metadata;
 
+  /**
+   * Constructor for SubscribeConfigurationRequest.
+   *
+   * @param storeName Name of the configuration store
+   * @param keys      Keys of the configurations values to subscribe to
+   */
   public SubscribeConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
     this.keys = keys == null ? Collections.EMPTY_LIST : Collections.unmodifiableList(keys);

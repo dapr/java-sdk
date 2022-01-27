@@ -32,6 +32,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * A class representing the state options for Dapr state API.
+ */
 public class StateOptions {
   private final Consistency consistency;
   private final Concurrency concurrency;
@@ -70,6 +73,9 @@ public class StateOptions {
     return Collections.unmodifiableMap(Optional.ofNullable(mapOptions).orElse(Collections.EMPTY_MAP));
   }
 
+  /**
+   * Options for Consistency.
+   */
   public enum Consistency {
     EVENTUAL("eventual"),
     STRONG("strong");
@@ -91,6 +97,9 @@ public class StateOptions {
     }
   }
 
+  /**
+   * Options for Concurrency.
+   */
   public enum Concurrency {
     FIRST_WRITE("first-write"),
     LAST_WRITE("last-write");

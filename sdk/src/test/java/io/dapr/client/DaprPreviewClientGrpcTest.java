@@ -15,6 +15,8 @@ package io.dapr.client;
 
 
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -72,6 +74,10 @@ public class DaprPreviewClientGrpcTest {
 		});
 		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.getConfiguration("", "key").block();
+		});
+		GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, null);
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.getConfiguration(req).block();
 		});
 	}
 
@@ -222,6 +228,11 @@ public class DaprPreviewClientGrpcTest {
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.subscribeToConfiguration("", "key").blockFirst();
+		});
+
+		SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, null);
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.subscribeToConfiguration(req).blockFirst();
 		});
 	}
 
