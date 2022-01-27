@@ -28,6 +28,12 @@ public class InvokeMethodRequest {
 
   private String contentType;
 
+  /**
+   * Constructor for InvokeMethodRequest.
+   *
+   * @param appId   ID of the Dapr application
+   * @param method  Name of the method to be invoked
+   */
   public InvokeMethodRequest(String appId, String method) {
     this.appId = appId;
     this.method = method;

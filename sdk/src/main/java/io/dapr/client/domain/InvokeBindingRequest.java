@@ -29,6 +29,12 @@ public class InvokeBindingRequest {
 
   private Map<String, String> metadata;
 
+  /**
+   * Constructor for InvokeBindingRequest.
+   *
+   * @param bindingName Name of the binding
+   * @param operation   Name of the binding operation
+   */
   public InvokeBindingRequest(String bindingName, String operation) {
     this.name = bindingName;
     this.operation = operation;

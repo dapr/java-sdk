@@ -17,6 +17,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A request for executing state transaction operations.
+ */
 public class ExecuteStateTransactionRequest {
 
   /**
@@ -34,6 +37,11 @@ public class ExecuteStateTransactionRequest {
    */
   private Map<String, String> metadata;
 
+  /**
+   * Constructor for ExecuteStateTransactionRequest.
+   *
+   * @param stateStoreName Name of the state store
+   */
   public ExecuteStateTransactionRequest(String stateStoreName) {
     this.stateStoreName = stateStoreName;
   }

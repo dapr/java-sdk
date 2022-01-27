@@ -25,6 +25,11 @@ public class GetBulkSecretRequest {
 
   private Map<String, String> metadata;
 
+  /**
+   * Constructor for GetBulkSecretRequest.
+   *
+   * @param storeName Name of the secret store
+   */
   public GetBulkSecretRequest(String storeName) {
     this.storeName = storeName;
   }
