@@ -25,6 +25,12 @@ public class GetConfigurationRequest {
   private final List<String> keys;
   private Map<String, String> metadata;
 
+  /**
+   * Constructor for GetConfigurationRequest.
+   *
+   * @param storeName Name of the configuration store
+   * @param keys      Keys for the configuration objects
+   */
   public GetConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
     this.keys = keys == null ? Collections.EMPTY_LIST : Collections.unmodifiableList(keys);
