@@ -31,8 +31,8 @@ public class InvokeMethodRequest {
   /**
    * Constructor for InvokeMethodRequest.
    *
-   * @param appId   AppId/ServiceId
-   * @param method  MethodName to be invoked
+   * @param appId   ID of the Dapr application
+   * @param method  Name of the method to be invoked
    */
   public InvokeMethodRequest(String appId, String method) {
     this.appId = appId;

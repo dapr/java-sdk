@@ -26,10 +26,10 @@ public class GetConfigurationRequest {
   private Map<String, String> metadata;
 
   /**
-   * Constructor for GetConfigurationStore.
+   * Constructor for GetConfigurationRequest.
    *
-   * @param storeName Name of the Configuration Store
-   * @param keys      keys for the Configuration objects
+   * @param storeName Name of the configuration store
+   * @param keys      Keys for the configuration objects
    */
   public GetConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;

@@ -32,8 +32,8 @@ public class InvokeBindingRequest {
   /**
    * Constructor for InvokeBindingRequest.
    *
-   * @param bindingName Name of the Binding
-   * @param operation   Binding operation
+   * @param bindingName Name of the binding
+   * @param operation   Name of the binding operation
    */
   public InvokeBindingRequest(String bindingName, String operation) {
     this.name = bindingName;

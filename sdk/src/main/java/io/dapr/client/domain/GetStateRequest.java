@@ -32,8 +32,8 @@ public class GetStateRequest {
   /**
    * Constructor for GetStateRequest.
    *
-   * @param storeName Name of the State Store
-   * @param key       key of the state object
+   * @param storeName Name of the state store
+   * @param key       Key of the state object
    */
   public GetStateRequest(String storeName, String key) {
     this.storeName = storeName;

@@ -28,8 +28,8 @@ public class SubscribeConfigurationRequest {
   /**
    * Constructor for SubscribeConfigurationRequest.
    *
-   * @param storeName Name of the Configuration Store
-   * @param keys      Keys for Configurations
+   * @param storeName Name of the configuration store
+   * @param keys      Keys of the configurations values to subscribe to
    */
   public SubscribeConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;

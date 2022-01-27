@@ -29,7 +29,7 @@ public class GetSecretRequest {
    * Constructor for GetSecretRequest.
    *
    * @param storeName Name of the Secret Store
-   * @param key       Key for retrieving the secret Object
+   * @param key       Key for retrieving the secret
    */
   public GetSecretRequest(String storeName, String key) {
     this.storeName = storeName;

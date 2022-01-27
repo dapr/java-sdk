@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 /**
- * Class to represent Transactional State Operations.
+ * Class to represent transactional state operations.
  * @param <T> Type of the state value
  */
 public class TransactionalStateOperation<T> {
@@ -78,7 +78,7 @@ public class TransactionalStateOperation<T> {
   }
 
   /**
-   * Options for operation Type.
+   * Options for type of operation.
    */
   public enum OperationType {
     @JsonProperty("upsert") UPSERT,

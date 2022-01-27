@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A class to represent request for TransactionalState.
- * @param <T> Type of TransactionalStateOperation
+ * A class to represent request for transactional state.
+ * @param <T> Type of state value in TransactionalStateOperation
  */
 public class TransactionalStateRequest<T> {
 

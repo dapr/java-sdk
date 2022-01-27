@@ -32,7 +32,7 @@ public class DeleteStateRequest {
   private StateOptions stateOptions;
 
   /**
-   * Instantiate DeleteStateRequest.
+   * Constructor for DeleteStateRequest.
    *
    * @param storeName Name of the state store
    * @param key Key present in the state store
