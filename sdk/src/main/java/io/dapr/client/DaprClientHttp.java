@@ -1,16 +1,26 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
@@ -20,6 +30,7 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.TransactionalStateRequest;
 import io.dapr.config.Properties;
@@ -28,6 +39,7 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -655,6 +667,22 @@ public class DaprClientHttp extends AbstractDaprClient {
             context -> client.invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments,
                     null, null, context))
             .then();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+    return DaprException.wrapMono(new UnsupportedOperationException());
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+    return DaprException.wrapFlux(new UnsupportedOperationException());
   }
 
   /**

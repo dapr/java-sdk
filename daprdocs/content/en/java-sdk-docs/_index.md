@@ -31,19 +31,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.3.1</version>
+      <version>1.4.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.3.1</version>
+      <version>1.4.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.3.1</version>
+      <version>1.4.0</version>
     </dependency>
     ...
   </dependencies>
@@ -57,11 +57,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.3.1')
+    compile('io.dapr:dapr-sdk:1.4.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.3.1')
+    compile('io.dapr:dapr-sdk-actors:1.4.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.3.1')
+    compile('io.dapr:dapr-sdk-springboot:1.4.0')
 }
 ```
 
@@ -72,7 +72,7 @@ You can fix this by specifying a compatible OkHttp version in your project to ma
 <dependency>
   <groupId>com.squareup.okhttp3</groupId>
   <artifactId>okhttp</artifactId>
-  <version>1.3.1</version>
+  <version>1.4.0</version>
 </dependency>
 ```
 
@@ -238,6 +238,34 @@ public interface DemoActor {
 
 - For a full guide on actors visit [How-To: Use virtual actors in Dapr]({{< ref howto-actors.md >}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/actors) for code samples and instructions to try actors
+
+### Get & Subscribe to application configurations
+
+```java
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+  // Get configuration for a single key
+  Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, CONFIG_KEY).block();
+
+// Get Configurations for multiple keys
+  Mono<List<ConfigurationItem>> items =
+          client.getConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
+
+  // Susbcribe to Confifuration changes
+  Flux<List<ConfigurationItem>> outFlux = client.subscribeToConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
+  outFlux.subscribe(configItems -> configItems.forEach(...));
+}
+```
+
+- For a full list of configuration operations visit [How-To: Manage configuration from a store]({{< ref howto-manage-configuration.md >}}).
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/configuration) for code samples and instructions to try out different configuration operations.
 
 ## Related links
 - [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)

@@ -1,7 +1,15 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package io.dapr.client;
 
@@ -9,10 +17,12 @@ import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
@@ -22,6 +32,7 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
@@ -40,6 +51,8 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
@@ -670,6 +683,100 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final Map<String, String> metadata = request.getMetadata();
+      final List<String> keys = request.getKeys();
+      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
+      }
+      if (keys.isEmpty()) {
+        throw new IllegalArgumentException("Keys can not be empty or null");
+      }
+      DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
+          .setStoreName(configurationStoreName).addAllKeys(keys);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+
+      DaprProtos.GetConfigurationRequest envelope = builder.build();
+      return this.getConfigurationAlpha1(envelope);
+
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
+    return Mono.subscriberContext().flatMap(
+        context ->
+            this.<DaprProtos.GetConfigurationResponse>createMono(
+                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelope, it)
+            )
+    ).map(
+        it ->
+            it.getItemsList().stream()
+                .map(this::buildConfigurationItem).collect(Collectors.toList())
+    );
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final List<String> keys = request.getKeys();
+      final Map<String, String> metadata = request.getMetadata();
+
+      if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
+      }
+      if (keys.isEmpty()) {
+        throw new IllegalArgumentException("Keys can not be null or empty.");
+      }
+      DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
+          .setStoreName(configurationStoreName)
+          .addAllKeys(keys);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+
+      DaprProtos.SubscribeConfigurationRequest envelope = builder.build();
+      return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
+          it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelope, it)
+      ).map(
+          it ->
+              it.getItemsList().stream()
+                  .map(this::buildConfigurationItem).collect(Collectors.toList())
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * Build a new Configuration Item from provided parameter.
+   *
+   * @param configurationItem CommonProtos.ConfigurationItem
+   * @return io.dapr.client.domain.ConfigurationItem
+   */
+  private ConfigurationItem buildConfigurationItem(
+      CommonProtos.ConfigurationItem configurationItem) {
+    return new ConfigurationItem(
+        configurationItem.getKey(),
+        configurationItem.getValue(),
+        configurationItem.getVersion(),
+        configurationItem.getMetadataMap()
+    );
+  }
+
+  /**
    * Populates GRPC client with interceptors.
    *
    * @param client GRPC client for Dapr.
@@ -714,6 +821,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
     return Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
   }
 
+  private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
+    return Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+  }
+
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
     return new StreamObserver<T>() {
       @Override
@@ -729,6 +840,25 @@ public class DaprClientGrpc extends AbstractDaprClient {
       @Override
       public void onCompleted() {
         sink.success();
+      }
+    };
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink) {
+    return new StreamObserver<T>() {
+      @Override
+      public void onNext(T value) {
+        sink.next(value);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        sink.error(DaprException.propagate(new ExecutionException(t)));
+      }
+
+      @Override
+      public void onCompleted() {
+        sink.complete();
       }
     };
   }

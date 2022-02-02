@@ -7,7 +7,7 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.4.0-SNAPSHOT</version>
+  <version>1.5.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -16,7 +16,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <grpc.version>1.39.0</grpc.version>
     <protobuf.version>3.13.0</protobuf.version>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.4.0-rc.6/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.6.0-rc.3/dapr/proto</dapr.proto.baseurl>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
@@ -277,8 +277,8 @@
 
   <licenses>
     <license>
-      <name>MIT License</name>
-      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <name>Apache License Version 2.0</name>
+      <url>https://opensource.org/licenses/Apache-2.0</url>
     </license>
   </licenses>
 
