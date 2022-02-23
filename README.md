@@ -160,6 +160,27 @@ This SDK provides a basic serialization for request/response objects but also fo
     }
     ```
 
+#### How to provide custom grpc/http client for DaprClient
+
+When building dapr client, following api will allow you to provide your own managed grpc channel within the DaprClient. This allows users to define/maintain their own thread pools and tune grpc parameters.
+Similarly you can override http client while building dapr client and tune http client parameters.
+
+   * Override custom grpc managed channel for DaprClient
+
+    ```java
+        DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
+        ManagedChannelBuilder managedChannelBuilder = Grpc.newChannelBuilder("localhost:8000", TlsChannelCredentials.create())
+            .executor(Executors.newFixedThreadPool(20));
+        DaprClient client = daprClientBuilder.withManagedGrpcChannel(managedChannelBuilder.build()).build();
+    ```
+
+   * Override custom okhttpclient for DaprClient
+
+    ```java 
+       DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
+       DaprClient client = daprClientBuilder.withOkHttpClient(new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS)).build();
+    ```
+
 
 #### Debug Java application or Dapr's Java SDK
 

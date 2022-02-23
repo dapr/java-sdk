@@ -34,6 +34,20 @@ public class DaprHttpBuilder {
   private static final Object LOCK = new Object();
 
   /**
+   * OKHttpClient builder
+   */
+  private OkHttpClient.Builder builder;
+
+  public DaprHttpBuilder() {
+    builder = new OkHttpClient.Builder();
+  }
+
+  public DaprHttpBuilder withOkHttpClientBuilder(OkHttpClient.Builder builder){
+    this.builder = builder;
+    return this;
+  }
+
+  /**
    * Build an instance of the Http client based on the provided setup.
    *
    * @return an instance of {@link DaprHttp}
@@ -52,7 +66,6 @@ public class DaprHttpBuilder {
     if (OK_HTTP_CLIENT == null) {
       synchronized (LOCK) {
         if (OK_HTTP_CLIENT == null) {
-          OkHttpClient.Builder builder = new OkHttpClient.Builder();
           Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READ_TIMEOUT_SECONDS.get());
           builder.readTimeout(readTimeout);
           OK_HTTP_CLIENT = builder.build();
