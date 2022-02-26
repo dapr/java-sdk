@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -25,11 +26,14 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
@@ -49,6 +53,11 @@ import java.util.stream.Collectors;
  * @see io.dapr.client.DaprClientHttp
  */
 abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
+
+  /**
+   * A mapper to serialize JSON request objects.
+   */
+  protected static final ObjectMapper JSON_REQUEST_MAPPER = new ObjectMapper();
 
   /**
    * A utility class for serialize and deserialize the transient objects.
@@ -130,7 +139,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public <T> Mono<T> invokeMethod(
-          String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
+      String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, TypeRef<T> type) {
     return this.invokeMethod(appId, methodName, null, httpExtension, metadata, type);
   }
 
@@ -139,7 +148,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public <T> Mono<T> invokeMethod(
-          String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
+      String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata, Class<T> clazz) {
     return this.invokeMethod(appId, methodName, null, httpExtension, metadata, TypeRef.get(clazz));
   }
 
@@ -174,7 +183,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public Mono<Void> invokeMethod(
-          String appId, String methodName, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
+      String appId, String methodName, Object request, HttpExtension httpExtension, Map<String, String> metadata) {
     return this.invokeMethod(appId, methodName, request, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
@@ -183,7 +192,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public Mono<Void> invokeMethod(
-          String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata) {
+      String appId, String methodName, HttpExtension httpExtension, Map<String, String> metadata) {
     return this.invokeMethod(appId, methodName, null, httpExtension, metadata, TypeRef.BYTE_ARRAY).then();
   }
 
@@ -192,7 +201,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public Mono<byte[]> invokeMethod(
-          String appId, String methodName, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
+      String appId, String methodName, byte[] request, HttpExtension httpExtension, Map<String, String> metadata) {
     return this.invokeMethod(appId, methodName, request, httpExtension, metadata, TypeRef.BYTE_ARRAY);
   }
 
@@ -233,7 +242,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public <T> Mono<T> invokeBinding(
-          String bindingName, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
+      String bindingName, String operation, Object data, Map<String, String> metadata, TypeRef<T> type) {
     InvokeBindingRequest request = new InvokeBindingRequest(bindingName, operation)
         .setData(data)
         .setMetadata(metadata);
@@ -246,7 +255,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public <T> Mono<T> invokeBinding(
-          String bindingName, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
+      String bindingName, String operation, Object data, Map<String, String> metadata, Class<T> clazz) {
     return this.invokeBinding(bindingName, operation, data, metadata, TypeRef.get(clazz));
   }
 
@@ -287,7 +296,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-          String storeName, String key, StateOptions options, TypeRef<T> type) {
+      String storeName, String key, StateOptions options, TypeRef<T> type) {
     GetStateRequest request = new GetStateRequest(storeName, key)
         .setStateOptions(options);
     return this.getState(request, type);
@@ -299,8 +308,84 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-          String storeName, String key, StateOptions options, Class<T> clazz) {
+      String storeName, String key, StateOptions options, Class<T> clazz) {
     return this.getState(storeName, key, options, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, Map<String, String> metadata,
+                                                    Class<T> clazz) {
+    return this.queryState(new QueryStateRequest(storeName).setQueryString(query).setMetadata(metadata), clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, Map<String, String> metadata,
+                                                    TypeRef<T> type) {
+    return this.queryState(new QueryStateRequest(storeName).setQueryString(query).setMetadata(metadata), type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, Class<T> clazz) {
+    return this.queryState(new QueryStateRequest(storeName).setQueryString(query), clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, TypeRef<T> type) {
+    return this.queryState(new QueryStateRequest(storeName).setQueryString(query), type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, Map<String, String> metadata,
+                                                    Class<T> clazz) {
+    return this.queryState(new QueryStateRequest(storeName).setQuery(query).setMetadata(metadata), clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, Map<String, String> metadata,
+                                                    TypeRef<T> type) {
+    return this.queryState(new QueryStateRequest(storeName).setQuery(query).setMetadata(metadata), type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, Class<T> clazz) {
+    return this.queryState(new QueryStateRequest(storeName).setQuery(query), clazz);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, TypeRef<T> type) {
+    return this.queryState(new QueryStateRequest(storeName).setQuery(query), type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, Class<T> clazz) {
+    return this.queryState(request, TypeRef.get(clazz));
   }
 
   /**

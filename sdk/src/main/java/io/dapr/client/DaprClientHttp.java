@@ -27,6 +27,9 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -162,7 +165,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
       return Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(
-            DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedEvent, headers, context
+              DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedEvent, headers, context
           )
       ).then();
     } catch (Exception ex) {
@@ -282,7 +285,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(ex);
     }
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -310,25 +313,25 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
 
-      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "bulk"};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "bulk" };
 
       Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
       return Mono.subscriberContext().flatMap(
-              context -> this.client
-                  .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, requestBody, null, context)
-          ).flatMap(s -> {
-            try {
-              return Mono.just(buildStates(s, type));
-            } catch (Exception ex) {
-              return DaprException.wrapMono(ex);
-            }
-          });
+          context -> this.client
+              .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, requestBody, null, context)
+      ).flatMap(s -> {
+        try {
+          return Mono.just(buildStates(s, type));
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
 
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
   }
-  
+
 
   /**
    * {@inheritDoc}
@@ -356,11 +359,11 @@ public class DaprClientHttp extends AbstractDaprClient {
       queryParams.putAll(optionsMap.entrySet().stream().collect(
           Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
 
-      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key };
 
       return Mono.subscriberContext().flatMap(
-        context -> this.client
-          .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryParams, null, context)
+          context -> this.client
+              .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryParams, null, context)
       ).flatMap(s -> {
         try {
           return Mono.justOrEmpty(buildState(s, key, options, type));
@@ -414,7 +417,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       TransactionalStateRequest<Object> req = new TransactionalStateRequest<>(internalOperationObjects, metadata);
       byte[] serializedOperationBody = INTERNAL_SERIALIZER.serialize(req);
 
-      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "transaction"};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, "transaction" };
 
       return Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(
@@ -458,11 +461,11 @@ public class DaprClientHttp extends AbstractDaprClient {
         byte[] data = this.stateSerializer.serialize(state.getValue());
         // Custom serializer, so everything is byte[].
         internalStateObjects.add(new State<>(state.getKey(), data, state.getEtag(), state.getMetadata(),
-                state.getOptions()));
+            state.getOptions()));
       }
       byte[] serializedStateBody = INTERNAL_SERIALIZER.serialize(internalStateObjects);
 
-      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName };
 
       return Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(
@@ -505,7 +508,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       queryParams.putAll(optionsMap.entrySet().stream().collect(
           Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
 
-      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key};
+      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key };
 
       return Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(
@@ -521,7 +524,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    *
    * @param response     The response of the HTTP Call
    * @param requestedKey The Key Requested.
-   * @param type        The Class of the Value of the state
+   * @param type         The Class of the Value of the state
    * @param <T>          The Type of the Value of the state
    * @return A State instance
    * @throws IOException If there's a issue deserializing the response.
@@ -540,9 +543,9 @@ public class DaprClientHttp extends AbstractDaprClient {
   /**
    * Builds a State object based on the Response.
    *
-   * @param response     The response of the HTTP Call
-   * @param type        The Class of the Value of the state
-   * @param <T>          The Type of the Value of the state
+   * @param response The response of the HTTP Call
+   * @param type     The Class of the Value of the state
+   * @param <T>      The Type of the Value of the state
    * @return A list of states.
    * @throws IOException If there's a issue deserializing the response.
    */
@@ -593,24 +596,24 @@ public class DaprClientHttp extends AbstractDaprClient {
     }
 
     Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
-    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, key};
+    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, key };
 
     return Mono.subscriberContext().flatMap(
-          context -> this.client
-              .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String)null, null, context)
-      ).flatMap(response -> {
-        try {
-          Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
-          if (m == null) {
-            return Mono.just(Collections.EMPTY_MAP);
-          }
+            context -> this.client
+                .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String) null, null, context)
+        ).flatMap(response -> {
+          try {
+            Map m = INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
+            if (m == null) {
+              return Mono.just(Collections.EMPTY_MAP);
+            }
 
-          return Mono.just(m);
-        } catch (IOException e) {
-          return DaprException.wrapMono(e);
-        }
-      })
-      .map(m -> (Map<String, String>)m);
+            return Mono.just(m);
+          } catch (IOException e) {
+            return DaprException.wrapMono(e);
+          }
+        })
+        .map(m -> (Map<String, String>) m);
   }
 
   /**
@@ -629,14 +632,14 @@ public class DaprClientHttp extends AbstractDaprClient {
     }
 
     Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
-    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, "bulk"};
+    String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "secrets", secretStoreName, "bulk" };
 
     return Mono.subscriberContext().flatMap(
             context -> this.client
-                .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String)null, null, context)
+                .invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, queryArgs, (String) null, null, context)
         ).flatMap(response -> {
           try {
-            Map m =  INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
+            Map m = INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
             if (m == null) {
               return Mono.just(Collections.EMPTY_MAP);
             }
@@ -646,7 +649,47 @@ public class DaprClientHttp extends AbstractDaprClient {
             return DaprException.wrapMono(e);
           }
         })
-        .map(m -> (Map<String, Map<String, String>>)m);
+        .map(m -> (Map<String, Map<String, String>>) m);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("Query state request cannot be null.");
+      }
+      String stateStoreName = request.getStoreName();
+      Map<String, String> metadata = request.getMetadata();
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
+      String[] pathSegments = new String[]{ DaprHttp.ALPHA_1_API_VERSION, "state", stateStoreName, "query" };
+      String serializedRequest;
+      if (request.getQuery() != null) {
+        serializedRequest = JSON_REQUEST_MAPPER.writeValueAsString(request.getQuery());
+      } else if (request.getQueryString() != null) {
+        serializedRequest = request.getQueryString();
+      } else {
+        throw new IllegalArgumentException("Both query and queryString fields are not set.");
+      }
+      return Mono.subscriberContext().flatMap(
+              context -> this.client
+                  .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments,
+                      queryArgs, serializedRequest, null, context)
+          ).flatMap(response -> {
+            try {
+              return Mono.justOrEmpty(buildQueryStateResponse(response, type));
+            } catch (Exception e) {
+              return DaprException.wrapMono(e);
+            }
+          });
+    } catch (Exception e) {
+      return DaprException.wrapMono(e);
+    }
   }
 
   /**
@@ -665,8 +708,49 @@ public class DaprClientHttp extends AbstractDaprClient {
     String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "shutdown" };
     return Mono.subscriberContext().flatMap(
             context -> client.invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments,
-                    null, null, context))
-            .then();
+                null, null, context))
+        .then();
+  }
+
+  private <T> QueryStateResponse<T> buildQueryStateResponse(DaprHttp.Response response,
+                                                            TypeRef<T> type) throws IOException {
+    JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+    if (!root.has("results")) {
+      return new QueryStateResponse<>(Collections.emptyList(), null);
+    }
+    String token = null;
+    if (root.has("token")) {
+      token = root.path("token").asText();
+    }
+    Map<String, String> metadata = new HashMap<>();
+    if (root.has("metadata")) {
+      for (Iterator<Map.Entry<String, JsonNode>> it = root.get("metadata").fields(); it.hasNext(); ) {
+        Map.Entry<String, JsonNode> entry = it.next();
+        metadata.put(entry.getKey(), entry.getValue().asText());
+      }
+    }
+    List<QueryStateItem<T>> result = new ArrayList<>();
+    for (Iterator<JsonNode> it = root.get("results").elements(); it.hasNext(); ) {
+      JsonNode node = it.next();
+      String key = node.path("key").asText();
+      String error = node.path("error").asText();
+      if (!Strings.isNullOrEmpty(error)) {
+        result.add(new QueryStateItem<>(key, null, error));
+        continue;
+      }
+
+      String etag = node.path("etag").asText();
+      if (etag.equals("")) {
+        etag = null;
+      }
+      // TODO(artursouza): JSON cannot differentiate if data returned is String or byte[], it is ambiguous.
+      // This is not a high priority since GRPC is the default (and recommended) client implementation.
+      byte[] data = node.path("data").toString().getBytes(Properties.STRING_CHARSET.get());
+      T value = stateSerializer.deserialize(data, type);
+      result.add(new QueryStateItem<>(key, value, etag));
+    }
+
+    return new QueryStateResponse<>(result, token).setMetadata(metadata);
   }
 
   /**
@@ -687,6 +771,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
   /**
    * Converts metadata map into Query params.
+   *
    * @param metadata metadata map
    * @return Query params
    */
