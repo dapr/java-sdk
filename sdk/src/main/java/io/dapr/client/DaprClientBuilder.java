@@ -19,7 +19,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import okhttp3.OkHttpClient;
 
 import java.io.Closeable;
 
@@ -43,11 +42,6 @@ public class DaprClientBuilder {
    * Builder for Dapr's HTTP Client.
    */
   private final DaprHttpBuilder daprHttpBuilder;
-
-  /**
-   * Managed gRPC channel
-   */
-  private ManagedChannel channel;
 
   /**
    * Serializer used for request and response objects in DaprClient.
@@ -109,16 +103,6 @@ public class DaprClientBuilder {
     return this;
   }
 
-  public DaprClientBuilder withManagedGrpcChannel(ManagedChannel channel){
-    this.channel = channel;
-    return this;
-  }
-
-  public DaprClientBuilder withOkHttpClient(OkHttpClient.Builder  builder){
-    this.daprHttpBuilder.withOkHttpClientBuilder(builder);
-    return this;
-  }
-
   /**
    * Build an instance of the Client based on the provided setup.
    *
@@ -173,12 +157,8 @@ public class DaprClientBuilder {
     if (port <= 0) {
       throw new IllegalArgumentException("Invalid port.");
     }
-
-    if(channel == null) {
-       channel = ManagedChannelBuilder.forAddress(
-               Properties.SIDECAR_IP.get(), port).usePlaintext().build();
-    }
-
+    ManagedChannel channel = ManagedChannelBuilder.forAddress(
+        Properties.SIDECAR_IP.get(), port).usePlaintext().build();
     Closeable closeableChannel = () -> {
       if (channel != null && !channel.isShutdown()) {
         channel.shutdown();
