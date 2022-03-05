@@ -161,6 +161,19 @@ This SDK provides a basic serialization for request/response objects but also fo
     ```
 
 
+#### How to extend DaprClientBuilder
+
+This gives a way to provide a managed grpc channel to your DaprClient.
+
+    ```java
+   
+    DaprExtensibleClientBuilder daprClientBuilder = new DaprExtensibleClientBuilder();
+    ManagedChannelBuilder managedChannelBuilder = Grpc.newChannelBuilder("localhost:8000", TlsChannelCredentials.create())
+            .executor(Executors.newFixedThreadPool(20));
+    DaprClient client = daprClientBuilder.withManagedGrpcChannel(managedChannelBuilder.build()).build();
+    ```
+
+
 #### Debug Java application or Dapr's Java SDK
 
 **In IntelliJ Community Edition, consider [debugging in IntelliJ](https://docs.dapr.io/developing-applications/ides/intellij/).**

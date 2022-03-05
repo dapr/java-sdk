@@ -54,6 +54,11 @@ public class DaprClientBuilder {
   private DaprObjectSerializer stateSerializer;
 
   /**
+   * Managed gRPC channel
+   */
+  protected ManagedChannel channel;
+
+  /**
    * Creates a constructor for DaprClient.
    *
    * {@link DefaultObjectSerializer} is used for object and state serializers by defaul but is not recommended
@@ -157,8 +162,10 @@ public class DaprClientBuilder {
     if (port <= 0) {
       throw new IllegalArgumentException("Invalid port.");
     }
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(
-        Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+    if(channel == null) {
+      channel = ManagedChannelBuilder.forAddress(
+              Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+    }
     Closeable closeableChannel = () -> {
       if (channel != null && !channel.isShutdown()) {
         channel.shutdown();
