@@ -13,20 +13,24 @@ limitations under the License.
 
 package io.dapr.springboot;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.Topic;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.EmbeddedValueResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.dapr.Topic;
 
 /**
  * Handles Dapr annotations in Spring Controllers.
@@ -68,7 +72,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
    * Subscribe to topics based on {@link Topic} annotations on the given class and any of ancestor classes.
    * @param clazz Controller class where {@link Topic} is expected.
    */
-  private static void subscribeToTopics(Class clazz, EmbeddedValueResolver embeddedValueResolver) {
+  private static void subscribeToTopics(Class<?> clazz, EmbeddedValueResolver embeddedValueResolver) {
     if (clazz == null) {
       return;
     }
@@ -79,16 +83,12 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       if (topic == null) {
         continue;
       }
-
-      String route = topic.name();
-      PostMapping mapping = method.getAnnotation(PostMapping.class);
-
-      if (mapping != null && mapping.path() != null && mapping.path().length >= 1) {
-        route = mapping.path()[0];
-      } else if (mapping != null && mapping.value() != null && mapping.value().length >= 1) {
-        route = mapping.value()[0];
+      RequestMapping clazzRequestMapping = (RequestMapping) clazz.getAnnotation(RequestMapping.class);
+      String[] clazzLevelRoute = null;
+      if(clazzRequestMapping != null) {
+    	  clazzLevelRoute = clazzRequestMapping.value();
       }
-
+      String[] postValueArray = getRouteForPost(method, topic.name());
       String topicName = embeddedValueResolver.resolveStringValue(topic.name());
       String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
@@ -96,11 +96,63 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
           TypeReference<HashMap<String, String>> typeRef
                   = new TypeReference<HashMap<String, String>>() {};
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
-          DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, route, metadata);
+          
+          if(postValueArray != null && postValueArray.length >= 1) {
+        	  for(String postvalue: postValueArray) {
+        		  if(clazzLevelRoute != null && clazzLevelRoute.length >= 1) {
+        			  for(String clazzLevelValue: clazzLevelRoute) {
+        				  String route = clazzLevelValue + confirmLeadingSlash(postvalue);
+        				  System.out.println("route: " + route);
+        				  DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, route, metadata);
+        			  }
+        		  } else {
+        			  System.out.println("postValue: " + postvalue);
+        			  DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, postvalue, metadata);
+        		  }
+        	  }
+          }
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException("Error while parsing metadata: " + e.toString());
         }
       }
     }
   }
+  
+	private static String confirmLeadingSlash(String s) {
+		if (s != null && s.length() >= 1) {
+			if (!s.substring(0, 1).equals("/")) {
+				return "/" + s;
+			}
+		}
+		return s;
+	}
+  
+  private static String[] getRouteForPost(Method method, String topicName) {
+	  String[] postValueArray = new String[] {topicName};
+	  PostMapping postMapping = method.getAnnotation(PostMapping.class);
+      if (postMapping != null) {
+    	  if(postMapping.path() != null && postMapping.path().length >= 1) {
+    		  postValueArray = postMapping.path();
+    	  } else if (postMapping.value() != null && postMapping.value().length >= 1) {
+    		  postValueArray = new String[postMapping.value().length];
+    		  postValueArray = postMapping.value();
+          }
+      } else {
+    	  RequestMapping reqMapping = method.getAnnotation(RequestMapping.class);
+    	  for(RequestMethod reqMethod: reqMapping.method()) {
+    		  if(reqMethod == RequestMethod.POST) {
+    			  if(reqMapping.path() != null && reqMapping.path().length >= 1) {
+    	    		  postValueArray = new String[reqMapping.path().length];
+    	    		  postValueArray = reqMapping.path();
+    	    	  } else if (reqMapping.value() != null && reqMapping.value().length >= 1) {
+    	    		  postValueArray = new String[reqMapping.value().length];
+    	    		  postValueArray = reqMapping.value();
+    	          }
+    			  break;
+    		  }
+    	  }
+      }
+      return postValueArray;
+  }
+  
 }
