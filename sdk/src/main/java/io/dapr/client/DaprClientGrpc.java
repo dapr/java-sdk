@@ -62,7 +62,6 @@ import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -201,17 +200,17 @@ public class DaprClientGrpc extends AbstractDaprClient {
       // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
 
       return Mono.subscriberContext().flatMap(
-          context -> this.<CommonProtos.InvokeResponse>createMono(
-              it -> intercept(context, asyncStub).invokeService(envelope, it)
-          )
-      ).flatMap(
-          it -> {
-            try {
-              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
-            } catch (IOException e) {
-              throw DaprException.propagate(e);
-            }
-          }
+              context -> this.<CommonProtos.InvokeResponse>createMono(
+                  it -> intercept(context, asyncStub).invokeService(envelope, it)
+              )
+          ).flatMap(
+              it -> {
+                try {
+                  return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
+                } catch (IOException e)  {
+                  throw DaprException.propagate(e);
+                }
+              }
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -248,17 +247,17 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
       return Mono.subscriberContext().flatMap(
-          context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
-          )
-      ).flatMap(
-          it -> {
-            try {
-              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
-            } catch (IOException e) {
-              throw DaprException.propagate(e);
-            }
-          }
+              context -> this.<DaprProtos.InvokeBindingResponse>createMono(
+                  it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+              )
+          ).flatMap(
+              it -> {
+                try {
+                  return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
+                } catch (IOException e) {
+                  throw DaprException.propagate(e);
+                }
+              }
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -344,12 +343,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.GetBulkStateRequest envelope = builder.build();
 
       return Mono.subscriberContext().flatMap(
-          context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
-              .getBulkState(envelope, it)
-          )
-      ).map(
-          it ->
-              it
+              context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+                  .getBulkState(envelope, it)
+              )
+          ).map(
+              it ->
+                it
                   .getItemsList()
                   .stream()
                   .map(b -> {
@@ -607,8 +606,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
 
     DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
-        .setStoreName(secretStoreName)
-        .setKey(key);
+              .setStoreName(secretStoreName)
+              .setKey(key);
 
     if (metadata != null) {
       requestBuilder.putAllMetadata(metadata);
@@ -642,18 +641,18 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       return Mono.subscriberContext().flatMap(
           context ->
-              this.<DaprProtos.GetBulkSecretResponse>createMono(
-                  it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
-              )
+            this.<DaprProtos.GetBulkSecretResponse>createMono(
+                it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
+            )
       ).map(it -> {
         Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
         if (secretsMap == null) {
           return Collections.emptyMap();
         }
         return secretsMap
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
+          .entrySet()
+          .stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
       });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);

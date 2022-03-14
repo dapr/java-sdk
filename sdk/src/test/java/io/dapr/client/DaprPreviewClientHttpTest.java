@@ -13,10 +13,12 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
+import io.dapr.utils.TypeRef;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
@@ -70,16 +72,34 @@ public class DaprPreviewClientHttpTest {
   @Test
   public void queryStateExceptionsTest() {
     assertThrows(IllegalArgumentException.class, () -> {
+      daprPreviewClientHttp.queryState("", "query", TypeRef.BOOLEAN).block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.queryState("", "query", String.class).block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprPreviewClientHttp.queryState("storeName", "", TypeRef.BOOLEAN).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.queryState("storeName", "", String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
+      daprPreviewClientHttp.queryState("storeName", (Query) null, TypeRef.BOOLEAN).block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.queryState("storeName", (Query) null, String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
+      daprPreviewClientHttp.queryState("storeName", (String) null, TypeRef.BOOLEAN).block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.queryState("storeName", (String) null, String.class).block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprPreviewClientHttp.queryState(null, TypeRef.BOOLEAN).block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprPreviewClientHttp.queryState(new QueryStateRequest("storeName"), TypeRef.BOOLEAN).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.queryState(null, String.class).block();

@@ -20,6 +20,7 @@ import com.google.protobuf.ByteString;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.query.Query;
@@ -302,6 +303,9 @@ public class DaprPreviewClientGrpcTest {
 			previewClient.queryState("storeName", (String) null, String.class).block();
 		});
 		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.queryState(new QueryStateRequest("storeName"), String.class).block();
+		});
+		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.queryState(null, String.class).block();
 		});
 	}
@@ -317,7 +321,8 @@ public class DaprPreviewClientGrpcTest {
 			assertEquals("query", req.getQuery());
 			assertEquals(0, req.getMetadataCount());
 
-			StreamObserver<DaprProtos.QueryStateResponse> observer = (StreamObserver<DaprProtos.QueryStateResponse>) invocation.getArguments()[1];
+			StreamObserver<DaprProtos.QueryStateResponse> observer = (StreamObserver<DaprProtos.QueryStateResponse>)
+					invocation.getArguments()[1];
 			observer.onNext(responseEnvelope);
 			observer.onCompleted();
 			return null;
@@ -329,6 +334,33 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals("result must be same", "1", response.getResults().get(0).getKey());
 		assertEquals("result must be same", "testData", response.getResults().get(0).getValue());
 		assertEquals("result must be same", "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag());
+	}
+
+	@Test
+	public void queryStateMetadataError() throws JsonProcessingException {
+		List<QueryStateItem<?>> resp = new ArrayList<>();
+		resp.add(new QueryStateItem<Object>("1", null, "error data"));
+		DaprProtos.QueryStateResponse responseEnvelope = buildQueryStateResponse(resp, "");
+		doAnswer((Answer<Void>) invocation -> {
+			DaprProtos.QueryStateRequest req = invocation.getArgument(0);
+			assertEquals(QUERY_STORE_NAME, req.getStoreName());
+			assertEquals("query", req.getQuery());
+			assertEquals(1, req.getMetadataCount());
+			assertEquals(1, req.getMetadataCount());
+
+			StreamObserver<DaprProtos.QueryStateResponse> observer = (StreamObserver<DaprProtos.QueryStateResponse>)
+					invocation.getArguments()[1];
+			observer.onNext(responseEnvelope);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).queryStateAlpha1(any(DaprProtos.QueryStateRequest.class), any());
+
+		QueryStateResponse<String> response = previewClient.queryState(QUERY_STORE_NAME, "query",
+				new HashMap<String, String>(){{ put("key", "error"); }}, String.class).block();
+		assertNotNull(response);
+		assertEquals("result size must be 1", 1, response.getResults().size());
+		assertEquals("result must be same", "1", response.getResults().get(0).getKey());
+		assertEquals("result must be same", "error data", response.getResults().get(0).getError());
 	}
 
 	private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)
