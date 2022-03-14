@@ -47,6 +47,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -195,17 +196,21 @@ public class DaprClientHttp extends AbstractDaprClient {
       if (method == null || method.trim().isEmpty()) {
         throw new IllegalArgumentException("Method name cannot be null or empty.");
       }
+
+
+      String[] methodSegments = method.split("/");
+
+      List<String> pathSegments = new ArrayList<>(Arrays.asList(DaprHttp.API_VERSION, "invoke", appId, "method"));
+      pathSegments.addAll(Arrays.asList(methodSegments));
+
       byte[] serializedRequestBody = objectSerializer.serialize(request);
-
-      String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "invoke", appId, "method", method };
-
       final Map<String, String> headers = new HashMap<>();
       if (contentType != null && !contentType.isEmpty()) {
         headers.put("content-type", contentType);
       }
       headers.putAll(httpExtension.getHeaders());
       Mono<DaprHttp.Response> response = Mono.subscriberContext().flatMap(
-          context -> this.client.invokeApi(httpMethod, pathSegments,
+          context -> this.client.invokeApi(httpMethod, pathSegments.toArray(new String[0]),
               httpExtension.getQueryParams(), serializedRequestBody, headers, context)
       );
       return response.flatMap(r -> getMono(type, r));
