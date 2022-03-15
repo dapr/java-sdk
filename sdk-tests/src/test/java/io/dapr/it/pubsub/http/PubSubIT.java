@@ -20,7 +20,7 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
-import io.dapr.client.domain.PublishEventRequestBuilder;
+import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -195,7 +195,7 @@ public class PubSubIT extends BaseIT {
       cloudEvent.setDatacontenttype("text/plain");
 
       //Publishing a cloud event.
-      client.publishEvent(new PublishEventRequestBuilder(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
+      client.publishEvent(new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
           .withContentType("application/cloudevents+json")
           .build()).block();
       System.out.println("Published one cloud event.");
