@@ -241,6 +241,8 @@ public interface DemoActor {
 
 ### Get & Subscribe to application configurations
 
+> Note this is a preview API and thus will only be accessible via the DaprPreviewClient interface and not the normal DaprClient interface
+
 ```java
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
@@ -266,6 +268,66 @@ try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) 
 
 - For a full list of configuration operations visit [How-To: Manage configuration from a store]({{< ref howto-manage-configuration.md >}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/configuration) for code samples and instructions to try out different configuration operations.
+
+### Query saved state
+
+> Note this is a preview API and thus will only be accessible via the DaprPreviewClient interface and not the normal DaprClient interface
+
+```java
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.query.Query;
+import io.dapr.client.domain.query.Sorting;
+import io.dapr.client.domain.query.filters.EqFilter;
+
+try (DaprClient client = builder.build(); DaprPreviewClient previewClient = builder.buildPreviewClient()) {
+        String searchVal = args.length == 0 ? "searchValue" : args[0];
+        
+        // Create JSON data
+        MyData dataQueried = new MyData();
+        dataQueried.setPropertyA(searchVal);
+        dataQueried.setPropertyB("query");
+        MyData dataNotQueried = new MyData();
+        dataNotQueried.setPropertyA("no query");
+        dataNotQueried.setPropertyB("no query");
+        
+        // Save state
+        ...
+        client.saveState(STATE_STORE_NAME, FIRST_KEY_NAME, dataQueried).block();
+        ...
+        client.saveState(STATE_STORE_NAME, SECOND_KEY_NAME, dataQueried).block();
+        ...
+        client.saveState(STATE_STORE_NAME, THIRD_KEY_NAME, dataNotQueried).block();
+        ...
+        
+        
+        // Create query and query state request
+
+        Query query = new Query().setFilter(new EqFilter<>("propertyA", searchVal))
+                .setSort(Arrays.asList(new Sorting("propertyB", Sorting.Order.ASC)));
+
+        QueryStateRequest request = new QueryStateRequest(STATE_STORE_NAME)
+          .setQuery(query);
+
+        // Use preview client to call query state API
+        QueryStateResponse<MyData> result = previewClient.queryState(request, MyData.class).block();
+        
+        // View Query state response 
+        for (QueryStateItem<MyData> item : result.getResults()) {
+          System.out.println("Key: " + item.getKey());
+          System.out.println("Data: " + item.getValue());
+          System.out.println("Data: " + item.getEtag());
+          System.out.println("Data: " + item.getError());
+        }
+}
+
+```
+- For a full list of configuration operations visit [How-To: Query state]({{< ref howto-state-query-api.md >}}).
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/querystate) for complete code sample.
 
 ## Related links
 - [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)

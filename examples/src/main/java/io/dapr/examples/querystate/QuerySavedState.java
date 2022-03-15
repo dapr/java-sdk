@@ -19,18 +19,11 @@ import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
-import io.dapr.client.domain.State;
-import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.query.Query;
 import io.dapr.client.domain.query.Sorting;
 import io.dapr.client.domain.query.filters.EqFilter;
-import io.dapr.exceptions.DaprException;
-import io.grpc.Status;
-import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 /**
