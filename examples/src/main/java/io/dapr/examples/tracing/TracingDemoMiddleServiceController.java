@@ -16,7 +16,6 @@ package io.dapr.examples.tracing;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.examples.OpenTelemetryInterceptor;
 import io.dapr.utils.TypeRef;
 import io.opentelemetry.context.Context;

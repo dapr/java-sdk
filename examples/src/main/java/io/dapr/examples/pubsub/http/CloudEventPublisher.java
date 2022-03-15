@@ -18,7 +18,6 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.PublishEventRequestBuilder;
 
 import java.util.UUID;
 
