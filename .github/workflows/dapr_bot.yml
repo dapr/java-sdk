@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Comment analyzer
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           github-token: ${{secrets.DAPR_BOT_TOKEN}}
           script: |
@@ -20,7 +20,8 @@ jobs:
 
             if (!isFromPulls && commentBody && commentBody.indexOf("/assign") == 0) {
               if (!issue.assignees || issue.assignees.length === 0) {
-                await github.issues.addAssignees({
+                // See https://github.com/actions/github-script#breaking-changes-in-v5
+                await github.rest.issues.addAssignees({
                   owner: issue.owner,
                   repo: issue.repo,
                   issue_number: issue.number,
