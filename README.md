@@ -217,7 +217,7 @@ Along with the pre-requisites for [SDK](#pre-requisites) the following are neede
   * [Docker Compose](https://docs.docker.com/compose/install/) 
   * [Docker Desktop](https://www.docker.com/products/docker-desktop)
 * Bash shell
-  * In Windows use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install)
+  * In Windows use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install)
   * In Linux and Mac, default shells are enough
 
 #### Code
