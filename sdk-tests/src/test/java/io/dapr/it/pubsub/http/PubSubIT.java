@@ -196,8 +196,7 @@ public class PubSubIT extends BaseIT {
 
       //Publishing a cloud event.
       client.publishEvent(new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
-          .withContentType("application/cloudevents+json")
-          .build()).block();
+          .setContentType("application/cloudevents+json")).block();
       System.out.println("Published one cloud event.");
 
       Thread.sleep(3000);
