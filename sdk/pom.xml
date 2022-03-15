@@ -167,8 +167,7 @@
                    <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <!--TODO Switch back coverage on removing the deprecated builder code-->
-                      <minimum>79%</minimum>
+                      <minimum>80%</minimum>
                     </limit>
                   </limits>
                   <excludes>

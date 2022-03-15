@@ -15,7 +15,6 @@ package io.dapr.client;
 
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
