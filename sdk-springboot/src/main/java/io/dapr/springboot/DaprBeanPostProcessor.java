@@ -92,7 +92,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
           TypeReference<HashMap<String, String>> typeRef
                   = new TypeReference<HashMap<String, String>>() {};
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
-          List<String> routes = SpringProcessorHelper.getAllCompleteRoutesForPost(clazz, method, topic.name());
+          List<String> routes = SpringProcessorHelper.getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
             DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, route,
                 metadata);
