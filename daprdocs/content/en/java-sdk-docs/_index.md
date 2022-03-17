@@ -288,28 +288,40 @@ try (DaprClient client = builder.build(); DaprPreviewClient previewClient = buil
         String searchVal = args.length == 0 ? "searchValue" : args[0];
         
         // Create JSON data
-        MyData dataQueried = new MyData();
-        dataQueried.setPropertyA(searchVal);
-        dataQueried.setPropertyB("query");
-        MyData dataNotQueried = new MyData();
-        dataNotQueried.setPropertyA("no query");
-        dataNotQueried.setPropertyB("no query");
-        
+        Listing first = new Listing();
+        first.setPropertyType("apartment");
+        first.setId("1000");
+        ...
+        Listing second = new Listing();
+        second.setPropertyType("row-house");
+        second.setId("1002");
+        ...
+        Listing third = new Listing();
+        third.setPropertyType("apartment");
+        third.setId("1003");
+        ...
+        Listing fourth = new Listing();
+        fourth.setPropertyType("apartment");
+        fourth.setId("1001");
+        ...
+        Map<String, String> meta = new HashMap<>();
+        meta.put("contentType", "application/json");
+
         // Save state
-        ...
-        client.saveState(STATE_STORE_NAME, FIRST_KEY_NAME, dataQueried).block();
-        ...
-        client.saveState(STATE_STORE_NAME, SECOND_KEY_NAME, dataQueried).block();
-        ...
-        client.saveState(STATE_STORE_NAME, THIRD_KEY_NAME, dataNotQueried).block();
-        ...
+        SaveStateRequest request = new SaveStateRequest(STATE_STORE_NAME).setStates(
+          new State<>("1", first, null, meta, null),
+          new State<>("2", second, null, meta, null),
+          new State<>("3", third, null, meta, null),
+          new State<>("4", fourth, null, meta, null)
+        );
+        client.saveBulkState(request).block();
         
         
         // Create query and query state request
 
-        Query query = new Query().setFilter(new EqFilter<>("propertyA", searchVal))
-                .setSort(Arrays.asList(new Sorting("propertyB", Sorting.Order.ASC)));
-
+        Query query = new Query()
+          .setFilter(new EqFilter<>("propertyType", "apartment"))
+          .setSort(Arrays.asList(new Sorting("id", Sorting.Order.DESC)));
         QueryStateRequest request = new QueryStateRequest(STATE_STORE_NAME)
           .setQuery(query);
 
@@ -317,11 +329,10 @@ try (DaprClient client = builder.build(); DaprPreviewClient previewClient = buil
         QueryStateResponse<MyData> result = previewClient.queryState(request, MyData.class).block();
         
         // View Query state response 
-        for (QueryStateItem<MyData> item : result.getResults()) {
+        System.out.println("Found " + result.getResults().size() + " items.");
+        for (QueryStateItem<Listing> item : result.getResults()) {
           System.out.println("Key: " + item.getKey());
           System.out.println("Data: " + item.getValue());
-          System.out.println("Data: " + item.getEtag());
-          System.out.println("Data: " + item.getError());
         }
 }
 
