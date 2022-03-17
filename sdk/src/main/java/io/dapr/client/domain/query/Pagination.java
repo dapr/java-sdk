@@ -33,15 +33,7 @@ public class Pagination {
     return limit;
   }
 
-  public void setLimit(int limit) {
-    this.limit = limit;
-  }
-
   public String getToken() {
     return token;
-  }
-
-  public void setToken(String token) {
-    this.token = token;
   }
 }
