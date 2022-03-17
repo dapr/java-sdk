@@ -180,7 +180,7 @@ public class DaprClientBuilder {
    *
    * @return DaprClient over HTTP.
    */
-  private DaprClient buildDaprClientHttp() {
+  protected DaprClient buildDaprClientHttp() {
     return new DaprClientHttp(this.daprHttpBuilder.build(), this.objectSerializer, this.stateSerializer);
   }
 }

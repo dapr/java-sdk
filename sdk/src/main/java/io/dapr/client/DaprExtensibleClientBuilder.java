@@ -25,5 +25,9 @@ public class DaprExtensibleClientBuilder extends DaprClientBuilder{
     return this;
   }
 
+  @Override
+  protected DaprClient buildDaprClientHttp() {
+    throw new UnsupportedOperationException("Http protocol is not supported in this builder.");
+  }
 
-}
+  }
