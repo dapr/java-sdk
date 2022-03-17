@@ -11,4 +11,4 @@ spec:
     - name: databaseName
       value: local
     - name: collectionName
-      value: testCollection
+      value: propertyCollection

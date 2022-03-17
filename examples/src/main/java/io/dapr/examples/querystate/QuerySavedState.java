@@ -19,12 +19,15 @@ import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.SaveStateRequest;
+import io.dapr.client.domain.State;
 import io.dapr.client.domain.query.Query;
 import io.dapr.client.domain.query.Sorting;
 import io.dapr.client.domain.query.filters.EqFilter;
 
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 1. Build and install jars:
@@ -37,63 +40,7 @@ import java.util.Objects;
  */
 public class QuerySavedState {
 
-  public static class MyData {
-
-    /// Gets or sets the value for PropertyA.
-    private String propertyA;
-
-    /// Gets or sets the value for PropertyB.
-    private String propertyB;
-
-    public String getPropertyB() {
-      return propertyB;
-    }
-
-    public void setPropertyB(String propertyB) {
-      this.propertyB = propertyB;
-    }
-
-    public String getPropertyA() {
-      return propertyA;
-    }
-
-    public void setPropertyA(String propertyA) {
-      this.propertyA = propertyA;
-    }
-
-    @Override
-    public String toString() {
-      return "MyData{"
-          + "propertyA='" + propertyA + '\''
-          + ", propertyB='" + propertyB + '\'' + '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      MyData myData = (MyData) o;
-      return Objects.equals(propertyA, myData.propertyA)
-          && Objects.equals(propertyB, myData.propertyB);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(propertyA, propertyB);
-    }
-  }
-
   private static final String STATE_STORE_NAME = "mongo-statestore";
-
-  private static final String FIRST_KEY_NAME = "key1";
-
-  private static final String SECOND_KEY_NAME = "key2";
-
-  private static final String THIRD_KEY_NAME = "key3";
 
   /**
    * Executes the sate actions.
@@ -106,33 +53,54 @@ public class QuerySavedState {
       client.waitForSidecar(10000).block();
       System.out.println("Dapr sidecar is ready.");
 
-      String searchVal = args.length == 0 ? "searchValue" : args[0];
+      Listing first = new Listing();
+      first.setPropertyType("apartment");
+      first.setId("1000");
+      first.setCity("Seattle");
+      first.setState("WA");
+      Listing second = new Listing();
+      second.setPropertyType("row-house");
+      second.setId("1002");
+      second.setCity("Seattle");
+      second.setState("WA");
+      Listing third = new Listing();
+      third.setPropertyType("apartment");
+      third.setId("1003");
+      third.setCity("Portland");
+      third.setState("OR");
+      Listing fourth = new Listing();
+      fourth.setPropertyType("apartment");
+      fourth.setId("1001");
+      fourth.setCity("Portland");
+      fourth.setState("OR");
+      Map<String, String> meta = new HashMap<>();
+      meta.put("contentType", "application/json");
 
-      MyData dataQueried = new MyData();
-      dataQueried.setPropertyA(searchVal);
-      dataQueried.setPropertyB("query");
-      MyData dataNotQueried = new MyData();
-      dataNotQueried.setPropertyA("no query");
-      dataNotQueried.setPropertyB("no query");
+      SaveStateRequest request = new SaveStateRequest(STATE_STORE_NAME).setStates(
+          new State<>("1", first, null, meta, null),
+          new State<>("2", second, null, meta, null),
+          new State<>("3", third, null, meta, null),
+          new State<>("4", fourth, null, meta, null)
+      );
+      client.saveBulkState(request).block();
+
+      System.out.println("Insert key: 1" + ", data: " + first);
+      System.out.println("Insert key: 2" + ", data: " + second);
+      System.out.println("Insert key: 3" + ", data: " + third);
+      System.out.println("Insert key: 4" + ", data: " + fourth);
 
 
-      System.out.println("Insert key: " + FIRST_KEY_NAME + ", data: " + dataQueried);
-      client.saveState(STATE_STORE_NAME, FIRST_KEY_NAME, dataQueried).block();
-      System.out.println("Insert key: " + SECOND_KEY_NAME + ", data: " + dataQueried);
-      client.saveState(STATE_STORE_NAME, SECOND_KEY_NAME, dataQueried).block();
-      System.out.println("Insert key: " + THIRD_KEY_NAME + ", data: " + dataNotQueried);
-      client.saveState(STATE_STORE_NAME, THIRD_KEY_NAME, dataNotQueried).block();
-      Query query = new Query().setFilter(new EqFilter<>("propertyA", searchVal))
-          .setSort(Arrays.asList(new Sorting("propertyB", Sorting.Order.ASC)));
+      Query query = new Query()
+          .setFilter(new EqFilter<>("propertyType", "apartment"))
+          .setSort(Arrays.asList(new Sorting("id", Sorting.Order.DESC)));
 
-      QueryStateRequest request = new QueryStateRequest(STATE_STORE_NAME)
+      QueryStateRequest queryStateRequest = new QueryStateRequest(STATE_STORE_NAME)
           .setQuery(query);
 
-
-      QueryStateResponse<MyData> result = previewClient.queryState(request, MyData.class).block();
+      QueryStateResponse<Listing> result = previewClient.queryState(queryStateRequest, Listing.class).block();
 
       System.out.println("Found " + result.getResults().size() + " items.");
-      for (QueryStateItem<MyData> item : result.getResults()) {
+      for (QueryStateItem<Listing> item : result.getResults()) {
         System.out.println("Key: " + item.getKey());
         System.out.println("Data: " + item.getValue());
       }
