@@ -155,7 +155,7 @@
                 <rule>
                   <element>BUNDLE</element>
                   <includes>
-                    <include>io.dapr.springboot.util</include>
+                    <include>io.dapr.springboot.DaprBeanPostProcessor</include>
                   </includes>
                   <limits>
                     <limit>

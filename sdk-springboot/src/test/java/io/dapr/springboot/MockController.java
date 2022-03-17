@@ -1,4 +1,4 @@
-package io.dapr.springboot.util;
+package io.dapr.springboot;
 
 import org.springframework.web.bind.annotation.*;
 

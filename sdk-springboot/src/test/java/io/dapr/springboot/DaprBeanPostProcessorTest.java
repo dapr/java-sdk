@@ -1,16 +1,18 @@
-package io.dapr.springboot.util;
+package io.dapr.springboot;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 @RunWith(Parameterized.class)
-public class SpringProcessorHelperTest {
+public class DaprBeanPostProcessorTest {
 
   private final Class<?> clazzToBeTested;
   private final String methodToBeTested;
@@ -18,7 +20,7 @@ public class SpringProcessorHelperTest {
   private final boolean expectedResult;
   private static final String TOPIC_NAME = "topicName1";
 
-  public SpringProcessorHelperTest(Class<?> clazzToBeTested, String methodToBeTested, String[] expected,
+  public DaprBeanPostProcessorTest(Class<?> clazzToBeTested, String methodToBeTested, String[] expected,
                                    boolean expectedResult) {
     this.clazzToBeTested = clazzToBeTested;
     this.methodToBeTested = methodToBeTested;
@@ -44,11 +46,18 @@ public class SpringProcessorHelperTest {
     });
   }
 
-
   @Test
   public void testAllPostRoutesGeneration() throws NoSuchMethodException {
-    List<String> routesArrayTestMethod1 = SpringProcessorHelper.getAllCompleteRoutesForPost(clazzToBeTested,
-        clazzToBeTested.getMethod(methodToBeTested), TOPIC_NAME);
+    Method allPostRoutesMethod = DaprBeanPostProcessor.class.
+        getDeclaredMethod("getAllCompleteRoutesForPost", Class.class, Method.class, String.class);
+    allPostRoutesMethod.setAccessible(true);
+    List<String> routesArrayTestMethod1 = null;
+    try {
+      routesArrayTestMethod1 = (List<String>) allPostRoutesMethod.invoke(DaprBeanPostProcessor.class, clazzToBeTested,
+          clazzToBeTested.getMethod(methodToBeTested), TOPIC_NAME);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      e.printStackTrace();
+    }
     Assert.assertEquals(expectedResult,
         testingListForOrderAgnosticEquality(Arrays.asList(expected), routesArrayTestMethod1));
   }
