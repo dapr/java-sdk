@@ -69,7 +69,7 @@ public class DaprHttpBuilder {
           Dispatcher dispatcher = new Dispatcher();
           dispatcher.setMaxRequests(Properties.HTTP_CLIENT_MAX_REQUESTS.get());
           // The maximum number of requests for each host to execute concurrently.
-          // Default value is 5 in okjava which is totally UNACCEPTABLE!
+          // Default value is 5 in okhttp which is totally UNACCEPTABLE!
           // For sidecar case, set it the same as maxRequests.
           dispatcher.setMaxRequestsPerHost(Properties.HTTP_CLIENT_MAX_REQUESTS.get());
           builder.dispatcher(dispatcher);
