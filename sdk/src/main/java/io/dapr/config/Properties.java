@@ -59,7 +59,7 @@ public class Properties {
   private static final Integer DEFAULT_HTTP_CLIENT_READ_TIMEOUT_SECONDS = 60;
 
   /**
-   *   The default maximum number of requests to execute concurrently.
+   *   Dapr's default maximum number of requests for HTTP client to execute concurrently.
    *
    *   <p>Above this requests queue in memory, waiting for the running calls to complete.
    *   Default is 64 in okjava which is OK for most case, but for some special case
