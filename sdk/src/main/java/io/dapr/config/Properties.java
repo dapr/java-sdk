@@ -62,13 +62,13 @@ public class Properties {
    *   Dapr's default maximum number of requests for HTTP client to execute concurrently.
    *
    *   <p>Above this requests queue in memory, waiting for the running calls to complete.
-   *   Default is 64 in okjava which is OK for most case, but for some special case
+   *   Default is 64 in okhttp which is OK for most case, but for some special case
    *   which is slow response and high concurrency, the value should set to a little big.
    */
   private static final Integer DEFAULT_HTTP_CLIENT_MAX_REQUESTS = 1024;
 
   /**
-   *   The default maximum number of idle connections of HTTP connection pool.
+   *   Dapr's default maximum number of idle connections of HTTP connection pool.
    *
    *   <p>Attention! This is max IDLE connection, NOT max connection!
    *   It is also very important for high concurrency cases.
@@ -143,7 +143,7 @@ public class Properties {
           DEFAULT_HTTP_CLIENT_READ_TIMEOUT_SECONDS);
 
   /**
-   * Dapr's timeout in seconds for HTTP client reads.
+   * Dapr's default maximum number of requests for HTTP client to execute concurrently.
    */
   public static final Property<Integer> HTTP_CLIENT_MAX_REQUESTS = new IntegerProperty(
           "dapr.http.client.maxRequests",
@@ -151,7 +151,7 @@ public class Properties {
           DEFAULT_HTTP_CLIENT_MAX_REQUESTS);
 
   /**
-   * The default maximum number of idle connections of HTTP connection pool.
+   * Dapr's default maximum number of idle connections for HTTP connection pool.
    */
   public static final Property<Integer> HTTP_CLIENT_MAX_IDLE_CONNECTIONS = new IntegerProperty(
           "dapr.http.client.maxIdleConnections",
