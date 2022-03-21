@@ -14,9 +14,16 @@ limitations under the License.
 package io.dapr.client;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ByteString;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -29,6 +36,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,14 +45,24 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class DaprPreviewClientGrpcTest {
 
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final String CONFIG_STORE_NAME = "MyConfigStore";
+	private static final String QUERY_STORE_NAME = "testQueryStore";
 
 	private Closeable closeable;
 	private DaprGrpc.DaprStub daprStub;
@@ -268,5 +286,106 @@ public class DaprPreviewClientGrpcTest {
 						.build())
 				.build();
 		return responseEnvelope;
+	}
+
+	@Test
+	public void queryStateExceptionsTest() {
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.queryState("", "query", String.class).block();
+		});
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.queryState("storeName", "", String.class).block();
+		});
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.queryState("storeName", (Query) null, String.class).block();
+		});
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.queryState("storeName", (String) null, String.class).block();
+		});
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.queryState(new QueryStateRequest("storeName"), String.class).block();
+		});
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.queryState(null, String.class).block();
+		});
+	}
+
+	@Test
+	public void queryState() throws JsonProcessingException {
+		List<QueryStateItem<?>> resp = new ArrayList<>();
+		resp.add(new QueryStateItem<Object>("1", (Object)"testData", "6f54ad94-dfb9-46f0-a371-e42d550adb7d"));
+		DaprProtos.QueryStateResponse responseEnvelope = buildQueryStateResponse(resp, "");
+		doAnswer((Answer<Void>) invocation -> {
+			DaprProtos.QueryStateRequest req = invocation.getArgument(0);
+			assertEquals(QUERY_STORE_NAME, req.getStoreName());
+			assertEquals("query", req.getQuery());
+			assertEquals(0, req.getMetadataCount());
+
+			StreamObserver<DaprProtos.QueryStateResponse> observer = (StreamObserver<DaprProtos.QueryStateResponse>)
+					invocation.getArguments()[1];
+			observer.onNext(responseEnvelope);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).queryStateAlpha1(any(DaprProtos.QueryStateRequest.class), any());
+
+		QueryStateResponse<String> response = previewClient.queryState(QUERY_STORE_NAME, "query", String.class).block();
+		assertNotNull(response);
+		assertEquals("result size must be 1", 1, response.getResults().size());
+		assertEquals("result must be same", "1", response.getResults().get(0).getKey());
+		assertEquals("result must be same", "testData", response.getResults().get(0).getValue());
+		assertEquals("result must be same", "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag());
+	}
+
+	@Test
+	public void queryStateMetadataError() throws JsonProcessingException {
+		List<QueryStateItem<?>> resp = new ArrayList<>();
+		resp.add(new QueryStateItem<Object>("1", null, "error data"));
+		DaprProtos.QueryStateResponse responseEnvelope = buildQueryStateResponse(resp, "");
+		doAnswer((Answer<Void>) invocation -> {
+			DaprProtos.QueryStateRequest req = invocation.getArgument(0);
+			assertEquals(QUERY_STORE_NAME, req.getStoreName());
+			assertEquals("query", req.getQuery());
+			assertEquals(1, req.getMetadataCount());
+			assertEquals(1, req.getMetadataCount());
+
+			StreamObserver<DaprProtos.QueryStateResponse> observer = (StreamObserver<DaprProtos.QueryStateResponse>)
+					invocation.getArguments()[1];
+			observer.onNext(responseEnvelope);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).queryStateAlpha1(any(DaprProtos.QueryStateRequest.class), any());
+
+		QueryStateResponse<String> response = previewClient.queryState(QUERY_STORE_NAME, "query",
+				new HashMap<String, String>(){{ put("key", "error"); }}, String.class).block();
+		assertNotNull(response);
+		assertEquals("result size must be 1", 1, response.getResults().size());
+		assertEquals("result must be same", "1", response.getResults().get(0).getKey());
+		assertEquals("result must be same", "error data", response.getResults().get(0).getError());
+	}
+
+	private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)
+			throws JsonProcessingException {
+		List<DaprProtos.QueryStateItem> items = new ArrayList<>();
+		for (QueryStateItem<?> item: resp) {
+			items.add(buildQueryStateItem(item));
+		}
+		return DaprProtos.QueryStateResponse.newBuilder()
+				.addAllResults(items)
+				.setToken(token)
+				.build();
+	}
+
+	private DaprProtos.QueryStateItem buildQueryStateItem(QueryStateItem<?> item) throws JsonProcessingException {
+		DaprProtos.QueryStateItem.Builder it = DaprProtos.QueryStateItem.newBuilder().setKey(item.getKey());
+		if (item.getValue() != null) {
+			it.setData(ByteString.copyFrom(MAPPER.writeValueAsBytes(item.getValue())));
+		}
+		if (item.getEtag() != null) {
+			it.setEtag(item.getEtag());
+		}
+		if (item.getError() != null) {
+			it.setError(item.getError());
+		}
+		return it.build();
 	}
 }
