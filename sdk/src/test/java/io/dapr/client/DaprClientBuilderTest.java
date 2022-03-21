@@ -13,8 +13,14 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.grpc.Grpc;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.TlsChannelCredentials;
 import org.junit.Test;
+
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -32,6 +38,31 @@ public class DaprClientBuilderTest {
     daprClientBuilder.withStateSerializer(stateSerializer);
     DaprClient daprClient = daprClientBuilder.build();
     assertNotNull(daprClient);
+  }
+
+  @Test
+  public void testBuilderWithManagedChannel(){
+
+    System.setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
+    System.setProperty(Properties.API_PROTOCOL.getName(),DaprApiProtocol.GRPC.name());
+    DaprExtensibleClientBuilder daprClientBuilder = new DaprExtensibleClientBuilder();
+    ManagedChannelBuilder managedChannelBuilder = Grpc.newChannelBuilder(Properties.SIDECAR_IP.get(), TlsChannelCredentials.create())
+            .executor(Executors.newFixedThreadPool(20));
+    DaprClient client = daprClientBuilder.withManagedGrpcChannel(managedChannelBuilder.build()).build();
+    assertNotNull(client);
+    System.setProperty(Properties.API_PROTOCOL.getName(),"");
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void testBuilderWithManagedChannelErrorHandling(){
+    System.setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
+    System.setProperty(Properties.API_PROTOCOL.getName(),DaprApiProtocol.HTTP.name());
+    DaprExtensibleClientBuilder daprClientBuilder = new DaprExtensibleClientBuilder();
+    ManagedChannelBuilder managedChannelBuilder = Grpc.newChannelBuilder(Properties.SIDECAR_IP.get(), TlsChannelCredentials.create())
+            .executor(Executors.newFixedThreadPool(20));
+    DaprClient client = daprClientBuilder.withManagedGrpcChannel(managedChannelBuilder.build()).build();
+    assertNotNull(client);
+    System.setProperty(Properties.API_PROTOCOL.getName(),"");
   }
 
   @Test(expected = IllegalArgumentException.class)
