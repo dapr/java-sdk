@@ -56,7 +56,24 @@ public class Properties {
   /**
    * Dapr's default timeout in seconds for HTTP client reads.
    */
-  private static final Integer DEFAULT_HTTP_CLIENT_READTIMEOUTSECONDS = 60;
+  private static final Integer DEFAULT_HTTP_CLIENT_READ_TIMEOUT_SECONDS = 60;
+
+  /**
+   *   Dapr's default maximum number of requests for HTTP client to execute concurrently.
+   *
+   *   <p>Above this requests queue in memory, waiting for the running calls to complete.
+   *   Default is 64 in okhttp which is OK for most case, but for some special case
+   *   which is slow response and high concurrency, the value should set to a little big.
+   */
+  private static final Integer DEFAULT_HTTP_CLIENT_MAX_REQUESTS = 1024;
+
+  /**
+   *   Dapr's default maximum number of idle connections of HTTP connection pool.
+   *
+   *   <p>Attention! This is max IDLE connection, NOT max connection!
+   *   It is also very important for high concurrency cases.
+   */
+  private static final Integer DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS = 128;
 
   /**
    * IP for Dapr's sidecar.
@@ -123,5 +140,21 @@ public class Properties {
   public static final Property<Integer> HTTP_CLIENT_READ_TIMEOUT_SECONDS = new IntegerProperty(
       "dapr.http.client.readTimeoutSeconds",
       "DAPR_HTTP_CLIENT_READ_TIMEOUT_SECONDS",
-      DEFAULT_HTTP_CLIENT_READTIMEOUTSECONDS);
+          DEFAULT_HTTP_CLIENT_READ_TIMEOUT_SECONDS);
+
+  /**
+   * Dapr's default maximum number of requests for HTTP client to execute concurrently.
+   */
+  public static final Property<Integer> HTTP_CLIENT_MAX_REQUESTS = new IntegerProperty(
+          "dapr.http.client.maxRequests",
+          "DAPR_HTTP_CLIENT_MAX_REQUESTS",
+          DEFAULT_HTTP_CLIENT_MAX_REQUESTS);
+
+  /**
+   * Dapr's default maximum number of idle connections for HTTP connection pool.
+   */
+  public static final Property<Integer> HTTP_CLIENT_MAX_IDLE_CONNECTIONS = new IntegerProperty(
+          "dapr.http.client.maxIdleConnections",
+          "DAPR_HTTP_CLIENT_MAX_IDLE_CONNECTIONS",
+          DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
 }
