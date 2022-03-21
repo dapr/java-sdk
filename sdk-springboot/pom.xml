@@ -88,6 +88,11 @@
       <scope>compile</scope>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -149,6 +154,9 @@
               <rules>
                 <rule>
                   <element>BUNDLE</element>
+                  <includes>
+                    <include>io.dapr.springboot.DaprBeanPostProcessor</include>
+                  </includes>
                   <limits>
                     <limit>
                       <counter>LINE</counter>
