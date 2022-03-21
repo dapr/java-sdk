@@ -31,7 +31,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +49,11 @@ public class DaprHttp implements AutoCloseable {
    * Dapr API used in this client.
    */
   public static final String API_VERSION = "v1.0";
+
+  /**
+   * Dapr alpha API used in this client.
+   */
+  public static final String ALPHA_1_API_VERSION = "v1.0-alpha1";
 
   /**
    * Header used for request id in Dapr.
