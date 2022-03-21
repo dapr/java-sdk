@@ -5,7 +5,10 @@ This sample illustrates the capabilities provided by Dapr Java SDK for state man
 ## Pre-requisites
 
 * [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
-* Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
+* Java JDK 11 (or greater):
+    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
+    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
+    * [OpenJDK 11](https://jdk.java.net/11/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -164,43 +167,26 @@ dapr run --components-path ./components/state --app-id state_example -- java -ja
 
 <!-- END_STEP -->
 
-Once running, the OutputBindingExample should print the output as follows:
+Once running, the StateClient should print the output as follows:
 
 ```txt
 == APP == Waiting for Dapr sidecar ...
-
 == APP == Dapr sidecar is ready.
-
 == APP == Saving class with message: my message
-
 == APP == Retrieved class message from state: my message
-
 == APP == Updating previous state and adding another state 'test state'... 
-
 == APP == Saving updated class with message: my message updated
-
 == APP == Retrieved messages using bulk get:
-
 == APP == StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == Deleting states...
-
 == APP == Verify delete key request is aborted if an etag different from stored is passed.
-
 == APP == Expected failure. ABORTED: failed deleting state with key myKey: possible etag mismatch. error from state store: ERR Error running script (call to f_9b5da7354cb61e2ca9faff50f6c43b81c73c0b94): @user_script:1: user_script:1: failed to delete Tailmad-Fang||myKey 
-
 == APP == Trying to delete again with correct etag.
-
 == APP == Trying to retrieve deleted states: 
-
 == APP == StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == Done
-
 ```
 
 ### Cleanup

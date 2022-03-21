@@ -29,6 +29,9 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -88,7 +91,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
    * @param closeableChannel A closeable for a Managed GRPC channel
-   * @param asyncStub     async gRPC stub
+   * @param asyncStub        async gRPC stub
    * @param objectSerializer Serializer for transient request/response objects.
    * @param stateSerializer  Serializer for state objects.
    * @see DaprClientBuilder
@@ -167,10 +170,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
 
       return Mono.subscriberContext().flatMap(
-              context ->
-                  this.<Empty>createMono(
-                      it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
-                  )
+          context ->
+              this.<Empty>createMono(
+                  it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
+              )
       ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -204,7 +207,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
               it -> {
                 try {
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
-                } catch (IOException e) {
+                } catch (IOException e)  {
                   throw DaprException.propagate(e);
                 }
               }
@@ -247,7 +250,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
               context -> this.<DaprProtos.InvokeBindingResponse>createMono(
                   it -> intercept(context, asyncStub).invokeBinding(envelope, it)
               )
-      ).flatMap(
+          ).flatMap(
               it -> {
                 try {
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
@@ -343,7 +346,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
               context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
                   .getBulkState(envelope, it)
               )
-      ).map(
+          ).map(
               it ->
                 it
                   .getItemsList()
@@ -414,7 +417,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
-      for (TransactionalStateOperation<?> operation: operations) {
+      for (TransactionalStateOperation<?> operation : operations) {
         DaprProtos.TransactionalStateOperation.Builder operationBuilder = DaprProtos.TransactionalStateOperation
             .newBuilder();
         operationBuilder.setOperationType(operation.getOperation().toString().toLowerCase());
@@ -603,8 +606,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
 
     DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
-          .setStoreName(secretStoreName)
-          .setKey(key);
+              .setStoreName(secretStoreName)
+              .setKey(key);
 
     if (metadata != null) {
       requestBuilder.putAllMetadata(metadata);
@@ -639,7 +642,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       return Mono.subscriberContext().flatMap(
           context ->
             this.<DaprProtos.GetBulkSecretResponse>createMono(
-              it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
+                it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
             )
       ).map(it -> {
         Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
@@ -657,9 +660,86 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("Query state request cannot be null.");
+      }
+      final String storeName = request.getStoreName();
+      final Map<String, String> metadata = request.getMetadata();
+      if ((storeName == null) || (storeName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+
+      String queryString;
+      if (request.getQuery() != null) {
+        queryString = JSON_REQUEST_MAPPER.writeValueAsString(request.getQuery());
+      } else if (request.getQueryString() != null) {
+        queryString = request.getQueryString();
+      } else {
+        throw new IllegalArgumentException("Both query and queryString fields are not set.");
+      }
+
+      DaprProtos.QueryStateRequest.Builder builder = DaprProtos.QueryStateRequest.newBuilder()
+          .setStoreName(storeName)
+          .setQuery(queryString);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+
+      DaprProtos.QueryStateRequest envelope = builder.build();
+
+      return Mono.subscriberContext().flatMap(
+          context -> this.<DaprProtos.QueryStateResponse>createMono(
+              it -> intercept(context, asyncStub).queryStateAlpha1(envelope, it)
+          )
+      ).map(
+          it -> {
+            Map<String, String> resultMeta = it.getMetadataMap();
+            String token = it.getToken();
+            List<QueryStateItem<T>> res = it.getResultsList()
+                .stream()
+                .map(v -> {
+                  try {
+                    return buildQueryStateKeyValue(v, type);
+                  } catch (Exception e) {
+                    throw  DaprException.propagate(e);
+                  }
+                })
+                .collect(Collectors.toList());
+            return new QueryStateResponse<>(res, token).setMetadata(metadata);
+          });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private <T> QueryStateItem<T> buildQueryStateKeyValue(
+      DaprProtos.QueryStateItem item,
+      TypeRef<T> type) throws IOException {
+    String key = item.getKey();
+    String error = item.getError();
+    if (!Strings.isNullOrEmpty(error)) {
+      return new QueryStateItem<>(key, null, error);
+    }
+    ByteString payload = item.getData();
+    byte[] data = payload == null ? null : payload.toByteArray();
+    T value = stateSerializer.deserialize(data, type);
+    String etag = item.getEtag();
+    if (etag.equals("")) {
+      etag = null;
+    }
+    return new QueryStateItem<>(key, value, etag);
+  }
+
+  /**
    * Closes the ManagedChannel for GRPC.
-   * @see io.grpc.ManagedChannel#shutdown()
+   *
    * @throws IOException on exception.
+   * @see io.grpc.ManagedChannel#shutdown()
    */
   @Override
   public void close() throws Exception {
@@ -677,8 +757,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
   @Override
   public Mono<Void> shutdown() {
     return Mono.subscriberContext().flatMap(
-            context -> this.<Empty>createMono(
-                    it -> intercept(context, asyncStub).shutdown(Empty.getDefaultInstance(), it))
+        context -> this.<Empty>createMono(
+            it -> intercept(context, asyncStub).shutdown(Empty.getDefaultInstance(), it))
     ).then();
   }
 
@@ -810,7 +890,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * Populates GRPC client with interceptors for telemetry.
    *
    * @param context Reactor's context.
-   * @param client GRPC client for Dapr.
+   * @param client  GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
   private static DaprGrpc.DaprStub intercept(Context context, DaprGrpc.DaprStub client) {

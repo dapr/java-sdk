@@ -23,9 +23,14 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.EmbeddedValueResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -80,15 +85,6 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
         continue;
       }
 
-      String route = topic.name();
-      PostMapping mapping = method.getAnnotation(PostMapping.class);
-
-      if (mapping != null && mapping.path() != null && mapping.path().length >= 1) {
-        route = mapping.path()[0];
-      } else if (mapping != null && mapping.value() != null && mapping.value().length >= 1) {
-        route = mapping.value()[0];
-      }
-
       String topicName = embeddedValueResolver.resolveStringValue(topic.name());
       String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
@@ -96,11 +92,84 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
           TypeReference<HashMap<String, String>> typeRef
                   = new TypeReference<HashMap<String, String>>() {};
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
-          DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, route, metadata);
+          List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
+          for (String route : routes) {
+            DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, route,
+                metadata);
+          }
+
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException("Error while parsing metadata: " + e.toString());
         }
       }
     }
   }
+
+  /**
+   * Method to provide all possible complete routes list fos this post method present in this controller class,
+   * for mentioned topic.
+   *
+   * @param clazz     Controller class
+   * @param method    Declared method for posting data
+   * @param topicName Associated topic name
+   * @return All possible routes for post mapping for this class and post method
+   */
+  private static List<String> getAllCompleteRoutesForPost(Class clazz, Method method, String topicName) {
+    List<String> routesList = new ArrayList<>();
+    RequestMapping clazzRequestMapping =
+        (RequestMapping) clazz.getAnnotation(RequestMapping.class);
+    String[] clazzLevelRoute = null;
+    if (clazzRequestMapping != null) {
+      clazzLevelRoute = clazzRequestMapping.value();
+    }
+    String[] postValueArray = getRoutesForPost(method, topicName);
+    if (postValueArray != null && postValueArray.length >= 1) {
+      for (String postValue : postValueArray) {
+        if (clazzLevelRoute != null && clazzLevelRoute.length >= 1) {
+          for (String clazzLevelValue : clazzLevelRoute) {
+            String route = clazzLevelValue + confirmLeadingSlash(postValue);
+            routesList.add(route);
+          }
+        } else {
+          routesList.add(postValue);
+        }
+      }
+    }
+    return routesList;
+  }
+
+  private static String[] getRoutesForPost(Method method, String topicName) {
+    String[] postValueArray = new String[] {topicName};
+    PostMapping postMapping = method.getAnnotation(PostMapping.class);
+    if (postMapping != null) {
+      if (postMapping.path() != null && postMapping.path().length >= 1) {
+        postValueArray = postMapping.path();
+      } else if (postMapping.value() != null && postMapping.value().length >= 1) {
+        postValueArray = postMapping.value();
+      }
+    } else {
+      RequestMapping reqMapping = method.getAnnotation(RequestMapping.class);
+      for (RequestMethod reqMethod : reqMapping.method()) {
+        if (reqMethod == RequestMethod.POST) {
+          if (reqMapping.path() != null && reqMapping.path().length >= 1) {
+            postValueArray = reqMapping.path();
+          } else if (reqMapping.value() != null && reqMapping.value().length >= 1) {
+            postValueArray = reqMapping.value();
+          }
+          break;
+        }
+      }
+    }
+    return postValueArray;
+  }
+
+  private static String confirmLeadingSlash(String path) {
+    if (path != null && path.length() >= 1) {
+      if (!path.substring(0, 1).equals("/")) {
+        return "/" + path;
+      }
+    }
+    return path;
+  }
+
 }
