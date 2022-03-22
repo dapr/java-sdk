@@ -8,7 +8,7 @@ This sample includes:
 * TracingDemoMiddleServiceController (Implements two methods: `proxy_echo` and `proxy_sleep`)
 * InvokeClient (Invokes the exposed methods from TracingDemoService)
 
-Also consider [getting started with observability in Dapr](https://github.com/dapr/quickstarts/tree/master/observability).
+Also consider [getting started with observability in Dapr](https://github.com/dapr/quickstarts/tree/master/tutorials/observability).
  
 ## Remote invocation using the Java-SDK
 
