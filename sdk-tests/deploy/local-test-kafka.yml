@@ -5,6 +5,8 @@ services:
     ports:
       - "2181:2181"
   kafka:
+    depends_on:
+      - zookeeper
     image: wurstmeister/kafka:latest
     ports:
       - "9092:9092"
