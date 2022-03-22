@@ -15,7 +15,11 @@ package io.dapr.client;
 
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.query.Query;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -103,4 +107,120 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return Flux of List of configuration items
    */
   Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request);
+
+  /**
+   * Query for states using a query string.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param metadata Optional metadata passed to the state store.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query,
+                                             Map<String, String> metadata, Class<T> clazz);
+
+  /**
+   * Query for states using a query string.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param metadata Optional metadata passed to the state store.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query,
+                                             Map<String, String> metadata, TypeRef<T> type);
+
+  /**
+   * Query for states using a query string.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, Class<T> clazz);
+
+  /**
+   * Query for states using a query string.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, TypeRef<T> type);
+
+  /**
+   * Query for states using a query domain object.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param metadata Optional metadata passed to the state store.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query,
+                                             Map<String, String> metadata, Class<T> clazz);
+
+  /**
+   * Query for states using a query domain object.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param metadata Optional metadata passed to the state store.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query,
+                                             Map<String, String> metadata, TypeRef<T> type);
+
+  /**
+   * Query for states using a query domain object.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, Class<T> clazz);
+
+  /**
+   * Query for states using a query domain object.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, TypeRef<T> type);
+
+  /**
+   * Query for states using a query request.
+   *
+   * @param request Query request object.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, Class<T> clazz);
+
+  /**
+   * Query for states using a query request.
+   *
+   * @param request Query request object.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type);
 }

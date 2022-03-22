@@ -31,7 +31,7 @@ jobs:
       matrix:
         java: [ 11, 13, 15, 16 ]
     env:
-      GOVER: 1.15.0
+      GOVER: 1.17.7
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
@@ -40,7 +40,7 @@ jobs:
       DAPR_RUNTIME_VER: 1.6.0-rc.2
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.6.0-rc.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF:
+      DAPR_REF: 5a307f3deaa1b322f7945179adad0403de80eb7e
     steps:
       - uses: actions/checkout@v3
       - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -108,6 +108,10 @@ jobs:
           sudo apt-get install vault
           # Verify vault is installed
           vault -h
+      - name: Install Local mongo database using docker-compose
+        run: |
+          docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
+          docker ps
       - name: Clean up files
         run: mvn clean
       - name: Build sdk
@@ -154,3 +158,7 @@ jobs:
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/configuration/grpc/README.md
+      - name: Validate query state HTTP example
+        working-directory: ./examples
+        run: |
+            mm.py ./src/main/java/io/dapr/examples/querystate/README.md
