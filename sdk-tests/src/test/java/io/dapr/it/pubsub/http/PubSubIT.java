@@ -419,7 +419,7 @@ public class PubSubIT extends BaseIT {
       daprRun.switchToHTTP();
     }
 
-    ConverLong value = new ConverLong();
+    ConvertToLong value = new ConvertToLong();
     value.setVal(590518626939830271L);
     try (DaprClient client = new DaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
@@ -448,7 +448,9 @@ public class PubSubIT extends BaseIT {
             "messages/testinglongvalues",
             null,
             HttpExtension.GET, CLOUD_EVENT_LIST_TYPE_REF).block();
-        assertEquals(590518626939830271L, messages.get(0).getData());
+        for (int i = 0; i < NUM_MESSAGES; i++) { 
+          assertEquals(590518626939830271L, messages.get(i).getData());
+        }
       }, 2000);
     }
   }
@@ -465,7 +467,7 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  public static class ConverLong {
+  public static class ConvertToLong {
     public Long value;
 
     public void setVal(Long value) {
