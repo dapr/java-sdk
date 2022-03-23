@@ -117,7 +117,7 @@ public class SubscriberController {
 
   @Topic(name = "testinglongvalues", pubsubName = "messagebus")
   @PostMapping(path = "/testinglongvalues")
-  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConverLong> cloudEvent) {
+  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         Long message = cloudEvent.getData().value;
