@@ -66,6 +66,8 @@ public class PubSubIT extends BaseIT {
   // Topic to test binary data
   private static final String BINARY_TOPIC_NAME = "binarytopic";
 
+   private static final String LONG_TOPIC_NAME = "testinglongvalues";
+
   /**
    * Parameters for this test.
    * Param #1: useGrpc.
@@ -402,6 +404,55 @@ public class PubSubIT extends BaseIT {
     daprRun.stop();
   }
 
+  @Test
+  public void testlongValues() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName(),
+        SubscriberService.SUCCESS_MESSAGE,
+        SubscriberService.class,
+        true,
+        60000));
+    // At this point, it is guaranteed that the service above is running and all ports being listened to.
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      daprRun.switchToHTTP();
+    }
+
+    ConverLong value = new ConverLong();
+    value.setVal(590518626939830271L);
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        //Publishing messages
+        client.publishEvent(
+            PUBSUB_NAME,
+            LONG_TOPIC_NAME,
+            value,
+            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
+
+        try {
+          Thread.sleep((long) (1000 * Math.random()));
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          Thread.currentThread().interrupt();
+          return;
+        }
+      }
+    }
+
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + LONG_TOPIC_NAME);
+        final List<CloudEvent> messages = client.invokeMethod(
+            daprRun.getAppName(),
+            "messages/testinglongvalues",
+            null,
+            HttpExtension.GET, CLOUD_EVENT_LIST_TYPE_REF).block();
+        assertEquals(590518626939830271L, messages.get(0).getData());
+      }, 2000);
+    }
+  }
+
   public static class MyObject {
     private String id;
 
@@ -413,4 +464,13 @@ public class PubSubIT extends BaseIT {
       this.id = id;
     }
   }
+
+  public static class ConverLong {
+    public Long value;
+
+    public void setVal(Long value) {
+      this.value = value;
+    }
+  }
+
 }

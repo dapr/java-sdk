@@ -115,6 +115,20 @@ public class SubscriberController {
     });
   }
 
+  @Topic(name = "testinglongvalues", pubsubName = "messagebus")
+  @PostMapping(path = "/testinglongvalues")
+  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConverLong> cloudEvent) {
+    return Mono.fromRunnable(() -> {
+      try {
+        Long message = cloudEvent.getData().value;
+        System.out.println("Subscriber got: " + message);
+        messagesByTopic.compute("testinglongvalues", merge(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
   private BiFunction<String, List<CloudEvent<?>>, List<CloudEvent<?>>> merge(final CloudEvent<?> item) {
     return (key, value) -> {
       final List<CloudEvent<?>> list = value == null ? new ArrayList<>() : value;
