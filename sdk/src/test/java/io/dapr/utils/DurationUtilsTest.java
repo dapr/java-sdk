@@ -30,6 +30,76 @@ public class DurationUtilsTest {
   }
 
   @Test
+  public void testParsePartialDurationMillis(){
+    String s = "0h0m0s101ms";
+    String partial = "101ms";
+    Duration d1 = DurationUtils.convertDurationFromDaprFormat(partial);
+
+    String t = DurationUtils.convertDurationToDaprFormat(d1);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
+  public void testParsePartialDurationSeconds(){
+    String s = "0h0m42s0ms";
+    String partial = "42s";
+    Duration d1 = DurationUtils.convertDurationFromDaprFormat(partial);
+
+    String t = DurationUtils.convertDurationToDaprFormat(d1);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
+  public void testParsePartialDurationMinutes(){
+    String s = "0h29m0s0ms";
+    String partial = "29m";
+    Duration d1 = DurationUtils.convertDurationFromDaprFormat(partial);
+
+    String t = DurationUtils.convertDurationToDaprFormat(d1);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
+  public void testParsePartialDurationHours(){
+    String s = "17h0m0s0ms";
+    String partial = "17h";
+    Duration d1 = DurationUtils.convertDurationFromDaprFormat(partial);
+
+    String t = DurationUtils.convertDurationToDaprFormat(d1);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
+  public void testZeroDurationString(){
+    String s = "0h0m0s0ms";
+    String partial = "0";
+    Duration d1 = DurationUtils.convertDurationFromDaprFormat(partial);
+
+    String t = DurationUtils.convertDurationToDaprFormat(d1);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
+  public void testZeroDuration(){
+    String s = "0h0m0s0ms";
+    String t = DurationUtils.convertDurationToDaprFormat(Duration.ZERO);
+    Assert.assertEquals(s, t);
+  }
+
+  @Test
+  public void testNullString() {
+    Assert.assertThrows(IllegalArgumentException.class, () ->{
+      DurationUtils.convertDurationFromDaprFormat(null);
+    });
+  }
+
+  @Test
+  public void testEmptyString() {
+    Duration d = DurationUtils.convertDurationFromDaprFormat("");
+    Assert.assertEquals(Duration.ZERO, d);
+  }
+
+  @Test
   public void largeHours() {
     // hours part is larger than 24
     String s = "31h15m50s60ms";
