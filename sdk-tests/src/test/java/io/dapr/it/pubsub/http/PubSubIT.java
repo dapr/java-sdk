@@ -420,7 +420,7 @@ public class PubSubIT extends BaseIT {
     }
 
     ConvertToLong value = new ConvertToLong();
-    value.setVal(Long.MAX_VALUE);
+    value.setVal(590518626939830271L);
     try (DaprClient client = new DaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         //Publishing messages
@@ -449,7 +449,8 @@ public class PubSubIT extends BaseIT {
             null,
             HttpExtension.GET, CLOUD_EVENT_LIST_TYPE_REF).block();
         for (int i = 0; i < NUM_MESSAGES; i++) { 
-          assertEquals(Long.MAX_VALUE, messages.get(i).getData());
+          System.out.println(messages.get(i).getData())
+          assertEquals(590518626939830271L, messages.get(i).getData());
         }
       }, 2000);
     }
