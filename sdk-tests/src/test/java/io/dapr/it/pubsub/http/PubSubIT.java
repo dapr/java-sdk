@@ -449,8 +449,8 @@ public class PubSubIT extends BaseIT {
             null,
             HttpExtension.GET, CLOUD_EVENT_LIST_TYPE_REF).block();
         for (int i = 0; i < NUM_MESSAGES; i++) { 
-          System.out.println("The long value received!!! " +messages.get(i).getData());
-          assertEquals(590518626939830271L, messages.get(i).getData());
+          System.out.println("The long value received!!! " +messages.get(i).getData().value);
+          assertEquals(590518626939830271L, messages.get(i).getData().value);
         }
       }, 2000);
     }
