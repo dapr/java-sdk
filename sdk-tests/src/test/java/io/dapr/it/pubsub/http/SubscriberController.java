@@ -120,7 +120,7 @@ public class SubscriberController {
   public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
-        Long message = cloudEvent.getData().value;
+        Long message = cloudEvent.getData().getValue();
         System.out.println("Subscriber got: " + message);
         messagesByTopic.compute("testinglongvalues", merge(cloudEvent));
       } catch (Exception e) {
