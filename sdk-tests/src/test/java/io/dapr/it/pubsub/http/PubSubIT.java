@@ -434,9 +434,10 @@ public class PubSubIT extends BaseIT {
     expected.add(toLong);
     Iterator expectVal = expected.iterator();
     for (int i = 1; i < NUM_MESSAGES; i++) {
+      ConvertToLong value = new ConvertToLong();
       randomLong = random.nextLong();
-      toLong.setValue(randomLong);
-      expected.add(toLong);
+      value.setValue(randomLong);
+      expected.add(value);
     }
     try (DaprClient client = new DaprClientBuilder().build()) {
       while(expectVal.hasNext()) {
@@ -501,12 +502,15 @@ public class PubSubIT extends BaseIT {
 
     public boolean equals(Object object) {
       if (this == object) return true;
-      if (object == null || getClass() != object.getClass()) return false;
+      if (!(object instanceof ConvertToLong)) return false;
       if (!super.equals(object)) return false;
       ConvertToLong that = (ConvertToLong) object;
-      return java.util.Objects.equals(value, that.value);
+      return java.util.Objects.equals(getValue(), that.getValue());
     }
 
+    public int hashCode() {
+      return java.util.Objects.hash(super.hashCode(), getValue());
+    }
   }
 
 }
