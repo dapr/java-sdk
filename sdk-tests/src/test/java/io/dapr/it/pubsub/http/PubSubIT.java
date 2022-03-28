@@ -37,6 +37,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Random;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
@@ -44,6 +47,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
+
 
 @RunWith(Parameterized.class)
 public class PubSubIT extends BaseIT {
@@ -51,6 +56,7 @@ public class PubSubIT extends BaseIT {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final TypeRef<List<CloudEvent>> CLOUD_EVENT_LIST_TYPE_REF = new TypeRef<>() {};
+  private static final TypeRef<List<CloudEvent<ConvertToLong>>> CLOUD_EVENT_LONG_LIST_TYPE_REF = new TypeRef<>() {};
   private static final TypeRef<List<CloudEvent<MyObject>>> CLOUD_EVENT_MYOBJECT_LIST_TYPE_REF = new TypeRef<>() {};
 
   //Number of messages to be sent: 10
@@ -405,7 +411,7 @@ public class PubSubIT extends BaseIT {
   }
 
   @Test
-  public void testlongValues() throws Exception {
+  public void testLongValues() throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -419,15 +425,27 @@ public class PubSubIT extends BaseIT {
       daprRun.switchToHTTP();
     }
 
-    ConvertToLong value = new ConvertToLong();
-    value.setVal(590518626939830271L);
+    ConvertToLong toLong = new ConvertToLong();
+    HashSet<ConvertToLong> expected = new HashSet<>();
+    Random random = new Random();
+    Long randomLong = 590518626939830271L;
+    random.setSeed(randomLong);
+    toLong.setValue(randomLong);
+    expected.add(toLong);
+    Iterator expectVal = expected.iterator();
+    for (int i = 1; i < NUM_MESSAGES; i++) {
+      randomLong = random.nextLong();
+      toLong.setValue(randomLong);
+      expected.add(toLong);
+    }
     try (DaprClient client = new DaprClientBuilder().build()) {
-      for (int i = 0; i < NUM_MESSAGES; i++) {
+      while(expectVal.hasNext()) {
+
         //Publishing messages
         client.publishEvent(
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
-            value,
+            expectVal.next(),
             Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
 
         try {
@@ -440,18 +458,20 @@ public class PubSubIT extends BaseIT {
       }
     }
 
+    HashSet<ConvertToLong> actual = new HashSet<>();
     try (DaprClient client = new DaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + LONG_TOPIC_NAME);
-        final List<CloudEvent> messages = client.invokeMethod(
+        final List<CloudEvent<ConvertToLong>> messages = client.invokeMethod(
             daprRun.getAppName(),
             "messages/testinglongvalues",
             null,
-            HttpExtension.GET, CLOUD_EVENT_LIST_TYPE_REF).block();
+            HttpExtension.GET, CLOUD_EVENT_LONG_LIST_TYPE_REF).block();
+            assertNotNull(messages);
         for (int i = 0; i < NUM_MESSAGES; i++) { 
-          System.out.println("The long value received!!! " +messages.get(i).getData().value);
-          assertEquals(590518626939830271L, messages.get(i).getData().value);
+          actual.add(messages.get(i).getData());
         }
+          assertEquals(expected, actual);
       }, 2000);
     }
   }
@@ -469,11 +489,24 @@ public class PubSubIT extends BaseIT {
   }
 
   public static class ConvertToLong {
-    public Long value;
+    private Long value;
 
-    public void setVal(Long value) {
+    public Long getValue() {
+      return value;
+    }
+
+    public void setValue(Long value) {
       this.value = value;
     }
+
+    public boolean equals(Object object) {
+      if (this == object) return true;
+      if (object == null || getClass() != object.getClass()) return false;
+      if (!super.equals(object)) return false;
+      ConvertToLong that = (ConvertToLong) object;
+      return java.util.Objects.equals(value, that.value);
+    }
+
   }
 
 }
