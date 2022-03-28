@@ -471,7 +471,7 @@ public class PubSubIT extends BaseIT {
         for (int i = 0; i < NUM_MESSAGES; i++) { 
           actual.add(messages.get(i).getData());
         }
-          assertEquals(expected, actual);
+          assertTrue(expected.equals(actual));
       }, 2000);
     }
   }
