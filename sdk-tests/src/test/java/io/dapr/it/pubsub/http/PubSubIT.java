@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
@@ -500,16 +501,17 @@ public class PubSubIT extends BaseIT {
       this.value = value;
     }
 
-    public boolean equals(Object object) {
-      if (this == object) return true;
-      if (!(object instanceof ConvertToLong)) return false;
-      if (!super.equals(object)) return false;
-      ConvertToLong that = (ConvertToLong) object;
-      return java.util.Objects.equals(getValue(), that.getValue());
+   @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ConvertToLong that = (ConvertToLong) o;
+      return Objects.equals(value, that.value);
     }
 
+    @Override
     public int hashCode() {
-      return java.util.Objects.hash(super.hashCode(), getValue());
+      return Objects.hash(value);
     }
   }
 
