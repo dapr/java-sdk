@@ -438,12 +438,11 @@ public class PubSubIT extends BaseIT {
       randomLong = random.nextLong();
       value.setValue(randomLong);
       expected.add(value);
+      System.out.println("expected value is : " +value);
     }
     Iterator expectVal = expected.iterator();
     try (DaprClient client = new DaprClientBuilder().build()) {
       while(expectVal.hasNext()) {
-        ConvertToLong val = new ConvertToLong();
-        val = expectVal.next();
         //Publishing messages
         client.publishEvent(
             PUBSUB_NAME,
@@ -458,7 +457,6 @@ public class PubSubIT extends BaseIT {
           Thread.currentThread().interrupt();
           return;
         }
-        System.out.println("expected value is : " +val);
       }
     }
 
