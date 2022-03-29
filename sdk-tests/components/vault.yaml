@@ -1,0 +1,16 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: vault
+spec:
+  type: secretstores.hashicorp.vault
+  version: v1
+  metadata:
+  - name: vaultAddr
+    value: "http://127.0.0.1:8200"
+  - name: skipVerify
+    value : true
+  - name: vaultTokenMountPath
+    value : ".hashicorp_vault_token"
+  - name: vaultKVPrefix
+    value : "dapr"

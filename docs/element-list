@@ -1,0 +1,12 @@
+io.dapr
+io.dapr.actors
+io.dapr.actors.client
+io.dapr.actors.runtime
+io.dapr.client
+io.dapr.client.domain
+io.dapr.config
+io.dapr.exceptions
+io.dapr.internal.opencensus
+io.dapr.serializer
+io.dapr.utils
+io.dapr.v1

@@ -1,0 +1,153 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+      - release-*
+    tags:
+      - v*
+
+  pull_request:
+    branches:
+    - master
+    - release-*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 11, 13, 15, 16 ]
+    env:
+      GOVER: 1.15.0
+      GOOS: linux
+      GOARCH: amd64
+      GOPROXY: https://proxy.golang.org
+      JDK_VER: ${{ matrix.java }}
+      DAPR_CLI_VER: 1.6.0-rc.1
+      DAPR_RUNTIME_VER: 1.6.0-rc.2
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.6.0-rc.1/install/install.sh
+      DAPR_CLI_REF:
+      DAPR_REF:
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up OpenJDK ${{ env.JDK_VER }}
+      uses: actions/setup-java@v2.5.0
+      with:
+        distribution: 'adopt'
+        java-version: ${{ env.JDK_VER }}
+    - name: Set up Dapr CLI
+      run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash -s ${{ env.DAPR_CLI_VER }}
+    - name: Set up Go ${{ env.GOVER }}
+      if: env.DAPR_REF != '' || env.DAPR_CLI_REF != ''
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ env.GOVER }}
+    - name: Checkout Dapr CLI repo to override dapr command.
+      uses: actions/checkout@v2
+      if: env.DAPR_CLI_REF != ''
+      with:
+        repository: dapr/cli
+        ref: ${{ env.DAPR_CLI_REF }}
+        path: cli
+    - name: Checkout Dapr repo to override daprd.
+      uses: actions/checkout@v2
+      if: env.DAPR_REF != ''
+      with:
+        repository: dapr/dapr
+        ref: ${{ env.DAPR_REF }}
+        path: dapr
+    - name: Build and override dapr cli with referenced commit.
+      if: env.DAPR_CLI_REF != ''
+      run: |
+        cd cli
+        make
+        sudo cp dist/linux_amd64/release/dapr /usr/local/bin/dapr
+        cd ..
+    - name: Initialize Dapr runtime ${{ env.DAPR_RUNTIME_VER }}
+      run: |
+        dapr uninstall --all
+        dapr init --runtime-version ${{ env.DAPR_RUNTIME_VER }}
+    - name: Build and override daprd with referenced commit.
+      if: env.DAPR_REF != ''
+      run: |
+        cd dapr
+        make
+        mkdir -p $HOME/.dapr/bin/
+        cp dist/linux_amd64/release/daprd $HOME/.dapr/bin/daprd
+        cd ..
+    - name: Override placement service.
+      if: env.DAPR_REF != ''
+      run: |
+        docker stop dapr_placement
+        cd dapr
+        ./dist/linux_amd64/release/placement &
+    - name: Install Local kafka using docker-compose
+      run: |
+        docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
+        docker ps
+    - name: Install Local Hashicorp Vault using docker-compose
+      run: |
+        docker-compose -f ./sdk-tests/deploy/local-test-vault.yml up -d
+        docker ps
+    - name: Clean up files
+      run: mvn clean
+    - name: Build sdk
+      run: mvn compile -q
+    - name: Unit tests
+      run: mvn test -q
+    - name: Codecov
+      uses: codecov/codecov-action@v2.1.0
+    - name: Install jars
+      run: mvn install -q
+    - name: Integration tests
+      run: mvn -f sdk-tests/pom.xml verify -q
+    - name: Upload test report for sdk
+      uses: actions/upload-artifact@master
+      with:
+        name: report-dapr-java-sdk
+        path: sdk/target/jacoco-report/
+    - name: Upload test report for sdk-actors
+      uses: actions/upload-artifact@master
+      with:
+        name: report-dapr-java-sdk-actors
+        path: sdk-actors/target/jacoco-report/
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      JDK_VER: 11
+      OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
+      OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
+      GPG_KEY: ${{ secrets.GPG_KEY }}
+      GPG_PWD: ${{ secrets.GPG_PWD }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v2.5.0
+        with:
+          distribution: 'adopt'
+          java-version: ${{ env.JDK_VER }}
+      - name: Get pom parent version
+        run: |
+          PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
+      - name: Is SNAPSHOT release ?
+        if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Is Release or RC version ?
+        if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
+        run: |
+          echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
+      - name: Install jars
+        if: env.DEPLOY_OSSRH == 'true'
+        run: mvn clean install -q
+      - name: Publish to ossrh
+        if: env.DEPLOY_OSSRH == 'true'
+        run: |
+          echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
+          export GPG_TTY=$(tty)
+          gpg --batch --import private-key.gpg
+          mvn -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples

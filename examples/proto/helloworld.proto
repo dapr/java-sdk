@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package daprexamples;
+
+option java_outer_classname = "DaprExamplesProtos";
+option java_package = "io.dapr.examples";
+
+// User Code definitions
+service HelloWorld {
+  rpc Say (SayRequest) returns (SayResponse) {}
+}
+
+message SayRequest {
+  string message = 1;
+}
+
+message SayResponse {
+  string timestamp = 1;
+}
