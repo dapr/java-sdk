@@ -442,12 +442,13 @@ public class PubSubIT extends BaseIT {
     Iterator expectVal = expected.iterator();
     try (DaprClient client = new DaprClientBuilder().build()) {
       while(expectVal.hasNext()) {
-
+        ConvertToLong val = new ConvertToLong();
+        val = expectVal.next();
         //Publishing messages
         client.publishEvent(
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
-            expectVal.next(),
+            val,
             Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
 
         try {
@@ -457,6 +458,7 @@ public class PubSubIT extends BaseIT {
           Thread.currentThread().interrupt();
           return;
         }
+        System.out.println("expected value is : " +val);
       }
     }
 
