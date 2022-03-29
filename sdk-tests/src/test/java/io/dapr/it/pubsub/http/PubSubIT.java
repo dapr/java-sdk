@@ -432,13 +432,13 @@ public class PubSubIT extends BaseIT {
     random.setSeed(randomLong);
     toLong.setValue(randomLong);
     expected.add(toLong);
-    Iterator expectVal = expected.iterator();
     for (int i = 1; i < NUM_MESSAGES; i++) {
       ConvertToLong value = new ConvertToLong();
       randomLong = random.nextLong();
       value.setValue(randomLong);
       expected.add(value);
     }
+    Iterator expectVal = expected.iterator();
     try (DaprClient client = new DaprClientBuilder().build()) {
       while(expectVal.hasNext()) {
 
