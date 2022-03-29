@@ -447,7 +447,7 @@ public class PubSubIT extends BaseIT {
         client.publishEvent(
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
-            val,
+            expectVal.next(),
             Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
 
         try {
