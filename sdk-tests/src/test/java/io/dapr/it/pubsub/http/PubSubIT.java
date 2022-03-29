@@ -471,8 +471,9 @@ public class PubSubIT extends BaseIT {
             assertNotNull(messages);
         for (int i = 0; i < NUM_MESSAGES; i++) { 
           actual.add(messages.get(i).getData());
-          System.out.println("Log data coming from subscriber added to hashset : " + messages.get(i).getData())
+          System.out.println("Log data coming from subscriber added to hashset : " + messages.get(i).getData());
         }
+          System.out.println(expected.equals(actual));
           assertTrue(expected.equals(actual));
       }, 2000);
     }
