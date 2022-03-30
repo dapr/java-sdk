@@ -27,7 +27,7 @@ import java.util.Map;
  * 4. Read secret from example:
  * dapr run --components-path ./components/secrets -- \
  * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient \
- * local-secret-store redisPassword randomKey
+ * localSecretStore redisPassword randomKey
  */
 public class SecretClient {
 
