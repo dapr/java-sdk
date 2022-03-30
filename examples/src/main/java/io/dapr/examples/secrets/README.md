@@ -119,7 +119,7 @@ sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/secrets --app-id secrets1 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient local-secret-store redisPassword randomKey
+dapr run --components-path ./components/secrets --app-id secrets1 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient localSecretStore redisPassword randomKey
 ```
 
 <!-- END_STEP -->
@@ -153,7 +153,7 @@ metadata:
 spec:
   secrets:
     scopes:
-      - storeName: "local-secret-store"
+      - storeName: "localSecretStore"
         defaultAccess: "deny"
         allowedSecrets: ["redisPassword",]
 ```
@@ -166,13 +166,13 @@ Execute the following script in order to run this example with additional secret
 name: Validate error on querying random secret
 expected_stdout_lines:
   - '== APP == {"redisPassword":"root123"}'
-  - '== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "local-secret-store"'
+  - '== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "localSecretStore"'
 background: true
 sleep: 5
 -->
 
 ```sh
-dapr run --components-path ./components/secrets --config ./src/main/java/io/dapr/examples/secrets/config.yaml --app-id secrets2 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient local-secret-store redisPassword randomKey
+dapr run --components-path ./components/secrets --config ./src/main/java/io/dapr/examples/secrets/config.yaml --app-id secrets2 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient localSecretStore redisPassword randomKey
 ```
 
 <!-- END_STEP --> 
@@ -181,7 +181,7 @@ Once running, the program should print the output as follows:
 
 ```
 == APP == {"redisPassword":"root123"}
-== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "local-secret-store"
+== APP == PERMISSION_DENIED: access denied by policy to get "randomKey" from "localSecretStore"
 ``` 
 
 To close the app either press `CTRL+C` or run
