@@ -18,7 +18,7 @@
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <grpc.version>1.39.0</grpc.version>
+    <grpc.version>1.42.1</grpc.version>
     <argLine>
       --add-opens java.base/java.util=ALL-UNNAMED
     </argLine>
@@ -33,7 +33,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.11.3</version>
+      <version>2.12.6.1</version>
     </dependency>
     <dependency>
       <groupId>io.projectreactor</groupId>
@@ -167,8 +167,7 @@
                    <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <!--TODO Switch back coverage on removing the deprecated builder code-->
-                      <minimum>79%</minimum>
+                      <minimum>80%</minimum>
                     </limit>
                   </limits>
                   <excludes>

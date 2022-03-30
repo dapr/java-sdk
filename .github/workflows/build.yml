@@ -29,11 +29,11 @@ jobs:
       DAPR_RUNTIME_VER: 1.7.0-rc.2
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.7.0-rc.2/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF:
+      DAPR_REF: 4cf499448ef6ee87c83db6a11b84e83237e92665
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up OpenJDK ${{ env.JDK_VER }}
-      uses: actions/setup-java@v2.5.0
+      uses: actions/setup-java@v3
       with:
         distribution: 'adopt'
         java-version: ${{ env.JDK_VER }}
@@ -45,14 +45,14 @@ jobs:
       with:
         go-version: ${{ env.GOVER }}
     - name: Checkout Dapr CLI repo to override dapr command.
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: env.DAPR_CLI_REF != ''
       with:
         repository: dapr/cli
         ref: ${{ env.DAPR_CLI_REF }}
         path: cli
     - name: Checkout Dapr repo to override daprd.
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: env.DAPR_REF != ''
       with:
         repository: dapr/dapr
@@ -91,6 +91,10 @@ jobs:
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-vault.yml up -d
         docker ps
+    - name: Install Local mongo database using docker-compose
+      run: |
+        docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
+        docker ps
     - name: Clean up files
       run: mvn clean
     - name: Build sdk
@@ -123,9 +127,9 @@ jobs:
       GPG_KEY: ${{ secrets.GPG_KEY }}
       GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up OpenJDK ${{ env.JDK_VER }}
-        uses: actions/setup-java@v2.5.0
+        uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
           java-version: ${{ env.JDK_VER }}

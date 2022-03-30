@@ -30,6 +30,8 @@ public abstract class BaseIT {
 
   protected static final String STATE_STORE_NAME = "statestore";
 
+  protected static final String QUERY_STATE_STORE = "mongo-statestore";
+
   private static final Map<String, DaprRun.Builder> DAPR_RUN_BUILDERS = new HashMap<>();
 
   private static final Queue<Stoppable> TO_BE_STOPPED = new LinkedList<>();

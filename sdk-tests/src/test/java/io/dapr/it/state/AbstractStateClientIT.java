@@ -13,10 +13,19 @@ limitations under the License.
 
 package io.dapr.it.state;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dapr.client.DaprClient;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.query.Query;
+import io.dapr.client.domain.query.Sorting;
+import io.dapr.client.domain.query.filters.EqFilter;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
 import org.junit.Test;
@@ -24,8 +33,11 @@ import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,6 +51,7 @@ import static org.junit.Assert.assertTrue;
  * Common test cases for Dapr client (GRPC and HTTP).
  */
 public abstract class AbstractStateClientIT extends BaseIT {
+  private static final Logger logger = Logger.getLogger(AbstractStateClientIT.class.getName());
 
   @Test
   public void saveAndGetState() {
@@ -127,6 +140,78 @@ public abstract class AbstractStateClientIT extends BaseIT {
   }
 
   @Test
+  public void saveAndQueryAndDeleteState() throws JsonProcessingException {
+    final String stateKeyOne = UUID.randomUUID().toString();
+    final String stateKeyTwo = UUID.randomUUID().toString();
+    final String stateKeyThree = UUID.randomUUID().toString();
+    final String commonSearchValue = UUID.randomUUID().toString();
+    Map<String,String> meta = new HashMap<>();
+    meta.put("contentType", "application/json");
+
+    DaprClient daprClient = buildDaprClient();
+    DaprPreviewClient previewApiClient = (DaprPreviewClient) daprClient;
+
+    //saves the states.
+    MyData data = new MyData();
+    data.setPropertyA(commonSearchValue);
+    data.setPropertyB("query");
+    State<MyData> state = new State<>(stateKeyOne, data, null, meta, null );
+    SaveStateRequest request = new SaveStateRequest(QUERY_STATE_STORE).setStates(state);
+    daprClient.saveBulkState(request).block();
+    data = new MyData();
+    data.setPropertyA(commonSearchValue);
+    data.setPropertyB("query");
+    state = new State<>(stateKeyTwo, data, null, meta, null );
+    request = new SaveStateRequest(QUERY_STATE_STORE).setStates(state);
+    daprClient.saveBulkState(request).block();
+    data = new MyData();
+    data.setPropertyA("CA");
+    data.setPropertyB("no query");
+    state = new State<>(stateKeyThree, data, null, meta, null );
+    request = new SaveStateRequest(QUERY_STATE_STORE).setStates(state);
+    daprClient.saveBulkState(request).block();
+
+
+    QueryStateRequest queryStateRequest = new QueryStateRequest(QUERY_STATE_STORE);
+    Query query = new Query().setFilter(new EqFilter<>("propertyA", commonSearchValue))
+            .setSort(Arrays.asList(new Sorting("propertyB", Sorting.Order.ASC)));
+    queryStateRequest.setQuery(query).setMetadata(meta);
+
+    Mono<QueryStateResponse<MyData>> response = previewApiClient.queryState(queryStateRequest, MyData.class);
+    QueryStateResponse<MyData>  result = response.block();
+
+    // Assert that the response is not null
+    assertNotNull(result);
+    List<QueryStateItem<MyData>> items = result.getResults();
+    assertNotNull(items);
+
+    QueryStateItem<MyData> item;
+    //Assert that the response is the correct one
+    assertEquals(2, items.size());
+    assertTrue(items.stream().anyMatch(f -> f.getKey().equals(stateKeyOne)));
+    item = items.stream().filter(f -> f.getKey().equals(stateKeyOne)).findFirst().get();
+    assertNotNull(item);
+    assertEquals(commonSearchValue, item.getValue().getPropertyA());
+    assertEquals("query", item.getValue().getPropertyB());
+    assertNull(item.getError());
+
+    assertTrue(items.stream().anyMatch(f -> f.getKey().equals(stateKeyTwo)));
+    item = items.stream().filter(f -> f.getKey().equals(stateKeyTwo)).findFirst().get();
+    assertEquals(commonSearchValue, item.getValue().getPropertyA());
+    assertEquals("query", item.getValue().getPropertyB());
+    assertNull(item.getError());
+
+    assertFalse(items.stream().anyMatch(f -> f.getKey().equals(stateKeyThree)));
+
+    assertEquals(2L, items.stream().filter(f -> f.getValue().getPropertyB().equals("query")).count());
+
+    //delete all states
+    daprClient.deleteState(QUERY_STATE_STORE, stateKeyOne).block();
+    daprClient.deleteState(QUERY_STATE_STORE, stateKeyTwo).block();
+    daprClient.deleteState(QUERY_STATE_STORE, stateKeyThree).block();
+  }
+
+  @Test
   public void saveUpdateAndGetState() {
 
     //The key use to store the state and be updated
@@ -159,6 +244,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //review that the update was success action
+    assertNotNull("expected non null response", myDataResponse);
     assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
     assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
