@@ -219,6 +219,7 @@
         </dependencies>
         <configuration>
           <failOnError>${spotbugs.fail}</failOnError>
+          <excludeFilterFile>sdk/src/main/java/io/findbugs-exclude.xml</excludeFilterFile>
           <xmlOutput>true</xmlOutput>
         </configuration>
         <executions>
