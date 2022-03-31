@@ -13,8 +13,7 @@ limitations under the License.
 
 package io.dapr.it.secrets;
 
-import com.bettercloud.vault.Vault;
-import com.bettercloud.vault.VaultConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.it.BaseIT;
@@ -26,9 +25,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -37,27 +37,27 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Test Secrets Store APIs using Harshicorp's vault.
+ * Test Secrets Store APIs using local file.
  *
- * 1. Start harshicorp vault locally:
- *  docker run --cap-add=IPC_LOCK -e 'VAULT_DEV_ROOT_TOKEN_ID=myroot' --name=dev-vault -p 8200:8200 -d vault
- * 2. Create token file (path defined in integration test's vault.yaml):
- *   echo myroot > /tmp/.hashicorp_vault_token
+ * 1. create secret file locally:
  */
 @RunWith(Parameterized.class)
 public class SecretsClientIT extends BaseIT {
 
-  private static final String LOCAL_VAULT_ADDRESS = "http://127.0.0.1:8200";
+  /**
+   * JSON Serializer to print output.
+   */
+  private static final ObjectMapper JSON_SERIALIZER = new ObjectMapper();
 
-  private static final String LOCAL_VAULT_TOKEN = "myroot";
+  private static final String SECRETS_STORE_NAME = "localSecretStore";
 
-  private static final String PREFIX = "dapr";
+  private static final String LOCAL_SECRET_FILE_PATH = "./components/secret.json";
 
-  private static final String SECRETS_STORE_NAME = "vault";
+  private static final String KEY1 = UUID.randomUUID().toString();
+
+  private static final String KYE2 = UUID.randomUUID().toString();
 
   private static DaprRun daprRun;
-
-  private static Vault vault;
 
   /**
    * Parameters for this test.
@@ -70,20 +70,24 @@ public class SecretsClientIT extends BaseIT {
   }
 
   @Parameterized.Parameter
-  public boolean useGrpc;
+  public boolean useGrpc = true;
 
   private DaprClient daprClient;
 
+  private static File localSecretFile;
+
   @BeforeClass
   public static void init() throws Exception {
-    daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
 
-    VaultConfig vaultConfig = new VaultConfig()
-      .address(LOCAL_VAULT_ADDRESS)
-      .token(LOCAL_VAULT_TOKEN)
-      .prefixPath(PREFIX)
-      .build();
-    vault = new Vault(vaultConfig);
+    localSecretFile = new File(LOCAL_SECRET_FILE_PATH);
+    if(localSecretFile.exists()) {
+      localSecretFile.delete();
+    }
+    boolean created = localSecretFile.createNewFile();
+    assertTrue(created);
+    initSecretFile();
+
+    daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
   }
 
   @Before
@@ -100,38 +104,31 @@ public class SecretsClientIT extends BaseIT {
   @After
   public void tearDown() throws Exception {
     daprClient.close();
+    if(localSecretFile.exists()) {
+      localSecretFile.delete();
+    }
   }
 
   @Test
   public void getSecret() throws Exception {
-    String key = UUID.randomUUID().toString();
-    String attributeKey = "title";
-    String attributeValue = "The Metrics IV";
-    writeSecret(key, attributeKey, attributeValue);
 
-    Map<String, String> data = daprClient.getSecret(SECRETS_STORE_NAME, key).block();
-    assertEquals(1, data.size());
+    Map<String, String> data = daprClient.getSecret(SECRETS_STORE_NAME, KEY1).block();
+    assertEquals(2, data.size());
     assertEquals("The Metrics IV", data.get("title"));
+    assertEquals("2020", data.get("year"));
   }
 
   @Test
   public void getBulkSecret() throws Exception {
-    String key1 = UUID.randomUUID().toString();
-    writeSecret(key1, new HashMap<>() {{
-      put("title", "The Metrics IV");
-      put("year", "2020");
-    }});
-    String key2 = UUID.randomUUID().toString();
-    writeSecret(key2, "name", "Jon Doe");
 
     Map<String, Map<String, String>> data = daprClient.getBulkSecret(SECRETS_STORE_NAME).block();
     // There can be other keys from other runs or test cases, so we are good with at least two.
     assertTrue(data.size() >= 2);
-    assertEquals(2, data.get(key1).size());
-    assertEquals("The Metrics IV", data.get(key1).get("title"));
-    assertEquals("2020", data.get(key1).get("year"));
-    assertEquals(1, data.get(key2).size());
-    assertEquals("Jon Doe", data.get(key2).get("name"));
+    assertEquals(2, data.get(KEY1).size());
+    assertEquals("The Metrics IV", data.get(KEY1).get("title"));
+    assertEquals("2020", data.get(KEY1).get("year"));
+    assertEquals(1, data.get(KYE2).size());
+    assertEquals("Jon Doe", data.get(KYE2).get("name"));
   }
 
   @Test(expected = RuntimeException.class)
@@ -144,12 +141,20 @@ public class SecretsClientIT extends BaseIT {
     daprClient.getSecret("unknownStore", "unknownKey").block();
   }
 
-  private static void writeSecret(String secretName, String key, String value) throws Exception {
-    writeSecret(secretName, Collections.singletonMap(key, value));
+  private static void initSecretFile() throws Exception {
+    Map<String, Object> key2 = new HashMap(){{
+      put("name", "Jon Doe");
+    }};
+    Map<String, Object> key1 = new HashMap(){{
+      put("title", "The Metrics IV");
+      put("year", "2020");
+    }};
+    Map<String, Map<String, Object>> secret = new HashMap<>(){{
+      put(KEY1, key1);
+      put(KYE2, key2);
+    }};
+    try (FileOutputStream fos = new FileOutputStream(localSecretFile)) {
+      JSON_SERIALIZER.writeValue(fos, secret);
+    }
   }
-
-  private static void writeSecret(String secretName, Map<String, Object> secrets) throws Exception {
-    vault.logical().write("secret/" + PREFIX + "/" + secretName, secrets);
-  }
-
 }
