@@ -50,6 +50,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
+
 
 @RunWith(Parameterized.class)
 public class PubSubIT extends BaseIT {
@@ -499,6 +501,7 @@ public class PubSubIT extends BaseIT {
     public Long getValue() {
       return value;
     }
+
 
     @Override
     public boolean equals(Object o) {
