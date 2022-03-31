@@ -448,7 +448,7 @@ public class PubSubIT extends BaseIT {
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
             value,
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
+            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
 
         try {
           Thread.sleep((long) (1000 * Math.random()));
