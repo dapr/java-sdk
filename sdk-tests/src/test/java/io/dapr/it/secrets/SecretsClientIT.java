@@ -18,6 +18,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,6 +28,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -80,11 +82,8 @@ public class SecretsClientIT extends BaseIT {
   public static void init() throws Exception {
 
     localSecretFile = new File(LOCAL_SECRET_FILE_PATH);
-    if(localSecretFile.exists()) {
-      localSecretFile.delete();
-    }
-    boolean created = localSecretFile.createNewFile();
-    assertTrue(created);
+    boolean existed = localSecretFile.exists();
+    assertTrue(existed);
     initSecretFile();
 
     daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
@@ -104,9 +103,7 @@ public class SecretsClientIT extends BaseIT {
   @After
   public void tearDown() throws Exception {
     daprClient.close();
-    if(localSecretFile.exists()) {
-      localSecretFile.delete();
-    }
+    clearSecretFile();
   }
 
   @Test
@@ -155,6 +152,12 @@ public class SecretsClientIT extends BaseIT {
     }};
     try (FileOutputStream fos = new FileOutputStream(localSecretFile)) {
       JSON_SERIALIZER.writeValue(fos, secret);
+    }
+  }
+
+  private static void clearSecretFile() throws IOException {
+    try (FileOutputStream fos = new FileOutputStream(localSecretFile)) {
+      IOUtils.write("{}", fos);
     }
   }
 }
