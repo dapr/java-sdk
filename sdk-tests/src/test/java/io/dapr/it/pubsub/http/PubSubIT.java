@@ -26,6 +26,7 @@ import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,12 +36,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Random;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
@@ -426,29 +428,27 @@ public class PubSubIT extends BaseIT {
       daprRun.switchToHTTP();
     }
 
-    ConvertToLong toLong = new ConvertToLong();
-    HashSet<ConvertToLong> expected = new HashSet<>();
-    Random random = new Random();
-    Long randomLong = 590518626939830271L;
-    random.setSeed(randomLong);
-    toLong.setValue(randomLong);
-    expected.add(toLong);
-    for (int i = 1; i < NUM_MESSAGES; i++) {
-      ConvertToLong value = new ConvertToLong();
-      randomLong = random.nextLong();
-      value.setValue(randomLong);
-      expected.add(value);
-      System.out.println("expected value is : " +value);
+    Random random = new Random(590518626939830271L);
+    Set<ConvertToLong> values = new HashSet<>();
+    values.add(new ConvertToLong().setVal(590518626939830271L));
+    ConvertToLong val;
+    for (int i = 0; i < NUM_MESSAGES - 1; i++) {
+      do {
+        val = new ConvertToLong().setVal(random.nextLong());
+      } while (values.contains(val));
+      values.add(val);
     }
-    Iterator expectVal = expected.iterator();
+    Iterator<ConvertToLong> valuesIt = values.iterator();
     try (DaprClient client = new DaprClientBuilder().build()) {
-      while(expectVal.hasNext()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        ConvertToLong value = valuesIt.next();
+        System.out.println("The long value sent " + value.getValue());
         //Publishing messages
         client.publishEvent(
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
-            expectVal.next(),
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
+            value,
+            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
 
         try {
           Thread.sleep((long) (1000 * Math.random()));
@@ -460,7 +460,7 @@ public class PubSubIT extends BaseIT {
       }
     }
 
-    HashSet<ConvertToLong> actual = new HashSet<>();
+    Set<ConvertToLong> actual = new HashSet<>();
     try (DaprClient client = new DaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + LONG_TOPIC_NAME);
@@ -469,12 +469,12 @@ public class PubSubIT extends BaseIT {
             "messages/testinglongvalues",
             null,
             HttpExtension.GET, CLOUD_EVENT_LONG_LIST_TYPE_REF).block();
-            assertNotNull(messages);
-        for (int i = 0; i < NUM_MESSAGES; i++) { 
-          actual.add(messages.get(i).getData());
+        Assert.assertNotNull(messages);
+        for (CloudEvent<ConvertToLong> message : messages) {
+          actual.add(message.getData());
         }
-          assertEquals(expected,actual);
       }, 2000);
+      Assert.assertEquals(values, actual);
     }
   }
 
@@ -493,15 +493,17 @@ public class PubSubIT extends BaseIT {
   public static class ConvertToLong {
     private Long value;
 
+    public ConvertToLong setVal(Long value) {
+      this.value = value;
+      return this;
+    }
+
     public Long getValue() {
       return value;
     }
 
-    public void setValue(Long value) {
-      this.value = value;
-    }
 
-   @Override
+    @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
