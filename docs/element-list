@@ -4,6 +4,8 @@ io.dapr.actors.client
 io.dapr.actors.runtime
 io.dapr.client
 io.dapr.client.domain
+io.dapr.client.domain.query
+io.dapr.client.domain.query.filters
 io.dapr.config
 io.dapr.exceptions
 io.dapr.internal.opencensus
