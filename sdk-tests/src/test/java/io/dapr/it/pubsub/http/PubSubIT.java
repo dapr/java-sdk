@@ -26,6 +26,7 @@ import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,8 +36,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
@@ -44,6 +50,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
+
 
 @RunWith(Parameterized.class)
 public class PubSubIT extends BaseIT {
@@ -51,6 +59,7 @@ public class PubSubIT extends BaseIT {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final TypeRef<List<CloudEvent>> CLOUD_EVENT_LIST_TYPE_REF = new TypeRef<>() {};
+  private static final TypeRef<List<CloudEvent<ConvertToLong>>> CLOUD_EVENT_LONG_LIST_TYPE_REF = new TypeRef<>() {};
   private static final TypeRef<List<CloudEvent<MyObject>>> CLOUD_EVENT_MYOBJECT_LIST_TYPE_REF = new TypeRef<>() {};
 
   //Number of messages to be sent: 10
@@ -65,6 +74,8 @@ public class PubSubIT extends BaseIT {
   private static final String TTL_TOPIC_NAME = "ttltopic";
   // Topic to test binary data
   private static final String BINARY_TOPIC_NAME = "binarytopic";
+
+   private static final String LONG_TOPIC_NAME = "testinglongvalues";
 
   /**
    * Parameters for this test.
@@ -402,6 +413,71 @@ public class PubSubIT extends BaseIT {
     daprRun.stop();
   }
 
+  @Test
+  public void testLongValues() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName(),
+        SubscriberService.SUCCESS_MESSAGE,
+        SubscriberService.class,
+        true,
+        60000));
+    // At this point, it is guaranteed that the service above is running and all ports being listened to.
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      daprRun.switchToHTTP();
+    }
+
+    Random random = new Random(590518626939830271L);
+    Set<ConvertToLong> values = new HashSet<>();
+    values.add(new ConvertToLong().setVal(590518626939830271L));
+    ConvertToLong val;
+    for (int i = 0; i < NUM_MESSAGES - 1; i++) {
+      do {
+        val = new ConvertToLong().setVal(random.nextLong());
+      } while (values.contains(val));
+      values.add(val);
+    }
+    Iterator<ConvertToLong> valuesIt = values.iterator();
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        ConvertToLong value = valuesIt.next();
+        System.out.println("The long value sent " + value.getValue());
+        //Publishing messages
+        client.publishEvent(
+            PUBSUB_NAME,
+            LONG_TOPIC_NAME,
+            value,
+            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
+
+        try {
+          Thread.sleep((long) (1000 * Math.random()));
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          Thread.currentThread().interrupt();
+          return;
+        }
+      }
+    }
+
+    Set<ConvertToLong> actual = new HashSet<>();
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + LONG_TOPIC_NAME);
+        final List<CloudEvent<ConvertToLong>> messages = client.invokeMethod(
+            daprRun.getAppName(),
+            "messages/testinglongvalues",
+            null,
+            HttpExtension.GET, CLOUD_EVENT_LONG_LIST_TYPE_REF).block();
+        Assert.assertNotNull(messages);
+        for (CloudEvent<ConvertToLong> message : messages) {
+          actual.add(message.getData());
+        }
+      }, 2000);
+      Assert.assertEquals(values, actual);
+    }
+  }
+
   public static class MyObject {
     private String id;
 
@@ -413,4 +489,32 @@ public class PubSubIT extends BaseIT {
       this.id = id;
     }
   }
+
+  public static class ConvertToLong {
+    private Long value;
+
+    public ConvertToLong setVal(Long value) {
+      this.value = value;
+      return this;
+    }
+
+    public Long getValue() {
+      return value;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ConvertToLong that = (ConvertToLong) o;
+      return Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(value);
+    }
+  }
+
 }

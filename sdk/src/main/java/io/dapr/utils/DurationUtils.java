@@ -26,32 +26,56 @@ public class DurationUtils {
   public static Duration convertDurationFromDaprFormat(String valueString) {
     // Convert the format returned by the Dapr runtime into Duration
     // An example of the format is: 4h15m50s60ms. It does not include days.
+    if (valueString == null) {
+      throw new IllegalArgumentException("duration string cannot be null");
+    }
+    Duration parsedDuration = Duration.ZERO;
     int hourIndex = valueString.indexOf('h');
+    // Get first occurrence of "m"
     int minuteIndex = valueString.indexOf('m');
+    // Check if that is not "ms"
+    if (minuteIndex != -1 && valueString.length() > minuteIndex + 1 && valueString.charAt(minuteIndex + 1) == 's') {
+      // condition satisfied when "m" is part of the string "ms"
+      minuteIndex = -1;
+    }
+    // Get first occurrence of "s"
     int secondIndex = valueString.indexOf('s');
-    int milliIndex = valueString.indexOf("ms");
+    if (secondIndex != -1 && valueString.charAt(secondIndex - 1) == 'm') {
+      // condition satisfied when "s" is part of the string "ms"
+      secondIndex = -1;
+    }
+    // Declaring it final to skip checkstyle issues
+    final int milliIndex = valueString.indexOf("ms");
 
-    String hoursSpan = valueString.substring(0, hourIndex);
+    if (hourIndex != -1) {
+      String hoursSpan = valueString.substring(0, hourIndex);
 
-    int hours = Integer.parseInt(hoursSpan);
-    int days = hours / 24;
-    hours = hours % 24;
+      int hours = Integer.parseInt(hoursSpan);
+      int days = hours / 24;
+      hours = hours % 24;
+      parsedDuration = parsedDuration.plusDays(days)
+          .plusHours(hours);
+    }
 
-    String minutesSpan = valueString.substring(hourIndex + 1, minuteIndex);
-    int minutes = Integer.parseInt(minutesSpan);
+    if (minuteIndex != -1) {
+      String minutesSpan = valueString.substring(hourIndex + 1, minuteIndex);
+      int minutes = Integer.parseInt(minutesSpan);
+      parsedDuration = parsedDuration.plusMinutes(minutes);
+    }
 
-    String secondsSpan = valueString.substring(minuteIndex + 1, secondIndex);
-    int seconds = Integer.parseInt(secondsSpan);
+    if (secondIndex != -1) {
+      String secondsSpan = valueString.substring(minuteIndex + 1, secondIndex);
+      int seconds = Integer.parseInt(secondsSpan);
+      parsedDuration = parsedDuration.plusSeconds(seconds);
+    }
 
-    String millisecondsSpan = valueString.substring(secondIndex + 1, milliIndex);
-    int milliseconds = Integer.parseInt(millisecondsSpan);
+    if (milliIndex != -1) {
+      String millisecondsSpan = valueString.substring(secondIndex + 1, milliIndex);
+      int milliseconds = Integer.parseInt(millisecondsSpan);
+      parsedDuration = parsedDuration.plusMillis(milliseconds);
+    }
 
-    return Duration.ZERO
-        .plusDays(days)
-        .plusHours(hours)
-        .plusMinutes(minutes)
-        .plusSeconds(seconds)
-        .plusMillis(milliseconds);
+    return parsedDuration;
   }
 
   /**
@@ -65,8 +89,7 @@ public class DurationUtils {
 
     // return empty string for anything negative, it'll only happen for reminder "periods", not dueTimes.  A
     // negative "period" means fire once only.
-    if (value == Duration.ZERO
-        || (value.compareTo(Duration.ZERO) == 1)) {
+    if (value == Duration.ZERO || (value.compareTo(Duration.ZERO) > 0)) {
       long hours = getDaysPart(value) * 24 + getHoursPart(value);
 
       StringBuilder sb = new StringBuilder();
