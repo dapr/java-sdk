@@ -99,15 +99,6 @@ jobs:
           echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
           pip3 install setuptools wheel
           pip3 install mechanical-markdown
-      - name: Install Vault CLI
-        run: |
-          # From the installtion page of vault https://learn.hashicorp.com/tutorials/vault/getting-started-install?in=vault/getting-started
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update
-          sudo apt-get install vault
-          # Verify vault is installed
-          vault -h
       - name: Install Local mongo database using docker-compose
         run: |
           docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
