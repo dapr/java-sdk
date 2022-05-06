@@ -70,6 +70,13 @@ public class DaprPreviewClientHttpTest {
   }
 
   @Test
+  public void unsubscribeConfigurations() {
+    assertThrows(DaprException.class, () -> {
+      daprPreviewClientHttp.unsubscribeToConfiguration("id", CONFIG_STORE_NAME).block();
+    });
+  }
+
+  @Test
   public void queryStateExceptionsTest() {
     assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.queryState("", "query", TypeRef.BOOLEAN).block();

@@ -23,6 +23,7 @@ import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.CommonProtos;
@@ -192,10 +193,10 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
 
-		Iterator<Map<String, ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+		Iterator<SubscribeConfigurationResponse> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
 		assertTrue(itr.hasNext());
-		assertTrue(itr.next().containsKey("configkey1"));
-		assertFalse(itr.hasNext());	
+		assertTrue(itr.next().getItems().containsKey("configkey1"));
+		assertFalse(itr.hasNext());
 	}
 
 	@Test
@@ -223,10 +224,10 @@ public class DaprPreviewClientGrpcTest {
 		Map<String, String> reqMetadata = new HashMap<>();
 		List<String> keys = Arrays.asList("configkey1");
 
-		Iterator<Map<String, ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+		Iterator<SubscribeConfigurationResponse> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
 		assertTrue(itr.hasNext());
-		assertTrue(itr.next().containsKey("configkey1"));
-		assertFalse(itr.hasNext());	
+		assertTrue(itr.next().getItems().containsKey("configkey1"));
+		assertFalse(itr.hasNext());
 	}
 
 	@Test

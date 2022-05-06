@@ -18,6 +18,8 @@ import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,6 +27,8 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,6 +51,7 @@ public class ConfigurationClient {
       getConfigurationsUsingVarargs(client);
       getConfigurations(client);
       subscribeConfigurationRequestWithSubscribe(client);
+      unsubscribeToConfigurationItems(client);
     }
   }
 
@@ -107,35 +112,94 @@ public class ConfigurationClient {
    * @param client DaprPreviewClient object
    */
   public static void subscribeConfigurationRequestWithSubscribe(DaprPreviewClient client) {
-    System.out.println("*****Subscribing to keys using subscribe method: " + keys.toString() + " *****");
+    System.out.println("Subscribing to key: myconfig1");
     AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
-    SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, keys);
+    SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
+        CONFIG_STORE_NAME, Collections.singletonList("myconfig1"));
     Runnable subscribeTask = () -> {
-      Flux<Map<String, ConfigurationItem>> outFlux = client.subscribeToConfiguration(req);
+      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeToConfiguration(req);
       disposableAtomicReference.set(outFlux
           .subscribe(
-              cis -> cis.forEach((k,v) -> print(v, k))
+              cis -> {
+                cis.getItems().forEach((k,v) -> print(v,k));
+              }
           ));
     };
     new Thread(subscribeTask).start();
-    try {
-      // To ensure that subscribeThread gets scheduled
-      Thread.sleep(0);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+
+    // To ensure that subscribeThread gets scheduled
+    inducingSleepTime(0);
+
     Runnable updateKeys = () -> {
       int i = 1;
       while (i <= 3) {
-        executeDockerCommand(i);
+        executeDockerCommand("myconfig1", i);
         i++;
       }
     };
     new Thread(updateKeys).start();
+
+    // To ensure main thread does not die before outFlux subscribe gets called
+    inducingSleepTime(5000);
+  }
+
+  /**
+   * Unsubscribe using subscription id.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void unsubscribeToConfigurationItems(DaprPreviewClient client) {
+    System.out.println("Subscribing to key: myconfig2");
+    SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME,
+        Collections.singletonList("myconfig2"));
+    AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
+    AtomicReference<String> subscriptionId = new AtomicReference<>();
+    Runnable subscribeTask = () -> {
+      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeToConfiguration(req);
+      disposableAtomicReference.set(outFlux
+          .subscribe(
+              cis -> {
+                subscriptionId.set(cis.getId());
+                cis.getItems().forEach((k,v) -> print(v,k));
+              }
+          ));
+    };
+    new Thread(subscribeTask).start();
+
+    // To ensure that subscribeThread gets scheduled
+    inducingSleepTime(0);
+
+    Runnable updateKeys = () -> {
+      int i = 1;
+      while (i <= 5) {
+        executeDockerCommand("myconfig2", i);
+        i++;
+      }
+    };
+    new Thread(updateKeys).start();
+
+    // To ensure key starts getting updated
+    inducingSleepTime(1000);
+
+    UnsubscribeConfigurationResponse res = client.unsubscribeToConfiguration(
+        subscriptionId.get(),
+        CONFIG_STORE_NAME
+    ).block();
+    assert res != null;
+    System.out.println("IsUnsubscribed : " + res.getIsUnsubscribed());
+
+    // To ensure main thread does not die
+    inducingSleepTime(1000);
+
+    new Thread(updateKeys).start();
+
+    // To ensure main thread does not die
+    inducingSleepTime(1000);
+  }
+
+  private static void inducingSleepTime(int timeInMillis) {
     try {
-      // To ensure main thread does not die before outFlux subscribe gets called
-      Thread.sleep(10000);
-      disposableAtomicReference.get().dispose();
+      Thread.sleep(timeInMillis);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -145,11 +209,11 @@ public class ConfigurationClient {
     System.out.println(item.getValue() + " : key ->" + key);
   }
 
-  private static void executeDockerCommand(int postfix) {
+  private static void executeDockerCommand(String key, int postfix) {
     String[] command = new String[] {
         "docker", "exec", "dapr_redis", "redis-cli",
         "SET",
-        "myconfig" + postfix, "update_myconfigvalue" + postfix + "||2"
+        key, "update_myconfigvalue" + postfix + "||2"
     };
     ProcessBuilder processBuilder = new ProcessBuilder(command);
     Process process = null;

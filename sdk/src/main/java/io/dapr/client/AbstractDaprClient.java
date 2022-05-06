@@ -32,7 +32,10 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -543,7 +546,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
-  public Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys) {
+  public Flux<SubscribeConfigurationResponse> subscribeToConfiguration(String storeName, String... keys) {
     List<String> listOfKeys = filterEmptyKeys(keys);
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
     return this.subscribeToConfiguration(request);
@@ -552,13 +555,23 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
-  public Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(
+  public Flux<SubscribeConfigurationResponse> subscribeToConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, keys);
     request.setMetadata(metadata);
     return this.subscribeToConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeToConfiguration(
+      String id,
+      String storeName) {
+    UnsubscribeConfigurationRequest request = new UnsubscribeConfigurationRequest(id, storeName);
+    return this.unsubscribeToConfiguration(request);
   }
 
   private List<String> filterEmptyKeys(String... keys) {
