@@ -150,15 +150,12 @@ public class ConfigurationClient {
    */
   public static void unsubscribeToConfigurationItems(DaprPreviewClient client) {
     System.out.println("Subscribing to key: myconfig2");
-    SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME,
-        Collections.singletonList("myconfig2"));
     AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
     AtomicReference<String> subscriptionId = new AtomicReference<>();
     Runnable subscribeTask = () -> {
-      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeToConfiguration(req);
+      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeToConfiguration(CONFIG_STORE_NAME, "myconfig2");
       disposableAtomicReference.set(outFlux
-          .subscribe(
-              cis -> {
+          .subscribe(cis -> {
                 subscriptionId.set(cis.getId());
                 cis.getItems().forEach((k,v) -> print(v,k));
               }
@@ -187,14 +184,6 @@ public class ConfigurationClient {
     ).block();
     assert res != null;
     System.out.println("IsUnsubscribed : " + res.getIsUnsubscribed());
-
-    // To ensure main thread does not die
-    inducingSleepTime(1000);
-
-    new Thread(updateKeys).start();
-
-    // To ensure main thread does not die
-    inducingSleepTime(1000);
   }
 
   private static void inducingSleepTime(int timeInMillis) {

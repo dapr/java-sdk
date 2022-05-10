@@ -68,12 +68,19 @@ expected_stdout_lines:
   - "== APP == val1 : key ->myconfig1"
   - "== APP == val2 : key ->myconfig2"
   - "== APP == val3 : key ->myconfig3"
-  - "== APP == *****Subscribing to keys using subscribe method: [myconfig1, myconfig3, myconfig2] *****"
+  - "== APP == Subscribing to key: myconfig1"
   - "== APP == update_myconfigvalue1 : key ->myconfig1"
+  - "== APP == update_myconfigvalue2 : key ->myconfig1"
+  - "== APP == update_myconfigvalue3 : key ->myconfig1"
+  - "== APP == Subscribing to key: myconfig2"
+  - "== APP == update_myconfigvalue1 : key ->myconfig2"
   - "== APP == update_myconfigvalue2 : key ->myconfig2"
-  - "== APP == update_myconfigvalue3 : key ->myconfig3"
+  - "== APP == update_myconfigvalue3 : key ->myconfig2"
+  - "== APP == update_myconfigvalue4 : key ->myconfig2"
+  - "== APP == update_myconfigvalue5 : key ->myconfig2"
+  - "== APP == IsUnsubscribed : true"
 background: true
-sleep: 5
+sleep: 10
 -->
 
 ```bash
@@ -94,10 +101,18 @@ dapr run --components-path ./components/configuration --app-id configgrpc --log-
 == APP == val1 : key ->myconfig1
 == APP == val2 : key ->myconfig2
 == APP == val3 : key ->myconfig3
-== APP == *****Subscribing to keys using subscribe method: [myconfig1, myconfig3, myconfig2] *****
+== APP == Subscribing to key: myconfig1"
 == APP == update_myconfigvalue1 : key ->myconfig1
+== APP == update_myconfigvalue2 : key ->myconfig1
+== APP == update_myconfigvalue3 : key ->myconfig1
+== APP == Subscribing to key: myconfig2"
+== APP == update_myconfigvalue1 : key ->myconfig2
 == APP == update_myconfigvalue2 : key ->myconfig2
-== APP == update_myconfigvalue3 : key ->myconfig3
+== APP == update_myconfigvalue3 : key ->myconfig2
+== APP == update_myconfigvalue4 : key ->myconfig2
+== APP == update_myconfigvalue5 : key ->myconfig2
+== APP == IsUnsubscribed : true
+
 
 ```
 ### Cleanup

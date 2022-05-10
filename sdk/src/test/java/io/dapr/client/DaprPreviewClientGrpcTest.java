@@ -24,6 +24,8 @@ import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.CommonProtos;
@@ -183,6 +185,7 @@ public class DaprPreviewClientGrpcTest {
 		.build());
 		DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
 				.putAllItems(configs)
+				.setId("subscription_id")
 				.build();
 
 		doAnswer((Answer<Void>) invocation -> {
@@ -195,7 +198,9 @@ public class DaprPreviewClientGrpcTest {
 
 		Iterator<SubscribeConfigurationResponse> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
 		assertTrue(itr.hasNext());
+		SubscribeConfigurationResponse res = itr.next();
 		assertTrue(itr.next().getItems().containsKey("configkey1"));
+		assertEquals("subscription_id", res.getId());
 		assertFalse(itr.hasNext());
 	}
 
@@ -211,6 +216,7 @@ public class DaprPreviewClientGrpcTest {
 		.build());
 		DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
 				.putAllItems(configs)
+				.setId("subscription_id")
 				.build();
 
 		doAnswer((Answer<Void>) invocation -> {
@@ -226,7 +232,9 @@ public class DaprPreviewClientGrpcTest {
 
 		Iterator<SubscribeConfigurationResponse> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
 		assertTrue(itr.hasNext());
+		SubscribeConfigurationResponse res = itr.next();
 		assertTrue(itr.next().getItems().containsKey("configkey1"));
+		assertEquals("subscription_id", res.getId());
 		assertFalse(itr.hasNext());
 	}
 
@@ -251,6 +259,51 @@ public class DaprPreviewClientGrpcTest {
 		SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, null);
 		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.subscribeToConfiguration(req).blockFirst();
+		});
+	}
+
+	@Test
+	public void unsubscribeConfigurationTest() {
+		DaprProtos.UnsubscribeConfigurationResponse responseEnvelope = DaprProtos.UnsubscribeConfigurationResponse.newBuilder()
+				.setOk(true)
+				.setMessage("unsubscribed_message")
+				.build();
+
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+					(StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+			observer.onNext(responseEnvelope);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).unsubscribeConfigurationAlpha1(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+
+		UnsubscribeConfigurationResponse
+				response = previewClient.unsubscribeToConfiguration("subscription_id", CONFIG_STORE_NAME).block();
+		assertTrue(response.getIsUnsubscribed());
+		assertEquals("unsubscribed_message", response.getMessage());
+	}
+
+	@Test
+	public void unsubscribeConfigurationTestWithError() {
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+					(StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+			observer.onError(new RuntimeException());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).unsubscribeConfigurationAlpha1(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+
+		assertThrowsDaprException(ExecutionException.class, () -> {
+			previewClient.unsubscribeToConfiguration("subscription_id", CONFIG_STORE_NAME).block();
+		});
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.unsubscribeToConfiguration("", CONFIG_STORE_NAME).block();
+		});
+
+		UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
+		assertThrows(IllegalArgumentException.class, () -> {
+			previewClient.unsubscribeToConfiguration(req).block();
 		});
 	}
 

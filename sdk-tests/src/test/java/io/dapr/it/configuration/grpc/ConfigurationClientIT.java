@@ -16,6 +16,8 @@ package io.dapr.it.configuration.grpc;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 
@@ -111,13 +113,10 @@ public class ConfigurationClientIT extends BaseIT {
         List<String> updatedValues = new ArrayList<>();
         AtomicReference<Disposable> disposable = new AtomicReference<>();
         Runnable subscribeTask = () -> {
-            Flux<Map<String, ConfigurationItem>> outFlux = daprPreviewClient
+            Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
                     .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
             disposable.set(outFlux.subscribe(update -> {
-                updatedValues.add(update.entrySet()
-                .stream()
-                .findFirst()
-                .get().getValue().getValue());
+                updatedValues.add(update.getItems().entrySet().stream().findFirst().get().getValue().getValue());
             }));
         };
         Thread subscribeThread = new Thread(subscribeTask);
@@ -145,7 +144,83 @@ public class ConfigurationClientIT extends BaseIT {
         assertFalse(updatedValues.contains("update_myconfigvalue3"));
     }
 
+    @Test
+    public void unsubscribeToConfigurationItems() {
+        List<String> updatedValues = new ArrayList<>();
+        AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
+        AtomicReference<String> subscriptionId = new AtomicReference<>();
+        Runnable subscribeTask = () -> {
+            Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
+                    .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1");
+            disposableAtomicReference.set(outFlux
+                .subscribe(update -> {
+                        subscriptionId.set(update.getId());
+                        updatedValues.add(update.getItems().entrySet().stream().findFirst().get().getValue().getValue());
+                    }
+                ));
+        };
+        new Thread(subscribeTask).start();
+
+        // To ensure that subscribeThread gets scheduled
+        inducingSleepTime(0);
+
+        Runnable updateKeys = () -> {
+            int i = 1;
+            while (i <= 5) {
+                executeDockerCommand("myconfigkey1", i);
+                i++;
+            }
+        };
+        new Thread(updateKeys).start();
+
+        // To ensure key starts getting updated
+        inducingSleepTime(1000);
+
+        UnsubscribeConfigurationResponse res = daprPreviewClient.unsubscribeToConfiguration(
+            subscriptionId.get(),
+            CONFIG_STORE_NAME
+        ).block();
+
+        assertTrue(res != null);
+        assertTrue(res.getIsUnsubscribed());
+        int listSize = updatedValues.size();
+        // To ensure main thread does not die
+        inducingSleepTime(1000);
+
+        new Thread(updateKeys).start();
+
+        // To ensure main thread does not die
+        inducingSleepTime(2000);
+        assertTrue(updatedValues.size() == listSize);
+    }
+
+    private static void inducingSleepTime(int timeInMillis) {
+        try {
+            Thread.sleep(timeInMillis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     private static void executeDockerCommand(String[] command) {
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        Process process = null;
+        try {
+            process = processBuilder.start();
+            process.waitFor();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void executeDockerCommand(String key, int postfix) {
+        String[] command = new String[] {
+            "docker", "exec", "dapr_redis", "redis-cli",
+            "SET",
+            key, "update_myconfigvalue" + postfix + "||2"
+        };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         Process process = null;
         try {
