@@ -32,6 +32,8 @@ public class Command {
 
   private final String command;
 
+  private final String shell;
+
   private Process process;
 
   private Map<String, String> env;
@@ -40,6 +42,7 @@ public class Command {
     this.successMessage = successMessage;
     this.command = command;
     this.env = env;
+    this.shell = detectShell();
   }
 
   public Command(String successMessage, String command) {
@@ -49,7 +52,7 @@ public class Command {
   public void run() throws InterruptedException, IOException {
     final AtomicBoolean success = new AtomicBoolean(false);
     final Semaphore finished = new Semaphore(0);
-    ProcessBuilder processBuilder = new ProcessBuilder("bash", "-c", command);
+    ProcessBuilder processBuilder = new ProcessBuilder(this.shell, "-c", command);
     if (this.env != null) {
       processBuilder.environment().putAll(this.env);
     }
@@ -102,5 +105,14 @@ public class Command {
   @Override
   public String toString() {
     return this.command;
+  }
+
+  private static String detectShell() {
+    String osName = System.getProperty("os.name").toLowerCase();
+    if (osName.contains("windows")) {
+      return "powershell.exe";
+    }
+
+    return "bash";
   }
 }
