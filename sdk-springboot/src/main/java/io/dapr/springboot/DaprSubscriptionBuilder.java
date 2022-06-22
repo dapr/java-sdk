@@ -1,7 +1,15 @@
 /*
- * Copyright (c) Microsoft Corporation and Dapr Contributors.
- * Licensed under the MIT License.
- */
+ * Copyright 2022 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package io.dapr.springboot;
 
@@ -12,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class DaprSubscriptionBuilder {
+class DaprSubscriptionBuilder {
   private final String pubsubName;
   private final String topic;
   private final List<TopicRule> rules;
@@ -24,7 +32,7 @@ public class DaprSubscriptionBuilder {
    * @param pubsubName The pubsub name to subscribe to.
    * @param topic The topic to subscribe to.
    */
-  public DaprSubscriptionBuilder(String pubsubName, String topic) {
+  DaprSubscriptionBuilder(String pubsubName, String topic) {
     this.pubsubName = pubsubName;
     this.topic = topic;
     this.rules = new ArrayList<>();
@@ -35,8 +43,9 @@ public class DaprSubscriptionBuilder {
   /**
    * Sets the default path for the subscription.
    * @param path The default path.
+   * @return this instance.
    */
-  public void setDefaultPath(String path) {
+  DaprSubscriptionBuilder setDefaultPath(String path) {
     if (defaultPath != null) {
       throw new RuntimeException(
               String.format(
@@ -44,6 +53,7 @@ public class DaprSubscriptionBuilder {
                       this.topic, this.pubsubName));
     }
     defaultPath = path;
+    return this;
   }
 
   /**
@@ -51,8 +61,9 @@ public class DaprSubscriptionBuilder {
    * @param path The path to route to.
    * @param match The CEL expression the event must match.
    * @param priority The priority of the rule.
+   * @return this instance.
    */
-  public void addRule(String path, String match, int priority) {
+  public DaprSubscriptionBuilder addRule(String path, String match, int priority) {
     if (rules.stream().anyMatch(e -> e.getPriority() == priority)) {
       throw new RuntimeException(
               String.format(
@@ -60,14 +71,17 @@ public class DaprSubscriptionBuilder {
                       priority, this.topic, this.pubsubName));
     }
     rules.add(new TopicRule(path, match, priority));
+    return this;
   }
 
   /**
    * Sets the metadata for the subscription.
    * @param metadata The metadata.
+   * @return this instance.
    */
-  public void setMetadata(Map<String, String> metadata) {
+  public DaprSubscriptionBuilder setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
+    return this;
   }
 
   /**
@@ -90,7 +104,7 @@ public class DaprSubscriptionBuilder {
     return new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata);
   }
 
-  static class TopicRule {
+  private static class TopicRule {
     private final String path;
     private final String match;
     private final int priority;

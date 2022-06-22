@@ -218,9 +218,9 @@ public class PubSubIT extends BaseIT {
         cloudEventV2.setSpecversion("1");
         cloudEventV2.setType("myevent.v2");
         cloudEventV2.setDatacontenttype("text/plain");
-        client.publishEvent(new PublishEventRequestBuilder(PUBSUB_NAME, TOPIC_NAME, cloudEventV2)
-                .withContentType("application/cloudevents+json")
-                .build()).block();
+        client.publishEvent(
+            new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEventV2)
+                .setContentType("application/cloudevents+json")).block();
         System.out.println("Published one cloud event for v2.");
       }
 
@@ -232,9 +232,9 @@ public class PubSubIT extends BaseIT {
         cloudEventV3.setSpecversion("1");
         cloudEventV3.setType("myevent.v3");
         cloudEventV3.setDatacontenttype("text/plain");
-        client.publishEvent(new PublishEventRequestBuilder(PUBSUB_NAME, TOPIC_NAME, cloudEventV3)
-                .withContentType("application/cloudevents+json")
-                .build()).block();
+        client.publishEvent(
+            new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEventV3)
+                .setContentType("application/cloudevents+json")).block();
         System.out.println("Published one cloud event for v3.");
       }
 
