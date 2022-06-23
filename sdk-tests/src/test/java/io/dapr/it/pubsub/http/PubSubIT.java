@@ -210,7 +210,35 @@ public class PubSubIT extends BaseIT {
           .setContentType("application/cloudevents+json")).block();
       System.out.println("Published one cloud event.");
 
-      Thread.sleep(3000);
+      {
+        CloudEvent cloudEventV2 = new CloudEvent();
+        cloudEventV2.setId("2222");
+        cloudEventV2.setData("message from cloudevent v2");
+        cloudEventV2.setSource("test");
+        cloudEventV2.setSpecversion("1");
+        cloudEventV2.setType("myevent.v2");
+        cloudEventV2.setDatacontenttype("text/plain");
+        client.publishEvent(
+            new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEventV2)
+                .setContentType("application/cloudevents+json")).block();
+        System.out.println("Published one cloud event for v2.");
+      }
+
+      {
+        CloudEvent cloudEventV3 = new CloudEvent();
+        cloudEventV3.setId("3333");
+        cloudEventV3.setData("message from cloudevent v3");
+        cloudEventV3.setSource("test");
+        cloudEventV3.setSpecversion("1");
+        cloudEventV3.setType("myevent.v3");
+        cloudEventV3.setDatacontenttype("text/plain");
+        client.publishEvent(
+            new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEventV3)
+                .setContentType("application/cloudevents+json")).block();
+        System.out.println("Published one cloud event for v3.");
+      }
+
+      Thread.sleep(2000);
 
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + TOPIC_NAME);
@@ -256,6 +284,30 @@ public class PubSubIT extends BaseIT {
             .map(m -> m.getData())
             .filter(m -> "message from cloudevent".equals(m))
             .count() == 1);
+      }, 2000);
+
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + TOPIC_NAME + " V2");
+        // Validate text payload.
+        final List<CloudEvent> messages = client.invokeMethod(
+                daprRun.getAppName(),
+                "messages/testingtopicV2",
+                null,
+                HttpExtension.GET,
+                CLOUD_EVENT_LIST_TYPE_REF).block();
+        assertEquals(1, messages.size());
+      }, 2000);
+
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + TOPIC_NAME + " V3");
+        // Validate text payload.
+        final List<CloudEvent> messages = client.invokeMethod(
+                daprRun.getAppName(),
+                "messages/testingtopicV3",
+                null,
+                HttpExtension.GET,
+                CLOUD_EVENT_LIST_TYPE_REF).block();
+        assertEquals(1, messages.size());
       }, 2000);
 
       callWithRetry(() -> {
