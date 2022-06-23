@@ -16,6 +16,7 @@ package io.dapr.springboot;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.Rule;
 import io.dapr.Topic;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -26,7 +27,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -85,8 +85,11 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
         continue;
       }
 
+
+      Rule rule = topic.rule();
       String topicName = embeddedValueResolver.resolveStringValue(topic.name());
       String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
+      String match = embeddedValueResolver.resolveStringValue(rule.match());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
           TypeReference<HashMap<String, String>> typeRef
@@ -94,12 +97,11 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
-            DaprRuntime.getInstance().addSubscribedTopic(pubSubName, topicName, route,
-                metadata);
+            DaprRuntime.getInstance().addSubscribedTopic(
+                pubSubName, topicName, match, rule.priority(), route, metadata);
           }
-
         } catch (JsonProcessingException e) {
-          throw new IllegalArgumentException("Error while parsing metadata: " + e.toString());
+          throw new IllegalArgumentException("Error while parsing metadata: " + e);
         }
       }
     }

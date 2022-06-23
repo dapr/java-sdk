@@ -37,6 +37,12 @@ public @interface Topic {
   String pubsubName();
 
   /**
+   * The rules used to match the incoming cloud event.
+   * @return the CEL expression.
+   */
+  Rule rule() default @Rule(match = "", priority = 0);
+
+  /**
    * Metadata in the form of a json object.
    * {
    *    "mykey": "myvalue"

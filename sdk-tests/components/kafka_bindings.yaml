@@ -19,3 +19,5 @@ spec:
     value: sample
   - name: authRequired
     value: "false"
+  - name: initialOffset
+    value: oldest

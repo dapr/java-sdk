@@ -172,6 +172,20 @@ public class SubscriberController {
     });
   }
 
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
+          rule = @Rule(match = "event.type == 'myevent.v2'", priority = 1))
+  @PostMapping(path = "/testingtopicV2")
+  public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.println("Subscriber got: " + cloudEvent.getData());
+        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
 }
 ```
 

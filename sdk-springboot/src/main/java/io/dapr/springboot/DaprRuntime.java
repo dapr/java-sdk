@@ -13,11 +13,12 @@ limitations under the License.
 
 package io.dapr.springboot;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import io.dapr.Rule;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Internal Singleton to handle Dapr configuration.
@@ -30,14 +31,9 @@ class DaprRuntime {
   private static volatile DaprRuntime instance;
 
   /**
-   * List of subscribed topics.
+   * Map of subscription builders.
    */
-  private final Set<String> subscribedTopics = new HashSet<>();
-
-  /**
-   * List of subscriptions.
-   */
-  private final List<DaprTopicSubscription> subscriptions = new ArrayList<>();
+  private final Map<DaprTopicKey, DaprSubscriptionBuilder> subscriptionBuilders = new HashMap<>();
 
   /**
    * Private constructor to make this singleton.
@@ -67,20 +63,38 @@ class DaprRuntime {
    *
    * @param pubsubName Pubsub name to subcribe to.
    * @param topicName Name of the topic being subscribed to.
+   * @param rule The optional rule for this route.
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
    */
   public synchronized void addSubscribedTopic(String pubsubName,
                                               String topicName,
+                                              String match,
+                                              int priority,
                                               String route,
                                               Map<String,String> metadata) {
-    if (!this.subscribedTopics.contains(topicName)) {
-      this.subscribedTopics.add(topicName);
-      this.subscriptions.add(new DaprTopicSubscription(pubsubName, topicName, route, metadata));
+    DaprTopicKey topicKey = new DaprTopicKey(pubsubName, topicName);
+
+    DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
+    if (builder == null) {
+      builder = new DaprSubscriptionBuilder(pubsubName, topicName);
+      subscriptionBuilders.put(topicKey, builder);
+    }
+
+    if (match.length() > 0) {
+      builder.addRule(route, match, priority);
+    } else {
+      builder.setDefaultPath(route);
+    }
+
+    if (metadata != null && !metadata.isEmpty()) {
+      builder.setMetadata(metadata);
     }
   }
 
   public synchronized DaprTopicSubscription[] listSubscribedTopics() {
-    return this.subscriptions.toArray(new DaprTopicSubscription[0]);
+    List<DaprTopicSubscription> values = subscriptionBuilders.values().stream()
+            .map(b -> b.build()).collect(Collectors.toList());
+    return values.toArray(new DaprTopicSubscription[0]);
   }
 }
