@@ -36,9 +36,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.7.0-rc.2
-      DAPR_RUNTIME_VER: 1.8.0-rc.2
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.7.0-rc.2/install/install.sh
+      DAPR_CLI_VER: 1.8.0-rc.1
+      DAPR_RUNTIME_VER: 1.8.0-rc.3
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.8.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
     steps:
