@@ -36,6 +36,8 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.TransactionalStateRequest;
+import io.dapr.client.domain.response.DaprResponse;
+import io.dapr.client.domain.response.HttpDaprResponse;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -46,6 +48,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +57,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -221,6 +226,15 @@ public class DaprClientHttp extends AbstractDaprClient {
 
   private <T> Mono<T> getMono(TypeRef<T> type, DaprHttp.Response r) {
     try {
+      if (type.getType().getTypeName().startsWith(DaprResponse.class.getName())) {
+        if (type.getType() instanceof ParameterizedType) {
+          Type[] actualTypeArguments = ((ParameterizedType) type.getType()).getActualTypeArguments();
+          if (Objects.nonNull(actualTypeArguments) && actualTypeArguments.length > 0) {
+            type = TypeRef.get(actualTypeArguments[0]);
+          }
+        }
+        return (Mono<T>) Mono.just(new HttpDaprResponse<T>(r, objectSerializer, type));
+      }
       T object = objectSerializer.deserialize(r.getBody(), type);
       if (object == null) {
         return Mono.empty();

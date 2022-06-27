@@ -25,6 +25,7 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.response.DaprResponse;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -631,6 +632,22 @@ public class DaprClientGrpcTest {
     String strOutput = result.block();
 
     assertEquals(expected, strOutput);
+  }
+
+  @Test
+  public void invokeServiceTestReturnResponse() throws IOException {
+    String expected = "Value";
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
+    Mono<DaprResponse<String>> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, new TypeRef<DaprResponse<String>>() {});
+    DaprResponse<String> res = result.block();
+
+    assertEquals(expected, res.getData());
   }
 
   @Test

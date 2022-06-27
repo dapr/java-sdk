@@ -37,6 +37,8 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.response.DaprResponse;
+import io.dapr.client.domain.response.GrpcDaprResponse;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
@@ -62,9 +64,13 @@ import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -206,6 +212,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
           ).flatMap(
               it -> {
                 try {
+                  if (type.getType().getTypeName().startsWith(DaprResponse.class.getName())) {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE,it.getContentType());
+                    return getMono(type, it.getData().getValue().toByteArray(),headers);
+                  }
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
                 } catch (IOException e)  {
                   throw DaprException.propagate(e);
@@ -215,6 +226,16 @@ public class DaprClientGrpc extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  private <T> Mono<T> getMono(TypeRef<T> type, byte[] data, Map<String,String> headers) {
+    if (type.getType() instanceof ParameterizedType) {
+      Type[] actualTypeArguments = ((ParameterizedType) type.getType()).getActualTypeArguments();
+      if (Objects.nonNull(actualTypeArguments) && actualTypeArguments.length > 0) {
+        type = TypeRef.get(actualTypeArguments[0]);
+      }
+    }
+    return (Mono<T>) Mono.just(new GrpcDaprResponse<T>(data, headers,objectSerializer, type));
   }
 
   /**
@@ -253,6 +274,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
           ).flatMap(
               it -> {
                 try {
+                  if (type.getType().getTypeName().startsWith(DaprResponse.class.getName())) {
+                    return getMono(type, it.getData().toByteArray(),it.getMetadataMap());
+                  }
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
                 } catch (IOException e) {
                   throw DaprException.propagate(e);
