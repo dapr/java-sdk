@@ -440,6 +440,28 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void invokeServiceReturnResponseBytes() throws IOException {
+    String resultString = "request success";
+    String resultHeaderName = "test-header";
+    String resultHeaderValue = "1";
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+          .respond(resultString)
+          .addHeader(resultHeaderName,resultHeaderValue);
+
+    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
+        .setBody("request")
+        .setHttpExtension(HttpExtension.POST);
+
+    Mono<DaprResponse> result = daprClientHttp.invokeMethod(req, new TypeRef<DaprResponse>() {});
+    DaprResponse response = result.block();
+    Assertions.assertNotNull(response);
+    Assertions.assertEquals(200, response.getCode());
+    Assertions.assertEquals(resultString,new String((byte[]) response.getData()));
+    Assertions.assertEquals(resultHeaderValue,response.getHeaders().get(resultHeaderName));
+  }
+
+  @Test
   public void invokeBinding() throws IOException {
     String resultString = "request success";
     String resultHeaderName = "test-header";

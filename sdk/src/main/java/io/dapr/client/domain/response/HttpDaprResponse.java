@@ -54,11 +54,19 @@ public class HttpDaprResponse<T> implements DaprResponse<T> {
     if (type.getType() == String.class) {
       return (T) new String(data);
     }
+    if (type.getType() == byte[].class) {
+      return (T) getBytes();
+    }
     return serializer.deserialize(data, type);
   }
 
   @Override
   public Map<String, String> getHeaders() {
     return response.getHeaders();
+  }
+
+  @Override
+  public byte[] getSourceBytesData() {
+    return response.getBody();
   }
 }

@@ -229,12 +229,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   private <T> Mono<T> getMono(TypeRef<T> type, byte[] data, Map<String,String> headers) {
-    if (type.getType() instanceof ParameterizedType) {
-      Type[] actualTypeArguments = ((ParameterizedType) type.getType()).getActualTypeArguments();
-      if (Objects.nonNull(actualTypeArguments) && actualTypeArguments.length > 0) {
-        type = TypeRef.get(actualTypeArguments[0]);
-      }
-    }
+    type = DaprResponse.getSubType(type);
     return (Mono<T>) Mono.just(new GrpcDaprResponse<T>(data, headers,objectSerializer, type));
   }
 

@@ -227,12 +227,7 @@ public class DaprClientHttp extends AbstractDaprClient {
   private <T> Mono<T> getMono(TypeRef<T> type, DaprHttp.Response r) {
     try {
       if (type.getType().getTypeName().startsWith(DaprResponse.class.getName())) {
-        if (type.getType() instanceof ParameterizedType) {
-          Type[] actualTypeArguments = ((ParameterizedType) type.getType()).getActualTypeArguments();
-          if (Objects.nonNull(actualTypeArguments) && actualTypeArguments.length > 0) {
-            type = TypeRef.get(actualTypeArguments[0]);
-          }
-        }
+        type = DaprResponse.getSubType(type);
         return (Mono<T>) Mono.just(new HttpDaprResponse<T>(r, objectSerializer, type));
       }
       T object = objectSerializer.deserialize(r.getBody(), type);

@@ -54,6 +54,9 @@ public class GrpcDaprResponse<T> implements DaprResponse<T> {
 
   @Override
   public T getData() throws IOException {
+    if (type.getType() == byte[].class) {
+      return (T) getBytes();
+    }
     return serializer.deserialize(data, type);
   }
 
@@ -61,4 +64,11 @@ public class GrpcDaprResponse<T> implements DaprResponse<T> {
   public Map<String, String> getHeaders() {
     return this.headers;
   }
+
+  @Override
+  public byte[] getSourceBytesData() {
+    return data;
+  }
+
+
 }
