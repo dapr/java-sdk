@@ -1,9 +1,10 @@
-## Dapr SDK for Java
+# Dapr SDK for Java
 
 [![Build Status](https://github.com/dapr/java-sdk/workflows/Build/badge.svg?event=push&branch=master)](https://github.com/dapr/java-sdk/actions?workflow=Build)
 [![Discord](https://img.shields.io/discord/778680217417809931)](https://discord.com/channels/778680217417809931/778749797242765342) 
 [![codecov](https://codecov.io/gh/dapr/java-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/dapr/java-sdk)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg)](https://opensource.org/licenses/Apache-2.0)
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B162%2Fgithub.com%2Fdapr%2Fjava-sdk.svg?type=shield)](https://app.fossa.com/projects/custom%2B162%2Fgithub.com%2Fdapr%2Fjava-sdk?ref=badge_shield)
 [![Maven Central](https://img.shields.io/maven-central/v/io.dapr/dapr-sdk.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22io.dapr%22%20AND%20a:%22dapr-sdk%22)
 
 This is the Dapr SDK for Java, including the following features:
@@ -14,12 +15,12 @@ This is the Dapr SDK for Java, including the following features:
 * State Store
 * Actors
 
-### Getting Started
+## Getting Started
 
-#### Pre-Requisites
+### Pre-Requisites
 * JDK 11 or above - the published jars are compatible with Java 8:
+    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [AdoptOpenJDK 11 - LTS](https://adoptopenjdk.net/)
-    * [Oracle's JDK 15](https://www.oracle.com/java/technologies/javase-jdk15-downloads.html)
     * [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
     * [OpenJDK](https://openjdk.java.net/)
 * Java IDE installed:
@@ -40,7 +41,7 @@ This is the Dapr SDK for Java, including the following features:
     * [New Maven project in IntelliJ](https://www.jetbrains.com/help/idea/maven-support.html#create_new_maven_project)
     * [Maven in 5 minutes](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
 
-#### Importing Dapr's Java SDK
+### Importing Dapr's Java SDK
 For a Maven project, add the following to your `pom.xml` file:
 ```xml
 <project>
@@ -51,19 +52,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.4.0</version>
+      <version>1.6.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.4.0</version>
+      <version>1.6.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.4.0</version>
+      <version>1.6.0</version>
     </dependency>
     ...
   </dependencies>
@@ -77,15 +78,15 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.4.0')
+    compile('io.dapr:dapr-sdk:1.6.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.4.0')
+    compile('io.dapr:dapr-sdk-actors:1.6.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.4.0')
+    compile('io.dapr:dapr-sdk-springboot:1.6.0')
 }
 ```
 
-#### Running the examples
+### Running the examples
 Clone this repository including the submodules:
 
 ```sh
@@ -111,11 +112,11 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [Exception handling](./examples/src/main/java/io/dapr/examples/exception)
 * [Unit testing](./examples/src/main/java/io/dapr/examples/unittesting)
 
-#### API Documentation
+### API Documentation
 
 Please, refer to our [Javadoc](https://dapr.github.io/java-sdk/) website.
 
-#### Reactor API
+### Reactor API
 
 The Java SDK for Dapr is built using [Project Reactor](https://projectreactor.io/). It provides an asynchronous API for Java. When consuming a result is consumed synchronously, as in the examples referenced above, the `block()` method is used.
 
@@ -131,7 +132,7 @@ Mono<Void> result = daprClient.publishEvent("mytopic", "my message");
 result.block();
 ```
 
-#### How to use a custom serializer
+### How to use a custom serializer
 
 This SDK provides a basic serialization for request/response objects but also for state objects. Applications should provide their own serialization for production scenarios.
 
@@ -161,7 +162,7 @@ This SDK provides a basic serialization for request/response objects but also fo
     ```
 
 
-#### Debug Java application or Dapr's Java SDK
+### Debug Java application or Dapr's Java SDK
 
 **In IntelliJ Community Edition, consider [debugging in IntelliJ](https://docs.dapr.io/developing-applications/ides/intellij/).**
 
@@ -184,13 +185,13 @@ DAPR_GRPC_PORT=5001
 
 Now you can go to your IDE (like Eclipse, for example) and debug your Java application, using port `3500` to call Dapr while also listening to port `3000` to expose Dapr's callback endpoint.
 
-#### Exception handling
+### Exception handling
 
 Most exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extends from `RuntimeException`, making it compatible with Project Reactor. See [example](./examples/src/main/java/io/dapr/examples/exception) for more details.
 
-### Development
+## Development
 
-#### Update proto files
+### Update proto files
 
 Change the properties below in [pom.xml](./pom.xml) to point to the desired reference URL in Git. Avoid pointing to `master` branch since it can change over time and create unpredictable behavior in the build.
 
@@ -206,3 +207,69 @@ Change the properties below in [pom.xml](./pom.xml) to point to the desired refe
   ...
 </project>
 ```
+
+### Running Integration Tests
+
+#### Pre-Requisites for ITs
+Along with the pre-requisites for [SDK](#pre-requisites) the following are needed. 
+
+* Docker installed 
+  * [Docker Compose](https://docs.docker.com/compose/install/) 
+  * [Docker Desktop](https://www.docker.com/products/docker-desktop)
+* Bash shell
+  * In Windows use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install)
+  * In Linux and Mac, default shells are enough
+
+#### Code
+
+The code for the tests are present inside the project [sdk-tests](./sdk-tests). This module alone can be imported as a separate project in IDEs. 
+This project depends on the rest of the JARs built by the other modules in the repo like [sdk](./sdk), [sdk-springboot](./sdk-springboot) etc.
+
+As a starting point for running Integration Tests, first run `mvn clean install` from the root of the repo to build the JARs for the different modules
+except the `sdk-tests` module.
+
+#### Run all the dependent services spun up during build
+
+During normal CI build, docker compose is used to bring up services like MongoDB, Hashicorp Vault, Apache Zookeeper, Kafka etc. 
+
+Similarly, all of these need to be run for running the ITs either individually or as a whole.
+
+Run the following commands from the root of the repo to start all the docker containers that the tests depend on.
+
+```bash
+docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
+docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
+docker-compose -f ./sdk-tests/deploy/local-test-vault.yml up -d
+```
+
+To stop the containers and services, run the following commands.
+
+```bash
+docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml down
+docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml down
+docker-compose -f ./sdk-tests/deploy/local-test-vault.yml down
+```
+
+
+#### Run all ITs from command line
+From the `java-sdk` repo root, change to the `sdk-tests` directory and run the following command.
+
+```bash
+## with current directory as /java-sdk/sdk-tests/
+
+mvn clean install
+```
+
+The above command runs all the integration tests present in the `sdk-tests` project. 
+
+#### Run Individual tests from IntelliJ
+
+In IntelliJ, go to `File > New > Project from Existing Sources...`. Import the `sdk-tests` project. 
+
+Once the project has been imported, the individual tests can be run normally as any Unit Tests, from the IDE itself.
+
+![intellij-integration-test](./examples/src/main/resources/img/intellij-integration-test.png).
+
+> Sometimes when the `sdk-tests` project does not build correctly, try `File > Invalidate Caches...`  and try restarting IntelliJ.
+
+You should be able to set breakpoints and Debug the test directly from IntelliJ itself as seen from the above image. 

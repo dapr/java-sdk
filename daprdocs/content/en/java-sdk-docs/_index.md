@@ -31,19 +31,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.4.0</version>
+      <version>1.6.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.4.0</version>
+      <version>1.6.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.4.0</version>
+      <version>1.6.0</version>
     </dependency>
     ...
   </dependencies>
@@ -57,11 +57,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.4.0')
+    compile('io.dapr:dapr-sdk:1.6.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.4.0')
+    compile('io.dapr:dapr-sdk-actors:1.6.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.4.0')
+    compile('io.dapr:dapr-sdk-springboot:1.6.0')
 }
 ```
 
@@ -72,7 +72,7 @@ You can fix this by specifying a compatible OkHttp version in your project to ma
 <dependency>
   <groupId>com.squareup.okhttp3</groupId>
   <artifactId>okhttp</artifactId>
-  <version>1.4.0</version>
+  <version>1.6.0</version>
 </dependency>
 ```
 
@@ -172,10 +172,24 @@ public class SubscriberController {
     });
   }
 
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
+          rule = @Rule(match = "event.type == 'myevent.v2'", priority = 1))
+  @PostMapping(path = "/testingtopicV2")
+  public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.println("Subscriber got: " + cloudEvent.getData());
+        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
 }
 ```
 
-- For a full list of state operations visit [How-To: Publish & subscribe]({{< ref howto-publish-subscribe.md >}}).
+- For a full guide on publishing messages and subscribing to a topic [How-To: Publish & subscribe]({{< ref howto-publish-subscribe.md >}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/pubsub/http) for code samples and instructions to try out pub/sub
 
 ### Interact with output bindings
@@ -241,6 +255,8 @@ public interface DemoActor {
 
 ### Get & Subscribe to application configurations
 
+> Note this is a preview API and thus will only be accessible via the DaprPreviewClient interface and not the normal DaprClient interface
+
 ```java
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
@@ -266,6 +282,77 @@ try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) 
 
 - For a full list of configuration operations visit [How-To: Manage configuration from a store]({{< ref howto-manage-configuration.md >}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/configuration) for code samples and instructions to try out different configuration operations.
+
+### Query saved state
+
+> Note this is a preview API and thus will only be accessible via the DaprPreviewClient interface and not the normal DaprClient interface
+
+```java
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.query.Query;
+import io.dapr.client.domain.query.Sorting;
+import io.dapr.client.domain.query.filters.EqFilter;
+
+try (DaprClient client = builder.build(); DaprPreviewClient previewClient = builder.buildPreviewClient()) {
+        String searchVal = args.length == 0 ? "searchValue" : args[0];
+        
+        // Create JSON data
+        Listing first = new Listing();
+        first.setPropertyType("apartment");
+        first.setId("1000");
+        ...
+        Listing second = new Listing();
+        second.setPropertyType("row-house");
+        second.setId("1002");
+        ...
+        Listing third = new Listing();
+        third.setPropertyType("apartment");
+        third.setId("1003");
+        ...
+        Listing fourth = new Listing();
+        fourth.setPropertyType("apartment");
+        fourth.setId("1001");
+        ...
+        Map<String, String> meta = new HashMap<>();
+        meta.put("contentType", "application/json");
+
+        // Save state
+        SaveStateRequest request = new SaveStateRequest(STATE_STORE_NAME).setStates(
+          new State<>("1", first, null, meta, null),
+          new State<>("2", second, null, meta, null),
+          new State<>("3", third, null, meta, null),
+          new State<>("4", fourth, null, meta, null)
+        );
+        client.saveBulkState(request).block();
+        
+        
+        // Create query and query state request
+
+        Query query = new Query()
+          .setFilter(new EqFilter<>("propertyType", "apartment"))
+          .setSort(Arrays.asList(new Sorting("id", Sorting.Order.DESC)));
+        QueryStateRequest request = new QueryStateRequest(STATE_STORE_NAME)
+          .setQuery(query);
+
+        // Use preview client to call query state API
+        QueryStateResponse<MyData> result = previewClient.queryState(request, MyData.class).block();
+        
+        // View Query state response 
+        System.out.println("Found " + result.getResults().size() + " items.");
+        for (QueryStateItem<Listing> item : result.getResults()) {
+          System.out.println("Key: " + item.getKey());
+          System.out.println("Data: " + item.getValue());
+        }
+}
+
+```
+- For a full list of configuration operations visit [How-To: Query state]({{< ref howto-state-query-api.md >}}).
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/querystate) for complete code sample.
 
 ## Related links
 - [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)

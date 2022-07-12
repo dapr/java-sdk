@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.it.pubsub.http;
 
+import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +43,25 @@ public class SubscriberController {
     return messagesByTopic.getOrDefault(topic, Collections.emptyList());
   }
 
+  private static final List<CloudEvent> messagesReceivedTestingTopic = new ArrayList();
+  private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
+  private static final List<CloudEvent> messagesReceivedTestingTopicV3 = new ArrayList();
+
+  @GetMapping(path = "/messages/testingtopic")
+  public List<CloudEvent> getMessagesReceivedTestingTopic() {
+    return messagesReceivedTestingTopic;
+  }
+
+  @GetMapping(path = "/messages/testingtopicV2")
+  public List<CloudEvent> getMessagesReceivedTestingTopicV2() {
+    return messagesReceivedTestingTopicV2;
+  }
+
+  @GetMapping(path = "/messages/testingtopicV3")
+  public List<CloudEvent> getMessagesReceivedTestingTopicV3() {
+    return messagesReceivedTestingTopicV3;
+  }
+
   @Topic(name = "testingtopic", pubsubName = "messagebus")
   @PostMapping("/route1")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent envelope) {
@@ -50,7 +70,39 @@ public class SubscriberController {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
         System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
-        messagesByTopic.compute("testingtopic", merge(envelope));
+        messagesReceivedTestingTopic.add(envelope);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "testingtopic", pubsubName = "messagebus",
+          rule = @Rule(match = "event.type == 'myevent.v2'", priority = 2))
+  @PostMapping(path = "/route1_v2")
+  public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
+        String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
+        System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        messagesReceivedTestingTopicV2.add(envelope);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "testingtopic", pubsubName = "messagebus",
+          rule = @Rule(match = "event.type == 'myevent.v3'", priority = 1))
+  @PostMapping(path = "/route1_v3")
+  public Mono<Void> handleMessageV3(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
+        String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
+        System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        messagesReceivedTestingTopicV3.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -109,6 +161,20 @@ public class SubscriberController {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         System.out.println("TTL topic Subscriber got message: " + message);
         messagesByTopic.compute("ttltopic", merge(envelope));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "testinglongvalues", pubsubName = "messagebus")
+  @PostMapping(path = "/testinglongvalues")
+  public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
+    return Mono.fromRunnable(() -> {
+      try {
+        Long message = cloudEvent.getData().getValue();
+        System.out.println("Subscriber got: " + message);
+        messagesByTopic.compute("testinglongvalues", merge(cloudEvent));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
