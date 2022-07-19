@@ -778,7 +778,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<SubscribeConfigurationResponse> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request) {
     return DaprException.wrapFlux(new UnsupportedOperationException());
   }
 
@@ -786,7 +786,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<UnsubscribeConfigurationResponse> unsubscribeToConfiguration(UnsubscribeConfigurationRequest request) {
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
     return DaprException.wrapMono(new UnsupportedOperationException());
   }
 

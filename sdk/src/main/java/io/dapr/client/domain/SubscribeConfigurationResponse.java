@@ -17,11 +17,18 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Domain object for response from subscribeToConfiguration API.
+ * Domain object for response from subscribeConfiguration API.
  */
 public class SubscribeConfigurationResponse {
 
-  private final String id;
+  /**
+   * Subscription id for the items subscribed to.
+   */
+  private final String subscriptionId;
+
+  /**
+   * Map of Configuration key to {@link ConfigurationItem}
+   */
   private final Map<String, ConfigurationItem> items;
 
   /**
@@ -31,7 +38,7 @@ public class SubscribeConfigurationResponse {
    * @param items     Map of configuration items user subscribed to.
    */
   public SubscribeConfigurationResponse(String id, Map<String, ConfigurationItem> items) {
-    this.id = id;
+    this.subscriptionId = id;
     this.items = Collections.unmodifiableMap(items);
   }
 
@@ -39,7 +46,7 @@ public class SubscribeConfigurationResponse {
     return items;
   }
 
-  public String getId() {
-    return id;
+  public String getSubscriptionId() {
+    return subscriptionId;
   }
 }

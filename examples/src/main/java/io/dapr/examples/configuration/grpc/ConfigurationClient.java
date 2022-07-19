@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -51,7 +50,7 @@ public class ConfigurationClient {
       getConfigurationsUsingVarargs(client);
       getConfigurations(client);
       subscribeConfigurationRequestWithSubscribe(client);
-      unsubscribeToConfigurationItems(client);
+      unsubscribeConfigurationItems(client);
     }
   }
 
@@ -117,7 +116,7 @@ public class ConfigurationClient {
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
         CONFIG_STORE_NAME, Collections.singletonList("myconfig1"));
     Runnable subscribeTask = () -> {
-      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeToConfiguration(req);
+      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
       disposableAtomicReference.set(outFlux
           .subscribe(
               cis -> {
@@ -148,15 +147,15 @@ public class ConfigurationClient {
    *
    * @param client DaprPreviewClient object
    */
-  public static void unsubscribeToConfigurationItems(DaprPreviewClient client) {
+  public static void unsubscribeConfigurationItems(DaprPreviewClient client) {
     System.out.println("Subscribing to key: myconfig2");
     AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
     AtomicReference<String> subscriptionId = new AtomicReference<>();
     Runnable subscribeTask = () -> {
-      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeToConfiguration(CONFIG_STORE_NAME, "myconfig2");
+      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(CONFIG_STORE_NAME, "myconfig2");
       disposableAtomicReference.set(outFlux
           .subscribe(cis -> {
-                subscriptionId.set(cis.getId());
+                subscriptionId.set(cis.getSubscriptionId());
                 cis.getItems().forEach((k,v) -> print(v,k));
               }
           ));
@@ -178,12 +177,16 @@ public class ConfigurationClient {
     // To ensure key starts getting updated
     inducingSleepTime(1000);
 
-    UnsubscribeConfigurationResponse res = client.unsubscribeToConfiguration(
+    UnsubscribeConfigurationResponse res = client.unsubscribeConfiguration(
         subscriptionId.get(),
         CONFIG_STORE_NAME
     ).block();
-    assert res != null;
-    System.out.println("IsUnsubscribed : " + res.getIsUnsubscribed());
+
+    if (res != null) {
+      System.out.println("Is Unsubscribe successful: " + res.getIsUnsubscribed());
+    } else {
+      System.out.println("Unsubscribe unsuccessful!!");
+    }
   }
 
   private static void inducingSleepTime(int timeInMillis) {

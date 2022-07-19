@@ -546,32 +546,32 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
-  public Flux<SubscribeConfigurationResponse> subscribeToConfiguration(String storeName, String... keys) {
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, String... keys) {
     List<String> listOfKeys = filterEmptyKeys(keys);
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
-    return this.subscribeToConfiguration(request);
+    return this.subscribeConfiguration(request);
   }
 
   /**
    * {@inheritDoc}
    */
-  public Flux<SubscribeConfigurationResponse> subscribeToConfiguration(
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, keys);
     request.setMetadata(metadata);
-    return this.subscribeToConfiguration(request);
+    return this.subscribeConfiguration(request);
   }
 
   /**
    * {@inheritDoc}
    */
-  public Mono<UnsubscribeConfigurationResponse> unsubscribeToConfiguration(
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(
       String id,
       String storeName) {
     UnsubscribeConfigurationRequest request = new UnsubscribeConfigurationRequest(id, storeName);
-    return this.unsubscribeToConfiguration(request);
+    return this.unsubscribeConfiguration(request);
   }
 
   private List<String> filterEmptyKeys(String... keys) {

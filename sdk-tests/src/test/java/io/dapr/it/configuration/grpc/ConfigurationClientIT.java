@@ -109,12 +109,12 @@ public class ConfigurationClientIT extends BaseIT {
     }
 
     @Test
-    public void subscribeToConfiguration() {
+    public void subscribeConfiguration() {
         List<String> updatedValues = new ArrayList<>();
         AtomicReference<Disposable> disposable = new AtomicReference<>();
         Runnable subscribeTask = () -> {
             Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
-                    .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
+                    .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
             disposable.set(outFlux.subscribe(update -> {
                 updatedValues.add(update.getItems().entrySet().stream().findFirst().get().getValue().getValue());
             }));
@@ -145,16 +145,16 @@ public class ConfigurationClientIT extends BaseIT {
     }
 
     @Test
-    public void unsubscribeToConfigurationItems() {
+    public void unsubscribeConfigurationItems() {
         List<String> updatedValues = new ArrayList<>();
         AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
         AtomicReference<String> subscriptionId = new AtomicReference<>();
         Runnable subscribeTask = () -> {
             Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
-                    .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1");
+                    .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1");
             disposableAtomicReference.set(outFlux
                 .subscribe(update -> {
-                        subscriptionId.set(update.getId());
+                        subscriptionId.set(update.getSubscriptionId());
                         updatedValues.add(update.getItems().entrySet().stream().findFirst().get().getValue().getValue());
                     }
                 ));
@@ -176,7 +176,7 @@ public class ConfigurationClientIT extends BaseIT {
         // To ensure key starts getting updated
         inducingSleepTime(1000);
 
-        UnsubscribeConfigurationResponse res = daprPreviewClient.unsubscribeToConfiguration(
+        UnsubscribeConfigurationResponse res = daprPreviewClient.unsubscribeConfiguration(
             subscriptionId.get(),
             CONFIG_STORE_NAME
         ).block();

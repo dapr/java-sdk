@@ -89,9 +89,9 @@ public interface DaprPreviewClient extends AutoCloseable {
    *
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be subscribed
-   * @return Flux of Map of configuration items
+   * @return Flux of {@link SubscribeConfigurationResponse} instance
    */
-  Flux<SubscribeConfigurationResponse> subscribeToConfiguration(String storeName, String... keys);
+  Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, String... keys);
 
   /**
    * Subscribe to the keys for any change.
@@ -99,35 +99,35 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be subscribed
    * @param metadata  optional metadata
-   * @return Flux of Map of configuration items
+   * @return Flux of {@link SubscribeConfigurationResponse} instance
    */
-  Flux<SubscribeConfigurationResponse> subscribeToConfiguration(String storeName, List<String> keys,
+  Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, List<String> keys,
                                                                 Map<String, String> metadata);
 
   /**
    * Subscribe to the keys for any change.
    *
    * @param request request for subscribing to any change for the given keys in request
-   * @return Flux of Map of configuration items
+   * @return Flux of {@link SubscribeConfigurationResponse} instance
    */
-  Flux<SubscribeConfigurationResponse> subscribeToConfiguration(SubscribeConfigurationRequest request);
+  Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request);
 
   /**
    * Subscribe to the keys for any change.
    *
-   * @param id subscription id returned by subscribeToConfiguration API.
+   * @param id subscription id returned by subscribeConfiguration API.
    * @param storeName Name of the configuration store.
-   * @return Mono of UnsubscribeConfigurationResponse.
+   * @return Mono of {@link UnsubscribeConfigurationResponse} instance.
    */
-  Mono<UnsubscribeConfigurationResponse> unsubscribeToConfiguration(String id, String storeName);
+  Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(String id, String storeName);
 
   /**
    * Subscribe to the keys for any change.
    *
    * @param request request for unsubscribing to any change for the given subscription id in request
-   * @return Mono of UnsubscribeConfigurationResponse
+   * @return Mono of {@link UnsubscribeConfigurationResponse} instance.
    */
-  Mono<UnsubscribeConfigurationResponse> unsubscribeToConfiguration(UnsubscribeConfigurationRequest request);
+  Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request);
 
   /**
    * Query for states using a query string.

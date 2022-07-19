@@ -17,7 +17,13 @@ package io.dapr.client.domain;
  * Domain object for unsubscribe response.
  */
 public class UnsubscribeConfigurationResponse {
+  /**
+   * Boolean denoting whether unsubscribe API call is success/failure.
+   */
   private final boolean isUnsubscribed;
+  /**
+   * Unsubscribe API response message.
+   */
   private final String message;
 
   /**

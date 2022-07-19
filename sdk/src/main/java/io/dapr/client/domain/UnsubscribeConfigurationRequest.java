@@ -13,33 +13,35 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Request to unsubscribe to one or more configuration items using subscription id.
  */
 public class UnsubscribeConfigurationRequest {
+  /**
+   * Name of the configuration store.
+   */
   private final String storeName;
-  private final String id;
+  /**
+   * Subscription id for the items to unsubscribe to.
+   */
+  private final String subscriptionId;
 
   /**
    * Constructor for UnsubscribeConfigurationRequest.
    *
-   * @param id        Subscription id for the items subscribed to.This id is returned by subscribeToConfiguration API.
+   * @param id        Subscription id for the items subscribed to.This id is returned by subscribeConfiguration API.
    * @param storeName Name of the configuration store.
    */
   public UnsubscribeConfigurationRequest(String id, String storeName) {
     this.storeName = storeName;
-    this.id = id;
+    this.subscriptionId = id;
   }
 
   public String getStoreName() {
     return storeName;
   }
 
-  public String getId() {
-    return id;
+  public String getSubscriptionId() {
+    return subscriptionId;
   }
 }

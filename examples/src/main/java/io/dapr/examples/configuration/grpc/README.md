@@ -48,6 +48,110 @@ docker exec dapr_redis redis-cli MSET myconfig1 "val1||1" myconfig2 "val2||1" my
 
 ### Running the example
 
+This example uses the Java SDK Dapr client in order to **Get, Subscribe and Unsubscribe** from configuration items and utilizes `Redis` as configuration store.
+`ConfigurationClient.java` is the example class demonstrating all 3 features.
+Kindly check [DaprPreviewClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprPreviewClient.java) for detailed description of the supported APIs.
+
+```java
+public class ConfigurationClient {
+    // ... 
+  /**
+   * Executes various methods to check the different apis.
+   * @param args arguments
+   * @throws Exception throws Exception
+   */
+  public static void main(String[] args) throws Exception {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+      System.out.println("Using preview client...");
+      getConfigurationForaSingleKey(client);
+      getConfigurationsUsingVarargs(client);
+      getConfigurations(client);
+      subscribeConfigurationRequestWithSubscribe(client);
+      unsubscribeConfigurationItems(client);
+    }
+  }
+
+  /**
+   * Gets configuration for a single key.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void getConfigurationForaSingleKey(DaprPreviewClient client) {
+    System.out.println("*******trying to retrieve configuration given a single key********");
+    try {
+      Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, keys.get(0));
+      // ..
+    } catch (Exception ex) {}
+  }
+
+  /**
+   * Gets configurations for varibale no. of arguments.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void getConfigurationsUsingVarargs(DaprPreviewClient client) {
+    System.out.println("*******trying to retrieve configurations for a variable no. of keys********");
+    try {
+      Mono<List<ConfigurationItem>> items =
+          client.getConfiguration(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
+      // ..
+    } catch (Exception ex) {}
+  }
+
+  /**
+   * Gets configurations for a list of keys.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void getConfigurations(DaprPreviewClient client) {
+    System.out.println("*******trying to retrieve configurations for a list of keys********");
+    List<String> keys = new ArrayList<>();
+    // ...
+    GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
+    try {
+      Mono<List<ConfigurationItem>> items = client.getConfiguration(req);
+      // ..
+    } catch (Exception ex) {}
+  }
+
+  /**
+   * Subscribe to a list of keys.Optional to above iterator way of retrieving the changes
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void subscribeConfigurationRequestWithSubscribe(DaprPreviewClient client) {
+    System.out.println("Subscribing to key: myconfig1");
+    // ...
+    Runnable subscribeTask = () -> {
+      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
+      // ...
+    };
+    // ..
+  }
+
+  /**
+   * Unsubscribe using subscription id.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void unsubscribeConfigurationItems(DaprPreviewClient client) {
+    System.out.println("Subscribing to key: myconfig2");
+    // ..
+    Runnable subscribeTask = () -> {
+      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(CONFIG_STORE_NAME, "myconfig2");
+      // ...
+    };
+    // ...
+
+    UnsubscribeConfigurationResponse res = client.unsubscribeConfiguration(
+        subscriptionId.get(),
+        CONFIG_STORE_NAME
+    ).block();
+    // ..
+  }
+}
+```
+
 Get into the examples' directory:
 ```sh
 cd examples
@@ -78,7 +182,7 @@ expected_stdout_lines:
   - "== APP == update_myconfigvalue3 : key ->myconfig2"
   - "== APP == update_myconfigvalue4 : key ->myconfig2"
   - "== APP == update_myconfigvalue5 : key ->myconfig2"
-  - "== APP == IsUnsubscribed : true"
+  - "== APP == Is Unsubscribe successful: true"
 background: true
 sleep: 10
 -->

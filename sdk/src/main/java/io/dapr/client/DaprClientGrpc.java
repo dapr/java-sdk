@@ -819,7 +819,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<SubscribeConfigurationResponse> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
@@ -861,10 +861,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<UnsubscribeConfigurationResponse> unsubscribeToConfiguration(UnsubscribeConfigurationRequest request) {
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
-      final String id = request.getId();
+      final String id = request.getSubscriptionId();
 
       if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");

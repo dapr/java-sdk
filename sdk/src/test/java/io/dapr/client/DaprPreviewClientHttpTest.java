@@ -65,14 +65,14 @@ public class DaprPreviewClientHttpTest {
   @Test
   public void subscribeConfigurations() {
     assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.subscribeToConfiguration(CONFIG_STORE_NAME, "key1", "key2").blockFirst();
+      daprPreviewClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "key1", "key2").blockFirst();
     });
   }
 
   @Test
   public void unsubscribeConfigurations() {
     assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.unsubscribeToConfiguration("id", CONFIG_STORE_NAME).block();
+      daprPreviewClientHttp.unsubscribeConfiguration("id", CONFIG_STORE_NAME).block();
     });
   }
 
