@@ -26,6 +26,7 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.QueryMethodResponse;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SaveStateRequest;
@@ -296,7 +297,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    */
   @Override
   public <T> Mono<State<T>> getState(
-      String storeName, String key, StateOptions options, TypeRef<T> type) {
+          String storeName, String key, StateOptions options, TypeRef<T> type) {
     GetStateRequest request = new GetStateRequest(storeName, key)
         .setStateOptions(options);
     return this.getState(request, type);
@@ -386,6 +387,14 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   @Override
   public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, Class<T> clazz) {
     return this.queryState(request, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryMethodResponse<T>> queryMethod(InvokeMethodRequest request, Class<T> clazz) {
+    return this.queryMethod(request, TypeRef.get(clazz));
   }
 
   /**
@@ -542,6 +551,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
+  @Override
   public Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys) {
     List<String> listOfKeys = filterEmptyKeys(keys);
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
@@ -551,6 +561,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
+  @Override
   public Flux<List<ConfigurationItem>> subscribeToConfiguration(
       String storeName,
       List<String> keys,

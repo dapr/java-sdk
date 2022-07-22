@@ -16,15 +16,20 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.QueryMethodResponse;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
@@ -33,6 +38,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -387,5 +393,54 @@ public class DaprPreviewClientGrpcTest {
 			it.setError(item.getError());
 		}
 		return it.build();
+	}
+
+
+
+	private ByteString serialize(Object value) throws IOException {
+		byte[] byteValue = new ObjectSerializer().serialize(value);
+		return ByteString.copyFrom(byteValue);
+	}
+
+	private Any getAny(Object value) throws IOException {
+		return Any.newBuilder().setValue(serialize(value)).build();
+	}
+
+
+	@Test
+	public void invokeServiceTestReturnResponse() throws IOException {
+		String expected = "Value";
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+			observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
+		InvokeMethodRequest req = new InvokeMethodRequest("appId", "method")
+				.setBody("request")
+				.setHttpExtension(HttpExtension.NONE);
+		Mono<QueryMethodResponse<String>> result = previewClient.queryMethod(req, new TypeRef<String>() {});
+		QueryMethodResponse<String> res = result.block();
+
+		assertEquals(expected, res.getResult());
+	}
+
+	@Test
+	public void invokeServiceTestReturnResponseWithBytes() throws IOException {
+		String expected = "Value";
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
+			observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
+
+		InvokeMethodRequest req = new InvokeMethodRequest("appId", "method")
+				.setBody("request")
+				.setHttpExtension(HttpExtension.NONE);
+		Mono<QueryMethodResponse<byte[]>> result = previewClient.queryMethod(req, new TypeRef<byte[]>() {});
+		QueryMethodResponse<byte[]> res = result.block();
+		assertEquals(expected, new String(res.getResult()));
 	}
 }

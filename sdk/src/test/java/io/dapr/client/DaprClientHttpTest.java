@@ -24,7 +24,6 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.response.DaprResponse;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -40,7 +39,6 @@ import okio.Buffer;
 import okio.BufferedSink;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.Assertions;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
@@ -416,68 +414,6 @@ public class DaprClientHttpTest {
     Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
         .subscriberContext(it -> it.putAll(context));
     result.block();
-  }
-
-  @Test
-  public void invokeServiceReturnResponse() throws IOException {
-    String resultString = "request success";
-    String resultHeaderName = "test-header";
-    String resultHeaderValue = "1";
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-          .respond(resultString)
-          .addHeader(resultHeaderName,resultHeaderValue);
-
-    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
-        .setBody("request")
-        .setHttpExtension(HttpExtension.POST);
-    Mono<DaprResponse<String>> result = daprClientHttp.invokeMethod(req, new TypeRef<DaprResponse<String>>() {});
-    DaprResponse<String> response = result.block();
-    Assertions.assertNotNull(response);
-    Assertions.assertEquals(200, response.getCode());
-    Assertions.assertEquals(resultString,response.getData());
-    Assertions.assertEquals(resultHeaderValue,response.getHeaders().get(resultHeaderName));
-  }
-
-  @Test
-  public void invokeServiceReturnResponseBytes() throws IOException {
-    String resultString = "request success";
-    String resultHeaderName = "test-header";
-    String resultHeaderValue = "1";
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-          .respond(resultString)
-          .addHeader(resultHeaderName,resultHeaderValue);
-
-    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
-        .setBody("request")
-        .setHttpExtension(HttpExtension.POST);
-
-    Mono<DaprResponse> result = daprClientHttp.invokeMethod(req, new TypeRef<DaprResponse>() {});
-    DaprResponse response = result.block();
-    Assertions.assertNotNull(response);
-    Assertions.assertEquals(200, response.getCode());
-    Assertions.assertEquals(resultString,new String((byte[]) response.getData()));
-    Assertions.assertEquals(resultHeaderValue,response.getHeaders().get(resultHeaderName));
-  }
-
-  @Test
-  public void invokeBinding() throws IOException {
-    String resultString = "request success";
-    String resultHeaderName = "test-header";
-    String resultHeaderValue = "1";
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-        .respond(resultString)
-        .addHeader(resultHeaderName,resultHeaderValue);
-
-    Mono<DaprResponse<String>> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", new TypeRef<DaprResponse<String>>() {});
-    DaprResponse<String> response = mono.block();
-    Assertions.assertNotNull(response);
-    Assertions.assertEquals(200, response.getCode());
-    Assertions.assertEquals(resultString,response.getData());
-    Assertions.assertEquals(resultHeaderValue,response.getHeaders().get(resultHeaderName));
   }
 
   @Test

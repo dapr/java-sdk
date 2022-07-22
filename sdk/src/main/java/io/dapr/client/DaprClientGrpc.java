@@ -29,6 +29,7 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.QueryMethodResponse;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -37,8 +38,6 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.response.DaprResponse;
-import io.dapr.client.domain.response.GrpcDaprResponse;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
@@ -56,6 +55,7 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -64,13 +64,12 @@ import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -192,45 +191,18 @@ public class DaprClientGrpc extends AbstractDaprClient {
   @Override
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
-      String appId = invokeMethodRequest.getAppId();
-      String method = invokeMethodRequest.getMethod();
-      Object body = invokeMethodRequest.getBody();
-      HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
-      DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
-          httpExtension,
-          appId,
-          method,
-          body);
-      // Regarding missing metadata in method invocation for gRPC:
-      // gRPC to gRPC does not handle metadata in Dapr runtime proto.
-      // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
-
-      return Mono.subscriberContext().flatMap(
-              context -> this.<CommonProtos.InvokeResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeService(envelope, it)
-              )
-          ).flatMap(
+      return queryMethod(invokeMethodRequest).flatMap(
               it -> {
                 try {
-                  if (type.getType().getTypeName().startsWith(DaprResponse.class.getName())) {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE,it.getContentType());
-                    return getMono(type, it.getData().getValue().toByteArray(),headers);
-                  }
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
-                } catch (IOException e)  {
-                  throw DaprException.propagate(e);
+                } catch (IOException e) {
+                  return DaprException.wrapMono(e);
                 }
               }
       );
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
+    } catch (Exception e) {
+      return DaprException.wrapMono(e);
     }
-  }
-
-  private <T> Mono<T> getMono(TypeRef<T> type, byte[] data, Map<String,String> headers) {
-    type = DaprResponse.getSubType(type);
-    return (Mono<T>) Mono.just(new GrpcDaprResponse<T>(data, headers,objectSerializer, type));
   }
 
   /**
@@ -269,9 +241,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
           ).flatMap(
               it -> {
                 try {
-                  if (type.getType().getTypeName().startsWith(DaprResponse.class.getName())) {
-                    return getMono(type, it.getData().toByteArray(),it.getMetadataMap());
-                  }
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
                 } catch (IOException e) {
                   throw DaprException.propagate(e);
@@ -734,6 +703,64 @@ public class DaprClientGrpc extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  @Override
+  public <T> Mono<QueryMethodResponse<T>> queryMethod(InvokeMethodRequest request, TypeRef<T> type) {
+    try {
+      return queryMethod(request).flatMap(r -> {
+        try {
+          return Mono.justOrEmpty(buildQueryMethodResponse(r, type));
+        } catch (Exception e) {
+          return DaprException.wrapMono(e);
+        }
+      });
+    } catch (Exception e) {
+      return DaprException.wrapMono(e);
+    }
+  }
+
+  @NotNull
+  private Mono<CommonProtos.InvokeResponse> queryMethod(InvokeMethodRequest invokeMethodRequest) throws IOException {
+    String appId = invokeMethodRequest.getAppId();
+    String method = invokeMethodRequest.getMethod();
+    Object body = invokeMethodRequest.getBody();
+    HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
+    DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
+            httpExtension,
+            appId,
+            method,
+            body);
+    // Regarding missing metadata in method invocation for gRPC:
+    // gRPC to gRPC does not handle metadata in Dapr runtime proto.
+    // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
+
+    Mono<CommonProtos.InvokeResponse> invokeResponseMono = Mono.subscriberContext().flatMap(
+            context -> this.<CommonProtos.InvokeResponse>createMono(
+                    it -> intercept(context, asyncStub).invokeService(envelope, it)
+            )
+    );
+    return invokeResponseMono;
+  }
+
+  private <T> QueryMethodResponse<T> buildQueryMethodResponse(CommonProtos.InvokeResponse response,
+                                                              TypeRef<T> type) throws IOException {
+    Map<String, String> headers = new HashMap<>();
+    headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE,response.getContentType());
+    byte[] respBody = response.getData().getValue().toByteArray();
+    if (respBody.length > 1 && respBody[0] == 34) {
+      respBody = Arrays.copyOfRange(respBody, 1, respBody.length - 1);
+    }
+    Object data;
+    if (type.getType() == String.class) {
+      data = new String(respBody, StandardCharsets.UTF_8);
+    } else if (type.getType() == byte[].class) {
+      data = respBody;
+    } else {
+      data = objectSerializer.deserialize(respBody, type);
+    }
+
+    return new QueryMethodResponse<T>(200, headers, (T) data);
   }
 
   private <T> QueryStateItem<T> buildQueryStateKeyValue(
