@@ -167,7 +167,12 @@ public class ConfigurationClientIT extends BaseIT {
         Runnable updateKeys = () -> {
             int i = 1;
             while (i <= 5) {
-                executeDockerCommand("myconfigkey1", i);
+                String[] command = new String[] {
+                        "docker", "exec", "dapr_redis", "redis-cli",
+                        "SET",
+                        "myconfigkey1", "update_myconfigvalue" + i + "||2"
+                };
+                executeDockerCommand(command);
                 i++;
             }
         };
@@ -203,24 +208,6 @@ public class ConfigurationClientIT extends BaseIT {
     }
 
     private static void executeDockerCommand(String[] command) {
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        Process process = null;
-        try {
-            process = processBuilder.start();
-            process.waitFor();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void executeDockerCommand(String key, int postfix) {
-        String[] command = new String[] {
-            "docker", "exec", "dapr_redis", "redis-cli",
-            "SET",
-            key, "update_myconfigvalue" + postfix + "||2"
-        };
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         Process process = null;
         try {

@@ -49,34 +49,6 @@ public class DaprPreviewClientHttpTest {
   }
 
   @Test
-  public void getConfigurationWithSingleKey() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "key").block();
-    });
-  }
-
-  @Test
-  public void getConfiguration() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "key1", "key2").block();
-    });
-  }
-
-  @Test
-  public void subscribeConfigurations() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "key1", "key2").blockFirst();
-    });
-  }
-
-  @Test
-  public void unsubscribeConfigurations() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.unsubscribeConfiguration("id", CONFIG_STORE_NAME).block();
-    });
-  }
-
-  @Test
   public void queryStateExceptionsTest() {
     assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.queryState("", "query", TypeRef.BOOLEAN).block();

@@ -63,7 +63,7 @@ public class ConfigurationClient {
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      getConfigurationForaSingleKey(client);
+      getConfigurationForSingleKey(client);
       getConfigurationsUsingVarargs(client);
       getConfigurations(client);
       subscribeConfigurationRequestWithSubscribe(client);

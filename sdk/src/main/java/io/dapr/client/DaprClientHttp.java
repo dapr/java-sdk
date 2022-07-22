@@ -771,7 +771,57 @@ public class DaprClientHttp extends AbstractDaprClient {
    */
   @Override
   public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
-    return DaprException.wrapMono(new UnsupportedOperationException());
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final Map<String, String> metadata = request.getMetadata();
+      final List<String> keys = request.getKeys();
+      if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
+      }
+      if (keys.isEmpty()) {
+        throw new IllegalArgumentException("Keys can not be empty or null");
+      }
+
+      String[] pathSegments = new String[] {DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName };
+      Map<String, List<String>> queryParams = new HashMap<>();
+      queryParams.put("key", Collections.unmodifiableList(keys));
+
+      return Mono.subscriberContext().flatMap(
+              context -> this.client
+                      .invokeApi(
+                              DaprHttp.HttpMethods.GET.name(),
+                              pathSegments, queryParams,
+                              (String) null, null, context)
+      ).map(
+              response -> {
+                try {
+                  return buildConfigItems(response);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              }
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private Map<String, ConfigurationItem> buildConfigItems(DaprHttp.Response response) throws IOException {
+    JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+    Map<String, ConfigurationItem> result = new HashMap<>();
+    System.out.println(root.toPrettyString());
+    System.out.println("getConfiguration ends.....");
+    Map m = INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
+    System.out.println(m.toString()+ " <<<< deserialse >> ");
+//    for (Iterator<JsonNode> it = root.elements(); it.hasNext(); ) {
+//      JsonNode node = it.next();
+//      String key = node.path("key").asText();
+//      String value = node.path("value").asText();
+//      String version = node.path("version").asText();
+//      ConfigurationItem configurationItem = new ConfigurationItem(key, value, version);
+//      result.add(configurationItem);
+//    }
+    return result;
   }
 
   /**
