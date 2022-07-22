@@ -15,6 +15,8 @@ package io.dapr.client;
 
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.QueryMethodResponse;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -223,4 +225,24 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return A Mono of QueryStateResponse of type T.
    */
   <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type);
+
+  /**
+   * Query for method using a query request.
+   *
+   * @param request Query request object.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryMethodResponse<T>> queryMethod(InvokeMethodRequest request, Class<T> clazz);
+
+  /**
+   * Query for method using a query request.
+   *
+   * @param request Query request object.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryMethodResponse<T>> queryMethod(InvokeMethodRequest request, TypeRef<T> type);
 }

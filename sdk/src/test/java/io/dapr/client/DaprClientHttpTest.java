@@ -417,7 +417,7 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void invokeBinding() {
+  public void invokeBindingReturnResponse() {
     Map<String, String> map = new HashMap<>();
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")

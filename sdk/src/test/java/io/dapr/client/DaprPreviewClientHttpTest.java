@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.QueryMethodResponse;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.query.Query;
@@ -24,6 +27,12 @@ import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -120,4 +129,49 @@ public class DaprPreviewClientHttpTest {
     assertEquals("result must be same", "testData", response.getResults().get(0).getValue());
     assertEquals("result must be same", "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag());
   }
+
+
+  @Test
+  public void invokeServiceReturnResponse() throws IOException {
+    String resultString = "request success";
+    String resultHeaderName = "test-header";
+    String resultHeaderValue = "1";
+    mockInterceptor.addRule()
+            .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+            .respond(resultString)
+            .addHeader(resultHeaderName,resultHeaderValue);
+
+    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
+            .setBody("request")
+            .setHttpExtension(HttpExtension.POST);
+    Mono<QueryMethodResponse<String>> result = daprPreviewClientHttp.queryMethod(req, new TypeRef<String>() {});
+    QueryMethodResponse<String> response = result.block();
+    Assertions.assertNotNull(response);
+    Assertions.assertEquals(200, response.getCode());
+    Assertions.assertEquals(resultString,response.getResult());
+    Assertions.assertEquals(resultHeaderValue,response.getHeaders().get(resultHeaderName));
+  }
+
+  @Test
+  public void invokeServiceReturnResponseBytes() throws IOException {
+    String resultString = "request success";
+    String resultHeaderName = "test-header";
+    String resultHeaderValue = "1";
+    mockInterceptor.addRule()
+            .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+            .respond(resultString)
+            .addHeader(resultHeaderName,resultHeaderValue);
+
+    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
+            .setBody("request")
+            .setHttpExtension(HttpExtension.POST);
+
+    Mono<QueryMethodResponse<byte[]>> result = daprPreviewClientHttp.queryMethod(req, new TypeRef<byte[]>() {});
+    QueryMethodResponse<byte[]> response = result.block();
+    Assertions.assertNotNull(response);
+    Assertions.assertEquals(200, response.getCode());
+    Assertions.assertEquals(resultString,new String(response.getResult()));
+    Assertions.assertEquals(resultHeaderValue,response.getHeaders().get(resultHeaderName));
+  }
+
 }
