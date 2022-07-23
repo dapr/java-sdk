@@ -45,6 +45,7 @@ import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
+import io.dapr.v1.DaprProtos;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -773,7 +774,6 @@ public class DaprClientHttp extends AbstractDaprClient {
   public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
-      final Map<String, String> metadata = request.getMetadata();
       final List<String> keys = request.getKeys();
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
@@ -829,7 +829,43 @@ public class DaprClientHttp extends AbstractDaprClient {
    */
   @Override
   public Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request) {
-    return DaprException.wrapFlux(new UnsupportedOperationException());
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final List<String> keys = request.getKeys();
+
+      if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
+      }
+      if (keys.isEmpty()) {
+        throw new IllegalArgumentException("Keys can not be null or empty.");
+      }
+
+      String[] pathSegments =
+              new String[] { DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName, "subscribe" };
+      Map<String, List<String>> queryParams = new HashMap<>();
+      queryParams.put("key", Collections.unmodifiableList(keys));
+
+      return Flux.from(this.client.invokeApi(
+              DaprHttp.HttpMethods.GET.name(),
+              pathSegments, queryParams,
+              (String) null, null, null)
+      ).map(it -> {
+        try {
+          return buildResp(it);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapFlux(ex);
+    }
+  }
+
+  private SubscribeConfigurationResponse buildResp(DaprHttp.Response response) throws IOException {
+    JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+    System.out.println("====== Subscribe=========");
+    System.out.println(root.toPrettyString());
+    return new SubscribeConfigurationResponse("some ID", new ArrayList<>());
   }
 
   /**
@@ -837,7 +873,41 @@ public class DaprClientHttp extends AbstractDaprClient {
    */
   @Override
   public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
-    return DaprException.wrapMono(new UnsupportedOperationException());
+    try {
+      final String id = request.getSubscriptionId();
+
+      if (id.isEmpty()) {
+        throw new IllegalArgumentException("Subscription id can not be null or empty.");
+      }
+
+      String[] pathSegments = new String[] {DaprHttp.ALPHA_1_API_VERSION, "configuration", id, "unsubscribe" };
+
+      return Mono.subscriberContext().flatMap(
+              context -> this.client
+                      .invokeApi(
+                              DaprHttp.HttpMethods.GET.name(),
+                              pathSegments, null,
+                              (String) null, null, context)
+      ).map(
+              response -> {
+                try {
+                  return buildUnsubscribeConfigResp(response);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              }
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private UnsubscribeConfigurationResponse buildUnsubscribeConfigResp(DaprHttp.Response response) throws IOException {
+    JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+    boolean ok = root.path("ok").asBoolean();
+    String message = root.path("message").asText();
+    UnsubscribeConfigurationResponse result = new UnsubscribeConfigurationResponse(ok, message);
+    return result;
   }
 
   /**
