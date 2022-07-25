@@ -25,6 +25,7 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -83,6 +84,8 @@ public class DaprClientGrpcTest {
   private static final String STATE_STORE_NAME = "MyStateStore";
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
+
+  private static final String LOCK_STORE_NAME = "MyLockStore";
 
   private Closeable closeable;
   private DaprGrpc.DaprStub daprStub;
@@ -2153,6 +2156,57 @@ public class DaprClientGrpcTest {
 
     Mono<Void> result = client.shutdown();
     result.block();
+  }
+
+  @Test
+  public void tryLock() {
+
+    DaprProtos.TryLockResponse.Builder builder = DaprProtos.TryLockResponse.newBuilder()
+            .setSuccess(true);
+
+    DaprProtos.TryLockResponse response = builder.build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.TryLockRequest req = invocation.getArgument(0);
+      assertEquals(LOCK_STORE_NAME, req.getStoreName());
+      assertEquals("1", req.getResourceId());
+      assertEquals("owner", req.getLockOwner());
+      assertEquals(10, req.getExpiryInSeconds());
+
+      StreamObserver<DaprProtos.TryLockResponse> observer =
+              (StreamObserver<DaprProtos.TryLockResponse>) invocation.getArguments()[1];
+      observer.onNext(response);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).tryLockAlpha1(any(DaprProtos.TryLockRequest.class), any());
+
+    Boolean result = client.tryLock("MyLockStore", "1", "owner", 10).block();
+    assertEquals(Boolean.TRUE, result);
+  }
+
+  @Test
+  public void unLock() {
+
+    DaprProtos.UnlockResponse.Builder builder = DaprProtos.UnlockResponse.newBuilder()
+            .setStatus(DaprProtos.UnlockResponse.Status.SUCCESS);
+
+    DaprProtos.UnlockResponse response = builder.build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      DaprProtos.UnlockRequest req = invocation.getArgument(0);
+      assertEquals(LOCK_STORE_NAME, req.getStoreName());
+      assertEquals("1", req.getResourceId());
+      assertEquals("owner", req.getLockOwner());
+
+      StreamObserver<DaprProtos.UnlockResponse> observer =
+              (StreamObserver<DaprProtos.UnlockResponse>) invocation.getArguments()[1];
+      observer.onNext(response);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).unlockAlpha1(any(DaprProtos.UnlockRequest.class), any());
+
+    UnlockResponseStatus result = client.unLock("MyLockStore", "1", "owner").block();
+    assertEquals(UnlockResponseStatus.SUCCESS, result);
   }
 
   private <T> DaprProtos.GetStateResponse buildFutureGetStateEnvelop(T value, String etag) throws IOException {

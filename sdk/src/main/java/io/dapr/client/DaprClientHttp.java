@@ -26,6 +26,7 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
@@ -36,6 +37,8 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.TransactionalStateRequest;
+import io.dapr.client.domain.UnLockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -655,6 +658,110 @@ public class DaprClientHttp extends AbstractDaprClient {
           }
         })
         .map(m -> (Map<String, Map<String, String>>) m);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Boolean> tryLock(LockRequest request) {
+    try {
+      final String stateStoreName = request.getStoreName();
+      final String resourceId = request.getResourceId();
+      final String lockOwner = request.getLockOwner();
+      final Integer expiryInSeconds = request.getExpiryInSeconds();
+
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (resourceId == null || resourceId.isEmpty()) {
+        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
+      }
+      if (lockOwner == null || lockOwner.isEmpty()) {
+        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
+      }
+      if (expiryInSeconds < 0) {
+        throw new IllegalArgumentException("ExpiryInSeconds cannot be negative.");
+      }
+
+
+      Map<String, Object> jsonMap = new HashMap<>();
+      jsonMap.put("resourceId", resourceId);
+      jsonMap.put("lockOwner", lockOwner);
+      jsonMap.put("expiryInSeconds", expiryInSeconds);
+
+      byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
+
+      String[] pathSegments = new String[]{DaprHttp.API_VERSION, "lock", stateStoreName};
+
+      return Mono.subscriberContext().flatMap(
+              context -> this.client
+                      .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, null, requestBody, null, context)
+      ).flatMap(response -> {
+        try {
+          Map m = INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
+          if (m == null) {
+            return Mono.just(Boolean.FALSE);
+          }
+          return Mono.just(Boolean.valueOf((String) m.get("success")));
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnlockResponseStatus> unLock(UnLockRequest request) {
+    try {
+      final String stateStoreName = request.getStoreName();
+      final String resourceId = request.getResourceId();
+      final String lockOwner = request.getLockOwner();
+
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (resourceId == null || resourceId.isEmpty()) {
+        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
+      }
+      if (lockOwner == null || lockOwner.isEmpty()) {
+        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
+      }
+
+
+      Map<String, Object> jsonMap = new HashMap<>();
+      jsonMap.put("resourceId", resourceId);
+      jsonMap.put("lockOwner", lockOwner);
+
+      byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
+
+      String[] pathSegments = new String[]{DaprHttp.API_VERSION, "unlock", stateStoreName};
+
+      return Mono.subscriberContext().flatMap(
+              context -> this.client
+                      .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, null, requestBody, null, context)
+      ).flatMap(response -> {
+        try {
+          Map m = INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
+          if (m == null) {
+            return Mono.just(UnlockResponseStatus.INTERNAL_ERROR);
+          }
+
+          Integer statusCode = Integer.valueOf((String) m.get("status"));
+
+          return Mono.just(UnlockResponseStatus.valueOf(statusCode));
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
   }
 
   /**

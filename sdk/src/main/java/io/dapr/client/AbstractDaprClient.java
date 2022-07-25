@@ -25,6 +25,7 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -33,6 +34,8 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnLockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -559,6 +562,25 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     request.setMetadata(metadata);
     return this.subscribeToConfiguration(request);
   }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Boolean> tryLock(String storeName, String resourceId, String lockOwner, Integer expiryInSeconds) {
+    LockRequest lockRequest = new LockRequest(storeName, resourceId, lockOwner, expiryInSeconds);
+    return this.tryLock(lockRequest);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnlockResponseStatus> unLock(String storeName, String resourceId, String lockOwner) {
+    UnLockRequest request = new UnLockRequest(storeName, resourceId, lockOwner);
+    return this.unLock(request);
+  }
+
 
   private List<String> filterEmptyKeys(String... keys) {
     return Arrays.stream(keys)

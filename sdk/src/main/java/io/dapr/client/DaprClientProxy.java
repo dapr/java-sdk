@@ -22,13 +22,14 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.QueryStateRequest;
-import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnLockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -497,6 +498,38 @@ class DaprClientProxy implements DaprClient {
   @Override
   public Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request) {
     return client.getBulkSecret(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Boolean> tryLock(LockRequest request) {
+    return client.tryLock(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Boolean> tryLock(String storeName, String resourceId, String lockOwner, Integer expiryInSeconds) {
+    return client.tryLock(storeName, resourceId, lockOwner, expiryInSeconds);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnlockResponseStatus> unLock(String storeName, String resourceId, String lockOwner) {
+    return client.unLock(storeName, resourceId, lockOwner);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnlockResponseStatus> unLock(UnLockRequest request) {
+    return client.unLock(request);
   }
 
   /**
