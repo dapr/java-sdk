@@ -58,7 +58,7 @@ sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/lock --app-id lockgrpc --app-protocol grpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.lock.http.DistributedLockHttpClient
+dapr run --components-path ./components/lock --app-id lockhttp --log-level debug -- java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.lock.http.DistributedLockHttpClient
 ```
 
 <!-- END_STEP -->
@@ -80,7 +80,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id lockgrpc
+dapr stop --app-id lockhttp
 ```
 
 <!-- END_STEP -->
