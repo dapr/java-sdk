@@ -16,7 +16,7 @@ package io.dapr.client.domain;
 /**
  * A request to unlock.
  */
-public class UnLockRequest {
+public class UnlockRequest {
 
   /**
    * The lock store name,e.g. `redis`.
@@ -49,12 +49,12 @@ public class UnLockRequest {
   private final String lockOwner;
 
   /**
-   * Constructor for UnLockRequest.
+   * Constructor for UnlockRequest.
    * @param storeName Name of the store
    * @param resourceId Lock key
    * @param lockOwner The identifier of lock owner.
    */
-  public UnLockRequest(String storeName, String resourceId, String lockOwner) {
+  public UnlockRequest(String storeName, String resourceId, String lockOwner) {
     this.storeName = storeName;
     this.resourceId = resourceId;
     this.lockOwner = lockOwner;

@@ -20,13 +20,10 @@ import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.UnLockRequest;
-import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -71,8 +68,6 @@ public class DaprClientHttpTest {
   private static final String STATE_STORE_NAME = "MyStateStore";
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
-
-  private static final String LOCK_STORE_NAME = "MyLockStore";
 
   private final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
@@ -1296,30 +1291,6 @@ public class DaprClientHttpTest {
     assertEquals(2, secrets.get("two").size());
     assertEquals("1", secrets.get("two").get("a"));
     assertEquals("2", secrets.get("two").get("b"));
-  }
-
-  @Test
-  public void tryLock() {
-    mockInterceptor.addRule()
-            .post("http://127.0.0.1:3000/v1.0/lock/MyLockStore")
-            .respond("{ \"success\": \"true\"}");
-
-    LockRequest lockRequest = new LockRequest(LOCK_STORE_NAME,"1","owner",10);
-
-    Mono<Boolean> mono = daprClientHttp.tryLock(lockRequest);
-    assertEquals(Boolean.TRUE, mono.block());
-  }
-
-  @Test
-  public void unLock() {
-    mockInterceptor.addRule()
-            .post("http://127.0.0.1:3000/v1.0/unlock/MyLockStore")
-            .respond("{ \"status\": \"0\"}");
-
-    UnLockRequest unLockRequest = new UnLockRequest(LOCK_STORE_NAME,"1","owner");
-
-    Mono<UnlockResponseStatus> mono = daprClientHttp.unLock(unLockRequest);
-    assertEquals(UnlockResponseStatus.SUCCESS, mono.block());
   }
 
   @Test

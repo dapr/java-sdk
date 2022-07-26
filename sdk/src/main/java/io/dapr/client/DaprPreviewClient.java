@@ -15,9 +15,12 @@ package io.dapr.client;
 
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.UnlockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
@@ -223,4 +226,39 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return A Mono of QueryStateResponse of type T.
    */
   <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type);
+
+
+  /**
+   * Tries to get a lock with an expiry.
+   * @param storeName Name of the store
+   * @param resourceId Lock key
+   * @param lockOwner The identifier of lock owner
+   * @param expiryInSeconds The time before expiry
+   * @return Whether the lock is successful
+   */
+  Mono<Boolean> tryLock(String storeName, String resourceId, String lockOwner, Integer expiryInSeconds);
+
+  /**
+   * Tries to get a lock with an expiry.
+   * @param request The request to lock
+   * @return Whether the lock is successful
+   */
+  Mono<Boolean> tryLock(LockRequest request);
+
+  /**
+   * Unlocks a lock.
+   * @param storeName Name of the store
+   * @param resourceId Lock key
+   * @param lockOwner The identifier of lock owner
+   * @return Unlock result
+   */
+  Mono<UnlockResponseStatus> unlock(String storeName, String resourceId, String lockOwner);
+
+  /**
+   * Unlocks a lock.
+   * @param request The request to unlock
+   * @return Unlock result
+   */
+  Mono<UnlockResponseStatus> unlock(UnlockRequest request);
+
 }

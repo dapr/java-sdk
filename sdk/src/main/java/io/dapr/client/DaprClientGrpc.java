@@ -38,7 +38,7 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.UnLockRequest;
+import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
@@ -714,7 +714,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<UnlockResponseStatus> unLock(UnLockRequest request) {
+  public Mono<UnlockResponseStatus> unlock(UnlockRequest request) {
     try {
       final String stateStoreName = request.getStoreName();
       final String resourceId = request.getResourceId();

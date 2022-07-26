@@ -13,8 +13,11 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.UnlockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
@@ -24,6 +27,7 @@ import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
 import org.junit.Test;
+import reactor.core.publisher.Mono;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -31,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprPreviewClientHttpTest {
   private static final String CONFIG_STORE_NAME = "MyConfigurationStore";
+
+  private static final String LOCK_STORE_NAME = "MyLockStore";
 
   private DaprPreviewClient daprPreviewClientHttp;
 
@@ -119,5 +125,29 @@ public class DaprPreviewClientHttpTest {
     assertEquals("result must be same", "1", response.getResults().get(0).getKey());
     assertEquals("result must be same", "testData", response.getResults().get(0).getValue());
     assertEquals("result must be same", "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag());
+  }
+
+  @Test
+  public void tryLock() {
+    mockInterceptor.addRule()
+            .post("http://127.0.0.1:3000/v1.0-alpha1/lock/MyLockStore")
+            .respond("{ \"success\": true}");
+
+    LockRequest lockRequest = new LockRequest(LOCK_STORE_NAME,"1","owner",10);
+
+    Mono<Boolean> mono = daprPreviewClientHttp.tryLock(lockRequest);
+    assertEquals(Boolean.TRUE, mono.block());
+  }
+
+  @Test
+  public void unLock() {
+    mockInterceptor.addRule()
+            .post("http://127.0.0.1:3000/v1.0-alpha1/unlock/MyLockStore")
+            .respond("{ \"status\": 0}");
+
+    UnlockRequest unLockRequest = new UnlockRequest(LOCK_STORE_NAME,"1","owner");
+
+    Mono<UnlockResponseStatus> mono = daprPreviewClientHttp.unlock(unLockRequest);
+    assertEquals(UnlockResponseStatus.SUCCESS, mono.block());
   }
 }

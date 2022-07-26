@@ -23,6 +23,7 @@ import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.CommonProtos;
@@ -63,6 +64,8 @@ public class DaprPreviewClientGrpcTest {
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final String CONFIG_STORE_NAME = "MyConfigStore";
 	private static final String QUERY_STORE_NAME = "testQueryStore";
+    private static final String LOCK_STORE_NAME = "MyLockStore";
+
 
 	private Closeable closeable;
 	private DaprGrpc.DaprStub daprStub;
@@ -361,6 +364,57 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals("result size must be 1", 1, response.getResults().size());
 		assertEquals("result must be same", "1", response.getResults().get(0).getKey());
 		assertEquals("result must be same", "error data", response.getResults().get(0).getError());
+	}
+
+	@Test
+	public void tryLock() {
+
+		DaprProtos.TryLockResponse.Builder builder = DaprProtos.TryLockResponse.newBuilder()
+						.setSuccess(true);
+
+		DaprProtos.TryLockResponse response = builder.build();
+
+		doAnswer((Answer<Void>) invocation -> {
+			DaprProtos.TryLockRequest req = invocation.getArgument(0);
+			assertEquals(LOCK_STORE_NAME, req.getStoreName());
+			assertEquals("1", req.getResourceId());
+			assertEquals("owner", req.getLockOwner());
+			assertEquals(10, req.getExpiryInSeconds());
+
+			StreamObserver<DaprProtos.TryLockResponse> observer =
+							(StreamObserver<DaprProtos.TryLockResponse>) invocation.getArguments()[1];
+			observer.onNext(response);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).tryLockAlpha1(any(DaprProtos.TryLockRequest.class), any());
+
+		Boolean result = previewClient.tryLock("MyLockStore", "1", "owner", 10).block();
+		assertEquals(Boolean.TRUE, result);
+	}
+
+	@Test
+	public void unLock() {
+
+		DaprProtos.UnlockResponse.Builder builder = DaprProtos.UnlockResponse.newBuilder()
+						.setStatus(DaprProtos.UnlockResponse.Status.SUCCESS);
+
+		DaprProtos.UnlockResponse response = builder.build();
+
+		doAnswer((Answer<Void>) invocation -> {
+			DaprProtos.UnlockRequest req = invocation.getArgument(0);
+			assertEquals(LOCK_STORE_NAME, req.getStoreName());
+			assertEquals("1", req.getResourceId());
+			assertEquals("owner", req.getLockOwner());
+
+			StreamObserver<DaprProtos.UnlockResponse> observer =
+							(StreamObserver<DaprProtos.UnlockResponse>) invocation.getArguments()[1];
+			observer.onNext(response);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).unlockAlpha1(any(DaprProtos.UnlockRequest.class), any());
+
+		UnlockResponseStatus result = previewClient.unlock("MyLockStore", "1", "owner").block();
+		assertEquals(UnlockResponseStatus.SUCCESS, result);
 	}
 
 	private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)

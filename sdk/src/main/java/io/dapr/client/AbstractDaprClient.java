@@ -34,7 +34,7 @@ import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.UnLockRequest;
+import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -576,9 +576,9 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<UnlockResponseStatus> unLock(String storeName, String resourceId, String lockOwner) {
-    UnLockRequest request = new UnLockRequest(storeName, resourceId, lockOwner);
-    return this.unLock(request);
+  public Mono<UnlockResponseStatus> unlock(String storeName, String resourceId, String lockOwner) {
+    UnlockRequest request = new UnlockRequest(storeName, resourceId, lockOwner);
+    return this.unlock(request);
   }
 
 

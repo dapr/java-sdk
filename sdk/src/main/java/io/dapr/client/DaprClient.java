@@ -22,14 +22,11 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.UnLockRequest;
-import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
@@ -561,39 +558,6 @@ public interface DaprClient extends AutoCloseable {
    * @return Key-value pairs for the secret.
    */
   Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request);
-
-  /**
-   * Tries to get a lock with an expiry.
-   * @param storeName Name of the store
-   * @param resourceId Lock key
-   * @param lockOwner The identifier of lock owner
-   * @param expiryInSeconds The time before expiry
-   * @return Whether the lock is successful
-   */
-  Mono<Boolean> tryLock(String storeName, String resourceId, String lockOwner, Integer expiryInSeconds);
-
-  /**
-   * Tries to get a lock with an expiry.
-   * @param request The request to lock
-   * @return Whether the lock is successful
-   */
-  Mono<Boolean> tryLock(LockRequest request);
-
-  /**
-   * Unlocks a lock.
-   * @param storeName Name of the store
-   * @param resourceId Lock key
-   * @param lockOwner The identifier of lock owner
-   * @return Unlock result
-   */
-  Mono<UnlockResponseStatus> unLock(String storeName, String resourceId, String lockOwner);
-
-  /**
-   * Unlocks a lock.
-   * @param request The request to unlock
-   * @return Unlock result
-   */
-  Mono<UnlockResponseStatus> unLock(UnLockRequest request);
 
   /**
    * Gracefully shutdown the dapr runtime.

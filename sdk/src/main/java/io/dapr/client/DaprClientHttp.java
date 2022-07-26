@@ -37,7 +37,7 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.TransactionalStateRequest;
-import io.dapr.client.domain.UnLockRequest;
+import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
@@ -692,7 +692,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
 
-      String[] pathSegments = new String[]{DaprHttp.API_VERSION, "lock", stateStoreName};
+      String[] pathSegments = new String[]{DaprHttp.ALPHA_1_API_VERSION, "lock", stateStoreName};
 
       return Mono.subscriberContext().flatMap(
               context -> this.client
@@ -703,7 +703,7 @@ public class DaprClientHttp extends AbstractDaprClient {
           if (m == null) {
             return Mono.just(Boolean.FALSE);
           }
-          return Mono.just(Boolean.valueOf((String) m.get("success")));
+          return Mono.just((Boolean) m.get("success"));
         } catch (Exception ex) {
           return DaprException.wrapMono(ex);
         }
@@ -717,7 +717,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<UnlockResponseStatus> unLock(UnLockRequest request) {
+  public Mono<UnlockResponseStatus> unlock(UnlockRequest request) {
     try {
       final String stateStoreName = request.getStoreName();
       final String resourceId = request.getResourceId();
@@ -740,7 +740,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
 
-      String[] pathSegments = new String[]{DaprHttp.API_VERSION, "unlock", stateStoreName};
+      String[] pathSegments = new String[]{DaprHttp.ALPHA_1_API_VERSION, "unlock", stateStoreName};
 
       return Mono.subscriberContext().flatMap(
               context -> this.client
@@ -752,7 +752,7 @@ public class DaprClientHttp extends AbstractDaprClient {
             return Mono.just(UnlockResponseStatus.INTERNAL_ERROR);
           }
 
-          Integer statusCode = Integer.valueOf((String) m.get("status"));
+          Integer statusCode = (Integer) m.get("status");
 
           return Mono.just(UnlockResponseStatus.valueOf(statusCode));
         } catch (Exception ex) {
