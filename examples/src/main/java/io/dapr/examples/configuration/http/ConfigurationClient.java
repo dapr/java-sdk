@@ -11,15 +11,13 @@
 limitations under the License.
 */
 
-package io.dapr.examples.configuration.grpc;
+package io.dapr.examples.configuration.http;
 
+import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
-import io.dapr.client.domain.SubscribeConfigurationRequest;
-import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.client.domain.*;
+import io.dapr.config.Properties;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -29,14 +27,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ConfigurationClient {
 
   private static final String CONFIG_STORE_NAME = "configstore";
-
-  private static final List<String> keys = new ArrayList<>(Arrays.asList("myconfig1", "myconfig3", "myconfig2"));
+  private static final String APP_ID = "subscriber";
 
   /**
    * Executes various methods to check the different apis.
@@ -44,64 +40,11 @@ public class ConfigurationClient {
    * @throws Exception throws Exception
    */
   public static void main(String[] args) throws Exception {
+    System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      getConfigurationForSingleKey(client);
-      getConfigurationsUsingVarargs(client);
-      getConfigurations(client);
       subscribeConfigurationRequest(client);
       unsubscribeConfigurationItems(client);
-    }
-  }
-
-  /**
-   * Gets configuration for a single key.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurationForSingleKey(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configuration given a single key********");
-    try {
-      Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, keys.get(0));
-      System.out.println("Value ->" + item.block().getValue() + " key ->" + item.block().getKey());
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
-    }
-  }
-
-  /**
-   * Gets configurations for varibale no. of arguments.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurationsUsingVarargs(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configurations for a variable no. of keys********");
-    try {
-      Mono<Map<String, ConfigurationItem>> items =
-          client.getConfiguration(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
-      items.block().forEach((k,v) -> print(v, k));
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
-    }
-  }
-
-  /**
-   * Gets configurations for a list of keys.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurations(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configurations for a list of keys********");
-    List<String> keys = new ArrayList<>();
-    keys.add("myconfig1");
-    keys.add("myconfig2");
-    keys.add("myconfig3");
-    GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
-    try {
-      Mono<Map<String, ConfigurationItem>> items = client.getConfiguration(req);
-      items.block().forEach((k,v) -> print(v, k));
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
     }
   }
 
@@ -120,7 +63,7 @@ public class ConfigurationClient {
       disposableAtomicReference.set(outFlux
           .subscribe(
               cis -> {
-                cis.getItems().forEach((k,v) -> print(v,k));
+                cis.getItems().forEach(ConfigurationClient::print);
               }
           ));
     };
@@ -156,7 +99,7 @@ public class ConfigurationClient {
       disposableAtomicReference.set(outFlux
           .subscribe(cis -> {
                 subscriptionId.set(cis.getSubscriptionId());
-                cis.getItems().forEach((k,v) -> print(v,k));
+                cis.getItems().forEach(ConfigurationClient::print);
               }
           ));
     };
@@ -197,8 +140,8 @@ public class ConfigurationClient {
     }
   }
 
-  private static void print(ConfigurationItem item, String key) {
-    System.out.println(item.getValue() + " : key ->" + key);
+  private static void print(ConfigurationItem item) {
+    System.out.println(item.getValue() + " : key ->" + item.getKey());
   }
 
   private static void executeDockerCommand(String key, int postfix) {
