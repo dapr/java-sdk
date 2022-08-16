@@ -16,7 +16,11 @@ package io.dapr.examples.configuration.http;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
-import io.dapr.client.domain.*;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -77,10 +81,9 @@ public class ConfigurationClient {
         CONFIG_STORE_NAME, Collections.singletonList("myconfig2"));
     Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
     outFlux.subscribe(
-                    cis -> {
-                      SUBSCRIPTION_ID = cis.getSubscriptionId();
-                    }
-            );
+        cis -> {
+          SUBSCRIPTION_ID = cis.getSubscriptionId();
+        });
     System.out.println("Getting updated values for all subscribed keys..");
     int i = 1;
     while (i <= 3) {
@@ -89,7 +92,7 @@ public class ConfigurationClient {
     }
   }
 
-   /**
+  /**
    * Unsubscribe API.
    *
    * @param client DaprPreviewClient object

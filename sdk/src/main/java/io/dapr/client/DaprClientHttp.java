@@ -854,7 +854,10 @@ public class DaprClientHttp extends AbstractDaprClient {
           throw new RuntimeException(e);
         }
       }).block();
-      return Flux.just(res);
+      if (res != null) {
+        return Flux.just(res);
+      }
+      return Flux.empty();
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
     }
