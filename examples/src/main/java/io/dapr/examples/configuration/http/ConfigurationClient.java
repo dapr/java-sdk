@@ -78,7 +78,6 @@ public class ConfigurationClient {
     Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
     outFlux.subscribe(
                     cis -> {
-                      System.out.println(cis.getSubscriptionId() + "  <------susbcription ID");
                       SUBSCRIPTION_ID = cis.getSubscriptionId();
                     }
             );
