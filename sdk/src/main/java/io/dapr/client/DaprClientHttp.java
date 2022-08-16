@@ -839,24 +839,21 @@ public class DaprClientHttp extends AbstractDaprClient {
               new String[] { DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName, "subscribe" };
       Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.put("key", Collections.unmodifiableList(keys));
-
-       SubscribeConfigurationResponse res = Mono.subscriberContext().flatMap(
-              context -> this.client
-                      .invokeApi(
-                              DaprHttp.HttpMethods.GET.name(),
-                              pathSegments, queryParams,
-                              (String) null, null, context)
-      ).map(
-              response -> {
-                try {
-                  JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
-                  String subscriptionId = root.path("id").asText();
-                  return new SubscribeConfigurationResponse(subscriptionId, new HashMap<>());
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              }
-      ).block();
+      SubscribeConfigurationResponse res = Mono.subscriberContext().flatMap(
+              context -> this.client.invokeApi(
+                      DaprHttp.HttpMethods.GET.name(),
+                      pathSegments, queryParams,
+                      (String) null, null, context
+              )
+      ).map(response -> {
+        try {
+          JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+          String subscriptionId = root.path("id").asText();
+          return new SubscribeConfigurationResponse(subscriptionId, new HashMap<>());
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }).block();
       return Flux.just(res);
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
@@ -870,12 +867,16 @@ public class DaprClientHttp extends AbstractDaprClient {
   public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
     try {
       final String id = request.getSubscriptionId();
-
+      final String configStoreName = request.getStoreName();
+      if (configStoreName == null || (configStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
+      }
       if (id.isEmpty()) {
         throw new IllegalArgumentException("Subscription id can not be null or empty.");
       }
 
-      String[] pathSegments = new String[] {DaprHttp.ALPHA_1_API_VERSION, "configuration", id, "unsubscribe" };
+      String[] pathSegments = new String[]
+          { DaprHttp.ALPHA_1_API_VERSION, "configuration", configStoreName, id, "unsubscribe" };
 
       return Mono.subscriberContext().flatMap(
               context -> this.client
@@ -885,14 +886,10 @@ public class DaprClientHttp extends AbstractDaprClient {
                               (String) null, null, context)
       ).map(
               response -> {
-                try {
-                  JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
-                  boolean ok = root.path("ok").asBoolean();
-                  String message = root.path("message").asText();
-                  UnsubscribeConfigurationResponse result = new UnsubscribeConfigurationResponse(ok, message);
-                  return result;
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
+                if (response.getStatusCode() == 204) {
+                  return new UnsubscribeConfigurationResponse(true, "Unsubscribe operation successful");
+                } else {
+                  return new UnsubscribeConfigurationResponse(false, "Unsubscribe operation unsuccessful");
                 }
               }
       );
