@@ -889,11 +889,16 @@ public class DaprClientHttp extends AbstractDaprClient {
                               (String) null, null, context)
       ).map(
               response -> {
-                if (response.getStatusCode() == 204) {
-                  return new UnsubscribeConfigurationResponse(true, "Unsubscribe operation successful");
-                } else {
-                  return new UnsubscribeConfigurationResponse(false, "Unsubscribe operation unsuccessful");
+                JsonNode root = null;
+                try {
+                  root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
                 }
+                System.out.println(root.toPrettyString());
+                boolean ok = root.path("ok").asBoolean();
+                String message = root.path("message").asText();
+                return new UnsubscribeConfigurationResponse(ok, message);
               }
       );
     } catch (Exception ex) {

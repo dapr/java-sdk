@@ -24,6 +24,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
@@ -179,7 +180,7 @@ public class DaprPreviewClientHttpTest {
     mockInterceptor.addRule()
             .get()
             .path("/v1.0-alpha1/configuration/MyConfigStore/1234/unsubscribe")
-            .respond(204);
+            .respond("{\"ok\": true}");
 
     UnsubscribeConfigurationResponse res = daprPreviewClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
     assertTrue(res.getIsUnsubscribed());
@@ -199,10 +200,9 @@ public class DaprPreviewClientHttpTest {
     mockInterceptor.addRule()
             .get()
             .path("/v1.0-alpha1/configuration/MyConfigStore/1234/unsubscribe")
-            .respond(500);
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
-    });
+            .respond("{\"ok\": false, \"message\": \"some error while unsubscribing\"}");
+    UnsubscribeConfigurationResponse res = daprPreviewClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
+    assertFalse(res.getIsUnsubscribed());
   }
 
   @Test
