@@ -48,8 +48,8 @@ public class ConfigurationClientIT extends BaseIT {
     };
 
     @BeforeClass
-    public void init() throws Exception {
-        daprRun = startDaprApp(this.getClass().getSimpleName(), 5000);
+    public static void init() throws Exception {
+        daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
         daprRun.switchToHTTP();
         daprPreviewClient = new DaprClientBuilder().buildPreviewClient();
     }
