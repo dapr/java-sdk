@@ -134,7 +134,6 @@ public class DaprPreviewClientHttpTest {
             .respond("[{\"key\":\"configkey1\", \"value\": \"configvalue1\", \"version\": \"1\"}]");
 
     ConfigurationItem ci = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-    System.out.println(ci.getKey() + " <  bsdjbsj  >");
     assertEquals("configkey1", ci.getKey());
     assertEquals("configvalue1", ci.getValue());
     assertEquals("1", ci.getVersion());

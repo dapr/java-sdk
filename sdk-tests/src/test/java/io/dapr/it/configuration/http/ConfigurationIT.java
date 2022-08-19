@@ -3,19 +3,15 @@ package io.dapr.it.configuration.http;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;

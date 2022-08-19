@@ -6,7 +6,6 @@ import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import io.dapr.it.pubsub.http.SubscriberService;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;

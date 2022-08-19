@@ -14,12 +14,14 @@ limitations under the License.
 package io.dapr.it.configuration.http;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * Service for ConfigurationSubscriber.
  * dapr run --components-path ./components/configuration --app-id configsubscriber --app-port 3000 -- \
  * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.http.ConfigurationSubscriber -p 3000
  */
+@SpringBootApplication
 public class ConfigurationSubscriberService {
 
   public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running";
