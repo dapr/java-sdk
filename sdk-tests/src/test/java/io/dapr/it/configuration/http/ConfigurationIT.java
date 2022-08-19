@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
-public class ConfigurationClientIT extends BaseIT {
+public class ConfigurationIT extends BaseIT {
     private static final String CONFIG_STORE_NAME = "redisconfigstore";
 
     private static DaprRun daprRun;
@@ -39,17 +39,9 @@ public class ConfigurationClientIT extends BaseIT {
             "myconfigkey3", "myconfigvalue3||1"
     };
 
-    private static String[] updateCmd = new String[] {
-            "docker", "exec", "dapr_redis", "redis-cli",
-            "MSET",
-            "myconfigkey1", "update_myconfigvalue1||2",
-            "myconfigkey2", "update_myconfigvalue2||2",
-            "myconfigkey3", "update_myconfigvalue3||2"
-    };
-
     @BeforeClass
     public static void init() throws Exception {
-        daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
+        daprRun = startDaprApp(ConfigurationIT.class.getSimpleName(), 5000);
         daprRun.switchToHTTP();
         daprPreviewClient = new DaprClientBuilder().buildPreviewClient();
     }
@@ -93,23 +85,6 @@ public class ConfigurationClientIT extends BaseIT {
         assertThrows(IllegalArgumentException.class, () -> {
             daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, listOfKeys, metadata).block();
         });
-    }
-
-    @Test
-    public void subscribeAndUnsubscribeConfiguration() {
-        AtomicReference<String> subId= new AtomicReference<>("");
-        Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
-                .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
-        outFlux.subscribe(items -> {
-            subId.set(items.getSubscriptionId());
-        });
-        assertTrue(subId.get().length() > 0);
-
-        UnsubscribeConfigurationResponse res = daprPreviewClient.unsubscribeConfiguration(
-                subId.get(),
-                CONFIG_STORE_NAME
-        ).block();
-        assertTrue(res.getIsUnsubscribed());
     }
 
     private static void executeDockerCommand(String[] command) {
