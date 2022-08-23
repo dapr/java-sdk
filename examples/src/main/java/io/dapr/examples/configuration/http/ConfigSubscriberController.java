@@ -39,7 +39,7 @@ public class ConfigSubscriberController {
    * @return Returns void
    */
   @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public Mono<Void> handleMessage(@PathVariable Map<String, String> pathVarsMap, @RequestBody JsonNode obj) {
+  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap, @RequestBody JsonNode obj) {
     return Mono.fromRunnable(
       () -> {
         try {

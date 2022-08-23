@@ -895,7 +895,6 @@ public class DaprClientHttp extends AbstractDaprClient {
                 } catch (IOException e) {
                   throw new RuntimeException(e);
                 }
-                System.out.println(root.toPrettyString());
                 boolean ok = root.path("ok").asBoolean();
                 String message = root.path("message").asText();
                 return new UnsubscribeConfigurationResponse(ok, message);

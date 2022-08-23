@@ -7,7 +7,8 @@ This example provides the different capabilities provided by Dapr Java SDK for C
 
 The java SDK exposes several methods for this -
 * `client.getConfiguration(...)` for getting a configuration for a single/multiple keys.
-* `client.subscribeToConfigurations(...)` for subscribing to a list of keys for any change.
+* `client.subscribeConfiguration(...)` for subscribing to a list of keys for any change.
+* `client.unsubscribeConfiguration(...)` for unsubscribing to changes from subscribed items.
 
 ## Pre-requisites
 

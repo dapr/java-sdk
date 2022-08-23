@@ -145,10 +145,14 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
-      - name: Validate Configuration API example
+      - name: Validate Configuration gRPC API example
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/configuration/grpc/README.md
+      - name: Validate Configuration HTTP API example
+        working-directory: ./examples
+        run: |
+            mm.py ./src/main/java/io/dapr/examples/configuration/http/README.md
       - name: Validate query state HTTP example
         working-directory: ./examples
         run: |
