@@ -762,7 +762,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
     return DaprException.wrapMono(new UnsupportedOperationException());
   }
 
@@ -770,7 +770,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+  public Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
     return DaprException.wrapFlux(new UnsupportedOperationException());
   }
 

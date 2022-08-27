@@ -78,7 +78,6 @@ public class ConfigurationClientIT extends BaseIT {
     @Test
     public void getConfiguration() {
         ConfigurationItem ci = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1").block();
-        assertEquals(ci.getKey(), "myconfigkey1");
         assertEquals(ci.getValue(), "myconfigvalue1");
     }
 
@@ -91,10 +90,11 @@ public class ConfigurationClientIT extends BaseIT {
 
     @Test
     public void getConfigurations() {
-        List<ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
+        Map<String, ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
         assertTrue(cis.size() == 2);
-        assertEquals(cis.get(0).getKey(), "myconfigkey1");
-        assertEquals(cis.get(1).getValue(), "myconfigvalue2");
+        assertTrue(cis.containsKey("myconfigkey1"));
+        assertTrue(cis.containsKey("myconfigkey2"));
+        assertEquals(cis.get("myconfigkey2").getValue(), "myconfigvalue2");
     }
 
     @Test
@@ -111,7 +111,7 @@ public class ConfigurationClientIT extends BaseIT {
         List<String> updatedValues = new ArrayList<>();
         AtomicReference<Disposable> disposable = new AtomicReference<>();
         Runnable subscribeTask = () -> {
-            Flux<List<ConfigurationItem>> outFlux = daprPreviewClient
+            Flux<Map<String, ConfigurationItem>> outFlux = daprPreviewClient
                     .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
             disposable.set(outFlux.subscribe(update -> {
                 updatedValues.add(update.get(0).getValue());
