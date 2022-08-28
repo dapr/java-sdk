@@ -114,7 +114,10 @@ public class ConfigurationClientIT extends BaseIT {
             Flux<Map<String, ConfigurationItem>> outFlux = daprPreviewClient
                     .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
             disposable.set(outFlux.subscribe(update -> {
-                updatedValues.add(update.get(0).getValue());
+                updatedValues.add(update.entrySet()
+                .stream()
+                .findFirst()
+                .get().getValue().getValue());
             }));
         };
         Thread subscribeThread = new Thread(subscribeTask);
