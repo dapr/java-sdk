@@ -115,7 +115,8 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     InvokeMethodRequest req = new InvokeMethodRequest(appId, methodName)
         .setBody(data)
         .setHttpExtension(httpExtension)
-        .setContentType(objectSerializer.getContentType());
+        .setContentType(objectSerializer.getContentType())
+        .setMetadata(metadata);
 
     return this.invokeMethod(req, type);
   }

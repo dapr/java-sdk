@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * A request to invoke a service.
  */
@@ -27,6 +30,8 @@ public class InvokeMethodRequest {
   private HttpExtension httpExtension;
 
   private String contentType;
+
+  private Map<String, String> metadata;
 
   /**
    * Constructor for InvokeMethodRequest.
@@ -71,6 +76,15 @@ public class InvokeMethodRequest {
 
   public InvokeMethodRequest setContentType(String contentType) {
     this.contentType = contentType;
+    return this;
+  }
+
+  public Map<String, String> getMetadata() {
+    return metadata;
+  }
+
+  public InvokeMethodRequest setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
     return this;
   }
 }
