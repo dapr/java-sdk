@@ -57,7 +57,7 @@ public interface DaprPreviewClient extends AutoCloseable {
    *
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be retrieved
-   * @return Mono of List of ConfigurationItems
+   * @return Mono of Map of ConfigurationItems
    */
   Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, String... keys);
 
@@ -67,7 +67,7 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be retrieved
    * @param metadata  optional metadata
-   * @return Mono of List of ConfigurationItems
+   * @return Mono of Map of ConfigurationItems
    */
   Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, List<String> keys, 
                                                           Map<String, String> metadata);
@@ -76,7 +76,7 @@ public interface DaprPreviewClient extends AutoCloseable {
    * Retrieve Map of configurations based on a provided configuration request object.
    *
    * @param request request for retrieving Configurations for a list keys
-   * @return Mono of List of ConfigurationItems
+   * @return Mono of Map of ConfigurationItems
    */
 
   Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request);
