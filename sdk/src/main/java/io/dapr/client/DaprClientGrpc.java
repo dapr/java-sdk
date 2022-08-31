@@ -807,7 +807,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
             Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
             configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
           }
-          return configMap;
+          return Collections.unmodifiableMap(configMap);
         }
     );
   }
@@ -846,7 +846,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
             Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
             configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
           }
-          return configMap;
+          return Collections.unmodifiableMap(configMap);
         }
       );
     } catch (Exception ex) {
