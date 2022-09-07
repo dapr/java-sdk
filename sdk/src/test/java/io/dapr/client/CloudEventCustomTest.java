@@ -57,7 +57,7 @@ public class CloudEventCustomTest {
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
     assertEquals("hello world again", cloudEventCustom.newValue);
     assertEquals(432434324.43, cloudEventCustom.newDouble,0);
-    assertEquals(435, cloudEventCustom.newInt);
+    assertEquals(435, cloudEventCustom.getNewInt());
   }
 
   @Test
@@ -90,7 +90,7 @@ public class CloudEventCustomTest {
     assertEquals(expected.name, myObject.name);
     assertEquals("hello world again", cloudEventCustom.newValue);
     assertEquals(432434324.43, cloudEventCustom.newDouble, 0);
-    assertEquals(435, cloudEventCustom.newInt);
+    assertEquals(435, cloudEventCustom.getNewInt());
 
   }
 
@@ -112,7 +112,7 @@ public class CloudEventCustomTest {
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
     assertNull(cloudEventCustom.getData());
     assertNull(cloudEventCustom.newValue);
-    assertEquals(0, cloudEventCustom.newInt);
+    assertEquals(0, cloudEventCustom.getNewInt());
   }
 
   @Test
@@ -134,7 +134,7 @@ public class CloudEventCustomTest {
     CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
     assertEquals(1, cloudEventCustom.getData());
-    assertEquals(7, cloudEventCustom.newInt);
+    assertEquals(7, cloudEventCustom.getNewInt());
   }
 
   @Test
@@ -240,7 +240,7 @@ public class CloudEventCustomTest {
     assertEquals("typeVal", cloudEventUnserial.getType());
     assertEquals("specVal", cloudEventUnserial.getSpecversion());
     assertEquals("newString", cloudEventUnserial.newValue);
-    assertEquals(5, cloudEventUnserial.newInt);
+    assertEquals(5, cloudEventUnserial.getNewInt());
     assertEquals(323.32323, cloudEventUnserial.newDouble, 0);
   }
 

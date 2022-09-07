@@ -24,7 +24,7 @@ import java.io.IOException;
 public class CloudEventCustom<T> extends CloudEvent<T> {
  
   public String newValue;
-  public int newInt;
+  private int newInt;
   public double newDouble;
 
   public CloudEventCustom() {
@@ -63,5 +63,9 @@ public class CloudEventCustom<T> extends CloudEvent<T> {
       this.newDouble = newDouble;
 
   } 
+
+  public int getNewInt() {
+    return newInt;
+  }
 
 }
