@@ -127,41 +127,6 @@ public class DaprPreviewClientHttpTest {
   }
 
   @Test
-  public void getSingleConfigurationTest() {
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0-alpha1/configuration/MyConfigStore")
-            .param("key", "configkey1")
-            .respond("{\"myconfig1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
-
-    ConfigurationItem ci = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-    assertNotNull(ci);
-    assertEquals("configkey1", ci.getKey());
-    assertEquals("configvalue1", ci.getValue());
-    assertEquals("1", ci.getVersion());
-  }
-
-  @Test
-  public void getMultipleConfigurationTest() {
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0-alpha1/configuration/MyConfigStore")
-            .param("key", "configkey1")
-            .respond("{\"myconfig1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}," +
-                    "{\"myconfig2\" : {\"value\" : \"configvalue2\",\"version\" : \"1\"}}");
-
-    Map<String, ConfigurationItem> cis = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
-    assertEquals(2, cis.size());
-    assertTrue(cis.containsKey("configkey1"));
-    assertEquals("configvalue1", cis.get("configkey1").getValue());
-    assertEquals("1", cis.get("configkey1").getVersion());
-
-    assertTrue(cis.containsKey("configkey2"));
-    assertEquals("configvalue2", cis.get("configkey1").getValue());
-    assertEquals("1", cis.get("configkey1").getVersion());
-  }
-
-  @Test
   public void subscribeConfigurationTest() {
     mockInterceptor.addRule()
             .get()

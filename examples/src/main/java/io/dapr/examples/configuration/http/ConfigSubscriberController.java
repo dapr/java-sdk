@@ -41,12 +41,14 @@ public class ConfigSubscriberController {
    * @return Returns void
    */
   @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.ALL_VALUE)
-  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap, @RequestBody SubscribeConfigurationResponse obj) {
+  public Mono<Void> handleConfigUpdate(
+      @PathVariable Map<String, String> pathVarsMap,
+      @RequestBody SubscribeConfigurationResponse obj) {
     return Mono.fromRunnable(
       () -> {
         try {
           Map<String, ConfigurationItem> items = obj.getItems();
-          for(Map.Entry<String, ConfigurationItem> entry : items.entrySet()) {
+          for (Map.Entry<String, ConfigurationItem> entry : items.entrySet()) {
             System.out.println(entry.getValue().getValue() + " : key ->" + entry.getKey());
           }
         } catch (Exception e) {
