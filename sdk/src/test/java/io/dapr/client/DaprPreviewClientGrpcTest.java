@@ -199,7 +199,7 @@ public class DaprPreviewClientGrpcTest {
 		Iterator<SubscribeConfigurationResponse> itr = previewClient.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
 		assertTrue(itr.hasNext());
 		SubscribeConfigurationResponse res = itr.next();
-		assertTrue(itr.next().getItems().containsKey("configkey1"));
+		assertTrue(res.getItems().containsKey("configkey1"));
 		assertEquals("subscription_id", res.getSubscriptionId());
 		assertFalse(itr.hasNext());
 	}
@@ -233,7 +233,7 @@ public class DaprPreviewClientGrpcTest {
 		Iterator<SubscribeConfigurationResponse> itr = previewClient.subscribeConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
 		assertTrue(itr.hasNext());
 		SubscribeConfigurationResponse res = itr.next();
-		assertTrue(itr.next().getItems().containsKey("configkey1"));
+		assertTrue(res.getItems().containsKey("configkey1"));
 		assertEquals("subscription_id", res.getSubscriptionId());
 		assertFalse(itr.hasNext());
 	}

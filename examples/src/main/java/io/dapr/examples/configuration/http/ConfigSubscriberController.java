@@ -15,6 +15,8 @@ package io.dapr.examples.configuration.http;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,16 +40,14 @@ public class ConfigSubscriberController {
    * @param obj request Body
    * @return Returns void
    */
-  @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap, @RequestBody JsonNode obj) {
+  @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.ALL_VALUE)
+  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap, @RequestBody SubscribeConfigurationResponse obj) {
     return Mono.fromRunnable(
       () -> {
         try {
-          for (Iterator<JsonNode> it = obj.get("items").elements(); it.hasNext(); ) {
-            JsonNode node = it.next();
-            String key = node.path("key").asText();
-            String value = node.path("value").asText();
-            System.out.println(value + " : key ->" + key);
+          Map<String, ConfigurationItem> items = obj.getItems();
+          for(Map.Entry<String, ConfigurationItem> entry : items.entrySet()) {
+            System.out.println(entry.getValue().getValue() + " : key ->" + entry.getKey());
           }
         } catch (Exception e) {
             throw new RuntimeException(e);

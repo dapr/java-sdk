@@ -31,6 +31,7 @@ import org.mockito.stubbing.Answer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
@@ -131,9 +132,10 @@ public class DaprPreviewClientHttpTest {
             .get()
             .path("/v1.0-alpha1/configuration/MyConfigStore")
             .param("key", "configkey1")
-            .respond("[{\"key\":\"configkey1\", \"value\": \"configvalue1\", \"version\": \"1\"}]");
+            .respond("{\"myconfig1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
 
     ConfigurationItem ci = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertNotNull(ci);
     assertEquals("configkey1", ci.getKey());
     assertEquals("configvalue1", ci.getValue());
     assertEquals("1", ci.getVersion());
@@ -145,18 +147,18 @@ public class DaprPreviewClientHttpTest {
             .get()
             .path("/v1.0-alpha1/configuration/MyConfigStore")
             .param("key", "configkey1")
-            .respond("[{\"key\":\"configkey1\", \"value\": \"configvalue1\", \"version\": \"1\"}," +
-                    "{\"key\":\"configkey2\", \"value\": \"configvalue2\", \"version\": \"1\"}]");
+            .respond("{\"myconfig1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}," +
+                    "{\"myconfig2\" : {\"value\" : \"configvalue2\",\"version\" : \"1\"}}");
 
-    List<ConfigurationItem> cis = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
+    Map<String, ConfigurationItem> cis = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
     assertEquals(2, cis.size());
-    assertEquals("configkey1", cis.stream().findFirst().get().getKey());
-    assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
-    assertEquals("1", cis.stream().findFirst().get().getVersion());
+    assertTrue(cis.containsKey("configkey1"));
+    assertEquals("configvalue1", cis.get("configkey1").getValue());
+    assertEquals("1", cis.get("configkey1").getVersion());
 
-    assertEquals("configkey2", cis.stream().skip(1).findFirst().get().getKey());
-    assertEquals("configvalue2", cis.stream().skip(1).findFirst().get().getValue());
-    assertEquals("1", cis.stream().skip(1).findFirst().get().getVersion());
+    assertTrue(cis.containsKey("configkey2"));
+    assertEquals("configvalue2", cis.get("configkey1").getValue());
+    assertEquals("1", cis.get("configkey1").getVersion());
   }
 
   @Test

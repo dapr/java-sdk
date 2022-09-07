@@ -20,10 +20,17 @@ import java.util.Map;
  * A configuration item from Dapr's configuration store.
  */
 public class ConfigurationItem {
-  private final String key;
-  private final String value;
-  private final String version;
-  private final Map<String, String> metadata;
+  private String key;
+  private String value;
+  private String version;
+  private Map<String, String> metadata;
+
+  /**
+   * Default constructor for ConfigurationItem.
+   */
+  public ConfigurationItem() {
+
+  }
 
   /**
    * Constructor for a configuration Item.

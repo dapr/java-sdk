@@ -57,6 +57,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -794,21 +795,23 @@ public class DaprClientHttp extends AbstractDaprClient {
       ).map(
               response -> {
                 try {
-                  JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
-                  Map<String, ConfigurationItem> result = new HashMap<>();
-                  System.out.println(root.toPrettyString());
-                  System.out.println("getConfiguration ends.....");
                   Map m = INTERNAL_SERIALIZER.deserialize(response.getBody(), Map.class);
-                  System.out.println(m.toString()+ " <<<< deserialse >> ");
-//                  for (Iterator<JsonNode> it = root.elements(); it.hasNext(); ) {
-//                    JsonNode node = it.next();
-//                    String key = node.path("key").asText();
-//                    String value = node.path("value").asText();
-//                    String version = node.path("version").asText();
-//                    ConfigurationItem configurationItem = new ConfigurationItem(key, value, version);
-//                    result.add(configurationItem);
-//                  }
-                  return result;
+                  Set<String> set = m.keySet();
+                  JsonNode root = INTERNAL_SERIALIZER.parseNode(response.getBody());
+                  Iterator<String> itr = set.iterator();
+                  Map<String, ConfigurationItem> result = new HashMap<>();
+                  while (itr.hasNext()) {
+                    String key = itr.next();
+                    String value = root.get(key).path("value").asText();
+                    String version = root.get(key).path("version").asText();
+                    result.put(key, new ConfigurationItem(
+                        key,
+                        value,
+                        version,
+                        new HashMap<>()
+                    ));
+                  }
+                  return Collections.unmodifiableMap(result);
                 } catch (IOException e) {
                   throw new RuntimeException(e);
                 }

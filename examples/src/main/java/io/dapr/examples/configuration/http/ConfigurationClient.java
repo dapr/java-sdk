@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class ConfigurationClient {
 
@@ -63,8 +64,8 @@ public class ConfigurationClient {
     keys.add("myconfig3");
     GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
     try {
-      Mono<List<ConfigurationItem>> items = client.getConfiguration(req);
-      items.block().forEach(ConfigurationClient::print);
+      Mono<Map<String, ConfigurationItem>> items = client.getConfiguration(req);
+      items.block().forEach((k,v) -> print(v, k));
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
     }
@@ -111,8 +112,8 @@ public class ConfigurationClient {
     }
   }
 
-  private static void print(ConfigurationItem item) {
-    System.out.println(item.getValue() + " : key ->" + item.getKey());
+  private static void print(ConfigurationItem item, String key) {
+    System.out.println(item.getValue() + " : key ->" + key);
   }
 
   private static void executeDockerCommand(String key, int postfix) {
