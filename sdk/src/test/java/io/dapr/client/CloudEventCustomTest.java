@@ -13,22 +13,19 @@ limitations under the License.
 
 package io.dapr.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import io.dapr.client.domain.CloudEvent;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 
 public class CloudEventCustomTest {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  DaprObjectSerializer serializer = new DefaultObjectSerializer();
+  private DaprObjectSerializer serializer = new DefaultObjectSerializer();
 
   public static class MyClass {
     public int id;
