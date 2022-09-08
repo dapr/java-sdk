@@ -127,6 +127,21 @@ public class DaprPreviewClientHttpTest {
   }
 
   @Test
+  public void getConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0-alpha1/configuration/MyConfigStore")
+        .param("key","configkey1")
+        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
+
+    ConfigurationItem ci = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertNotNull(ci);
+    assertEquals("configkey1", ci.getKey());
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
   public void subscribeConfigurationTest() {
     mockInterceptor.addRule()
             .get()

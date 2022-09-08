@@ -68,10 +68,10 @@ public class ConfigurationIT extends BaseIT {
 
     @Test
     public void getConfigurations() {
-        List<ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
+        Map<String, ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
         assertTrue(cis.size() == 2);
-        assertEquals(cis.get(0).getKey(), "myconfigkey1");
-        assertEquals(cis.get(1).getValue(), "myconfigvalue2");
+        assertTrue(cis.containsKey("myconfigkey1"));
+        assertTrue(cis.containsKey("myconfigkey2"));
     }
 
     @Test

@@ -28,6 +28,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,9 +46,26 @@ public class ConfigurationClient {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
+      getSingleConfigurations(client);
       getConfigurations(client);
       subscribeConfigurationRequest(client);
       unsubscribeConfigurationItems(client);
+    }
+  }
+
+  /**
+   * Gets configurations for a single key.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void getSingleConfigurations(DaprPreviewClient client) {
+    System.out.println("*******trying to retrieve configurations for a single key********");
+    try {
+      ConfigurationItem item = client.getConfiguration(CONFIG_STORE_NAME, "myconfig1").block();
+      System.out.println(item.getValue());
+      System.out.println(item.getKey());
+    } catch (Exception ex) {
+      System.out.println(ex.getMessage());
     }
   }
 
@@ -62,7 +80,12 @@ public class ConfigurationClient {
     keys.add("myconfig1");
     keys.add("myconfig2");
     keys.add("myconfig3");
+
+    Map<String, String> hmap = new HashMap<>();
+    hmap.put("meta_key","meta_value");
     GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
+    req.setMetadata(hmap);
+
     try {
       Mono<Map<String, ConfigurationItem>> items = client.getConfiguration(req);
       items.block().forEach((k,v) -> print(v, k));

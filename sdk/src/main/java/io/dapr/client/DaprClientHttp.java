@@ -775,6 +775,8 @@ public class DaprClientHttp extends AbstractDaprClient {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
+      final Map<String, String> metadata = request.getMetadata();
+
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
@@ -782,10 +784,14 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("Keys can not be empty or null");
       }
 
-      String[] pathSegments = new String[] {DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName };
       Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.put("key", Collections.unmodifiableList(keys));
 
+      // Appending passed metadata too into queryparams
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
+      queryParams.putAll(queryArgs);
+
+      String[] pathSegments = new String[] {DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName };
       return Mono.subscriberContext().flatMap(
               context -> this.client
                       .invokeApi(
@@ -830,6 +836,7 @@ public class DaprClientHttp extends AbstractDaprClient {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
+      final Map<String, String> metadata = request.getMetadata();
 
       if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
@@ -838,10 +845,15 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("Keys can not be null or empty.");
       }
 
-      String[] pathSegments =
-              new String[] { DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName, "subscribe" };
       Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.put("key", Collections.unmodifiableList(keys));
+
+      // Appending passed metadata too into queryparams
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
+      queryParams.putAll(queryArgs);
+
+      String[] pathSegments =
+          new String[] { DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName, "subscribe" };
       SubscribeConfigurationResponse res = Mono.subscriberContext().flatMap(
               context -> this.client.invokeApi(
                       DaprHttp.HttpMethods.GET.name(),
