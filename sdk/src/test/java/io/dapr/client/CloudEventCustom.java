@@ -23,49 +23,48 @@ import java.io.IOException;
 
 public class CloudEventCustom<T> extends CloudEvent<T> {
  
-  public String newValue;
+  private String newValue;
+
   private int newInt;
-  public double newDouble;
 
-  public CloudEventCustom() {
-    super();
+  private double newDouble;
+
+  public String getNewValue() {
+    return newValue;
   }
 
-  public CloudEventCustom(
-      String id,
-      String source,
-      String type,
-      String specversion,
-      String datacontenttype,
-      T data,
-      String newValue,
-      int newInt,
-      double newDouble) {
-      super(id, source, type, specversion, datacontenttype, data);
-      this.newValue = newValue;
-      this.newInt = newInt;
-      this.newDouble = newDouble;
+  public void setNewValue(String newValue) {
+    this.newValue = newValue;
   }
-
-  public CloudEventCustom(
-      String id,
-      String source,
-      String type,
-      String specversion,
-      byte[] binaryData,
-      String newValue,
-      int newInt,
-      double newDouble
-      ) {
-      super(id, source, type, specversion, binaryData);
-      this.newValue = newValue;
-      this.newInt = newInt;
-      this.newDouble = newDouble;
-
-  } 
 
   public int getNewInt() {
     return newInt;
+  }
+
+  public void setNewInt(int newInt) {
+    this.newInt = newInt;
+  }
+
+  public double getNewDouble() {
+    return newDouble;
+  }
+
+  public void setNewDouble(double newDouble) {
+    this.newDouble = newDouble;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    CloudEventCustom<?> that = (CloudEventCustom<?>) o;
+    return newInt == that.newInt && Double.compare(that.newDouble, newDouble) == 0 && Objects.equals(newValue, that.newValue);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), newValue, newInt, newDouble);
   }
 
 }

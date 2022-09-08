@@ -55,8 +55,8 @@ public class CloudEventCustomTest {
 
     CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
-    assertEquals("hello world again", cloudEventCustom.newValue);
-    assertEquals(432434324.43, cloudEventCustom.newDouble,0);
+    assertEquals("hello world again", cloudEventCustom.getNewValue());
+    assertEquals(432434324.43, cloudEventCustom.getNewDouble(),0);
     assertEquals(435, cloudEventCustom.getNewInt());
   }
 
@@ -78,18 +78,13 @@ public class CloudEventCustomTest {
         "    \"data\" : {\"id\": 1, \"name\": \"hello world\"}\n" +
         "}";
 
-    MyClass expected = new MyClass() {{
-      this.id = 1;
-      this.name = "hello world";
-    }};
-
-    CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
+    CloudEventCustom<MyClass> cloudEventCustom = serializer.deserialize(
+        content.getBytes(), new TypeRef<CloudEventCustom<MyClass>>() {});
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
-    MyClass myObject = OBJECT_MAPPER.convertValue(cloudEventCustom.getData(), MyClass.class);
-    assertEquals(expected.id, myObject.id);
-    assertEquals(expected.name, myObject.name);
-    assertEquals("hello world again", cloudEventCustom.newValue);
-    assertEquals(432434324.43, cloudEventCustom.newDouble, 0);
+    assertEquals(1, cloudEventCustom.getData().id);
+    assertEquals("hello world", cloudEventCustom.getData().name);
+    assertEquals("hello world again", cloudEventCustom.getNewValue());
+    assertEquals(432434324.43, cloudEventCustom.getNewDouble(), 0);
     assertEquals(435, cloudEventCustom.getNewInt());
 
   }
@@ -111,7 +106,7 @@ public class CloudEventCustomTest {
     CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
     assertNull(cloudEventCustom.getData());
-    assertNull(cloudEventCustom.newValue);
+    assertNull(cloudEventCustom.getNewValue());
     assertEquals(0, cloudEventCustom.getNewInt());
   }
 
@@ -131,9 +126,10 @@ public class CloudEventCustomTest {
         "    \"data\" : 1\n" +
         "}";
 
-    CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
+    CloudEventCustom<Integer> cloudEventCustom = serializer.deserialize(
+        content.getBytes(), new TypeRef<CloudEventCustom<Integer>>() {});
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
-    assertEquals(1, cloudEventCustom.getData());
+    assertEquals(1, cloudEventCustom.getData().intValue());
     assertEquals(7, cloudEventCustom.getNewInt());
   }
 
@@ -152,7 +148,8 @@ public class CloudEventCustomTest {
         "    \"data\" : \"hello world\"\n" +
         "}";
 
-    CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
+    CloudEventCustom<String> cloudEventCustom = serializer.deserialize(
+        content.getBytes(), new TypeRef<CloudEventCustom<String>>() {});
     assertEquals("text/plain", cloudEventCustom.getDatacontenttype());
     assertEquals("hello world", cloudEventCustom.getData());
   }
@@ -172,7 +169,8 @@ public class CloudEventCustomTest {
         "    \"data\" : \"<root/>\"\n" +
         "}";
 
-    CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
+    CloudEventCustom<String> cloudEventCustom = serializer.deserialize(
+        content.getBytes(), new TypeRef<CloudEventCustom<String>>() {});
     assertEquals("text/xml", cloudEventCustom.getDatacontenttype());
     assertEquals("<root/>", cloudEventCustom.getData());
   }
@@ -193,10 +191,10 @@ public class CloudEventCustomTest {
         "}";
 
     byte[] expected = new byte[]{ 0x1, 0x2 };
-    CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
+    CloudEventCustom<byte[]> cloudEventCustom = serializer.deserialize(
+        content.getBytes(), new TypeRef<CloudEventCustom<byte[]>>() {});
     assertEquals("application/json", cloudEventCustom.getDatacontenttype());
-    assertEquals("AQI=", cloudEventCustom.getData());
-    assertArrayEquals(expected, OBJECT_MAPPER.convertValue(cloudEventCustom.getData(), byte[].class));
+    assertArrayEquals(expected, cloudEventCustom.getData());
   }
 
   @Test
@@ -215,7 +213,8 @@ public class CloudEventCustomTest {
         "}";
 
     byte[] expected = new byte[]{ 0x1, 0x2 };
-    CloudEventCustom cloudEventCustom = serializer.deserialize(content.getBytes(), TypeRef.get(CloudEventCustom.class));
+    CloudEventCustom<byte[]> cloudEventCustom = serializer.deserialize(
+        content.getBytes(), new TypeRef<CloudEventCustom<byte[]>>() {});
     assertEquals("application/octet-stream", cloudEventCustom.getDatacontenttype());
     assertNull(cloudEventCustom.getData());
     assertArrayEquals(expected, cloudEventCustom.getBinaryData());
@@ -223,25 +222,32 @@ public class CloudEventCustomTest {
 
   @Test
   public void serializeAndDeserialize() throws Exception {
-    MyClass expected = new MyClass() {{
+    CloudEventCustom<MyClass> cloudEventCustom = new CloudEventCustom();
+    cloudEventCustom.setId("idVal");
+    cloudEventCustom.setSource("sourceVal");
+    cloudEventCustom.setType("typeVal");
+    cloudEventCustom.setSpecversion("specVal");
+    cloudEventCustom.setDatacontenttype("contentVal");
+    cloudEventCustom.setNewValue("specVal");
+    cloudEventCustom.setNewInt(5);
+    cloudEventCustom.setNewDouble(323.32323);
+    cloudEventCustom.setData(new MyClass() {{
       this.id = 1;
       this.name = "hello world";
-    }};
-
-    CloudEventCustom<MyClass> cloudEventCustom = new CloudEventCustom("idVal", "sourceVal", "typeVal", "specVal", "contentVal", expected, "newString", 5, 323.32323);
+    }});
     byte[] byte_array = serializer.serialize(cloudEventCustom);
-    CloudEventCustom cloudEventUnserial = serializer.deserialize(byte_array, TypeRef.get(CloudEventCustom.class));
-    assertEquals("contentVal", cloudEventUnserial.getDatacontenttype());
-    MyClass myObject = OBJECT_MAPPER.convertValue(cloudEventUnserial.getData(), MyClass.class);
-    assertEquals(expected.id, myObject.id);
-    assertEquals(expected.name, myObject.name);
-    assertEquals("idVal", cloudEventUnserial.getId());
-    assertEquals("sourceVal", cloudEventUnserial.getSource());
-    assertEquals("typeVal", cloudEventUnserial.getType());
-    assertEquals("specVal", cloudEventUnserial.getSpecversion());
-    assertEquals("newString", cloudEventUnserial.newValue);
-    assertEquals(5, cloudEventUnserial.getNewInt());
-    assertEquals(323.32323, cloudEventUnserial.newDouble, 0);
+    CloudEventCustom<MyClass> cloudEventUnserial =
+        serializer.deserialize(byte_array, new TypeRef<CloudEventCustom<MyClass>>() {});
+    assertEquals(cloudEventCustom.getDatacontenttype(), cloudEventUnserial.getDatacontenttype());
+    assertEquals(cloudEventCustom.getData().id, cloudEventUnserial.getData().id);
+    assertEquals(cloudEventCustom.getData().name, cloudEventUnserial.getData().name);
+    assertEquals(cloudEventCustom.getId(), cloudEventUnserial.getId());
+    assertEquals(cloudEventCustom.getSource(), cloudEventUnserial.getSource());
+    assertEquals(cloudEventCustom.getType(), cloudEventUnserial.getType());
+    assertEquals(cloudEventCustom.getSpecversion(), cloudEventUnserial.getSpecversion());
+    assertEquals(cloudEventCustom.getNewValue(), cloudEventUnserial.getNewValue());
+    assertEquals(cloudEventCustom.getNewInt(), cloudEventUnserial.getNewInt());
+    assertEquals(cloudEventCustom.getNewDouble(), cloudEventUnserial.getNewDouble(), 0.00001);
   }
 
 }
