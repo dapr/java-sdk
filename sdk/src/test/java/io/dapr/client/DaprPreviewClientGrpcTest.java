@@ -113,7 +113,6 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
 
 		ConfigurationItem ci = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-		assertEquals("configkey1", ci.getKey());
 		assertEquals("configvalue1", ci.getValue());
 		assertEquals("1", ci.getVersion());
 	}
@@ -131,7 +130,6 @@ public class DaprPreviewClientGrpcTest {
 		Map<String, String> reqMetadata = new HashMap<>();
 		reqMetadata.put("meta1", "value1");
 		ConfigurationItem ci = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1", reqMetadata).block();
-		assertEquals("configkey1", ci.getKey());
 		assertEquals("configvalue1", ci.getValue());
 		assertEquals("1", ci.getVersion());
 	}
@@ -146,15 +144,14 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
 
-		List<ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
+		Map<String, ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
 		assertEquals(2, cis.size());
-		assertEquals("configkey1", cis.stream().findFirst().get().getKey());
-		assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
-		assertEquals("1", cis.stream().findFirst().get().getVersion());
-
-		assertEquals("configkey2", cis.stream().skip(1).findFirst().get().getKey());
-		assertEquals("configvalue2", cis.stream().skip(1).findFirst().get().getValue());
-		assertEquals("1", cis.stream().skip(1).findFirst().get().getVersion());
+		assertTrue("configkey1", cis.containsKey("configkey1"));
+		assertEquals("configvalue1", cis.get("configkey1").getValue());
+		assertEquals("1", cis.get("configkey1").getVersion());
+		assertTrue("configkey2", cis.containsKey("configkey2"));
+		assertEquals("configvalue2", cis.get("configkey2").getValue());
+		assertEquals("1", cis.get("configkey2").getVersion());
 	}
 
 	@Test
@@ -170,23 +167,24 @@ public class DaprPreviewClientGrpcTest {
 		Map<String, String> reqMetadata = new HashMap<>();
 		reqMetadata.put("meta1", "value1");
 		List<String> keys = Arrays.asList("configkey1","configkey2");
-		List<ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
+		Map<String, ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
 		assertEquals(2, cis.size());
-		assertEquals("configkey1", cis.stream().findFirst().get().getKey());
-		assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
+		assertTrue("configkey1", cis.containsKey("configkey1"));
+		assertEquals("configvalue1", cis.get("configkey1").getValue());
 	}
 
 	@Test
 	public void subscribeConfigurationTest() {
 		Map<String, String> metadata = new HashMap<>();
 		metadata.put("meta1", "value1");
+		Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+		configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+		.setValue("configvalue1")
+		.setVersion("1")
+		.putAllMetadata(metadata)
+		.build());
 		DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
+				.putAllItems(configs)
 				.build();
 
 		doAnswer((Answer<Void>) invocation -> {
@@ -197,23 +195,24 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
 
-		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+		Iterator<Map<String, ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
 		assertTrue(itr.hasNext());
-		assertEquals("configkey1", itr.next().get(0).getKey());
-		assertFalse(itr.hasNext());
+		assertTrue(itr.next().containsKey("configkey1"));
+		assertFalse(itr.hasNext());	
 	}
 
 	@Test
 	public void subscribeConfigurationTestWithMetadata() {
 		Map<String, String> metadata = new HashMap<>();
 		metadata.put("meta1", "value1");
+		Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+		configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+		.setValue("configvalue1")
+		.setVersion("1")
+		.putAllMetadata(metadata)
+		.build());
 		DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
+				.putAllItems(configs)
 				.build();
 
 		doAnswer((Answer<Void>) invocation -> {
@@ -227,10 +226,10 @@ public class DaprPreviewClientGrpcTest {
 		Map<String, String> reqMetadata = new HashMap<>();
 		List<String> keys = Arrays.asList("configkey1");
 
-		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
+		Iterator<Map<String, ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
 		assertTrue(itr.hasNext());
-		assertEquals("configkey1", itr.next().get(0).getKey());
-		assertFalse(itr.hasNext());
+		assertTrue(itr.next().containsKey("configkey1"));
+		assertFalse(itr.hasNext());	
 	}
 
 	@Test
@@ -260,33 +259,34 @@ public class DaprPreviewClientGrpcTest {
 	private DaprProtos.GetConfigurationResponse getSingleMockResponse() {
 		Map<String, String> metadata = new HashMap<>();
 		metadata.put("meta1", "value1");
+		Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+		configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+		.setValue("configvalue1")
+		.setVersion("1")
+		.putAllMetadata(metadata)
+		.build());
 		DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build()
-				).build();
+				.putAllItems(configs)
+				.build();
 		return responseEnvelope;
 	}
 
 	private DaprProtos.GetConfigurationResponse getMultipleMockResponse() {
 		Map<String, String> metadata = new HashMap<>();
 		metadata.put("meta1", "value1");
+		Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+		configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+		.setValue("configvalue1")
+		.setVersion("1")
+		.putAllMetadata(metadata)
+		.build());
+		configs.put("configkey2", CommonProtos.ConfigurationItem.newBuilder()
+		.setValue("configvalue2")
+		.setVersion("1")
+		.putAllMetadata(metadata)
+		.build());
 		DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey2")
-						.setValue("configvalue2")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
+				.putAllItems(configs)
 				.build();
 		return responseEnvelope;
 	}

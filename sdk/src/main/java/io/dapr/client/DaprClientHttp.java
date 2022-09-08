@@ -188,6 +188,8 @@ public class DaprClientHttp extends AbstractDaprClient {
       final Object request = invokeMethodRequest.getBody();
       final HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
       final String contentType = invokeMethodRequest.getContentType();
+      final Map<String, String> metadata = invokeMethodRequest.getMetadata();
+
       if (httpExtension == null) {
         throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
       }
@@ -206,12 +208,15 @@ public class DaprClientHttp extends AbstractDaprClient {
       List<String> pathSegments = new ArrayList<>(Arrays.asList(DaprHttp.API_VERSION, "invoke", appId, "method"));
       pathSegments.addAll(Arrays.asList(methodSegments));
 
-      byte[] serializedRequestBody = objectSerializer.serialize(request);
       final Map<String, String> headers = new HashMap<>();
       if (contentType != null && !contentType.isEmpty()) {
         headers.put("content-type", contentType);
       }
       headers.putAll(httpExtension.getHeaders());
+      if (metadata != null) {
+        headers.putAll(metadata);
+      }
+      byte[] serializedRequestBody = objectSerializer.serialize(request);
       Mono<DaprHttp.Response> response = Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(httpMethod, pathSegments.toArray(new String[0]),
               httpExtension.getQueryParams(), serializedRequestBody, headers, context)
@@ -869,7 +874,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
     return DaprException.wrapMono(new UnsupportedOperationException());
   }
 
@@ -877,7 +882,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+  public Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
     return DaprException.wrapFlux(new UnsupportedOperationException());
   }
 

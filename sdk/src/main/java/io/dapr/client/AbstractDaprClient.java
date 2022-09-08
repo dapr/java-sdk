@@ -118,7 +118,8 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     InvokeMethodRequest req = new InvokeMethodRequest(appId, methodName)
         .setBody(data)
         .setHttpExtension(httpExtension)
-        .setContentType(objectSerializer.getContentType());
+        .setContentType(objectSerializer.getContentType())
+        .setMetadata(metadata);
 
     return this.invokeMethod(req, type);
   }
@@ -506,7 +507,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   @Override
   public Mono<ConfigurationItem> getConfiguration(String storeName, String key) {
     GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
-    return this.getConfiguration(request).map(data -> data.get(0));
+    return this.getConfiguration(request).map(data -> data.get(key));
   }
 
   /**
@@ -516,14 +517,14 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   public Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata) {
     GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
     request.setMetadata(metadata);
-    return this.getConfiguration(request).map(data -> data.get(0));
+    return this.getConfiguration(request).map(data -> data.get(key));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(String storeName, String... keys) {
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, String... keys) {
     List<String> listOfKeys = filterEmptyKeys(keys);
     GetConfigurationRequest request = new GetConfigurationRequest(storeName, listOfKeys);
     return this.getConfiguration(request);
@@ -533,7 +534,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {
@@ -545,7 +546,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys) {
+  public Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys) {
     List<String> listOfKeys = filterEmptyKeys(keys);
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
     return this.subscribeToConfiguration(request);
@@ -554,7 +555,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(
+  public Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {

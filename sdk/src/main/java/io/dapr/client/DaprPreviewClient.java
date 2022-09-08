@@ -56,41 +56,42 @@ public interface DaprPreviewClient extends AutoCloseable {
   Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata);
 
   /**
-   * Retrieve List of configurations based on a provided variable number of keys.
+   * Retrieve Map of configurations based on a provided variable number of keys.
    *
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be retrieved
-   * @return Mono of List of ConfigurationItems
+   * @return Mono of Map of ConfigurationItems
    */
-  Mono<List<ConfigurationItem>> getConfiguration(String storeName, String... keys);
+  Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, String... keys);
 
   /**
-   * Retrieve List of configurations based on a provided variable number of keys.
+   * Retrieve Map of configurations based on a provided variable number of keys.
    *
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be retrieved
    * @param metadata  optional metadata
-   * @return Mono of List of ConfigurationItems
+   * @return Mono of Map of ConfigurationItems
    */
-  Mono<List<ConfigurationItem>> getConfiguration(String storeName, List<String> keys, Map<String, String> metadata);
+  Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, List<String> keys, 
+                                                          Map<String, String> metadata);
 
   /**
-   * Retrieve List of configurations based on a provided configuration request object.
+   * Retrieve Map of configurations based on a provided configuration request object.
    *
    * @param request request for retrieving Configurations for a list keys
-   * @return Mono of List of ConfigurationItems
+   * @return Mono of Map of ConfigurationItems
    */
 
-  Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request);
+  Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request);
 
   /**
    * Subscribe to the keys for any change.
    *
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be subscribed
-   * @return Flux of List of configuration items
+   * @return Flux of Map of configuration items
    */
-  Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys);
+  Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys);
 
   /**
    * Subscribe to the keys for any change.
@@ -98,18 +99,18 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param storeName Name of the configuration store
    * @param keys      keys of the configurations which are to be subscribed
    * @param metadata  optional metadata
-   * @return Flux of List of configuration items
+   * @return Flux of Map of configuration items
    */
-  Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, List<String> keys,
+  Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(String storeName, List<String> keys,
                                                          Map<String, String> metadata);
 
   /**
    * Subscribe to the keys for any change.
    *
    * @param request request for subscribing to any change for the given keys in request
-   * @return Flux of List of configuration items
+   * @return Flux of Map of configuration items
    */
-  Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request);
+  Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request);
 
   /**
    * Query for states using a query string.

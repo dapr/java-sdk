@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ConfigurationClient {
@@ -72,9 +73,9 @@ public class ConfigurationClient {
   public static void getConfigurationsUsingVarargs(DaprPreviewClient client) {
     System.out.println("*******trying to retrieve configurations for a variable no. of keys********");
     try {
-      Mono<List<ConfigurationItem>> items =
+      Mono<Map<String, ConfigurationItem>> items =
           client.getConfiguration(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
-      items.block().forEach(ConfigurationClient::print);
+      items.block().forEach((k,v) -> print(v, k));
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
     }
@@ -93,8 +94,8 @@ public class ConfigurationClient {
     keys.add("myconfig3");
     GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
     try {
-      Mono<List<ConfigurationItem>> items = client.getConfiguration(req);
-      items.block().forEach(ConfigurationClient::print);
+      Mono<Map<String, ConfigurationItem>> items = client.getConfiguration(req);
+      items.block().forEach((k,v) -> print(v, k));
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
     }
@@ -110,10 +111,10 @@ public class ConfigurationClient {
     AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, keys);
     Runnable subscribeTask = () -> {
-      Flux<List<ConfigurationItem>> outFlux = client.subscribeToConfiguration(req);
+      Flux<Map<String, ConfigurationItem>> outFlux = client.subscribeToConfiguration(req);
       disposableAtomicReference.set(outFlux
           .subscribe(
-              cis -> cis.forEach(ConfigurationClient::print)
+              cis -> cis.forEach((k,v) -> print(v, k))
           ));
     };
     new Thread(subscribeTask).start();
@@ -140,8 +141,8 @@ public class ConfigurationClient {
     }
   }
 
-  private static void print(ConfigurationItem item) {
-    System.out.println(item.getValue() + " : key ->" + item.getKey());
+  private static void print(ConfigurationItem item, String key) {
+    System.out.println(item.getValue() + " : key ->" + key);
   }
 
   private static void executeDockerCommand(int postfix) {

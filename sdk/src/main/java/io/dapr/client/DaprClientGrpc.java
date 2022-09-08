@@ -66,6 +66,8 @@ import reactor.util.context.Context;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -860,7 +862,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final Map<String, String> metadata = request.getMetadata();
@@ -885,16 +887,22 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
   }
 
-  private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
+  private Mono<Map<String, ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
     return Mono.subscriberContext().flatMap(
         context ->
             this.<DaprProtos.GetConfigurationResponse>createMono(
                 it -> intercept(context, asyncStub).getConfigurationAlpha1(envelope, it)
             )
     ).map(
-        it ->
-            it.getItemsList().stream()
-                .map(this::buildConfigurationItem).collect(Collectors.toList())
+        it -> {
+          Map<String, ConfigurationItem> configMap = new HashMap<>();
+          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
+          while (itr.hasNext()) {
+            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+          }
+          return Collections.unmodifiableMap(configMap);
+        }
     );
   }
 
@@ -902,7 +910,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+  public Flux<Map<String, ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
@@ -925,9 +933,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
       return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
           it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelope, it)
       ).map(
-          it ->
-              it.getItemsList().stream()
-                  .map(this::buildConfigurationItem).collect(Collectors.toList())
+        it -> {
+          Map<String, ConfigurationItem> configMap = new HashMap<>();
+          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
+          while (itr.hasNext()) {
+            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+          }
+          return Collections.unmodifiableMap(configMap);
+        }
       );
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
@@ -941,10 +955,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @return io.dapr.client.domain.ConfigurationItem
    */
   private ConfigurationItem buildConfigurationItem(
-      CommonProtos.ConfigurationItem configurationItem) {
+      CommonProtos.ConfigurationItem configurationItem, String key) {
     return new ConfigurationItem(
-        configurationItem.getKey(),
-        configurationItem.getValue(),
+      key,
+      configurationItem.getValue(),
         configurationItem.getVersion(),
         configurationItem.getMetadataMap()
     );
