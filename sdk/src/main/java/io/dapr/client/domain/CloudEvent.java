@@ -26,7 +26,7 @@ import java.util.Objects;
  * A cloud event in Dapr.
  * @param <T> The type of the payload.
  */
-public final class CloudEvent<T> {
+public class CloudEvent<T> {
 
   /**
    * Mime type used for CloudEvent.
