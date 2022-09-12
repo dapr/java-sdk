@@ -115,14 +115,7 @@ public class DaprPreviewClientHttpTest {
   @Test
   public void getConfigurationTestErrorScenario() {
     assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "").block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
       daprPreviewClientHttp.getConfiguration("", "key").block();
-    });
-    GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, null);
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.getConfiguration(req).block();
     });
   }
 

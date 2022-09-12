@@ -91,14 +91,7 @@ public class DaprPreviewClientGrpcTest {
 	@Test
 	public void getConfigurationTestErrorScenario() {
 		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfiguration(CONFIG_STORE_NAME, "").block();
-		});
-		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.getConfiguration("", "key").block();
-		});
-		GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, null);
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfiguration(req).block();
 		});
 	}
 

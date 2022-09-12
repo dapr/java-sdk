@@ -780,12 +780,11 @@ public class DaprClientHttp extends AbstractDaprClient {
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
-      if (keys.isEmpty()) {
-        throw new IllegalArgumentException("Keys can not be empty or null");
-      }
 
       Map<String, List<String>> queryParams = new HashMap<>();
-      queryParams.put("key", Collections.unmodifiableList(keys));
+      if (!keys.isEmpty()) {
+        queryParams.put("key", Collections.unmodifiableList(keys));
+      }
 
       // Appending passed metadata too into queryparams
       Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);

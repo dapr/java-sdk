@@ -779,9 +779,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
-      if (keys.isEmpty()) {
-        throw new IllegalArgumentException("Keys can not be empty or null");
-      }
+
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName).addAllKeys(keys);
       if (metadata != null) {

@@ -60,27 +60,11 @@ public class ConfigurationIT extends BaseIT {
     }
 
     @Test
-    public void getConfigurationWithEmptyKey() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "").block();
-        });
-    }
-
-    @Test
     public void getConfigurations() {
         Map<String, ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
         assertTrue(cis.size() == 2);
         assertTrue(cis.containsKey("myconfigkey1"));
         assertTrue(cis.containsKey("myconfigkey2"));
-    }
-
-    @Test
-    public void getConfigurationsWithEmptyList() {
-        List<String> listOfKeys = new ArrayList<>();
-        Map<String, String> metadata = new HashMap<>();
-        assertThrows(IllegalArgumentException.class, () -> {
-            daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, listOfKeys, metadata).block();
-        });
     }
 
     private static void executeDockerCommand(String[] command) {
