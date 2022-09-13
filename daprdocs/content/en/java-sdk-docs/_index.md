@@ -222,6 +222,11 @@ import org.slf4j.LoggerFactory;
 public class myClass {
     private static final Logger log = LoggerFactory.getLogger(myClass);
         @PostMapping(path = "/checkout")
+        public Mono<String> getCheckout(@RequestBody(required = false) byte[] body) {
+            return Mono.fromRunnable(() ->
+                    log.info("Received Message: " + new String(body)));
+        }
+}
 ```
 
 - For a full guide on input bindings, visit [How-To: Input bindings]({{< ref howto-triggers >}}).
