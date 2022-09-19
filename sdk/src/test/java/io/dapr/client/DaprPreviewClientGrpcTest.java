@@ -248,11 +248,6 @@ public class DaprPreviewClientGrpcTest {
 		assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.subscribeConfiguration("", "key").blockFirst();
 		});
-
-		SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, null);
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.subscribeConfiguration(req).blockFirst();
-		});
 	}
 
 	@Test

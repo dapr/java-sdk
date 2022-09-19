@@ -27,7 +27,6 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -94,14 +93,18 @@ public class ConfigurationClientIT extends BaseIT {
 
     @Test
     public void subscribeConfiguration() {
-        List<String> updatedValues = new ArrayList<>();
-        AtomicReference<Disposable> disposable = new AtomicReference<>();
         Runnable subscribeTask = () -> {
             Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
                     .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
-            disposable.set(outFlux.subscribe(update -> {
-                updatedValues.add(update.getItems().entrySet().stream().findFirst().get().getValue().getValue());
-            }));
+            outFlux.subscribe(update -> {
+                if (update.getItems().size() == 0 ) {
+                    assertTrue(update.getSubscriptionId().length() > 0);
+                } else {
+                    String value = update.getItems().entrySet().stream().findFirst().get().getValue().getValue();
+                    assertEquals(update.getItems().size(), 1);
+                    assertTrue(value.contains("update_"));
+                }
+            });
         };
         Thread subscribeThread = new Thread(subscribeTask);
         subscribeThread.start();
@@ -117,15 +120,10 @@ public class ConfigurationClientIT extends BaseIT {
         new Thread(updateKeys).start();
         try {
             // To ensure main thread does not die before outFlux subscribe gets called
-            Thread.sleep(3000);
-            disposable.get().dispose();
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        assertEquals(updatedValues.size(), 2);
-        assertTrue(updatedValues.contains("update_myconfigvalue1"));
-        assertTrue(updatedValues.contains("update_myconfigvalue2"));
-        assertFalse(updatedValues.contains("update_myconfigvalue3"));
     }
 
     @Test

@@ -185,12 +185,6 @@ public class DaprPreviewClientHttpTest {
       daprPreviewClientHttp.subscribeConfiguration("", "key1").blockFirst();
     });
 
-    List<String> list = new ArrayList<>();
-    SubscribeConfigurationRequest req = new SubscribeConfigurationRequest("mystore", list);
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.subscribeConfiguration(req).blockFirst();
-    });
-
     mockInterceptor.addRule()
             .get()
             .path("/v1.0-alpha1/configuration/MyConfigStore/subscribe")

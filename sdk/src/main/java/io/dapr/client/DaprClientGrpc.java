@@ -826,12 +826,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
       }
-      if (keys.isEmpty()) {
-        throw new IllegalArgumentException("Keys can not be null or empty.");
-      }
+
+      // keys can and empty list for subscribe all scenario, so we do not need check for empty keys.
       DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName)
           .addAllKeys(keys);
+
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
