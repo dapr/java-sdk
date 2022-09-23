@@ -64,39 +64,10 @@ public class ConfigurationClient {
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      getConfigurationForSingleKey(client);
-      getConfigurationsUsingVarargs(client);
       getConfigurations(client);
       subscribeConfigurationRequestWithSubscribe(client);
       unsubscribeConfigurationItems(client);
     }
-  }
-
-  /**
-   * Gets configuration for a single key.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurationForaSingleKey(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configuration given a single key********");
-    try {
-      Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, keys.get(0));
-      // ..
-    } catch (Exception ex) {}
-  }
-
-  /**
-   * Gets configurations for varibale no. of arguments.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurationsUsingVarargs(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configurations for a variable no. of keys********");
-    try {
-      Mono<List<ConfigurationItem>> items =
-          client.getConfiguration(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
-      // ..
-    } catch (Exception ex) {}
   }
 
   /**
@@ -164,27 +135,15 @@ Use the following command to run this example-
 name: Run ConfigurationClient example
 expected_stdout_lines:
   - "== APP == Using preview client..."
-  - "== APP == *******trying to retrieve configuration given a single key********"
-  - "== APP == Value ->val1 key ->myconfig1"
-  - "== APP == *******trying to retrieve configurations for a variable no. of keys********"
-  - "== APP == val1 : key ->myconfig1"
-  - "== APP == val3 : key ->myconfig3"
   - "== APP == *******trying to retrieve configurations for a list of keys********"
   - "== APP == val1 : key ->myconfig1"
   - "== APP == val2 : key ->myconfig2"
   - "== APP == val3 : key ->myconfig3"
   - "== APP == Subscribing to key: myconfig1"
-  - "== APP == update_myconfigvalue1 : key ->myconfig1"
-  - "== APP == update_myconfigvalue2 : key ->myconfig1"
-  - "== APP == update_myconfigvalue3 : key ->myconfig1"
-  - "== APP == Subscribing to key: myconfig2"
-  - "== APP == update_myconfigvalue1 : key ->myconfig2"
-  - "== APP == update_myconfigvalue2 : key ->myconfig2"
-  - "== APP == update_myconfigvalue3 : key ->myconfig2"
-  - "== APP == update_myconfigvalue4 : key ->myconfig2"
-  - "== APP == update_myconfigvalue5 : key ->myconfig2"
-  - "== APP == Is Unsubscribe successful: true"
+  - "== APP == subscription ID :"
+  - "== APP == subscribing to key myconfig1 is successful"
 background: true
+output_match_mode: substring
 sleep: 10
 -->
 
@@ -197,26 +156,13 @@ dapr run --components-path ./components/configuration --app-id configgrpc --log-
 ### Sample output
 ```
 == APP == Using preview client...
-== APP == *******trying to retrieve configuration given a single key********
-== APP == Value ->val1 key ->myconfig1
-== APP == *******trying to retrieve configurations for a variable no. of keys********
-== APP == val1 : key ->myconfig1
-== APP == val3 : key ->myconfig3
 == APP == *******trying to retrieve configurations for a list of keys********
 == APP == val1 : key ->myconfig1
 == APP == val2 : key ->myconfig2
 == APP == val3 : key ->myconfig3
-== APP == Subscribing to key: myconfig1"
-== APP == update_myconfigvalue1 : key ->myconfig1
-== APP == update_myconfigvalue2 : key ->myconfig1
-== APP == update_myconfigvalue3 : key ->myconfig1
-== APP == Subscribing to key: myconfig2"
-== APP == update_myconfigvalue1 : key ->myconfig2
-== APP == update_myconfigvalue2 : key ->myconfig2
-== APP == update_myconfigvalue3 : key ->myconfig2
-== APP == update_myconfigvalue4 : key ->myconfig2
-== APP == update_myconfigvalue5 : key ->myconfig2
-== APP == IsUnsubscribed : true
+== APP == Subscribing to key: myconfig1
+== APP == subscription ID : 82bb8e24-f69d-477a-9126-5ffaf995f498
+== APP == subscribing to key myconfig1 is successful
 
 
 ```

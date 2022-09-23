@@ -25,7 +25,6 @@ import io.dapr.config.Properties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,26 +45,9 @@ public class ConfigurationClient {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      getSingleConfigurations(client);
       getConfigurations(client);
       subscribeConfigurationRequest(client);
       unsubscribeConfigurationItems(client);
-    }
-  }
-
-  /**
-   * Gets configurations for a single key.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getSingleConfigurations(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configurations for a single key********");
-    try {
-      ConfigurationItem item = client.getConfiguration(CONFIG_STORE_NAME, "myconfig1").block();
-      System.out.println(item.getValue());
-      System.out.println(item.getKey());
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
     }
   }
 
@@ -108,11 +90,10 @@ public class ConfigurationClient {
         cis -> {
           SUBSCRIPTION_ID = cis.getSubscriptionId();
         });
-    System.out.println("Getting updated values for all subscribed keys..");
-    int i = 1;
-    while (i <= 3) {
-      executeDockerCommand("myconfig2", i);
-      i++;
+    if (!SUBSCRIPTION_ID.isEmpty()) {
+      System.out.println("subscribing to myconfig2 is successful");
+    } else {
+      System.out.println("error in subscribing to myconfig2");
     }
   }
 
@@ -137,23 +118,5 @@ public class ConfigurationClient {
 
   private static void print(ConfigurationItem item, String key) {
     System.out.println(item.getValue() + " : key ->" + key);
-  }
-
-  private static void executeDockerCommand(String key, int postfix) {
-    String[] command = new String[] {
-        "docker", "exec", "dapr_redis", "redis-cli",
-        "SET",
-        key, "update_myconfigvalue" + postfix + "||2"
-    };
-    ProcessBuilder processBuilder = new ProcessBuilder(command);
-    Process process = null;
-    try {
-      process = processBuilder.start();
-      process.waitFor();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
   }
 }

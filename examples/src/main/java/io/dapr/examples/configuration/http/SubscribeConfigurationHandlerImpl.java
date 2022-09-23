@@ -30,7 +30,6 @@ public class SubscribeConfigurationHandlerImpl extends BaseSubscribeConfigHandle
    * @param response {@link SubscribeConfigurationResponse}
    */
   public void handleResponse(SubscribeConfigurationResponse response) {
-    System.out.println("hello  form hndle configuraiton");
     Map<String, ConfigurationItem> items = response.getItems();
     for (Map.Entry<String, ConfigurationItem> entry : items.entrySet()) {
       System.out.println(entry.getValue().getValue() + " : sp key ->" + entry.getKey());

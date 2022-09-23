@@ -147,24 +147,20 @@ cd examples
 
 #### Running the configuration subscriber app:
 
-`DaprApplication.start()` Method will run an Spring Boot application that registers the `ConfigSubscriberController`. This controller exposes a `POST`
+`DaprApplication.start()` Method will run an Spring Boot application that registers the `DaprController`. This controller exposes a `POST`
 route which dapr sidecar calls invokes whenever any update happens to subscribed config keys.
 
 ```java
 @RestController
 public class ConfigSubscriberController {
   ///...
-  @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap, @RequestBody JsonNode obj) {
+  @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.ALL_VALUE)
+  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap,
+                                       @RequestBody SubscribeConfigurationResponse obj) {
     return Mono.fromRunnable(
             () -> {
               try {
-                for (Iterator<JsonNode> it = obj.get("items").elements(); it.hasNext(); ) {
-                  JsonNode node = it.next();
-                  String key = node.path("key").asText();
-                  String value = node.path("value").asText();
-                  System.out.println(value + " : key ->" + key);
-                }
+                BaseSubscribeConfigHandler.getInstance().handleResponse(obj);
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }
@@ -177,12 +173,7 @@ Execute the following script to run the ConfigSubscriber app:
 
 <!-- STEP
 name: Run ConfigurationSubscriber
-expected_stdout_lines:
-  - '== APP == update_myconfigvalue1 : key ->myconfig2'
-  - '== APP == update_myconfigvalue2 : key ->myconfig2'
-  - '== APP == update_myconfigvalue3 : key ->myconfig2'
 background: true
-output_match_mode: substring
 sleep: 5
 -->
 
@@ -205,7 +196,7 @@ expected_stdout_lines:
   - "== APP == val2 : key ->myconfig2"
   - "== APP == val3 : key ->myconfig3"
   - "== APP == Subscribing to key: myconfig2"
-  - "== APP == Getting updated values for all subscribed keys.."
+  - "== APP == subscribing to myconfig2 is successful"
   - "== APP == Unsubscribing to key: myconfig2"
   - "== APP == Is Unsubscribe successful: true"
 background: true
@@ -224,10 +215,10 @@ dapr run --components-path ./components/configuration --app-id confighttp --log-
 == APP == Using preview client...
 == APP == *******trying to retrieve configurations for a list of keys********
 == APP == val1 : key ->myconfig1
-== APP == update_myconfigvalue3 : key ->myconfig2
+== APP == val2 : key ->myconfig2
 == APP == val3 : key ->myconfig3
 == APP == Subscribing to key: myconfig2
-== APP == Getting updated values for all subscribed keys..
+== APP == subscribing to myconfig2 is successful
 == APP == Unsubscribing to key: myconfig2
 == APP == Is Unsubscribe successful: true
 
