@@ -81,13 +81,13 @@ public class ConfigurationClient {
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
         CONFIG_STORE_NAME, Collections.singletonList("myconfig1"));
     Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
-    outFlux
-        .subscribe(
-            cis -> {
-              System.out.println("subscription ID : " + cis.getSubscriptionId());
-              System.out.println("subscribing to key myconfig1 is successful");
-            });
-
+    Runnable subscribeTask = () -> {
+      outFlux.subscribe(cis -> {
+        System.out.println("subscription ID : " + cis.getSubscriptionId());
+        System.out.println("subscribing to key myconfig1 is successful");
+      });
+    };
+    new Thread(subscribeTask).start();
     // To ensure main thread does not die before outFlux subscribe gets called
     inducingSleepTime(5000);
   }
