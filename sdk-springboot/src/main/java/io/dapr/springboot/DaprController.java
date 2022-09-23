@@ -15,17 +15,21 @@ package io.dapr.springboot;
 
 
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.client.BaseSubscribeConfigHandler;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * SpringBoot Controller to handle callback APIs for Dapr.
@@ -123,6 +127,26 @@ public class DaprController {
                                         @PathVariable("reminder") String reminder,
                                         @RequestBody(required = false) byte[] body) {
     return ActorRuntime.getInstance().invokeReminder(type, id, reminder, body);
+  }
+
+  /**
+   * Api mapping for subscribe configuration.
+   * @param pathVarsMap Path variables for post call
+   * @param obj request Body
+   * @return Returns void
+   */
+  @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.ALL_VALUE)
+  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap,
+                                       @RequestBody SubscribeConfigurationResponse obj) {
+    return Mono.fromRunnable(
+        () -> {
+          try {
+            BaseSubscribeConfigHandler.getInstance().handleResponse(obj);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+    );
   }
 
 }

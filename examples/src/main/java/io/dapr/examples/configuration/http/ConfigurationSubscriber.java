@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.configuration.http;
 
+import io.dapr.client.BaseSubscribeConfigHandler;
 import io.dapr.examples.DaprApplication;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -39,6 +40,7 @@ public class ConfigurationSubscriber {
     // If port string is not valid, it will throw an exception.
     int port = Integer.parseInt(cmd.getOptionValue("port"));
     // Start Dapr's callback endpoint.
+    BaseSubscribeConfigHandler.getInstance().setConfigSubscriberHandlerImpl(new SubscribeConfigurationHandlerImpl());
     DaprApplication.start(port);
   }
 }
