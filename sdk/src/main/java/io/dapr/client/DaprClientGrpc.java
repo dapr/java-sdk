@@ -17,6 +17,10 @@ import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishRequestEntry;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -41,6 +45,8 @@ import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
@@ -62,6 +68,7 @@ import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -177,6 +184,81 @@ public class DaprClientGrpc extends AbstractDaprClient {
                   it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
               )
       ).then();
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   */
+  public <T> Mono<BulkPublishResponse> publishEvents(BulkPublishRequest<T> request) {
+    try {
+      String pubsubName = request.getPubsubName();
+      String topic = request.getTopic();
+      DaprProtos.BulkPublishRequest.Builder envelopeBuilder = DaprProtos.BulkPublishRequest.newBuilder().setTopic(topic)
+          .setPubsubName(pubsubName);
+
+      for (BulkPublishRequestEntry<?> entry: request.getEntries()) {
+        Object event = entry.getEvent();
+        byte[] data;
+        String contentType = entry.getContentType();
+
+        // Serialize event into bytes
+        if (!Strings.isNullOrEmpty(contentType) && objectSerializer instanceof DefaultObjectSerializer) {
+          // If content type is given by user and default object serializer is used
+          data = DefaultContentTypeConverter.convertEventToBytesForGrpc(event, contentType);
+        } else {
+          // perform the serialization as per user given input of serializer
+          // this is also the case when content type is empty
+          data = objectSerializer.serialize(event);
+          if (Strings.isNullOrEmpty(contentType)) {
+            // Only override content type if not given in input by user
+            contentType = objectSerializer.getContentType();
+          }
+        }
+
+        DaprProtos.BulkPublishRequestEntry.Builder reqEntryBuilder = DaprProtos.BulkPublishRequestEntry.newBuilder()
+            .setEntryID(entry.getEntryID())
+            .setEvent(ByteString.copyFrom(data))
+            .setContentType(contentType);
+        Map<String, String> metadata = entry.getMetadata();
+        if (metadata != null) {
+          reqEntryBuilder.putAllMetadata(metadata);
+        }
+        envelopeBuilder.addEntries(reqEntryBuilder.build());
+      }
+
+      // Set metadata if available
+      Map<String, String> metadata = request.getMetadata();
+      if (metadata != null) {
+        envelopeBuilder.putAllMetadata(metadata);
+      }
+
+      return Mono.subscriberContext().flatMap(
+          context ->
+              this.<DaprProtos.BulkPublishResponse>createMono(
+                  it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
+              )
+      ).map(
+          it -> {
+            BulkPublishResponse response = new BulkPublishResponse();
+            List<BulkPublishResponseEntry> statuses = new ArrayList<>();
+            for (DaprProtos.BulkPublishResponseEntry entry : it.getStatusesList()) {
+              BulkPublishResponseEntry domainEntry = new BulkPublishResponseEntry();
+              domainEntry.setEntryID(entry.getEntryID());
+              if (entry.getStatus() == DaprProtos.BulkPublishResponseEntry.Status.SUCCESS) {
+                domainEntry.setStatus(BulkPublishResponseEntry.PublishStatus.SUCCESS);
+              } else {
+                domainEntry.setStatus(BulkPublishResponseEntry.PublishStatus.FAILED);
+              }
+              statuses.add(domainEntry);
+            }
+            response.setStatuses(statuses);
+            return response;
+          }
+      );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }

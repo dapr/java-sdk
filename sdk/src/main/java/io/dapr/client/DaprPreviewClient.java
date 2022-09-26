@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.QueryStateRequest;
@@ -224,4 +226,6 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return A Mono of QueryStateResponse of type T.
    */
   <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type);
+
+  <T> Mono<BulkPublishResponse> publishEvents(BulkPublishRequest<T> request);
 }

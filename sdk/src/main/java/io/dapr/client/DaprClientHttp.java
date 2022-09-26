@@ -15,6 +15,11 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import com.google.protobuf.ByteString;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishRequestEntry;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -40,8 +45,10 @@ import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
+import io.dapr.v1.DaprProtos;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -172,6 +179,84 @@ public class DaprClientHttp extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse> publishEvents(BulkPublishRequest<T> request) {
+    try {
+      String pubsubName = request.getPubsubName();
+      String topic = request.getTopic();
+
+      if (topic == null || topic.trim().isEmpty()) {
+        throw new IllegalArgumentException("Topic name cannot be null or empty.");
+      }
+
+      List<BulkPublishRequestEntry<?>> entries = new ArrayList<>();
+
+      for (BulkPublishRequestEntry<?> entry: request.getEntries()) {
+        Object event = entry.getEvent();
+        byte[] data;
+        String contentType = entry.getContentType();
+
+        // Serialize event into bytes
+        if (!Strings.isNullOrEmpty(contentType) && objectSerializer instanceof DefaultObjectSerializer) {
+          // If content type is given by user and default object serializer is used
+          data = DefaultContentTypeConverter.convertEventToBytesForHttp(event, contentType);
+        } else if (event instanceof byte[]) {
+          // Specific scenario where byte array needs to be Bas64 encoded for Http
+          if (!Strings.isNullOrEmpty(contentType) && !DefaultContentTypeConverter.isBinaryContentType(contentType)) {
+            throw new IllegalArgumentException("content type expected for byte[] data is application/octet-stream");
+          }
+          data = DefaultContentTypeConverter.convertEventToBytesForHttp(event, contentType);
+        } else {
+          // perform the serialization as per user given input of serializer
+          // this is also the case when content type is empty
+          data = objectSerializer.serialize(event);
+          if (Strings.isNullOrEmpty(contentType)) {
+            // Only override content type if not given in input by user
+            contentType = objectSerializer.getContentType();
+          }
+        }
+        BulkPublishRequestEntry<?> bulkPublishRequestEntry = new BulkPublishRequestEntry<>(entry.getEntryID(),data,
+            contentType, entry.getMetadata());
+        entries.add(entry);
+      }
+
+      byte[] serializedRequest = INTERNAL_SERIALIZER.serialize(entries);
+
+      Map<String, String> requestHeaders = Collections.singletonMap("content-type", "application/json");
+      String[] pathSegments = new String[]{ DaprHttp.ALPHA_1_API_VERSION, "publish", "bulk", pubsubName, topic };
+
+      Map<String, List<String>> queryArgs = metadataToQueryArgs(request.getMetadata());
+
+      return Mono.subscriberContext().flatMap(
+          context -> this.client.invokeApi(
+              DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedRequest, requestHeaders, context
+          )
+      ).map(
+          it -> {
+            BulkPublishResponse response;
+            try {
+              response = INTERNAL_SERIALIZER.deserialize(it.getBody(), BulkPublishResponse.class);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            return response;
+          }
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private <T> List<Map<String, Object>> populateBulkPublishRequestEntries(BulkPublishRequest<T> request) {
+    if (request.getEntries() == null || request.getEntries().size() == 0) {
+      return new ArrayList<>();
+    }
+    return null;
   }
 
   /**
