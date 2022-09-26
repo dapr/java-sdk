@@ -40,7 +40,7 @@ public class Publisher {
   private static final String TOPIC_NAME = "testingtopic";
 
   //The name of the pubsub
-  private static final String PUBSUB_NAME = "messagebus";
+  private static final String PUBSUB_NAME = "kafka-pubsub";
 
   /**
    * This is the entry point of the publisher app example.

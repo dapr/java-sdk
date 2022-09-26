@@ -14,6 +14,9 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishRequestEntry;
+import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -39,6 +42,7 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -387,6 +391,34 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   @Override
   public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, Class<T> clazz) {
     return this.queryState(request, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse> publishEvents(String pubsubName, String topicName, List<T> events,
+                                                     String contentType) {
+    return publishEvents(pubsubName, topicName, events, contentType, null);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse> publishEvents(String pubsubName, String topicName, List<T> events,
+                                                     String contentType, Map<String, String> requestMetadata) {
+    BulkPublishRequest<T> request = new BulkPublishRequest<>(pubsubName, topicName);
+    if (events == null || events.size() == 0) {
+      throw new IllegalArgumentException("list of events cannot be null or empty");
+    }
+    List<BulkPublishRequestEntry<T>> entries = new ArrayList<>();
+    for (int i = 0; i < events.size(); i++) {
+      // entryID field is generated based on order of events in the request
+      entries.add(new BulkPublishRequestEntry<>("" + (i + 1), events.get(i), contentType, null));
+    }
+    request.setMetadata(requestMetadata);
+    return publishEvents(request.setEntries(entries));
   }
 
   /**

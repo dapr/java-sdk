@@ -17,27 +17,35 @@ package io.dapr.client.domain;
  * Class representing the status of each event that was published using BulkPublishRequest.
  */
 public class BulkPublishResponseEntry {
+  /**
+   * An ID unique across the Response object, identifying a particular entry in the BulkPublishRequest.
+   */
   private String entryID;
+
+  /**
+   * The publishing status of this particular event.
+   */
   private PublishStatus status;
 
   public enum PublishStatus {
-    SUCCESS,
-    FAILED
+    SUCCESS, FAILED
   }
 
   public String getEntryID() {
     return entryID;
   }
 
-  public void setEntryID(String entryID) {
+  public BulkPublishResponseEntry setEntryID(String entryID) {
     this.entryID = entryID;
+    return this;
   }
 
   public PublishStatus getStatus() {
     return status;
   }
 
-  public void setStatus(PublishStatus status) {
+  public BulkPublishResponseEntry setStatus(PublishStatus status) {
     this.status = status;
+    return this;
   }
 }

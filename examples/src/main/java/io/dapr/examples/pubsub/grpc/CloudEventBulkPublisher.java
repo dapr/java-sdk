@@ -54,10 +54,8 @@ public class CloudEventBulkPublisher {
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      BulkPublishRequest<CloudEvent<String>> request = new BulkPublishRequest<>();
-      request.setPubsubName(PUBSUB_NAME);
+      BulkPublishRequest<CloudEvent<String>> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
       List<BulkPublishRequestEntry<CloudEvent<String>>> entries = new ArrayList<>();
-      request.setTopic(TOPIC_NAME);
       for (int i = 0; i < NUM_MESSAGES; i++) {
         CloudEvent<String> cloudEvent = new CloudEvent<>();
         cloudEvent.setId(UUID.randomUUID().toString());

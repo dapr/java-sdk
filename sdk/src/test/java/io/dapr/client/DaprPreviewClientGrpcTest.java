@@ -17,27 +17,40 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Empty;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishRequestEntry;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.query.Query;
+import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
+import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -64,6 +77,10 @@ public class DaprPreviewClientGrpcTest {
 	private static final String CONFIG_STORE_NAME = "MyConfigStore";
 	private static final String QUERY_STORE_NAME = "testQueryStore";
 
+	private static final String PUBSUB_NAME = "testPubsub";
+
+	private static final String TOPIC_NAME = "testTopic";
+
 	private Closeable closeable;
 	private DaprGrpc.DaprStub daprStub;
 	private DaprPreviewClient previewClient;
@@ -83,6 +100,224 @@ public class DaprPreviewClientGrpcTest {
 		previewClient.close();
 		verify(closeable).close();
 		verifyNoMoreInteractions(closeable);
+	}
+
+	@Test
+	public void publishEventsExceptionThrownTest() {
+		doAnswer((Answer<Void>) invocation -> {
+			throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		assertThrowsDaprException(
+				StatusRuntimeException.class,
+				"INVALID_ARGUMENT",
+				"INVALID_ARGUMENT: bad bad argument",
+				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME)).block());
+	}
+
+	@Test
+	public void publishEventsCallbackExceptionThrownTest() {
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		assertThrowsDaprException(
+				ExecutionException.class,
+				"INVALID_ARGUMENT",
+				"INVALID_ARGUMENT: bad bad argument",
+				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME)).block());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void publishEventsContentTypeMismatchException() throws IOException {
+		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
+		BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>("1", "testEntry"
+				, "application/octet-stream", null);
+		wrongReq.setEntries(Collections.singletonList(entry));
+		previewClient.publishEvents(wrongReq).block();
+	}
+
+	@Test
+	public void publishEventsSerializeException() throws IOException {
+		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
+		previewClient = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+		BulkPublishRequest<Map<String, String>> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
+		BulkPublishRequestEntry<Map<String, String>> entry = new BulkPublishRequestEntry<>("1", new HashMap<>(),
+				"application/json", null);
+
+		req.setEntries(Collections.singletonList(entry));
+		when(mockSerializer.serialize(any())).thenThrow(IOException.class);
+		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
+
+		assertThrowsDaprException(
+				IOException.class,
+				"UNKNOWN",
+				"UNKNOWN: ",
+				() -> result.block());
+	}
+
+	@Test
+	public void publishEventsTest() {
+		doAnswer((Answer<BulkPublishResponse>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
+			DaprProtos.BulkPublishResponseEntry entry = DaprProtos.BulkPublishResponseEntry.newBuilder()
+					.setEntryID("1")
+					.setStatus(DaprProtos.BulkPublishResponseEntry.Status.SUCCESS).build();
+			builder.addAllStatuses(Collections.singletonList(entry));
+			observer.onNext(builder.build());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
+		BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>("1", "test",
+				"text/plain", null);
+
+		req.setEntries(Collections.singletonList(entry));
+		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
+		BulkPublishResponse res = result.block();
+		Assert.assertNotNull(res);
+		assertEquals("expected single entry in status list", 1, res.getStatuses().size());
+		BulkPublishResponseEntry responseEntry = res.getStatuses().get(0);
+		assertEquals("expected entryID to match", "1", responseEntry.getEntryID());
+		assertEquals("expected status to match", BulkPublishResponseEntry.PublishStatus.SUCCESS,
+				responseEntry.getStatus());
+	}
+
+	@Test
+	public void publishEventsWithoutMetaTest() {
+		doAnswer((Answer<BulkPublishResponse>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
+			DaprProtos.BulkPublishResponseEntry entry = DaprProtos.BulkPublishResponseEntry.newBuilder()
+					.setEntryID("1")
+					.setStatus(DaprProtos.BulkPublishResponseEntry.Status.SUCCESS).build();
+			builder.addAllStatuses(Collections.singletonList(entry));
+			observer.onNext(builder.build());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		Mono<BulkPublishResponse> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList("test"), "text/plain");
+		BulkPublishResponse res = result.block();
+		Assert.assertNotNull(res);
+		assertEquals("expected single entry in status list", 1, res.getStatuses().size());
+		BulkPublishResponseEntry responseEntry = res.getStatuses().get(0);
+		assertEquals("expected entryID to match", "1", responseEntry.getEntryID());
+		assertEquals("expected status to match", BulkPublishResponseEntry.PublishStatus.SUCCESS,
+				responseEntry.getStatus());
+	}
+
+	@Test
+	public void publishEventsWithRequestMetaTest() {
+		doAnswer((Answer<BulkPublishResponse>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
+			DaprProtos.BulkPublishResponseEntry entry = DaprProtos.BulkPublishResponseEntry.newBuilder()
+					.setEntryID("1")
+					.setStatus(DaprProtos.BulkPublishResponseEntry.Status.SUCCESS).build();
+			builder.addAllStatuses(Collections.singletonList(entry));
+			observer.onNext(builder.build());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		Mono<BulkPublishResponse> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList("test"), "text/plain", new HashMap<String, String>(){{
+					put("ttlInSeconds", "123");
+				}});
+		BulkPublishResponse res = result.block();
+		Assert.assertNotNull(res);
+		assertEquals("expected single entry in status list", 1, res.getStatuses().size());
+		BulkPublishResponseEntry responseEntry = res.getStatuses().get(0);
+		assertEquals("expected entryID to match", "1", responseEntry.getEntryID());
+		assertEquals("expected status to match", BulkPublishResponseEntry.PublishStatus.SUCCESS,
+				responseEntry.getStatus());
+	}
+
+	@Test
+	public void publishEventsObjectTest() {
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(ArgumentMatchers.argThat(bulkPublishRequest -> {
+			DaprProtos.BulkPublishRequestEntry entry = bulkPublishRequest.getEntries(0);
+			if (!"application/json".equals(bulkPublishRequest.getEntries(0).getContentType())) {
+				return false;
+			}
+
+			if (!"{\"id\":1,\"value\":\"Event\"}".equals(new String(entry.getEvent().toByteArray())) &&
+					!"{\"value\":\"Event\",\"id\":1}".equals(new String(entry.getEvent().toByteArray()))) {
+				return false;
+			}
+			return true;
+		}), any());
+
+
+		DaprClientGrpcTest.MyObject event = new DaprClientGrpcTest.MyObject(1, "Event");
+		BulkPublishRequest<DaprClientGrpcTest.MyObject> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
+		BulkPublishRequestEntry<DaprClientGrpcTest.MyObject> entry = new BulkPublishRequestEntry<>("1", event,
+				"application/json", null);
+
+		req.setEntries(Collections.singletonList(entry));
+		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
+		result.block();
+	}
+
+	@Test
+	public void publishEventsContentTypeOverrideTest() {
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(ArgumentMatchers.argThat(bulkPublishRequest -> {
+			DaprProtos.BulkPublishRequestEntry entry = bulkPublishRequest.getEntries(0);
+			if (!"application/json".equals(entry.getContentType())) {
+				return false;
+			}
+
+			if (!"\"hello\"".equals(new String(entry.getEvent().toByteArray()))) {
+				return false;
+			}
+			return true;
+		}), any());
+
+		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
+		BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>("1", "hello",
+				"", null);
+
+		req.setEntries(Collections.singletonList(entry));
+		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
+		result.block();
 	}
 
 	@Test
@@ -387,5 +622,9 @@ public class DaprPreviewClientGrpcTest {
 			it.setError(item.getError());
 		}
 		return it.build();
+	}
+
+	private static StatusRuntimeException newStatusRuntimeException(String status, String message) {
+		return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(status)).withDescription(message));
 	}
 }

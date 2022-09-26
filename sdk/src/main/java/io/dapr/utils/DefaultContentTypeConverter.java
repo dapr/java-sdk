@@ -78,7 +78,7 @@ public class DefaultContentTypeConverter {
     if (isBinaryContentType(contentType)) {
       if (event instanceof byte[]) {
         // Return the bytes of the event directly for gRPC
-        return (byte[])event;
+        return (byte[]) event;
       } else {
         throw new IllegalArgumentException("mismatch between 'application/octect-stream' contentType and event. "
             + "expected binary data as bytes array");
@@ -103,7 +103,7 @@ public class DefaultContentTypeConverter {
       throws IllegalArgumentException, IOException {
     if (isBinaryContentType(contentType)) {
       byte[] decoded = Base64.getDecoder().decode(new String(event, StandardCharsets.UTF_8));
-        return OBJECT_SERIALIZER.deserialize(decoded, typeRef);
+      return OBJECT_SERIALIZER.deserialize(decoded, typeRef);
     } else if (isStringContentType(contentType)) {
       if (TypeRef.STRING.equals(typeRef)) {
         // This is a string data, required as string

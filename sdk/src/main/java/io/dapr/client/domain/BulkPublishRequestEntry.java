@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -21,9 +22,25 @@ import java.util.Map;
  * @param <T> Type of the event that is part of the request.
  */
 public class BulkPublishRequestEntry<T> {
+  /**
+   * The ID uniquely identifying this particular request entry across the request and scoped for this request only.
+   */
   private String entryID;
+
+  /**
+   * The event to be published.
+   */
   private T event;
+
+  /**
+   * The content type of the event to be published. Uses MIME style content-type values.
+   */
   private String contentType;
+
+  /**
+   * The metadata set for this particular event.
+   * Any particular values in this metadata overrides the request metadata present in BulkPublishRequest.
+   */
   private Map<String, String> metadata;
 
   /**
@@ -35,10 +52,10 @@ public class BulkPublishRequestEntry<T> {
   /**
    * Constructor for the BulkPublishRequestEntry object.
    *
-   * @param entryID         A request scoped ID uniquely identifying this entry in the BulkPublishRequest.
-   * @param event           Event to be published.
+   * @param entryID     A request scoped ID uniquely identifying this entry in the BulkPublishRequest.
+   * @param event       Event to be published.
    * @param contentType Content Type of the event to be published in MIME format.
-   * @param metadata        Metadata for the event.
+   * @param metadata    Metadata for the event.
    */
   public BulkPublishRequestEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
     this.entryID = entryID;
@@ -51,31 +68,35 @@ public class BulkPublishRequestEntry<T> {
     return entryID;
   }
 
-  public void setEntryID(String entryID) {
+  public BulkPublishRequestEntry<T> setEntryID(String entryID) {
     this.entryID = entryID;
+    return this;
   }
 
   public T getEvent() {
     return event;
   }
 
-  public void setEvent(T event) {
+  public BulkPublishRequestEntry<T> setEvent(T event) {
     this.event = event;
+    return this;
   }
 
   public String getContentType() {
     return contentType;
   }
 
-  public void setContentType(String contentType) {
+  public BulkPublishRequestEntry<T> setContentType(String contentType) {
     this.contentType = contentType;
+    return this;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  public void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
+  public BulkPublishRequestEntry<T> setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    return this;
   }
 }

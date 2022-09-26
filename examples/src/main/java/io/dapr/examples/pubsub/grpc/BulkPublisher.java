@@ -53,10 +53,8 @@ public class BulkPublisher {
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      BulkPublishRequest<Object> request = new BulkPublishRequest<>();
-      request.setPubsubName(PUBSUB_NAME);
+      BulkPublishRequest<Object> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
       List<BulkPublishRequestEntry<Object>> entries = new ArrayList<>();
-      request.setTopic(TOPIC_NAME);
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d", i);
         BulkPublishRequestEntry<Object> entry = new BulkPublishRequestEntry<>("" + (i + 1),

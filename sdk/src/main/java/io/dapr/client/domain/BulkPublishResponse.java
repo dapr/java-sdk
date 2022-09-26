@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,15 +46,17 @@ public class BulkPublishResponse {
     return errorCode;
   }
 
-  public void setErrorCode(String errorCode) {
+  public BulkPublishResponse setErrorCode(String errorCode) {
     this.errorCode = errorCode;
+    return this;
   }
 
   public List<BulkPublishResponseEntry> getStatuses() {
     return statuses;
   }
 
-  public void setStatuses(List<BulkPublishResponseEntry> statuses) {
-    this.statuses = statuses;
+  public BulkPublishResponse setStatuses(List<BulkPublishResponseEntry> statuses) {
+    this.statuses = statuses == null ? new ArrayList<>() : Collections.unmodifiableList(statuses);
+    return this;
   }
 }

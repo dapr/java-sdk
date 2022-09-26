@@ -15,6 +15,7 @@ package io.dapr.client;
 
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.QueryStateRequest;
@@ -227,5 +228,44 @@ public interface DaprPreviewClient extends AutoCloseable {
    */
   <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type);
 
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param request {@link BulkPublishRequest} object.
+   * @return A Mono of {@link BulkPublishResponse} object.
+   * @param <T> The type of events to publish in the call.
+   */
   <T> Mono<BulkPublishResponse> publishEvents(BulkPublishRequest<T> request);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishResponseEntry} in {@link BulkPublishResponse} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse> publishEvents(String pubsubName, String topicName, List<T> events, String contentType);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   * 
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishResponseEntry} in {@link BulkPublishResponse} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse> publishEvents(String pubsubName, String topicName, List<T> events, String contentType,
+                                              Map<String,String> requestMetadata);
+
+
 }

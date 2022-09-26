@@ -152,12 +152,17 @@ public class DaprClientHttp extends AbstractDaprClient {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
-      Object data = request.getData();
-      Map<String, String> metadata = request.getMetadata();
+
+      if (pubsubName == null || pubsubName.trim().isEmpty()) {
+        throw new IllegalArgumentException("Pubsub name cannot be null or empty.");
+      }
 
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
+
+      Object data = request.getData();
+      Map<String, String> metadata = request.getMetadata();
 
       byte[] serializedEvent = objectSerializer.serialize(data);
       // Content-type can be overwritten on a per-request basis.
@@ -189,6 +194,10 @@ public class DaprClientHttp extends AbstractDaprClient {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
+
+      if (pubsubName == null || pubsubName.trim().isEmpty()) {
+        throw new IllegalArgumentException("Pubsub name cannot be null or empty.");
+      }
 
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");

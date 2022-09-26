@@ -197,8 +197,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
-      DaprProtos.BulkPublishRequest.Builder envelopeBuilder = DaprProtos.BulkPublishRequest.newBuilder().setTopic(topic)
-          .setPubsubName(pubsubName);
+      DaprProtos.BulkPublishRequest.Builder envelopeBuilder = DaprProtos.BulkPublishRequest.newBuilder();
+      envelopeBuilder.setTopic(topic);
+      envelopeBuilder.setPubsubName(pubsubName);
 
       for (BulkPublishRequestEntry<?> entry: request.getEntries()) {
         Object event = entry.getEvent();
