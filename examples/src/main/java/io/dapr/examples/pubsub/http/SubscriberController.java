@@ -17,8 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.springboot.DaprBulkMessage;
-import io.dapr.springboot.DaprBulkMessageEntry;
+import io.dapr.springboot.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,17 +75,25 @@ public class SubscriberController {
    */
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:pubsub}", bulk = "true")
   @PostMapping(path = "/testingtopicbulk")
-  public Mono<Void> handleBulkMessage(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
-    return Mono.fromRunnable(() -> {
-      try {
-        System.out.printf("Subscriber got %d messages\n", bulkMessage.entries.length);
-        for (DaprBulkMessageEntry<?> entry: bulkMessage.entries) {
+  public Mono<DaprBulkAppResponse> handleBulkMessage(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
+    return Mono.fromCallable(() -> {
+      if (bulkMessage.entries.length == 0) {
+        return new DaprBulkAppResponse(new DaprBulkAppResponseEntry[]{});
+      }
+
+      DaprBulkAppResponseEntry[] entries = new DaprBulkAppResponseEntry[bulkMessage.entries.length];
+      int i = 0;
+      for (DaprBulkMessageEntry<?> entry: bulkMessage.entries) {
+        try {
           System.out.printf("Entry ID: %s\n", entry.entryID);
           System.out.printf("Event: %s\n", entry.event);
+          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.RETRY);
+        } catch (Exception e) {
+          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.RETRY);
         }
-      } catch (Exception e) {
-        throw new RuntimeException(e);
+        i++;
       }
+      return new DaprBulkAppResponse(entries);
     });
   }
 }
