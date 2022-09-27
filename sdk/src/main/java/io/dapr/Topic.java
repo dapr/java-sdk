@@ -50,4 +50,11 @@ public @interface Topic {
    * @return metadata object
    */
   String metadata() default "{}";
+
+  /**
+   * If bulk is "true", the handler will receive multiple
+   * messages using the bulk subscribe API.
+   * @return bulk subscribe flag
+   */
+  String bulk() default "false";
 }

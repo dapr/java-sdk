@@ -40,6 +40,7 @@ import java.util.Map;
 public class DaprBeanPostProcessor implements BeanPostProcessor {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String BULK_SUBSCRIBE_METADATA_KEY = "bulkSubscribe";
 
   private final EmbeddedValueResolver embeddedValueResolver;
 
@@ -90,11 +91,18 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       String topicName = embeddedValueResolver.resolveStringValue(topic.name());
       String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
       String match = embeddedValueResolver.resolveStringValue(rule.match());
+      boolean bulk = Boolean.parseBoolean(embeddedValueResolver.resolveStringValue(topic.bulk()));
+
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
           TypeReference<HashMap<String, String>> typeRef
                   = new TypeReference<HashMap<String, String>>() {};
+
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
+          if (bulk) {
+            metadata.put(BULK_SUBSCRIBE_METADATA_KEY, "true");
+          }
+
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
             DaprRuntime.getInstance().addSubscribedTopic(

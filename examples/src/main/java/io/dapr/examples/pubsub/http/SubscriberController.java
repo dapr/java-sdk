@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.springboot.DaprBulkMessage;
+import io.dapr.springboot.DaprBulkMessageEntry;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,7 +37,7 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:pubsub}")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
     return Mono.fromRunnable(() -> {
@@ -53,7 +55,7 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:pubsub}",
           rule = @Rule(match = "event.type == \"v2\"", priority = 1))
   @PostMapping(path = "/testingtopicV2")
   public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent cloudEvent) {
@@ -67,4 +69,24 @@ public class SubscriberController {
     });
   }
 
+  /**
+   * Handles a registered subscribe endpoint on this app using bulk subscribe.
+   * @param bulkMessage The bulk message received.
+   * @return A list of responses for each event. TODO
+   */
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:pubsub}", bulk = "true")
+  @PostMapping(path = "/testingtopicbulk")
+  public Mono<Void> handleBulkMessage(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.printf("Subscriber got %d messages\n", bulkMessage.getEntries().length);
+        for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
+          System.out.printf("Entry ID: %s\n", entry.getEntryID());
+          System.out.printf("Entry ID: %s\n", entry.getEvent());
+        }
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
 }
