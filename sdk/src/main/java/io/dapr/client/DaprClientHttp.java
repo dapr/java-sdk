@@ -15,11 +15,9 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
-import com.google.protobuf.ByteString;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishRequestEntry;
 import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -48,7 +46,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
-import io.dapr.v1.DaprProtos;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -216,22 +213,26 @@ public class DaprClientHttp extends AbstractDaprClient {
           data = DefaultContentTypeConverter.convertEventToBytesForHttp(event, contentType);
         } else if (event instanceof byte[]) {
           // Specific scenario where byte array needs to be Bas64 encoded for Http
-          if (!Strings.isNullOrEmpty(contentType) && !DefaultContentTypeConverter.isBinaryContentType(contentType)) {
+          if (Strings.isNullOrEmpty(contentType)
+              || (!Strings.isNullOrEmpty(contentType)
+              && !DefaultContentTypeConverter.isBinaryContentType(contentType))) {
             throw new IllegalArgumentException("content type expected for byte[] data is application/octet-stream");
           }
           data = DefaultContentTypeConverter.convertEventToBytesForHttp(event, contentType);
-        } else {
+        } else if (!(objectSerializer instanceof DefaultObjectSerializer)) {
           // perform the serialization as per user given input of serializer
-          // this is also the case when content type is empty
           data = objectSerializer.serialize(event);
           if (Strings.isNullOrEmpty(contentType)) {
             // Only override content type if not given in input by user
             contentType = objectSerializer.getContentType();
           }
+        } else {
+          // this is scenario where content-type is empty
+          throw new IllegalArgumentException("content type expected for data");
         }
         BulkPublishRequestEntry<?> bulkPublishRequestEntry = new BulkPublishRequestEntry<>(entry.getEntryID(),data,
             contentType, entry.getMetadata());
-        entries.add(entry);
+        entries.add(bulkPublishRequestEntry);
       }
 
       byte[] serializedRequest = INTERNAL_SERIALIZER.serialize(entries);
@@ -259,13 +260,6 @@ public class DaprClientHttp extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
-  }
-
-  private <T> List<Map<String, Object>> populateBulkPublishRequestEntries(BulkPublishRequest<T> request) {
-    if (request.getEntries() == null || request.getEntries().size() == 0) {
-      return new ArrayList<>();
-    }
-    return null;
   }
 
   /**

@@ -51,7 +51,7 @@ public class BulkPublisher {
    * @throws Exception any exception
    */
   public static void main(String[] args) throws Exception {
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).withObjectSerializer(new CustomSerializer()).buildPreviewClient()) {
       System.out.println("Using preview client...");
       BulkPublishRequest<Object> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
       List<BulkPublishRequestEntry<Object>> entries = new ArrayList<>();
@@ -74,3 +74,4 @@ public class BulkPublisher {
     }
   }
 }
+

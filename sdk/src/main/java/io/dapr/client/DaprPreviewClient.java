@@ -253,7 +253,7 @@ public interface DaprPreviewClient extends AutoCloseable {
 
   /**
    * Publish multiple events to Dapr in a single request.
-   * 
+   *
    * @param pubsubName the pubsub name we will publish the event to.
    * @param topicName the topicName where the event will be published.
    * @param events the {@link List} of events to be published.
