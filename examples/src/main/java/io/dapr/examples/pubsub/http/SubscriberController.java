@@ -74,15 +74,15 @@ public class SubscriberController {
    * @param bulkMessage The bulk message received.
    * @return A list of responses for each event. TODO
    */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:pubsub}", bulk = "true")
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:pubsub}", bulk = "true")
   @PostMapping(path = "/testingtopicbulk")
   public Mono<Void> handleBulkMessage(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
     return Mono.fromRunnable(() -> {
       try {
-        System.out.printf("Subscriber got %d messages\n", bulkMessage.getEntries().length);
-        for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
-          System.out.printf("Entry ID: %s\n", entry.getEntryID());
-          System.out.printf("Entry ID: %s\n", entry.getEvent());
+        System.out.printf("Subscriber got %d messages\n", bulkMessage.entries.length);
+        for (DaprBulkMessageEntry<?> entry: bulkMessage.entries) {
+          System.out.printf("Entry ID: %s\n", entry.entryID);
+          System.out.printf("Event: %s\n", entry.event);
         }
       } catch (Exception e) {
         throw new RuntimeException(e);

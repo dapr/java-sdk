@@ -16,25 +16,7 @@ package io.dapr.springboot;
 import java.util.Map;
 
 public class DaprBulkMessage {
-    private final DaprBulkMessageEntry<?>[] entries;
-    private final String topic;
-    private final Map<String, String> metadata;
-
-    DaprBulkMessage(DaprBulkMessageEntry<?>[] entries, String topic, Map<String, String> metadata) {
-        this.entries = entries;
-        this.topic = topic;
-        this.metadata = metadata;
-    }
-
-    public DaprBulkMessageEntry<?>[] getEntries() {
-        return entries;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public Map<String, String> getMetadata() {
-        return metadata;
-    }
+    public DaprBulkMessageEntry<?>[] entries;
+    public String topic;
+    public Map<String, String> metadata;
 }

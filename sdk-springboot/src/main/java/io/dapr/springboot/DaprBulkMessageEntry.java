@@ -16,31 +16,8 @@ package io.dapr.springboot;
 import java.util.Map;
 
 public class DaprBulkMessageEntry<T> {
-    private final String entryID;
-    private final T event;
-    private final String contentType;
-    private final Map<String, String> metadata;
-
-    DaprBulkMessageEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
-        this.entryID = entryID;
-        this.event = event;
-        this.contentType = contentType;
-        this.metadata = metadata;
-    }
-
-    public String getEntryID() {
-        return entryID;
-    }
-
-    public T getEvent() {
-        return event;
-    }
-
-    public String getContentType() {
-        return contentType;
-    }
-
-    public Map<String, String> getMetadata() {
-        return metadata;
-    }
+    public String entryID;
+    public T event;
+    public String contentType;
+    public Map<String, String> metadata;
 }
