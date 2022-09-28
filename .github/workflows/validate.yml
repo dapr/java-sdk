@@ -137,6 +137,10 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/http/README.md
+      - name: Validate bulk pubsub gRPC example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/pubsub/bulk/README.md
       - name: Validate bindings HTTP example
         working-directory: ./examples
         run: |
