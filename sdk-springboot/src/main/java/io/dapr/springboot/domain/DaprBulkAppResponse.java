@@ -13,14 +13,18 @@ limitations under the License.
 
 package io.dapr.springboot.domain;
 
+/**
+ * Response from the application containing status for each entry in the bulk message.
+ * It is posted by the bulk subscribe handler.
+ */
 public class DaprBulkAppResponse {
-    private DaprBulkAppResponseEntry[] statuses;
+  private final DaprBulkAppResponseEntry[] statuses;
 
-    public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
-        this.statuses = statuses;
-    }
+  public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
+    this.statuses = statuses;
+  }
 
-    public DaprBulkAppResponseEntry[] getStatuses() {
-        return statuses;
-    }
+  public DaprBulkAppResponseEntry[] getStatuses() {
+    return statuses;
+  }
 }

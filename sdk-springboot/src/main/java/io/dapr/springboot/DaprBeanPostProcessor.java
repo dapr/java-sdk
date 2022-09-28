@@ -104,14 +104,13 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       String topicName = embeddedValueResolver.resolveStringValue(topic.name());
       String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
       String match = embeddedValueResolver.resolveStringValue(rule.match());
-
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
           TypeReference<HashMap<String, String>> typeRef
                   = new TypeReference<HashMap<String, String>>() {};
 
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
-          
+
           // Copy elements from bulk metadata to the request metadata.
           metadata.putAll(bulkMetadata);
 

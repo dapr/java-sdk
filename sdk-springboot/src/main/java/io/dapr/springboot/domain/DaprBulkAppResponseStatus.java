@@ -13,8 +13,11 @@ limitations under the License.
 
 package io.dapr.springboot.domain;
 
+/**
+ * Status of the message handled in bulk subscribe handler.
+ */
 public enum DaprBulkAppResponseStatus {
-    SUCCESS,
-    RETRY,
-    DROP
+  SUCCESS,
+  RETRY,
+  DROP
 }

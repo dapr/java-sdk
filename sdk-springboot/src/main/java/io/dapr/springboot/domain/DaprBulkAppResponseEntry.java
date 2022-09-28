@@ -13,20 +13,23 @@ limitations under the License.
 
 package io.dapr.springboot.domain;
 
+/**
+ * Maps an entry from bulk subscribe messages to a response status.
+ */
 public class DaprBulkAppResponseEntry {
-    private String entryID;
-    private DaprBulkAppResponseStatus status;
+  private String entryID;
+  private DaprBulkAppResponseStatus status;
 
-    public DaprBulkAppResponseEntry(String entryID, DaprBulkAppResponseStatus status) {
-        this.entryID = entryID;
-        this.status = status;
-    }
+  public DaprBulkAppResponseEntry(String entryID, DaprBulkAppResponseStatus status) {
+    this.entryID = entryID;
+    this.status = status;
+  }
 
-    public String getEntryID() {
-        return entryID;
-    }
+  public String getEntryID() {
+    return entryID;
+  }
 
-    public DaprBulkAppResponseStatus getStatus() {
-        return status;
-    }
+  public DaprBulkAppResponseStatus getStatus() {
+    return status;
+  }
 }

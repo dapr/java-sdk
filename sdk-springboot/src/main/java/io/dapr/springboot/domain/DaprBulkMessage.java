@@ -15,8 +15,11 @@ package io.dapr.springboot.domain;
 
 import java.util.Map;
 
+/**
+ * Represents a bulk of messages received from the message bus.
+ */
 public class DaprBulkMessage {
-    public DaprBulkMessageEntry<?>[] entries;
-    public String topic;
-    public Map<String, String> metadata;
+  public DaprBulkMessageEntry<?>[] entries;
+  public String topic;
+  public Map<String, String> metadata;
 }

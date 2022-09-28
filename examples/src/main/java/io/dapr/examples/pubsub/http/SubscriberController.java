@@ -14,11 +14,15 @@ limitations under the License.
 package io.dapr.examples.pubsub.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.springboot.annotations.BulkSubscribe;
 import io.dapr.springboot.annotations.Rule;
 import io.dapr.springboot.annotations.Topic;
-import io.dapr.client.domain.CloudEvent;
-import io.dapr.springboot.domain.*;
+import io.dapr.springboot.domain.DaprBulkAppResponse;
+import io.dapr.springboot.domain.DaprBulkAppResponseEntry;
+import io.dapr.springboot.domain.DaprBulkAppResponseStatus;
+import io.dapr.springboot.domain.DaprBulkMessage;
+import io.dapr.springboot.domain.DaprBulkMessageEntry;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -89,7 +93,7 @@ public class SubscriberController {
         try {
           System.out.printf("Entry ID: %s\n", entry.entryID);
           System.out.printf("Event: %s\n", entry.event);
-          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.RETRY);
+          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.SUCCESS);
         } catch (Exception e) {
           entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.RETRY);
         }

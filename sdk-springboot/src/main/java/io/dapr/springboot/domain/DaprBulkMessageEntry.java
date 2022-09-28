@@ -15,9 +15,13 @@ package io.dapr.springboot.domain;
 
 import java.util.Map;
 
+/**
+ * Represents a single event from a bulk of messages sent by the message bus.
+ * @param <T> Type of event.
+ */
 public class DaprBulkMessageEntry<T> {
-    public String entryID;
-    public T event;
-    public String contentType;
-    public Map<String, String> metadata;
+  public String entryID;
+  public T event;
+  public String contentType;
+  public Map<String, String> metadata;
 }
