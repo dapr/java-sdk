@@ -11,16 +11,10 @@
 limitations under the License.
 */
 
-package io.dapr.springboot;
+package io.dapr.springboot.domain;
 
-public class DaprBulkAppResponse {
-    private DaprBulkAppResponseEntry[] statuses;
-
-    public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
-        this.statuses = statuses;
-    }
-
-    public DaprBulkAppResponseEntry[] getStatuses() {
-        return statuses;
-    }
+public enum DaprBulkAppResponseStatus {
+    SUCCESS,
+    RETRY,
+    DROP
 }

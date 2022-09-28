@@ -11,12 +11,16 @@
 limitations under the License.
 */
 
-package io.dapr.springboot;
+package io.dapr.springboot.domain;
 
-import java.util.Map;
+public class DaprBulkAppResponse {
+    private DaprBulkAppResponseEntry[] statuses;
 
-public class DaprBulkMessage {
-    public DaprBulkMessageEntry<?>[] entries;
-    public String topic;
-    public Map<String, String> metadata;
+    public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
+        this.statuses = statuses;
+    }
+
+    public DaprBulkAppResponseEntry[] getStatuses() {
+        return statuses;
+    }
 }

@@ -11,13 +11,12 @@
 limitations under the License.
 */
 
-package io.dapr.springboot;
+package io.dapr.springboot.domain;
 
 import java.util.Map;
 
-public class DaprBulkMessageEntry<T> {
-    public String entryID;
-    public T event;
-    public String contentType;
+public class DaprBulkMessage {
+    public DaprBulkMessageEntry<?>[] entries;
+    public String topic;
     public Map<String, String> metadata;
 }

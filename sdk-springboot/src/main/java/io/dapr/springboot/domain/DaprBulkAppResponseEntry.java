@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.springboot;
+package io.dapr.springboot.domain;
 
 public class DaprBulkAppResponseEntry {
     private String entryID;

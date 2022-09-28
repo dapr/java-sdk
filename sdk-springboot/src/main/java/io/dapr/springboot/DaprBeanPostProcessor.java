@@ -16,8 +16,9 @@ package io.dapr.springboot;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.Rule;
-import io.dapr.Topic;
+import io.dapr.springboot.annotations.BulkSubscribe;
+import io.dapr.springboot.annotations.Rule;
+import io.dapr.springboot.annotations.Topic;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -41,6 +42,8 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String BULK_SUBSCRIBE_METADATA_KEY = "bulkSubscribe";
+  private static final String BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY = "maxBulkSubCount";
+  private static final String BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY = "maxBulkSubAwaitDurationMs";
 
   private final EmbeddedValueResolver embeddedValueResolver;
 
@@ -86,12 +89,21 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
         continue;
       }
 
+      Map<String, String> bulkMetadata = new HashMap<>();
+      BulkSubscribe bulkSubscribe = method.getAnnotation(BulkSubscribe.class);
+      if (bulkSubscribe != null) {
+        bulkMetadata.put(BULK_SUBSCRIBE_METADATA_KEY, "true");
+        bulkMetadata.put(BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY,
+                String.valueOf(bulkSubscribe.maxBulkSubCount()));
+        bulkMetadata.put(BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY,
+                String.valueOf(bulkSubscribe.maxBulkSubAwaitDurationMs()));
+      }
+
 
       Rule rule = topic.rule();
       String topicName = embeddedValueResolver.resolveStringValue(topic.name());
       String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
       String match = embeddedValueResolver.resolveStringValue(rule.match());
-      boolean bulk = Boolean.parseBoolean(embeddedValueResolver.resolveStringValue(topic.bulk()));
 
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
@@ -99,9 +111,9 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
                   = new TypeReference<HashMap<String, String>>() {};
 
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
-          if (bulk) {
-            metadata.put(BULK_SUBSCRIBE_METADATA_KEY, "true");
-          }
+          
+          // Copy elements from bulk metadata to the request metadata.
+          metadata.putAll(bulkMetadata);
 
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {

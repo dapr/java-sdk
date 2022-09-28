@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.springboot;
 
-import io.dapr.Rule;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

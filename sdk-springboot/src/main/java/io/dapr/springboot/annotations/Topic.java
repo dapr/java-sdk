@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr;
+package io.dapr.springboot.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -50,11 +50,4 @@ public @interface Topic {
    * @return metadata object
    */
   String metadata() default "{}";
-
-  /**
-   * If bulk is "true", the handler will receive multiple
-   * messages using the bulk subscribe API.
-   * @return bulk subscribe flag
-   */
-  String bulk() default "false";
 }

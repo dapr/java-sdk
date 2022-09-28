@@ -11,10 +11,13 @@
 limitations under the License.
 */
 
-package io.dapr.springboot;
+package io.dapr.springboot.domain;
 
-public enum DaprBulkAppResponseStatus {
-    SUCCESS,
-    RETRY,
-    DROP
+import java.util.Map;
+
+public class DaprBulkMessageEntry<T> {
+    public String entryID;
+    public T event;
+    public String contentType;
+    public Map<String, String> metadata;
 }

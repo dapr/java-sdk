@@ -14,10 +14,11 @@ limitations under the License.
 package io.dapr.examples.pubsub.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.Rule;
-import io.dapr.Topic;
+import io.dapr.springboot.annotations.BulkSubscribe;
+import io.dapr.springboot.annotations.Rule;
+import io.dapr.springboot.annotations.Topic;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.springboot.*;
+import io.dapr.springboot.domain.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -73,7 +74,8 @@ public class SubscriberController {
    * @param bulkMessage The bulk message received.
    * @return A list of responses for each event. TODO
    */
-  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:pubsub}", bulk = "true")
+  @BulkSubscribe()
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:pubsub}")
   @PostMapping(path = "/testingtopicbulk")
   public Mono<DaprBulkAppResponse> handleBulkMessage(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
     return Mono.fromCallable(() -> {

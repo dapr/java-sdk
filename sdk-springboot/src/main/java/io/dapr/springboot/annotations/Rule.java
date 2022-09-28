@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr;
+package io.dapr.springboot.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
