@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.springboot.annotations;
+package io.dapr;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -19,21 +19,26 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * BulkSubscribe annotation should be applied with {@link Topic @Topic} when
+ * the topic should be subscribed to using the Bulk Subscribe API.
+ * This will require handling multiple messages using io.dapr.springboot.domain.DaprBulkMessage
+ * and returning an io.dapr.springboot.domain.DaprBulkAppResponse.
+ */
 @Documented
-@Target(ElementType.ANNOTATION_TYPE)
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Rule {
+public @interface BulkSubscribe {
   /**
-   * The Common Expression Language (CEL) expression to use
-   * to match the incoming cloud event.
-   * <a href="https://docs.dapr.io/developing-applications/building-blocks/pubsub/howto-route-messages/">Examples</a>.
-   * @return the CEL expression.
+   * Maximum number of messages in a bulk message from the message bus.
+   * @return number of messages.
    */
-  String match();
+  int maxBulkSubCount() default 1000;
 
   /**
-   * Priority of the rule used for ordering. Lowest numbers have higher priority.
-   * @return the rule's priority.
+   * Maximum duration to wait for maxBulkSubCount messages by the message bus
+   * before sending the messages to Dapr.
+   * @return time to await in milliseconds.
    */
-  int priority();
+  int maxBulkSubAwaitDurationMs() default 100;
 }

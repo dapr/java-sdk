@@ -147,7 +147,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.springboot.annotations.Topic;
+import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
