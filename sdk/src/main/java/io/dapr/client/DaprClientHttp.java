@@ -188,78 +188,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    */
   @Override
   public <T> Mono<BulkPublishResponse> publishEvents(BulkPublishRequest<T> request) {
-    try {
-      String pubsubName = request.getPubsubName();
-      String topic = request.getTopic();
-
-      if (pubsubName == null || pubsubName.trim().isEmpty()) {
-        throw new IllegalArgumentException("Pubsub name cannot be null or empty.");
-      }
-
-      if (topic == null || topic.trim().isEmpty()) {
-        throw new IllegalArgumentException("Topic name cannot be null or empty.");
-      }
-
-      List<BulkPublishRequestEntry<?>> entries = new ArrayList<>();
-
-      for (BulkPublishRequestEntry<?> entry: request.getEntries()) {
-        Object event = entry.getEvent();
-        byte[] data;
-        String contentType = entry.getContentType();
-
-        // Serialize event into bytes
-        if (!Strings.isNullOrEmpty(contentType) && objectSerializer instanceof DefaultObjectSerializer) {
-          // If content type is given by user and default object serializer is used
-          data = DefaultContentTypeConverter.convertEventToBytesForHttp(event, contentType);
-        } else if (event instanceof byte[]) {
-          // Specific scenario where byte array needs to be Bas64 encoded for Http
-          if (Strings.isNullOrEmpty(contentType)
-              || (!Strings.isNullOrEmpty(contentType)
-              && !DefaultContentTypeConverter.isBinaryContentType(contentType))) {
-            throw new IllegalArgumentException("content type expected for byte[] data is application/octet-stream");
-          }
-          data = DefaultContentTypeConverter.convertEventToBytesForHttp(event, contentType);
-        } else if (!(objectSerializer instanceof DefaultObjectSerializer)) {
-          // perform the serialization as per user given input of serializer
-          data = objectSerializer.serialize(event);
-          if (Strings.isNullOrEmpty(contentType)) {
-            // Only override content type if not given in input by user
-            contentType = objectSerializer.getContentType();
-          }
-        } else {
-          // this is scenario where content-type is empty
-          throw new IllegalArgumentException("content type expected for data");
-        }
-        BulkPublishRequestEntry<?> bulkPublishRequestEntry = new BulkPublishRequestEntry<>(entry.getEntryID(),data,
-            contentType, entry.getMetadata());
-        entries.add(bulkPublishRequestEntry);
-      }
-
-      byte[] serializedRequest = INTERNAL_SERIALIZER.serialize(entries);
-
-      Map<String, String> requestHeaders = Collections.singletonMap("content-type", "application/json");
-      String[] pathSegments = new String[]{ DaprHttp.ALPHA_1_API_VERSION, "publish", "bulk", pubsubName, topic };
-
-      Map<String, List<String>> queryArgs = metadataToQueryArgs(request.getMetadata());
-
-      return Mono.subscriberContext().flatMap(
-          context -> this.client.invokeApi(
-              DaprHttp.HttpMethods.POST.name(), pathSegments, queryArgs, serializedRequest, requestHeaders, context
-          )
-      ).map(
-          it -> {
-            BulkPublishResponse response;
-            try {
-              response = INTERNAL_SERIALIZER.deserialize(it.getBody(), BulkPublishResponse.class);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-            return response;
-          }
-      );
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
+    return DaprException.wrapMono(new UnsupportedOperationException());
   }
 
   /**

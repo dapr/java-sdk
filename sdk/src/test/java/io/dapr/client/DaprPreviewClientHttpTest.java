@@ -13,10 +13,6 @@ limitations under the License.
 
 package io.dapr.client;
 
-import io.dapr.client.domain.BulkPublishRequest;
-import io.dapr.client.domain.BulkPublishRequestEntry;
-import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.query.Query;
@@ -28,14 +24,10 @@ import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
 import org.junit.Test;
-import reactor.core.publisher.Mono;
 
-import java.util.Collections;
-import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprPreviewClientHttpTest {
@@ -55,92 +47,6 @@ public class DaprPreviewClientHttpTest {
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprPreviewClientHttp = new DaprClientHttp(daprHttp);
-  }
-
-  @Test
-  public void publishEvents() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0-alpha1/publish/bulk/mypubsubname/A")
-        .header("content-type", "application/json")
-        .respond("{}");
-    String event = "{ \"message\": \"This is a test\" }";
-
-    BulkPublishRequest<String> req = new BulkPublishRequest<>("mypubsubname", "A");
-    BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>();
-    entry.setEntryID("1");
-    entry.setEvent(event);
-    entry.setContentType("text/plain");
-    req.setEntries(Collections.singletonList(entry));
-
-    Mono<BulkPublishResponse> mono = daprPreviewClientHttp.publishEvents(req);
-    assertNotNull(mono.block());
-  }
-
-  @Test
-  public void publishEventsWithoutMeta() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0-alpha1/publish/bulk/mypubsubname/A")
-        .header("content-type", "application/json")
-        .respond("{}");
-    String event = "{ \"message\": \"This is a test\" }";
-
-    Mono<BulkPublishResponse> mono = daprPreviewClientHttp.publishEvents("mypubsubname", "A",
-        Collections.singletonList(event), "text/plain");
-    assertNotNull(mono.block());
-  }
-
-  @Test
-  public void publishEventsWithRequestMeta() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0-alpha1/publish/bulk/mypubsubname/A?metadata.ttlInSeconds=1235")
-        .header("content-type", "application/json")
-        .respond("{}");
-    String event = "{ \"message\": \"This is a test\" }";
-
-    Mono<BulkPublishResponse> mono = daprPreviewClientHttp.publishEvents("mypubsubname", "A",
-        Collections.singletonList(event), "text/plain", new HashMap<String, String>(){{
-          put("ttlInSeconds", "1235");
-        }});
-    assertNotNull(mono.block());
-  }
-
-  @Test
-  public void publishEventsIfTopicOrPubsubIsNullOrEmpty() {
-    String event = "{ \"message\": \"This is a test\" }";
-
-    BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>();
-    entry.setEntryID("1");
-    entry.setEvent(event);
-    entry.setContentType("text/plain");
-
-    final BulkPublishRequest<String> req = new BulkPublishRequest<>("mypubsubname", null);
-    req.setEntries(Collections.singletonList(entry));
-    assertThrows(IllegalArgumentException.class, () ->
-        daprPreviewClientHttp.publishEvents(req).block());
-    final BulkPublishRequest<String>  req1 = new BulkPublishRequest<>("mypubsubname", "");
-    req1.setEntries(Collections.singletonList(entry));
-    assertThrows(IllegalArgumentException.class, () ->
-        daprPreviewClientHttp.publishEvents(req1).block());
-
-    final BulkPublishRequest<String>  req2 = new BulkPublishRequest<>(null, "A");
-    req2.setEntries(Collections.singletonList(entry));
-    assertThrows(IllegalArgumentException.class, () ->
-        daprPreviewClientHttp.publishEvents(req2).block());
-  }
-
-  @Test
-  public void publishEventsNoHotMono() {
-    String event = "{ \"message\": \"This is a test\" }";
-
-    BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>();
-    entry.setEntryID("1");
-    entry.setEvent(event);
-    entry.setContentType("text/plain");
-
-    final BulkPublishRequest<String> req = new BulkPublishRequest<>("mypubsubname", null);
-    req.setEntries(Collections.singletonList(entry));
-    daprPreviewClientHttp.publishEvents(req);
-    // should not throw exception since block is not called.
   }
 
   @Test

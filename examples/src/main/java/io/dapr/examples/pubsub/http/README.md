@@ -6,7 +6,7 @@ Visit [this](https://docs.dapr.io/developing-applications/building-blocks/pubsub
  
 ## Pub-Sub Sample using the Java-SDK
 
-This sample uses the HTTP Client provided in Dapr Java SDK for subscribing, and Dapr Spring Boot integration for publishing. This example uses Redis Streams (enabled in Redis versions => 5).
+This sample uses the HTTP Springboot integration provided in Dapr Java SDK for subscribing, and GRPC client for publishing. This example uses Redis Streams (enabled in Redis versions => 5).
 ## Pre-requisites
 
 * [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).

@@ -43,9 +43,15 @@ public class SubscriberController {
     return messagesByTopic.getOrDefault(topic, Collections.emptyList());
   }
 
+  private static final List<CloudEvent> messagesReceivedKafkaTestingTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV3 = new ArrayList();
+
+  @GetMapping(path = "/messages/kafka/testingtopic")
+  public List<CloudEvent> getMessagesReceivedKafkaTestingTopic() {
+    return messagesReceivedKafkaTestingTopic;
+  }
 
   @GetMapping(path = "/messages/testingtopic")
   public List<CloudEvent> getMessagesReceivedTestingTopic() {
@@ -71,6 +77,21 @@ public class SubscriberController {
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
         System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesReceivedTestingTopic.add(envelope);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "testingtopic", pubsubName = "kafka-messagebus")
+  @PostMapping("/route1_kafka")
+  public Mono<Void> handleKafkaMessage(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
+        String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
+        System.out.println("Testing topic Kafka Subscriber got message: " + message + "; Content-type: " + contentType);
+        messagesReceivedKafkaTestingTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

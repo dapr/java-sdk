@@ -11,10 +11,9 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub.http;
+package io.dapr.examples.pubsub.bulk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +25,7 @@ import reactor.core.publisher.Mono;
  * SpringBoot Controller to handle input binding.
  */
 @RestController
-public class SubscriberController {
+public class KafkaController {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -35,9 +34,9 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
-  @PostMapping(path = "/testingtopic")
-  public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
+  @Topic(name = "kafkatestingtopic", pubsubName = "${myAppProperty:kafka-pubsub}")
+  @PostMapping(path = "/kafkatestingtopic")
+  public Mono<Void> handleKafkaMessage(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         System.out.println("Subscriber got: " + cloudEvent.getData());
@@ -47,24 +46,4 @@ public class SubscriberController {
       }
     });
   }
-
-  /**
-   * Handles a registered publish endpoint on this app (version 2 of a cloud event).
-   * @param cloudEvent The cloud event received.
-   * @return A message containing the time.
-   */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
-          rule = @Rule(match = "event.type == \"v2\"", priority = 1))
-  @PostMapping(path = "/testingtopicV2")
-  public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent cloudEvent) {
-    return Mono.fromRunnable(() -> {
-      try {
-        System.out.println("Subscriber got: " + cloudEvent.getData());
-        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
-  }
-
 }
