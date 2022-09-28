@@ -15,6 +15,7 @@ package io.dapr.client.domain;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,7 +55,7 @@ public class BulkPublishRequest<T> {
   public BulkPublishRequest(String pubsubName, String topic) {
     this.pubsubName = pubsubName;
     this.topic = topic;
-    this.entries = new ArrayList<>();
+    this.entries = Collections.unmodifiableList(new ArrayList<>());
   }
 
   /**
@@ -69,7 +70,8 @@ public class BulkPublishRequest<T> {
                             List<BulkPublishRequestEntry<T>> entries) {
     this.pubsubName = pubsubName;
     this.topic = topic;
-    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
+    this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
+        Collections.unmodifiableMap(metadata);
     this.entries = entries == null ? Collections.unmodifiableList(new ArrayList<>()) :
         Collections.unmodifiableList(entries);
   }

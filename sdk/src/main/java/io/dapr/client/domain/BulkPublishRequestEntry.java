@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client.domain;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -61,7 +62,8 @@ public class BulkPublishRequestEntry<T> {
     this.entryID = entryID;
     this.event = event;
     this.contentType = contentType;
-    this.metadata = metadata;
+    this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
+        Collections.unmodifiableMap(metadata);
   }
 
   public String getEntryID() {

@@ -39,7 +39,8 @@ public class BulkPublishResponse {
    */
   public BulkPublishResponse(String errorCode, List<BulkPublishResponseEntry> statuses) {
     this.errorCode = errorCode;
-    this.statuses = statuses;
+    this.statuses = statuses == null ? Collections.unmodifiableList(new ArrayList<>()) :
+        Collections.unmodifiableList(statuses);
   }
 
   public String getErrorCode() {
