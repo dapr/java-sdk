@@ -34,9 +34,10 @@ class DaprRuntime {
   private final Map<DaprTopicKey, DaprSubscriptionBuilder> subscriptionBuilders = new HashMap<>();
 
   /**
-   * Private constructor to make this singleton.
+   * DaprRuntime should be used as a singleton, using {@link DaprRuntime#getInstance()}.
+   * The constructor's default scope is available for unit tests only.
    */
-  private DaprRuntime() {
+  DaprRuntime() {
   }
 
   /**
@@ -56,26 +57,17 @@ class DaprRuntime {
     return instance;
   }
 
-  /**
-   * Adds a topic to the list of subscribed topics.
-   *
-   * @param pubsubName Pubsub name to subcribe to.
-   * @param topicName Name of the topic being subscribed to.
-   * @param rule The optional rule for this route.
-   * @param route Destination route for requests.
-   * @param metadata Metadata for extended subscription functionality.
-   */
-  public synchronized void addSubscribedTopic(String pubsubName,
+  public synchronized void addSubscribedTopic(String pubSubName,
                                               String topicName,
                                               String match,
                                               int priority,
                                               String route,
                                               Map<String,String> metadata) {
-    DaprTopicKey topicKey = new DaprTopicKey(pubsubName, topicName);
+    DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
 
     DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
     if (builder == null) {
-      builder = new DaprSubscriptionBuilder(pubsubName, topicName);
+      builder = new DaprSubscriptionBuilder(pubSubName, topicName);
       subscriptionBuilders.put(topicKey, builder);
     }
 

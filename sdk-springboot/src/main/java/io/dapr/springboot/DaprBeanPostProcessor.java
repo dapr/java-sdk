@@ -24,6 +24,7 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.EmbeddedValueResolver;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringValueResolver;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -41,9 +42,9 @@ import java.util.Map;
 public class DaprBeanPostProcessor implements BeanPostProcessor {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final String BULK_SUBSCRIBE_METADATA_KEY = "bulkSubscribe";
-  private static final String BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY = "maxBulkSubCount";
-  private static final String BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY = "maxBulkSubAwaitDurationMs";
+  static final String BULK_SUBSCRIBE_METADATA_KEY = "bulkSubscribe";
+  static final String BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY = "maxBulkSubCount";
+  static final String BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY = "maxBulkSubAwaitDurationMs";
 
   private final EmbeddedValueResolver embeddedValueResolver;
 
@@ -60,7 +61,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       return null;
     }
 
-    subscribeToTopics(bean.getClass(), embeddedValueResolver);
+    subscribeToTopics(bean.getClass(), embeddedValueResolver, DaprRuntime.getInstance());
 
     return bean;
   }
@@ -77,12 +78,13 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
    * Subscribe to topics based on {@link Topic} annotations on the given class and any of ancestor classes.
    * @param clazz Controller class where {@link Topic} is expected.
    */
-  private static void subscribeToTopics(Class clazz, EmbeddedValueResolver embeddedValueResolver) {
+  private static void subscribeToTopics(
+          Class clazz, StringValueResolver stringValueResolver, DaprRuntime daprRuntime) {
     if (clazz == null) {
       return;
     }
 
-    subscribeToTopics(clazz.getSuperclass(), embeddedValueResolver);
+    subscribeToTopics(clazz.getSuperclass(), stringValueResolver, daprRuntime);
     for (Method method : clazz.getDeclaredMethods()) {
       Topic topic = method.getAnnotation(Topic.class);
       if (topic == null) {
@@ -101,9 +103,9 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
 
 
       Rule rule = topic.rule();
-      String topicName = embeddedValueResolver.resolveStringValue(topic.name());
-      String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
-      String match = embeddedValueResolver.resolveStringValue(rule.match());
+      String topicName = stringValueResolver.resolveStringValue(topic.name());
+      String pubSubName = stringValueResolver.resolveStringValue(topic.pubsubName());
+      String match = stringValueResolver.resolveStringValue(rule.match());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
           TypeReference<HashMap<String, String>> typeRef
@@ -116,7 +118,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
 
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
-            DaprRuntime.getInstance().addSubscribedTopic(
+            daprRuntime.addSubscribedTopic(
                 pubSubName, topicName, match, rule.priority(), route, metadata);
           }
         } catch (JsonProcessingException e) {
