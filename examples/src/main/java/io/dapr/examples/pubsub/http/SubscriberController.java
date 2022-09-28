@@ -76,7 +76,7 @@ public class SubscriberController {
   /**
    * Handles a registered subscribe endpoint on this app using bulk subscribe.
    * @param bulkMessage The bulk message received.
-   * @return A list of responses for each event. TODO
+   * @return A list of responses for each event.
    */
   @BulkSubscribe()
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:pubsub}")

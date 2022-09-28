@@ -17,9 +17,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.beans.factory.config.EmbeddedValueResolver;
-import org.springframework.util.StringValueResolver;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

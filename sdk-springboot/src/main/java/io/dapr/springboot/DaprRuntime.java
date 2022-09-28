@@ -57,6 +57,16 @@ class DaprRuntime {
     return instance;
   }
 
+  /**
+   * Adds a topic to the list of subscribed topics.
+   *
+   * @param pubSubName PubSub name to subscribe to.
+   * @param topicName Name of the topic being subscribed to.
+   * @param match The CEL expression the event must match.
+   * @param priority The priority of the match.
+   * @param route Destination route for requests.
+   * @param metadata Metadata for extended subscription functionality.
+   */
   public synchronized void addSubscribedTopic(String pubSubName,
                                               String topicName,
                                               String match,
