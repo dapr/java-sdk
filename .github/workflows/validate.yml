@@ -40,7 +40,7 @@ jobs:
       DAPR_RUNTIME_VER: 1.8.0-rc.3
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.8.0-rc.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF: 683a436ff1367e4ff2d27da2d79069c04ec2c46d
+      DAPR_REF: 405bf03b02275cb58672f9251f39a43c62aa5290
     steps:
       - uses: actions/checkout@v3
       - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -99,6 +99,10 @@ jobs:
           echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
           pip3 install setuptools wheel
           pip3 install mechanical-markdown
+      - name: Install Local kafka using docker-compose
+        run: |
+          docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
+          docker ps
       - name: Install Local mongo database using docker-compose
         run: |
           docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
