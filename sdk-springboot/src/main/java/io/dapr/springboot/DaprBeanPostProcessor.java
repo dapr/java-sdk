@@ -16,7 +16,7 @@ package io.dapr.springboot;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.BulkSubscribe;
+import io.dapr.springboot.annotations.BulkSubscribe;
 import io.dapr.Rule;
 import io.dapr.Topic;
 import org.springframework.beans.BeansException;

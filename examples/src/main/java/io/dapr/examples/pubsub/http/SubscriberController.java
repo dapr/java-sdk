@@ -14,10 +14,10 @@ limitations under the License.
 package io.dapr.examples.pubsub.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.BulkSubscribe;
 import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.springboot.annotations.BulkSubscribe;
 import io.dapr.springboot.domain.DaprBulkAppResponse;
 import io.dapr.springboot.domain.DaprBulkAppResponseEntry;
 import io.dapr.springboot.domain.DaprBulkAppResponseStatus;
