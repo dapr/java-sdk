@@ -24,6 +24,7 @@ import java.util.List;
 
 /**
  * A DaprClient over HTTP for Actor's runtime.
+ * @deprecated Use {@link io.dapr.actors.runtime.DaprGrpcClient} instead, this will be removed in a future release.
  */
 class DaprHttpClient implements DaprClient {
 

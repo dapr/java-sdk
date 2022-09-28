@@ -19,6 +19,11 @@ package io.dapr.client;
 public enum DaprApiProtocol {
 
   GRPC,
+  /**
+   * HTTP protocol; note that this is deprecated and will be removed in a future release.
+   *
+   * @deprecated HTTP support is being deprecated; use GRPC instead. This will be removed in a future release
+   * */
   HTTP
 
 }

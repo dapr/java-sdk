@@ -43,6 +43,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Dapr's HTTP client implementation -- note: this is deprecated and will be removed in a future release.
+ *
+ * @deprecated HTTP support is being deprecated; use gRPC instead. This will be removed in a future release.
+ */
 public class DaprHttp implements AutoCloseable {
 
   /**

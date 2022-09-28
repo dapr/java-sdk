@@ -23,6 +23,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A builder for the DaprHttp.
+ *
+ * @deprecated HTTP support is being deprecated; use gRPC instead. This will be removed in a future release.
+ *
  */
 public class DaprHttpBuilder {
 

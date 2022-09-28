@@ -20,6 +20,8 @@ import reactor.core.publisher.Mono;
  * DaprClient over HTTP for actor client.
  *
  * @see DaprHttp
+ *
+ * @deprecated Use {@link DaprGrpcClient} instead, this will be removed in a future release.
  */
 class DaprHttpClient implements DaprClient {
 
@@ -34,6 +36,7 @@ class DaprHttpClient implements DaprClient {
    * Instantiates a new Dapr Http Client to invoke Actors.
    *
    * @param client Dapr's http client.
+   *
    */
   DaprHttpClient(DaprHttp client) {
     this.client = client;

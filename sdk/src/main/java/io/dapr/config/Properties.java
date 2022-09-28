@@ -45,6 +45,8 @@ public class Properties {
 
   /**
    * Dapr's default use of gRPC or HTTP for Dapr's method invocation APIs.
+   *
+   * @deprecated HTTP support is being deprecated; use gRPC instead. This will be removed in a future release.
    */
   private static final DaprApiProtocol DEFAULT_API_METHOD_INVOCATION_PROTOCOL = DaprApiProtocol.HTTP;
 

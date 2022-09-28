@@ -62,6 +62,9 @@ import java.util.stream.Collectors;
  *
  * @see io.dapr.client.DaprHttp
  * @see io.dapr.client.DaprClient
+ *
+ * @deprecated HTTP support is being deprecated; use {@link io.dapr.client.DaprClientGrpc} instead.
+ *     This will be removed in a future release.
  */
 public class DaprClientHttp extends AbstractDaprClient {
   /**

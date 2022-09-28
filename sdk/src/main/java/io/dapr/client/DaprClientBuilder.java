@@ -24,7 +24,8 @@ import java.io.Closeable;
 
 /**
  * A builder for the DaprClient,
- * Currently only gRPC and HTTP Client will be supported.
+ * Currently both gRPC and HTTP clients are supported but gRPC is recommended.
+ * Note: HTTP support is being deprecated and will be removed in a future release.
  */
 public class DaprClientBuilder {
 
@@ -40,6 +41,8 @@ public class DaprClientBuilder {
 
   /**
    * Builder for Dapr's HTTP Client.
+   *
+   * @deprecated HTTP support is being deprecated; use gRPC instead. This will be removed in a future release.
    */
   private final DaprHttpBuilder daprHttpBuilder;
 
@@ -172,6 +175,9 @@ public class DaprClientBuilder {
    * Creates and instance of DaprClient over HTTP.
    *
    * @return DaprClient over HTTP.
+   *
+   * @deprecated HTTP support is being deprecated; Use the gRPC builder method (buildDaprClientGrpc) instead.
+   *     This will be removed in a future release.
    */
   private DaprClient buildDaprClientHttp() {
     return new DaprClientHttp(this.daprHttpBuilder.build(), this.objectSerializer, this.stateSerializer);
