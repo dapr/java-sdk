@@ -21,8 +21,10 @@ public class MockControllerWithSubscribe {
   public static final String pubSubName = "mockPubSub";
   public static final String topicName = "mockTopic";
   public static final String bulkTopicName = "mockBulkTopic";
+  public static final String bulkTopicNameV2 = "mockBulkTopicV2";
   public static final String subscribeRoute = "mockRoute";
   public static final String bulkSubscribeRoute = "mockBulkRoute";
+  public static final String bulkSubscribeRouteV2 = "mockBulkRouteV2";
   public static final int maxBulkSubCount = 500;
   public static final int maxBulkSubAwaitDurationMs = 1000;
 
@@ -34,4 +36,9 @@ public class MockControllerWithSubscribe {
   @Topic(name = bulkTopicName, pubsubName = pubSubName)
   @PostMapping(path = bulkSubscribeRoute)
   public void handleBulkMessages() {}
+
+  @BulkSubscribe(maxBulkSubCount = maxBulkSubCount, maxBulkSubAwaitDurationMs = maxBulkSubAwaitDurationMs)
+  @Topic(name = bulkTopicNameV2, pubsubName = pubSubName, metadata = "{\"maxBulkSubAwaitDurationMs\": 5}")
+  @PostMapping(path = bulkSubscribeRouteV2)
+  public void handleBulkMessagesV2() {}
 }

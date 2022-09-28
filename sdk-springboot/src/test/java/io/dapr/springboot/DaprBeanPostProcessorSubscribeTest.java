@@ -30,7 +30,44 @@ public class DaprBeanPostProcessorSubscribeTest {
             "subscribeToTopics", Class.class, StringValueResolver.class, DaprRuntime.class);
     subscribeToTopicsMethod.setAccessible(true);
 
-    DaprTopicSubscription normalTopicSubscription = new DaprTopicSubscription(
+    DaprRuntime runtime = new DaprRuntime();
+
+    try {
+      subscribeToTopicsMethod.invoke(DaprBeanPostProcessor.class, MockControllerWithSubscribe.class,
+              new MockStringValueResolver(), runtime);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      e.printStackTrace();
+    }
+
+    DaprTopicSubscription[] topicSubscriptions = runtime.listSubscribedTopics();
+
+    // There should be three subscriptions.
+    Assert.assertEquals(3, topicSubscriptions.length);
+
+    DaprTopicSubscription[] expectedDaprTopicSubscriptions = getTestDaprTopicSubscriptions();
+
+    // Subscription without BulkSubscribe.
+    this.assertTopicSubscriptionEquality(expectedDaprTopicSubscriptions[0], topicSubscriptions[0]);
+
+    // Subscription with BulkSubscribe.
+    // This should populate the right metadata for bulk subscribe.
+    this.assertTopicSubscriptionEquality(expectedDaprTopicSubscriptions[1], topicSubscriptions[1]);
+
+    // Subscription with BulkSubscribe, with bulk metadata in @Topic.
+    // The bulk metadata from @Topic should be overridden.
+    this.assertTopicSubscriptionEquality(expectedDaprTopicSubscriptions[2], topicSubscriptions[2]);
+  }
+
+  private void assertTopicSubscriptionEquality(DaprTopicSubscription s1, DaprTopicSubscription s2) {
+    Assert.assertEquals(s1.getPubsubName(), s2.getPubsubName());
+    Assert.assertEquals(s1.getTopic(), s2.getTopic());
+    Assert.assertEquals(s1.getRoute(), s2.getRoute());
+    Assert.assertEquals(s1.getMetadata(), s2.getMetadata());
+  }
+
+  private DaprTopicSubscription[] getTestDaprTopicSubscriptions() {
+    DaprTopicSubscription[] daprTopicSubscriptions = new DaprTopicSubscription[3];
+    daprTopicSubscriptions[0] = new DaprTopicSubscription(
             MockControllerWithSubscribe.pubSubName,
             MockControllerWithSubscribe.topicName,
             MockControllerWithSubscribe.subscribeRoute,
@@ -43,32 +80,20 @@ public class DaprBeanPostProcessorSubscribeTest {
       put(DaprBeanPostProcessor.BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY,
               String.valueOf(MockControllerWithSubscribe.maxBulkSubAwaitDurationMs));
     }};
-    DaprTopicSubscription bulkTopicSubscription = new DaprTopicSubscription(
+
+    daprTopicSubscriptions[1] = new DaprTopicSubscription(
             MockControllerWithSubscribe.pubSubName,
             MockControllerWithSubscribe.bulkTopicName,
             MockControllerWithSubscribe.bulkSubscribeRoute,
             bulkTopicSubscriptionMetadata);
 
-    DaprRuntime runtime = new DaprRuntime();
 
-    try {
-      subscribeToTopicsMethod.invoke(DaprBeanPostProcessor.class, MockControllerWithSubscribe.class,
-              new MockStringValueResolver(), runtime);
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      e.printStackTrace();
-    }
+    daprTopicSubscriptions[2] = new DaprTopicSubscription(
+            MockControllerWithSubscribe.pubSubName,
+            MockControllerWithSubscribe.bulkTopicNameV2,
+            MockControllerWithSubscribe.bulkSubscribeRouteV2,
+            bulkTopicSubscriptionMetadata);
 
-    DaprTopicSubscription[] topicSubscriptions = runtime.listSubscribedTopics();
-    Assert.assertEquals(2, topicSubscriptions.length);
-
-    this.assertTopicSubscriptionEquality(normalTopicSubscription, topicSubscriptions[0]);
-    this.assertTopicSubscriptionEquality(bulkTopicSubscription, topicSubscriptions[1]);
-  }
-
-  private void assertTopicSubscriptionEquality(DaprTopicSubscription s1, DaprTopicSubscription s2) {
-    Assert.assertEquals(s1.getPubsubName(), s2.getPubsubName());
-    Assert.assertEquals(s1.getTopic(), s2.getTopic());
-    Assert.assertEquals(s1.getRoute(), s2.getRoute());
-    Assert.assertEquals(s1.getMetadata(), s2.getMetadata());
+    return daprTopicSubscriptions;
   }
 }
