@@ -16,6 +16,8 @@ package io.dapr.it.pubsub.http;
 import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.springboot.annotations.BulkSubscribe;
+import io.dapr.springboot.domain.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,6 +49,8 @@ public class SubscriberController {
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV3 = new ArrayList();
 
+  private static final List<DaprBulkAppResponse> responsesReceivedTestingTopicBulk = new ArrayList<>();
+
   @GetMapping(path = "/messages/testingtopic")
   public List<CloudEvent> getMessagesReceivedTestingTopic() {
     return messagesReceivedTestingTopic;
@@ -57,11 +61,11 @@ public class SubscriberController {
     return messagesReceivedTestingTopicV2;
   }
 
-  @GetMapping(path = "/messages/testingtopicV3")
-  public List<CloudEvent> getMessagesReceivedTestingTopicV3() {
-    return messagesReceivedTestingTopicV3;
+  @GetMapping(path = "/messages/topicBulkSub")
+  public List<DaprBulkAppResponse> getMessagesReceivedTestingTopicBulkSub() {
+    return responsesReceivedTestingTopicBulk;
   }
-
+  
   @Topic(name = "testingtopic", pubsubName = "messagebus")
   @PostMapping("/route1")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent envelope) {
@@ -178,6 +182,42 @@ public class SubscriberController {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
+    });
+  }
+
+  /**
+   * Receive messages using the bulk subscribe API.
+   * The maxBulkSubCount and maxBulkSubAwaitDurationMs are adjusted to ensure
+   * that all the test messages arrive in a single batch.
+   *
+   * @param bulkMessage incoming bulk of messages from the message bus.
+   * @return status for each message received.
+   */
+  @BulkSubscribe(maxBulkSubCount = 100, maxBulkSubAwaitDurationMs = 5000)
+  @Topic(name = "topicBulkSub", pubsubName = "messagebus")
+  @PostMapping(path = "/routeBulkSub")
+  public Mono<DaprBulkAppResponse> handleMessageBulk(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
+    return Mono.fromCallable(() -> {
+      if (bulkMessage.entries.length == 0) {
+        DaprBulkAppResponse response = new DaprBulkAppResponse(new DaprBulkAppResponseEntry[]{});
+        responsesReceivedTestingTopicBulk.add(response);
+        return response;
+      }
+
+      DaprBulkAppResponseEntry[] entries = new DaprBulkAppResponseEntry[bulkMessage.entries.length];
+      int i = 0;
+      for (DaprBulkMessageEntry<?> entry: bulkMessage.entries) {
+        try {
+          System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.entryID);
+          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.SUCCESS);
+        } catch (Exception e) {
+          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.RETRY);
+        }
+        i++;
+      }
+      DaprBulkAppResponse response = new DaprBulkAppResponse(entries);
+      responsesReceivedTestingTopicBulk.add(response);
+      return response;
     });
   }
 
