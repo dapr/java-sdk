@@ -145,9 +145,8 @@ sleep: 5
 -->
 
 ```bash
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.http.ConfigurationHandler -p 3009
+dapr run --app-id confighandler -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.http.ConfigurationHandler -p 3009
 ```
-
 <!-- END_STEP -->
 
 #### Running the ConfigurationClient app:
@@ -208,6 +207,7 @@ name: Cleanup
 
 ```bash
 dapr stop --app-id confighttp
+dapr stop --app-id confighandler
 ```
 
 <!-- END_STEP -->
