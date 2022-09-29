@@ -39,6 +39,9 @@ public class Publisher {
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
 
+  // Topic registered with Bulk Subscribe handler.
+  private static final String BULK_SUB_TOPIC_NAME = "testingtopicbulk";
+
   //The name of the pubsub
   private static final String PUBSUB_NAME = "messagebus";
 
@@ -51,12 +54,18 @@ public class Publisher {
     try (DaprClient client = new DaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d", i);
-        //Publishing messages
+        // Publish messages to all topics.
         client.publishEvent(
             PUBSUB_NAME,
             TOPIC_NAME,
             message,
             singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+
+        client.publishEvent(
+                PUBSUB_NAME,
+                BULK_SUB_TOPIC_NAME,
+                message,
+                singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
         System.out.println("Published message: " + message);
 
         try {

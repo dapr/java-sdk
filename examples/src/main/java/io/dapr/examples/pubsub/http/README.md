@@ -59,7 +59,8 @@ This Spring Controller handles the message endpoint, printing the message which 
 The subscription's topic in Dapr is handled automatically via the `@Topic` annotation - which also supports the same expressions in 
 [Spring's @Value annotations](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations).
 
-The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support. In this case, `myAppProperty` is a Java property that does not exist, so the expression resolves to the default value (`messagebus`). 
+The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support. In this case, `myAppProperty` is a Java property that does not exist, so the expression resolves to the default value (`messagebus`).
+The `@BulkSubscribe` annotation can be used with `@Topic` to receive multiple messages at once. See the example on how to handle the bulk messages and respond correctly.
 
 ```java
 @RestController
@@ -89,6 +90,7 @@ Execute the follow script in order to run the Subscriber example:
 name: Run Subscriber
 expected_stdout_lines:
   - '== APP == Subscriber got: This is message #1'
+  - '== APP == Subscriber got: This is message #2'
   - '== APP == Subscriber got: This is message #2'
 background: true
 sleep: 5
