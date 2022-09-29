@@ -61,6 +61,11 @@ public class SubscriberController {
     return messagesReceivedTestingTopicV2;
   }
 
+  @GetMapping(path = "/messages/testingtopicV3")
+  public List<CloudEvent> getMessagesReceivedTestingTopicV3() {
+    return messagesReceivedTestingTopicV3;
+  }
+
   @GetMapping(path = "/messages/topicBulkSub")
   public List<DaprBulkAppResponse> getMessagesReceivedTestingTopicBulkSub() {
     return responsesReceivedTestingTopicBulk;
