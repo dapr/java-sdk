@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -20,17 +23,10 @@ import java.util.Map;
  * A configuration item from Dapr's configuration store.
  */
 public class ConfigurationItem {
-  private String key;
-  private String value;
-  private String version;
-  private Map<String, String> metadata;
-
-  /**
-   * Default constructor for ConfigurationItem.
-   */
-  public ConfigurationItem() {
-
-  }
+  private final String key;
+  private final String value;
+  private final String version;
+  private final Map<String, String> metadata;
 
   /**
    * Constructor for a configuration Item.
@@ -54,7 +50,11 @@ public class ConfigurationItem {
    * @param value value for the provided key
    * @param version version of the configuration item
    */
-  public ConfigurationItem(String key, String value, String version) {
+  @JsonCreator
+  public ConfigurationItem(
+      @JsonProperty("key") String key,
+      @JsonProperty("value") String value,
+      @JsonProperty("version") String version) {
     this.key = key;
     this.value = value;
     this.version = version;

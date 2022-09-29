@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
@@ -26,20 +27,12 @@ public class SubscribeConfigurationResponse {
   /**
    * Subscription id for the items subscribed to.
    */
-  @JsonProperty("id")
-  private String subscriptionId;
+  private final String subscriptionId;
 
   /**
    * Map of Configuration key to {@link ConfigurationItem}.
    */
-  private Map<String, ConfigurationItem> items;
-
-  /**
-   * Default constructor for SubscribeConfigurationResponse.
-   */
-  public SubscribeConfigurationResponse() {
-
-  }
+  private final Map<String, ConfigurationItem> items;
 
   /**
    * Constructor for SubscribeConfigurationResponse.
@@ -47,7 +40,10 @@ public class SubscribeConfigurationResponse {
    * @param id        Subscription id for the items subscribed to.This id is returned by subscribeToConfiguration API.
    * @param items     Map of configuration items user subscribed to.
    */
-  public SubscribeConfigurationResponse(String id, Map<String, ConfigurationItem> items) {
+  @JsonCreator
+  public SubscribeConfigurationResponse(
+      @JsonProperty("id") String id,
+      @JsonProperty("items") Map<String, ConfigurationItem> items) {
     this.subscriptionId = id;
     this.items = Collections.unmodifiableMap(items);
   }
