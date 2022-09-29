@@ -64,7 +64,7 @@ public class DaprPreviewClientGrpcTest {
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final String CONFIG_STORE_NAME = "MyConfigStore";
 	private static final String QUERY_STORE_NAME = "testQueryStore";
-    private static final String LOCK_STORE_NAME = "MyLockStore";
+	private static final String LOCK_STORE_NAME = "MyLockStore";
 
 
 	private Closeable closeable;

@@ -689,13 +689,7 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("ExpiryInSeconds cannot be negative.");
       }
 
-
-      Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put("resourceId", resourceId);
-      jsonMap.put("lockOwner", lockOwner);
-      jsonMap.put("expiryInSeconds", expiryInSeconds);
-
-      byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
+      byte[] requestBody = INTERNAL_SERIALIZER.serialize(request);
 
       String[] pathSegments = new String[]{DaprHttp.ALPHA_1_API_VERSION, "lock", stateStoreName};
 
@@ -738,12 +732,7 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("LockOwner cannot be null or empty.");
       }
 
-
-      Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put("resourceId", resourceId);
-      jsonMap.put("lockOwner", lockOwner);
-
-      byte[] requestBody = INTERNAL_SERIALIZER.serialize(jsonMap);
+      byte[] requestBody = INTERNAL_SERIALIZER.serialize(request);
 
       String[] pathSegments = new String[]{DaprHttp.ALPHA_1_API_VERSION, "unlock", stateStoreName};
 

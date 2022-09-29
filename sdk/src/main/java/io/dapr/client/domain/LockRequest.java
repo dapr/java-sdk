@@ -14,14 +14,19 @@ limitations under the License.
 package io.dapr.client.domain;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.io.Serializable;
+
 /**
  * A request to lock.
  */
-public class LockRequest {
+public class LockRequest implements Serializable {
 
   /**
    * The lock store name,e.g. `redis`.
    */
+  @JsonIgnore
   private final String storeName;
 
   /**
