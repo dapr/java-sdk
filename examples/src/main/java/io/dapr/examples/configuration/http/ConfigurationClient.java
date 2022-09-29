@@ -20,7 +20,6 @@ import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -47,7 +46,6 @@ public class ConfigurationClient {
       System.out.println("Using preview client...");
       getConfigurations(client);
       subscribeConfigurationRequest(client);
-      unsubscribeConfigurationItems(client);
     }
   }
 
@@ -81,7 +79,7 @@ public class ConfigurationClient {
    *
    * @param client DaprPreviewClient object
    */
-  public static void subscribeConfigurationRequest(DaprPreviewClient client) {
+  public static void subscribeConfigurationRequest(DaprPreviewClient client) throws InterruptedException {
     System.out.println("Subscribing to key: myconfig2");
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
         CONFIG_STORE_NAME, Collections.singletonList("myconfig2"));
@@ -95,25 +93,7 @@ public class ConfigurationClient {
     } else {
       System.out.println("error in subscribing to myconfig2");
     }
-  }
-
-  /**
-   * Unsubscribe API.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void unsubscribeConfigurationItems(DaprPreviewClient client) {
-    System.out.println("Unsubscribing to key: myconfig2");
-    UnsubscribeConfigurationResponse res = client.unsubscribeConfiguration(
-            SUBSCRIPTION_ID,
-            CONFIG_STORE_NAME
-    ).block();
-
-    if (res != null) {
-      System.out.println("Is Unsubscribe successful: " + res.getIsUnsubscribed());
-    } else {
-      System.out.println("Unsubscribe unsuccessful!!");
-    }
+    Thread.sleep(5000);
   }
 
   private static void print(ConfigurationItem item, String key) {

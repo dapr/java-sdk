@@ -15,7 +15,6 @@ package io.dapr.springboot;
 
 
 import io.dapr.actors.runtime.ActorRuntime;
-import io.dapr.client.BaseSubscribeConfigHandler;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.http.MediaType;
@@ -141,7 +140,7 @@ public class DaprController {
     return Mono.fromRunnable(
         () -> {
           try {
-            BaseSubscribeConfigHandler.getInstance().handleResponse(obj);
+            DaprRuntime.getInstance().handleConfigurationChange(pathVarsMap.get("configStore"),obj);
           } catch (Exception e) {
             throw new RuntimeException(e);
           }

@@ -67,7 +67,6 @@ public class ConfigurationClient {
       System.out.println("Using preview client...");
       getConfigurations(client);
       subscribeConfigurationRequest(client);
-      unsubscribeConfigurationItems(client);
     }
   }
 
@@ -76,7 +75,7 @@ public class ConfigurationClient {
    *
    * @param client DaprPreviewClient object
    */
-  public static void getConfigurationForaSingleKey(DaprPreviewClient client) {
+  public static void getConfigurations(DaprPreviewClient client) {
     System.out.println("*******trying to retrieve configurations for a list of keys********");
     GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
     try {
@@ -88,25 +87,11 @@ public class ConfigurationClient {
   }
 
   /**
-   * Gets configurations for varibale no. of arguments.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurationsUsingVarargs(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configurations for a variable no. of keys********");
-    try {
-      Mono<List<ConfigurationItem>> items =
-          client.getConfiguration(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
-      // ..
-    } catch (Exception ex) {}
-  }
-
-  /**
    * Subscribe to a list of keys.
    *
    * @param client DaprPreviewClient object
    */
-  public static void subscribeConfigurationRequestWithSubscribe(DaprPreviewClient client) {
+  public static void subscribeConfigurationRequest(DaprPreviewClient client) {
     // ...
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
         CONFIG_STORE_NAME, Collections.singletonList("myconfig2"));
@@ -114,27 +99,6 @@ public class ConfigurationClient {
       Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
       // ...
     };
-    // ..
-  }
-
-  /**
-   * Unsubscribe using subscription id.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void unsubscribeConfigurationItems(DaprPreviewClient client) {
-    System.out.println("Subscribing to key: myconfig2");
-    // ..
-    Runnable subscribeTask = () -> {
-      Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(CONFIG_STORE_NAME, "myconfig2");
-      // ...
-    };
-    // ...
-
-    UnsubscribeConfigurationResponse res = client.unsubscribeConfiguration(
-        subscriptionId.get(),
-        CONFIG_STORE_NAME
-    ).block();
     // ..
   }
 }
@@ -149,36 +113,39 @@ cd examples
 
 `DaprApplication.start()` Method will run an Spring Boot application that registers the `DaprController`. This controller exposes a `POST`
 route which dapr sidecar calls invokes whenever any update happens to subscribed config keys.
+`ConfigurationHandler` is a sample springboot application to register and receive for updates on configuration items sent by dapr. 
+springboot-sdk implements a generic route and enables users to register for different handlers per configuration store. 
+Users are free to write their own controllers to handle any specific route suited to the need.
 
 ```java
 @RestController
-public class ConfigSubscriberController {
-  ///...
-  @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.ALL_VALUE)
-  public Mono<Void> handleConfigUpdate(@PathVariable Map<String, String> pathVarsMap,
-                                       @RequestBody SubscribeConfigurationResponse obj) {
-    return Mono.fromRunnable(
-            () -> {
-              try {
-                BaseSubscribeConfigHandler.getInstance().handleResponse(obj);
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            }
-    );
-  }
+public class ConfigurationHandler {
+  //...
+  BiConsumer<String, SubscribeConfigurationResponse> biConsumer = (store, resp) -> {
+    System.out.println("Configuration update received for store : " + store);
+    resp.getItems().forEach((k,v) -> {
+      System.out.println("Key: "+ k + " Value :" + v.getValue());
+    });
+  };
+  
+  //....
 }
 ```
 Execute the following script to run the ConfigSubscriber app:
 
 <!-- STEP
-name: Run ConfigurationSubscriber
+name: Run ConfigurationHandler
+expected_stdout_lines:
+  - '== APP == Configuration update received for store: configstore'
+  - '== APP == Key: myconfig2 Value :updated_val2'
+background: true
+output_match_mode: substring
 background: true
 sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/configuration --app-id configsubscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.http.ConfigurationSubscriber -p 3009
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.http.ConfigurationHandler -p 3009
 ```
 
 <!-- END_STEP -->
@@ -197,8 +164,6 @@ expected_stdout_lines:
   - "== APP == val3 : key ->myconfig3"
   - "== APP == Subscribing to key: myconfig2"
   - "== APP == subscribing to myconfig2 is successful"
-  - "== APP == Unsubscribing to key: myconfig2"
-  - "== APP == Is Unsubscribe successful: true"
 background: true
 output_match_mode: substring
 sleep: 10
@@ -208,6 +173,17 @@ sleep: 10
 dapr run --components-path ./components/configuration --app-id confighttp --log-level debug --app-port 3009 --dapr-http-port 3500 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.http.ConfigurationClient
 ```
 
+#### Update myconfig2 key in configurationstore
+<!-- END_STEP -->
+
+<!-- STEP
+name: Update configuration value
+timeout_seconds: 20
+-->
+
+```bash
+docker exec dapr_redis redis-cli MSET myconfig2 "updated_val2||1"
+```
 <!-- END_STEP -->
 
 ### Sample output
@@ -219,8 +195,6 @@ dapr run --components-path ./components/configuration --app-id confighttp --log-
 == APP == val3 : key ->myconfig3
 == APP == Subscribing to key: myconfig2
 == APP == subscribing to myconfig2 is successful
-== APP == Unsubscribing to key: myconfig2
-== APP == Is Unsubscribe successful: true
 
 
 ```
@@ -234,7 +208,6 @@ name: Cleanup
 
 ```bash
 dapr stop --app-id confighttp
-dapr stop --app-id configsubscriber
 ```
 
 <!-- END_STEP -->

@@ -14,17 +14,19 @@ limitations under the License.
 package io.dapr.springboot;
 
 import io.dapr.Rule;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
  * Internal Singleton to handle Dapr configuration.
  */
-class DaprRuntime {
-
+public final class DaprRuntime {
   /**
    * The singleton instance.
    */
@@ -34,6 +36,12 @@ class DaprRuntime {
    * Map of subscription builders.
    */
   private final Map<DaprTopicKey, DaprSubscriptionBuilder> subscriptionBuilders = new HashMap<>();
+
+  /**
+   * Map of Store name to BiConsumer of Store name and {@link SubscribeConfigurationResponse}.
+   */
+  private final Map<String, BiConsumer<String, SubscribeConfigurationResponse>>
+      configurationChangeHandlers = Collections.synchronizedMap(new HashMap<>());
 
   /**
    * Private constructor to make this singleton.
@@ -67,7 +75,7 @@ class DaprRuntime {
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
    */
-  public synchronized void addSubscribedTopic(String pubsubName,
+  synchronized void addSubscribedTopic(String pubsubName,
                                               String topicName,
                                               String match,
                                               int priority,
@@ -92,9 +100,30 @@ class DaprRuntime {
     }
   }
 
-  public synchronized DaprTopicSubscription[] listSubscribedTopics() {
+  synchronized DaprTopicSubscription[] listSubscribedTopics() {
     List<DaprTopicSubscription> values = subscriptionBuilders.values().stream()
             .map(b -> b.build()).collect(Collectors.toList());
     return values.toArray(new DaprTopicSubscription[0]);
+  }
+
+  /**
+   * Method to Register different configuration change handlers.
+   * @param store Name of the configuration store
+   * @param handler BiConsumer handler to be called when configurations are modified for this store.
+   */
+  public void registerConfigurationChangeHandler(
+      String store, BiConsumer<String,
+      SubscribeConfigurationResponse> handler) {
+    this.configurationChangeHandlers.put(store, handler);
+  }
+
+  /**
+   * Method to call the BiConsumer handler registered for teh given store name.
+   * @param store Name of the configuration store
+   * @param resp {@link SubscribeConfigurationResponse}
+   */
+  void handleConfigurationChange(String store, SubscribeConfigurationResponse resp) {
+    BiConsumer<String, SubscribeConfigurationResponse> handler = this.configurationChangeHandlers.get(store);
+    handler.accept(store, resp);
   }
 }
