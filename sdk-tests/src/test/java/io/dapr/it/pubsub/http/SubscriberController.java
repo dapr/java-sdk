@@ -16,8 +16,12 @@ package io.dapr.it.pubsub.http;
 import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.client.domain.DaprBulkAppResponse;
+import io.dapr.client.domain.DaprBulkAppResponseEntry;
+import io.dapr.client.domain.DaprBulkAppResponseStatus;
+import io.dapr.client.domain.DaprBulkMessage;
+import io.dapr.client.domain.DaprBulkMessageEntry;
 import io.dapr.springboot.annotations.BulkSubscribe;
-import io.dapr.springboot.domain.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -203,20 +207,20 @@ public class SubscriberController {
   @PostMapping(path = "/routeBulkSub")
   public Mono<DaprBulkAppResponse> handleMessageBulk(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
     return Mono.fromCallable(() -> {
-      if (bulkMessage.entries.length == 0) {
+      if (bulkMessage.getEntries().length == 0) {
         DaprBulkAppResponse response = new DaprBulkAppResponse(new DaprBulkAppResponseEntry[]{});
         responsesReceivedTestingTopicBulk.add(response);
         return response;
       }
 
-      DaprBulkAppResponseEntry[] entries = new DaprBulkAppResponseEntry[bulkMessage.entries.length];
+      DaprBulkAppResponseEntry[] entries = new DaprBulkAppResponseEntry[bulkMessage.getEntries().length];
       int i = 0;
-      for (DaprBulkMessageEntry<?> entry: bulkMessage.entries) {
+      for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
         try {
-          System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.entryID);
-          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.SUCCESS);
+          System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.getEntryID());
+          entries[i] = new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.SUCCESS);
         } catch (Exception e) {
-          entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.RETRY);
+          entries[i] = new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY);
         }
         i++;
       }
