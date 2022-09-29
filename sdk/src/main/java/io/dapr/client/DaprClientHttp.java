@@ -113,6 +113,7 @@ public class DaprClientHttp extends AbstractDaprClient {
     this.client = client;
     this.isObjectSerializerDefault = objectSerializer.getClass() == DefaultObjectSerializer.class;
     this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
+    System.out.println("NOTE: DaprClientHttp is deprecated and will be removed in a future release.");
   }
 
   /**
