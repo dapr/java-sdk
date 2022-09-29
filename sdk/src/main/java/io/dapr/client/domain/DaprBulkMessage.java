@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Arrays;
 import java.util.Map;
 
@@ -37,17 +39,17 @@ public class DaprBulkMessage {
    * @param metadata metadata for the bulk message.
    */
   public DaprBulkMessage(DaprBulkMessageEntry<?>[] entries, String topic, Map<String, String> metadata) {
-    this.entries = Arrays.copyOf(entries, entries.length);
+    this.entries = entries == null ? new DaprBulkMessageEntry[]{} : Arrays.copyOf(entries, entries.length);
     this.topic = topic;
     this.metadata = metadata;
   }
 
   public DaprBulkMessageEntry<?>[] getEntries() {
-    return Arrays.copyOf(entries, entries.length);
+    return entries == null ? new DaprBulkMessageEntry[]{} : Arrays.copyOf(entries, entries.length);
   }
 
   public void setEntries(DaprBulkMessageEntry<?>[] entries) {
-    this.entries = Arrays.copyOf(entries, entries.length);
+    this.entries = entries == null ? new DaprBulkMessageEntry[]{} : Arrays.copyOf(entries, entries.length);
   }
 
   public String getTopic() {
