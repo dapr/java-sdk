@@ -90,7 +90,7 @@ Execute the follow script in order to run the Subscriber example:
 name: Run Subscriber
 expected_stdout_lines:
   - '== APP == Subscriber got: This is message #1'
-  - '== APP == Subscriber got: This is message #2'qaQ
+  - '== APP == Subscriber got: This is message #2'
 background: true
 sleep: 5
 -->
