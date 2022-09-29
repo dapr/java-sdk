@@ -18,15 +18,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.client.domain.DaprBulkAppResponse;
+import io.dapr.client.domain.DaprBulkAppResponseEntry;
+import io.dapr.client.domain.DaprBulkAppResponseStatus;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.springboot.domain.DaprBulkAppResponse;
-import io.dapr.springboot.domain.DaprBulkAppResponseEntry;
-import io.dapr.springboot.domain.DaprBulkAppResponseStatus;
 import io.dapr.utils.TypeRef;
 import org.junit.After;
 import org.junit.Assert;
@@ -521,11 +521,11 @@ public class PubSubIT extends BaseIT {
         assertEquals(1, messages.size());
 
         // The bulk response should contain NUM_MESSAGES entries.
-        assertEquals(NUM_MESSAGES, response.statuses.length);
+        assertEquals(NUM_MESSAGES, response.getStatuses().length);
 
         // All the entries should be SUCCESS.
-        for (DaprBulkAppResponseEntry entry : response.statuses) {
-          assertEquals(entry.status, DaprBulkAppResponseStatus.SUCCESS);
+        for (DaprBulkAppResponseEntry entry : response.getStatuses()) {
+          assertEquals(entry.getStatus(), DaprBulkAppResponseStatus.SUCCESS);
         }
       }, 2000);
     }
