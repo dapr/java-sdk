@@ -28,6 +28,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * SpringBoot Controller to handle input binding.
  */
@@ -81,23 +84,26 @@ public class SubscriberController {
   @BulkSubscribe()
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopicbulk")
-  public Mono<DaprBulkAppResponse> handleBulkMessage(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
+  public Mono<DaprBulkAppResponse> handleBulkMessage(
+          @RequestBody(required = false) DaprBulkMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
-      if (bulkMessage.getEntries().length == 0) {
-        return new DaprBulkAppResponse(new DaprBulkAppResponseEntry[]{});
+      if (bulkMessage.getEntries().size() == 0) {
+        return new DaprBulkAppResponse(new ArrayList<DaprBulkAppResponseEntry>());
       }
 
       System.out.println("Bulk Subscriber got: " + OBJECT_MAPPER.writeValueAsString(bulkMessage));
 
-      DaprBulkAppResponseEntry[] entries = new DaprBulkAppResponseEntry[bulkMessage.getEntries().length];
+      List<DaprBulkAppResponseEntry> entries = new ArrayList<DaprBulkAppResponseEntry>();
       int i = 0;
       for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryID());
-          System.out.printf("Bulk Subscriber message has event: %s\n", entry.getEvent());
-          entries[i] = new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.SUCCESS);
+          CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
+          System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
+          entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.SUCCESS));
         } catch (Exception e) {
-          entries[i] = new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY);
+          System.err.println(e.toString());
+          entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY));
         }
         i++;
       }

@@ -13,16 +13,15 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Represents a bulk of messages received from the message bus.
  */
-public class DaprBulkMessage {
-  private DaprBulkMessageEntry<?>[] entries;
+public class DaprBulkMessage<T> {
+  private List<DaprBulkMessageEntry<T>> entries;
   private String topic;
   private Map<String, String> metadata;
 
@@ -38,18 +37,18 @@ public class DaprBulkMessage {
    * @param topic pubSub topic.
    * @param metadata metadata for the bulk message.
    */
-  public DaprBulkMessage(DaprBulkMessageEntry<?>[] entries, String topic, Map<String, String> metadata) {
-    this.entries = entries == null ? new DaprBulkMessageEntry[]{} : Arrays.copyOf(entries, entries.length);
+  public DaprBulkMessage(List<DaprBulkMessageEntry<T>> entries, String topic, Map<String, String> metadata) {
+    this.entries = entries == null ? null : Collections.unmodifiableList(entries);
     this.topic = topic;
     this.metadata = metadata;
   }
 
-  public DaprBulkMessageEntry<?>[] getEntries() {
-    return entries == null ? new DaprBulkMessageEntry[]{} : Arrays.copyOf(entries, entries.length);
+  public List<DaprBulkMessageEntry<T>> getEntries() {
+    return entries == null ? null : Collections.unmodifiableList(entries);
   }
 
-  public void setEntries(DaprBulkMessageEntry<?>[] entries) {
-    this.entries = entries == null ? new DaprBulkMessageEntry[]{} : Arrays.copyOf(entries, entries.length);
+  public void setEntries(List<DaprBulkMessageEntry<T>> entries) {
+    this.entries = entries == null ? null : Collections.unmodifiableList(entries);
   }
 
   public String getTopic() {

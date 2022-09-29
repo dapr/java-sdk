@@ -521,7 +521,7 @@ public class PubSubIT extends BaseIT {
         assertEquals(1, messages.size());
 
         // The bulk response should contain NUM_MESSAGES entries.
-        assertEquals(NUM_MESSAGES, response.getStatuses().length);
+        assertEquals(NUM_MESSAGES, response.getStatuses().size());
 
         // All the entries should be SUCCESS.
         for (DaprBulkAppResponseEntry entry : response.getStatuses()) {

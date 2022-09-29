@@ -205,22 +205,22 @@ public class SubscriberController {
   @BulkSubscribe(maxBulkSubCount = 100, maxBulkSubAwaitDurationMs = 5000)
   @Topic(name = "topicBulkSub", pubsubName = "messagebus")
   @PostMapping(path = "/routeBulkSub")
-  public Mono<DaprBulkAppResponse> handleMessageBulk(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
+  public Mono<DaprBulkAppResponse> handleMessageBulk(@RequestBody(required = false) DaprBulkMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
-      if (bulkMessage.getEntries().length == 0) {
-        DaprBulkAppResponse response = new DaprBulkAppResponse(new DaprBulkAppResponseEntry[]{});
+      if (bulkMessage.getEntries().size() == 0) {
+        DaprBulkAppResponse response = new DaprBulkAppResponse(new ArrayList<DaprBulkAppResponseEntry>());
         responsesReceivedTestingTopicBulk.add(response);
         return response;
       }
 
-      DaprBulkAppResponseEntry[] entries = new DaprBulkAppResponseEntry[bulkMessage.getEntries().length];
+      List<DaprBulkAppResponseEntry> entries = new ArrayList<DaprBulkAppResponseEntry>();
       int i = 0;
       for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.getEntryID());
-          entries[i] = new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.SUCCESS);
+          entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.SUCCESS));
         } catch (Exception e) {
-          entries[i] = new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY);
+          entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY));
         }
         i++;
       }
