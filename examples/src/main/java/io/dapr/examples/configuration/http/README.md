@@ -111,23 +111,20 @@ cd examples
 
 #### Running the configuration subscriber app:
 
-`DaprApplication.start()` Method will run an Spring Boot application that registers the `DaprController`. This controller exposes a `POST`
-route which dapr sidecar calls invokes whenever any update happens to subscribed config keys.
-`ConfigurationHandler` is a sample springboot application to register and receive for updates on configuration items sent by dapr. 
-springboot-sdk implements a generic route and enables users to register for different handlers per configuration store. 
-Users are free to write their own controllers to handle any specific route suited to the need.
+`DaprApplication.start()` Method will run a Spring Boot application containing a `ConfigurationHandler`, a contoller
+to receive configuration change notifications.
 
 ```java
 @RestController
 public class ConfigurationHandler {
   //...
-  BiConsumer<String, SubscribeConfigurationResponse> biConsumer = (store, resp) -> {
-    System.out.println("Configuration update received for store : " + store);
-    resp.getItems().forEach((k,v) -> {
-      System.out.println("Key: "+ k + " Value :" + v.getValue());
-    });
-  };
-  
+  @PostMapping(path = "/configuration/{configStore}/{key}", produces = MediaType.ALL_VALUE)
+  public void handleConfigUpdate(@PathVariable("configStore") String configStore,
+                                 @PathVariable("key") String key,
+                                 @RequestBody SubscribeConfigurationResponse response) {
+    System.out.println("Configuration update received for store: " + configStore);
+    response.getItems().forEach((k,v) -> System.out.println("Key: " + k + " Value :" + v.getValue()));
+  }
   //....
 }
 ```
@@ -194,8 +191,6 @@ docker exec dapr_redis redis-cli MSET myconfig2 "updated_val2||1"
 == APP == val3 : key ->myconfig3
 == APP == Subscribing to key: myconfig2
 == APP == subscribing to myconfig2 is successful
-
-
 ```
 ### Cleanup
 
