@@ -41,7 +41,7 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:pubsub}")
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
     return Mono.fromRunnable(() -> {
@@ -59,7 +59,7 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:pubsub}",
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
           rule = @Rule(match = "event.type == \"v2\"", priority = 1))
   @PostMapping(path = "/testingtopicV2")
   public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent cloudEvent) {
@@ -79,7 +79,7 @@ public class SubscriberController {
    * @return A list of responses for each event.
    */
   @BulkSubscribe()
-  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:pubsub}")
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopicbulk")
   public Mono<DaprBulkAppResponse> handleBulkMessage(@RequestBody(required = false) DaprBulkMessage bulkMessage) {
     return Mono.fromCallable(() -> {
