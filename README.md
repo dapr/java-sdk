@@ -202,7 +202,7 @@ Note: You may need to run `mvn clean` after changing this setting to remove any 
   <properties>
     ...
     <!-- change this .... -->
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/master/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/(current ref in pom.xml)/dapr/proto</dapr.proto.baseurl>
     <!-- to something like this: -->
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/1ac5d0e8590a7d6772c9957c236351ed992ccb19/dapr/proto</dapr.proto.baseurl>
     ...
