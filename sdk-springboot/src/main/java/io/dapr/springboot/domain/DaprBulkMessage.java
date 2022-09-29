@@ -37,16 +37,4 @@ public class DaprBulkMessage {
     this.topic = topic;
     this.metadata = metadata;
   }
-
-  public void setEntries(DaprBulkMessageEntry<?>[] entries) {
-    this.entries = entries;
-  }
-
-  public void setTopic(String topic) {
-    this.topic = topic;
-  }
-
-  public void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
-  }
 }
