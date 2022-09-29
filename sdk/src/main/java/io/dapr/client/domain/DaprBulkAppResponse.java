@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Arrays;
+
 /**
  * Response from the application containing status for each entry in the bulk message.
  * It is posted by the bulk subscribe handler.
@@ -31,14 +33,14 @@ public class DaprBulkAppResponse {
    * @param statuses array of statuses.
    */
   public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
-    this.statuses = statuses;
+    this.statuses = Arrays.copyOf(statuses, statuses.length);
   }
 
   public DaprBulkAppResponseEntry[] getStatuses() {
-    return statuses;
+    return Arrays.copyOf(statuses, statuses.length);
   }
 
   public void setStatuses(DaprBulkAppResponseEntry[] statuses) {
-    this.statuses = statuses;
+    this.statuses = Arrays.copyOf(statuses, statuses.length);
   }
 }
