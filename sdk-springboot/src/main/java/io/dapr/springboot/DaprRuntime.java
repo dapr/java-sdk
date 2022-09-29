@@ -24,7 +24,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
- * Internal Singleton to handle Dapr configuration.
+ * Singleton to handle Dapr configuration.
  */
 public final class DaprRuntime {
   /**
