@@ -26,4 +26,8 @@ public class DaprBulkAppResponse {
   public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
     this.statuses = statuses;
   }
+
+  public DaprBulkAppResponseEntry[] getStatuses() {
+    return statuses;
+  }
 }

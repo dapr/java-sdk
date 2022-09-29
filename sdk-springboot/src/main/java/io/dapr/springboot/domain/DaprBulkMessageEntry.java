@@ -23,7 +23,18 @@ public class DaprBulkMessageEntry<T> {
   public String entryID;
   public T event;
   public String contentType;
+
   public Map<String, String> metadata;
+
+  public DaprBulkMessageEntry() {
+  }
+
+  public DaprBulkMessageEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
+    this.entryID = entryID;
+    this.event = event;
+    this.contentType = contentType;
+    this.metadata = metadata;
+  }
 
   public void setEntryID(String entryID) {
     this.entryID = entryID;

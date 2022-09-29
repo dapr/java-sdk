@@ -87,12 +87,14 @@ public class SubscriberController {
         return new DaprBulkAppResponse(new DaprBulkAppResponseEntry[]{});
       }
 
+      System.out.println("Bulk Subscriber got: " + OBJECT_MAPPER.writeValueAsString(bulkMessage));
+
       DaprBulkAppResponseEntry[] entries = new DaprBulkAppResponseEntry[bulkMessage.entries.length];
       int i = 0;
       for (DaprBulkMessageEntry<?> entry: bulkMessage.entries) {
         try {
-          System.out.printf("Entry ID: %s\n", entry.entryID);
-          System.out.printf("Event: %s\n", entry.event);
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.entryID);
+          System.out.printf("Bulk Subscriber message has event: %s\n", entry.event);
           entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.SUCCESS);
         } catch (Exception e) {
           entries[i] = new DaprBulkAppResponseEntry(entry.entryID, DaprBulkAppResponseStatus.RETRY);
