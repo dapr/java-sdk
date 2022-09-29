@@ -214,7 +214,6 @@ public class SubscriberController {
       }
 
       List<DaprBulkAppResponseEntry> entries = new ArrayList<DaprBulkAppResponseEntry>();
-      int i = 0;
       for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.getEntryID());
@@ -222,7 +221,6 @@ public class SubscriberController {
         } catch (Exception e) {
           entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY));
         }
-        i++;
       }
       DaprBulkAppResponse response = new DaprBulkAppResponse(entries);
       responsesReceivedTestingTopicBulk.add(response);

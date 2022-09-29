@@ -94,7 +94,6 @@ public class SubscriberController {
       System.out.println("Bulk Subscriber got: " + OBJECT_MAPPER.writeValueAsString(bulkMessage));
 
       List<DaprBulkAppResponseEntry> entries = new ArrayList<DaprBulkAppResponseEntry>();
-      int i = 0;
       for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryID());
@@ -105,7 +104,6 @@ public class SubscriberController {
           System.err.println(e.toString());
           entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY));
         }
-        i++;
       }
       return new DaprBulkAppResponse(entries);
     });
