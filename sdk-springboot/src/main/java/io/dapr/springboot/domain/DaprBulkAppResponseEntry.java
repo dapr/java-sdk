@@ -20,7 +20,8 @@ public class DaprBulkAppResponseEntry {
   public String entryID;
   public DaprBulkAppResponseStatus status;
 
-  public DaprBulkAppResponseEntry() {}
+  public DaprBulkAppResponseEntry() {
+  }
 
   public DaprBulkAppResponseEntry(String entryID, DaprBulkAppResponseStatus status) {
     this.entryID = entryID;

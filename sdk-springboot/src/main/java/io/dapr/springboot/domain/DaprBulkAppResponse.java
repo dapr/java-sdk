@@ -20,7 +20,8 @@ package io.dapr.springboot.domain;
 public class DaprBulkAppResponse {
   public DaprBulkAppResponseEntry[] statuses;
 
-  public DaprBulkAppResponse() {};
+  public DaprBulkAppResponse() {
+  }
 
   public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
     this.statuses = statuses;
