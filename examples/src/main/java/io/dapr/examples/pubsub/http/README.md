@@ -91,7 +91,8 @@ name: Run Subscriber
 expected_stdout_lines:
   - '== APP == Subscriber got: This is message #1'
   - '== APP == Subscriber got: This is message #2'
-  - '== APP == Subscriber got: This is message #2'
+  - '== APP == Bulk Subscriber message has event: {data=This is message #1'
+  - '== APP == Bulk Subscriber message has event: {data=This is message #2'
 background: true
 sleep: 5
 -->
