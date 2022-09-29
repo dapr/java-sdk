@@ -25,6 +25,8 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.springboot.domain.DaprBulkAppResponse;
+import io.dapr.springboot.domain.DaprBulkAppResponseEntry;
+import io.dapr.springboot.domain.DaprBulkAppResponseStatus;
 import io.dapr.utils.TypeRef;
 import org.junit.After;
 import org.junit.Assert;
@@ -511,13 +513,20 @@ public class PubSubIT extends BaseIT {
                 null,
                 HttpExtension.GET,
                 clazz).block();
+
         assertNotNull(messages);
+        DaprBulkAppResponse response = OBJECT_MAPPER.convertValue(messages.get(0), DaprBulkAppResponse.class);
+
+        // There should be a single bulk response.
         assertEquals(1, messages.size());
-//        DaprBulkAppResponse response = messages.get(0);
-//        assertEquals(NUM_MESSAGES, response.getStatuses().length);
-//        for (DaprBulkAppResponseEntry entry : response.getStatuses()) {
-//          Sentry.getEntryID()
-//        }
+
+        // The bulk response should contain NUM_MESSAGES entries.
+        assertEquals(NUM_MESSAGES, response.statuses.length);
+
+        // All the entries should be SUCCESS.
+        for (DaprBulkAppResponseEntry entry : response.statuses) {
+          assertEquals(entry.status, DaprBulkAppResponseStatus.SUCCESS);
+        }
       }, 2000);
     }
 

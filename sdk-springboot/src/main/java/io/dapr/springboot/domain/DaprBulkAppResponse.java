@@ -18,13 +18,11 @@ package io.dapr.springboot.domain;
  * It is posted by the bulk subscribe handler.
  */
 public class DaprBulkAppResponse {
-  private final DaprBulkAppResponseEntry[] statuses;
+  public DaprBulkAppResponseEntry[] statuses;
+
+  public DaprBulkAppResponse() {};
 
   public DaprBulkAppResponse(DaprBulkAppResponseEntry[] statuses) {
     this.statuses = statuses;
-  }
-
-  public DaprBulkAppResponseEntry[] getStatuses() {
-    return statuses;
   }
 }

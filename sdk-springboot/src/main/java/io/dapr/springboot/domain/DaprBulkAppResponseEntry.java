@@ -17,8 +17,10 @@ package io.dapr.springboot.domain;
  * Maps an entry from bulk subscribe messages to a response status.
  */
 public class DaprBulkAppResponseEntry {
-  private final String entryID;
-  private final DaprBulkAppResponseStatus status;
+  public String entryID;
+  public DaprBulkAppResponseStatus status;
+
+  public DaprBulkAppResponseEntry() {}
 
   public DaprBulkAppResponseEntry(String entryID, DaprBulkAppResponseStatus status) {
     this.entryID = entryID;
