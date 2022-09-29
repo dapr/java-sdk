@@ -29,6 +29,13 @@ public class DaprBulkMessageEntry<T> {
   public DaprBulkMessageEntry() {
   }
 
+  /**
+   * Create a DaprBulkMessageEntry.
+   * @param entryID unique identifier for the event.
+   * @param event pubSub event.
+   * @param contentType content type of the event.
+   * @param metadata metadata for the event.
+   */
   public DaprBulkMessageEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
     this.entryID = entryID;
     this.event = event;

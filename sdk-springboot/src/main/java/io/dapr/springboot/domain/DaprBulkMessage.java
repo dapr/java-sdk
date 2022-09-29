@@ -26,6 +26,12 @@ public class DaprBulkMessage {
   public DaprBulkMessage() {
   }
 
+  /**
+   * Create a DaprBulkMessage from entries, topic and metadata.
+   * @param entries mapping from bulk message entry ID to a status.
+   * @param topic pubSub topic.
+   * @param metadata metadata for the bulk message.
+   */
   public DaprBulkMessage(DaprBulkMessageEntry<?>[] entries, String topic, Map<String, String> metadata) {
     this.entries = entries;
     this.topic = topic;
