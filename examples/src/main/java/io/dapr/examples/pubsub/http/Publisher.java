@@ -62,10 +62,10 @@ public class Publisher {
             singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
 
         client.publishEvent(
-                PUBSUB_NAME,
-                BULK_SUB_TOPIC_NAME,
-                message,
-                singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+            PUBSUB_NAME,
+            BULK_SUB_TOPIC_NAME,
+            message,
+            singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
         System.out.println("Published message: " + message);
 
         try {
