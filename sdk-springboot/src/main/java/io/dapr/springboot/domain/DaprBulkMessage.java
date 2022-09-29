@@ -22,4 +22,16 @@ public class DaprBulkMessage {
   public DaprBulkMessageEntry<?>[] entries;
   public String topic;
   public Map<String, String> metadata;
+
+  public void setEntries(DaprBulkMessageEntry<?>[] entries) {
+    this.entries = entries;
+  }
+
+  public void setTopic(String topic) {
+    this.topic = topic;
+  }
+
+  public void setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata;
+  }
 }
