@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.springboot.domain;
+package io.dapr.client.domain;
 
 import java.util.Map;
 
@@ -19,15 +19,18 @@ import java.util.Map;
  * Represents a bulk of messages received from the message bus.
  */
 public class DaprBulkMessage {
-  public DaprBulkMessageEntry<?>[] entries;
-  public String topic;
-  public Map<String, String> metadata;
+  private DaprBulkMessageEntry<?>[] entries;
+  private String topic;
+  private Map<String, String> metadata;
 
+  /**
+   * Instantiate a DaprBulkMessage.
+   */
   public DaprBulkMessage() {
   }
 
   /**
-   * Create a DaprBulkMessage from entries, topic and metadata.
+   * Instantiate a DaprBulkMessage.
    * @param entries mapping from bulk message entry ID to a status.
    * @param topic pubSub topic.
    * @param metadata metadata for the bulk message.
@@ -42,11 +45,23 @@ public class DaprBulkMessage {
     return entries;
   }
 
+  public void setEntries(DaprBulkMessageEntry<?>[] entries) {
+    this.entries = entries;
+  }
+
   public String getTopic() {
     return topic;
   }
 
+  public void setTopic(String topic) {
+    this.topic = topic;
+  }
+
   public Map<String, String> getMetadata() {
     return metadata;
+  }
+
+  public void setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata;
   }
 }

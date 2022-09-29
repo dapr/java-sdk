@@ -11,18 +11,26 @@
 limitations under the License.
 */
 
-package io.dapr.springboot.domain;
+package io.dapr.client.domain;
 
 /**
  * Maps an entry from bulk subscribe messages to a response status.
  */
 public class DaprBulkAppResponseEntry {
-  public String entryID;
-  public DaprBulkAppResponseStatus status;
+  private String entryID;
+  private DaprBulkAppResponseStatus status;
 
+  /**
+   * Instantiate a DaprBulkAppResponseEntry.
+   */
   public DaprBulkAppResponseEntry() {
   }
 
+  /**
+   * Instantiate a DaprBulkAppResponseEntry.
+   * @param entryID entry ID of the event.
+   * @param status status of the event processing in application.
+   */
   public DaprBulkAppResponseEntry(String entryID, DaprBulkAppResponseStatus status) {
     this.entryID = entryID;
     this.status = status;
@@ -32,7 +40,15 @@ public class DaprBulkAppResponseEntry {
     return entryID;
   }
 
+  public void setEntryID(String entryID) {
+    this.entryID = entryID;
+  }
+
   public DaprBulkAppResponseStatus getStatus() {
     return status;
+  }
+
+  public void setStatus(DaprBulkAppResponseStatus status) {
+    this.status = status;
   }
 }

@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.springboot.domain;
+package io.dapr.client.domain;
 
 import java.util.Map;
 
@@ -20,17 +20,20 @@ import java.util.Map;
  * @param <T> Type of event.
  */
 public class DaprBulkMessageEntry<T> {
-  public String entryID;
-  public T event;
-  public String contentType;
+  private String entryID;
+  private T event;
+  private String contentType;
 
-  public Map<String, String> metadata;
+  private Map<String, String> metadata;
 
+  /**
+   * Instantiate a DaprBulkMessageEntry.
+   */
   public DaprBulkMessageEntry() {
   }
 
   /**
-   * Create a DaprBulkMessageEntry.
+   * Instantiate a DaprBulkMessageEntry.
    * @param entryID unique identifier for the event.
    * @param event pubSub event.
    * @param contentType content type of the event.
@@ -47,15 +50,31 @@ public class DaprBulkMessageEntry<T> {
     return entryID;
   }
 
+  public void setEntryID(String entryID) {
+    this.entryID = entryID;
+  }
+
   public T getEvent() {
     return event;
+  }
+
+  public void setEvent(T event) {
+    this.event = event;
   }
 
   public String getContentType() {
     return contentType;
   }
 
+  public void setContentType(String contentType) {
+    this.contentType = contentType;
+  }
+
   public Map<String, String> getMetadata() {
     return metadata;
+  }
+
+  public void setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata;
   }
 }
