@@ -11,32 +11,29 @@
 limitations under the License.
 */
 
-package io.dapr.examples.configuration.grpc;
+package io.dapr.examples.configuration.http;
 
+import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
-import reactor.core.Disposable;
+import io.dapr.config.Properties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ConfigurationClient {
 
   private static final String CONFIG_STORE_NAME = "configstore";
-
-  private static final List<String> keys = new ArrayList<>(Arrays.asList("myconfig1", "myconfig3", "myconfig2"));
+  private static String SUBSCRIPTION_ID;
 
   /**
    * Executes various methods to check the different apis.
@@ -44,6 +41,7 @@ public class ConfigurationClient {
    * @throws Exception throws Exception
    */
   public static void main(String[] args) throws Exception {
+    System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
       getConfigurations(client);
@@ -62,7 +60,12 @@ public class ConfigurationClient {
     keys.add("myconfig1");
     keys.add("myconfig2");
     keys.add("myconfig3");
+
+    Map<String, String> hmap = new HashMap<>();
+    hmap.put("meta_key","meta_value");
     GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
+    req.setMetadata(hmap);
+
     try {
       Mono<Map<String, ConfigurationItem>> items = client.getConfiguration(req);
       items.block().forEach((k,v) -> print(v, k));
@@ -72,32 +75,25 @@ public class ConfigurationClient {
   }
 
   /**
-   * Subscribe to a list of keys.Optional to above iterator way of retrieving the changes
+   * Subscribe to a list of keys.
    *
    * @param client DaprPreviewClient object
    */
-  public static void subscribeConfigurationRequest(DaprPreviewClient client) {
-    System.out.println("Subscribing to key: myconfig1");
+  public static void subscribeConfigurationRequest(DaprPreviewClient client) throws InterruptedException {
+    System.out.println("Subscribing to key: myconfig2");
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
-        CONFIG_STORE_NAME, Collections.singletonList("myconfig1"));
+        CONFIG_STORE_NAME, Collections.singletonList("myconfig2"));
     Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
-    Runnable subscribeTask = () -> {
-      outFlux.subscribe(cis -> {
-        System.out.println("subscription ID : " + cis.getSubscriptionId());
-        System.out.println("subscribing to key myconfig1 is successful");
-      });
-    };
-    new Thread(subscribeTask).start();
-    // To ensure main thread does not die before outFlux subscribe gets called
-    inducingSleepTime(5000);
-  }
-
-  private static void inducingSleepTime(int timeInMillis) {
-    try {
-      Thread.sleep(timeInMillis);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+    outFlux.subscribe(
+        cis -> {
+          SUBSCRIPTION_ID = cis.getSubscriptionId();
+        });
+    if (!SUBSCRIPTION_ID.isEmpty()) {
+      System.out.println("subscribing to myconfig2 is successful");
+    } else {
+      System.out.println("error in subscribing to myconfig2");
     }
+    Thread.sleep(5000);
   }
 
   private static void print(ConfigurationItem item, String key) {
