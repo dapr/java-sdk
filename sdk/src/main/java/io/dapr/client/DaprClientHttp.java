@@ -26,6 +26,7 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
@@ -210,14 +211,16 @@ public class DaprClientHttp extends AbstractDaprClient {
       pathSegments.addAll(Arrays.asList(methodSegments));
 
       final Map<String, String> headers = new HashMap<>();
-      if (contentType != null && !contentType.isEmpty()) {
-        headers.put("content-type", contentType);
-      }
       headers.putAll(httpExtension.getHeaders());
       if (metadata != null) {
         headers.putAll(metadata);
       }
       byte[] serializedRequestBody = objectSerializer.serialize(request);
+      if (contentType != null && !contentType.isEmpty()) {
+        headers.put(Metadata.CONTENT_TYPE, contentType);
+      } else {
+        headers.put(Metadata.CONTENT_TYPE, objectSerializer.getContentType());
+      }
       Mono<DaprHttp.Response> response = Mono.subscriberContext().flatMap(
           context -> this.client.invokeApi(httpMethod, pathSegments.toArray(new String[0]),
               httpExtension.getQueryParams(), serializedRequestBody, headers, context)
