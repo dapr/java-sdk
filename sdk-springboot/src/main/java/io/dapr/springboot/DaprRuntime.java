@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
  * Internal Singleton to handle Dapr configuration.
  */
 class DaprRuntime {
-
   /**
    * The singleton instance.
    */
@@ -62,8 +61,8 @@ class DaprRuntime {
    *
    * @param pubSubName PubSub name to subscribe to.
    * @param topicName Name of the topic being subscribed to.
-   * @param match The CEL expression the event must match.
-   * @param priority The priority of the match.
+   * @param match Match expression for this route.
+   * @param priority Priority for this match relative to others.
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
    */
