@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -47,7 +50,11 @@ public class ConfigurationItem {
    * @param value value for the provided key
    * @param version version of the configuration item
    */
-  public ConfigurationItem(String key, String value, String version) {
+  @JsonCreator
+  public ConfigurationItem(
+      @JsonProperty("key") String key,
+      @JsonProperty("value") String value,
+      @JsonProperty("version") String version) {
     this.key = key;
     this.value = value;
     this.version = version;
