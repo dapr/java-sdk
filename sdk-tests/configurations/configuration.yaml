@@ -10,3 +10,5 @@ spec:
   features:
     - name: PubSub.Routing
       enabled: true
+    - name: AppHealthCheck
+      enabled: true

@@ -1,5 +1,6 @@
 package io.dapr.it.tracing.http;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,5 +17,9 @@ public class Controller {
             throw new IllegalArgumentException("Sleep time cannot be negative.");
         }
         Thread.sleep(seconds * 1000);
+    }
+
+    @GetMapping(path = "/health")
+    public void health() {
     }
 }

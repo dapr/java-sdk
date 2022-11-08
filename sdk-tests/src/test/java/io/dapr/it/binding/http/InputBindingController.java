@@ -47,4 +47,8 @@ public class InputBindingController {
     return "hello";
   }
 
+  @GetMapping(path = "/health")
+  public void health() {
+  }
+
 }
