@@ -25,6 +25,11 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.TimeZone;
+
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 /**
@@ -37,7 +42,6 @@ final class Validation {
   private static final RetryConfig RETRY_CONFIG = new RetryConfigBuilder()
       .withMaxNumberOfTries(5)
       .withFixedBackoff().withDelayBetweenTries(10, SECONDS).build();
-
 
   public static final String JSONPATH_PROXY_ECHO_SPAN_ID =
       "$..[?(@.parentId=='%s' && @.name=='calllocal/tracingdemoproxy/proxy_echo')]['id']";
@@ -59,6 +63,8 @@ final class Validation {
   }
 
   private static Void doValidate() throws Exception {
+    System.out.println("Performing validation of tracing events ...");
+
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
     urlBuilder.scheme("http")
         .host("localhost")
@@ -99,6 +105,7 @@ final class Validation {
         .toString();
     readOne(documentContext,
         String.format(JSONPATH_SLEEP_SPAN_ID, proxySleepSpanId2));
+    System.out.println("Validation of tracing events has succeeded.");
     return null;
   }
 
