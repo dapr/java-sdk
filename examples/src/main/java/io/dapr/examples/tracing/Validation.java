@@ -13,6 +13,10 @@ limitations under the License.
 
 package io.dapr.examples.tracing;
 
+import com.evanlennick.retry4j.CallExecutorBuilder;
+import com.evanlennick.retry4j.Status;
+import com.evanlennick.retry4j.config.RetryConfig;
+import com.evanlennick.retry4j.config.RetryConfigBuilder;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
@@ -21,12 +25,19 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import static java.time.temporal.ChronoUnit.SECONDS;
+
 /**
  * Class used to verify that traces are present as expected.
  */
 final class Validation {
 
   private static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
+
+  private static final RetryConfig RETRY_CONFIG = new RetryConfigBuilder()
+      .withMaxNumberOfTries(5)
+      .withFixedBackoff().withDelayBetweenTries(10, SECONDS).build();
+
 
   public static final String JSONPATH_PROXY_ECHO_SPAN_ID =
       "$..[?(@.parentId=='%s' && @.name=='calllocal/tracingdemoproxy/proxy_echo')]['id']";
@@ -40,9 +51,14 @@ final class Validation {
   public static final String JSONPATH_SLEEP_SPAN_ID =
       "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='calllocal/tracingdemo/sleep')]['id']";
 
-  static void validate() throws Exception {
-    // Must wait for some time to make sure Zipkin receives all spans.
-    Thread.sleep(5000);
+  static void validate() {
+    Status<Void> result = new CallExecutorBuilder().config(RETRY_CONFIG).build().execute(() -> doValidate());
+    if (!result.wasSuccessful()) {
+      throw new RuntimeException(result.getLastExceptionThatCausedRetry());
+    }
+  }
+
+  private static Void doValidate() throws Exception {
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
     urlBuilder.scheme("http")
         .host("localhost")
@@ -83,6 +99,7 @@ final class Validation {
         .toString();
     readOne(documentContext,
         String.format(JSONPATH_SLEEP_SPAN_ID, proxySleepSpanId2));
+    return null;
   }
 
   private static Object readOne(DocumentContext documentContext, String path) {
