@@ -116,9 +116,68 @@ public class ActorManagerTest {
     }
   }
 
+  @ActorType(name = "MyActor2")
+  public static class MyActorBuilderImpl extends AbstractActor implements MyActor, Remindable<String> {
+
+    private int timeCount = 0;
+
+    @Override
+    public String say(String something) {
+      return executeSayMethod(something);
+    }
+
+    @Override
+    public int getCount() {
+      return this.timeCount;
+    }
+
+    @Override
+    public void incrementCount(int delta) {
+      this.timeCount = timeCount + delta;
+    }
+
+    @Override
+    public void throwsException() {
+      throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Mono<Void> throwsExceptionHotMono() {
+      throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Mono<Void> throwsExceptionMono() {
+      return Mono.error(new IllegalArgumentException());
+    }
+
+    public MyActorBuilderImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+      super(runtimeContext, id);
+      TimerOptions options = new TimerOptions.TimerOptionsBuilder<Integer>("count", "incrementCount")
+        .setDueTime(Duration.ofSeconds(1))
+        .setPeriod(Duration.ofSeconds(1))
+        .build();
+      super.registerActorTimer(2, options).block();
+    }
+
+    @Override
+    public TypeRef<String> getStateType() {
+      return TypeRef.STRING;
+    }
+
+    @Override
+    public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
+      return Mono.empty();
+    }
+  }
+
   private ActorRuntimeContext<MyActorImpl> context = createContext(MyActorImpl.class);
 
   private ActorManager<MyActorImpl> manager = new ActorManager<>(context);
+
+  private ActorRuntimeContext<MyActorBuilderImpl> contextBuild = createContext(MyActorBuilderImpl.class);
+
+  private ActorManager<MyActorBuilderImpl> managerBuild = new ActorManager<>(contextBuild);
 
   @Test(expected = IllegalArgumentException.class)
   public void invokeBeforeActivate() throws Exception {
@@ -249,6 +308,69 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
     this.manager.invokeTimer(actorId, "unknown", createTimerParams("incrementCount", 2)).block();
+  }
+
+  @Test
+  public void activateThenInvokeTimerBuild() throws IOException {
+    ActorId actorId = newActorId();
+    this.managerBuild.activateActor(actorId).block();
+    this.managerBuild.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
+    byte[] response = this.managerBuild.invokeMethod(actorId, "getCount", null).block();
+    Assert.assertEquals("2", new String(response));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void activateInvokeTimerDeactivateThenInvokeTimerBuild() throws IOException {
+    ActorId actorId = newActorId();
+    this.managerBuild.activateActor(actorId).block();
+    this.managerBuild.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
+    byte[] response = this.managerBuild.invokeMethod(actorId, "getCount", null).block();
+    Assert.assertEquals("2", new String(response));
+
+    this.managerBuild.deactivateActor(actorId).block();
+    this.managerBuild.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
+  }
+
+  @Test
+  public void invokeReminderNotRemindableBuild() throws Exception {
+    ActorId actorId = newActorId();
+    ActorRuntimeContext<NotRemindableActor> contextLocal = createContext(NotRemindableActor.class);
+    ActorManager<NotRemindableActor> managerLocal = new ActorManager<>(contextLocal);
+    managerLocal.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void invokeReminderBeforeActivateBuild() throws Exception {
+    ActorId actorId = newActorId();
+    this.managerBuild.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
+  }
+
+  @Test
+  public void activateThenInvokeReminderBuild() throws Exception {
+    ActorId actorId = newActorId();
+    this.managerBuild.activateActor(actorId).block();
+    this.managerBuild.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void activateDeactivateThenInvokeReminderBuild() throws Exception {
+    ActorId actorId = newActorId();
+    this.managerBuild.activateActor(actorId).block();
+    this.managerBuild.deactivateActor(actorId).block();;
+    this.managerBuild.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void invokeTimerBeforeActivateBuild() throws IOException {
+    ActorId actorId = newActorId();
+    this.managerBuild.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
+  }
+
+  @Test
+  public void activateThenInvokeTimerBeforeRegisterBuild() throws IOException {
+    ActorId actorId = newActorId();
+    this.managerBuild.activateActor(actorId).block();
+    this.managerBuild.invokeTimer(actorId, "unknown", createTimerParams("incrementCount", 2)).block();
   }
 
   @Test
