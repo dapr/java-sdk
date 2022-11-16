@@ -20,7 +20,7 @@ import java.util.Properties;
 
 public final class ActorUtils {
 
-  public static String version = null;
+  private static String version = null;
 
   /**
    * Finds the actor type name for the given class or interface.
