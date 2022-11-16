@@ -26,6 +26,12 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-resources-plugin</artifactId>
+      <version>3.3.0</version>
+      <type>maven-plugin</type>
+    </dependency>
+    <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-autogen</artifactId>
       <version>${project.version}</version>
@@ -106,6 +112,22 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+          <directory>src/main/resources</directory>
+          <filtering>true</filtering>
+          <includes>
+              <include>**/app.properties</include>
+          </includes>
+      </resource>
+      <resource>
+          <directory>src/main/resources</directory>
+          <filtering>false</filtering>
+          <excludes>
+              <exclude>**/app.properties</exclude>
+          </excludes>
+      </resource>
+  </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

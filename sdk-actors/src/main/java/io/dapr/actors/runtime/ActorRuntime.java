@@ -15,6 +15,7 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
+import io.dapr.actors.ActorUtils;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
@@ -338,7 +339,10 @@ public class ActorRuntime implements Closeable {
       throw new IllegalStateException("Invalid port.");
     }
 
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+      .usePlaintext()
+      .userAgent(ActorUtils.getVersion())
+      .build();
   }
 
   /**

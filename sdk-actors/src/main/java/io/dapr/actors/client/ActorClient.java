@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.actors.client;
 
+import io.dapr.actors.ActorUtils;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
@@ -102,7 +103,10 @@ public class ActorClient implements AutoCloseable {
       throw new IllegalArgumentException("Invalid port.");
     }
 
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+      .usePlaintext()
+      .userAgent(ActorUtils.getVersion())
+      .build();
   }
 
   /**
