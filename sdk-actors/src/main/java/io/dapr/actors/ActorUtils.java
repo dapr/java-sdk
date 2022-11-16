@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.actors;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -66,14 +68,19 @@ public final class ActorUtils {
       return version;
     }
 
+    InputStream in = new ByteArrayInputStream(new byte[0]);
     try {
       Properties properties = new Properties();
-      InputStream in = ActorUtils.class.getResourceAsStream("/app.properties");
+      in = ActorUtils.class.getResourceAsStream("/app.properties");
       properties.load(in);
       version = "dapr-sdk-java/v" + properties.getProperty("version");
-      in.close();
     } catch (Exception e) {
       version = "unknown";
+    }
+    try {
+      in.close();
+    } catch (IOException e) {
+      //omit
     }
     return version;
   }
