@@ -17,7 +17,7 @@ import java.util.Properties;
 
 public final class Version {
 
-  public static String version = null;
+  private static String version = null;
 
   /**
    * Retrieves sdk version from resrouces.
