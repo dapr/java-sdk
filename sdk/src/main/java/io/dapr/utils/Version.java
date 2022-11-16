@@ -23,7 +23,7 @@ public final class Version {
   private static String version = null;
 
   /**
-   * Retrieves sdk version from resrouces.
+   * Retrieves sdk version from resources.
    *
    * @return String version of sdk.
    */

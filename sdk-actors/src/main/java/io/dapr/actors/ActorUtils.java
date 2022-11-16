@@ -58,7 +58,7 @@ public final class ActorUtils {
   }
 
   /**
-   * Retrieves sdk version from resrouces.
+   * Retrieves sdk version from resources.
    *
    * @return String version of sdk.
    */
