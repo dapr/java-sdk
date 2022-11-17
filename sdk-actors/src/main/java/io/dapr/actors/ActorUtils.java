@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.actors;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -70,7 +71,7 @@ public final class ActorUtils {
       Properties properties = new Properties();
       properties.load(input);
       sdkVersion = "dapr-sdk-java/v" + properties.getProperty("version");
-    } catch (Exception e) {
+    } catch (IOException e) {
       sdkVersion = "unknown";
     }
 

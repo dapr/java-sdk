@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.utils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -35,7 +36,7 @@ public final class Version {
       Properties properties = new Properties();
       properties.load(input);
       sdkVersion = "dapr-sdk-java/v" + properties.getProperty("version");
-    } catch (Exception e) {
+    } catch (IOException e) {
       sdkVersion = "unknown";
     }
 
