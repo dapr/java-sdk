@@ -117,14 +117,14 @@
           <directory>src/main/resources</directory>
           <filtering>true</filtering>
           <includes>
-              <include>**/app.properties</include>
+              <include>**/sdk_version.properties</include>
           </includes>
       </resource>
       <resource>
           <directory>src/main/resources</directory>
           <filtering>false</filtering>
           <excludes>
-              <exclude>**/app.properties</exclude>
+              <exclude>**/sdk_version.properties</exclude>
           </excludes>
       </resource>
   </resources>

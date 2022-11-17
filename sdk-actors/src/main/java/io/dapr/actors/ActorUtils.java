@@ -13,14 +13,12 @@ limitations under the License.
 
 package io.dapr.actors;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
 public final class ActorUtils {
 
-  private static String version = null;
+  private static String sdkVersion = null;
 
   /**
    * Finds the actor type name for the given class or interface.
@@ -64,25 +62,19 @@ public final class ActorUtils {
    */
   public static String getVersion() {
 
-    if (version != null) {
-      return version;
+    if (sdkVersion != null) {
+      return sdkVersion;
     }
 
-    InputStream in = new ByteArrayInputStream(new byte[0]);
-    try {
+    try (InputStream input = ActorUtils.class.getResourceAsStream("/sdk_version.properties");) {
       Properties properties = new Properties();
-      in = ActorUtils.class.getResourceAsStream("/app.properties");
-      properties.load(in);
-      version = "dapr-sdk-java/v" + properties.getProperty("version");
+      properties.load(input);
+      sdkVersion = "dapr-sdk-java/v" + properties.getProperty("version");
     } catch (Exception e) {
-      version = "unknown";
+      sdkVersion = "unknown";
     }
-    try {
-      in.close();
-    } catch (IOException e) {
-      //omit
-    }
-    return version;
+
+    return sdkVersion;
   }
 
 }
