@@ -306,7 +306,7 @@ public class DaprHttp implements AutoCloseable {
       requestBuilder.addHeader(Headers.DAPR_API_TOKEN, daprApiToken);
     }
   
-    requestBuilder.addHeader(Headers.DAPR_USER_AGENT, Version.getVersion());
+    requestBuilder.addHeader(Headers.DAPR_USER_AGENT, Version.getSdkVersion());
 
     if (headers != null) {
       Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()

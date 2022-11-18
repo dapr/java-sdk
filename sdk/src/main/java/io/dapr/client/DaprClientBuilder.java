@@ -159,7 +159,7 @@ public class DaprClientBuilder {
       throw new IllegalArgumentException("Invalid port.");
     }
     ManagedChannel channel = ManagedChannelBuilder.forAddress(
-        Properties.SIDECAR_IP.get(), port).usePlaintext().userAgent(Version.getVersion()).build();
+        Properties.SIDECAR_IP.get(), port).usePlaintext().userAgent(Version.getSdkVersion()).build();
     Closeable closeableChannel = () -> {
       if (channel != null && !channel.isShutdown()) {
         channel.shutdown();

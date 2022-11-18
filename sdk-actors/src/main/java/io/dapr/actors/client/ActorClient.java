@@ -105,7 +105,7 @@ public class ActorClient implements AutoCloseable {
 
     return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
       .usePlaintext()
-      .userAgent(Version.getVersion())
+      .userAgent(Version.getSdkVersion())
       .build();
   }
 

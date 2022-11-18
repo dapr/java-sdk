@@ -26,7 +26,7 @@ public final class Version {
    *
    * @return String version of sdk.
    */
-  public static String getVersion() {
+  public static String getSdkVersion() {
 
     if (sdkVersion != null) {
       return sdkVersion;
