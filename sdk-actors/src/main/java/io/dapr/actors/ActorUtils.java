@@ -13,13 +13,7 @@ limitations under the License.
 
 package io.dapr.actors;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-
 public final class ActorUtils {
-
-  private static String sdkVersion = null;
 
   /**
    * Finds the actor type name for the given class or interface.
@@ -54,28 +48,6 @@ public final class ActorUtils {
 
     ActorType actorTypeAnnotation = node.getAnnotation(ActorType.class);
     return actorTypeAnnotation != null ? actorTypeAnnotation.name() : actorClass.getSimpleName();
-  }
-
-  /**
-   * Retrieves sdk version from resources.
-   *
-   * @return String version of sdk.
-   */
-  public static String getVersion() {
-
-    if (sdkVersion != null) {
-      return sdkVersion;
-    }
-
-    try (InputStream input = ActorUtils.class.getResourceAsStream("/sdk_version.properties");) {
-      Properties properties = new Properties();
-      properties.load(input);
-      sdkVersion = "dapr-sdk-java/v" + properties.getProperty("version");
-    } catch (IOException e) {
-      sdkVersion = "unknown";
-    }
-
-    return sdkVersion;
   }
 
 }

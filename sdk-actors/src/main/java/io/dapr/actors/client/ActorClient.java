@@ -13,10 +13,10 @@ limitations under the License.
 
 package io.dapr.actors.client;
 
-import io.dapr.actors.ActorUtils;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
+import io.dapr.utils.Version;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
@@ -105,7 +105,7 @@ public class ActorClient implements AutoCloseable {
 
     return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
       .usePlaintext()
-      .userAgent(ActorUtils.getVersion())
+      .userAgent(Version.getVersion())
       .build();
   }
 

@@ -15,12 +15,12 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorTrace;
-import io.dapr.actors.ActorUtils;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.Version;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
@@ -341,7 +341,7 @@ public class ActorRuntime implements Closeable {
 
     return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
       .usePlaintext()
-      .userAgent(ActorUtils.getVersion())
+      .userAgent(Version.getVersion())
       .build();
   }
 

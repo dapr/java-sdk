@@ -35,7 +35,7 @@ public final class Version {
     try (InputStream input = Version.class.getResourceAsStream("/sdk_version.properties");) {
       Properties properties = new Properties();
       properties.load(input);
-      sdkVersion = "dapr-sdk-java/v" + properties.getProperty("version");
+      sdkVersion = "dapr-sdk-java/v" + properties.getProperty("sdk_version", "unknown");
     } catch (IOException e) {
       sdkVersion = "unknown";
     }
