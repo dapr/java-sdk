@@ -18,6 +18,8 @@ import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,7 +27,9 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ConfigurationClient {
@@ -42,41 +46,8 @@ public class ConfigurationClient {
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      getConfigurationForaSingleKey(client);
-      getConfigurationsUsingVarargs(client);
       getConfigurations(client);
-      subscribeConfigurationRequestWithSubscribe(client);
-    }
-  }
-
-  /**
-   * Gets configuration for a single key.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurationForaSingleKey(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configuration given a single key********");
-    try {
-      Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, keys.get(0));
-      System.out.println("Value ->" + item.block().getValue() + " key ->" + item.block().getKey());
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
-    }
-  }
-
-  /**
-   * Gets configurations for varibale no. of arguments.
-   *
-   * @param client DaprPreviewClient object
-   */
-  public static void getConfigurationsUsingVarargs(DaprPreviewClient client) {
-    System.out.println("*******trying to retrieve configurations for a variable no. of keys********");
-    try {
-      Mono<List<ConfigurationItem>> items =
-          client.getConfiguration(CONFIG_STORE_NAME, "myconfig1", "myconfig3");
-      items.block().forEach(ConfigurationClient::print);
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
+      subscribeConfigurationRequest(client);
     }
   }
 
@@ -93,8 +64,8 @@ public class ConfigurationClient {
     keys.add("myconfig3");
     GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
     try {
-      Mono<List<ConfigurationItem>> items = client.getConfiguration(req);
-      items.block().forEach(ConfigurationClient::print);
+      Mono<Map<String, ConfigurationItem>> items = client.getConfiguration(req);
+      items.block().forEach((k,v) -> print(v, k));
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
     }
@@ -105,60 +76,31 @@ public class ConfigurationClient {
    *
    * @param client DaprPreviewClient object
    */
-  public static void subscribeConfigurationRequestWithSubscribe(DaprPreviewClient client) {
-    System.out.println("*****Subscribing to keys using subscribe method: " + keys.toString() + " *****");
-    AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
-    SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, keys);
+  public static void subscribeConfigurationRequest(DaprPreviewClient client) {
+    System.out.println("Subscribing to key: myconfig1");
+    SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
+        CONFIG_STORE_NAME, Collections.singletonList("myconfig1"));
+    Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(req);
     Runnable subscribeTask = () -> {
-      Flux<List<ConfigurationItem>> outFlux = client.subscribeToConfiguration(req);
-      disposableAtomicReference.set(outFlux
-          .subscribe(
-              cis -> cis.forEach(ConfigurationClient::print)
-          ));
+      outFlux.subscribe(cis -> {
+        System.out.println("subscription ID : " + cis.getSubscriptionId());
+        System.out.println("subscribing to key myconfig1 is successful");
+      });
     };
     new Thread(subscribeTask).start();
+    // To ensure main thread does not die before outFlux subscribe gets called
+    inducingSleepTime(5000);
+  }
+
+  private static void inducingSleepTime(int timeInMillis) {
     try {
-      // To ensure that subscribeThread gets scheduled
-      Thread.sleep(0);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-    Runnable updateKeys = () -> {
-      int i = 1;
-      while (i <= 3) {
-        executeDockerCommand(i);
-        i++;
-      }
-    };
-    new Thread(updateKeys).start();
-    try {
-      // To ensure main thread does not die before outFlux subscribe gets called
-      Thread.sleep(10000);
-      disposableAtomicReference.get().dispose();
+      Thread.sleep(timeInMillis);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
   }
 
-  private static void print(ConfigurationItem item) {
-    System.out.println(item.getValue() + " : key ->" + item.getKey());
-  }
-
-  private static void executeDockerCommand(int postfix) {
-    String[] command = new String[] {
-        "docker", "exec", "dapr_redis", "redis-cli",
-        "SET",
-        "myconfig" + postfix, "update_myconfigvalue" + postfix + "||2"
-    };
-    ProcessBuilder processBuilder = new ProcessBuilder(command);
-    Process process = null;
-    try {
-      process = processBuilder.start();
-      process.waitFor();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+  private static void print(ConfigurationItem item, String key) {
+    System.out.println(item.getValue() + " : key ->" + key);
   }
 }

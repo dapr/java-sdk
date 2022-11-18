@@ -36,7 +36,10 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
@@ -63,6 +66,8 @@ import reactor.util.context.Context;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -766,7 +771,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final Map<String, String> metadata = request.getMetadata();
@@ -774,9 +779,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
-      if (keys.isEmpty()) {
-        throw new IllegalArgumentException("Keys can not be empty or null");
-      }
+
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName).addAllKeys(keys);
       if (metadata != null) {
@@ -791,16 +794,22 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
   }
 
-  private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
+  private Mono<Map<String, ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
     return Mono.subscriberContext().flatMap(
         context ->
             this.<DaprProtos.GetConfigurationResponse>createMono(
                 it -> intercept(context, asyncStub).getConfigurationAlpha1(envelope, it)
             )
     ).map(
-        it ->
-            it.getItemsList().stream()
-                .map(this::buildConfigurationItem).collect(Collectors.toList())
+        it -> {
+          Map<String, ConfigurationItem> configMap = new HashMap<>();
+          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
+          while (itr.hasNext()) {
+            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+          }
+          return Collections.unmodifiableMap(configMap);
+        }
     );
   }
 
@@ -808,7 +817,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
@@ -817,12 +826,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
       }
-      if (keys.isEmpty()) {
-        throw new IllegalArgumentException("Keys can not be null or empty.");
-      }
+
+      // keys can and empty list for subscribe all scenario, so we do not need check for empty keys.
       DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName)
           .addAllKeys(keys);
+
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
@@ -831,12 +840,50 @@ public class DaprClientGrpc extends AbstractDaprClient {
       return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
           it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelope, it)
       ).map(
-          it ->
-              it.getItemsList().stream()
-                  .map(this::buildConfigurationItem).collect(Collectors.toList())
+        it -> {
+          Map<String, ConfigurationItem> configMap = new HashMap<>();
+          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItemsMap().entrySet().iterator();
+          while (itr.hasNext()) {
+            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+          }
+          return new SubscribeConfigurationResponse(it.getId(), Collections.unmodifiableMap(configMap));
+        }
       );
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final String id = request.getSubscriptionId();
+
+      if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
+      }
+      if (id.isEmpty()) {
+        throw new IllegalArgumentException("Subscription id can not be null or empty.");
+      }
+      DaprProtos.UnsubscribeConfigurationRequest.Builder builder =
+          DaprProtos.UnsubscribeConfigurationRequest.newBuilder()
+              .setId(id)
+              .setStoreName(configurationStoreName);
+
+      DaprProtos.UnsubscribeConfigurationRequest envelope = builder.build();
+
+      return this.<DaprProtos.UnsubscribeConfigurationResponse>createMono(
+          it -> intercept(asyncStub).unsubscribeConfigurationAlpha1(envelope, it)
+      ).map(
+          it -> new UnsubscribeConfigurationResponse(it.getOk(), it.getMessage())
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -847,10 +894,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @return io.dapr.client.domain.ConfigurationItem
    */
   private ConfigurationItem buildConfigurationItem(
-      CommonProtos.ConfigurationItem configurationItem) {
+      CommonProtos.ConfigurationItem configurationItem, String key) {
     return new ConfigurationItem(
-        configurationItem.getKey(),
-        configurationItem.getValue(),
+      key,
+      configurationItem.getValue(),
         configurationItem.getVersion(),
         configurationItem.getMetadataMap()
     );

@@ -31,19 +31,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.6.0</version>
+      <version>1.7.1</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.6.0</version>
+      <version>1.7.1</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.6.0</version>
+      <version>1.7.1</version>
     </dependency>
     ...
   </dependencies>
@@ -57,11 +57,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.6.0')
+    compile('io.dapr:dapr-sdk:1.7.1')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.6.0')
+    compile('io.dapr:dapr-sdk-actors:1.7.1')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.6.0')
+    compile('io.dapr:dapr-sdk-springboot:1.7.1')
 }
 ```
 
@@ -207,8 +207,30 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 }
 ```
 
-- For a full guide on output bindings visit [How-To: Use bindings]({{< ref howto-bindings.md >}}).
-- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http) for code samples and instructions to try out output bindings
+- For a full guide on output bindings visit [How-To: Output bindings]({{< ref howto-bindings.md >}}).
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http) for code samples and instructions to try out output bindings.
+
+### Interact with input bindings
+
+```java
+import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@RestController
+@RequestMapping("/")
+public class myClass {
+    private static final Logger log = LoggerFactory.getLogger(myClass);
+        @PostMapping(path = "/checkout")
+        public Mono<String> getCheckout(@RequestBody(required = false) byte[] body) {
+            return Mono.fromRunnable(() ->
+                    log.info("Received Message: " + new String(body)));
+        }
+}
+```
+
+- For a full guide on input bindings, visit [How-To: Input bindings]({{< ref howto-triggers >}}).
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http) for code samples and instructions to try out input bindings.
 
 ### Retrieve secrets
 
