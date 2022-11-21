@@ -25,9 +25,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.9.0-rc.2
-      DAPR_RUNTIME_VER: 1.9.0-rc.3
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.0-rc.2/install/install.sh
+      DAPR_CLI_VER: 1.9.1
+      DAPR_RUNTIME_VER: 1.9.3
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF: 760cf246d55531d2847b7d1862c4f4fb33fe33ed # TODO: update this after feature is merged to master
     steps:

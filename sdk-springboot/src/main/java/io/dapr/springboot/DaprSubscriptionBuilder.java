@@ -47,10 +47,12 @@ class DaprSubscriptionBuilder {
    */
   DaprSubscriptionBuilder setDefaultPath(String path) {
     if (defaultPath != null) {
-      throw new RuntimeException(
-              String.format(
-                      "a default route is already set for topic %s on pubsub %s",
-                      this.topic, this.pubsubName));
+      if (!defaultPath.equals(path)) {
+        throw new RuntimeException(
+                String.format(
+                        "a default route is already set for topic %s on pubsub %s (current: '%s', supplied: '%s')",
+                        this.topic, this.pubsubName, this.defaultPath, path));
+      }
     }
     defaultPath = path;
     return this;
