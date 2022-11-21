@@ -41,6 +41,7 @@ public class SubscriberController {
 
   /**
    * Handles a registered publish endpoint on this app.
+   * 
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
@@ -58,12 +59,13 @@ public class SubscriberController {
   }
 
   /**
-   * Handles a registered publish endpoint on this app (version 2 of a cloud event).
+   * Handles a registered publish endpoint on this app (version 2 of a cloud
+   * event).
+   * 
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
-          rule = @Rule(match = "event.type == \"v2\"", priority = 1))
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}", rule = @Rule(match = "event.type == \"v2\"", priority = 1))
   @PostMapping(path = "/testingtopicV2")
   public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent cloudEvent) {
     return Mono.fromRunnable(() -> {
@@ -78,6 +80,7 @@ public class SubscriberController {
 
   /**
    * Handles a registered subscribe endpoint on this app using bulk subscribe.
+   * 
    * @param bulkMessage The bulk message received.
    * @return A list of responses for each event.
    */
@@ -85,16 +88,16 @@ public class SubscriberController {
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopicbulk")
   public Mono<DaprBulkAppResponse> handleBulkMessage(
-          @RequestBody(required = false) DaprBulkMessage<CloudEvent<String>> bulkMessage) {
+      @RequestBody(required = false) DaprBulkMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
       if (bulkMessage.getEntries().size() == 0) {
         return new DaprBulkAppResponse(new ArrayList<DaprBulkAppResponseEntry>());
       }
 
-      System.out.println("Bulk Subscriber got: " + OBJECT_MAPPER.writeValueAsString(bulkMessage));
+      System.out.println("Bulk Subscriber got #" + bulkMessage.getEntries().size() + " messages.");
 
       List<DaprBulkAppResponseEntry> entries = new ArrayList<DaprBulkAppResponseEntry>();
-      for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
+      for (DaprBulkMessageEntry<?> entry : bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryID());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();

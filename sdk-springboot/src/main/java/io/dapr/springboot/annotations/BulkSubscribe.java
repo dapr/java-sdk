@@ -26,7 +26,8 @@ import java.lang.annotation.Target;
 /**
  * BulkSubscribe annotation should be applied with {@link Topic @Topic} when
  * the topic should be subscribed to using the Bulk Subscribe API.
- * This will require handling multiple messages using {@link DaprBulkMessage DaprBulkMessage}
+ * This will require handling multiple messages using {@link DaprBulkMessage
+ * DaprBulkMessage}
  * and returning a {@link DaprBulkAppResponse DaprBulkAppResponse}.
  */
 @Documented
@@ -35,14 +36,16 @@ import java.lang.annotation.Target;
 public @interface BulkSubscribe {
   /**
    * Maximum number of messages in a bulk message from the message bus.
+   * 
    * @return number of messages.
    */
-  int maxBulkSubCount() default 1000;
+  int maxBulkSubCount() default 100;
 
   /**
    * Maximum duration to wait for maxBulkSubCount messages by the message bus
    * before sending the messages to Dapr.
+   * 
    * @return time to await in milliseconds.
    */
-  int maxBulkSubAwaitDurationMs() default 100;
+  int maxBulkSubAwaitDurationMs() default 1000;
 }

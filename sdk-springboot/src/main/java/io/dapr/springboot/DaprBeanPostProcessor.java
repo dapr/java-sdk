@@ -75,11 +75,13 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
   }
 
   /**
-   * Subscribe to topics based on {@link Topic} annotations on the given class and any of ancestor classes.
+   * Subscribe to topics based on {@link Topic} annotations on the given class and
+   * any of ancestor classes.
+   * 
    * @param clazz Controller class where {@link Topic} is expected.
    */
   private static void subscribeToTopics(
-          Class clazz, StringValueResolver stringValueResolver, DaprRuntime daprRuntime) {
+      Class clazz, StringValueResolver stringValueResolver, DaprRuntime daprRuntime) {
     if (clazz == null) {
       return;
     }
@@ -96,11 +98,10 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       if (bulkSubscribe != null) {
         bulkMetadata.put(BULK_SUBSCRIBE_METADATA_KEY, "true");
         bulkMetadata.put(BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY,
-                String.valueOf(bulkSubscribe.maxBulkSubCount()));
+            String.valueOf(bulkSubscribe.maxBulkSubCount()));
         bulkMetadata.put(BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY,
-                String.valueOf(bulkSubscribe.maxBulkSubAwaitDurationMs()));
+            String.valueOf(bulkSubscribe.maxBulkSubAwaitDurationMs()));
       }
-
 
       Rule rule = topic.rule();
       String topicName = stringValueResolver.resolveStringValue(topic.name());
@@ -108,8 +109,8 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       String match = stringValueResolver.resolveStringValue(rule.match());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
-          TypeReference<HashMap<String, String>> typeRef
-                  = new TypeReference<HashMap<String, String>>() {};
+          TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String, String>>() {
+          };
 
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
 
@@ -129,7 +130,8 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
   }
 
   /**
-   * Method to provide all possible complete routes list fos this post method present in this controller class,
+   * Method to provide all possible complete routes list fos this post method
+   * present in this controller class,
    * for mentioned topic.
    *
    * @param clazz     Controller class
@@ -139,8 +141,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
    */
   private static List<String> getAllCompleteRoutesForPost(Class clazz, Method method, String topicName) {
     List<String> routesList = new ArrayList<>();
-    RequestMapping clazzRequestMapping =
-        (RequestMapping) clazz.getAnnotation(RequestMapping.class);
+    RequestMapping clazzRequestMapping = (RequestMapping) clazz.getAnnotation(RequestMapping.class);
     String[] clazzLevelRoute = null;
     if (clazzRequestMapping != null) {
       clazzLevelRoute = clazzRequestMapping.value();
@@ -162,7 +163,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
   }
 
   private static String[] getRoutesForPost(Method method, String topicName) {
-    String[] postValueArray = new String[] {topicName};
+    String[] postValueArray = new String[] { topicName };
     PostMapping postMapping = method.getAnnotation(PostMapping.class);
     if (postMapping != null) {
       if (postMapping.path() != null && postMapping.path().length >= 1) {
