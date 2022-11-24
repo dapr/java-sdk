@@ -292,13 +292,16 @@ try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) 
   // Get configuration for a single key
   Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, CONFIG_KEY).block();
 
-// Get Configurations for multiple keys
-  Mono<List<ConfigurationItem>> items =
+  // Get configurations for multiple keys
+  Mono<Map<String, ConfigurationItem>> items =
           client.getConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
 
-  // Susbcribe to Confifuration changes
-  Flux<List<ConfigurationItem>> outFlux = client.subscribeToConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
+  // Subscribe to configuration changes
+  Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
   outFlux.subscribe(configItems -> configItems.forEach(...));
+
+  // Unsubscribe to configuration changes
+  Mono<UnsubscribeConfigurationResponse> unsubscribe = client.unsubscribeConfiguration(SUBSCRIPTION_ID, CONFIG_STORE_NAME)
 }
 ```
 
