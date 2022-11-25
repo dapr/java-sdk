@@ -58,7 +58,8 @@ public class DaprRun implements Stoppable {
                   DaprApiProtocol protocol,
                   DaprApiProtocol appProtocol) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
-    this.appName = serviceClass == null ? testName : String.format("%s-%s", testName, serviceClass.getSimpleName());
+    this.appName = 
+        serviceClass == null ? testName : String.format("%s-%s", testName, serviceClass.getSimpleName()).toLowerCase();
     this.startCommand =
         new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, protocol, appProtocol));
     this.listCommand = new Command(
