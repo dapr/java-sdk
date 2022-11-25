@@ -300,7 +300,7 @@ try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) 
   Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
   outFlux.subscribe(configItems -> configItems.forEach(...));
 
-  // Unsubscribe to configuration changes
+  // Unsubscribe from configuration changes
   Mono<UnsubscribeConfigurationResponse> unsubscribe = client.unsubscribeConfiguration(SUBSCRIPTION_ID, CONFIG_STORE_NAME)
 }
 ```
