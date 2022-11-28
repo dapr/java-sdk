@@ -16,6 +16,7 @@ package io.dapr.client;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.Version;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -161,7 +162,7 @@ public class DaprClientBuilder {
       throw new IllegalArgumentException("Invalid port.");
     }
     ManagedChannel channel = ManagedChannelBuilder.forAddress(
-        Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+        Properties.SIDECAR_IP.get(), port).usePlaintext().userAgent(Version.getSdkVersion()).build();
     Closeable closeableChannel = () -> {
       if (channel != null && !channel.isShutdown()) {
         channel.shutdown();
@@ -182,4 +183,5 @@ public class DaprClientBuilder {
   private DaprClient buildDaprClientHttp() {
     return new DaprClientHttp(this.daprHttpBuilder.build(), this.objectSerializer, this.stateSerializer);
   }
+
 }

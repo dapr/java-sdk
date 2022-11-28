@@ -16,6 +16,7 @@ package io.dapr.actors.client;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
+import io.dapr.utils.Version;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
@@ -102,7 +103,10 @@ public class ActorClient implements AutoCloseable {
       throw new IllegalArgumentException("Invalid port.");
     }
 
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+      .usePlaintext()
+      .userAgent(Version.getSdkVersion())
+      .build();
   }
 
   /**
