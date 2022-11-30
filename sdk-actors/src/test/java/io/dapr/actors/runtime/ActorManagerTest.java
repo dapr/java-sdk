@@ -153,10 +153,9 @@ public class ActorManagerTest {
 
     public MyActorBuilderImpl(ActorRuntimeContext runtimeContext, ActorId id) {
       super(runtimeContext, id);
-      TimerOptions options = new TimerOptions.TimerOptionsBuilder<Integer>("count", "incrementCount")
-        .setDueTime(Duration.ofSeconds(1))
-        .setPeriod(Duration.ofSeconds(1))
-        .build();
+      TimerOptions options = new TimerOptions("count", "incrementCount");
+      options.setDueTime(Duration.ofSeconds(1));
+      options.setPeriod(Duration.ofSeconds(1));
       super.registerActorTimer(2, options).block();
     }
 

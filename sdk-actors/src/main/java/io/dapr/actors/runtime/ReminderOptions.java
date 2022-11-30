@@ -21,8 +21,8 @@ public class ReminderOptions {
   private String name;
 
   //optional parameters
-  private Duration dueTime;
-  private Duration period;
+  private Duration dueTime = Duration.ZERO;
+  private Duration period = Duration.ZERO;
     
 
   public String getName() {
@@ -37,40 +37,16 @@ public class ReminderOptions {
     return period;
   }
     
-  private ReminderOptions(ReminderOptionsBuilder builder) {
-    this.name = builder.name;
-    this.dueTime = builder.dueTime;
-    this.period = builder.period;
+  public void setDueTime(Duration dueTime) {
+    this.dueTime = dueTime;
   }
-    
-  //Builder Class
-  public static class ReminderOptionsBuilder<T> {
 
-    //required parameters
-    private String name;
+  public void setPeriod(Duration period) {
+    this.period = period;
+  }
 
-    //optional parameters
-    private Duration dueTime = Duration.ZERO;
-    private Duration period = Duration.ZERO;
-        
-    public ReminderOptionsBuilder(String name) {
-      this.name = name;
-    }
-
-    public ReminderOptionsBuilder setDueTime(Duration dueTime) {
-      this.dueTime = dueTime;
-      return this;
-    }
-
-    public ReminderOptionsBuilder setPeriod(Duration period) {
-      this.period = period;
-      return this;
-    }
-    
-    public ReminderOptions build() {
-      return new ReminderOptions(this);
-    }
-
+  public ReminderOptions(String name) {
+    this.name = name;
   }
 
 }

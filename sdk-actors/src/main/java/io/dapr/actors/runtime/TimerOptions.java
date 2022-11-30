@@ -22,8 +22,8 @@ public class TimerOptions {
   private String callback;
 
   //optional parameters
-  private Duration dueTime;
-  private Duration period;
+  private Duration dueTime = Duration.ZERO;
+  private Duration period = Duration.ZERO;
     
   public String getName() {
     return name;
@@ -40,44 +40,18 @@ public class TimerOptions {
   public Duration getPeriod() {
     return period;
   }
-    
-  private TimerOptions(TimerOptionsBuilder builder) {
-    this.name = builder.name;
-    this.callback = builder.callback;
-    this.dueTime = builder.dueTime;
-    this.period = builder.period;
+
+  public void setDueTime(Duration dueTime) {
+    this.dueTime = dueTime;
   }
-    
-  //Builder Class
-  public static class TimerOptionsBuilder<T> {
 
-    //required parameters
-    private String name;
-    private String callback;
+  public void setPeriod(Duration period) {
+    this.period = period;
+  }
 
-    //optional parameters
-    private Duration dueTime = Duration.ZERO;
-    private Duration period = Duration.ZERO;
-        
-    public TimerOptionsBuilder(String name, String callback) {
-      this.name = name;
-      this.callback = callback;
-    }
-
-    public TimerOptionsBuilder setDueTime(Duration dueTime) {
-      this.dueTime = dueTime;
-      return this;
-    }
-
-    public TimerOptionsBuilder setPeriod(Duration period) {
-      this.period = period;
-      return this;
-    }
-    
-    public TimerOptions build() {
-      return new TimerOptions(this);
-    }
-
+  public TimerOptions(String name, String callback) {
+    this.name = name;
+    this.callback = callback;
   }
 
 }
