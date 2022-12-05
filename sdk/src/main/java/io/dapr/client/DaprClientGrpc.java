@@ -174,10 +174,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
         envelopeBuilder.putAllMetadata(metadata);
       }
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context ->
               this.<Empty>createMono(
-                  it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
+                  it -> intercept(Context.of(context), asyncStub).publishEvent(envelopeBuilder.build(), it)
               )
       ).then();
     } catch (Exception ex) {
@@ -204,9 +204,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
       // gRPC to gRPC does not handle metadata in Dapr runtime proto.
       // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
               context -> this.<CommonProtos.InvokeResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeService(envelope, it)
+                  it -> intercept(Context.of(context), asyncStub).invokeService(envelope, it)
               )
           ).flatMap(
               it -> {
@@ -251,9 +251,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
               context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+                  it -> intercept(Context.of(context), asyncStub).invokeBinding(envelope, it)
               )
           ).flatMap(
               it -> {
@@ -298,10 +298,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetStateRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context ->
               this.<DaprProtos.GetStateResponse>createMono(
-                  it -> intercept(context, asyncStub).getState(envelope, it)
+                  it -> intercept(Context.of(context), asyncStub).getState(envelope, it)
               )
       ).map(
           it -> {
@@ -347,8 +347,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkStateRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
-              context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+      return Mono.deferContextual(
+              context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(Context.of(context), asyncStub)
                   .getBulkState(envelope, it)
               )
           ).map(
@@ -431,8 +431,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.ExecuteStateTransactionRequest req = builder.build();
 
-      return Mono.subscriberContext().flatMap(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it))
+      return Mono.deferContextual(
+          context -> this.<Empty>createMono(it -> intercept(Context.of(context), asyncStub).executeStateTransaction(req, it))
       ).then();
     } catch (Exception e) {
       return DaprException.wrapMono(e);
@@ -457,8 +457,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.SaveStateRequest req = builder.build();
 
-      return Mono.subscriberContext().flatMap(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
+      return Mono.deferContextual(
+          context -> this.<Empty>createMono(it -> intercept(Context.of(context), asyncStub).saveState(req, it))
       ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -541,8 +541,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.DeleteStateRequest req = builder.build();
 
-      return Mono.subscriberContext().flatMap(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
+      return Mono.deferContextual(
+          context -> this.<Empty>createMono(it -> intercept(Context.of(context), asyncStub).deleteState(req, it))
       ).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -619,8 +619,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
     DaprProtos.GetSecretRequest req = requestBuilder.build();
 
-    return Mono.subscriberContext().flatMap(
-        context -> this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(context, asyncStub).getSecret(req, it))
+    return Mono.deferContextual(
+        context -> this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(Context.of(context), asyncStub).getSecret(req, it))
     ).map(DaprProtos.GetSecretResponse::getDataMap);
   }
 
@@ -644,10 +644,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkSecretRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context ->
             this.<DaprProtos.GetBulkSecretResponse>createMono(
-                it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
+                it -> intercept(Context.of(context), asyncStub).getBulkSecret(envelope, it)
             )
       ).map(it -> {
         Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
@@ -697,9 +697,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.QueryStateRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context -> this.<DaprProtos.QueryStateResponse>createMono(
-              it -> intercept(context, asyncStub).queryStateAlpha1(envelope, it)
+              it -> intercept(Context.of(context), asyncStub).queryStateAlpha1(envelope, it)
           )
       ).map(
           it -> {
@@ -761,9 +761,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public Mono<Void> shutdown() {
-    return Mono.subscriberContext().flatMap(
+    return Mono.deferContextual(
         context -> this.<Empty>createMono(
-            it -> intercept(context, asyncStub).shutdown(Empty.getDefaultInstance(), it))
+            it -> intercept(Context.of(context), asyncStub).shutdown(Empty.getDefaultInstance(), it))
     ).then();
   }
 
@@ -795,10 +795,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   private Mono<Map<String, ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
-    return Mono.subscriberContext().flatMap(
+    return Mono.deferContextual(
         context ->
             this.<DaprProtos.GetConfigurationResponse>createMono(
-                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelope, it)
+                it -> intercept(Context.of(context), asyncStub).getConfigurationAlpha1(envelope, it)
             )
     ).map(
         it -> {
