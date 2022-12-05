@@ -65,9 +65,9 @@ class DaprGrpcClient implements DaprClient {
             .setMethod(methodName)
             .setData(jsonPayload == null ? ByteString.EMPTY : ByteString.copyFrom(jsonPayload))
             .build();
-    return Mono.subscriberContext().flatMap(
+    return Mono.deferContextual(
         context -> this.<DaprProtos.InvokeActorResponse>createMono(
-            it -> intercept(context, client).invokeActor(req, it)
+            it -> intercept(Context.of(context), client).invokeActor(req, it)
         )
     ).map(r -> r.getData().toByteArray());
   }
