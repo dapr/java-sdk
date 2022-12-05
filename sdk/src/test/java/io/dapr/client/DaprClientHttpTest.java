@@ -411,8 +411,7 @@ public class DaprClientHttpTest {
     InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
         .setBody("request")
         .setHttpExtension(HttpExtension.POST);
-    Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
-        .subscriberContext(it -> it.putAll(context));
+    Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class)).contextWrite(context);
     result.block();
   }
 
