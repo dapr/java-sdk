@@ -52,19 +52,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
     </dependency>
     ...
   </dependencies>
@@ -78,11 +78,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.7.0')
+    compile('io.dapr:dapr-sdk:1.7.1')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.7.0')
+    compile('io.dapr:dapr-sdk-actors:1.7.1')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.7.0')
+    compile('io.dapr:dapr-sdk-springboot:1.7.1')
 }
 ```
 
@@ -191,17 +191,20 @@ Most exceptions thrown from the SDK are instances of `DaprException`. `DaprExcep
 
 ## Development
 
-### Update proto files
+### Update URL to fetch proto files
 
-Change the properties below in [pom.xml](./pom.xml) to point to the desired reference URL in Git. Avoid pointing to `master` branch since it can change over time and create unpredictable behavior in the build.
+Change the `dapr.proto.baseurl` property below in [pom.xml](./pom.xml) to point to the URL for the desired commit hash in Git if you need to target a proto file that is not been merged into master yet. 
+Note: You may need to run `mvn clean` after changing this setting to remove any auto-generated files so that the new proto files get downloaded and compiled.
 
 ```xml
 <project>
   ...
   <properties>
     ...
-    <dapr.proto.url>https://raw.githubusercontent.com/dapr/dapr/v1.0.0/pkg/proto/dapr/dapr.proto</dapr.proto.url>
-    <dapr.client.proto.url>https://raw.githubusercontent.com/dapr/dapr/v1.0.0/pkg/proto/daprclient/daprclient.proto</dapr.client.proto.url>
+    <!-- change this .... -->
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/(current ref in pom.xml)/dapr/proto</dapr.proto.baseurl>
+    <!-- to something like this: -->
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/1ac5d0e8590a7d6772c9957c236351ed992ccb19/dapr/proto</dapr.proto.baseurl>
     ...
   </properties>
   ...

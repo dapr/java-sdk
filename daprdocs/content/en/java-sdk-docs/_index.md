@@ -31,19 +31,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
     </dependency>
     ...
   </dependencies>
@@ -57,11 +57,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.7.0')
+    compile('io.dapr:dapr-sdk:1.7.1')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.7.0')
+    compile('io.dapr:dapr-sdk-actors:1.7.1')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.7.0')
+    compile('io.dapr:dapr-sdk-springboot:1.7.1')
 }
 ```
 
@@ -292,13 +292,16 @@ try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) 
   // Get configuration for a single key
   Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, CONFIG_KEY).block();
 
-// Get Configurations for multiple keys
-  Mono<List<ConfigurationItem>> items =
+  // Get configurations for multiple keys
+  Mono<Map<String, ConfigurationItem>> items =
           client.getConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
 
-  // Susbcribe to Confifuration changes
-  Flux<List<ConfigurationItem>> outFlux = client.subscribeToConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
+  // Subscribe to configuration changes
+  Flux<SubscribeConfigurationResponse> outFlux = client.subscribeConfiguration(CONFIG_STORE_NAME, CONFIG_KEY_1, CONFIG_KEY_2);
   outFlux.subscribe(configItems -> configItems.forEach(...));
+
+  // Unsubscribe from configuration changes
+  Mono<UnsubscribeConfigurationResponse> unsubscribe = client.unsubscribeConfiguration(SUBSCRIPTION_ID, CONFIG_STORE_NAME)
 }
 ```
 
