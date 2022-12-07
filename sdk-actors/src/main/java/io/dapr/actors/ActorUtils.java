@@ -49,4 +49,5 @@ public final class ActorUtils {
     ActorType actorTypeAnnotation = node.getAnnotation(ActorType.class);
     return actorTypeAnnotation != null ? actorTypeAnnotation.name() : actorClass.getSimpleName();
   }
+
 }

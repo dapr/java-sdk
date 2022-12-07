@@ -20,6 +20,7 @@ import io.dapr.client.DaprHttpBuilder;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.Version;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
@@ -338,7 +339,10 @@ public class ActorRuntime implements Closeable {
       throw new IllegalStateException("Invalid port.");
     }
 
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+      .usePlaintext()
+      .userAgent(Version.getSdkVersion())
+      .build();
   }
 
   /**
