@@ -41,7 +41,9 @@ final class Validation {
 
   private static final RetryConfig RETRY_CONFIG = new RetryConfigBuilder()
       .withMaxNumberOfTries(5)
-      .withFixedBackoff().withDelayBetweenTries(10, SECONDS).build();
+      .withFixedBackoff().withDelayBetweenTries(10, SECONDS)
+      .retryOnAnyException()
+      .build();
 
   public static final String JSONPATH_PROXY_ECHO_SPAN_ID =
       "$..[?(@.parentId=='%s' && @.name=='calllocal/tracingdemoproxy/proxy_echo')]['id']";
