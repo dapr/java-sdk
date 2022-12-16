@@ -73,11 +73,13 @@ public class BulkPublisher {
         BulkPublishResponse res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, messages, "text/plain")
             .subscriberContext(getReactorContext()).block();
         System.out.println("Published the set of messages in a single call to Dapr");
-        if (res != null && res.getFailedEntries().size() > 0) {
-          // Ideally this condition will not happen in examples
-          System.out.println("Some events failed to be published");
-          for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
-            System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
+        if (res != null) {
+          if (res.getFailedEntries().size() > 0) {
+            // Ideally this condition will not happen in examples
+            System.out.println("Some events failed to be published");
+            for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
+              System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
+            }
           }
         } else {
           throw new Exception("null response from dapr");
