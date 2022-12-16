@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.springboot;
 
-import io.dapr.Rule;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +22,6 @@ import java.util.stream.Collectors;
  * Internal Singleton to handle Dapr configuration.
  */
 class DaprRuntime {
-
   /**
    * The singleton instance.
    */
@@ -63,7 +60,8 @@ class DaprRuntime {
    *
    * @param pubsubName Pubsub name to subcribe to.
    * @param topicName Name of the topic being subscribed to.
-   * @param rule The optional rule for this route.
+   * @param match Match expression for this route.
+   * @param priority Priority for this match relative to others.
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
    */

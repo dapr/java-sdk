@@ -36,9 +36,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.8.0-rc.1
-      DAPR_RUNTIME_VER: 1.8.0-rc.3
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.8.0-rc.1/install/install.sh
+      DAPR_CLI_VER: 1.9.1
+      DAPR_RUNTIME_VER: 1.9.3
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF: 405bf03b02275cb58672f9251f39a43c62aa5290
     steps:
@@ -153,10 +153,14 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
-      - name: Validate Configuration API example
+      - name: Validate Configuration gRPC API example
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/configuration/grpc/README.md
+      - name: Validate Configuration HTTP API example
+        working-directory: ./examples
+        run: |
+            mm.py ./src/main/java/io/dapr/examples/configuration/http/README.md
       - name: Validate query state HTTP example
         working-directory: ./examples
         run: |
