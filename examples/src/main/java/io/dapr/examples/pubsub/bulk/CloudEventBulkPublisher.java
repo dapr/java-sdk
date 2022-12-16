@@ -77,7 +77,7 @@ public class CloudEventBulkPublisher {
       }
       request.setEntries(entries);
       BulkPublishResponse res = client.publishEvents(request).block();
-      if (res != null) {
+      if (res != null && res.getFailedEntries().size() > 0) {
         // Ideally this condition will not happen in examples
         System.out.println("Some events failed to be published");
         for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
