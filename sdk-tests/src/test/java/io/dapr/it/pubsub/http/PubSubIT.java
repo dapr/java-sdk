@@ -204,7 +204,7 @@ public class PubSubIT extends BaseIT {
         System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
             NUM_MESSAGES, TOPIC_NAME, KAFKA_PUBSUB));
         Assert.assertNotNull("expected not null bulk publish response", response);
-        Assert.assertEquals("expected response size to match", NUM_MESSAGES, response.getStatuses().size());
+        Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
         //Publishing an object.
         MyObject object = new MyObject();
@@ -213,7 +213,7 @@ public class PubSubIT extends BaseIT {
             "application/json").block();
         System.out.println("Published one object.");
         Assert.assertNotNull("expected not null bulk publish response", response);
-        Assert.assertEquals("expected response size to match", 1, response.getStatuses().size());
+        Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
         //Publishing a single byte: Example of non-string based content published
         previewClient.publishEvents(
@@ -223,7 +223,7 @@ public class PubSubIT extends BaseIT {
         System.out.println("Published one byte.");
 
         Assert.assertNotNull("expected not null bulk publish response", response);
-        Assert.assertEquals("expected response size to match", 1, response.getStatuses().size());
+        Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
         CloudEvent cloudEvent = new CloudEvent();
         cloudEvent.setId("1234");
@@ -241,7 +241,7 @@ public class PubSubIT extends BaseIT {
         //Publishing a cloud event.
         previewClient.publishEvents(req).block();
         Assert.assertNotNull("expected not null bulk publish response", response);
-        Assert.assertEquals("expected response size to match", 1, response.getStatuses().size());
+        Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
         System.out.println("Published one cloud event.");
       }

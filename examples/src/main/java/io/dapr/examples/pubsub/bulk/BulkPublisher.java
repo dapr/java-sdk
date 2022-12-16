@@ -17,7 +17,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseEntry;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.examples.OpenTelemetryConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -74,10 +74,10 @@ public class BulkPublisher {
             .subscriberContext(getReactorContext()).block();
         System.out.println("Published the set of messages in a single call to Dapr");
         if (res != null) {
-          System.out.println("Response for each individual message based on EntryID "
-              + "(in this index of message in list above)");
-          for (BulkPublishResponseEntry entry : res.getStatuses()) {
-            System.out.println("EntryID : " + entry.getEntryID() + " Status : " + entry.getStatus());
+          // Ideally this condition will not happen in examples
+          System.out.println("Some events failed to be published");
+          for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
+            System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
           }
         } else {
           throw new Exception("null response from dapr");

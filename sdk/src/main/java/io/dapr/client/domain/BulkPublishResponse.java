@@ -23,7 +23,7 @@ import java.util.List;
 public class BulkPublishResponse {
 
   private String errorCode;
-  private List<BulkPublishResponseEntry> statuses;
+  private List<BulkPublishResponseFailedEntry> failedEntries;
 
   /**
    * Default constructor for the class.
@@ -35,12 +35,13 @@ public class BulkPublishResponse {
    * Constructor for the BulkPublishResponse object.
    *
    * @param errorCode Dapr errorCode if any.
-   * @param statuses  The List of BulkPublishResponseEntries representing status of each event in bulk publish.
+   * @param failedEntries  The List of BulkPublishResponseEntries representing the list of
+   *                       events that failed to be published.
    */
-  public BulkPublishResponse(String errorCode, List<BulkPublishResponseEntry> statuses) {
+  public BulkPublishResponse(String errorCode, List<BulkPublishResponseFailedEntry> failedEntries) {
     this.errorCode = errorCode;
-    this.statuses = statuses == null ? Collections.unmodifiableList(new ArrayList<>()) :
-        Collections.unmodifiableList(statuses);
+    this.failedEntries = failedEntries == null ? Collections.unmodifiableList(new ArrayList<>()) :
+        Collections.unmodifiableList(failedEntries);
   }
 
   public String getErrorCode() {
@@ -52,12 +53,12 @@ public class BulkPublishResponse {
     return this;
   }
 
-  public List<BulkPublishResponseEntry> getStatuses() {
-    return statuses;
+  public List<BulkPublishResponseFailedEntry> getFailedEntries() {
+    return failedEntries;
   }
 
-  public BulkPublishResponse setStatuses(List<BulkPublishResponseEntry> statuses) {
-    this.statuses = statuses == null ? new ArrayList<>() : Collections.unmodifiableList(statuses);
+  public BulkPublishResponse setFailedEntries(List<BulkPublishResponseFailedEntry> failedEntries) {
+    this.failedEntries = failedEntries == null ? new ArrayList<>() : Collections.unmodifiableList(failedEntries);
     return this;
   }
 }

@@ -14,38 +14,34 @@ limitations under the License.
 package io.dapr.client.domain;
 
 /**
- * Class representing the status of each event that was published using BulkPublishRequest.
+ * Class representing the entry that failed to be published using BulkPublishRequest.
  */
-public class BulkPublishResponseEntry {
+public class BulkPublishResponseFailedEntry {
   /**
    * An ID unique across the Response object, identifying a particular entry in the BulkPublishRequest.
    */
-  private String entryID;
+  private String entryId;
+
 
   /**
-   * The publishing status of this particular event.
+   * Error message as to why the entry failed to publish.
    */
-  private PublishStatus status;
+  private String errorMessage;
 
-  public enum PublishStatus {
-    SUCCESS, FAILED
+  public String getEntryId() {
+    return entryId;
   }
 
-  public String getEntryID() {
-    return entryID;
-  }
-
-  public BulkPublishResponseEntry setEntryID(String entryID) {
-    this.entryID = entryID;
+  public BulkPublishResponseFailedEntry setEntryId(String entryId) {
+    this.entryId = entryId;
     return this;
   }
 
-  public PublishStatus getStatus() {
-    return status;
+  public String getErrorMessage() {
+    return errorMessage;
   }
 
-  public BulkPublishResponseEntry setStatus(PublishStatus status) {
-    this.status = status;
-    return this;
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 }

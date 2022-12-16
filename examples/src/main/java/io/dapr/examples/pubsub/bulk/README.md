@@ -136,10 +136,10 @@ public class BulkPublisher {
                 .subscriberContext(getReactorContext()).block();
         System.out.println("Published the set of messages in a single call to Dapr");
         if (res != null) {
-          System.out.println("Response for each individual message based on EntryID "
-                  + "(in this index of message in list above)");
-          for (BulkPublishResponseEntry entry : res.getStatuses()) {
-            System.out.println("EntryID : " + entry.getEntryID() + " Status : " + entry.getStatus());
+          // Ideally this condition will not happen in examples
+          System.out.println("Some events failed to be published");
+          for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
+            System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
           }
         } else {
           throw new Exception("null response from dapr");
@@ -200,8 +200,10 @@ public class CloudEventBulkPublisher {
       // Publish events
       BulkPublishResponse res = client.publishEvents(request).block();
       if (res != null) {
-        for (BulkPublishResponseEntry entry : res.getStatuses()) {
-          System.out.println("EntryID : " + entry.getEntryID() + " Status : " + entry.getStatus());
+        // Ideally this condition will not happen in examples
+        System.out.println("Some events failed to be published");
+        for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
+          System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
         }
       } else {
         throw new Exception("null response");
@@ -219,9 +221,8 @@ Use the follow command to execute the BulkPublisher example:
 <!-- STEP
 name: Run Publisher
 expected_stdout_lines:
-  - '== APP == EntryID : 1 Status : SUCCESS'
-  - '== APP == EntryID : 2 Status : SUCCESS'
-  - '== APP == EntryID : 3 Status : SUCCESS'
+  - 'Published the set of messages in a single call to Dapr'
+  - 'Done'
 background: true
 sleep: 15
 -->
@@ -249,18 +250,6 @@ Once running, the Publisher should print the output as follows:
 == APP == Going to publish message : This is message #7
 == APP == Going to publish message : This is message #8
 == APP == Going to publish message : This is message #9
-== APP == Published the set of messages in a single call to Dapr
-== APP == Response for each individual message based on EntryID (in this index of message in list above)
-== APP == EntryID : 1 Status : SUCCESS
-== APP == EntryID : 2 Status : SUCCESS
-== APP == EntryID : 3 Status : SUCCESS
-== APP == EntryID : 4 Status : SUCCESS
-== APP == EntryID : 5 Status : SUCCESS
-== APP == EntryID : 6 Status : SUCCESS
-== APP == EntryID : 7 Status : SUCCESS
-== APP == EntryID : 8 Status : SUCCESS
-== APP == EntryID : 9 Status : SUCCESS
-== APP == EntryID : 10 Status : SUCCESS
 == APP == Done
 
 ```

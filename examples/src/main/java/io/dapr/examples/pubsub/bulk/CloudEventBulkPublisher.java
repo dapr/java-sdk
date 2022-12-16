@@ -18,7 +18,7 @@ import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishRequestEntry;
 import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseEntry;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.CloudEvent;
 
 import java.util.ArrayList;
@@ -70,7 +70,7 @@ public class CloudEventBulkPublisher {
           }
         });
         BulkPublishRequestEntry<CloudEvent<Map<String, String>>> entry = new BulkPublishRequestEntry<>();
-        entry.setEntryID("" + (i + 1))
+        entry.setEntryId("" + (i + 1))
             .setEvent(cloudEvent)
             .setContentType(CloudEvent.CONTENT_TYPE);
         entries.add(entry);
@@ -78,8 +78,10 @@ public class CloudEventBulkPublisher {
       request.setEntries(entries);
       BulkPublishResponse res = client.publishEvents(request).block();
       if (res != null) {
-        for (BulkPublishResponseEntry entry : res.getStatuses()) {
-          System.out.println("EntryID : " + entry.getEntryID() + " Status : " + entry.getStatus());
+        // Ideally this condition will not happen in examples
+        System.out.println("Some events failed to be published");
+        for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
+          System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
         }
       } else {
         throw new Exception("null response");

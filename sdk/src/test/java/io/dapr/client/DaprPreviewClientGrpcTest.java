@@ -17,18 +17,14 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Empty;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishRequestEntry;
 import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseEntry;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
-import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
-import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
@@ -184,10 +180,6 @@ public class DaprPreviewClientGrpcTest {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
 			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
-			DaprProtos.BulkPublishResponseEntry entry = DaprProtos.BulkPublishResponseEntry.newBuilder()
-					.setEntryID("1")
-					.setStatus(DaprProtos.BulkPublishResponseEntry.Status.SUCCESS).build();
-			builder.addAllStatuses(Collections.singletonList(entry));
 			observer.onNext(builder.build());
 			observer.onCompleted();
 			return null;
@@ -201,11 +193,7 @@ public class DaprPreviewClientGrpcTest {
 		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
 		BulkPublishResponse res = result.block();
 		Assert.assertNotNull(res);
-		assertEquals("expected single entry in status list", 1, res.getStatuses().size());
-		BulkPublishResponseEntry responseEntry = res.getStatuses().get(0);
-		assertEquals("expected entryID to match", "1", responseEntry.getEntryID());
-		assertEquals("expected status to match", BulkPublishResponseEntry.PublishStatus.SUCCESS,
-				responseEntry.getStatus());
+		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
 	}
 
 	@Test
@@ -214,10 +202,6 @@ public class DaprPreviewClientGrpcTest {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
 			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
-			DaprProtos.BulkPublishResponseEntry entry = DaprProtos.BulkPublishResponseEntry.newBuilder()
-					.setEntryID("1")
-					.setStatus(DaprProtos.BulkPublishResponseEntry.Status.SUCCESS).build();
-			builder.addAllStatuses(Collections.singletonList(entry));
 			observer.onNext(builder.build());
 			observer.onCompleted();
 			return null;
@@ -227,11 +211,7 @@ public class DaprPreviewClientGrpcTest {
 				Collections.singletonList("test"), "text/plain");
 		BulkPublishResponse res = result.block();
 		Assert.assertNotNull(res);
-		assertEquals("expected single entry in status list", 1, res.getStatuses().size());
-		BulkPublishResponseEntry responseEntry = res.getStatuses().get(0);
-		assertEquals("expected entryID to match", "1", responseEntry.getEntryID());
-		assertEquals("expected status to match", BulkPublishResponseEntry.PublishStatus.SUCCESS,
-				responseEntry.getStatus());
+		assertEquals("expected no entries in failed entries list", 0, res.getFailedEntries().size());
 	}
 
 	@Test
@@ -240,10 +220,6 @@ public class DaprPreviewClientGrpcTest {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
 			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
-			DaprProtos.BulkPublishResponseEntry entry = DaprProtos.BulkPublishResponseEntry.newBuilder()
-					.setEntryID("1")
-					.setStatus(DaprProtos.BulkPublishResponseEntry.Status.SUCCESS).build();
-			builder.addAllStatuses(Collections.singletonList(entry));
 			observer.onNext(builder.build());
 			observer.onCompleted();
 			return null;
@@ -255,11 +231,7 @@ public class DaprPreviewClientGrpcTest {
 				}});
 		BulkPublishResponse res = result.block();
 		Assert.assertNotNull(res);
-		assertEquals("expected single entry in status list", 1, res.getStatuses().size());
-		BulkPublishResponseEntry responseEntry = res.getStatuses().get(0);
-		assertEquals("expected entryID to match", "1", responseEntry.getEntryID());
-		assertEquals("expected status to match", BulkPublishResponseEntry.PublishStatus.SUCCESS,
-				responseEntry.getStatus());
+		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
 	}
 
 	@Test

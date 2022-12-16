@@ -26,7 +26,7 @@ public class BulkPublishRequestEntry<T> {
   /**
    * The ID uniquely identifying this particular request entry across the request and scoped for this request only.
    */
-  private String entryID;
+  private String entryId;
 
   /**
    * The event to be published.
@@ -53,25 +53,25 @@ public class BulkPublishRequestEntry<T> {
   /**
    * Constructor for the BulkPublishRequestEntry object.
    *
-   * @param entryID     A request scoped ID uniquely identifying this entry in the BulkPublishRequest.
+   * @param entryId     A request scoped ID uniquely identifying this entry in the BulkPublishRequest.
    * @param event       Event to be published.
    * @param contentType Content Type of the event to be published in MIME format.
    * @param metadata    Metadata for the event.
    */
-  public BulkPublishRequestEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
-    this.entryID = entryID;
+  public BulkPublishRequestEntry(String entryId, T event, String contentType, Map<String, String> metadata) {
+    this.entryId = entryId;
     this.event = event;
     this.contentType = contentType;
     this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
         Collections.unmodifiableMap(metadata);
   }
 
-  public String getEntryID() {
-    return entryID;
+  public String getEntryId() {
+    return entryId;
   }
 
-  public BulkPublishRequestEntry<T> setEntryID(String entryID) {
-    this.entryID = entryID;
+  public BulkPublishRequestEntry<T> setEntryId(String entryId) {
+    this.entryId = entryId;
     return this;
   }
 

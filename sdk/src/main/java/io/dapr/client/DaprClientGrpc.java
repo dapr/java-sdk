@@ -20,7 +20,7 @@ import com.google.protobuf.Empty;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishRequestEntry;
 import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseEntry;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -224,7 +224,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
         }
 
         DaprProtos.BulkPublishRequestEntry.Builder reqEntryBuilder = DaprProtos.BulkPublishRequestEntry.newBuilder()
-            .setEntryID(entry.getEntryID())
+            .setEntryId(entry.getEntryId())
             .setEvent(ByteString.copyFrom(data))
             .setContentType(contentType);
         Map<String, String> metadata = entry.getMetadata();
@@ -248,18 +248,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
       ).map(
           it -> {
             BulkPublishResponse response = new BulkPublishResponse();
-            List<BulkPublishResponseEntry> statuses = new ArrayList<>();
-            for (DaprProtos.BulkPublishResponseEntry entry : it.getStatusesList()) {
-              BulkPublishResponseEntry domainEntry = new BulkPublishResponseEntry();
-              domainEntry.setEntryID(entry.getEntryID());
-              if (entry.getStatus() == DaprProtos.BulkPublishResponseEntry.Status.SUCCESS) {
-                domainEntry.setStatus(BulkPublishResponseEntry.PublishStatus.SUCCESS);
-              } else {
-                domainEntry.setStatus(BulkPublishResponseEntry.PublishStatus.FAILED);
-              }
-              statuses.add(domainEntry);
+            List<BulkPublishResponseFailedEntry> entries = new ArrayList<>();
+            for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
+              BulkPublishResponseFailedEntry domainEntry = new BulkPublishResponseFailedEntry();
+              domainEntry.setEntryId(entry.getEntryId());
+              domainEntry.setErrorMessage(entry.getError());
+              entries.add(domainEntry);
             }
-            response.setStatuses(statuses);
+            response.setFailedEntries(entries);
             return response;
           }
       );
