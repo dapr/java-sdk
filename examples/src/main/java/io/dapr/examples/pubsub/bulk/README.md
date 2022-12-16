@@ -225,8 +225,8 @@ Use the follow command to execute the BulkPublisher example:
 <!-- STEP
 name: Run Publisher
 expected_stdout_lines:
-  - 'Published the set of messages in a single call to Dapr'
-  - 'Done'
+  - '== APP == Published the set of messages in a single call to Dapr'
+  - '== APP == Done'
 background: true
 sleep: 15
 -->
