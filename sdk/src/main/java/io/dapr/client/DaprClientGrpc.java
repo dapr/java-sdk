@@ -17,8 +17,8 @@ import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
@@ -241,7 +241,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
 
       Map<String, BulkPublishEntry<T>> entryMap = new HashMap<>();
-      for (BulkPublishEntry<T> entry: request.getEntries()){
+      for (BulkPublishEntry<T> entry: request.getEntries()) {
         entryMap.put(entry.getEntryId(), entry);
       }
       return Mono.subscriberContext().flatMap(

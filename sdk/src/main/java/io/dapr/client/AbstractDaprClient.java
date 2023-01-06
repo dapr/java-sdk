@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
