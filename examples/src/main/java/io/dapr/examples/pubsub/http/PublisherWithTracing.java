@@ -30,7 +30,7 @@ import static io.dapr.examples.OpenTelemetryConfig.getReactorContext;
  * mvn clean install
  * 2. cd [repo root]/examples
  * 3. Run the program:
- * dapr run --components-path ./components/pubsub --app-id publisher_tracing -- \
+ * dapr run --components-path ./components/pubsub --app-id publisher-tracing -- \
  * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.PublisherWithTracing
  */
 public class PublisherWithTracing {

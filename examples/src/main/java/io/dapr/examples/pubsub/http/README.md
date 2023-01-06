@@ -272,7 +272,7 @@ sleep: 15
 -->
 
 ```bash
-dapr run --components-path ./components/pubsub --app-id publisher_tracing -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.PublisherWithTracing
+dapr run --components-path ./components/pubsub --app-id publisher-tracing -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.PublisherWithTracing
 ```
 
 <!-- END_STEP -->
