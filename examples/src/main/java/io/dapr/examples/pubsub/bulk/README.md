@@ -89,6 +89,7 @@ Execute the follow script in order to run the Subscriber example:
 
 <!-- STEP
 name: Run Subscriber
+match_order: none
 expected_stdout_lines:
   - '== APP == Subscriber got: This is message #1'
   - '== APP == Subscriber got: This is message #2'
@@ -224,6 +225,7 @@ Use the follow command to execute the BulkPublisher example:
 
 <!-- STEP
 name: Run Publisher
+match_order: sequential
 expected_stdout_lines:
   - '== APP == Published the set of messages in a single call to Dapr'
   - '== APP == Done'
