@@ -83,7 +83,7 @@ public class SubscriberController {
     });
   }
 
-  @Topic(name = "testingbulktopic", pubsubName = "messagebus")
+  @Topic(name = "testingbulktopic", pubsubName = "kafka-messagebus")
   @PostMapping("/route1_redis")
   public Mono<Void> handleKafkaMessage(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {
@@ -188,7 +188,7 @@ public class SubscriberController {
     });
   }
 
-  @Topic(name = "testinglongvalues", pubsubName = "kafka-messagebus")
+  @Topic(name = "testinglongvalues", pubsubName = "messagebus")
   @PostMapping(path = "/testinglongvalues")
   public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
     return Mono.fromRunnable(() -> {

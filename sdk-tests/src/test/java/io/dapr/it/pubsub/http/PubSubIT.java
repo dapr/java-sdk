@@ -199,23 +199,23 @@ public class PubSubIT extends BaseIT {
         messages.add(String.format("This is message #%d on topic %s", i, TOPIC_BULK));
       }
       //Publishing 10 messages
-      BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, messages, "").block();
+      BulkPublishResponse response = previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_BULK, messages, "").block();
       System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
-          NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
+          NUM_MESSAGES, TOPIC_BULK, KAFKA_PUBSUB));
       Assert.assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing an object.
       MyObject object = new MyObject();
       object.setId("123");
-      response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, Collections.singletonList(object),
+      response = previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_BULK, Collections.singletonList(object),
           "application/json").block();
       System.out.println("Published one object.");
       Assert.assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing a single byte: Example of non-string based content published
-      previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
+      previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_BULK,
           Collections.singletonList(new byte[]{1}), "").block();
       System.out.println("Published one byte.");
 
@@ -229,12 +229,12 @@ public class PubSubIT extends BaseIT {
       cloudEvent.setSpecversion("1");
       cloudEvent.setType("myevent");
       cloudEvent.setDatacontenttype("text/plain");
-      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_BULK);
+      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(KAFKA_PUBSUB, TOPIC_BULK);
       req.setEntries(Collections.singletonList(
           new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
       ));
 
-      new BulkPublishRequest<CloudEvent>(PUBSUB_NAME, TOPIC_BULK);
+      new BulkPublishRequest<CloudEvent>(KAFKA_PUBSUB, TOPIC_BULK);
       //Publishing a cloud event.
       previewClient.publishEvents(req).block();
       Assert.assertNotNull("expected not null bulk publish response", response);
@@ -247,7 +247,7 @@ public class PubSubIT extends BaseIT {
 
       // Check kafka-messagebus subscription since it is populated only by bulkPublish
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TOPIC_BULK + " in pubsub " + PUBSUB_NAME);
+        System.out.println("Checking results for topic " + TOPIC_BULK + " in pubsub " + KAFKA_PUBSUB);
         // Validate text payload.
         final List<CloudEvent> cloudEventMessages = client.invokeMethod(
             daprRun.getAppName(),
@@ -660,7 +660,7 @@ public class PubSubIT extends BaseIT {
         System.out.println("The long value sent " + value.getValue());
         //Publishing messages
         client.publishEvent(
-            KAFKA_PUBSUB,
+            PUBSUB_NAME,
             LONG_TOPIC_NAME,
             value,
             Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
