@@ -17,6 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         java: [ 11, 13, 15, 16 ]
     env:
@@ -29,7 +30,7 @@ jobs:
       DAPR_RUNTIME_VER: 1.9.3
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF:
+      DAPR_REF: adf3ab5dab64bc997f346c78afcdd2bac73bd5bc
     steps:
     - uses: actions/checkout@v3
     - name: Set up OpenJDK ${{ env.JDK_VER }}
