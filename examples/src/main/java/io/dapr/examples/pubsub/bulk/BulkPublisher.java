@@ -70,7 +70,7 @@ public class BulkPublisher {
           messages.add(message);
           System.out.println("Going to publish message : " + message);
         }
-        BulkPublishResponse res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, messages, "text/plain")
+        BulkPublishResponse<?> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, messages, "text/plain")
             .subscriberContext(getReactorContext()).block();
         System.out.println("Published the set of messages in a single call to Dapr");
         if (res != null) {
@@ -78,8 +78,8 @@ public class BulkPublisher {
             // Ideally this condition will not happen in examples
             System.out.println("Some events failed to be published");
             for (BulkPublishResponseFailedEntry<?> entry : res.getFailedEntries()) {
-              System.out.println("EntryId : " + entry.getEntry().getEntryId() +
-                  " Error message : " + entry.getErrorMessage());
+              System.out.println("EntryId : " + entry.getEntry().getEntryId()
+                  + " Error message : " + entry.getErrorMessage());
             }
           }
         } else {

@@ -190,7 +190,7 @@ public class DaprClientHttp extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<BulkPublishResponse> publishEvents(BulkPublishRequest<T> request) {
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request) {
     return DaprException.wrapMono(new UnsupportedOperationException());
   }
 

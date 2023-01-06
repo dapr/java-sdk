@@ -74,14 +74,14 @@ public class CloudEventBulkPublisher {
         entries.add(entry);
       }
       request.setEntries(entries);
-      BulkPublishResponse res = client.publishEvents(request).block();
+      BulkPublishResponse<?> res = client.publishEvents(request).block();
       if (res != null) {
         if (res.getFailedEntries().size() > 0) {
           // Ideally this condition will not happen in examples
           System.out.println("Some events failed to be published");
-          for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
-            System.out.println("EntryId : " + entry.getEntry().getEntryId() +
-                " Error message : " + entry.getErrorMessage());
+          for (BulkPublishResponseFailedEntry<?> entry : res.getFailedEntries()) {
+            System.out.println("EntryId : " + entry.getEntry().getEntryId()
+                + " Error message : " + entry.getErrorMessage());
           }
         }
       } else {

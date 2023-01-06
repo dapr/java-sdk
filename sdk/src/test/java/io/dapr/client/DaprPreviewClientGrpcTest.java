@@ -164,7 +164,7 @@ public class DaprPreviewClientGrpcTest {
 
 		req.setEntries(Collections.singletonList(entry));
 		when(mockSerializer.serialize(any())).thenThrow(IOException.class);
-		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
+		Mono<BulkPublishResponse<Map<String, String>>> result = previewClient.publishEvents(req);
 
 		assertThrowsDaprException(
 				IOException.class,
@@ -189,7 +189,7 @@ public class DaprPreviewClientGrpcTest {
 				"text/plain", null);
 
 		req.setEntries(Collections.singletonList(entry));
-		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
+		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(req);
 		BulkPublishResponse res = result.block();
 		Assert.assertNotNull(res);
 		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
@@ -206,9 +206,9 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		Mono<BulkPublishResponse> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
+		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
 				Collections.singletonList("test"), "text/plain");
-		BulkPublishResponse res = result.block();
+		BulkPublishResponse<String> res = result.block();
 		Assert.assertNotNull(res);
 		assertEquals("expected no entries in failed entries list", 0, res.getFailedEntries().size());
 	}
@@ -224,11 +224,11 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		Mono<BulkPublishResponse> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
+		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
 				Collections.singletonList("test"), "text/plain", new HashMap<String, String>(){{
 					put("ttlInSeconds", "123");
 				}});
-		BulkPublishResponse res = result.block();
+		BulkPublishResponse<String> res = result.block();
 		Assert.assertNotNull(res);
 		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
 	}
@@ -261,7 +261,7 @@ public class DaprPreviewClientGrpcTest {
 				"application/json", null);
 
 		req.setEntries(Collections.singletonList(entry));
-		BulkPublishResponse result = previewClient.publishEvents(req).block();
+		BulkPublishResponse<DaprClientGrpcTest.MyObject> result = previewClient.publishEvents(req).block();
 		Assert.assertNotNull(result);
 		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
 	}
@@ -291,7 +291,7 @@ public class DaprPreviewClientGrpcTest {
 				"", null);
 
 		req.setEntries(Collections.singletonList(entry));
-		BulkPublishResponse result = previewClient.publishEvents(req).block();
+		BulkPublishResponse<String> result = previewClient.publishEvents(req).block();
 		Assert.assertNotNull(result);
 		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
 	}

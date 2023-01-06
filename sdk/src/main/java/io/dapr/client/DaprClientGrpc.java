@@ -196,7 +196,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
    *
    * {@inheritDoc}
    */
-  public <T> Mono<BulkPublishResponse> publishEvents(BulkPublishRequest<T> request) {
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request) {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
@@ -204,11 +205,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
       envelopeBuilder.setTopic(topic);
       envelopeBuilder.setPubsubName(pubsubName);
 
+      if (Strings.isNullOrEmpty(pubsubName) || Strings.isNullOrEmpty(topic)) {
+        throw new IllegalArgumentException("pubsubName and topic name cannot be null or empty");
+      }
+
       for (BulkPublishEntry<?> entry: request.getEntries()) {
         Object event = entry.getEvent();
         byte[] data;
         String contentType = entry.getContentType();
-
         // Serialize event into bytes
         if (!Strings.isNullOrEmpty(contentType) && objectSerializer instanceof DefaultObjectSerializer) {
           // If content type is given by user and default object serializer is used
@@ -216,7 +220,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
         } else {
           // perform the serialization as per user given input of serializer
           // this is also the case when content type is empty
+
           data = objectSerializer.serialize(event);
+
           if (Strings.isNullOrEmpty(contentType)) {
             // Only override content type if not given in input by user
             contentType = objectSerializer.getContentType();
@@ -251,8 +257,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
               )
       ).map(
           it -> {
-            BulkPublishResponse response = new BulkPublishResponse();
-            List<BulkPublishResponseFailedEntry> entries = new ArrayList<>();
+            BulkPublishResponse<T> response = new BulkPublishResponse<>();
+            List<BulkPublishResponseFailedEntry<T>> entries = new ArrayList<>();
             for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
               BulkPublishResponseFailedEntry<T> domainEntry = new BulkPublishResponseFailedEntry<T>();
               domainEntry.setEntry(entryMap.get(entry.getEntryId()));

@@ -20,10 +20,10 @@ import java.util.List;
 /**
  * Class representing the response returned on bulk publishing events.
  */
-public class BulkPublishResponse {
+public class BulkPublishResponse<T> {
 
   private String errorCode;
-  private List<BulkPublishResponseFailedEntry> failedEntries;
+  private List<BulkPublishResponseFailedEntry<T>> failedEntries;
 
   /**
    * Default constructor for the class.
@@ -38,7 +38,7 @@ public class BulkPublishResponse {
    * @param failedEntries  The List of BulkPublishResponseEntries representing the list of
    *                       events that failed to be published.
    */
-  public BulkPublishResponse(String errorCode, List<BulkPublishResponseFailedEntry> failedEntries) {
+  public BulkPublishResponse(String errorCode, List<BulkPublishResponseFailedEntry<T>> failedEntries) {
     this.errorCode = errorCode;
     this.failedEntries = failedEntries == null ? Collections.unmodifiableList(new ArrayList<>()) :
         Collections.unmodifiableList(failedEntries);
@@ -48,16 +48,16 @@ public class BulkPublishResponse {
     return errorCode;
   }
 
-  public BulkPublishResponse setErrorCode(String errorCode) {
+  public BulkPublishResponse<T> setErrorCode(String errorCode) {
     this.errorCode = errorCode;
     return this;
   }
 
-  public List<BulkPublishResponseFailedEntry> getFailedEntries() {
+  public List<BulkPublishResponseFailedEntry<T>> getFailedEntries() {
     return failedEntries;
   }
 
-  public BulkPublishResponse setFailedEntries(List<BulkPublishResponseFailedEntry> failedEntries) {
+  public BulkPublishResponse<T> setFailedEntries(List<BulkPublishResponseFailedEntry<T>> failedEntries) {
     this.failedEntries = failedEntries == null ? new ArrayList<>() : Collections.unmodifiableList(failedEntries);
     return this;
   }

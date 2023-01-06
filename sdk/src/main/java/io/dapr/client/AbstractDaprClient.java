@@ -400,7 +400,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<BulkPublishResponse> publishEvents(String pubsubName, String topicName, List<T> events,
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, List<T> events,
                                                      String contentType) {
     return publishEvents(pubsubName, topicName, events, contentType, null);
   }
@@ -409,7 +409,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
-  public <T> Mono<BulkPublishResponse> publishEvents(String pubsubName, String topicName, List<T> events,
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, List<T> events,
                                                      String contentType, Map<String, String> requestMetadata) {
     BulkPublishRequest<T> request = new BulkPublishRequest<>(pubsubName, topicName);
     if (events == null || events.size() == 0) {
