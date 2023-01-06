@@ -103,7 +103,7 @@ jobs:
       run: mvn install  -Dmaven.test.skip=true -Dcheckstyle.skip=true
     - name: Integration tests
       id: integration_tests
-      run: mvn -f sdk-tests/pom.xml -Dit.test=PubSubIT verify
+      run: mvn -f sdk-tests/pom.xml -Dtest=PubSubIT verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:

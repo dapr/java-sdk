@@ -158,7 +158,7 @@ public class PubSubIT extends BaseIT {
   }
 
   @Test
-  public void testPubSub() throws Exception {
+  public void testBulkPublish() throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -169,9 +169,8 @@ public class PubSubIT extends BaseIT {
     if (this.useGrpc) {
       daprRun.switchToGRPC();
     } else {
-      daprRun.switchToHTTP();
+      return;
     }
-
     DaprObjectSerializer serializer = new DaprObjectSerializer() {
       @Override
       public byte[] serialize(Object o) throws JsonProcessingException {
@@ -188,10 +187,8 @@ public class PubSubIT extends BaseIT {
         return "application/json";
       }
     };
-
-    // Send a batch of messages on one topic
     try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build();
-    DaprPreviewClient previewClient = new DaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
+         DaprPreviewClient previewClient = new DaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
       if (useGrpc) {
         // Only for the gRPC test
         // Send a multiple messages on one topic in Kafka pubsub via publishEvents API.
@@ -245,6 +242,91 @@ public class PubSubIT extends BaseIT {
 
         System.out.println("Published one cloud event.");
       }
+      if (useGrpc) {
+        // Check kafka-messagebus subscription since it is populated only by bulkPublish
+        callWithRetry(() -> {
+          System.out.println("Checking results for topic " + TOPIC_NAME + " in pubsub " + KAFKA_PUBSUB);
+          // Validate text payload.
+          final List<CloudEvent> messages = client.invokeMethod(
+              daprRun.getAppName(),
+              "messages/kafka/testingtopic",
+              null,
+              HttpExtension.GET,
+              CLOUD_EVENT_LIST_TYPE_REF).block();
+          assertEquals(13, messages.size());
+          for (int i = 0; i < NUM_MESSAGES; i++) {
+            final int messageId = i;
+            assertTrue(messages
+                .stream()
+                .filter(m -> m.getData() != null)
+                .map(m -> m.getData())
+                .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_NAME)))
+                .count() == 1);
+          }
+
+          // Validate object payload.
+          assertTrue(messages
+              .stream()
+              .filter(m -> m.getData() != null)
+              .filter(m -> m.getData() instanceof LinkedHashMap)
+              .map(m -> (LinkedHashMap) m.getData())
+              .filter(m -> "123".equals(m.get("id")))
+              .count() == 1);
+
+          // Validate byte payload.
+          assertTrue(messages
+              .stream()
+              .filter(m -> m.getData() != null)
+              .map(m -> m.getData())
+              .filter(m -> "AQ==".equals(m))
+              .count() == 1);
+
+          // Validate cloudevent payload.
+          assertTrue(messages
+              .stream()
+              .filter(m -> m.getData() != null)
+              .map(m -> m.getData())
+              .filter(m -> "message from cloudevent".equals(m))
+              .count() == 1);
+        }, 2000);
+      }
+    }
+  }
+
+  @Test
+  public void testPubSub() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName(),
+        SubscriberService.SUCCESS_MESSAGE,
+        SubscriberService.class,
+        true,
+        60000));
+    // At this point, it is guaranteed that the service above is running and all ports being listened to.
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      daprRun.switchToHTTP();
+    }
+
+    DaprObjectSerializer serializer = new DaprObjectSerializer() {
+      @Override
+      public byte[] serialize(Object o) throws JsonProcessingException {
+        return OBJECT_MAPPER.writeValueAsBytes(o);
+      }
+
+      @Override
+      public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
+        return (T) OBJECT_MAPPER.readValue(data, OBJECT_MAPPER.constructType(type.getType()));
+      }
+
+      @Override
+      public String getContentType() {
+        return "application/json";
+      }
+    };
+
+    // Send a batch of messages on one topic
+    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TOPIC_NAME);
         //Publishing messages
@@ -428,55 +510,6 @@ public class PubSubIT extends BaseIT {
               .count() == 1);
         }
       }, 2000);
-
-      if (useGrpc) {
-        // Check kafka-messagebus subscription since it is populated only by bulkPublish
-        callWithRetry(() -> {
-          System.out.println("Checking results for topic " + TOPIC_NAME + " in pubsub " + KAFKA_PUBSUB);
-          // Validate text payload.
-          final List<CloudEvent> messages = client.invokeMethod(
-              daprRun.getAppName(),
-              "messages/kafka/testingtopic",
-              null,
-              HttpExtension.GET,
-              CLOUD_EVENT_LIST_TYPE_REF).block();
-          assertEquals(13, messages.size());
-          for (int i = 0; i < NUM_MESSAGES; i++) {
-            final int messageId = i;
-            assertTrue(messages
-                .stream()
-                .filter(m -> m.getData() != null)
-                .map(m -> m.getData())
-                .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_NAME)))
-                .count() == 1);
-          }
-
-          // Validate object payload.
-          assertTrue(messages
-              .stream()
-              .filter(m -> m.getData() != null)
-              .filter(m -> m.getData() instanceof LinkedHashMap)
-              .map(m -> (LinkedHashMap) m.getData())
-              .filter(m -> "123".equals(m.get("id")))
-              .count() == 1);
-
-          // Validate byte payload.
-          assertTrue(messages
-              .stream()
-              .filter(m -> m.getData() != null)
-              .map(m -> m.getData())
-              .filter(m -> "AQ==".equals(m))
-              .count() == 1);
-
-          // Validate cloudevent payload.
-          assertTrue(messages
-              .stream()
-              .filter(m -> m.getData() != null)
-              .map(m -> m.getData())
-              .filter(m -> "message from cloudevent".equals(m))
-              .count() == 1);
-        }, 2000);
-      }
     }
   }
 
