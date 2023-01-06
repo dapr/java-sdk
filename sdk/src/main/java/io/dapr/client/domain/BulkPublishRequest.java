@@ -43,9 +43,9 @@ public class BulkPublishRequest<T> {
   private Map<String, String> metadata;
 
   /**
-   * The request entry objects that make up this request.
+   * The list of entry objects that make up this request.
    */
-  private List<BulkPublishRequestEntry<T>> entries;
+  private List<BulkPublishEntry<T>> entries;
 
   /**
    * Constructor for BulkPublishRequest.
@@ -67,7 +67,7 @@ public class BulkPublishRequest<T> {
    * @param entries    List of BulkPublishRequestEntry objects.
    */
   public BulkPublishRequest(String pubsubName, String topic, Map<String, String> metadata,
-                            List<BulkPublishRequestEntry<T>> entries) {
+                            List<BulkPublishEntry<T>> entries) {
     this.pubsubName = pubsubName;
     this.topic = topic;
     this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
@@ -93,11 +93,11 @@ public class BulkPublishRequest<T> {
     return this;
   }
 
-  public List<BulkPublishRequestEntry<T>> getEntries() {
+  public List<BulkPublishEntry<T>> getEntries() {
     return entries;
   }
 
-  public BulkPublishRequest<T> setEntries(List<BulkPublishRequestEntry<T>> entries) {
+  public BulkPublishRequest<T> setEntries(List<BulkPublishEntry<T>> entries) {
     this.entries = entries == null ? null : Collections.unmodifiableList(entries);
     return this;
   }

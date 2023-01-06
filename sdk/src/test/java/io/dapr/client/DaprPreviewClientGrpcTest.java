@@ -18,9 +18,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import io.dapr.client.domain.BulkPublishRequest;
-import io.dapr.client.domain.BulkPublishRequestEntry;
+import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
@@ -142,7 +141,7 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
 		BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
-		BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>("1", "testEntry"
+		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "testEntry"
 				, "application/octet-stream", null);
 		wrongReq.setEntries(Collections.singletonList(entry));
 		previewClient.publishEvents(wrongReq).block();
@@ -160,7 +159,7 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 		BulkPublishRequest<Map<String, String>> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
-		BulkPublishRequestEntry<Map<String, String>> entry = new BulkPublishRequestEntry<>("1", new HashMap<>(),
+		BulkPublishEntry<Map<String, String>> entry = new BulkPublishEntry<>("1", new HashMap<>(),
 				"application/json", null);
 
 		req.setEntries(Collections.singletonList(entry));
@@ -186,7 +185,7 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
 		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
-		BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>("1", "test",
+		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "test",
 				"text/plain", null);
 
 		req.setEntries(Collections.singletonList(entry));
@@ -258,12 +257,13 @@ public class DaprPreviewClientGrpcTest {
 
 		DaprClientGrpcTest.MyObject event = new DaprClientGrpcTest.MyObject(1, "Event");
 		BulkPublishRequest<DaprClientGrpcTest.MyObject> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
-		BulkPublishRequestEntry<DaprClientGrpcTest.MyObject> entry = new BulkPublishRequestEntry<>("1", event,
+		BulkPublishEntry<DaprClientGrpcTest.MyObject> entry = new BulkPublishEntry<>("1", event,
 				"application/json", null);
 
 		req.setEntries(Collections.singletonList(entry));
-		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
-		result.block();
+		BulkPublishResponse result = previewClient.publishEvents(req).block();
+		Assert.assertNotNull(result);
+		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
 	}
 
 	@Test
@@ -287,12 +287,13 @@ public class DaprPreviewClientGrpcTest {
 		}), any());
 
 		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
-		BulkPublishRequestEntry<String> entry = new BulkPublishRequestEntry<>("1", "hello",
+		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "hello",
 				"", null);
 
 		req.setEntries(Collections.singletonList(entry));
-		Mono<BulkPublishResponse> result = previewClient.publishEvents(req);
-		result.block();
+		BulkPublishResponse result = previewClient.publishEvents(req).block();
+		Assert.assertNotNull(result);
+		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
 	}
 
 	@Test

@@ -59,7 +59,7 @@ public class BulkPublisher {
     Tracer tracer = openTelemetry.getTracer(BulkPublisher.class.getCanonicalName());
     Span span = tracer.spanBuilder("Bulk Publisher's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      DaprClient c = (DaprClient)client;
+      DaprClient c = (DaprClient) client;
       c.waitForSidecar(10000);
       try (Scope scope = span.makeCurrent()) {
         System.out.println("Using preview client...");
@@ -77,8 +77,9 @@ public class BulkPublisher {
           if (res.getFailedEntries().size() > 0) {
             // Ideally this condition will not happen in examples
             System.out.println("Some events failed to be published");
-            for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
-              System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
+            for (BulkPublishResponseFailedEntry<?> entry : res.getFailedEntries()) {
+              System.out.println("EntryId : " + entry.getEntry().getEntryId() +
+                  " Error message : " + entry.getErrorMessage());
             }
           }
         } else {

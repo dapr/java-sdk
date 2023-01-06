@@ -21,10 +21,10 @@ import java.util.Map;
 
 import static org.junit.Assert.assertNull;
 
-public class BulkPublishRequestEntryTest {
+public class BulkPublishEntryTest {
   @Test
   public void testSetMetadata() {
-    BulkPublishRequestEntry<String> request = new BulkPublishRequestEntry<>();
+    BulkPublishEntry<String> request = new BulkPublishEntry<>();
     // Null check
     request.setMetadata(null);
     assertNull(request.getMetadata());

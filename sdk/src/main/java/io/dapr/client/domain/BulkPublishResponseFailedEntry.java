@@ -16,24 +16,23 @@ package io.dapr.client.domain;
 /**
  * Class representing the entry that failed to be published using BulkPublishRequest.
  */
-public class BulkPublishResponseFailedEntry {
+public class BulkPublishResponseFailedEntry<T> {
   /**
-   * An ID unique across the Response object, identifying a particular entry in the BulkPublishRequest.
+   * The entry that failed to be published.
    */
-  private String entryId;
-
+  private BulkPublishEntry<T> entry;
 
   /**
    * Error message as to why the entry failed to publish.
    */
   private String errorMessage;
 
-  public String getEntryId() {
-    return entryId;
+  public BulkPublishEntry<T> getEntry() {
+    return entry;
   }
 
-  public BulkPublishResponseFailedEntry setEntryId(String entryId) {
-    this.entryId = entryId;
+  public BulkPublishResponseFailedEntry setEntry(BulkPublishEntry<T> entry) {
+    this.entry = entry;
     return this;
   }
 

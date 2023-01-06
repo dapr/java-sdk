@@ -15,8 +15,8 @@ package io.dapr.examples.pubsub.bulk;
 
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
-import io.dapr.client.domain.BulkPublishRequestEntry;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.CloudEvent;
@@ -56,7 +56,7 @@ public class CloudEventBulkPublisher {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
       BulkPublishRequest<CloudEvent<Map<String, String>>> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
-      List<BulkPublishRequestEntry<CloudEvent<Map<String, String>>>> entries = new ArrayList<>();
+      List<BulkPublishEntry<CloudEvent<Map<String, String>>>> entries = new ArrayList<>();
       for (int i = 0; i < NUM_MESSAGES; i++) {
         CloudEvent<Map<String, String>> cloudEvent = new CloudEvent<>();
         cloudEvent.setId(UUID.randomUUID().toString());
@@ -69,10 +69,8 @@ public class CloudEventBulkPublisher {
             put("dataKey", val);
           }
         });
-        BulkPublishRequestEntry<CloudEvent<Map<String, String>>> entry = new BulkPublishRequestEntry<>();
-        entry.setEntryId("" + (i + 1))
-            .setEvent(cloudEvent)
-            .setContentType(CloudEvent.CONTENT_TYPE);
+        BulkPublishEntry<CloudEvent<Map<String, String>>> entry = new BulkPublishEntry<>();
+        entry.setEntryId("" + (i + 1)).setEvent(cloudEvent).setContentType(CloudEvent.CONTENT_TYPE);
         entries.add(entry);
       }
       request.setEntries(entries);
@@ -82,7 +80,8 @@ public class CloudEventBulkPublisher {
           // Ideally this condition will not happen in examples
           System.out.println("Some events failed to be published");
           for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
-            System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
+            System.out.println("EntryId : " + entry.getEntry().getEntryId() +
+                " Error message : " + entry.getErrorMessage());
           }
         }
       } else {

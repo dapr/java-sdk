@@ -18,7 +18,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.BulkPublishRequest;
-import io.dapr.client.domain.BulkPublishRequestEntry;
+import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
@@ -204,7 +204,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       envelopeBuilder.setTopic(topic);
       envelopeBuilder.setPubsubName(pubsubName);
 
-      for (BulkPublishRequestEntry<?> entry: request.getEntries()) {
+      for (BulkPublishEntry<?> entry: request.getEntries()) {
         Object event = entry.getEvent();
         byte[] data;
         String contentType = entry.getContentType();
@@ -240,6 +240,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
         envelopeBuilder.putAllMetadata(metadata);
       }
 
+      Map<String, BulkPublishEntry<T>> entryMap = new HashMap<>();
+      for (BulkPublishEntry<T> entry: request.getEntries()){
+        entryMap.put(entry.getEntryId(), entry);
+      }
       return Mono.subscriberContext().flatMap(
           context ->
               this.<DaprProtos.BulkPublishResponse>createMono(
@@ -250,8 +254,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
             BulkPublishResponse response = new BulkPublishResponse();
             List<BulkPublishResponseFailedEntry> entries = new ArrayList<>();
             for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
-              BulkPublishResponseFailedEntry domainEntry = new BulkPublishResponseFailedEntry();
-              domainEntry.setEntryId(entry.getEntryId());
+              BulkPublishResponseFailedEntry<T> domainEntry = new BulkPublishResponseFailedEntry<T>();
+              domainEntry.setEntry(entryMap.get(entry.getEntryId()));
               domainEntry.setErrorMessage(entry.getError());
               entries.add(domainEntry);
             }

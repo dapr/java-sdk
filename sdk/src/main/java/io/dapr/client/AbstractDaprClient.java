@@ -15,7 +15,7 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.BulkPublishRequest;
-import io.dapr.client.domain.BulkPublishRequestEntry;
+import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
@@ -415,10 +415,10 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     if (events == null || events.size() == 0) {
       throw new IllegalArgumentException("list of events cannot be null or empty");
     }
-    List<BulkPublishRequestEntry<T>> entries = new ArrayList<>();
+    List<BulkPublishEntry<T>> entries = new ArrayList<>();
     for (int i = 0; i < events.size(); i++) {
       // entryID field is generated based on order of events in the request
-      entries.add(new BulkPublishRequestEntry<>("" + (i + 1), events.get(i), contentType, null));
+      entries.add(new BulkPublishEntry<>("" + (i + 1), events.get(i), contentType, null));
     }
     request.setMetadata(requestMetadata);
     return publishEvents(request.setEntries(entries));

@@ -47,11 +47,11 @@ public class BulkPublishRequestTest {
     request.setEntries(null);
     assertNull(request.getEntries());
     // Modifiability check
-    BulkPublishRequestEntry<String> testEntry = new BulkPublishRequestEntry<>("1", "test event", "text/plain", null);
-    List<BulkPublishRequestEntry<String>> entryList = new ArrayList<>();
+    BulkPublishEntry<String> testEntry = new BulkPublishEntry<>("1", "test event", "text/plain", null);
+    List<BulkPublishEntry<String>> entryList = new ArrayList<>();
     entryList.add(testEntry);
     request.setEntries(entryList);
-    List<BulkPublishRequestEntry<String>> initial = request.getEntries();
+    List<BulkPublishEntry<String>> initial = request.getEntries();
     request.setEntries(entryList);
     Assert.assertNotSame("Should not be same map", request.getEntries(), initial);
   }

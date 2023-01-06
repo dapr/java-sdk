@@ -18,11 +18,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class representing an entry in the BulkPublishRequest.
+ * Class representing an entry in the BulkPublishRequest or BulkPublishResponse.
  *
  * @param <T> Type of the event that is part of the request.
  */
-public class BulkPublishRequestEntry<T> {
+public class BulkPublishEntry<T> {
   /**
    * The ID uniquely identifying this particular request entry across the request and scoped for this request only.
    */
@@ -47,7 +47,7 @@ public class BulkPublishRequestEntry<T> {
   /**
    * Default constructor for the BulkPublishRequestEntry object.
    */
-  public BulkPublishRequestEntry() {
+  public BulkPublishEntry() {
   }
 
   /**
@@ -58,7 +58,7 @@ public class BulkPublishRequestEntry<T> {
    * @param contentType Content Type of the event to be published in MIME format.
    * @param metadata    Metadata for the event.
    */
-  public BulkPublishRequestEntry(String entryId, T event, String contentType, Map<String, String> metadata) {
+  public BulkPublishEntry(String entryId, T event, String contentType, Map<String, String> metadata) {
     this.entryId = entryId;
     this.event = event;
     this.contentType = contentType;
@@ -70,7 +70,7 @@ public class BulkPublishRequestEntry<T> {
     return entryId;
   }
 
-  public BulkPublishRequestEntry<T> setEntryId(String entryId) {
+  public BulkPublishEntry<T> setEntryId(String entryId) {
     this.entryId = entryId;
     return this;
   }
@@ -79,7 +79,7 @@ public class BulkPublishRequestEntry<T> {
     return event;
   }
 
-  public BulkPublishRequestEntry<T> setEvent(T event) {
+  public BulkPublishEntry<T> setEvent(T event) {
     this.event = event;
     return this;
   }
@@ -88,7 +88,7 @@ public class BulkPublishRequestEntry<T> {
     return contentType;
   }
 
-  public BulkPublishRequestEntry<T> setContentType(String contentType) {
+  public BulkPublishEntry<T> setContentType(String contentType) {
     this.contentType = contentType;
     return this;
   }
@@ -97,7 +97,7 @@ public class BulkPublishRequestEntry<T> {
     return metadata;
   }
 
-  public BulkPublishRequestEntry<T> setMetadata(Map<String, String> metadata) {
+  public BulkPublishEntry<T> setMetadata(Map<String, String> metadata) {
     this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
     return this;
   }

@@ -18,8 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
-import io.dapr.client.domain.BulkPublishRequestEntry;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
@@ -234,7 +234,7 @@ public class PubSubIT extends BaseIT {
         cloudEvent.setDatacontenttype("text/plain");
         BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(KAFKA_PUBSUB, TOPIC_NAME);
         req.setEntries(Collections.singletonList(
-            new BulkPublishRequestEntry<>("1", cloudEvent, "application/cloudevents+json", null)
+            new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
         ));
 
         new BulkPublishRequest<CloudEvent>(KAFKA_PUBSUB, TOPIC_NAME);
