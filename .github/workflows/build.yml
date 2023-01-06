@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 11 ]
+        java: [ 11, 13, 15, 16 ]
     env:
       GOVER: 1.19
       GOOS: linux
@@ -100,10 +100,10 @@ jobs:
     - name: Codecov
       uses: codecov/codecov-action@v3.1.0
     - name: Install jars
-      run: mvn install  -Dmaven.test.skip=true -Dcheckstyle.skip=true
+      run: mvn install  -q
     - name: Integration tests
       id: integration_tests
-      run: mvn -f sdk-tests/pom.xml -Dtest=PubSubIT verify
+      run: mvn -f sdk-tests/pom.xml verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
@@ -114,13 +114,13 @@ jobs:
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
-    - name: Upload failsafe test report for sdk-tests
+    - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@master
       with:
         name: failsafe-report-sdk-tests
         path: sdk-tests/target/failsafe-reports
-    - name: Upload surefire test report for sdk-tests
+    - name: Upload surefire test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@master
       with:

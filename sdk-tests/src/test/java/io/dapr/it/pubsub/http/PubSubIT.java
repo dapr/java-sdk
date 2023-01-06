@@ -68,7 +68,6 @@ public class PubSubIT extends BaseIT {
   //Number of messages to be sent: 10
   private static final int NUM_MESSAGES = 10;
 
-  private static final String KAFKA_PUBSUB = "kafka-messagebus";
   private static final String PUBSUB_NAME = "messagebus";
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
@@ -193,29 +192,29 @@ public class PubSubIT extends BaseIT {
     try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build();
          DaprPreviewClient previewClient = new DaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
       // Only for the gRPC test
-      // Send a multiple messages on one topic in Kafka pubsub via publishEvents API.
+      // Send a multiple messages on one topic in messagebus pubsub via publishEvents API.
       List<String> messages = new ArrayList<>();
       for (int i = 0; i < NUM_MESSAGES; i++) {
         messages.add(String.format("This is message #%d on topic %s", i, TOPIC_BULK));
       }
       //Publishing 10 messages
-      BulkPublishResponse response = previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_BULK, messages, "").block();
+      BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, messages, "").block();
       System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
-          NUM_MESSAGES, TOPIC_BULK, KAFKA_PUBSUB));
+          NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
       Assert.assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing an object.
       MyObject object = new MyObject();
       object.setId("123");
-      response = previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_BULK, Collections.singletonList(object),
+      response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, Collections.singletonList(object),
           "application/json").block();
       System.out.println("Published one object.");
       Assert.assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing a single byte: Example of non-string based content published
-      previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_BULK,
+      previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
           Collections.singletonList(new byte[]{1}), "").block();
       System.out.println("Published one byte.");
 
@@ -229,12 +228,12 @@ public class PubSubIT extends BaseIT {
       cloudEvent.setSpecversion("1");
       cloudEvent.setType("myevent");
       cloudEvent.setDatacontenttype("text/plain");
-      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(KAFKA_PUBSUB, TOPIC_BULK);
+      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_BULK);
       req.setEntries(Collections.singletonList(
           new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
       ));
 
-      new BulkPublishRequest<CloudEvent>(KAFKA_PUBSUB, TOPIC_BULK);
+      new BulkPublishRequest<CloudEvent>(PUBSUB_NAME, TOPIC_BULK);
       //Publishing a cloud event.
       previewClient.publishEvents(req).block();
       Assert.assertNotNull("expected not null bulk publish response", response);
@@ -245,9 +244,9 @@ public class PubSubIT extends BaseIT {
       // Introduce sleep
       Thread.sleep(10000);
 
-      // Check kafka-messagebus subscription since it is populated only by bulkPublish
+      // Check messagebus subscription for topic testingbulktopic since it is populated only by publishEvents API call
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TOPIC_BULK + " in pubsub " + KAFKA_PUBSUB);
+        System.out.println("Checking results for topic " + TOPIC_BULK + " in pubsub " + PUBSUB_NAME);
         // Validate text payload.
         final List<CloudEvent> cloudEventMessages = client.invokeMethod(
             daprRun.getAppName(),

@@ -43,14 +43,14 @@ public class SubscriberController {
     return messagesByTopic.getOrDefault(topic, Collections.emptyList());
   }
 
-  private static final List<CloudEvent> messagesReceivedKafkaTestingTopic = new ArrayList();
+  private static final List<CloudEvent> messagesReceivedBulkTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV3 = new ArrayList();
 
   @GetMapping(path = "/messages/redis/testingbulktopic")
-  public List<CloudEvent> getMessagesReceivedKafkaTestingTopic() {
-    return messagesReceivedKafkaTestingTopic;
+  public List<CloudEvent> getMessagesReceivedBulkTopic() {
+    return messagesReceivedBulkTopic;
   }
 
   @GetMapping(path = "/messages/testingtopic")
@@ -83,15 +83,15 @@ public class SubscriberController {
     });
   }
 
-  @Topic(name = "testingbulktopic", pubsubName = "kafka-messagebus")
+  @Topic(name = "testingbulktopic", pubsubName = "messagebus")
   @PostMapping("/route1_redis")
-  public Mono<Void> handleKafkaMessage(@RequestBody(required = false) CloudEvent envelope) {
+  public Mono<Void> handleBulkTopicMessage(@RequestBody(required = false) CloudEvent envelope) {
     return Mono.fromRunnable(() -> {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
         System.out.println("Testing bulk publish topic Subscriber got message: " + message + "; Content-type: " + contentType);
-        messagesReceivedKafkaTestingTopic.add(envelope);
+        messagesReceivedBulkTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
