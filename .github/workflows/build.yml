@@ -102,6 +102,7 @@ jobs:
     - name: Install jars
       run: mvn install  -Dmaven.test.skip=true -Dcheckstyle.skip=true
     - name: Integration tests
+      id: integration_tests
       run: mvn -f sdk-tests/pom.xml -Dit.test=PubSubIT verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
@@ -114,7 +115,7 @@ jobs:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
     - name: Upload failsafe test report for sdk-tests
-      if: always()
+      if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@master
       with:
         name: failsafe-report-sdk-tests
