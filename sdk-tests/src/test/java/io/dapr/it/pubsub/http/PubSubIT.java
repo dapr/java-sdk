@@ -73,7 +73,7 @@ public class PubSubIT extends BaseIT {
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
 
-  private static final String TOPIC_NAME_2 = "testingtopic2";
+  private static final String TOPIC_BULK = "testingbulktopic";
   private static final String TYPED_TOPIC_NAME = "typedtestingtopic";
   private static final String ANOTHER_TOPIC_NAME = "anothertopic";
   // Topic used for TTL test
@@ -196,28 +196,26 @@ public class PubSubIT extends BaseIT {
       // Send a multiple messages on one topic in Kafka pubsub via publishEvents API.
       List<String> messages = new ArrayList<>();
       for (int i = 0; i < NUM_MESSAGES; i++) {
-        messages.add(String.format("This is message #%d on topic %s", i, TOPIC_NAME));
+        messages.add(String.format("This is message #%d on topic %s", i, TOPIC_BULK));
       }
       //Publishing 10 messages
-      BulkPublishResponse response = previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_NAME, messages, "").block();
+      BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, messages, "").block();
       System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
-          NUM_MESSAGES, TOPIC_NAME, KAFKA_PUBSUB));
+          NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
       Assert.assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing an object.
       MyObject object = new MyObject();
       object.setId("123");
-      response = previewClient.publishEvents(KAFKA_PUBSUB, TOPIC_NAME, Collections.singletonList(object),
+      response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, Collections.singletonList(object),
           "application/json").block();
       System.out.println("Published one object.");
       Assert.assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing a single byte: Example of non-string based content published
-      previewClient.publishEvents(
-          KAFKA_PUBSUB,
-          TOPIC_NAME,
+      previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
           Collections.singletonList(new byte[]{1}), "").block();
       System.out.println("Published one byte.");
 
@@ -231,12 +229,12 @@ public class PubSubIT extends BaseIT {
       cloudEvent.setSpecversion("1");
       cloudEvent.setType("myevent");
       cloudEvent.setDatacontenttype("text/plain");
-      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(KAFKA_PUBSUB, TOPIC_NAME);
+      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_BULK);
       req.setEntries(Collections.singletonList(
           new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
       ));
 
-      new BulkPublishRequest<CloudEvent>(KAFKA_PUBSUB, TOPIC_NAME);
+      new BulkPublishRequest<CloudEvent>(PUBSUB_NAME, TOPIC_BULK);
       //Publishing a cloud event.
       previewClient.publishEvents(req).block();
       Assert.assertNotNull("expected not null bulk publish response", response);
@@ -249,27 +247,27 @@ public class PubSubIT extends BaseIT {
 
       // Check kafka-messagebus subscription since it is populated only by bulkPublish
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TOPIC_NAME + " in pubsub " + KAFKA_PUBSUB);
+        System.out.println("Checking results for topic " + TOPIC_BULK + " in pubsub " + PUBSUB_NAME);
         // Validate text payload.
         final List<CloudEvent> cloudEventMessages = client.invokeMethod(
             daprRun.getAppName(),
-            "messages/kafka/testingtopic",
+            "messages/redis/testingbulktopic",
             null,
             HttpExtension.GET,
             CLOUD_EVENT_LIST_TYPE_REF).block();
         assertEquals("expected 13 messages to be received on subscribe", 13, cloudEventMessages.size());
         for (int i = 0; i < NUM_MESSAGES; i++) {
           final int messageId = i;
-          assertTrue(cloudEventMessages
+          assertTrue("expected data content to match", cloudEventMessages
               .stream()
               .filter(m -> m.getData() != null)
               .map(m -> m.getData())
-              .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_NAME)))
+              .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_BULK)))
               .count() == 1);
         }
 
         // Validate object payload.
-        assertTrue(cloudEventMessages
+        assertTrue("expected data content 123 to match", cloudEventMessages
             .stream()
             .filter(m -> m.getData() != null)
             .filter(m -> m.getData() instanceof LinkedHashMap)
@@ -278,7 +276,7 @@ public class PubSubIT extends BaseIT {
             .count() == 1);
 
         // Validate byte payload.
-        assertTrue(cloudEventMessages
+        assertTrue("expected bin data to match", cloudEventMessages
             .stream()
             .filter(m -> m.getData() != null)
             .map(m -> m.getData())
@@ -286,7 +284,7 @@ public class PubSubIT extends BaseIT {
             .count() == 1);
 
         // Validate cloudevent payload.
-        assertTrue(cloudEventMessages
+        assertTrue("expected data to match",cloudEventMessages
             .stream()
             .filter(m -> m.getData() != null)
             .map(m -> m.getData())
