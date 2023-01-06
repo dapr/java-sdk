@@ -137,7 +137,7 @@ public class PubSubIT extends BaseIT {
   }
 
   @Test
-  public void bulkPublishPubSubNotFound() throws Exception {
+  public void testBulkPublishPubSubNotFound() throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
