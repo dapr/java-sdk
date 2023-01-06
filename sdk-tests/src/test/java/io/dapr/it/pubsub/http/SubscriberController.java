@@ -188,7 +188,7 @@ public class SubscriberController {
     });
   }
 
-  @Topic(name = "testinglongvalues", pubsubName = "messagebus")
+  @Topic(name = "testinglongvalues", pubsubName = "kafka-messagebus")
   @PostMapping(path = "/testinglongvalues")
   public Mono<Void> handleMessageLongValues(@RequestBody(required = false) CloudEvent<PubSubIT.ConvertToLong> cloudEvent) {
     return Mono.fromRunnable(() -> {

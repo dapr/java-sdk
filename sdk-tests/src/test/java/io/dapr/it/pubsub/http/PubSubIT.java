@@ -660,7 +660,7 @@ public class PubSubIT extends BaseIT {
         System.out.println("The long value sent " + value.getValue());
         //Publishing messages
         client.publishEvent(
-            PUBSUB_NAME,
+            KAFKA_PUBSUB,
             LONG_TOPIC_NAME,
             value,
             Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
