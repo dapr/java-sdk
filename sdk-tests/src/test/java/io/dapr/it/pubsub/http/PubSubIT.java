@@ -243,55 +243,55 @@ public class PubSubIT extends BaseIT {
 
         System.out.println("Published one cloud event.");
       }
-      if (useGrpc) {
-        // Check kafka-messagebus subscription since it is populated only by bulkPublish
-        callWithRetry(() -> {
-          System.out.println("Checking results for topic " + TOPIC_NAME + " in pubsub " + KAFKA_PUBSUB);
-          // Validate text payload.
-          final List<CloudEvent> messages = client.invokeMethod(
-              daprRun.getAppName(),
-              "messages/kafka/testingtopic",
-              null,
-              HttpExtension.GET,
-              CLOUD_EVENT_LIST_TYPE_REF).block();
-          assertEquals(13, messages.size());
-          for (int i = 0; i < NUM_MESSAGES; i++) {
-            final int messageId = i;
-            assertTrue(messages
-                .stream()
-                .filter(m -> m.getData() != null)
-                .map(m -> m.getData())
-                .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_NAME)))
-                .count() == 1);
-          }
 
-          // Validate object payload.
-          assertTrue(messages
-              .stream()
-              .filter(m -> m.getData() != null)
-              .filter(m -> m.getData() instanceof LinkedHashMap)
-              .map(m -> (LinkedHashMap) m.getData())
-              .filter(m -> "123".equals(m.get("id")))
-              .count() == 1);
-
-          // Validate byte payload.
+      // Check kafka-messagebus subscription since it is populated only by bulkPublish
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + TOPIC_NAME + " in pubsub " + KAFKA_PUBSUB);
+        // Validate text payload.
+        final List<CloudEvent> messages = client.invokeMethod(
+            daprRun.getAppName(),
+            "messages/kafka/testingtopic",
+            null,
+            HttpExtension.GET,
+            CLOUD_EVENT_LIST_TYPE_REF).block();
+        assertEquals(13, messages.size());
+        for (int i = 0; i < NUM_MESSAGES; i++) {
+          final int messageId = i;
           assertTrue(messages
               .stream()
               .filter(m -> m.getData() != null)
               .map(m -> m.getData())
-              .filter(m -> "AQ==".equals(m))
+              .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_NAME)))
               .count() == 1);
+        }
 
-          // Validate cloudevent payload.
-          assertTrue(messages
-              .stream()
-              .filter(m -> m.getData() != null)
-              .map(m -> m.getData())
-              .filter(m -> "message from cloudevent".equals(m))
-              .count() == 1);
-        }, 2000);
-      }
+        // Validate object payload.
+        assertTrue(messages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .filter(m -> m.getData() instanceof LinkedHashMap)
+            .map(m -> (LinkedHashMap) m.getData())
+            .filter(m -> "123".equals(m.get("id")))
+            .count() == 1);
+
+        // Validate byte payload.
+        assertTrue(messages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .map(m -> m.getData())
+            .filter(m -> "AQ==".equals(m))
+            .count() == 1);
+
+        // Validate cloudevent payload.
+        assertTrue(messages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .map(m -> m.getData())
+            .filter(m -> "message from cloudevent".equals(m))
+            .count() == 1);
+      }, 2000);
     }
+
   }
 
   @Test
