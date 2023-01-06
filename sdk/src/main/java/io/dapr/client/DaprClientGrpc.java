@@ -213,20 +213,24 @@ public class DaprClientGrpc extends AbstractDaprClient {
         Object event = entry.getEvent();
         byte[] data;
         String contentType = entry.getContentType();
-        // Serialize event into bytes
-        if (!Strings.isNullOrEmpty(contentType) && objectSerializer instanceof DefaultObjectSerializer) {
-          // If content type is given by user and default object serializer is used
-          data = DefaultContentTypeConverter.convertEventToBytesForGrpc(event, contentType);
-        } else {
-          // perform the serialization as per user given input of serializer
-          // this is also the case when content type is empty
+        try {
+          // Serialize event into bytes
+          if (!Strings.isNullOrEmpty(contentType) && objectSerializer instanceof DefaultObjectSerializer) {
+            // If content type is given by user and default object serializer is used
+            data = DefaultContentTypeConverter.convertEventToBytesForGrpc(event, contentType);
+          } else {
+            // perform the serialization as per user given input of serializer
+            // this is also the case when content type is empty
 
-          data = objectSerializer.serialize(event);
+            data = objectSerializer.serialize(event);
 
-          if (Strings.isNullOrEmpty(contentType)) {
-            // Only override content type if not given in input by user
-            contentType = objectSerializer.getContentType();
+            if (Strings.isNullOrEmpty(contentType)) {
+              // Only override content type if not given in input by user
+              contentType = objectSerializer.getContentType();
+            }
           }
+        } catch (IOException ex) {
+          throw DaprException.propagate(ex);
         }
 
         DaprProtos.BulkPublishRequestEntry.Builder reqEntryBuilder = DaprProtos.BulkPublishRequestEntry.newBuilder()
@@ -269,7 +273,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
             return response;
           }
       );
-    } catch (Exception ex) {
+    } catch (RuntimeException ex) {
       return DaprException.wrapMono(ex);
     }
   }
