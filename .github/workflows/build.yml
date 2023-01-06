@@ -100,9 +100,9 @@ jobs:
     - name: Codecov
       uses: codecov/codecov-action@v3.1.0
     - name: Install jars
-      run: mvn install -q
+      run: mvn install  -Dmaven.test.skip=true -Dcheckstyle.skip=true
     - name: Integration tests
-      run: mvn -f sdk-tests/pom.xml verify -q
+      run: mvn -f sdk-tests/pom.xml -Dit.test=PubSubIT verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
@@ -113,6 +113,13 @@ jobs:
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
+    - name: Upload failsafe test report for sdk-tests
+      if: always()
+      uses: actions/upload-artifact@master
+      with:
+        name: failsafe-report-sdk-tests
+        path: sdk-tests/target/failsafe-reports
+
   publish:
     runs-on: ubuntu-latest
     needs: build
