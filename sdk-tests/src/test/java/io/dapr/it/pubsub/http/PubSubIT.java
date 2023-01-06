@@ -169,6 +169,7 @@ public class PubSubIT extends BaseIT {
     if (this.useGrpc) {
       daprRun.switchToGRPC();
     } else {
+      System.out.println("HTTP BulkPublish is not implemented. So skipping tests");
       return;
     }
     DaprObjectSerializer serializer = new DaprObjectSerializer() {

@@ -120,6 +120,12 @@ jobs:
       with:
         name: failsafe-report-sdk-tests
         path: sdk-tests/target/failsafe-reports
+    - name: Upload surefire test report for sdk-tests
+        if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
+        uses: actions/upload-artifact@master
+        with:
+          name: surefire-report-sdk-tests
+          path: sdk-tests/target/surefire-reports
 
   publish:
     runs-on: ubuntu-latest
