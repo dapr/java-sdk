@@ -154,7 +154,7 @@ public class PubSubIT extends BaseIT {
       assertThrowsDaprException(
             "INVALID_ARGUMENT",
             "INVALID_ARGUMENT: pubsub unknown pubsub not found",
-            () -> client.publishEvents("unknown pubsub", "mytopic", Collections.singletonList("message"), "text/plain").block());
+            () -> client.publishEvents("unknown pubsub", "mytopic","text/plain", "message").block());
     }
   }
 
