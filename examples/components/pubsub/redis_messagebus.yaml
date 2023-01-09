@@ -13,3 +13,4 @@ spec:
 scopes:
   - publisher
   - subscriber
+  - publisher-tracing
