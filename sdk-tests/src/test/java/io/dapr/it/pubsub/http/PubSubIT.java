@@ -198,7 +198,7 @@ public class PubSubIT extends BaseIT {
         messages.add(String.format("This is message #%d on topic %s", i, TOPIC_BULK));
       }
       //Publishing 10 messages
-      BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, messages, "").block();
+      BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
       System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
           NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
       Assert.assertNotNull("expected not null bulk publish response", response);
@@ -207,15 +207,15 @@ public class PubSubIT extends BaseIT {
       //Publishing an object.
       MyObject object = new MyObject();
       object.setId("123");
-      response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, Collections.singletonList(object),
-          "application/json").block();
+      response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
+          "application/json", Collections.singletonList(object)).block();
       System.out.println("Published one object.");
       Assert.assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing a single byte: Example of non-string based content published
-      previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
-          Collections.singletonList(new byte[]{1}), "").block();
+      previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "",
+          Collections.singletonList(new byte[]{1})).block();
       System.out.println("Published one byte.");
 
       Assert.assertNotNull("expected not null bulk publish response", response);

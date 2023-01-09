@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Dapr Authors
+ * Copyright 2023 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -70,7 +70,7 @@ public class BulkPublisher {
           messages.add(message);
           System.out.println("Going to publish message : " + message);
         }
-        BulkPublishResponse<?> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, messages, "text/plain")
+        BulkPublishResponse<?> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, "text/plain", messages)
             .subscriberContext(getReactorContext()).block();
         System.out.println("Published the set of messages in a single call to Dapr");
         if (res != null) {

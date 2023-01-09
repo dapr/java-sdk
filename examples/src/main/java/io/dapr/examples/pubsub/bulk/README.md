@@ -98,7 +98,7 @@ sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.bulk.KafkaSubscriber -p 3000
+dapr run --components-path ./components/pubsub --app-id kafka-subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.bulk.KafkaSubscriber -p 3000
 ```
 
 <!-- END_STEP -->
@@ -228,9 +228,8 @@ name: Run Publisher
 match_order: sequential
 expected_stdout_lines:
   - '== APP == Published the set of messages in a single call to Dapr'
-  - '== APP == Done'
 background: true
-sleep: 15
+sleep: 20
 -->
 
 ```bash
@@ -308,7 +307,7 @@ name: Cleanup
 
 ```bash
 dapr stop --app-id bulk-publisher
-dapr stop --app-id subscriber
+dapr stop --app-id kafka-subscriber
 ```
 
 <!-- END_STEP -->

@@ -270,8 +270,23 @@ public interface DaprPreviewClient extends AutoCloseable {
    *     generated based on the order of events in the {@link List}.
    * @param <T> The type of the events to publish in the call.
    */
-  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, List<T> events,
-                                                 String contentType);
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 T... events);
 
   /**
    * Publish multiple events to Dapr in a single request.
@@ -286,8 +301,24 @@ public interface DaprPreviewClient extends AutoCloseable {
    *     generated based on the order of events in the {@link List}.
    * @param <T> The type of the events to publish in the call.
    */
-  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, List<T> events,
-                                                 String contentType, Map<String,String> requestMetadata);
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, T... events);
 
 
 }

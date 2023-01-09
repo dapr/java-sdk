@@ -207,7 +207,7 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
 		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
-				Collections.singletonList("test"), "text/plain");
+				"text/plain", Collections.singletonList("test"));
 		BulkPublishResponse<String> res = result.block();
 		Assert.assertNotNull(res);
 		assertEquals("expected no entries in failed entries list", 0, res.getFailedEntries().size());
@@ -225,9 +225,9 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
 		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
-				Collections.singletonList("test"), "text/plain", new HashMap<String, String>(){{
+				 "text/plain", new HashMap<String, String>(){{
 					put("ttlInSeconds", "123");
-				}});
+				}}, Collections.singletonList("test"));
 		BulkPublishResponse<String> res = result.block();
 		Assert.assertNotNull(res);
 		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());

@@ -10,3 +10,6 @@ spec:
       value: "localhost:9092"
     - name: "authType"
       value: "none"
+scopes:
+  - bulk-publisher
+  - kafka-subscriber
