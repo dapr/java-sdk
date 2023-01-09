@@ -83,7 +83,7 @@ public class TracingIT extends BaseIT {
         span.end();
         OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
 
-        Validation.validate(spanName, "calllocal/tracingit_service/sleep");
+        Validation.validate(spanName, "calllocal/tracingit-service/sleep");
     }
 
 }
