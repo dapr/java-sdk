@@ -283,7 +283,7 @@ sleep: 20
 -->
 
 ```bash
-dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
+dapr run --app-id tracingdemoclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.tracing.InvokeClient "message one" "message two"
 ```
 
 <!-- END_STEP -->
