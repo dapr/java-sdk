@@ -22,9 +22,7 @@ import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse;
 import static io.dapr.it.MethodInvokeServiceProtos.PostMessageRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 
@@ -138,10 +136,12 @@ public class MethodInvokeIT extends BaseIT {
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
 
-            assertEquals("UNKNOWN", exception.getErrorCode());
             if (this.useGrpc) {
-                assertEquals("UNKNOWN: ", exception.getMessage());
+                assertEquals("INTERNAL", exception.getErrorCode());
+                assertNotNull(exception.getMessage());
+                assertTrue(exception.getMessage().contains("INTERNAL:"));
             } else {
+                assertEquals("UNKNOWN", exception.getErrorCode());
                 assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
             }
         }
