@@ -202,7 +202,7 @@ public class SubscriberController {
    * @param bulkMessage incoming bulk of messages from the message bus.
    * @return status for each message received.
    */
-  @BulkSubscribe(maxBulkSubCount = 100, maxBulkSubAwaitDurationMs = 5000)
+  @BulkSubscribe(maxMessagesCount = 100, maxAwaitDurationMs = 5000)
   @Topic(name = "topicBulkSub", pubsubName = "messagebus")
   @PostMapping(path = "/routeBulkSub")
   public Mono<DaprBulkAppResponse> handleMessageBulk(@RequestBody(required = false) DaprBulkMessage<CloudEvent<String>> bulkMessage) {
