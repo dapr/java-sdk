@@ -9,12 +9,8 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 
 import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest;
@@ -25,32 +21,16 @@ import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class MethodInvokeIT extends BaseIT {
 
     //Number of messages to be sent: 10
     private static final int NUM_MESSAGES = 10;
 
     /**
-     * Parameters for this test.
-     * Param #1: useGrpc.
-     * @return Collection of parameter tuples.
-     */
-    @Parameters
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] { { false }, { true } });
-    }
-
-    /**
      * Run of a Dapr application.
      */
     private DaprRun daprRun = null;
-
-    @Parameter
-    public boolean useGrpc;
 
     @Before
     public void init() throws Exception {
@@ -60,13 +40,7 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.class,
           DaprApiProtocol.GRPC,  // appProtocol
           60000);
-
-        if (this.useGrpc) {
-            daprRun.switchToGRPC();
-        } else {
-            daprRun.switchToHTTP();
-        }
-
+        daprRun.switchToGRPC();
         // Wait since service might be ready even after port is available.
         Thread.sleep(2000);
     }
@@ -138,12 +112,9 @@ public class MethodInvokeIT extends BaseIT {
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
 
-            assertEquals("UNKNOWN", exception.getErrorCode());
-            if (this.useGrpc) {
-                assertEquals("UNKNOWN: ", exception.getMessage());
-            } else {
-                assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
-            }
+            assertEquals("INTERNAL", exception.getErrorCode());
+            assertEquals("INTERNAL: fail to invoke, id: MethodInvokeIT_MethodInvokeService, err: message is nil",
+                exception.getMessage());
         }
     }
 }

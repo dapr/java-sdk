@@ -40,6 +40,7 @@ public class SubscribeConfigurationRequest {
     this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
     return this;
   }
+  m
 
   public String getStoreName() {
     return storeName;

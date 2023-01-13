@@ -21,3 +21,5 @@ spec:
     value: "false"
   - name: initialOffset
     value: oldest
+scopes:
+  - BindingIT_InputBindingService
