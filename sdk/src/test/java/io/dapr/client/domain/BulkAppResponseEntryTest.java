@@ -6,14 +6,14 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
-public class DaprBulkAppResponseEntryTest {
+public class BulkAppResponseEntryTest {
   @Test
   public void testSetStatus() {
-    for (DaprBulkAppResponseStatus status: Arrays.asList(
-            DaprBulkAppResponseStatus.RETRY,
-            DaprBulkAppResponseStatus.DROP,
-            DaprBulkAppResponseStatus.SUCCESS)) {
-      DaprBulkAppResponseEntry entry = new DaprBulkAppResponseEntry();
+    for (BulkAppResponseStatus status: Arrays.asList(
+            BulkAppResponseStatus.RETRY,
+            BulkAppResponseStatus.DROP,
+            BulkAppResponseStatus.SUCCESS)) {
+      BulkAppResponseEntry entry = new BulkAppResponseEntry();
       entry.setStatus(status);
       assertEquals(status, entry.getStatus());
     }
@@ -22,7 +22,7 @@ public class DaprBulkAppResponseEntryTest {
   @Test
   public void testSetEntryId() {
     // Arrange
-    DaprBulkAppResponseEntry entry = new DaprBulkAppResponseEntry();
+    BulkAppResponseEntry entry = new BulkAppResponseEntry();
     String entryId = "1";
 
     // Act
@@ -35,10 +35,10 @@ public class DaprBulkAppResponseEntryTest {
   @Test
   public void testCtr() {
     // Arrange/Act
-    DaprBulkAppResponseEntry entry = new DaprBulkAppResponseEntry("1", DaprBulkAppResponseStatus.SUCCESS);
+    BulkAppResponseEntry entry = new BulkAppResponseEntry("1", BulkAppResponseStatus.SUCCESS);
 
     // Assert
     assertEquals("1", entry.getEntryID());
-    assertEquals(DaprBulkAppResponseStatus.SUCCESS, entry.getStatus());
+    assertEquals(BulkAppResponseStatus.SUCCESS, entry.getStatus());
   }
 }

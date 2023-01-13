@@ -20,34 +20,34 @@ import java.util.Map;
 /**
  * Represents a bulk of messages received from the message bus.
  */
-public class DaprBulkMessage<T> {
-  private List<DaprBulkMessageEntry<T>> entries;
+public class BulkMessage<T> {
+  private List<BulkMessageEntry<T>> entries;
   private String topic;
   private Map<String, String> metadata;
 
   /**
-   * Instantiate a DaprBulkMessage.
+   * Instantiate a BulkMessage.
    */
-  public DaprBulkMessage() {
+  public BulkMessage() {
   }
 
   /**
-   * Instantiate a DaprBulkMessage.
+   * Instantiate a BulkMessage.
    * @param entries mapping from bulk message entry ID to a status.
    * @param topic pubSub topic.
    * @param metadata metadata for the bulk message.
    */
-  public DaprBulkMessage(List<DaprBulkMessageEntry<T>> entries, String topic, Map<String, String> metadata) {
+  public BulkMessage(List<BulkMessageEntry<T>> entries, String topic, Map<String, String> metadata) {
     this.entries = entries == null ? null : Collections.unmodifiableList(entries);
     this.topic = topic;
     this.metadata = metadata;
   }
 
-  public List<DaprBulkMessageEntry<T>> getEntries() {
+  public List<BulkMessageEntry<T>> getEntries() {
     return entries == null ? null : Collections.unmodifiableList(entries);
   }
 
-  public void setEntries(List<DaprBulkMessageEntry<T>> entries) {
+  public void setEntries(List<BulkMessageEntry<T>> entries) {
     this.entries = entries == null ? null : Collections.unmodifiableList(entries);
   }
 

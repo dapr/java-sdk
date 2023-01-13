@@ -15,7 +15,7 @@ public class DaprBulkMessageTest {
   @Test
   public void testSetMetadata() {
     // Arrange
-    DaprBulkMessage<String> message = new DaprBulkMessage<>();
+    BulkMessage<String> message = new BulkMessage<>();
     Map<String, String> metadata = new HashMap<>();
     metadata.put("FOO", "BAR");
 
@@ -30,7 +30,7 @@ public class DaprBulkMessageTest {
   @Test
   public void testSetTopic() {
     // Arrange
-    DaprBulkMessage<String> message = new DaprBulkMessage<>();
+    BulkMessage<String> message = new BulkMessage<>();
     String topic = "myTopic";
 
     // Act
@@ -40,11 +40,11 @@ public class DaprBulkMessageTest {
     assertEquals(topic, message.getTopic());
   }
 
-  private DaprBulkMessage<String> getDaprBulkMessage(List<DaprBulkMessageEntry<String>> entries, boolean useCtr) {
+  private BulkMessage<String> getBulkMessage(List<BulkMessageEntry<String>> entries, boolean useCtr) {
     if (useCtr) {
-      return new DaprBulkMessage<>(entries, "foo-topic", new HashMap<>());
+      return new BulkMessage<>(entries, "foo-topic", new HashMap<>());
     } else {
-      DaprBulkMessage<String> message = new DaprBulkMessage<>();
+      BulkMessage<String> message = new BulkMessage<>();
       message.setEntries(entries);
       return message;
     }
@@ -54,20 +54,20 @@ public class DaprBulkMessageTest {
   public void testSetEntries() {
     for (boolean b: new boolean[]{true, false}) {
       // Scenario 1: When entry is null
-      DaprBulkMessage<String> messageWithNull = getDaprBulkMessage(null, b);
+      BulkMessage<String> messageWithNull = getBulkMessage(null, b);
       assertNull(messageWithNull.getEntries());
 
       // Scenario 2: When entry has items
-      DaprBulkMessageEntry<String> entry1 = new DaprBulkMessageEntry<>(
+      BulkMessageEntry<String> entry1 = new BulkMessageEntry<>(
               "1", "Message 1", "text/plain", new HashMap<>()
       );
-      DaprBulkMessageEntry<String> entry2 = new DaprBulkMessageEntry<>(
+      BulkMessageEntry<String> entry2 = new BulkMessageEntry<>(
               "2", "Message 2", "text/plain", new HashMap<>()
       );
-      List<DaprBulkMessageEntry<String>> entries = new ArrayList<>(Arrays.asList(entry1, entry2));
-      DaprBulkMessage<String> message = getDaprBulkMessage(entries, b);
+      List<BulkMessageEntry<String>> entries = new ArrayList<>(Arrays.asList(entry1, entry2));
+      BulkMessage<String> message = getBulkMessage(entries, b);
 
-      List<DaprBulkMessageEntry<String>> entriesFromGet = message.getEntries();
+      List<BulkMessageEntry<String>> entriesFromGet = message.getEntries();
       assertEquals(2, entriesFromGet.size());
       assertEquals("1", entriesFromGet.get(0).getEntryID());
       assertEquals("2", entriesFromGet.get(1).getEntryID());

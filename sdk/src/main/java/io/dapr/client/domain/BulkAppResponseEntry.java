@@ -16,22 +16,22 @@ package io.dapr.client.domain;
 /**
  * Maps an entry from bulk subscribe messages to a response status.
  */
-public class DaprBulkAppResponseEntry {
+public class BulkAppResponseEntry {
   private String entryID;
-  private DaprBulkAppResponseStatus status;
+  private BulkAppResponseStatus status;
 
   /**
-   * Instantiate a DaprBulkAppResponseEntry.
+   * Instantiate a BulkAppResponseEntry.
    */
-  public DaprBulkAppResponseEntry() {
+  public BulkAppResponseEntry() {
   }
 
   /**
-   * Instantiate a DaprBulkAppResponseEntry.
+   * Instantiate a BulkAppResponseEntry.
    * @param entryID entry ID of the event.
    * @param status status of the event processing in application.
    */
-  public DaprBulkAppResponseEntry(String entryID, DaprBulkAppResponseStatus status) {
+  public BulkAppResponseEntry(String entryID, BulkAppResponseStatus status) {
     this.entryID = entryID;
     this.status = status;
   }
@@ -44,11 +44,11 @@ public class DaprBulkAppResponseEntry {
     this.entryID = entryID;
   }
 
-  public DaprBulkAppResponseStatus getStatus() {
+  public BulkAppResponseStatus getStatus() {
     return status;
   }
 
-  public void setStatus(DaprBulkAppResponseStatus status) {
+  public void setStatus(BulkAppResponseStatus status) {
     this.status = status;
   }
 }

@@ -16,7 +16,7 @@ package io.dapr.client.domain;
 /**
  * Status of the message handled in bulk subscribe handler.
  */
-public enum DaprBulkAppResponseStatus {
+public enum BulkAppResponseStatus {
   SUCCESS,
   RETRY,
   DROP

@@ -20,28 +20,28 @@ import java.util.List;
  * Response from the application containing status for each entry in the bulk message.
  * It is posted by the bulk subscribe handler.
  */
-public class DaprBulkAppResponse {
-  private List<DaprBulkAppResponseEntry> statuses;
+public class BulkAppResponse {
+  private List<BulkAppResponseEntry> statuses;
 
   /**
-   * Instantiate a DaprBulkAppResponse.
+   * Instantiate a BulkAppResponse.
    */
-  public DaprBulkAppResponse() {
+  public BulkAppResponse() {
   }
 
   /**
-   * Instantiate a DaprBulkAppResponse.
+   * Instantiate a BulkAppResponse.
    * @param statuses list of statuses.
    */
-  public DaprBulkAppResponse(List<DaprBulkAppResponseEntry> statuses) {
+  public BulkAppResponse(List<BulkAppResponseEntry> statuses) {
     this.statuses = statuses == null ? null : Collections.unmodifiableList(statuses);
   }
 
-  public List<DaprBulkAppResponseEntry> getStatuses() {
+  public List<BulkAppResponseEntry> getStatuses() {
     return statuses == null ? null : Collections.unmodifiableList(statuses);
   }
 
-  public void setStatuses(List<DaprBulkAppResponseEntry> statuses) {
+  public void setStatuses(List<BulkAppResponseEntry> statuses) {
     this.statuses = statuses == null ? null : Collections.unmodifiableList(statuses);
   }
 }

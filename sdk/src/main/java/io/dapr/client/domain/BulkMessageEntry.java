@@ -19,7 +19,7 @@ import java.util.Map;
  * Represents a single event from a bulk of messages sent by the message bus.
  * @param <T> Type of event.
  */
-public class DaprBulkMessageEntry<T> {
+public class BulkMessageEntry<T> {
   private String entryID;
   private T event;
   private String contentType;
@@ -27,19 +27,19 @@ public class DaprBulkMessageEntry<T> {
   private Map<String, String> metadata;
 
   /**
-   * Instantiate a DaprBulkMessageEntry.
+   * Instantiate a BulkMessageEntry.
    */
-  public DaprBulkMessageEntry() {
+  public BulkMessageEntry() {
   }
 
   /**
-   * Instantiate a DaprBulkMessageEntry.
+   * Instantiate a BulkMessageEntry.
    * @param entryID unique identifier for the event.
    * @param event pubSub event.
    * @param contentType content type of the event.
    * @param metadata metadata for the event.
    */
-  public DaprBulkMessageEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
+  public BulkMessageEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
     this.entryID = entryID;
     this.event = event;
     this.contentType = contentType;

@@ -7,11 +7,11 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class DaprBulkMessageEntryTest {
+public class BulkMessageEntryTest {
   @Test
   public void testSetMetadata() {
     // Arrange
-    DaprBulkMessageEntry<String> entry = new DaprBulkMessageEntry<>();
+    BulkMessageEntry<String> entry = new BulkMessageEntry<>();
     Map<String, String> metadata = new HashMap<>();
     metadata.put("FOO", "BAR");
 
@@ -26,7 +26,7 @@ public class DaprBulkMessageEntryTest {
   @Test
   public void testSetContentType() {
     // Arrange
-    DaprBulkMessageEntry<String> entry = new DaprBulkMessageEntry<>();
+    BulkMessageEntry<String> entry = new BulkMessageEntry<>();
     String contentType = "application/json";
 
     // Act
@@ -39,7 +39,7 @@ public class DaprBulkMessageEntryTest {
   @Test
   public void testSetEvent() {
     // Arrange
-    DaprBulkMessageEntry<String> entry = new DaprBulkMessageEntry<>();
+    BulkMessageEntry<String> entry = new BulkMessageEntry<>();
     String event = "This is an event!";
 
     // Act
