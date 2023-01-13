@@ -42,7 +42,7 @@ public class DaprBeanPostProcessorSubscribeTest {
     DaprTopicSubscription[] topicSubscriptions = runtime.listSubscribedTopics();
 
     // There should be three subscriptions.
-    Assert.assertEquals(3, topicSubscriptions.length);
+    Assert.assertEquals(2, topicSubscriptions.length);
 
     DaprTopicSubscription[] expectedDaprTopicSubscriptions = getTestDaprTopicSubscriptions();
 
@@ -50,12 +50,8 @@ public class DaprBeanPostProcessorSubscribeTest {
     this.assertTopicSubscriptionEquality(expectedDaprTopicSubscriptions[0], topicSubscriptions[0]);
 
     // Subscription with BulkSubscribe.
-    // This should populate the right metadata for bulk subscribe.
+    // This should correctly set the bulkSubscribe field.
     this.assertTopicSubscriptionEquality(expectedDaprTopicSubscriptions[1], topicSubscriptions[1]);
-
-    // Subscription with BulkSubscribe, with bulk metadata in @Topic.
-    // The bulk metadata from @Topic should be overridden.
-    this.assertTopicSubscriptionEquality(expectedDaprTopicSubscriptions[2], topicSubscriptions[2]);
   }
 
   private void assertTopicSubscriptionEquality(DaprTopicSubscription s1, DaprTopicSubscription s2) {
@@ -63,6 +59,13 @@ public class DaprBeanPostProcessorSubscribeTest {
     Assert.assertEquals(s1.getTopic(), s2.getTopic());
     Assert.assertEquals(s1.getRoute(), s2.getRoute());
     Assert.assertEquals(s1.getMetadata(), s2.getMetadata());
+    if (s1.getBulkSubscribe() == null) {
+      Assert.assertNull(s2.getBulkSubscribe());
+    } else {
+      Assert.assertEquals(s1.getBulkSubscribe().isEnabled(), s2.getBulkSubscribe().isEnabled());
+      Assert.assertEquals(s1.getBulkSubscribe().getMaxAwaitDurationMs(), s2.getBulkSubscribe().getMaxAwaitDurationMs());
+      Assert.assertEquals(s1.getBulkSubscribe().getMaxMessagesCount(), s2.getBulkSubscribe().getMaxMessagesCount());
+    }
   }
 
   private DaprTopicSubscription[] getTestDaprTopicSubscriptions() {
@@ -73,26 +76,17 @@ public class DaprBeanPostProcessorSubscribeTest {
             MockControllerWithSubscribe.subscribeRoute,
             new HashMap<>());
 
-    HashMap<String, String> bulkTopicSubscriptionMetadata = new HashMap<String, String>() {{
-      put(DaprBeanPostProcessor.BULK_SUBSCRIBE_METADATA_KEY, "true");
-      put(DaprBeanPostProcessor.BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY,
-              String.valueOf(MockControllerWithSubscribe.maxBulkSubCount));
-      put(DaprBeanPostProcessor.BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY,
-              String.valueOf(MockControllerWithSubscribe.maxBulkSubAwaitDurationMs));
-    }};
+    DaprTopicBulkSubscribe bulkSubscribe = new DaprTopicBulkSubscribe(true);
+    bulkSubscribe.setMaxMessagesCount(MockControllerWithSubscribe.maxMessagesCount);
+    bulkSubscribe.setMaxAwaitDurationMs(MockControllerWithSubscribe.maxAwaitDurationMs);
 
     daprTopicSubscriptions[1] = new DaprTopicSubscription(
             MockControllerWithSubscribe.pubSubName,
             MockControllerWithSubscribe.bulkTopicName,
             MockControllerWithSubscribe.bulkSubscribeRoute,
-            bulkTopicSubscriptionMetadata);
+            new HashMap<>());
 
-
-    daprTopicSubscriptions[2] = new DaprTopicSubscription(
-            MockControllerWithSubscribe.pubSubName,
-            MockControllerWithSubscribe.bulkTopicNameV2,
-            MockControllerWithSubscribe.bulkSubscribeRouteV2,
-            bulkTopicSubscriptionMetadata);
+    daprTopicSubscriptions[1].setBulkSubscribe(bulkSubscribe);
 
     return daprTopicSubscriptions;
   }

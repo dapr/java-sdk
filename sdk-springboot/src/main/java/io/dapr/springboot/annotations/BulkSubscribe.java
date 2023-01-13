@@ -39,7 +39,7 @@ public @interface BulkSubscribe {
    * 
    * @return number of messages.
    */
-  int maxBulkSubCount() default 100;
+  int maxMessagesCount() default -1;
 
   /**
    * Maximum duration to wait for maxBulkSubCount messages by the message bus
@@ -47,5 +47,5 @@ public @interface BulkSubscribe {
    * 
    * @return time to await in milliseconds.
    */
-  int maxBulkSubAwaitDurationMs() default 1000;
+  int maxAwaitDurationMs() default -1;
 }

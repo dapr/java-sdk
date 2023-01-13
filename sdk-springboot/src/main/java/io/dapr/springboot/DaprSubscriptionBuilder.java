@@ -13,11 +13,7 @@ limitations under the License.
 
 package io.dapr.springboot;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 class DaprSubscriptionBuilder {
@@ -26,6 +22,8 @@ class DaprSubscriptionBuilder {
   private final List<TopicRule> rules;
   private String defaultPath;
   private Map<String, String> metadata;
+
+  private DaprTopicBulkSubscribe bulkSubscribe;
 
   /**
    * Create a subscription topic.
@@ -87,6 +85,14 @@ class DaprSubscriptionBuilder {
   }
 
   /**
+   * Sets the bulkSubscribe configuration for the subscription.
+   * @param bulkSubscribe The bulk subscribe configuration.
+   */
+  public void setBulkSubscribe(DaprTopicBulkSubscribe bulkSubscribe) {
+    this.bulkSubscribe = bulkSubscribe;
+  }
+
+  /**
    * Builds the DaprTopicSubscription that is returned by the application to Dapr.
    * @return The DaprTopicSubscription.
    */
@@ -103,7 +109,12 @@ class DaprSubscriptionBuilder {
       route = defaultPath;
     }
 
-    return new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata);
+    DaprTopicSubscription subscription =
+            new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata);
+    if (bulkSubscribe != null) {
+      subscription.setBulkSubscribe(bulkSubscribe);
+    }
+    return subscription;
   }
 
   private static class TopicRule {

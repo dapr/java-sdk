@@ -65,13 +65,15 @@ class DaprRuntime {
    * @param priority Priority for this match relative to others.
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
+   * @param bulkSubscribe Bulk Subscribe configuration.
    */
   public synchronized void addSubscribedTopic(String pubSubName,
                                               String topicName,
                                               String match,
                                               int priority,
                                               String route,
-                                              Map<String,String> metadata) {
+                                              Map<String,String> metadata,
+                                              DaprTopicBulkSubscribe bulkSubscribe) {
     DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
 
     DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
@@ -88,6 +90,10 @@ class DaprRuntime {
 
     if (metadata != null && !metadata.isEmpty()) {
       builder.setMetadata(metadata);
+    }
+
+    if (bulkSubscribe != null) {
+      builder.setBulkSubscribe(bulkSubscribe);
     }
   }
 

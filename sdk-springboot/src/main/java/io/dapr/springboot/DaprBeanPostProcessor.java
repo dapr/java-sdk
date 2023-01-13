@@ -42,10 +42,6 @@ import java.util.Map;
 public class DaprBeanPostProcessor implements BeanPostProcessor {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  static final String BULK_SUBSCRIBE_METADATA_KEY = "bulkSubscribe";
-  static final String BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY = "maxBulkSubCount";
-  static final String BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY = "maxBulkSubAwaitDurationMs";
-
   private final EmbeddedValueResolver embeddedValueResolver;
 
   DaprBeanPostProcessor(ConfigurableBeanFactory beanFactory) {
@@ -93,14 +89,19 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
         continue;
       }
 
-      Map<String, String> bulkMetadata = new HashMap<>();
-      BulkSubscribe bulkSubscribe = method.getAnnotation(BulkSubscribe.class);
-      if (bulkSubscribe != null) {
-        bulkMetadata.put(BULK_SUBSCRIBE_METADATA_KEY, "true");
-        bulkMetadata.put(BULK_SUBSCRIBE_METADATA_MAX_COUNT_KEY,
-            String.valueOf(bulkSubscribe.maxBulkSubCount()));
-        bulkMetadata.put(BULK_SUBSCRIBE_METADATA_MAX_AWAIT_DURATION_MS_KEY,
-            String.valueOf(bulkSubscribe.maxBulkSubAwaitDurationMs()));
+      DaprTopicBulkSubscribe bulkSubscribe = null;
+      BulkSubscribe bulkSubscribeAnnotation = method.getAnnotation(BulkSubscribe.class);
+      if (bulkSubscribeAnnotation != null) {
+        bulkSubscribe = new DaprTopicBulkSubscribe(true);
+        int maxMessagesCount = bulkSubscribeAnnotation.maxMessagesCount();
+        if (maxMessagesCount != -1) {
+          bulkSubscribe.setMaxMessagesCount(maxMessagesCount);
+        }
+
+        int maxAwaitDurationMs = bulkSubscribeAnnotation.maxAwaitDurationMs();
+        if (maxAwaitDurationMs != -1) {
+          bulkSubscribe.setMaxAwaitDurationMs(maxAwaitDurationMs);
+        }
       }
 
       Rule rule = topic.rule();
@@ -111,16 +112,11 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
         try {
           TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String, String>>() {
           };
-
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
-
-          // Copy elements from bulk metadata to the request metadata.
-          metadata.putAll(bulkMetadata);
-
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
             daprRuntime.addSubscribedTopic(
-                pubSubName, topicName, match, rule.priority(), route, metadata);
+                pubSubName, topicName, match, rule.priority(), route, metadata, bulkSubscribe);
           }
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException("Error while parsing metadata: " + e);
