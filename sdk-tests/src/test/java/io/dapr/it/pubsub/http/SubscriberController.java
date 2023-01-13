@@ -16,11 +16,11 @@ package io.dapr.it.pubsub.http;
 import io.dapr.Rule;
 import io.dapr.Topic;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.client.domain.DaprBulkAppResponse;
-import io.dapr.client.domain.DaprBulkAppResponseEntry;
-import io.dapr.client.domain.DaprBulkAppResponseStatus;
-import io.dapr.client.domain.DaprBulkMessage;
-import io.dapr.client.domain.DaprBulkMessageEntry;
+import io.dapr.client.domain.BulkAppResponse;
+import io.dapr.client.domain.BulkAppResponseEntry;
+import io.dapr.client.domain.BulkAppResponseStatus;
+import io.dapr.client.domain.BulkMessage;
+import io.dapr.client.domain.BulkMessageEntry;
 import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,7 +53,7 @@ public class SubscriberController {
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV3 = new ArrayList();
 
-  private static final List<DaprBulkAppResponse> responsesReceivedTestingTopicBulk = new ArrayList<>();
+  private static final List<BulkAppResponse> responsesReceivedTestingTopicBulk = new ArrayList<>();
 
   @GetMapping(path = "/messages/testingtopic")
   public List<CloudEvent> getMessagesReceivedTestingTopic() {
@@ -71,7 +71,7 @@ public class SubscriberController {
   }
 
   @GetMapping(path = "/messages/topicBulkSub")
-  public List<DaprBulkAppResponse> getMessagesReceivedTestingTopicBulkSub() {
+  public List<BulkAppResponse> getMessagesReceivedTestingTopicBulkSub() {
     return responsesReceivedTestingTopicBulk;
   }
   
@@ -205,24 +205,24 @@ public class SubscriberController {
   @BulkSubscribe(maxMessagesCount = 100, maxAwaitDurationMs = 5000)
   @Topic(name = "topicBulkSub", pubsubName = "messagebus")
   @PostMapping(path = "/routeBulkSub")
-  public Mono<DaprBulkAppResponse> handleMessageBulk(@RequestBody(required = false) DaprBulkMessage<CloudEvent<String>> bulkMessage) {
+  public Mono<BulkAppResponse> handleMessageBulk(@RequestBody(required = false) BulkMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
       if (bulkMessage.getEntries().size() == 0) {
-        DaprBulkAppResponse response = new DaprBulkAppResponse(new ArrayList<DaprBulkAppResponseEntry>());
+        BulkAppResponse response = new BulkAppResponse(new ArrayList<BulkAppResponseEntry>());
         responsesReceivedTestingTopicBulk.add(response);
         return response;
       }
 
-      List<DaprBulkAppResponseEntry> entries = new ArrayList<DaprBulkAppResponseEntry>();
-      for (DaprBulkMessageEntry<?> entry: bulkMessage.getEntries()) {
+      List<BulkAppResponseEntry> entries = new ArrayList<BulkAppResponseEntry>();
+      for (BulkMessageEntry<?> entry: bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.getEntryID());
-          entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.SUCCESS));
+          entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.SUCCESS));
         } catch (Exception e) {
-          entries.add(new DaprBulkAppResponseEntry(entry.getEntryID(), DaprBulkAppResponseStatus.RETRY));
+          entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.RETRY));
         }
       }
-      DaprBulkAppResponse response = new DaprBulkAppResponse(entries);
+      BulkAppResponse response = new BulkAppResponse(entries);
       responsesReceivedTestingTopicBulk.add(response);
       return response;
     });

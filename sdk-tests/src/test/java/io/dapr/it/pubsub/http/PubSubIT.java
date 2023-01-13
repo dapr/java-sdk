@@ -18,9 +18,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.client.domain.DaprBulkAppResponse;
-import io.dapr.client.domain.DaprBulkAppResponseEntry;
-import io.dapr.client.domain.DaprBulkAppResponseStatus;
+import io.dapr.client.domain.BulkAppResponse;
+import io.dapr.client.domain.BulkAppResponseEntry;
+import io.dapr.client.domain.BulkAppResponseStatus;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
@@ -505,9 +505,9 @@ public class PubSubIT extends BaseIT {
         System.out.println("Checking results for topic " + BULK_SUB_TOPIC_NAME);
 
         @SuppressWarnings("unchecked")
-        Class<List<DaprBulkAppResponse>> clazz = (Class) List.class;
+        Class<List<BulkAppResponse>> clazz = (Class) List.class;
 
-        final List<DaprBulkAppResponse> messages = client.invokeMethod(
+        final List<BulkAppResponse> messages = client.invokeMethod(
                 appId,
                 "messages/" + BULK_SUB_TOPIC_NAME,
                 null,
@@ -515,7 +515,7 @@ public class PubSubIT extends BaseIT {
                 clazz).block();
 
         assertNotNull(messages);
-        DaprBulkAppResponse response = OBJECT_MAPPER.convertValue(messages.get(0), DaprBulkAppResponse.class);
+        BulkAppResponse response = OBJECT_MAPPER.convertValue(messages.get(0), BulkAppResponse.class);
 
         // There should be a single bulk response.
         assertEquals(1, messages.size());
@@ -524,8 +524,8 @@ public class PubSubIT extends BaseIT {
         assertEquals(NUM_MESSAGES, response.getStatuses().size());
 
         // All the entries should be SUCCESS.
-        for (DaprBulkAppResponseEntry entry : response.getStatuses()) {
-          assertEquals(entry.getStatus(), DaprBulkAppResponseStatus.SUCCESS);
+        for (BulkAppResponseEntry entry : response.getStatuses()) {
+          assertEquals(entry.getStatus(), BulkAppResponseStatus.SUCCESS);
         }
       }, 2000);
     }
