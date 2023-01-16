@@ -113,7 +113,7 @@ public class MethodInvokeIT extends BaseIT {
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
 
             assertEquals("INTERNAL", exception.getErrorCode());
-            assertEquals("INTERNAL: fail to invoke, id: MethodInvokeIT_MethodInvokeService, err: message is nil",
+            assertEquals("INTERNAL: fail to invoke, id: methodinvokeit-methodinvokeservice, err: message is nil",
                 exception.getMessage());
         }
     }

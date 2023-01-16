@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * SpringBoot Controller to handle input binding.
@@ -28,11 +30,20 @@ import java.util.List;
 @RestController
 public class InputBindingController {
 
-  private static final List<String> messagesReceived = new ArrayList();
+  private static final List<String> messagesReceived = Collections.synchronizedList(new ArrayList());
+
+  private static final AtomicBoolean initialized = new AtomicBoolean(false);
 
   @PostMapping(path = "/sample123")
   @PutMapping(path = "/sample123")
   public void handleInputBinding(@RequestBody(required = false) String body) {
+    if ("\"ping\"".equals(body)) {
+      // Initialization messages are useful to detect if input binding is up.
+      initialized.set(true);
+      System.out.println("Input binding is up: " + body);
+      return;
+    }
+
     messagesReceived.add(body);
     System.out.println("Received message through binding: " + (body == null ? "" : body));
   }
@@ -49,6 +60,13 @@ public class InputBindingController {
 
   @GetMapping(path = "/health")
   public void health() {
+  }
+
+  @GetMapping(path = "/initialized")
+  public void initialized() {
+    if (!initialized.get()) {
+      throw new RuntimeException("Input binding is not initialized yet.");
+    }
   }
 
 }
