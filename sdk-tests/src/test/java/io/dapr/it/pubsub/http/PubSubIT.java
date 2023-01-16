@@ -17,10 +17,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.client.domain.BulkAppResponse;
-import io.dapr.client.domain.BulkAppResponseEntry;
-import io.dapr.client.domain.BulkAppResponseStatus;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
@@ -505,9 +505,9 @@ public class PubSubIT extends BaseIT {
         System.out.println("Checking results for topic " + BULK_SUB_TOPIC_NAME);
 
         @SuppressWarnings("unchecked")
-        Class<List<BulkAppResponse>> clazz = (Class) List.class;
+        Class<List<BulkSubscribeAppResponse>> clazz = (Class) List.class;
 
-        final List<BulkAppResponse> messages = client.invokeMethod(
+        final List<BulkSubscribeAppResponse> messages = client.invokeMethod(
                 appId,
                 "messages/" + BULK_SUB_TOPIC_NAME,
                 null,
@@ -515,7 +515,7 @@ public class PubSubIT extends BaseIT {
                 clazz).block();
 
         assertNotNull(messages);
-        BulkAppResponse response = OBJECT_MAPPER.convertValue(messages.get(0), BulkAppResponse.class);
+        BulkSubscribeAppResponse response = OBJECT_MAPPER.convertValue(messages.get(0), BulkSubscribeAppResponse.class);
 
         // There should be a single bulk response.
         assertEquals(1, messages.size());
@@ -524,8 +524,8 @@ public class PubSubIT extends BaseIT {
         assertEquals(NUM_MESSAGES, response.getStatuses().size());
 
         // All the entries should be SUCCESS.
-        for (BulkAppResponseEntry entry : response.getStatuses()) {
-          assertEquals(entry.getStatus(), BulkAppResponseStatus.SUCCESS);
+        for (BulkSubscribeAppResponseEntry entry : response.getStatuses()) {
+          assertEquals(entry.getStatus(), BulkSubscribeAppResponseStatus.SUCCESS);
         }
       }, 2000);
     }
