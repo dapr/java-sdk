@@ -91,9 +91,11 @@ class DaprSubscriptionBuilder {
   /**
    * Sets the bulkSubscribe configuration for the subscription.
    * @param bulkSubscribe The bulk subscribe configuration.
+   * @return this instance.
    */
-  public void setBulkSubscribe(DaprTopicBulkSubscribe bulkSubscribe) {
+  public DaprSubscriptionBuilder setBulkSubscribe(DaprTopicBulkSubscribe bulkSubscribe) {
     this.bulkSubscribe = bulkSubscribe;
+    return this;
   }
 
   /**
@@ -113,12 +115,7 @@ class DaprSubscriptionBuilder {
       route = defaultPath;
     }
 
-    DaprTopicSubscription subscription =
-            new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata);
-    if (bulkSubscribe != null) {
-      subscription.setBulkSubscribe(bulkSubscribe);
-    }
-    return subscription;
+    return new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata, bulkSubscribe);
   }
 
   private static class TopicRule {

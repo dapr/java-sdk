@@ -36,7 +36,7 @@ class DaprRuntime {
    * DaprRuntime should be used as a singleton, using {@link DaprRuntime#getInstance()}.
    * The constructor's default scope is available for unit tests only.
    */
-  DaprRuntime() {
+  private DaprRuntime() {
   }
 
   /**
@@ -65,15 +65,13 @@ class DaprRuntime {
    * @param priority Priority for this match relative to others.
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
-   * @param bulkSubscribe Bulk Subscribe configuration.
    */
   public synchronized void addSubscribedTopic(String pubSubName,
                                               String topicName,
                                               String match,
                                               int priority,
                                               String route,
-                                              Map<String,String> metadata,
-                                              DaprTopicBulkSubscribe bulkSubscribe) {
+                                              Map<String,String> metadata) {
     DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
 
     DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
@@ -91,10 +89,40 @@ class DaprRuntime {
     if (metadata != null && !metadata.isEmpty()) {
       builder.setMetadata(metadata);
     }
+  }
 
-    if (bulkSubscribe != null) {
-      builder.setBulkSubscribe(bulkSubscribe);
+  /**
+   * Adds a topic to the list of subscribed topics.
+   *
+   * @param pubSubName PubSub name to subscribe to.
+   * @param topicName Name of the topic being subscribed to.
+   * @param match Match expression for this route.
+   * @param priority Priority for this match relative to others.
+   * @param route Destination route for requests.
+   * @param metadata Metadata for extended subscription functionality.
+   * @param bulkSubscribe Bulk subscribe configuration.
+   */
+  public synchronized void addSubscribedTopic(String pubSubName,
+                                              String topicName,
+                                              String match,
+                                              int priority,
+                                              String route,
+                                              Map<String,String> metadata,
+                                              DaprTopicBulkSubscribe bulkSubscribe) {
+    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, metadata);
+
+    if (bulkSubscribe == null) {
+      return;
     }
+
+    DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
+    DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
+    if (builder == null) {
+     // Builder should have been instantiated in the other overload.
+     throw new RuntimeException("Builder cannot be null");
+    }
+
+    builder.setBulkSubscribe(bulkSubscribe);
   }
 
   public synchronized DaprTopicSubscription[] listSubscribedTopics() {

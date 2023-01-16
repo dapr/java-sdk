@@ -202,17 +202,17 @@ public class SubscriberController {
         return new BulkAppResponse(new ArrayList<BulkAppResponseEntry>());
       }
 
-      System.out.println("Bulk Subscriber got #" + bulkMessage.getEntries().size() + " messages.");
+      System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
 
       List<BulkAppResponseEntry> entries = new ArrayList<BulkAppResponseEntry>();
-      for (BulkMessageEntry<?> entry: bulkMessage.getEntries()) {
+      for (BulkMessageEntry<?> entry : bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryID());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
           System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
           entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.SUCCESS));
         } catch (Exception e) {
-          System.err.println(e.toString());
+          e.printStackTrace();
           entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.RETRY));
         }
       }

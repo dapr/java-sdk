@@ -36,9 +36,9 @@ public class DaprRuntimeTest {
 
     // We should be able to register the same route multiple times
     runtime.addSubscribedTopic(
-            pubSubName, topicName, match, rule.priority(), route, metadata, null);
+            pubSubName, topicName, match, rule.priority(), route, metadata);
     runtime.addSubscribedTopic(
-            pubSubName, topicName, match, rule.priority(), route, metadata, null);
+            pubSubName, topicName, match, rule.priority(), route, metadata);
   }
 
   @Test(expected = RuntimeException.class)
@@ -70,11 +70,11 @@ public class DaprRuntimeTest {
 
     Assert.assertNotNull(runtime);
     runtime.addSubscribedTopic(
-            pubSubName, topicName, match, rule.priority(), firstRoute, metadata, null);
+            pubSubName, topicName, match, rule.priority(), firstRoute, metadata);
 
     // Supplying the same pubsub bits but a different route should fail
     runtime.addSubscribedTopic(
-            pubSubName, topicName, match, rule.priority(), secondRoute, metadata, null);
+            pubSubName, topicName, match, rule.priority(), secondRoute, metadata);
 
   }
 

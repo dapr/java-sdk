@@ -25,7 +25,7 @@ class DaprTopicSubscription {
   private final String route;
   private final DaprTopicRoutes routes;
   private final Map<String, String> metadata;
-  private DaprTopicBulkSubscribe bulkSubscribe;
+  private final DaprTopicBulkSubscribe bulkSubscribe;
 
   /**
    * Create a subscription topic.
@@ -48,11 +48,26 @@ class DaprTopicSubscription {
    */
   DaprTopicSubscription(String pubsubName, String topic, String route, DaprTopicRoutes routes,
                         Map<String, String> metadata) {
+    this(pubsubName, topic, route, routes, metadata, null);
+  }
+
+  /**
+   * Create a subscription topic.
+   * @param pubsubName The pubsub name to subscribe to.
+   * @param topic The topic to subscribe to.
+   * @param route Destination route for messages.
+   * @param routes Destination routes with rules for messages.
+   * @param metadata Metadata for extended subscription functionality.
+   * @param bulkSubscribe Bulk subscribe configuration.
+   */
+  DaprTopicSubscription(String pubsubName, String topic, String route, DaprTopicRoutes routes,
+                        Map<String, String> metadata, DaprTopicBulkSubscribe bulkSubscribe) {
     this.pubsubName = pubsubName;
     this.topic = topic;
     this.route = route;
     this.routes = routes;
     this.metadata = Collections.unmodifiableMap(metadata);
+    this.bulkSubscribe = bulkSubscribe;
   }
 
   public String getPubsubName() {
@@ -77,9 +92,5 @@ class DaprTopicSubscription {
 
   public DaprTopicBulkSubscribe getBulkSubscribe() {
     return bulkSubscribe;
-  }
-
-  public void setBulkSubscribe(DaprTopicBulkSubscribe bulkSubscribe) {
-    this.bulkSubscribe = bulkSubscribe;
   }
 }

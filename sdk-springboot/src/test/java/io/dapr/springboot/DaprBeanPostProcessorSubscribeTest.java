@@ -15,9 +15,9 @@ package io.dapr.springboot;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.springframework.util.StringValueResolver;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ public class DaprBeanPostProcessorSubscribeTest {
             "subscribeToTopics", Class.class, StringValueResolver.class, DaprRuntime.class);
     subscribeToTopicsMethod.setAccessible(true);
 
-    DaprRuntime runtime = new DaprRuntime();
+    DaprRuntime runtime = getDaprRuntime();
 
     try {
       subscribeToTopicsMethod.invoke(DaprBeanPostProcessor.class, MockControllerWithSubscribe.class,
@@ -89,5 +89,15 @@ public class DaprBeanPostProcessorSubscribeTest {
     daprTopicSubscriptions[1].setBulkSubscribe(bulkSubscribe);
 
     return daprTopicSubscriptions;
+  }
+
+  private DaprRuntime getDaprRuntime() {
+    try {
+      Constructor<DaprRuntime> constructor = DaprRuntime.class.getDeclaredConstructor();
+      constructor.setAccessible(true);
+      return constructor.newInstance();
+    }catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+      throw new RuntimeException(e.getMessage());
+    }
   }
 }
