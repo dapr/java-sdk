@@ -13,57 +13,44 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Represents a bulk of messages received from the message bus.
  */
-public class BulkMessage<T> {
-  private List<BulkMessageEntry<T>> entries;
-  private String topic;
-  private Map<String, String> metadata;
+public final class BulkPubSubMessage<T> {
+  private final List<BulkPubSubMessageEntry<T>> entries;
+  private final String topic;
+  private final Map<String, String> metadata;
 
   /**
-   * Instantiate a BulkMessage.
-   */
-  public BulkMessage() {
-  }
-
-  /**
-   * Instantiate a BulkMessage.
-   * @param entries mapping from bulk message entry ID to a status.
+   * Instantiate a BulkPubSubMessage.
+   * @param entries mapping from bulk pubSub message entry ID to a status.
    * @param topic pubSub topic.
    * @param metadata metadata for the bulk message.
    */
-  public BulkMessage(List<BulkMessageEntry<T>> entries, String topic, Map<String, String> metadata) {
-    this.entries = entries == null ? null : Collections.unmodifiableList(entries);
+  public BulkPubSubMessage(List<BulkPubSubMessageEntry<T>> entries, String topic, Map<String, String> metadata) {
+    this.entries = new ArrayList<>();
+    this.entries.addAll(entries);
+
     this.topic = topic;
-    this.metadata = metadata;
+
+    this.metadata = new HashMap<>();
+    this.metadata.putAll(metadata);
   }
 
-  public List<BulkMessageEntry<T>> getEntries() {
-    return entries == null ? null : Collections.unmodifiableList(entries);
-  }
-
-  public void setEntries(List<BulkMessageEntry<T>> entries) {
-    this.entries = entries == null ? null : Collections.unmodifiableList(entries);
+  public List<BulkPubSubMessageEntry<T>> getEntries() {
+    return entries;
   }
 
   public String getTopic() {
     return topic;
   }
 
-  public void setTopic(String topic) {
-    this.topic = topic;
-  }
-
   public Map<String, String> getMetadata() {
     return metadata;
-  }
-
-  public void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
   }
 }

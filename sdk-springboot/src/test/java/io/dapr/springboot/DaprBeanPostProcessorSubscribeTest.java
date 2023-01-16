@@ -84,9 +84,8 @@ public class DaprBeanPostProcessorSubscribeTest {
             MockControllerWithSubscribe.pubSubName,
             MockControllerWithSubscribe.bulkTopicName,
             MockControllerWithSubscribe.bulkSubscribeRoute,
-            new HashMap<>());
-
-    daprTopicSubscriptions[1].setBulkSubscribe(bulkSubscribe);
+            new HashMap<>(),
+            bulkSubscribe);
 
     return daprTopicSubscriptions;
   }

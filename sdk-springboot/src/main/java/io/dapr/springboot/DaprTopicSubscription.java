@@ -35,7 +35,19 @@ class DaprTopicSubscription {
    * @param metadata Metdata for extended subscription functionality.
    */
   DaprTopicSubscription(String pubsubName, String topic, String route, Map<String, String> metadata) {
-    this(pubsubName, topic, route, null, metadata);
+    this(pubsubName, topic, route, metadata, null);
+  }
+
+  /**
+   * Create a subscription topic.
+   * @param pubsubName The pubsub name to subscribe to.
+   * @param topic The topic to subscribe to.
+   * @param route Destination route for messages.
+   * @param metadata Metdata for extended subscription functionality.
+   */
+  DaprTopicSubscription(String pubsubName, String topic, String route,
+                        Map<String, String> metadata, DaprTopicBulkSubscribe bulkSubscribe) {
+    this(pubsubName, topic, route, null, metadata, bulkSubscribe);
   }
 
   /**

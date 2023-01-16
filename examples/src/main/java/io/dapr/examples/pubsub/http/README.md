@@ -94,12 +94,12 @@ public class SubscriberController {
   @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
   public Mono<BulkAppResponse> handleBulkMessage(
-          @RequestBody(required = false) BulkMessage<CloudEvent<String>> bulkMessage) {
+          @RequestBody(required = false) BulkMessage<CloudEvent<String>> bulkPubSubMessage) {
     return Mono.fromCallable(() -> {
-      System.out.println("Bulk Subscriber got #" + bulkMessage.getEntries().size() + " messages.");
+      System.out.println("Bulk Subscriber got #" + bulkPubSubMessage.getEntries().size() + " messages.");
 
       List<BulkAppResponseEntry> entries = new ArrayList<BulkAppResponseEntry>();
-      for (BulkMessageEntry<?> entry : bulkMessage.getEntries()) {
+      for (BulkMessageEntry<?> entry : bulkPubSubMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryID());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();

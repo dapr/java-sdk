@@ -13,71 +13,49 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Represents a single event from a bulk of messages sent by the message bus.
  * @param <T> Type of event.
  */
-public class BulkMessageEntry<T> {
+public final class BulkPubSubMessageEntry<T> {
 
-  @JsonProperty("entryId")
-  private String entryID;
-  private T event;
-  private String contentType;
-  private Map<String, String> metadata;
-
-  /**
-   * Instantiate a BulkMessageEntry.
-   */
-  public BulkMessageEntry() {
-  }
+  private final String entryId;
+  private final T event;
+  private final String contentType;
+  private final Map<String, String> metadata;
 
   /**
-   * Instantiate a BulkMessageEntry.
-   * @param entryID unique identifier for the event.
+   * Instantiate a BulkPubSubMessageEntry.
+   * @param entryId unique identifier for the event.
    * @param event pubSub event.
    * @param contentType content type of the event.
    * @param metadata metadata for the event.
    */
-  public BulkMessageEntry(String entryID, T event, String contentType, Map<String, String> metadata) {
-    this.entryID = entryID;
+  public BulkPubSubMessageEntry(String entryId, T event, String contentType, Map<String, String> metadata) {
+    this.entryId = entryId;
     this.event = event;
     this.contentType = contentType;
-    this.metadata = metadata;
+
+    this.metadata = new HashMap<>();
+    this.metadata.putAll(metadata);
   }
 
-  public String getEntryID() {
-    return entryID;
-  }
-
-  public void setEntryID(String entryID) {
-    this.entryID = entryID;
+  public String getEntryId() {
+    return entryId;
   }
 
   public T getEvent() {
     return event;
   }
 
-  public void setEvent(T event) {
-    this.event = event;
-  }
-
   public String getContentType() {
     return contentType;
   }
 
-  public void setContentType(String contentType) {
-    this.contentType = contentType;
-  }
-
   public Map<String, String> getMetadata() {
     return metadata;
-  }
-
-  public void setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata;
   }
 }

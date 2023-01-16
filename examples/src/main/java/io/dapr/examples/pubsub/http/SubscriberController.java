@@ -16,11 +16,11 @@ package io.dapr.examples.pubsub.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Rule;
 import io.dapr.Topic;
-import io.dapr.client.domain.BulkAppResponse;
-import io.dapr.client.domain.BulkAppResponseEntry;
-import io.dapr.client.domain.BulkAppResponseStatus;
-import io.dapr.client.domain.BulkMessage;
-import io.dapr.client.domain.BulkMessageEntry;
+import io.dapr.client.domain.BulkPubSubMessage;
+import io.dapr.client.domain.BulkPubSubMessageEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,34 +82,34 @@ public class SubscriberController {
   /**
    * Handles a registered subscribe endpoint on this app using bulk subscribe.
    * 
-   * @param bulkMessage The bulk message received.
+   * @param bulkMessage The bulk pubSub message received.
    * @return A list of responses for each event.
    */
   @BulkSubscribe()
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopicbulk")
-  public Mono<BulkAppResponse> handleBulkMessage(
-      @RequestBody(required = false) BulkMessage<CloudEvent<String>> bulkMessage) {
+  public Mono<BulkSubscribeAppResponse> handleBulkMessage(
+      @RequestBody(required = false) BulkPubSubMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
       if (bulkMessage.getEntries().size() == 0) {
-        return new BulkAppResponse(new ArrayList<BulkAppResponseEntry>());
+        return new BulkSubscribeAppResponse(new ArrayList<BulkSubscribeAppResponseEntry>());
       }
 
       System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
 
-      List<BulkAppResponseEntry> entries = new ArrayList<BulkAppResponseEntry>();
-      for (BulkMessageEntry<?> entry : bulkMessage.getEntries()) {
+      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
+      for (BulkPubSubMessageEntry<?> entry : bulkMessage.getEntries()) {
         try {
-          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryID());
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
           System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
-          entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.SUCCESS));
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
         } catch (Exception e) {
           e.printStackTrace();
-          entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.RETRY));
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
         }
       }
-      return new BulkAppResponse(entries);
+      return new BulkSubscribeAppResponse(entries);
     });
   }
 }

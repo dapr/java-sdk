@@ -72,23 +72,7 @@ class DaprRuntime {
                                               int priority,
                                               String route,
                                               Map<String,String> metadata) {
-    DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
-
-    DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
-    if (builder == null) {
-      builder = new DaprSubscriptionBuilder(pubSubName, topicName);
-      subscriptionBuilders.put(topicKey, builder);
-    }
-
-    if (match.length() > 0) {
-      builder.addRule(route, match, priority);
-    } else {
-      builder.setDefaultPath(route);
-    }
-
-    if (metadata != null && !metadata.isEmpty()) {
-      builder.setMetadata(metadata);
-    }
+    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, metadata, null);
   }
 
   /**
@@ -109,20 +93,27 @@ class DaprRuntime {
                                               String route,
                                               Map<String,String> metadata,
                                               DaprTopicBulkSubscribe bulkSubscribe) {
-    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, metadata);
-
-    if (bulkSubscribe == null) {
-      return;
-    }
-
     DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
+
     DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
     if (builder == null) {
-     // Builder should have been instantiated in the other overload.
-     throw new RuntimeException("Builder cannot be null");
+      builder = new DaprSubscriptionBuilder(pubSubName, topicName);
+      subscriptionBuilders.put(topicKey, builder);
     }
 
-    builder.setBulkSubscribe(bulkSubscribe);
+    if (match.length() > 0) {
+      builder.addRule(route, match, priority);
+    } else {
+      builder.setDefaultPath(route);
+    }
+
+    if (metadata != null && !metadata.isEmpty()) {
+      builder.setMetadata(metadata);
+    }
+
+    if (bulkSubscribe != null) {
+      builder.setBulkSubscribe(bulkSubscribe);
+    }
   }
 
   public synchronized DaprTopicSubscription[] listSubscribedTopics() {
