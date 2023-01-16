@@ -39,9 +39,6 @@ public class Publisher {
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
 
-  // Topic registered with Bulk Subscribe handler.
-  private static final String BULK_SUB_TOPIC_NAME = "testingtopicbulk";
-
   //The name of the pubsub
   private static final String PUBSUB_NAME = "messagebus";
 
@@ -51,21 +48,17 @@ public class Publisher {
    * @throws Exception A startup Exception.
    */
   public static void main(String[] args) throws Exception {
+    String topicName = getTopicName(args);
     try (DaprClient client = new DaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d", i);
-        // Publish messages to all topics.
+        // Publishing messages
         client.publishEvent(
             PUBSUB_NAME,
-            TOPIC_NAME,
+            topicName,
             message,
             singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
 
-        client.publishEvent(
-            PUBSUB_NAME,
-            BULK_SUB_TOPIC_NAME,
-            message,
-            singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
         System.out.println("Published message: " + message);
 
         try {
@@ -81,5 +74,18 @@ public class Publisher {
       // Normally a dapr app would be a web service and not exit main.
       System.out.println("Done.");
     }
+  }
+
+  /**
+   * If a topic is specified in args, use that.
+   * Else, fallback to the default topic.
+   * @param args program arguments
+   * @return name of the topic to publish messages to.
+   */
+  private static String getTopicName(String[] args) {
+    if (args.length >= 1) {
+      return args[0];
+    }
+    return TOPIC_NAME;
   }
 }

@@ -13,10 +13,14 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Maps an entry from bulk subscribe messages to a response status.
  */
 public class BulkAppResponseEntry {
+
+  @JsonProperty("entryId")
   private String entryID;
   private BulkAppResponseStatus status;
 

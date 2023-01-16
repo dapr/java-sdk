@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Map;
 
 /**
@@ -20,10 +22,11 @@ import java.util.Map;
  * @param <T> Type of event.
  */
 public class BulkMessageEntry<T> {
+
+  @JsonProperty("entryId")
   private String entryID;
   private T event;
   private String contentType;
-
   private Map<String, String> metadata;
 
   /**
