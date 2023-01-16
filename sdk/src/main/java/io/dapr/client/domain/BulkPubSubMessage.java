@@ -13,8 +13,10 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -32,14 +34,14 @@ public final class BulkPubSubMessage<T> {
    * @param topic pubSub topic.
    * @param metadata metadata for the bulk message.
    */
-  public BulkPubSubMessage(List<BulkPubSubMessageEntry<T>> entries, String topic, Map<String, String> metadata) {
-    this.entries = new ArrayList<>();
-    this.entries.addAll(entries);
-
+  @JsonCreator
+  public BulkPubSubMessage(
+          @JsonProperty("entries") List<BulkPubSubMessageEntry<T>> entries,
+          @JsonProperty("topic") String topic,
+          @JsonProperty("metadata") Map<String, String> metadata) {
+    this.entries = Collections.unmodifiableList(entries);
     this.topic = topic;
-
-    this.metadata = new HashMap<>();
-    this.metadata.putAll(metadata);
+    this.metadata = Collections.unmodifiableMap(metadata);
   }
 
   public List<BulkPubSubMessageEntry<T>> getEntries() {

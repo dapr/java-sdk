@@ -13,6 +13,11 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,7 +26,6 @@ import java.util.Map;
  * @param <T> Type of event.
  */
 public final class BulkPubSubMessageEntry<T> {
-
   private final String entryId;
   private final T event;
   private final String contentType;
@@ -34,13 +38,20 @@ public final class BulkPubSubMessageEntry<T> {
    * @param contentType content type of the event.
    * @param metadata metadata for the event.
    */
-  public BulkPubSubMessageEntry(String entryId, T event, String contentType, Map<String, String> metadata) {
+  @JsonCreator
+  public BulkPubSubMessageEntry(
+          @JsonProperty("entryId") String entryId,
+          @JsonProperty("event") T event,
+          @JsonProperty("contentType") String contentType,
+          @JsonProperty("metadata") Map<String, String> metadata) {
     this.entryId = entryId;
     this.event = event;
     this.contentType = contentType;
 
-    this.metadata = new HashMap<>();
-    this.metadata.putAll(metadata);
+    if (metadata == null) {
+      metadata = new HashMap<>();
+    }
+    this.metadata = Collections.unmodifiableMap(metadata);
   }
 
   public String getEntryId() {
