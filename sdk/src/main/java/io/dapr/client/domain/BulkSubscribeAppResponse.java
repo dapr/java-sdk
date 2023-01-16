@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +29,9 @@ public final class BulkSubscribeAppResponse {
    * Instantiate a BulkSubscribeAppResponse.
    * @param statuses list of statuses.
    */
-  public BulkSubscribeAppResponse(List<BulkSubscribeAppResponseEntry> statuses) {
+  @JsonCreator
+  public BulkSubscribeAppResponse(
+          @JsonProperty("statuses") List<BulkSubscribeAppResponseEntry> statuses) {
     this.statuses = new ArrayList<>();
     this.statuses.addAll(statuses);
   }

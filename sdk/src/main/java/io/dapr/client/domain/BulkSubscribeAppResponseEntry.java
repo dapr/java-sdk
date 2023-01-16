@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Maps entries from a bulk publish message to a response status.
  */
@@ -26,7 +29,10 @@ public final class BulkSubscribeAppResponseEntry {
    * @param entryId entry ID of the event.
    * @param status status of the event processing in application.
    */
-  public BulkSubscribeAppResponseEntry(String entryId, BulkSubscribeAppResponseStatus status) {
+  @JsonCreator
+  public BulkSubscribeAppResponseEntry(
+          @JsonProperty("entryId") String entryId,
+          @JsonProperty("status") BulkSubscribeAppResponseStatus status) {
     this.entryId = entryId;
     this.status = status;
   }
