@@ -7,8 +7,3 @@ spec:
     samplingRate: "1"
     zipkin:
       endpointAddress: http://localhost:9411/api/v2/spans
-  features:
-    - name: PubSub.Routing
-      enabled: true
-    - name: AppHealthCheck
-      enabled: true
