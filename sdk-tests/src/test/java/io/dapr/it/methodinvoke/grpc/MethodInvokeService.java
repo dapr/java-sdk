@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.it.methodinvoke.grpc;
 
 import com.google.protobuf.Any;
+import io.dapr.grpc.GrpcHealthCheckService;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.CommonProtos;
 import io.grpc.Server;
@@ -60,6 +61,7 @@ public class MethodInvokeService {
       this.server = ServerBuilder
           .forPort(port)
           .addService(this)
+          .addService(new GrpcHealthCheckService())
           .build()
           .start();
       System.out.printf("Server: started listening on port %d\n", port);
