@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,5 +57,9 @@ public class ConfigSubscriberController {
         }
       }
     );
+  }
+
+  @GetMapping(path = "/health")
+  public void health() {
   }
 }

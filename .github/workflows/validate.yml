@@ -41,7 +41,7 @@ jobs:
       DAPR_RUNTIME_VER: 1.9.3
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF: c73b9596979ecf15b8207cd9baec86ab158be91d
+      DAPR_REF: a8c698ad897e42d6624f5fc6ccfd0630e2a8fd00
     steps:
       - uses: actions/checkout@v3
       - name: Set up OpenJDK ${{ env.JDK_VER }}
