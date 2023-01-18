@@ -429,7 +429,6 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   @Override
   public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
                                                         Map<String, String> requestMetadata, List<T> events) {
-    BulkPublishRequest<T> request = new BulkPublishRequest<>(pubsubName, topicName);
     if (events == null || events.size() == 0) {
       throw new IllegalArgumentException("list of events cannot be null or empty");
     }
@@ -438,8 +437,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
       // entryID field is generated based on order of events in the request
       entries.add(new BulkPublishEntry<>("" + i, events.get(i), contentType, null));
     }
-    request.setMetadata(requestMetadata);
-    return publishEvents(request.setEntries(entries));
+    return publishEvents(new BulkPublishRequest<>(pubsubName, topicName, entries, requestMetadata));
   }
 
   /**

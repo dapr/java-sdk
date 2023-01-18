@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub.bulk;
+package io.dapr.examples.pubsub;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
@@ -37,16 +37,16 @@ import static io.dapr.examples.OpenTelemetryConfig.getReactorContext;
  * 2. cd [repo root]/examples
  * 3. Run the program:
  * dapr run --components-path ./components/pubsub --app-id bulk-publisher -- \
- * java -Ddapr.grpc.port="50010" -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.bulk.BulkPublisher
+ * java -Ddapr.grpc.port="50010" -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.BulkPublisher
  */
 public class BulkPublisher {
 
   private static final int NUM_MESSAGES = 10;
 
-  private static final String TOPIC_NAME = "kafkatestingtopic";
+  private static final String TOPIC_NAME = "bulkpublishtesting";
 
   //The name of the pubsub
-  private static final String PUBSUB_NAME = "kafka-pubsub";
+  private static final String PUBSUB_NAME = "messagebus";
 
   /**
    * main method.

@@ -261,7 +261,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
               )
       ).map(
           it -> {
-            BulkPublishResponse<T> response = new BulkPublishResponse<>();
             List<BulkPublishResponseFailedEntry<T>> entries = new ArrayList<>();
             for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
               BulkPublishResponseFailedEntry<T> domainEntry = new BulkPublishResponseFailedEntry<T>();
@@ -269,8 +268,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
               domainEntry.setErrorMessage(entry.getError());
               entries.add(domainEntry);
             }
-            response.setFailedEntries(entries);
-            return response;
+            if (entries.size() > 0) {
+              return new BulkPublishResponse<>(entries);
+            }
+            return new BulkPublishResponse<>();
           }
       );
     } catch (RuntimeException ex) {

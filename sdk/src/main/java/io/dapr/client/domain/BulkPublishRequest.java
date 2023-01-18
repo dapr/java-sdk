@@ -29,12 +29,12 @@ public class BulkPublishRequest<T> {
   /**
    * The name of the pubsub to publish to.
    */
-  private String pubsubName;
+  private final String pubsubName;
 
   /**
    * The name of the topic to publish to.
    */
-  private String topic;
+  private final String topic;
 
   /**
    * The metadata for the request sent to the pubsub broker.
@@ -45,17 +45,19 @@ public class BulkPublishRequest<T> {
   /**
    * The list of entry objects that make up this request.
    */
-  private List<BulkPublishEntry<T>> entries;
+  private final List<BulkPublishEntry<T>> entries;
 
   /**
    * Constructor for BulkPublishRequest.
    * @param pubsubName Name of the pubsub to publish to.
    * @param topic      Name of the topic to publish to.
+   * @param entries    List of {@link BulkPublishEntry} objects.
    */
-  public BulkPublishRequest(String pubsubName, String topic) {
+  public BulkPublishRequest(String pubsubName, String topic, List<BulkPublishEntry<T>> entries) {
     this.pubsubName = pubsubName;
     this.topic = topic;
-    this.entries = Collections.unmodifiableList(new ArrayList<>());
+    this.entries = entries == null ? Collections.unmodifiableList(new ArrayList<>()) :
+        Collections.unmodifiableList(entries);
   }
 
   /**
@@ -63,17 +65,17 @@ public class BulkPublishRequest<T> {
    *
    * @param pubsubName Name of the pubsub to publish to.
    * @param topic      Name of the topic to publish to.
+   * @param entries    List of {@link BulkPublishEntry} objects.
    * @param metadata   Metadata for the request.
-   * @param entries    List of BulkPublishRequestEntry objects.
    */
-  public BulkPublishRequest(String pubsubName, String topic, Map<String, String> metadata,
-                            List<BulkPublishEntry<T>> entries) {
+  public BulkPublishRequest(String pubsubName, String topic, List<BulkPublishEntry<T>> entries,
+                            Map<String, String> metadata) {
     this.pubsubName = pubsubName;
     this.topic = topic;
-    this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
-        Collections.unmodifiableMap(metadata);
     this.entries = entries == null ? Collections.unmodifiableList(new ArrayList<>()) :
         Collections.unmodifiableList(entries);
+    this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
+        Collections.unmodifiableMap(metadata);
   }
 
   public String getPubsubName() {
@@ -97,8 +99,4 @@ public class BulkPublishRequest<T> {
     return entries;
   }
 
-  public BulkPublishRequest<T> setEntries(List<BulkPublishEntry<T>> entries) {
-    this.entries = entries == null ? null : Collections.unmodifiableList(entries);
-    return this;
-  }
 }

@@ -228,12 +228,11 @@ public class PubSubIT extends BaseIT {
       cloudEvent.setSpecversion("1");
       cloudEvent.setType("myevent");
       cloudEvent.setDatacontenttype("text/plain");
-      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_BULK);
-      req.setEntries(Collections.singletonList(
-          new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
-      ));
+      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_BULK,
+          Collections.singletonList(
+              new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
+          ));
 
-      new BulkPublishRequest<CloudEvent>(PUBSUB_NAME, TOPIC_BULK);
       //Publishing a cloud event.
       previewClient.publishEvents(req).block();
       Assert.assertNotNull("expected not null bulk publish response", response);

@@ -17,6 +17,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,7 @@ public class BulkPublishRequestTest {
 
   @Test
   public void testSetMetadata() {
-    BulkPublishRequest<String> request = new BulkPublishRequest<>("testPubsub", "testTopic");
+    BulkPublishRequest<String> request = new BulkPublishRequest<>("testPubsub", "testTopic", Collections.emptyList());
     // Null check
     request.setMetadata(null);
     assertNull(request.getMetadata());
@@ -38,21 +39,5 @@ public class BulkPublishRequestTest {
     Map<String, String> initial = request.getMetadata();
     request.setMetadata(metadata);
     Assert.assertNotSame("Should not be same map", request.getMetadata(), initial);
-  }
-
-  @Test
-  public void testSetEntries() {
-    BulkPublishRequest<String> request = new BulkPublishRequest<>("testPubsub", "testTopic");
-    // Null check
-    request.setEntries(null);
-    assertNull(request.getEntries());
-    // Modifiability check
-    BulkPublishEntry<String> testEntry = new BulkPublishEntry<>("1", "test event", "text/plain", null);
-    List<BulkPublishEntry<String>> entryList = new ArrayList<>();
-    entryList.add(testEntry);
-    request.setEntries(entryList);
-    List<BulkPublishEntry<String>> initial = request.getEntries();
-    request.setEntries(entryList);
-    Assert.assertNotSame("Should not be same map", request.getEntries(), initial);
   }
 }

@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub.bulk;
+package io.dapr.examples.pubsub;
 
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
@@ -35,16 +35,16 @@ import java.util.UUID;
  * 3. Run the program:
  * dapr run --components-path ./components/pubsub --app-id publisher -- \
  * java -Ddapr.grpc.port="50010" \
- * -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.bulk.CloudEventBulkPublisher
+ * -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.CloudEventBulkPublisher
  */
 public class CloudEventBulkPublisher {
 
   private static final int NUM_MESSAGES = 10;
 
-  private static final String TOPIC_NAME = "kafkatestingtopic";
+  private static final String TOPIC_NAME = "bulkpublishtesting";
 
   //The name of the pubsub
-  private static final String PUBSUB_NAME = "kafka-pubsub";
+  private static final String PUBSUB_NAME = "messagebus";
 
   /**
    * main method.
@@ -55,7 +55,6 @@ public class CloudEventBulkPublisher {
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
       System.out.println("Using preview client...");
-      BulkPublishRequest<CloudEvent<Map<String, String>>> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
       List<BulkPublishEntry<CloudEvent<Map<String, String>>>> entries = new ArrayList<>();
       for (int i = 0; i < NUM_MESSAGES; i++) {
         CloudEvent<Map<String, String>> cloudEvent = new CloudEvent<>();
@@ -73,7 +72,8 @@ public class CloudEventBulkPublisher {
         entry.setEntryId("" + (i + 1)).setEvent(cloudEvent).setContentType(CloudEvent.CONTENT_TYPE);
         entries.add(entry);
       }
-      request.setEntries(entries);
+      BulkPublishRequest<CloudEvent<Map<String, String>>> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+          entries);
       BulkPublishResponse<?> res = client.publishEvents(request).block();
       if (res != null) {
         if (res.getFailedEntries().size() > 0) {

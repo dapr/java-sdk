@@ -12,5 +12,6 @@ spec:
     value: ""
 scopes:
   - publisher
+  - bulk-publisher
   - subscriber
   - publisher-tracing

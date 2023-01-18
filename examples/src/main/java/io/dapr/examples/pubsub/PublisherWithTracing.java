@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub.http;
+package io.dapr.examples.pubsub;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
@@ -31,7 +31,7 @@ import static io.dapr.examples.OpenTelemetryConfig.getReactorContext;
  * 2. cd [repo root]/examples
  * 3. Run the program:
  * dapr run --components-path ./components/pubsub --app-id publisher-tracing -- \
- * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.PublisherWithTracing
+ * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.PublisherWithTracing
  */
 public class PublisherWithTracing {
 

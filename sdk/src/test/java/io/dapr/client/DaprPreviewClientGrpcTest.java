@@ -110,7 +110,8 @@ public class DaprPreviewClientGrpcTest {
 				StatusRuntimeException.class,
 				"INVALID_ARGUMENT",
 				"INVALID_ARGUMENT: bad bad argument",
-				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME)).block());
+				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+						Collections.EMPTY_LIST)).block());
 	}
 
 	@Test
@@ -126,7 +127,8 @@ public class DaprPreviewClientGrpcTest {
 				ExecutionException.class,
 				"INVALID_ARGUMENT",
 				"INVALID_ARGUMENT: bad bad argument",
-				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME)).block());
+				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+						Collections.EMPTY_LIST)).block());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -140,10 +142,11 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
+
 		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "testEntry"
 				, "application/octet-stream", null);
-		wrongReq.setEntries(Collections.singletonList(entry));
+		BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
 		previewClient.publishEvents(wrongReq).block();
 	}
 
@@ -158,11 +161,10 @@ public class DaprPreviewClientGrpcTest {
 			observer.onCompleted();
 			return null;
 		}).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
-		BulkPublishRequest<Map<String, String>> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
 		BulkPublishEntry<Map<String, String>> entry = new BulkPublishEntry<>("1", new HashMap<>(),
 				"application/json", null);
-
-		req.setEntries(Collections.singletonList(entry));
+		BulkPublishRequest<Map<String, String>> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
 		when(mockSerializer.serialize(any())).thenThrow(IOException.class);
 		Mono<BulkPublishResponse<Map<String, String>>> result = previewClient.publishEvents(req);
 
@@ -184,11 +186,10 @@ public class DaprPreviewClientGrpcTest {
 			return null;
 		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
 		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "test",
 				"text/plain", null);
-
-		req.setEntries(Collections.singletonList(entry));
+		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
 		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(req);
 		BulkPublishResponse res = result.block();
 		Assert.assertNotNull(res);
@@ -256,11 +257,10 @@ public class DaprPreviewClientGrpcTest {
 
 
 		DaprClientGrpcTest.MyObject event = new DaprClientGrpcTest.MyObject(1, "Event");
-		BulkPublishRequest<DaprClientGrpcTest.MyObject> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
 		BulkPublishEntry<DaprClientGrpcTest.MyObject> entry = new BulkPublishEntry<>("1", event,
 				"application/json", null);
-
-		req.setEntries(Collections.singletonList(entry));
+		BulkPublishRequest<DaprClientGrpcTest.MyObject> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
 		BulkPublishResponse<DaprClientGrpcTest.MyObject> result = previewClient.publishEvents(req).block();
 		Assert.assertNotNull(result);
 		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
@@ -286,11 +286,10 @@ public class DaprPreviewClientGrpcTest {
 			return true;
 		}), any());
 
-		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
 		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "hello",
 				"", null);
-
-		req.setEntries(Collections.singletonList(entry));
+		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
 		BulkPublishResponse<String> result = previewClient.publishEvents(req).block();
 		Assert.assertNotNull(result);
 		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());

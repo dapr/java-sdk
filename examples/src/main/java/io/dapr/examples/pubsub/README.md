@@ -6,7 +6,7 @@ Visit [this](https://docs.dapr.io/developing-applications/building-blocks/pubsub
  
 ## Pub-Sub Sample using the Java-SDK
 
-This sample uses the HTTP Springboot integration provided in Dapr Java SDK for subscribing, and GRPC client for publishing. This example uses Redis Streams (enabled in Redis versions => 5).
+This sample uses the HTTP Springboot integration provided in Dapr Java SDK for subscribing, and gRPC client for publishing. This example uses Redis Streams (enabled in Redis versions => 5).
 ## Pre-requisites
 
 * [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
@@ -87,24 +87,27 @@ Execute the follow script in order to run the Subscriber example:
 
 <!-- STEP
 name: Run Subscriber
+match_order: none
 expected_stdout_lines:
   - '== APP == Subscriber got: This is message #1'
   - '== APP == Subscriber got: This is message #2'
+  - '== APP == Subscriber got from bulk published topic: This is message #2'
+  - '== APP == Subscriber got from bulk published topic: This is message #3'
 background: true
 sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
+dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Subscriber -p 3000
 ```
 
 <!-- END_STEP -->
 
 ### Running the publisher
 
-The other component is the publisher. It is a simple java application with a main method that uses the Dapr HTTP Client to publish 10 messages to an specific topic.
+Another component is the publisher. It is a simple java application with a main method that uses the Dapr gRPC Client to publish 10 messages to a specific topic.
 
-In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
+In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and received objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
 Dapr sidecar will automatically wrap the payload received into a CloudEvent object, which will later on parsed by the subscriber.
 ```java
 public class Publisher {
@@ -173,7 +176,7 @@ sleep: 15
 -->
 
 ```bash
-dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher
+dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
 ```
 
 <!-- END_STEP -->
@@ -246,6 +249,192 @@ Once running, the Subscriber should print the output as follows:
 
 Messages have been retrieved from the topic.
 
+### Bulk Publish Messages 
+> Note : This API is currently in Alpha stage in Dapr runtime, hence the API methods in SDK are part of the DaprPreviewClient class.  
+
+Another feature provided by the SDK is to allow users to publish multiple messages in a single call to the Dapr sidecar.
+For this example, we have a simple java application with a main method that uses the Dapr gPRC Preview Client to publish 10 messages to a specific topic in a single call.
+
+In the `BulkPublisher.java` file, you will find the `BulkPublisher` class, containing the main method. The main method declares a Dapr Preview Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted.
+The client publishes messages using `publishEvents` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
+Dapr sidecar will automatically wrap the payload received into a CloudEvent object, which will later on be parsed by the subscriber.
+
+```java
+public class BulkPublisher {
+  private static final int NUM_MESSAGES = 10;
+  private static final String TOPIC_NAME = "kafkatestingtopic";
+  private static final String PUBSUB_NAME = "kafka-pubsub";
+
+  ///...
+  public static void main(String[] args) throws Exception {
+    OpenTelemetry openTelemetry = OpenTelemetryConfig.createOpenTelemetry();
+    Tracer tracer = openTelemetry.getTracer(BulkPublisher.class.getCanonicalName());
+    Span span = tracer.spanBuilder("Bulk Publisher's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+      DaprClient c = (DaprClient)client;
+      c.waitForSidecar(10000);
+      try (Scope scope = span.makeCurrent()) {
+        System.out.println("Using preview client...");
+        List<String> messages = new ArrayList<>();
+        System.out.println("Constructing the list of messages to publish");
+        for (int i = 0; i < NUM_MESSAGES; i++) {
+          String message = String.format("This is message #%d", i);
+          messages.add(message);
+          System.out.println("Going to publish message : " + message);
+        }
+        BulkPublishResponse res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, messages, "text/plain")
+                .subscriberContext(getReactorContext()).block();
+        System.out.println("Published the set of messages in a single call to Dapr");
+        if (res != null) {
+          if (res.getFailedEntries().size() > 0) {
+            // Ideally this condition will not happen in examples
+            System.out.println("Some events failed to be published");
+            for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
+              System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
+            }
+          }
+        } else {
+          throw new Exception("null response from dapr");
+        }
+      }
+      // Close the span.
+
+      span.end();
+      // Allow plenty of time for Dapr to export all relevant spans to the tracing infra.
+      Thread.sleep(10000);
+      // Shutdown the OpenTelemetry tracer.
+      OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
+  }
+}
+```
+The code uses the `DaprPreviewClient` created by the `DaprClientBuilder` is used for the `publishEvents` (BulkPublish) preview API.
+
+In this case, when `publishEvents` call is made, one of the argument to the method is the content type of data, this being `text/plain` in the example.
+In this case, when parsing and printing the response, there is a concept of EntryID, which is automatically generated or can be set manually when using the `BulkPublishRequest` object.
+The EntryID is a request scoped ID, in this case automatically generated as the index of the message in the list of messages in the `publishEvents` call.
+
+The response, will be empty if all events are published successfully or it will contain the list of events that have failed.
+
+The code also shows the scenario where it is possible to start tracing in code and pass on that tracing context to Dapr.
+
+The `CloudEventBulkPublisher.java` file shows how the same can be accomplished if the application must send a CloudEvent object instead of relying on Dapr's automatic CloudEvent "wrapping".
+In this case, the application **MUST** override the content-type parameter via `withContentType()`, so Dapr sidecar knows that the payload is already a CloudEvent object.
+
+```java
+public class CloudEventBulkPublisher {
+  ///...
+  public static void main(String[] args) throws Exception {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+      // Construct request
+      BulkPublishRequest<CloudEvent<Map<String, String>>> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME);
+      List<BulkPublishRequestEntry<CloudEvent<Map<String, String>>>> entries = new ArrayList<>();
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        CloudEvent<Map<String, String>> cloudEvent = new CloudEvent<>();
+        cloudEvent.setId(UUID.randomUUID().toString());
+        cloudEvent.setType("example");
+        cloudEvent.setSpecversion("1");
+        cloudEvent.setDatacontenttype("application/json");
+        String val = String.format("This is message #%d", i);
+        cloudEvent.setData(new HashMap<>() {
+          {
+            put("dataKey", val);
+          }
+        });
+        BulkPublishRequestEntry<CloudEvent<Map<String, String>>> entry = new BulkPublishRequestEntry<>();
+        entry.setEntryID("" + (i + 1))
+                .setEvent(cloudEvent)
+                .setContentType(CloudEvent.CONTENT_TYPE);
+        entries.add(entry);
+      }
+      request.setEntries(entries);
+
+      // Publish events
+      BulkPublishResponse res = client.publishEvents(request).block();
+      if (res != null) {
+        if (res.getFailedEntries().size() > 0) {
+          // Ideally this condition will not happen in examples
+          System.out.println("Some events failed to be published");
+          for (BulkPublishResponseFailedEntry entry : res.getFailedEntries()) {
+            System.out.println("EntryId : " + entry.getEntryId() + " Error message : " + entry.getErrorMessage());
+          }
+        }
+      } else {
+        throw new Exception("null response");
+      }
+      System.out.println("Done");
+    }
+  }
+}
+```
+
+Use the follow command to execute the BulkPublisher example:
+
+<!-- STEP
+name: Run Publisher
+match_order: sequential
+expected_stdout_lines:
+  - '== APP == Published the set of messages in a single call to Dapr'
+background: true
+sleep: 20
+-->
+
+```bash
+dapr run --components-path ./components/pubsub --app-id bulk-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.BulkPublisher
+```
+
+Once running, the BulkPublisher should print the output as follows:
+
+```txt
+✅  You're up and running! Both Dapr and your app logs will appear here.
+
+== APP == Using preview client...
+== APP == Constructing the list of messages to publish
+== APP == Going to publish message : This is message #0
+== APP == Going to publish message : This is message #1
+== APP == Going to publish message : This is message #2
+== APP == Going to publish message : This is message #3
+== APP == Going to publish message : This is message #4
+== APP == Going to publish message : This is message #5
+== APP == Going to publish message : This is message #6
+== APP == Going to publish message : This is message #7
+== APP == Going to publish message : This is message #8
+== APP == Going to publish message : This is message #9
+== APP == Published the set of messages in a single call to Dapr
+== APP == Done
+
+```
+
+Messages have been published in the topic.
+
+The Subscriber started previously [here](#running-the-subscriber) should print the output as follows:
+
+```txt
+== APP == Subscriber got from bulk published topic: This is message #1
+== APP == Subscriber got: {"id":"323935ed-d8db-4ea2-ba28-52352b1d1b34","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #1","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #0
+== APP == Subscriber got: {"id":"bb2f4833-0473-446b-a6cc-04a36de5ac0a","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #0","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #5
+== APP == Subscriber got: {"id":"07bad175-4be4-4beb-a983-4def2eba5768","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #5","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #6
+== APP == Subscriber got: {"id":"b99fba4d-732a-4d18-bf10-b37916dedfb1","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #6","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #2
+== APP == Subscriber got: {"id":"2976f254-7859-449e-b66c-57fab4a72aef","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #2","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #3
+== APP == Subscriber got: {"id":"f21ff2b5-4842-481d-9a96-e4c299d1c463","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #3","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #4
+== APP == Subscriber got: {"id":"4bf50438-e576-4f5f-bb40-bd31c716ad02","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #4","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #7
+== APP == Subscriber got: {"id":"f0c8b53b-7935-478e-856b-164d329d25ab","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #7","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #9
+== APP == Subscriber got: {"id":"b280569f-cc29-471f-9cb7-682d8d6bd553","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #9","data_base64":null}
+== APP == Subscriber got from bulk published topic: This is message #8
+== APP == Subscriber got: {"id":"df20d841-296e-4c6b-9dcb-dd17920538e7","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #8","data_base64":null}
+```
+
+> Note: Redis pubsub component does not have a native and uses Dapr runtime's default bulk publish implementation which is concurrent, thus the order of the events that are published are not guaranteed. 
+
+Messages have been retrieved from the topic.
+
 ### Tracing
 
 Dapr handles tracing in PubSub automatically. Open Zipkin on [http://localhost:9411/zipkin](http://localhost:9411/zipkin). You should see a screen like the one below:
@@ -260,6 +449,11 @@ Once you click on the tracing event, you will see the details of the call stack 
 
 ![zipking-details](https://raw.githubusercontent.com/dapr/java-sdk/master/examples/src/main/resources/img/zipkin-pubsub-details.png)
 
+
+Once you click on the bulk publisher tracing event, you will see the details of the call stack starting in the client and then showing the service API calls right below.
+
+![zipking-details](../../../../../../resources/img/zipkin-bulk-publish-details.png)
+
 If you would like to add a tracing span as a parent of the span created by Dapr, change the publisher to handle that. See `PublisherWithTracing.java` to see the difference and run it with:
 
 <!-- STEP
@@ -272,7 +466,7 @@ sleep: 15
 -->
 
 ```bash
-dapr run --components-path ./components/pubsub --app-id publisher-tracing -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.PublisherWithTracing
+dapr run --components-path ./components/pubsub --app-id publisher-tracing -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.PublisherWithTracing
 ```
 
 <!-- END_STEP -->
@@ -301,12 +495,12 @@ mvn install
 
 Run the publisher app:
 ```sh
-dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher
+dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher
 ```
 
 Wait until all 10 messages are published like before, then wait for a few more seconds and run the subscriber app:
 ```sh
-dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
+dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Subscriber -p 3000
 ```
 
 No message is consumed by the subscriber app and warnings messages are emitted from Dapr sidecar:
@@ -333,7 +527,7 @@ No message is consumed by the subscriber app and warnings messages are emitted f
 
 ```
 
-For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java) Application implementation.
+For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../DaprApplication.java) Application implementation.
 
 ### Cleanup
 
@@ -343,6 +537,7 @@ name: Cleanup
 
 ```bash
 dapr stop --app-id publisher
+dapr stop --app-id bulk-publisher
 dapr stop --app-id subscriber
 ```
 

@@ -22,35 +22,27 @@ import java.util.List;
  */
 public class BulkPublishResponse<T> {
 
-  private String errorCode;
+  /**
+   * List of {@link BulkPublishResponseFailedEntry} objects that have failed to publish.
+   */
   private List<BulkPublishResponseFailedEntry<T>> failedEntries;
 
   /**
-   * Default constructor for the class.
+   * Default constructor for class.
    */
   public BulkPublishResponse() {
+    this.failedEntries = Collections.unmodifiableList(new ArrayList<>());
   }
 
   /**
    * Constructor for the BulkPublishResponse object.
    *
-   * @param errorCode Dapr errorCode if any.
    * @param failedEntries  The List of BulkPublishResponseEntries representing the list of
    *                       events that failed to be published.
    */
-  public BulkPublishResponse(String errorCode, List<BulkPublishResponseFailedEntry<T>> failedEntries) {
-    this.errorCode = errorCode;
+  public BulkPublishResponse(List<BulkPublishResponseFailedEntry<T>> failedEntries) {
     this.failedEntries = failedEntries == null ? Collections.unmodifiableList(new ArrayList<>()) :
         Collections.unmodifiableList(failedEntries);
-  }
-
-  public String getErrorCode() {
-    return errorCode;
-  }
-
-  public BulkPublishResponse<T> setErrorCode(String errorCode) {
-    this.errorCode = errorCode;
-    return this;
   }
 
   public List<BulkPublishResponseFailedEntry<T>> getFailedEntries() {
