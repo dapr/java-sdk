@@ -17,7 +17,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Maps entries from a bulk publish message to a response status.
+ * Maps a {@link BulkSubscribeMessageEntry} to a {@link BulkSubscribeAppResponseStatus}.
  */
 public final class BulkSubscribeAppResponseEntry {
 

@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.client.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
@@ -22,10 +21,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Represents a single event from a bulk of messages sent by the message bus.
+ * Represents a single event from a {@link BulkSubscribeMessage}.
  * @param <T> Type of event.
  */
-public final class BulkPubSubMessageEntry<T> {
+public final class BulkSubscribeMessageEntry<T> {
   private final String entryId;
   private final T event;
   private final String contentType;
@@ -39,7 +38,7 @@ public final class BulkPubSubMessageEntry<T> {
    * @param metadata metadata for the event.
    */
   @JsonCreator
-  public BulkPubSubMessageEntry(
+  public BulkSubscribeMessageEntry(
           @JsonProperty("entryId") String entryId,
           @JsonProperty("event") T event,
           @JsonProperty("contentType") String contentType,

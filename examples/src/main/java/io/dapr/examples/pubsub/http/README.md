@@ -91,26 +91,26 @@ The `@BulkSubscribe` annotation can be used with `@Topic` to receive multiple me
 public class SubscriberController {
   ///...
   @BulkSubscribe()
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
-  @PostMapping(path = "/testingtopic")
-  public Mono<BulkAppResponse> handleBulkMessage(
-          @RequestBody(required = false) BulkMessage<CloudEvent<String>> bulkPubSubMessage) {
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
+  @PostMapping(path = "/testingtopicbulk")
+  public Mono<BulkSubscribeAppResponse> handleBulkMessage(
+          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
-      System.out.println("Bulk Subscriber got #" + bulkPubSubMessage.getEntries().size() + " messages.");
+      System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
 
-      List<BulkAppResponseEntry> entries = new ArrayList<BulkAppResponseEntry>();
-      for (BulkMessageEntry<?> entry : bulkPubSubMessage.getEntries()) {
+      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
+      for (BulkSubscribeMessageEntry<?> entry : bulkMessage.getEntries()) {
         try {
-          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryID());
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
           System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
-          entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.SUCCESS));
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
         } catch (Exception e) {
           e.printStackTrace();
-          entries.add(new BulkAppResponseEntry(entry.getEntryID(), BulkAppResponseStatus.RETRY));
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
         }
       }
-      return new BulkAppResponse(entries);
+      return new BulkSubscribeAppResponse(entries);
     });
   }
 }
@@ -140,22 +140,28 @@ dapr run --components-path ./components/pubsub --app-id subscriber --app-port 30
 
 The other component is the publisher. It is a simple java application with a main method that uses the Dapr HTTP Client to publish 10 messages to an specific topic.
 
-In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
+In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and received objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
 Dapr sidecar will automatically wrap the payload received into a CloudEvent object, which will later on parsed by the subscriber.
 ```java
 public class Publisher {
   private static final int NUM_MESSAGES = 10;
-  private static final String TOPIC_NAME = "testingtopic";
+  private static final String DEFAULT_TOPIC_NAME = "testingtopic";
   private static final String PUBSUB_NAME = "messagebus";
 
   ///...
   public static void main(String[] args) throws Exception {
-      //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
+      String topicName = getTopicName(args); // Topic can be configured by args. 
+      // Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
       try (DaprClient client = new DaprClientBuilder().build()) {
         for (int i = 0; i < NUM_MESSAGES; i++) {
           String message = String.format("This is message #%d", i);
-          //Publishing messages
-          client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
+          // Publishing messages
+          client.publishEvent(
+                  PUBSUB_NAME,
+                  topicName,
+                  message,
+                  singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+
           System.out.println("Published message: " + message);
           //...
         }

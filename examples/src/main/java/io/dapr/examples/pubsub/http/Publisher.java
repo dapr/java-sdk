@@ -37,7 +37,7 @@ public class Publisher {
   private static final String MESSAGE_TTL_IN_SECONDS = "1000";
 
   //The title of the topic to be used for publishing
-  private static final String TOPIC_NAME = "testingtopic";
+  private static final String DEFAULT_TOPIC_NAME = "testingtopic";
 
   //The name of the pubsub
   private static final String PUBSUB_NAME = "messagebus";
@@ -86,6 +86,6 @@ public class Publisher {
     if (args.length >= 1) {
       return args[0];
     }
-    return TOPIC_NAME;
+    return DEFAULT_TOPIC_NAME;
   }
 }

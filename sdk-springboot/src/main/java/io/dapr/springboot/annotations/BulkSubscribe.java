@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.springboot.annotations;
 
 import io.dapr.Topic;
-import io.dapr.client.domain.BulkPubSubMessage;
 import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeMessage;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
 /**
  * BulkSubscribe annotation should be applied with {@link Topic @Topic} when
  * the topic should be subscribed to using the Bulk Subscribe API.
- * This will require handling multiple messages using {@link BulkPubSubMessage
+ * This will require handling multiple messages using {@link BulkSubscribeMessage
  * DaprBulkMessage}
  * and returning a {@link BulkSubscribeAppResponse DaprBulkAppResponse}.
  */

@@ -148,12 +148,12 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Topic;
-import io.dapr.client.domain.CloudEvent;
-import io.dapr.client.domain.BulkPubSubMessage;
-import io.dapr.client.domain.BulkPubSubMessageEntry;
 import io.dapr.client.domain.BulkSubscribeAppResponse;
 import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
 import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
+import io.dapr.client.domain.BulkSubscribeMessage;
+import io.dapr.client.domain.BulkSubscribeMessageEntry;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -196,7 +196,7 @@ public class SubscriberController {
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopicbulk")
   public Mono<BulkSubscribeAppResponse> handleBulkMessage(
-          @RequestBody(required = false) BulkPubSubMessage<CloudEvent<String>> bulkMessage) {
+          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
       if (bulkMessage.getEntries().size() == 0) {
         return new BulkSubscribeAppResponse(new ArrayList<BulkSubscribeAppResponseEntry>());
@@ -205,7 +205,7 @@ public class SubscriberController {
       System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
 
       List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
-      for (BulkPubSubMessageEntry<?> entry : bulkMessage.getEntries()) {
+      for (BulkSubscribeMessageEntry<?> entry : bulkMessage.getEntries()) {
         try {
           System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
           CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();

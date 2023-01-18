@@ -23,20 +23,20 @@ import java.util.Map;
 /**
  * Represents a bulk of messages received from the message bus.
  */
-public final class BulkPubSubMessage<T> {
-  private final List<BulkPubSubMessageEntry<T>> entries;
+public final class BulkSubscribeMessage<T> {
+  private final List<BulkSubscribeMessageEntry<T>> entries;
   private final String topic;
   private final Map<String, String> metadata;
 
   /**
-   * Instantiate a BulkPubSubMessage.
-   * @param entries mapping from bulk pubSub message entry ID to a status.
+   * Instantiate a BulkSubscribeMessage.
+   * @param entries maps a {@link BulkSubscribeMessageEntry} to a {@link BulkSubscribeAppResponseStatus}.
    * @param topic pubSub topic.
-   * @param metadata metadata for the bulk message.
+   * @param metadata metadata for the {@link BulkSubscribeMessage}
    */
   @JsonCreator
-  public BulkPubSubMessage(
-          @JsonProperty("entries") List<BulkPubSubMessageEntry<T>> entries,
+  public BulkSubscribeMessage(
+          @JsonProperty("entries") List<BulkSubscribeMessageEntry<T>> entries,
           @JsonProperty("topic") String topic,
           @JsonProperty("metadata") Map<String, String> metadata) {
     this.entries = Collections.unmodifiableList(entries);
@@ -44,7 +44,7 @@ public final class BulkPubSubMessage<T> {
     this.metadata = Collections.unmodifiableMap(metadata);
   }
 
-  public List<BulkPubSubMessageEntry<T>> getEntries() {
+  public List<BulkSubscribeMessageEntry<T>> getEntries() {
     return entries;
   }
 
