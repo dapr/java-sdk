@@ -231,4 +231,8 @@ public class SubscriberController {
       return list;
     };
   }
+
+  @GetMapping(path = "/health")
+  public void health() {
+  }
 }
