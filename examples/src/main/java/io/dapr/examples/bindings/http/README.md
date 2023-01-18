@@ -52,9 +52,18 @@ Before getting into the application code, follow these steps in order to set up 
 
 1. To run container locally run:
 
+<!-- STEP
+name: Setup kafka container
+expected_stderr_lines:
+  - 'Creating network "http_default" with the default driver'
+sleep: 5
+-->
+
 ```bash
 docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d
-````
+```
+
+<!-- END_STEP -->
 
 2. Run `docker ps` to see the container running locally: 
 
@@ -232,8 +241,14 @@ dapr stop --app-id outputbinding
 
 For bringing down the kafka cluster that was started in the beginning, run
 
+<!-- STEP
+name: Cleanup Kafka containers
+-->
+
 ```bash
 docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml down
 ```
+
+<!-- END_STEP -->
 
 For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java)  Application implementation.
