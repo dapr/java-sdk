@@ -382,6 +382,8 @@ sleep: 20
 dapr run --components-path ./components/pubsub --app-id bulk-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.BulkPublisher
 ```
 
+<!-- END_STEP -->
+
 Once running, the BulkPublisher should print the output as follows:
 
 ```txt
