@@ -17,6 +17,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkSubscribeAppResponse;
 import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
 import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
@@ -51,9 +55,9 @@ import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
 
 
 @RunWith(Parameterized.class)
@@ -71,6 +75,8 @@ public class PubSubIT extends BaseIT {
   private static final String PUBSUB_NAME = "messagebus";
   //The title of the topic to be used for publishing
   private static final String TOPIC_NAME = "testingtopic";
+
+  private static final String TOPIC_BULK = "testingbulktopic";
   private static final String TYPED_TOPIC_NAME = "typedtestingtopic";
   private static final String ANOTHER_TOPIC_NAME = "anothertopic";
   // Topic used for TTL test
@@ -136,6 +142,162 @@ public class PubSubIT extends BaseIT {
             () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
       }
     }
+  }
+
+  @Test
+  public void testBulkPublishPubSubNotFound() throws Exception {
+    DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName(),
+        60000));
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      // No HTTP implementation for bulk publish
+      System.out.println("no HTTP impl for bulkPublish");
+      return;
+    }
+
+    try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
+      assertThrowsDaprException(
+            "INVALID_ARGUMENT",
+            "INVALID_ARGUMENT: pubsub unknown pubsub not found",
+            () -> client.publishEvents("unknown pubsub", "mytopic","text/plain", "message").block());
+    }
+  }
+
+  @Test
+  public void testBulkPublish() throws Exception {
+    final DaprRun daprRun = closeLater(startDaprApp(
+        this.getClass().getSimpleName(),
+        SubscriberService.SUCCESS_MESSAGE,
+        SubscriberService.class,
+        true,
+        60000));
+    // At this point, it is guaranteed that the service above is running and all ports being listened to.
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      System.out.println("HTTP BulkPublish is not implemented. So skipping tests");
+      return;
+    }
+    DaprObjectSerializer serializer = new DaprObjectSerializer() {
+      @Override
+      public byte[] serialize(Object o) throws JsonProcessingException {
+        return OBJECT_MAPPER.writeValueAsBytes(o);
+      }
+
+      @Override
+      public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
+        return (T) OBJECT_MAPPER.readValue(data, OBJECT_MAPPER.constructType(type.getType()));
+      }
+
+      @Override
+      public String getContentType() {
+        return "application/json";
+      }
+    };
+    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build();
+         DaprPreviewClient previewClient = new DaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
+      // Only for the gRPC test
+      // Send a multiple messages on one topic in messagebus pubsub via publishEvents API.
+      List<String> messages = new ArrayList<>();
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        messages.add(String.format("This is message #%d on topic %s", i, TOPIC_BULK));
+      }
+      //Publishing 10 messages
+      BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
+      System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
+          NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
+      assertNotNull("expected not null bulk publish response", response);
+      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+
+      //Publishing an object.
+      MyObject object = new MyObject();
+      object.setId("123");
+      response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
+          "application/json", Collections.singletonList(object)).block();
+      System.out.println("Published one object.");
+      assertNotNull("expected not null bulk publish response", response);
+      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+
+      //Publishing a single byte: Example of non-string based content published
+      previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "",
+          Collections.singletonList(new byte[]{1})).block();
+      System.out.println("Published one byte.");
+
+      assertNotNull("expected not null bulk publish response", response);
+      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+
+      CloudEvent cloudEvent = new CloudEvent();
+      cloudEvent.setId("1234");
+      cloudEvent.setData("message from cloudevent");
+      cloudEvent.setSource("test");
+      cloudEvent.setSpecversion("1");
+      cloudEvent.setType("myevent");
+      cloudEvent.setDatacontenttype("text/plain");
+      BulkPublishRequest<CloudEvent> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_BULK,
+          Collections.singletonList(
+              new BulkPublishEntry<>("1", cloudEvent, "application/cloudevents+json", null)
+          ));
+
+      //Publishing a cloud event.
+      previewClient.publishEvents(req).block();
+      assertNotNull("expected not null bulk publish response", response);
+      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+
+      System.out.println("Published one cloud event.");
+
+      // Introduce sleep
+      Thread.sleep(10000);
+
+      // Check messagebus subscription for topic testingbulktopic since it is populated only by publishEvents API call
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + TOPIC_BULK + " in pubsub " + PUBSUB_NAME);
+        // Validate text payload.
+        final List<CloudEvent> cloudEventMessages = client.invokeMethod(
+            daprRun.getAppName(),
+            "messages/redis/testingbulktopic",
+            null,
+            HttpExtension.GET,
+            CLOUD_EVENT_LIST_TYPE_REF).block();
+        assertEquals("expected 13 messages to be received on subscribe", 13, cloudEventMessages.size());
+        for (int i = 0; i < NUM_MESSAGES; i++) {
+          final int messageId = i;
+          assertTrue("expected data content to match", cloudEventMessages
+              .stream()
+              .filter(m -> m.getData() != null)
+              .map(m -> m.getData())
+              .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_BULK)))
+              .count() == 1);
+        }
+
+        // Validate object payload.
+        assertTrue("expected data content 123 to match", cloudEventMessages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .filter(m -> m.getData() instanceof LinkedHashMap)
+            .map(m -> (LinkedHashMap) m.getData())
+            .filter(m -> "123".equals(m.get("id")))
+            .count() == 1);
+
+        // Validate byte payload.
+        assertTrue("expected bin data to match", cloudEventMessages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .map(m -> m.getData())
+            .filter(m -> "AQ==".equals(m))
+            .count() == 1);
+
+        // Validate cloudevent payload.
+        assertTrue("expected data to match",cloudEventMessages
+            .stream()
+            .filter(m -> m.getData() != null)
+            .map(m -> m.getData())
+            .filter(m -> "message from cloudevent".equals(m))
+            .count() == 1);
+      }, 2000);
+    }
+
   }
 
   @Test
@@ -589,7 +751,7 @@ public class PubSubIT extends BaseIT {
             "messages/testinglongvalues",
             null,
             HttpExtension.GET, CLOUD_EVENT_LONG_LIST_TYPE_REF).block();
-        Assert.assertNotNull(messages);
+        assertNotNull(messages);
         for (CloudEvent<ConvertToLong> message : messages) {
           actual.add(message.getData());
         }

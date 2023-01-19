@@ -28,6 +28,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false # Keep running if one leg fails.
       matrix:
         java: [ 11, 13, 15, 16 ]
     env:
@@ -129,10 +130,10 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/state/README.md
-      - name: Validate pubsub HTTP example
+      - name: Validate pubsub example
         working-directory: ./examples
         run: |
-          mm.py ./src/main/java/io/dapr/examples/pubsub/http/README.md
+          mm.py ./src/main/java/io/dapr/examples/pubsub/README.md
       - name: Validate bindings HTTP example
         working-directory: ./examples
         run: |

@@ -13,33 +13,29 @@ limitations under the License.
 
 package io.dapr.client;
 
-import io.dapr.client.domain.*;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.TypeRef;
-import io.dapr.v1.DaprProtos;
-import io.grpc.stub.StreamObserver;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
-import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 
 public class DaprPreviewClientHttpTest {
   private static final String CONFIG_STORE_NAME = "MyConfigStore";

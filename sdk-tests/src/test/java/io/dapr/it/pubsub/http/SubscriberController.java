@@ -44,11 +44,18 @@ public class SubscriberController {
     return messagesByTopic.getOrDefault(topic, Collections.emptyList());
   }
 
+  private static final List<CloudEvent> messagesReceivedBulkPublishTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopic = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV3 = new ArrayList();
+  private static final List<BulkSubscribeAppResponse> responsesReceivedTestingTopicBulkSub = new ArrayList<>();
 
-  private static final List<BulkSubscribeAppResponse> responsesReceivedTestingTopicBulk = new ArrayList<>();
+  @GetMapping(path = "/messages/redis/testingbulktopic")
+  public List<CloudEvent> getMessagesReceivedBulkTopic() {
+    return messagesReceivedBulkPublishTopic;
+  }
+
+
 
   @GetMapping(path = "/messages/testingtopic")
   public List<CloudEvent> getMessagesReceivedTestingTopic() {
@@ -67,7 +74,7 @@ public class SubscriberController {
 
   @GetMapping(path = "/messages/topicBulkSub")
   public List<BulkSubscribeAppResponse> getMessagesReceivedTestingTopicBulkSub() {
-    return responsesReceivedTestingTopicBulk;
+    return responsesReceivedTestingTopicBulkSub;
   }
   
   @Topic(name = "testingtopic", pubsubName = "messagebus")
@@ -79,6 +86,21 @@ public class SubscriberController {
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
         System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesReceivedTestingTopic.add(envelope);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Topic(name = "testingbulktopic", pubsubName = "messagebus")
+  @PostMapping("/route1_redis")
+  public Mono<Void> handleBulkTopicMessage(@RequestBody(required = false) CloudEvent envelope) {
+    return Mono.fromRunnable(() -> {
+      try {
+        String message = envelope.getData() == null ? "" : envelope.getData().toString();
+        String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
+        System.out.println("Testing bulk publish topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        messagesReceivedBulkPublishTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -205,7 +227,7 @@ public class SubscriberController {
     return Mono.fromCallable(() -> {
       if (bulkMessage.getEntries().size() == 0) {
         BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(new ArrayList<>());
-        responsesReceivedTestingTopicBulk.add(response);
+        responsesReceivedTestingTopicBulkSub.add(response);
         return response;
       }
 
@@ -219,7 +241,7 @@ public class SubscriberController {
         }
       }
       BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(entries);
-      responsesReceivedTestingTopicBulk.add(response);
+      responsesReceivedTestingTopicBulkSub.add(response);
       return response;
     });
   }

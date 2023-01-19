@@ -222,6 +222,35 @@ public class SubscriberController {
 }
 ```
 
+##### Bulk Publish Messages
+> Note: API is in Alpha stage
+
+
+```java
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import java.util.ArrayList;
+import java.util.List;
+class Solution {
+  public void publishMessages() {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+      // Create a list of messages to publish
+      List<String> messages = new ArrayList<>();
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d", i);
+        messages.add(message);
+        System.out.println("Going to publish message : " + message);
+      }
+
+      // Publish list of messages using the bulk publish API
+      BulkPublishResponse<String> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, "text/plain", messages).block()
+    }
+  }
+}
+```
+
 - For a full guide on publishing messages and subscribing to a topic [How-To: Publish & subscribe]({{< ref howto-publish-subscribe.md >}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/pubsub/http) for code samples and instructions to try out pub/sub
 

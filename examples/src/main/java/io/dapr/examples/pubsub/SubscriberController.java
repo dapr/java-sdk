@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub.http;
+package io.dapr.examples.pubsub;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Rule;
@@ -72,6 +72,24 @@ public class SubscriberController {
     return Mono.fromRunnable(() -> {
       try {
         System.out.println("Subscriber got: " + cloudEvent.getData());
+        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  /**
+   * Handles a registered publish endpoint on this app (bulk published events).
+   * @param cloudEvent The cloud event received.
+   * @return A message containing the time.
+   */
+  @Topic(name = "bulkpublishtesting", pubsubName = "${myAppProperty:messagebus}")
+  @PostMapping(path = "/bulkpublishtesting")
+  public Mono<Void> handleBulkPublishMessage(@RequestBody(required = false) CloudEvent cloudEvent) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.println("Subscriber got from bulk published topic: " + cloudEvent.getData());
         System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
       } catch (Exception e) {
         throw new RuntimeException(e);
