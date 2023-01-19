@@ -15,7 +15,8 @@ package io.dapr.it.pubsub.http;
 
 import io.dapr.Rule;
 import io.dapr.Topic;
-import io.dapr.client.domain.CloudEvent;
+import io.dapr.client.domain.*;
+import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,6 +48,8 @@ public class SubscriberController {
   private static final List<CloudEvent> messagesReceivedTestingTopicV2 = new ArrayList();
   private static final List<CloudEvent> messagesReceivedTestingTopicV3 = new ArrayList();
 
+  private static final List<BulkSubscribeAppResponse> responsesReceivedTestingTopicBulk = new ArrayList<>();
+
   @GetMapping(path = "/messages/testingtopic")
   public List<CloudEvent> getMessagesReceivedTestingTopic() {
     return messagesReceivedTestingTopic;
@@ -62,6 +65,11 @@ public class SubscriberController {
     return messagesReceivedTestingTopicV3;
   }
 
+  @GetMapping(path = "/messages/topicBulkSub")
+  public List<BulkSubscribeAppResponse> getMessagesReceivedTestingTopicBulkSub() {
+    return responsesReceivedTestingTopicBulk;
+  }
+  
   @Topic(name = "testingtopic", pubsubName = "messagebus")
   @PostMapping("/route1")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent envelope) {
@@ -178,6 +186,41 @@ public class SubscriberController {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
+    });
+  }
+
+  /**
+   * Receive messages using the bulk subscribe API.
+   * The maxBulkSubCount and maxBulkSubAwaitDurationMs are adjusted to ensure
+   * that all the test messages arrive in a single batch.
+   *
+   * @param bulkMessage incoming bulk of messages from the message bus.
+   * @return status for each message received.
+   */
+  @BulkSubscribe(maxMessagesCount = 100, maxAwaitDurationMs = 5000)
+  @Topic(name = "topicBulkSub", pubsubName = "messagebus")
+  @PostMapping(path = "/routeBulkSub")
+  public Mono<BulkSubscribeAppResponse> handleMessageBulk(
+          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
+    return Mono.fromCallable(() -> {
+      if (bulkMessage.getEntries().size() == 0) {
+        BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(new ArrayList<>());
+        responsesReceivedTestingTopicBulk.add(response);
+        return response;
+      }
+
+      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<>();
+      for (BulkSubscribeMessageEntry<?> entry: bulkMessage.getEntries()) {
+        try {
+          System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.getEntryId());
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
+        } catch (Exception e) {
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
+        }
+      }
+      BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(entries);
+      responsesReceivedTestingTopicBulk.add(response);
+      return response;
     });
   }
 

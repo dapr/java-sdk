@@ -1,6 +1,6 @@
 # Dapr Pub-Sub Sample
 
-In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subcribe pattern. The publisher will generate messages of a specific topic, while subscriber will listen for messages of specific topic. See [Why Pub-Sub](#why-pub-sub) to understand when this pattern might be a good choice for your software architecture.
+In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subscribe pattern. The publisher will generate messages of a specific topic, while subscriber will listen for messages of specific topic. See [Why Pub-Sub](#why-pub-sub) to understand when this pattern might be a good choice for your software architecture.
 
 Visit [this](https://docs.dapr.io/developing-applications/building-blocks/pubsub/pubsub-overview/) link for more information about Dapr and Pub-Sub.
  
@@ -59,7 +59,7 @@ This Spring Controller handles the message endpoint, printing the message which 
 The subscription's topic in Dapr is handled automatically via the `@Topic` annotation - which also supports the same expressions in 
 [Spring's @Value annotations](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations).
 
-The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support. In this case, `myAppProperty` is a Java property that does not exist, so the expression resolves to the default value (`messagebus`). 
+The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support. In this case, `myAppProperty` is a Java property that does not exist, so the expression resolves to the default value (`messagebus`).
 
 ```java
 @RestController
@@ -83,13 +83,49 @@ public class SubscriberController {
   }
 }
 ```
+
+The `@BulkSubscribe` annotation can be used with `@Topic` to receive multiple messages at once. See the example on how to handle the bulk messages and respond correctly.
+
+```java
+@RestController
+public class SubscriberController {
+  ///...
+  @BulkSubscribe()
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
+  @PostMapping(path = "/testingtopicbulk")
+  public Mono<BulkSubscribeAppResponse> handleBulkMessage(
+          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
+    return Mono.fromCallable(() -> {
+      System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
+
+      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
+      for (BulkSubscribeMessageEntry<?> entry : bulkMessage.getEntries()) {
+        try {
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
+          CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
+          System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
+        } catch (Exception e) {
+          e.printStackTrace();
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
+        }
+      }
+      return new BulkSubscribeAppResponse(entries);
+    });
+  }
+}
+```
+
 Execute the follow script in order to run the Subscriber example:
 
 <!-- STEP
 name: Run Subscriber
+match_order: none
 expected_stdout_lines:
   - '== APP == Subscriber got: This is message #1'
   - '== APP == Subscriber got: This is message #2'
+  - '== APP == Bulk Subscriber got: This is message #1'
+  - '== APP == Bulk Subscriber got: This is message #2'
 background: true
 sleep: 5
 -->
@@ -104,22 +140,28 @@ dapr run --components-path ./components/pubsub --app-id subscriber --app-port 30
 
 The other component is the publisher. It is a simple java application with a main method that uses the Dapr HTTP Client to publish 10 messages to an specific topic.
 
-In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
+In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and received objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
 Dapr sidecar will automatically wrap the payload received into a CloudEvent object, which will later on parsed by the subscriber.
 ```java
 public class Publisher {
   private static final int NUM_MESSAGES = 10;
-  private static final String TOPIC_NAME = "testingtopic";
+  private static final String DEFAULT_TOPIC_NAME = "testingtopic";
   private static final String PUBSUB_NAME = "messagebus";
 
   ///...
   public static void main(String[] args) throws Exception {
-      //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
+      String topicName = getTopicName(args); // Topic can be configured by args. 
+      // Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
       try (DaprClient client = new DaprClientBuilder().build()) {
         for (int i = 0; i < NUM_MESSAGES; i++) {
           String message = String.format("This is message #%d", i);
-          //Publishing messages
-          client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
+          // Publishing messages
+          client.publishEvent(
+                  PUBSUB_NAME,
+                  topicName,
+                  message,
+                  singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+
           System.out.println("Published message: " + message);
           //...
         }
@@ -245,6 +287,50 @@ Once running, the Subscriber should print the output as follows:
 ```
 
 Messages have been retrieved from the topic.
+
+You can also run the publisher to publish messages to `testingtopicbulk` topic, and receive messages using the bulk subscription.
+
+<!-- STEP
+name: Run Publisher on bulk topic
+expected_stdout_lines:
+  - '== APP == Published message: This is message #0'
+  - '== APP == Published message: This is message #1'
+background: true
+sleep: 15
+-->
+
+```bash
+dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher testingtopicbulk
+```
+
+<!-- END_STEP -->
+
+Once running, the Publisher should print the same output as above. The Subscriber should print the output as follows:
+
+```txt
+== APP == Bulk Subscriber got 10 messages.
+== APP == Bulk Subscriber message has entry ID: d4d81c57-d75c-4a22-a747-e907099ca135
+== APP == Bulk Subscriber got: This is message #0
+== APP == Bulk Subscriber message has entry ID: f109c837-f7c8-4839-8d71-2df9c467875c
+== APP == Bulk Subscriber got: This is message #1
+== APP == Bulk Subscriber message has entry ID: d735044f-1320-43e1-bd41-787ad9d26427
+== APP == Bulk Subscriber got: This is message #2
+== APP == Bulk Subscriber message has entry ID: afe74e5a-1a2b-498a-beca-7a6383141ccf
+== APP == Bulk Subscriber got: This is message #3
+== APP == Bulk Subscriber message has entry ID: 1df3fa51-d137-4749-891d-973ce58f1e1c
+== APP == Bulk Subscriber got: This is message #4
+== APP == Bulk Subscriber message has entry ID: ecab82bd-77be-40a1-8b62-2dbb3388d726
+== APP == Bulk Subscriber got: This is message #5
+== APP == Bulk Subscriber message has entry ID: 49a63916-ed09-4101-969e-13a860e35c55
+== APP == Bulk Subscriber got: This is message #6
+== APP == Bulk Subscriber message has entry ID: 897ec32c-ad74-4512-8979-ee0a455433e8
+== APP == Bulk Subscriber got: This is message #7
+== APP == Bulk Subscriber message has entry ID: 67367edc-27a6-4c8c-9e39-31caa0f74b2d
+== APP == Bulk Subscriber got: This is message #8
+== APP == Bulk Subscriber message has entry ID: f134d21f-0a05-408d-977c-1397b999e908
+== APP == Bulk Subscriber got: This is message #9
+
+```
 
 ### Tracing
 

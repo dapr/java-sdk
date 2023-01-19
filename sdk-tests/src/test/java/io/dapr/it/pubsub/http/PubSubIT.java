@@ -17,6 +17,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
@@ -75,7 +78,10 @@ public class PubSubIT extends BaseIT {
   // Topic to test binary data
   private static final String BINARY_TOPIC_NAME = "binarytopic";
 
-   private static final String LONG_TOPIC_NAME = "testinglongvalues";
+  private static final String LONG_TOPIC_NAME = "testinglongvalues";
+  // Topic to test bulk subscribe.
+  private static final String BULK_SUB_TOPIC_NAME = "topicBulkSub";
+
 
   /**
    * Parameters for this test.
@@ -459,6 +465,68 @@ public class PubSubIT extends BaseIT {
         System.out.println("Checking results for topic " + TTL_TOPIC_NAME);
         final List<String> messages = client.invokeMethod(appId, "messages/" + TTL_TOPIC_NAME, null, HttpExtension.GET, List.class).block();
         assertEquals(0, messages.size());
+      }, 2000);
+    }
+
+    daprRun.stop();
+  }
+
+  @Test
+  public void testPubSubBulkSubscribe() throws Exception {
+    DaprRun daprRun = closeLater(startDaprApp(
+            this.getClass().getSimpleName(),
+            SubscriberService.SUCCESS_MESSAGE,
+            SubscriberService.class,
+            true,
+            60000));
+    if (this.useGrpc) {
+      daprRun.switchToGRPC();
+    } else {
+      daprRun.switchToHTTP();
+    }
+
+    // Send a batch of messages on one topic.
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d on topic %s", i, BULK_SUB_TOPIC_NAME);
+        // Publishing messages
+        client.publishEvent(PUBSUB_NAME, BULK_SUB_TOPIC_NAME, message).block();
+        System.out.printf("Published message: '%s' to topic '%s' pubSub_name '%s'\n",
+                message, BULK_SUB_TOPIC_NAME, PUBSUB_NAME);
+      }
+    }
+
+    // Sleeps for five seconds to give subscriber a chance to receive messages.
+    Thread.sleep(5000);
+
+    final String appId = daprRun.getAppName();
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      callWithRetry(() -> {
+        System.out.println("Checking results for topic " + BULK_SUB_TOPIC_NAME);
+
+        @SuppressWarnings("unchecked")
+        Class<List<BulkSubscribeAppResponse>> clazz = (Class) List.class;
+
+        final List<BulkSubscribeAppResponse> messages = client.invokeMethod(
+                appId,
+                "messages/" + BULK_SUB_TOPIC_NAME,
+                null,
+                HttpExtension.GET,
+                clazz).block();
+
+        assertNotNull(messages);
+        BulkSubscribeAppResponse response = OBJECT_MAPPER.convertValue(messages.get(0), BulkSubscribeAppResponse.class);
+
+        // There should be a single bulk response.
+        assertEquals(1, messages.size());
+
+        // The bulk response should contain NUM_MESSAGES entries.
+        assertEquals(NUM_MESSAGES, response.getStatuses().size());
+
+        // All the entries should be SUCCESS.
+        for (BulkSubscribeAppResponseEntry entry : response.getStatuses()) {
+          assertEquals(entry.getStatus(), BulkSubscribeAppResponseStatus.SUCCESS);
+        }
       }, 2000);
     }
 
