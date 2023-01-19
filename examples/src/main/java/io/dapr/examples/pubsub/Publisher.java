@@ -37,7 +37,7 @@ public class Publisher {
   private static final String MESSAGE_TTL_IN_SECONDS = "1000";
 
   //The title of the topic to be used for publishing
-  private static final String TOPIC_NAME = "testingtopic";
+  private static final String DEFAULT_TOPIC_NAME = "testingtopic";
 
   //The name of the pubsub
   private static final String PUBSUB_NAME = "messagebus";
@@ -48,15 +48,17 @@ public class Publisher {
    * @throws Exception A startup Exception.
    */
   public static void main(String[] args) throws Exception {
+    String topicName = getTopicName(args);
     try (DaprClient client = new DaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d", i);
-        //Publishing messages
+        // Publishing messages
         client.publishEvent(
             PUBSUB_NAME,
-            TOPIC_NAME,
+            topicName,
             message,
             singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+
         System.out.println("Published message: " + message);
 
         try {
@@ -72,5 +74,18 @@ public class Publisher {
       // Normally a dapr app would be a web service and not exit main.
       System.out.println("Done.");
     }
+  }
+
+  /**
+   * If a topic is specified in args, use that.
+   * Else, fallback to the default topic.
+   * @param args program arguments
+   * @return name of the topic to publish messages to.
+   */
+  private static String getTopicName(String[] args) {
+    if (args.length >= 1) {
+      return args[0];
+    }
+    return DEFAULT_TOPIC_NAME;
   }
 }

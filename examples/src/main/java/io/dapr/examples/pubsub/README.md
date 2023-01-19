@@ -1,6 +1,6 @@
 # Dapr Pub-Sub Sample
 
-In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subcribe pattern. The publisher will generate messages of a specific topic, while subscriber will listen for messages of specific topic. See [Why Pub-Sub](#why-pub-sub) to understand when this pattern might be a good choice for your software architecture.
+In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subscribe pattern. The publisher will generate messages of a specific topic, while subscriber will listen for messages of specific topic. See [Why Pub-Sub](#why-pub-sub) to understand when this pattern might be a good choice for your software architecture.
 
 Visit [this](https://docs.dapr.io/developing-applications/building-blocks/pubsub/pubsub-overview/) link for more information about Dapr and Pub-Sub.
  
@@ -59,7 +59,7 @@ This Spring Controller handles the message endpoint, printing the message which 
 The subscription's topic in Dapr is handled automatically via the `@Topic` annotation - which also supports the same expressions in 
 [Spring's @Value annotations](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations).
 
-The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support. In this case, `myAppProperty` is a Java property that does not exist, so the expression resolves to the default value (`messagebus`). 
+The code snippet below shows how to create a subscription using the `@Topic` annotation showcasing expression support. In this case, `myAppProperty` is a Java property that does not exist, so the expression resolves to the default value (`messagebus`).
 
 ```java
 @RestController
@@ -83,6 +83,39 @@ public class SubscriberController {
   }
 }
 ```
+
+The `@BulkSubscribe` annotation can be used with `@Topic` to receive multiple messages at once. See the example on how to handle the bulk messages and respond correctly.
+
+```java
+@RestController
+public class SubscriberController {
+  ///...
+  @BulkSubscribe()
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
+  @PostMapping(path = "/testingtopicbulk")
+  public Mono<BulkSubscribeAppResponse> handleBulkMessage(
+          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
+    return Mono.fromCallable(() -> {
+      System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
+
+      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
+      for (BulkSubscribeMessageEntry<?> entry : bulkMessage.getEntries()) {
+        try {
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
+          CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
+          System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
+        } catch (Exception e) {
+          e.printStackTrace();
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
+        }
+      }
+      return new BulkSubscribeAppResponse(entries);
+    });
+  }
+}
+```
+
 Execute the follow script in order to run the Subscriber example:
 
 <!-- STEP
@@ -93,6 +126,8 @@ expected_stdout_lines:
   - '== APP == Subscriber got: This is message #2'
   - '== APP == Subscriber got from bulk published topic: This is message #2'
   - '== APP == Subscriber got from bulk published topic: This is message #3'
+  - '== APP == Bulk Subscriber got: This is message #1'
+  - '== APP == Bulk Subscriber got: This is message #2'
 background: true
 sleep: 5
 -->
@@ -112,17 +147,23 @@ Dapr sidecar will automatically wrap the payload received into a CloudEvent obje
 ```java
 public class Publisher {
   private static final int NUM_MESSAGES = 10;
-  private static final String TOPIC_NAME = "testingtopic";
+  private static final String DEFAULT_TOPIC_NAME = "testingtopic";
   private static final String PUBSUB_NAME = "messagebus";
 
   ///...
   public static void main(String[] args) throws Exception {
-      //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
+      String topicName = getTopicName(args); // Topic can be configured by args. 
+      // Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
       try (DaprClient client = new DaprClientBuilder().build()) {
         for (int i = 0; i < NUM_MESSAGES; i++) {
           String message = String.format("This is message #%d", i);
-          //Publishing messages
-          client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message).block();
+          // Publishing messages
+          client.publishEvent(
+                  PUBSUB_NAME,
+                  topicName,
+                  message,
+                  singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
+
           System.out.println("Published message: " + message);
           //...
         }
@@ -136,7 +177,7 @@ The `CloudEventPublisher.java` file shows how the same can be accomplished if th
 In this case, the app MUST override the content-type parameter via `withContentType()`, so Dapr sidecar knows that the payload is already a CloudEvent object.
 
 ```java
-public class Publisher {
+public class CloudEventPublisher {
   ///...
   public static void main(String[] args) throws Exception {
     //Creating the DaprClient: Using the default builder client produces an HTTP Dapr Client
@@ -370,7 +411,7 @@ public class CloudEventBulkPublisher {
 Use the follow command to execute the BulkPublisher example:
 
 <!-- STEP
-name: Run Publisher
+name: Run Bulk Publisher
 match_order: sequential
 expected_stdout_lines:
   - '== APP == Published the set of messages in a single call to Dapr'
@@ -381,8 +422,8 @@ sleep: 20
 ```bash
 dapr run --components-path ./components/pubsub --app-id bulk-publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.BulkPublisher
 ```
-
 <!-- END_STEP -->
+
 
 Once running, the BulkPublisher should print the output as follows:
 
@@ -433,9 +474,55 @@ The Subscriber started previously [here](#running-the-subscriber) should print t
 == APP == Subscriber got: {"id":"df20d841-296e-4c6b-9dcb-dd17920538e7","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #8","data_base64":null}
 ```
 
-> Note: Redis pubsub component does not have a native and uses Dapr runtime's default bulk publish implementation which is concurrent, thus the order of the events that are published are not guaranteed. 
+> Note: Redis pubsub component does not have a native and uses Dapr runtime's default bulk publish implementation which is concurrent, thus the order of the events that are published are not guaranteed.
 
 Messages have been retrieved from the topic.
+
+### Bulk Subscription
+
+You can also run the publisher to publish messages to `testingtopicbulk` topic, and receive messages using the bulk subscription.
+
+<!-- STEP
+name: Run Publisher on bulk topic
+expected_stdout_lines:
+  - '== APP == Published message: This is message #0'
+  - '== APP == Published message: This is message #1'
+background: true
+sleep: 15
+-->
+
+```bash
+dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Publisher testingtopicbulk
+```
+
+<!-- END_STEP -->
+
+Once running, the Publisher should print the same output as seen [above](#running-the-publisher). The Subscriber should print the output as follows:
+
+```txt
+== APP == Bulk Subscriber got 10 messages.
+== APP == Bulk Subscriber message has entry ID: d4d81c57-d75c-4a22-a747-e907099ca135
+== APP == Bulk Subscriber got: This is message #0
+== APP == Bulk Subscriber message has entry ID: f109c837-f7c8-4839-8d71-2df9c467875c
+== APP == Bulk Subscriber got: This is message #1
+== APP == Bulk Subscriber message has entry ID: d735044f-1320-43e1-bd41-787ad9d26427
+== APP == Bulk Subscriber got: This is message #2
+== APP == Bulk Subscriber message has entry ID: afe74e5a-1a2b-498a-beca-7a6383141ccf
+== APP == Bulk Subscriber got: This is message #3
+== APP == Bulk Subscriber message has entry ID: 1df3fa51-d137-4749-891d-973ce58f1e1c
+== APP == Bulk Subscriber got: This is message #4
+== APP == Bulk Subscriber message has entry ID: ecab82bd-77be-40a1-8b62-2dbb3388d726
+== APP == Bulk Subscriber got: This is message #5
+== APP == Bulk Subscriber message has entry ID: 49a63916-ed09-4101-969e-13a860e35c55
+== APP == Bulk Subscriber got: This is message #6
+== APP == Bulk Subscriber message has entry ID: 897ec32c-ad74-4512-8979-ee0a455433e8
+== APP == Bulk Subscriber got: This is message #7
+== APP == Bulk Subscriber message has entry ID: 67367edc-27a6-4c8c-9e39-31caa0f74b2d
+== APP == Bulk Subscriber got: This is message #8
+== APP == Bulk Subscriber message has entry ID: f134d21f-0a05-408d-977c-1397b999e908
+== APP == Bulk Subscriber got: This is message #9
+
+```
 
 ### Tracing
 
@@ -459,7 +546,7 @@ Once you click on the bulk publisher tracing event, you will see the details of 
 If you would like to add a tracing span as a parent of the span created by Dapr, change the publisher to handle that. See `PublisherWithTracing.java` to see the difference and run it with:
 
 <!-- STEP
-name: Run Publisher
+name: Run Publisher with tracing
 expected_stdout_lines:
   - '== APP == Published message: This is message #0'
   - '== APP == Published message: This is message #1'
