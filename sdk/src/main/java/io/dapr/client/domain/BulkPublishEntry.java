@@ -22,32 +22,40 @@ import java.util.Map;
  *
  * @param <T> Type of the event that is part of the request.
  */
-public class BulkPublishEntry<T> {
+public final class BulkPublishEntry<T> {
   /**
    * The ID uniquely identifying this particular request entry across the request and scoped for this request only.
    */
-  private String entryId;
+  private final String entryId;
 
   /**
    * The event to be published.
    */
-  private T event;
+  private final T event;
 
   /**
    * The content type of the event to be published. Uses MIME style content-type values.
    */
-  private String contentType;
+  private final String contentType;
 
   /**
    * The metadata set for this particular event.
    * Any particular values in this metadata overrides the request metadata present in BulkPublishRequest.
    */
-  private Map<String, String> metadata;
+  private final Map<String, String> metadata;
 
   /**
-   * Default constructor for the BulkPublishRequestEntry object.
+   * Constructor for the BulkPublishRequestEntry object.
+   *
+   * @param entryId     A request scoped ID uniquely identifying this entry in the BulkPublishRequest.
+   * @param event       Event to be published.
+   * @param contentType Content Type of the event to be published in MIME format.
    */
-  public BulkPublishEntry() {
+  public BulkPublishEntry(String entryId, T event, String contentType) {
+    this.entryId = entryId;
+    this.event = event;
+    this.contentType = contentType;
+    this.metadata = Collections.unmodifiableMap(new HashMap<>());
   }
 
   /**
@@ -70,35 +78,17 @@ public class BulkPublishEntry<T> {
     return entryId;
   }
 
-  public BulkPublishEntry<T> setEntryId(String entryId) {
-    this.entryId = entryId;
-    return this;
-  }
-
   public T getEvent() {
     return event;
   }
 
-  public BulkPublishEntry<T> setEvent(T event) {
-    this.event = event;
-    return this;
-  }
 
   public String getContentType() {
     return contentType;
-  }
-
-  public BulkPublishEntry<T> setContentType(String contentType) {
-    this.contentType = contentType;
-    return this;
   }
 
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-  public BulkPublishEntry<T> setMetadata(Map<String, String> metadata) {
-    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
-    return this;
-  }
 }

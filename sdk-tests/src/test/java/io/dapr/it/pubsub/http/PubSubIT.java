@@ -55,6 +55,7 @@ import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -207,7 +208,7 @@ public class PubSubIT extends BaseIT {
       BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
       System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
           NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
-      Assert.assertNotNull("expected not null bulk publish response", response);
+      assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing an object.
@@ -216,7 +217,7 @@ public class PubSubIT extends BaseIT {
       response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
           "application/json", Collections.singletonList(object)).block();
       System.out.println("Published one object.");
-      Assert.assertNotNull("expected not null bulk publish response", response);
+      assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       //Publishing a single byte: Example of non-string based content published
@@ -224,7 +225,7 @@ public class PubSubIT extends BaseIT {
           Collections.singletonList(new byte[]{1})).block();
       System.out.println("Published one byte.");
 
-      Assert.assertNotNull("expected not null bulk publish response", response);
+      assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       CloudEvent cloudEvent = new CloudEvent();
@@ -241,7 +242,7 @@ public class PubSubIT extends BaseIT {
 
       //Publishing a cloud event.
       previewClient.publishEvents(req).block();
-      Assert.assertNotNull("expected not null bulk publish response", response);
+      assertNotNull("expected not null bulk publish response", response);
       Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
 
       System.out.println("Published one cloud event.");
@@ -750,7 +751,7 @@ public class PubSubIT extends BaseIT {
             "messages/testinglongvalues",
             null,
             HttpExtension.GET, CLOUD_EVENT_LONG_LIST_TYPE_REF).block();
-        Assert.assertNotNull(messages);
+        assertNotNull(messages);
         for (CloudEvent<ConvertToLong> message : messages) {
           actual.add(message.getData());
         }

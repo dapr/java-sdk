@@ -68,8 +68,8 @@ public class CloudEventBulkPublisher {
             put("dataKey", val);
           }
         });
-        BulkPublishEntry<CloudEvent<Map<String, String>>> entry = new BulkPublishEntry<>();
-        entry.setEntryId("" + (i + 1)).setEvent(cloudEvent).setContentType(CloudEvent.CONTENT_TYPE);
+        BulkPublishEntry<CloudEvent<Map<String, String>>> entry = new BulkPublishEntry<>(
+            "" + (i + 1), cloudEvent, CloudEvent.CONTENT_TYPE, null);
         entries.add(entry);
       }
       BulkPublishRequest<CloudEvent<Map<String, String>>> request = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,

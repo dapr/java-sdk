@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * @param <T> Type parameter of the event.
  */
-public class BulkPublishRequest<T> {
+public final class BulkPublishRequest<T> {
 
   /**
    * The name of the pubsub to publish to.

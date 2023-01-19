@@ -25,7 +25,7 @@ public class BulkPublishResponse<T> {
   /**
    * List of {@link BulkPublishResponseFailedEntry} objects that have failed to publish.
    */
-  private List<BulkPublishResponseFailedEntry<T>> failedEntries;
+  private final List<BulkPublishResponseFailedEntry<T>> failedEntries;
 
   /**
    * Default constructor for class.
@@ -47,10 +47,5 @@ public class BulkPublishResponse<T> {
 
   public List<BulkPublishResponseFailedEntry<T>> getFailedEntries() {
     return failedEntries;
-  }
-
-  public BulkPublishResponse<T> setFailedEntries(List<BulkPublishResponseFailedEntry<T>> failedEntries) {
-    this.failedEntries = failedEntries == null ? new ArrayList<>() : Collections.unmodifiableList(failedEntries);
-    return this;
   }
 }
