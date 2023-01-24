@@ -120,7 +120,7 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void publishEventInvokation() {
+  public void publishEventInvocation() {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
         .respond(EXPECTED_RESULT);
@@ -165,6 +165,16 @@ public class DaprClientHttpTest {
         daprClientHttp.publishEvent("mypubsubname", null, event).block());
     assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.publishEvent("mypubsubname", "", event).block());
+  }
+
+  @Test
+  public void publishEventIfPubsubIsNullOrEmpty() {
+    String event = "{ \"message\": \"This is a test\" }";
+
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.publishEvent(null, "A", event).block());
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.publishEvent("", "A", event).block());
   }
 
   @Test

@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.utils;
 
+import com.fasterxml.jackson.databind.JavaType;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
@@ -31,6 +33,8 @@ public abstract class TypeRef<T> {
   public static final TypeRef<Integer> INT = new TypeRef<Integer>(int.class) {};
 
   public static final TypeRef<Long> LONG = new TypeRef<Long>(long.class) {};
+
+  public static final TypeRef<Short> SHORT = new TypeRef<Short>(short.class) {};
 
   public static final TypeRef<Character> CHAR = new TypeRef<Character>(char.class) {};
 
@@ -140,5 +144,26 @@ public abstract class TypeRef<T> {
     }
     
     return new TypeRef<T>(type) {};
+  }
+
+  /**
+   * Checks if the given TypeRef is of a primitive type
+   * Similar to implementation of deserializePrimitives in the class {@link io.dapr.client.ObjectSerializer}
+   * It considers only those types as primitives.
+   * @param typeRef  Type to be referenced.
+   * @param <T> Type to be referenced.
+   * @return truth value of whether the given type ref is a primitive reference or not.
+   */
+  public static <T> boolean isPrimitive(TypeRef<T> typeRef) {
+    if (typeRef == null) {
+      return false;
+    }
+    if (BOOLEAN.equals(typeRef) || CHAR.equals(typeRef)
+        || INT.equals(typeRef) || FLOAT.equals(typeRef)
+        || LONG.equals(typeRef) || DOUBLE.equals(typeRef)
+        || SHORT.equals(typeRef) || BYTE.equals(typeRef)) {
+      return true;
+    }
+    return false;
   }
 }

@@ -27,6 +27,8 @@ class DaprSubscriptionBuilder {
   private String defaultPath;
   private Map<String, String> metadata;
 
+  private DaprTopicBulkSubscribe bulkSubscribe;
+
   /**
    * Create a subscription topic.
    * @param pubsubName The pubsub name to subscribe to.
@@ -87,6 +89,16 @@ class DaprSubscriptionBuilder {
   }
 
   /**
+   * Sets the bulkSubscribe configuration for the subscription.
+   * @param bulkSubscribe The bulk subscribe configuration.
+   * @return this instance.
+   */
+  public DaprSubscriptionBuilder setBulkSubscribe(DaprTopicBulkSubscribe bulkSubscribe) {
+    this.bulkSubscribe = bulkSubscribe;
+    return this;
+  }
+
+  /**
    * Builds the DaprTopicSubscription that is returned by the application to Dapr.
    * @return The DaprTopicSubscription.
    */
@@ -103,7 +115,7 @@ class DaprSubscriptionBuilder {
       route = defaultPath;
     }
 
-    return new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata);
+    return new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata, bulkSubscribe);
   }
 
   private static class TopicRule {

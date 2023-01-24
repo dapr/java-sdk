@@ -50,7 +50,7 @@ cd examples
 
 Before getting into the application code, follow these steps in order to set up a local instance of Kafka. This is needed for the local instances. Steps are:
 
-1. To run container locally run: 
+1. To run container locally run:
 
 <!-- STEP
 name: Setup kafka container
