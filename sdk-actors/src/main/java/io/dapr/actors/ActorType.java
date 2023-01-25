@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
  * Annotation to define Actor class.
  */
 @Documented
-@Target(ElementType.TYPE_USE)
+@Target({ElementType.TYPE_USE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ActorType {
 
