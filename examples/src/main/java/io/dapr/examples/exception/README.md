@@ -74,7 +74,7 @@ sleep: 5
 -->
 
 ```bash
-dapr run --app-id exception_example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
+dapr run --app-id exception-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
 ```
 
 <!-- END_STEP -->
@@ -124,7 +124,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id exception_example
+dapr stop --app-id exception-example
 ```
 
 <!-- END_STEP -->

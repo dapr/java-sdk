@@ -148,7 +148,13 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Topic;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
+import io.dapr.client.domain.BulkSubscribeMessage;
+import io.dapr.client.domain.BulkSubscribeMessageEntry;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -186,6 +192,62 @@ public class SubscriberController {
     });
   }
 
+  @BulkSubscribe()
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
+  @PostMapping(path = "/testingtopicbulk")
+  public Mono<BulkSubscribeAppResponse> handleBulkMessage(
+          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
+    return Mono.fromCallable(() -> {
+      if (bulkMessage.getEntries().size() == 0) {
+        return new BulkSubscribeAppResponse(new ArrayList<BulkSubscribeAppResponseEntry>());
+      }
+
+      System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
+
+      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
+      for (BulkSubscribeMessageEntry<?> entry : bulkMessage.getEntries()) {
+        try {
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
+          CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
+          System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
+        } catch (Exception e) {
+          e.printStackTrace();
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
+        }
+      }
+      return new BulkSubscribeAppResponse(entries);
+    });
+  }
+}
+```
+
+##### Bulk Publish Messages
+> Note: API is in Alpha stage
+
+
+```java
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import java.util.ArrayList;
+import java.util.List;
+class Solution {
+  public void publishMessages() {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+      // Create a list of messages to publish
+      List<String> messages = new ArrayList<>();
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d", i);
+        messages.add(message);
+        System.out.println("Going to publish message : " + message);
+      }
+
+      // Publish list of messages using the bulk publish API
+      BulkPublishResponse<String> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, "text/plain", messages).block()
+    }
+  }
 }
 ```
 
