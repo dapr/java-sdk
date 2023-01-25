@@ -37,11 +37,12 @@ import java.util.Map;
 
 /**
  * Class that delegates to other implementations.
- *
+ * @deprecated This class will be deleted at SDK release version 1.10.
  * @see DaprClient
  * @see DaprClientGrpc
  * @see DaprClientHttp
  */
+@Deprecated
 class DaprClientProxy implements DaprClient {
 
   /**
