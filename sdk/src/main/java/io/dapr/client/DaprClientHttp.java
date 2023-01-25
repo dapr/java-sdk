@@ -66,10 +66,11 @@ import java.util.stream.Collectors;
 
 /**
  * An adapter for the HTTP Client.
- *
+ * @deprecated This class will be deleted at SDK release version 1.10.
  * @see io.dapr.client.DaprHttp
  * @see io.dapr.client.DaprClient
  */
+@Deprecated
 public class DaprClientHttp extends AbstractDaprClient {
   /**
    * Header for the conditional operation.

@@ -21,12 +21,16 @@ import io.dapr.v1.DaprGrpc;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 /**
  * Holds a client for Dapr sidecar communication. ActorClient should be reused.
  */
 public class ActorClient implements AutoCloseable {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ActorClient.class);
 
   /**
    * gRPC channel for communication with Dapr sidecar.
@@ -118,7 +122,10 @@ public class ActorClient implements AutoCloseable {
   private static DaprClient buildDaprClient(DaprApiProtocol apiProtocol, Channel grpcManagedChannel) {
     switch (apiProtocol) {
       case GRPC: return new DaprGrpcClient(DaprGrpc.newStub(grpcManagedChannel));
-      case HTTP: return new DaprHttpClient(new DaprHttpBuilder().build());
+      case HTTP: {
+        LOGGER.warn("HTTP client protocol is deprecated and will be removed in Dapr's Java SDK version 1.10.");
+        return new DaprHttpClient(new DaprHttpBuilder().build());
+      }
       default: throw new IllegalStateException("Unsupported protocol: " + apiProtocol.name());
     }
   }
