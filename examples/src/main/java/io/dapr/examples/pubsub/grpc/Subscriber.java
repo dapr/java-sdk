@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub;
+package io.dapr.examples.pubsub.grpc;
 
 import io.dapr.examples.DaprApplication;
 import org.apache.commons.cli.CommandLine;
@@ -26,7 +26,7 @@ import org.apache.commons.cli.Options;
  * 2. cd [repo root]/examples
  * 3. Run the server:
  * dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- \
- *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Subscriber -p 3000
+ *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3000
  */
 public class Subscriber {
 
@@ -46,6 +46,6 @@ public class Subscriber {
     int port = Integer.parseInt(cmd.getOptionValue("port"));
 
     // Start Dapr's callback endpoint.
-    DaprApplication.start(port);
+    DaprApplication.start("grpc",port);
   }
 }

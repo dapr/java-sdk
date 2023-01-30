@@ -24,6 +24,7 @@
     <maven.deploy.skip>true</maven.deploy.skip>
     <spotbugs.fail>false</spotbugs.fail>
     <opentelemetry.version>0.14.0</opentelemetry.version>
+    <grpc-server-spring-boot-starter.version>2.13.1.RELEASE</grpc-server-spring-boot-starter.version>
   </properties>
 
   <dependencies>
@@ -53,6 +54,11 @@
       <version>${grpc.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+			<groupId>net.devh</groupId>
+			<artifactId>grpc-server-spring-boot-starter</artifactId>
+      <version>${grpc-server-spring-boot-starter.version}</version>
+		</dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java-util</artifactId>
