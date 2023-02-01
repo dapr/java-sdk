@@ -18,9 +18,10 @@ import reactor.core.publisher.Mono;
 
 /**
  * DaprClient over HTTP for actor client.
- *
+ * @deprecated This class will be deleted at SDK release version 1.10.
  * @see DaprHttp
  */
+@Deprecated
 class DaprHttpClient implements DaprClient {
 
   /**

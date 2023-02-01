@@ -14,6 +14,9 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -42,6 +45,7 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -390,6 +394,50 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   @Override
   public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, Class<T> clazz) {
     return this.queryState(request, TypeRef.get(clazz));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        List<T> events) {
+    return publishEvents(pubsubName, topicName, contentType, null, events);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        T... events) {
+    return publishEvents(pubsubName, topicName, contentType, null, events);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        Map<String, String> requestMetadata, T... events) {
+    return publishEvents(pubsubName, topicName, contentType, requestMetadata, Arrays.asList(events));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        Map<String, String> requestMetadata, List<T> events) {
+    if (events == null || events.size() == 0) {
+      throw new IllegalArgumentException("list of events cannot be null or empty");
+    }
+    List<BulkPublishEntry<T>> entries = new ArrayList<>();
+    for (int i = 0; i < events.size(); i++) {
+      // entryID field is generated based on order of events in the request
+      entries.add(new BulkPublishEntry<>("" + i, events.get(i), contentType, null));
+    }
+    return publishEvents(new BulkPublishRequest<>(pubsubName, topicName, entries, requestMetadata));
   }
 
   /**

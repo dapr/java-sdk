@@ -87,4 +87,8 @@ public class MethodInvokeController {
         }
         Thread.sleep(seconds * 1000);
     }
+
+    @GetMapping(path = "/health")
+    public void health() {
+    }
 }

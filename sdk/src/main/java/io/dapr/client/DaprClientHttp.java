@@ -15,6 +15,8 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -64,10 +66,11 @@ import java.util.stream.Collectors;
 
 /**
  * An adapter for the HTTP Client.
- *
+ * @deprecated This class will be deleted at SDK release version 1.10.
  * @see io.dapr.client.DaprHttp
  * @see io.dapr.client.DaprClient
  */
+@Deprecated
 public class DaprClientHttp extends AbstractDaprClient {
   /**
    * Header for the conditional operation.
@@ -150,12 +153,17 @@ public class DaprClientHttp extends AbstractDaprClient {
     try {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
-      Object data = request.getData();
-      Map<String, String> metadata = request.getMetadata();
+
+      if (pubsubName == null || pubsubName.trim().isEmpty()) {
+        throw new IllegalArgumentException("Pubsub name cannot be null or empty.");
+      }
 
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
+
+      Object data = request.getData();
+      Map<String, String> metadata = request.getMetadata();
 
       byte[] serializedEvent = objectSerializer.serialize(data);
       // Content-type can be overwritten on a per-request basis.
@@ -177,6 +185,14 @@ public class DaprClientHttp extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request) {
+    return DaprException.wrapMono(new UnsupportedOperationException());
   }
 
   /**
