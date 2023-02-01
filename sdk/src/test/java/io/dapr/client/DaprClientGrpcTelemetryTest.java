@@ -189,7 +189,7 @@ public class DaprClientGrpcTelemetryTest {
         .setBody("request")
         .setHttpExtension(HttpExtension.NONE);
     Mono<Void> result = this.client.invokeMethod(req, TypeRef.get(Void.class))
-        .subscriberContext(it -> it.putAll(contextCopy == null ? Context.empty() : contextCopy));
+        .contextWrite((contextCopy == null ? Context.empty() : contextCopy));
     result.block();
   }
 

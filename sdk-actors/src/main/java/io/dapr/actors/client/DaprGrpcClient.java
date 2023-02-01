@@ -30,6 +30,7 @@ import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -65,7 +66,7 @@ class DaprGrpcClient implements DaprClient {
             .setMethod(methodName)
             .setData(jsonPayload == null ? ByteString.EMPTY : ByteString.copyFrom(jsonPayload))
             .build();
-    return Mono.subscriberContext().flatMap(
+    return Mono.deferContextual(
         context -> this.<DaprProtos.InvokeActorResponse>createMono(
             it -> intercept(context, client).invokeActor(req, it)
         )
@@ -109,7 +110,7 @@ class DaprGrpcClient implements DaprClient {
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(Context context, DaprGrpc.DaprStub client) {
+  private static DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
     return GrpcWrapper.intercept(context, client);
   }
 

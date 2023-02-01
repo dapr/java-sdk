@@ -67,7 +67,7 @@ public class InvokeClient {
                 InvokeMethodRequest sleepRequest = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_sleep")
                     .setHttpExtension(HttpExtension.POST);
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
-              }).subscriberContext(getReactorContext()).block();
+              }).contextWrite(getReactorContext()).block();
         }
       }
     }

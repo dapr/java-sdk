@@ -23,6 +23,7 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.util.Map;
 import java.util.Optional;
@@ -61,7 +62,7 @@ public final class GrpcWrapper {
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  public static DaprGrpc.DaprStub intercept(final Context context, DaprGrpc.DaprStub client) {
+  public static DaprGrpc.DaprStub intercept(final ContextView context, DaprGrpc.DaprStub client) {
     ClientInterceptor interceptor = new ClientInterceptor() {
       @Override
       public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
