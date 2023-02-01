@@ -101,7 +101,9 @@ public class Properties {
 
   /**
    * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.
+   * @deprecated This attribute will be deleted at SDK version 1.10.
    */
+  @Deprecated
   public static final Property<DaprApiProtocol> API_PROTOCOL = new GenericProperty<>(
       "dapr.api.protocol",
       "DAPR_API_PROTOCOL",
@@ -110,7 +112,9 @@ public class Properties {
 
   /**
    * Determines if Dapr client should use gRPC or HTTP for Dapr's service method invocation APIs.
+   * @deprecated This attribute will be deleted at SDK version 1.10.
    */
+  @Deprecated
   public static final Property<DaprApiProtocol> API_METHOD_INVOCATION_PROTOCOL = new GenericProperty<>(
       "dapr.api.methodInvocation.protocol",
       "DAPR_API_METHOD_INVOCATION_PROTOCOL",

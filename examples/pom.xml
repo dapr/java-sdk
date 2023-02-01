@@ -123,6 +123,11 @@
       <artifactId>dapr-sdk</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.evanlennick</groupId>
+      <artifactId>retry4j</artifactId>
+      <version>0.15.0</version>
+    </dependency>
   </dependencies>
 
   <build>

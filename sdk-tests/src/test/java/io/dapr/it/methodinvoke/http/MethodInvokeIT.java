@@ -9,13 +9,10 @@ import io.dapr.it.DaprRun;
 import io.dapr.it.MethodInvokeServiceProtos;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -24,32 +21,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class MethodInvokeIT extends BaseIT {
 
     //Number of messages to be sent: 10
     private static final int NUM_MESSAGES = 10;
 
     /**
-     * Parameters for this test.
-     * Param #1: useGrpc.
-     * @return Collection of parameter tuples.
-     */
-    @Parameters
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] { { false }, { true } });
-    }
-
-    /**
      * Run of a Dapr application.
      */
     private DaprRun daprRun = null;
-
-    @Parameter
-    public boolean useGrpc;
 
     @Before
     public void init() throws Exception {
@@ -59,13 +40,7 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.class,
           true,
           30000);
-
-        if (this.useGrpc) {
-            daprRun.switchToGRPC();
-        } else {
-            daprRun.switchToHTTP();
-        }
-
+        daprRun.switchToHTTP();
         // Wait since service might be ready even after port is available.
         Thread.sleep(2000);
     }
@@ -154,6 +129,7 @@ public class MethodInvokeIT extends BaseIT {
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", -9, HttpExtension.POST).block());
 
+            // TODO(artursouza): change this to INTERNAL once runtime is fixed.
             assertEquals("UNKNOWN", exception.getErrorCode());
             assertNotNull(exception.getMessage());
             assertTrue(exception.getMessage().contains("Internal Server Error"));

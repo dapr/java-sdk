@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub.http;
+package io.dapr.examples.pubsub;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
@@ -30,7 +30,7 @@ import static java.util.Collections.singletonMap;
  * 2. cd [repo root]/examples
  * 3. Run the program:
  * dapr run --components-path ./components/pubsub --app-id publisher -- \
- *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.CloudEventPublisher
+ *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.CloudEventPublisher
  */
 public class CloudEventPublisher {
 

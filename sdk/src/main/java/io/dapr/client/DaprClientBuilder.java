@@ -20,6 +20,8 @@ import io.dapr.utils.Version;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 
@@ -28,6 +30,8 @@ import java.io.Closeable;
  * Currently only gRPC and HTTP Client will be supported.
  */
 public class DaprClientBuilder {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DaprClientBuilder.class);
 
   /**
    * Determine if this builder will create GRPC clients instead of HTTP clients.
@@ -111,6 +115,10 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   public DaprClient build() {
+    if (this.apiProtocol == DaprApiProtocol.HTTP) {
+      LOGGER.warn("HTTP client protocol is deprecated and will be removed in Dapr's Java SDK version 1.10.");
+    }
+
     if (this.apiProtocol != this.methodInvocationApiProtocol) {
       return new DaprClientProxy(buildDaprClient(this.apiProtocol), buildDaprClient(this.methodInvocationApiProtocol));
     }
