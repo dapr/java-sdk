@@ -89,7 +89,7 @@ public class OpenTelemetryConfig {
    * Converts current OpenTelemetry's context into Reactor's context.
    * @return Reactor's context.
    */
-  public static reactor.util.context.Context getReactorContext() {
+  public static reactor.util.context.ContextView getReactorContext() {
     return getReactorContext(Context.current());
   }
 

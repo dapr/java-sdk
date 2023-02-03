@@ -71,7 +71,7 @@ public class BulkPublisher {
           System.out.println("Going to publish message : " + message);
         }
         BulkPublishResponse<?> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, "text/plain", messages)
-            .subscriberContext(getReactorContext()).block();
+            .contextWrite(getReactorContext()).block();
         System.out.println("Published the set of messages in a single call to Dapr");
         if (res != null) {
           if (res.getFailedEntries().size() > 0) {
