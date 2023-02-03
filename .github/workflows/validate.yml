@@ -37,11 +37,11 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.9.1
-      DAPR_RUNTIME_VER: 1.9.3
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
+      DAPR_CLI_VER: 1.10.0-rc.1
+      DAPR_RUNTIME_VER: 1.10.0-rc.2
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.10.0-rc.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF: a8c698ad897e42d6624f5fc6ccfd0630e2a8fd00
+      DAPR_REF:
     steps:
       - uses: actions/checkout@v3
       - name: Set up OpenJDK ${{ env.JDK_VER }}
