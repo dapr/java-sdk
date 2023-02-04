@@ -104,7 +104,7 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [Invoking a Http service](./examples/src/main/java/io/dapr/examples/invoke/http)
 * [Invoking a Grpc service](./examples/src/main/java/io/dapr/examples/invoke/grpc)
 * [State management](./examples/src/main/java/io/dapr/examples/state)
-* [PubSub with subscriber over Http](./examples/src/main/java/io/dapr/examples/pubsub/http)
+* [PubSub with subscriber](./examples/src/main/java/io/dapr/examples/pubsub/)
 * [Binding with input over Http](./examples/src/main/java/io/dapr/examples/bindings/http)
 * [Actors](./examples/src/main/java/io/dapr/examples/actors/)
 * [Secrets management](./examples/src/main/java/io/dapr/examples/secrets)
