@@ -755,8 +755,8 @@ public class PubSubIT extends BaseIT {
         for (CloudEvent<ConvertToLong> message : messages) {
           actual.add(message.getData());
         }
+        Assert.assertEquals(values, actual);
       }, 2000);
-      Assert.assertEquals(values, actual);
     }
   }
 
