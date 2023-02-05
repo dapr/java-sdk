@@ -14,10 +14,10 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import com.google.protobuf.GeneratedMessageV3;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
@@ -30,12 +30,10 @@ import io.grpc.testing.GrpcCleanupRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -43,303 +41,333 @@ import java.util.concurrent.ExecutionException;
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.mockito.Mockito.*;
 
 public class DaprGrpcClientTest {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private static final String ACTOR_TYPE = "MyActorType";
+    private static final String ACTOR_TYPE = "MyActorType";
 
-  private static final String ACTOR_ID = "1234567890";
+    private static final String ACTOR_ID = "1234567890";
 
-  private static final String ACTOR_ID_OK = "123-Ok";
+    private static final String KEY = "MyKey";
 
-  private static final String ACTOR_ID_NULL_INPUT = "123-Null";
+    private static final String ACTOR_EXCEPTION = "1_exception";
 
-  private static final String ACTOR_EXCEPTION = "1_exception";
+    private static final String REMINDER_NAME = "myreminder";
 
-  private static final String METHOD_NAME = "myMethod";
+    private static final String TIMER_NAME = "timerName";
 
-  private static final byte[] REQUEST_PAYLOAD = "{ \"id\": 123 }".getBytes();
+    private static final byte[] RESPONSE_PAYLOAD = "\"hello world\"".getBytes();
 
-  private static final byte[] RESPONSE_PAYLOAD = "\"OK\"".getBytes();
+    private static final List<ActorStateOperation> OPERATIONS =  Arrays.asList(
+            new ActorStateOperation("upsert", "mykey", "hello world".getBytes()),
+            new ActorStateOperation("delete", "mykey", null));
 
-  private final DaprGrpc.DaprImplBase serviceImpl =
-          mock(DaprGrpc.DaprImplBase.class, delegatesTo(
-                  new DaprGrpc.DaprImplBase() {
-                    @Override
-                    public void getActorState(DaprProtos.GetActorStateRequest request,
-                                            StreamObserver<DaprProtos.GetActorStateResponse> responseObserver) {
-                      switch (request.getActorId()) {
-                        case ACTOR_ID_OK:
-                        case ACTOR_ID_NULL_INPUT:
-                          responseObserver.onNext(
-                                  DaprProtos.GetActorStateResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
-                                          .build());
-                          responseObserver.onCompleted();
-                          return;
+    private final DaprGrpc.DaprImplBase serviceImpl = new CustomDaprClient();
 
-                        case ACTOR_EXCEPTION:
-                          Throwable e = new ArithmeticException();
-                          StatusException se = new StatusException(Status.UNKNOWN.withCause(e));
-                          responseObserver.onError(se);
-                          return;
-                      }
-                      super.getActorState(request, responseObserver);
+    private DaprGrpcClient client;
+
+    @Rule
+    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+
+    @Before
+    public void setup() throws IOException {
+        // Generate a unique in-process server name.
+        String serverName = InProcessServerBuilder.generateName();
+
+        // Create a server, add service, start, and register for automatic graceful shutdown.
+        grpcCleanup.register(InProcessServerBuilder
+                .forName(serverName).directExecutor().addService(serviceImpl).build().start());
+
+        // Create a client channel and register for automatic graceful shutdown.
+        ManagedChannel channel = grpcCleanup.register(
+                InProcessChannelBuilder.forName(serverName).directExecutor().build());
+
+        // Create a HelloWorldClient using the in-process channel;
+        client = new DaprGrpcClient(DaprGrpc.newStub(channel));
+    }
+
+    @Test
+    public void getActorStateException() {
+        Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_EXCEPTION, KEY);
+        assertThrowsDaprException(
+                ExecutionException.class,
+                "UNKNOWN",
+                "UNKNOWN: ",
+                result::block);
+    }
+
+    @Test
+    public void getActorState() {
+        Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_ID, KEY);
+        assertArrayEquals(RESPONSE_PAYLOAD, result.block());
+    }
+
+    @Test
+    public void saveActorStateTransactionallyException() {
+        Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_EXCEPTION, OPERATIONS);
+        assertThrowsDaprException(
+                ExecutionException.class,
+                "UNKNOWN",
+                "UNKNOWN: ",
+                result::block);
+    }
+    @Test
+    public void saveActorStateTransactionally() {
+        Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, OPERATIONS);
+        result.block();
+    }
+
+    @Test
+    public void saveActorStateTransactionallyByteArray() {
+        Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, OPERATIONS);
+        result.block();
+    }
+
+    @Test
+    public void saveActorStateTransactionallyInvalidValueType() {
+        ActorStateOperation[] operations = new ActorStateOperation[]{
+                new ActorStateOperation("upsert", "mykey", 123),
+                new ActorStateOperation("delete", "mykey", null),
+        };
+
+        Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
+        assertThrows(IllegalArgumentException.class, result::block);
+    }
+
+
+    @Test
+    public void registerActorReminder() {
+        ActorReminderParams params = new ActorReminderParams(
+                "hello world".getBytes(),
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(2)
+        );
+        Mono<Void> result = client.registerReminder(ACTOR_TYPE, ACTOR_ID, REMINDER_NAME, params);
+        result.block();
+    }
+
+    @Test
+    public void unregisterActorReminder() {
+
+        Mono<Void> result = client.unregisterReminder(ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
+        result.block();
+    }
+
+    @Test
+    public void registerActorTimer() {
+        String callback = "mymethod";
+        ActorTimerParams params = new ActorTimerParams(
+                callback,
+                "hello world".getBytes(),
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(2)
+        );
+
+        Mono<Void> result = client.registerTimer(ACTOR_TYPE, ACTOR_ID, TIMER_NAME, params);
+        result.block();
+    }
+
+    @Test
+    public void unregisterActorTimer() {
+        Mono<Void> result = client.unregisterTimer(ACTOR_TYPE, ACTOR_ID, TIMER_NAME);
+        result.block();
+    }
+
+
+    private class CustomDaprClient extends DaprGrpc.DaprImplBase {
+
+        @Override
+        public void getActorState(DaprProtos.GetActorStateRequest request,
+                                  StreamObserver<DaprProtos.GetActorStateResponse> responseObserver) {
+            assertEquals(ACTOR_TYPE, request.getActorType());
+            assertEquals(KEY, request.getKey());
+            assertEquals(ACTOR_ID, request.getActorId());
+            switch (request.getActorId()) {
+                case ACTOR_ID:
+                    populateObserver(responseObserver,  DaprProtos.GetActorStateResponse.newBuilder().setData(ByteString.copyFrom(RESPONSE_PAYLOAD))
+                            .build());
+                    return;
+
+                case ACTOR_EXCEPTION:
+                    throwException(responseObserver);
+                    return;
+            }
+            super.getActorState(request, responseObserver);
+        }
+
+        public void executeActorStateTransaction(io.dapr.v1.DaprProtos.ExecuteActorStateTransactionRequest request,
+                                                 io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
+            assertEquals(ACTOR_TYPE, request.getActorType());
+            assertEquals(ACTOR_ID, request.getActorId());
+            assertTrue(new OperationsMatcher(OPERATIONS).matches(request));
+            switch (request.getActorId()) {
+                case ACTOR_ID:
+                    populateObserver(responseObserver, Empty.newBuilder().build());
+                    return;
+
+                case ACTOR_EXCEPTION:
+                    throwException(responseObserver);
+                    return;
+            }
+            super.executeActorStateTransaction(request, responseObserver);
+        }
+
+        @Override
+        public void registerActorReminder(io.dapr.v1.DaprProtos.RegisterActorReminderRequest request,
+                                          io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
+            assertEquals(REMINDER_NAME, request.getName());
+            assertEquals("0h0m1s0ms", request.getDueTime());
+            assertEquals("0h0m2s0ms", request.getPeriod());
+            assertEquals(ACTOR_TYPE, request.getActorType());
+            assertEquals(ACTOR_ID, request.getActorId());
+            switch (request.getActorId()) {
+                case ACTOR_ID:
+                    populateObserver(responseObserver, Empty.newBuilder().build());
+                    return;
+
+                case ACTOR_EXCEPTION:
+                    throwException(responseObserver);
+                    return;
+            }
+            super.registerActorReminder(request, responseObserver);
+        }
+
+        public void registerActorTimer(io.dapr.v1.DaprProtos.RegisterActorTimerRequest request,
+                                       io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
+            assertEquals(ACTOR_TYPE, request.getActorType());
+            assertEquals(ACTOR_ID, request.getActorId());
+            assertEquals(TIMER_NAME, request.getName());
+            assertEquals("mymethod", request.getCallback());
+            assertEquals("0h0m1s0ms", request.getDueTime());
+            assertEquals("0h0m2s0ms", request.getPeriod());
+            switch (request.getActorId()) {
+                case ACTOR_ID:
+                    populateObserver(responseObserver, Empty.newBuilder().build());
+                    return;
+
+                case ACTOR_EXCEPTION:
+                    throwException(responseObserver);
+                    return;
+            }
+            super.registerActorTimer(request, responseObserver);
+        }
+
+        /**
+         * <pre>
+         * Unregister an actor timer.
+         * </pre>
+         */
+        public void unregisterActorTimer(io.dapr.v1.DaprProtos.UnregisterActorTimerRequest request,
+                                         io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
+            assertEquals(ACTOR_TYPE, request.getActorType());
+            assertEquals(ACTOR_ID, request.getActorId());
+            assertEquals(TIMER_NAME, request.getName());
+            switch (request.getActorId()) {
+                case ACTOR_ID:
+                    populateObserver(responseObserver, Empty.newBuilder().build());
+                    return;
+
+                case ACTOR_EXCEPTION:
+                    throwException(responseObserver);
+                    return;
+            }
+            super.unregisterActorTimer(request, responseObserver);
+        }
+
+        public void unregisterActorReminder(io.dapr.v1.DaprProtos.UnregisterActorReminderRequest request,
+                                            io.grpc.stub.StreamObserver<com.google.protobuf.Empty> responseObserver) {
+            assertEquals(ACTOR_TYPE, request.getActorType());
+            assertEquals(ACTOR_ID, request.getActorId());
+            assertEquals(REMINDER_NAME, request.getName());
+            switch (request.getActorId()) {
+                case ACTOR_ID:
+                    populateObserver(responseObserver, Empty.newBuilder().build());
+                    return;
+
+                case ACTOR_EXCEPTION:
+                    throwException(responseObserver);
+                    return;
+            }
+            super.unregisterActorReminder(request, responseObserver);
+        }
+
+        private void throwException(StreamObserver<?> responseObserver) {
+            Throwable e = new ArithmeticException();
+            StatusException se = new StatusException(Status.UNKNOWN.withCause(e));
+            responseObserver.onError(se);
+        }
+
+        private <T extends GeneratedMessageV3> void populateObserver(StreamObserver<T> responseObserver, GeneratedMessageV3 generatedMessageV3) {
+            responseObserver.onNext((T) generatedMessageV3);
+            responseObserver.onCompleted();
+        }
+    }
+
+    private static class OperationsMatcher {
+
+        private final List<ActorStateOperation> operations;
+
+        OperationsMatcher(List<ActorStateOperation> operations) {
+            this.operations = operations;
+        }
+
+        public boolean matches(DaprProtos.ExecuteActorStateTransactionRequest argument) {
+            if (argument == null) {
+                return false;
+            }
+
+            if (operations.size() != argument.getOperationsCount()) {
+                return false;
+            }
+
+            for (ActorStateOperation operation : operations) {
+                boolean found = false;
+                for (DaprProtos.TransactionalActorStateOperation grpcOperation : argument.getOperationsList()) {
+                    if (operation.getKey().equals(grpcOperation.getKey())
+                            && operation.getOperationType().equals(grpcOperation.getOperationType())
+                            && nullableEquals(operation.getValue(), grpcOperation.getValue())) {
+                        found = true;
+                        break;
                     }
-                  }));
+                }
 
-  private DaprGrpcClient client;
+                if (!found) {
+                    return false;
+                }
+            }
 
-  @Rule
-  public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-  @Before
-  public void setup() throws IOException {
-    // Generate a unique in-process server name.
-    String serverName = InProcessServerBuilder.generateName();
-
-    // Create a server, add service, start, and register for automatic graceful shutdown.
-    grpcCleanup.register(InProcessServerBuilder
-            .forName(serverName).directExecutor().addService(serviceImpl).build().start());
-
-    // Create a client channel and register for automatic graceful shutdown.
-    ManagedChannel channel = grpcCleanup.register(
-            InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-    // Create a HelloWorldClient using the in-process channel;
-    client = new DaprGrpcClient(DaprGrpc.newStub(channel));
-  }
-
-  @Test
-  public void getActorStateException() {
-    SettableFuture<DaprProtos.GetActorStateResponse> settableFuture = SettableFuture.create();
-    settableFuture.setException(new ArithmeticException());
-
-    Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_EXCEPTION, "MyKey");
-    assertThrowsDaprException(
-            ExecutionException.class,
-            "UNKNOWN",
-            "UNKNOWN: ",
-            () -> result.block());
-  }
-
-  @Test
-  public void getActorState() {
-    byte[] data = "hello world".getBytes();
-    SettableFuture<DaprProtos.GetActorStateResponse> settableFuture = SettableFuture.create();
-    settableFuture.set(DaprProtos.GetActorStateResponse.newBuilder().setData(ByteString.copyFrom(data)).build());
-    Mono<byte[]> result = client.getState(ACTOR_TYPE, ACTOR_ID, "MyKey");
-    assertArrayEquals(data, result.block());
-  }
-
-  @Test
-  public void saveActorStateTransactionallyException() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    settableFuture.setException(new ArithmeticException());
-    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, new ArrayList<>());
-    Exception exception = assertThrows(Exception.class, () -> result.block());
-    assertTrue(exception.getCause().getCause() instanceof ArithmeticException);
-  }
-
-  @Test
-  public void saveActorStateTransactionally() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    settableFuture.set(Empty.newBuilder().build());
-
-    ActorStateOperation[] operations = new ActorStateOperation[] {
-        new ActorStateOperation("upsert", "mykey", "hello world"),
-        new ActorStateOperation("delete", "mykey", null),
-    };
-    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
-    result.block();
-  }
-
-  @Test
-  public void saveActorStateTransactionallyByteArray() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    settableFuture.set(Empty.newBuilder().build());
-
-    ActorStateOperation[] operations = new ActorStateOperation[] {
-        new ActorStateOperation("upsert", "mykey", "hello world".getBytes()),
-        new ActorStateOperation("delete", "mykey", null),
-    };
-
-    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
-    result.block();
-  }
-
-  @Test
-  public void saveActorStateTransactionallyInvalidValueType() {
-    ActorStateOperation[] operations = new ActorStateOperation[] {
-        new ActorStateOperation("upsert", "mykey", 123),
-        new ActorStateOperation("delete", "mykey", null),
-    };
-
-    Mono<Void> result = client.saveStateTransactionally(ACTOR_TYPE, ACTOR_ID, Arrays.asList(operations));
-    assertThrows(IllegalArgumentException.class, () -> result.block());
-  }
-
-
-  @Test
-  public void registerActorReminder() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    settableFuture.set(Empty.newBuilder().build());
-
-    String reminderName = "myreminder";
-    ActorReminderParams params = new ActorReminderParams(
-        "hello world".getBytes(),
-        Duration.ofSeconds(1),
-        Duration.ofSeconds(2)
-    );
-
-    Mono<Void> result = client.registerReminder(ACTOR_TYPE, ACTOR_ID, reminderName, params);
-    result.block();
-  }
-
-  @Test
-  public void unregisterActorReminder() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    settableFuture.set(Empty.newBuilder().build());
-
-    String reminderName = "myreminder";
-
-    Mono<Void> result = client.unregisterReminder(ACTOR_TYPE, ACTOR_ID, reminderName);
-    result.block();
-  }
-
-  @Test
-  public void registerActorTimer() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    settableFuture.set(Empty.newBuilder().build());
-
-    String timerName = "mytimer";
-    String callback = "mymethod";
-    ActorTimerParams params = new ActorTimerParams(
-        callback,
-        "hello world".getBytes(),
-        Duration.ofSeconds(1),
-        Duration.ofSeconds(2)
-    );
-
-    Mono<Void> result = client.registerTimer(ACTOR_TYPE, ACTOR_ID, timerName, params);
-    result.block();
-  }
-
-  @Test
-  public void unregisterActorTimer() {
-    SettableFuture<Empty> settableFuture = SettableFuture.create();
-    settableFuture.set(Empty.newBuilder().build());
-
-    String timerName = "mytimer";
-    Mono<Void> result = client.unregisterTimer(ACTOR_TYPE, ACTOR_ID, timerName);
-    result.block();
-  }
-
-  private static Any getAny(Object value) throws IOException {
-    if (value instanceof byte[]) {
-      String base64 = OBJECT_MAPPER.writeValueAsString(value);
-      return Any.newBuilder().setValue(ByteString.copyFrom(base64.getBytes())).build();
-    } else if (value instanceof String) {
-      return Any.newBuilder().setValue(ByteString.copyFrom(((String)value).getBytes())).build();
-    }
-
-    throw new IllegalArgumentException("Must be byte[] or String");
-  }
-
-  private static class GetActorStateRequestMatcher implements ArgumentMatcher<DaprProtos.GetActorStateRequest> {
-
-    private final String actorType;
-
-    private final String actorId;
-
-    private final String key;
-
-    GetActorStateRequestMatcher(String actorType, String actorId, String key) {
-      this.actorType = actorType;
-      this.actorId = actorId;
-      this.key = key;
-    }
-
-    @Override
-    public boolean matches(DaprProtos.GetActorStateRequest argument) {
-      if (argument == null) {
-        return false;
-      }
-
-      return actorType.equals(argument.getActorType())
-          && actorId.equals(argument.getActorId())
-          && key.equals(argument.getKey());
-    }
-  }
-
-  private static class ExecuteActorStateTransactionRequestMatcher
-      implements ArgumentMatcher<DaprProtos.ExecuteActorStateTransactionRequest> {
-
-    private final String actorType;
-
-    private final String actorId;
-
-    private final List<ActorStateOperation> operations;
-
-    ExecuteActorStateTransactionRequestMatcher(String actorType, String actorId, List<ActorStateOperation> operations) {
-      this.actorType = actorType;
-      this.actorId = actorId;
-      this.operations = operations;
-    }
-
-    @Override
-    public boolean matches(DaprProtos.ExecuteActorStateTransactionRequest argument) {
-      if (argument == null) {
-        return false;
-      }
-
-      if (operations.size() != argument.getOperationsCount()) {
-        return false;
-      }
-
-      if (!actorType.equals(argument.getActorType())
-          || !actorId.equals(argument.getActorId())) {
-        return false;
-      }
-
-      for(ActorStateOperation operation : operations) {
-        boolean found = false;
-        for (DaprProtos.TransactionalActorStateOperation grpcOperation : argument.getOperationsList()) {
-          if (operation.getKey().equals(grpcOperation.getKey())
-              && operation.getOperationType().equals(grpcOperation.getOperationType())
-              && nullableEquals(operation.getValue(), grpcOperation.getValue())) {
-            found = true;
-            break;
-          }
+            return true;
         }
 
-        if (!found) {
-          return false;
+        private static boolean nullableEquals(Object one, Any another) {
+            if (one == null) {
+                return another.getValue().isEmpty();
+            }
+
+            if ((one == null) ^ (another == null)) {
+                return false;
+            }
+
+            try {
+                Any oneAny = getAny(one);
+                return oneAny.getValue().equals(another.getValue());
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
-      }
 
-      return true;
+        private static Any getAny(Object value) throws IOException {
+            if (value instanceof byte[]) {
+                String base64 = OBJECT_MAPPER.writeValueAsString(value);
+                return Any.newBuilder().setValue(ByteString.copyFrom(base64.getBytes())).build();
+            } else if (value instanceof String) {
+                return Any.newBuilder().setValue(ByteString.copyFrom(((String)value).getBytes())).build();
+            }
+
+            throw new IllegalArgumentException("Must be byte[] or String");
+        }
     }
-
-    private static boolean nullableEquals(Object one, Any another) {
-      if (one == null) {
-        return another.getValue().isEmpty();
-      }
-
-      if ((one == null) ^ (another == null)) {
-        return false;
-      }
-
-      try {
-        Any oneAny = getAny(one);
-        return oneAny.getValue().equals(another.getValue());
-      } catch (IOException e) {
-        e.printStackTrace();
-        return false;
-      }
-    }
-  }
 }
