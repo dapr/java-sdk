@@ -26,16 +26,17 @@ public class DaprApplication {
    * Starts Dapr's callback in a given port and specified protocal.
    * 
    * @param port Port to listen to.
+   * @param protocal select Http or gRPC to run.
    */
   public static void start(String protocal, int port) {
     SpringApplication app = new SpringApplication(DaprApplication.class);
 
     String args;
-    if (protocal.equals("grpc")){
-      args = String.format("--grpc.server.port=%d", port);}
-    else if (protocal.equals("http")){
-      args = String.format("--server.port=%d", port);}
-    else {
+    if (protocal.equals("grpc")) {
+      args = String.format("--grpc.server.port=%d", port);
+    } else if (protocal.equals("http")) {
+      args = String.format("--server.port=%d", port);
+    } else {
       System.out.println("please select protocal in grpc or http.");
       return; 
     }
@@ -49,7 +50,9 @@ public class DaprApplication {
    * @param port Port to listen to.
    */
   public static void start(int port) {
+
     SpringApplication app = new SpringApplication(DaprApplication.class);
+
     app.run(String.format("--server.port=%d", port));
   }
 

@@ -13,63 +13,65 @@ limitations under the License.
 
 package io.dapr.examples.pubsub.grpc;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.protobuf.Empty;
-
-import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.DaprAppCallbackProtos;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class that encapsulates all client-side logic for Grpc.
  */
 @GrpcService
 public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
-	private final List<DaprAppCallbackProtos.TopicSubscription> topicSubscriptionList = new ArrayList<>();
-	private final DaprObjectSerializer objectSerializer = new DefaultObjectSerializer();
-	
-	@Override
-	public void listTopicSubscriptions(Empty request,
-			StreamObserver<DaprAppCallbackProtos.ListTopicSubscriptionsResponse> responseObserver) {
-			registerConsumer("messagebus","testingtopic");
-		try {
-			DaprAppCallbackProtos.ListTopicSubscriptionsResponse.Builder builder = DaprAppCallbackProtos.ListTopicSubscriptionsResponse
-					.newBuilder();
-			topicSubscriptionList.forEach(builder::addSubscriptions);
-			DaprAppCallbackProtos.ListTopicSubscriptionsResponse response = builder.build();
-			responseObserver.onNext(response);
-		} catch (Throwable e) {
-			responseObserver.onError(e);
-		} finally {
-			responseObserver.onCompleted();
-		}
-	}
+  private final List<DaprAppCallbackProtos.TopicSubscription> topicSubscriptionList = new ArrayList<>();
+  
+  @Override
+  public void listTopicSubscriptions(Empty request,
+      StreamObserver<DaprAppCallbackProtos.ListTopicSubscriptionsResponse> responseObserver) {
+    registerConsumer("messagebus","testingtopic");
+    try {
+      DaprAppCallbackProtos.ListTopicSubscriptionsResponse.Builder builder = DaprAppCallbackProtos
+          .ListTopicSubscriptionsResponse.newBuilder();
+      topicSubscriptionList.forEach(builder::addSubscriptions);
+      DaprAppCallbackProtos.ListTopicSubscriptionsResponse response = builder.build();
+      responseObserver.onNext(response);
+    } catch (Throwable e) {
+      responseObserver.onError(e);
+    } finally {
+      responseObserver.onCompleted();
+    }
+  }
 
-	@Override
-	public void onTopicEvent(DaprAppCallbackProtos.TopicEventRequest request,
-			StreamObserver<DaprAppCallbackProtos.TopicEventResponse> responseObserver) {
-		try {
-			System.out.println("Subscriber got: " + request.getData());
-			DaprAppCallbackProtos.TopicEventResponse response = DaprAppCallbackProtos.TopicEventResponse.newBuilder()
-					.setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS)
-					.build();
-			responseObserver.onNext(response);
-			responseObserver.onCompleted();
-		} catch (Throwable e) {
-			responseObserver.onError(e);
-		}
-	}
+  @Override
+  public void onTopicEvent(DaprAppCallbackProtos.TopicEventRequest request,
+      StreamObserver<DaprAppCallbackProtos.TopicEventResponse> responseObserver) {
+    try {
+      System.out.println("Subscriber got: " + request.getData());
+      DaprAppCallbackProtos.TopicEventResponse response = DaprAppCallbackProtos.TopicEventResponse.newBuilder()
+          .setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS)
+          .build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+    } catch (Throwable e) {
+      responseObserver.onError(e);
+    }
+  }
 
-	public void registerConsumer(String pubsubName, String topic) {
-		topicSubscriptionList.add(DaprAppCallbackProtos.TopicSubscription
-				.newBuilder()
-				.setPubsubName(pubsubName)
-				.setTopic(topic)
-				.build());
-	}
+  /**
+   * Add pubsub name and topic to topicSubscriptionList.
+   * 
+   * @param topic the topic
+   * @param pubsubName the pubsub name
+   */
+  public void registerConsumer(String pubsubName, String topic) {
+    topicSubscriptionList.add(DaprAppCallbackProtos.TopicSubscription
+        .newBuilder()
+        .setPubsubName(pubsubName)
+        .setTopic(topic)
+        .build());
+  }
 }
