@@ -23,7 +23,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DaprApplication {
 
   /**
-   * Starts Dapr's callback in a given port.
+   * Starts Dapr's callback in a given port and specified protocal.
    * 
    * @param port Port to listen to.
    */
@@ -41,6 +41,16 @@ public class DaprApplication {
     }
 
     app.run(args);
+  }
+
+  /**
+   * Starts Dapr's callback in a given port. HTTP is used by default.
+   * 
+   * @param port Port to listen to.
+   */
+  public static void start(int port) {
+    SpringApplication app = new SpringApplication(DaprApplication.class);
+    app.run(String.format("--server.port=%d", port));
   }
 
 }
