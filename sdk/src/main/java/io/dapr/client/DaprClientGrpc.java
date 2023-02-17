@@ -181,7 +181,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
         envelopeBuilder.putAllMetadata(metadata);
       }
 
-      return Mono.deferContextual(Mono::just).flatMap(
+      return Mono.deferContextual(
           context ->
               this.<Empty>createMono(
                   it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
