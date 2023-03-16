@@ -78,14 +78,15 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<byte[]> getState(String actorType, String actorId, String keyName) {
-      DaprProtos.GetActorStateRequest req =
-              DaprProtos.GetActorStateRequest.newBuilder()
-                      .setActorType(actorType)
-                      .setActorId(actorId)
-                      .setKey(keyName)
-                      .build();
+    DaprProtos.GetActorStateRequest req =
+            DaprProtos.GetActorStateRequest.newBuilder()
+                    .setActorType(actorType)
+                    .setActorId(actorId)
+                    .setKey(keyName)
+                    .build();
 
-    return Mono.<DaprProtos.GetActorStateResponse>create(it -> client.getActorState(req, createStreamObserver(it))).map(r -> r.getData().toByteArray());
+    return Mono.<DaprProtos.GetActorStateResponse>create(it ->
+            client.getActorState(req, createStreamObserver(it))).map(r -> r.getData().toByteArray());
   }
 
   /**
@@ -153,7 +154,7 @@ class DaprGrpcClient implements DaprClient {
                     .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
                     .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()))
                     .build();
-     return Mono.<Empty>create(it -> client.registerActorReminder(req, createStreamObserver(it))).then().then();
+    return Mono.<Empty>create(it -> client.registerActorReminder(req, createStreamObserver(it))).then().then();
   }
 
   /**
@@ -161,14 +162,14 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
-      DaprProtos.UnregisterActorReminderRequest req =
-          DaprProtos.UnregisterActorReminderRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(reminderName)
-              .build();
+    DaprProtos.UnregisterActorReminderRequest req =
+        DaprProtos.UnregisterActorReminderRequest.newBuilder()
+            .setActorType(actorType)
+            .setActorId(actorId)
+            .setName(reminderName)
+            .build();
 
-      return Mono.<Empty>create(it -> client.unregisterActorReminder(req, createStreamObserver(it))).then().then();
+    return Mono.<Empty>create(it -> client.unregisterActorReminder(req, createStreamObserver(it))).then().then();
   }
 
   /**
@@ -180,18 +181,18 @@ class DaprGrpcClient implements DaprClient {
       String actorId,
       String timerName,
       ActorTimerParams timerParams) {
-      DaprProtos.RegisterActorTimerRequest req =
-          DaprProtos.RegisterActorTimerRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(timerName)
-              .setCallback(timerParams.getCallback())
-              .setData(ByteString.copyFrom(timerParams.getData()))
-              .setDueTime(DurationUtils.convertDurationToDaprFormat(timerParams.getDueTime()))
-              .setPeriod(DurationUtils.convertDurationToDaprFormat(timerParams.getPeriod()))
-              .build();
+    DaprProtos.RegisterActorTimerRequest req =
+         DaprProtos.RegisterActorTimerRequest.newBuilder()
+             .setActorType(actorType)
+             .setActorId(actorId)
+             .setName(timerName)
+             .setCallback(timerParams.getCallback())
+             .setData(ByteString.copyFrom(timerParams.getData()))
+             .setDueTime(DurationUtils.convertDurationToDaprFormat(timerParams.getDueTime()))
+             .setPeriod(DurationUtils.convertDurationToDaprFormat(timerParams.getPeriod()))
+             .build();
 
-     return Mono.<Empty>create(it -> client.registerActorTimer(req, createStreamObserver(it))).then().then();
+    return Mono.<Empty>create(it -> client.registerActorTimer(req, createStreamObserver(it))).then().then();
   }
 
   /**
@@ -199,14 +200,14 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
-      DaprProtos.UnregisterActorTimerRequest req =
-          DaprProtos.UnregisterActorTimerRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(timerName)
-              .build();
+    DaprProtos.UnregisterActorTimerRequest req =
+        DaprProtos.UnregisterActorTimerRequest.newBuilder()
+            .setActorType(actorType)
+            .setActorId(actorId)
+            .setName(timerName)
+            .build();
 
-      return Mono.<Empty>create(it -> client.unregisterActorTimer(req, createStreamObserver(it))).then().then();
+    return Mono.<Empty>create(it -> client.unregisterActorTimer(req, createStreamObserver(it))).then().then();
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
