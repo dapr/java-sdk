@@ -53,6 +53,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import reactor.util.context.ContextView;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
@@ -422,7 +423,7 @@ public class DaprClientHttpTest {
         .setBody("request")
         .setHttpExtension(HttpExtension.POST);
     Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
-        .subscriberContext(it -> it.putAll(context));
+        .contextWrite(it -> it.putAll((ContextView) context));
     result.block();
   }
 
