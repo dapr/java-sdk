@@ -118,7 +118,7 @@ public class MethodInvokeIT extends BaseIT {
             }).getMessage();
             long delay = System.currentTimeMillis() - started;
             assertTrue(delay <= 200);  // 200 ms is a reasonable delay if the request timed out.
-            assertEquals("Timeout on blocking read for 10 MILLISECONDS", message);
+            assertEquals("Timeout on blocking read for 10000000 NANOSECONDS", message);
         }
     }
 
