@@ -14,6 +14,8 @@ package io.dapr.client;
 
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
+import io.dapr.exceptions.DaprHttpException;
+import okhttp3.Response;
 import reactor.util.context.Context;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -35,6 +37,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 public class DaprHttpTest {
@@ -177,9 +180,8 @@ public class DaprHttpTest {
     assertEquals(EXPECTED_RESULT, body);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test(expected = DaprException.class)
   public void invokePostDaprError() throws IOException {
-
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("text"),
@@ -191,17 +193,21 @@ public class DaprHttpTest {
     assertEquals(EXPECTED_RESULT, body);
   }
 
-  @Test(expected = RuntimeException.class)
-  public void invokePostMethodUnknownError() throws IOException {
+  @Test
+  public void invokePostMethodUnknownError() {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3500/v1.0/state")
-      .respond(500, ResponseBody.create(MediaType.parse("application/json"),
-        "{\"errorCode\":\"null\",\"message\":\"null\"}"));
+      .respond(404, ResponseBody.create(MediaType.parse("text"),
+              "{\"message\":\"someMessage\",\"body\":\"property\"}"));
     DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
-    DaprHttp.Response response = mono.block();
-    String body = serializer.deserialize(response.getBody(), String.class);
-    assertEquals(EXPECTED_RESULT, body);
+    DaprHttpException exception = assertThrows(DaprHttpException.class, () -> {
+      DaprHttp.Response response = mono.block();
+      String body = serializer.deserialize(response.getBody(), String.class);
+      assertEquals(EXPECTED_RESULT, body);
+    });
+    Response originalResponse = exception.getResponse();
+    assertEquals(404, originalResponse.code());
   }
 
   /**

@@ -18,6 +18,7 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
+import io.dapr.exceptions.DaprHttpException;
 import io.dapr.utils.Version;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -305,7 +306,7 @@ public class DaprHttp implements AutoCloseable {
     if (daprApiToken != null) {
       requestBuilder.addHeader(Headers.DAPR_API_TOKEN, daprApiToken);
     }
-  
+
     requestBuilder.addHeader(Headers.DAPR_USER_AGENT, Version.getSdkVersion());
 
     if (headers != null) {
@@ -383,7 +384,7 @@ public class DaprHttp implements AutoCloseable {
           future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
           return;
         } catch (DaprException e) {
-          future.completeExceptionally(e);
+          future.completeExceptionally(new DaprHttpException(response));
           return;
         }
       }
