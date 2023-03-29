@@ -29,7 +29,7 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -190,7 +190,7 @@ public class DaprHttp implements AutoCloseable {
       String[] pathSegments,
       Map<String, List<String>> urlParameters,
       Map<String, String> headers,
-      Context context) {
+      ContextView context) {
     return this.invokeApi(method, pathSegments, urlParameters, (byte[]) null, headers, context);
   }
 
@@ -211,7 +211,7 @@ public class DaprHttp implements AutoCloseable {
       Map<String, List<String>> urlParameters,
       String content,
       Map<String, String> headers,
-      Context context) {
+      ContextView context) {
 
     return this.invokeApi(
         method, pathSegments, urlParameters, content == null
@@ -231,12 +231,12 @@ public class DaprHttp implements AutoCloseable {
    * @return Asynchronous response
    */
   public Mono<Response> invokeApi(
-          String method,
-          String[] pathSegments,
-          Map<String, List<String>> urlParameters,
-          byte[] content,
-          Map<String, String> headers,
-          Context context) {
+      String method,
+      String[] pathSegments,
+      Map<String, List<String>> urlParameters,
+      byte[] content,
+      Map<String, String> headers,
+      ContextView context) {
     // fromCallable() is needed so the invocation does not happen early, causing a hot mono.
     return Mono.fromCallable(() -> doInvokeApi(method, pathSegments, urlParameters, content, headers, context))
         .flatMap(f -> Mono.fromFuture(f));
@@ -263,10 +263,10 @@ public class DaprHttp implements AutoCloseable {
    * @return CompletableFuture for Response.
    */
   private CompletableFuture<Response> doInvokeApi(String method,
-                               String[] pathSegments,
-                               Map<String, List<String>> urlParameters,
-                               byte[] content, Map<String, String> headers,
-                               Context context) {
+      String[] pathSegments,
+      Map<String, List<String>> urlParameters,
+      byte[] content, Map<String, String> headers,
+      ContextView context) {
     final String requestId = UUID.randomUUID().toString();
     RequestBody body;
 
@@ -289,8 +289,8 @@ public class DaprHttp implements AutoCloseable {
     Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
         .forEach(urlParameter ->
             Optional.ofNullable(urlParameter.getValue()).orElse(Collections.emptyList()).stream()
-              .forEach(urlParameterValue ->
-                  urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameterValue)));
+                .forEach(urlParameterValue ->
+                    urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameterValue)));
 
     Request.Builder requestBuilder = new Request.Builder()
         .url(urlBuilder.build())
