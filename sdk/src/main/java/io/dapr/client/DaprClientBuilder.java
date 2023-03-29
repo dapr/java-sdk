@@ -22,7 +22,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import io.dapr.exceptions.DaprError;
 import java.io.Closeable;
 
 /**
@@ -52,6 +52,11 @@ public class DaprClientBuilder {
    * Serializer used for request and response objects in DaprClient.
    */
   private DaprObjectSerializer objectSerializer;
+
+  /**
+   * Response parser used for custom handling of error responses from Dapr.
+   */
+  private DaprErrorResponseParser responseParser;
 
   /**
    * Serializer used for state objects in DaprClient.
@@ -91,6 +96,22 @@ public class DaprClientBuilder {
     this.objectSerializer = objectSerializer;
     return this;
   }
+
+    /**
+     * Sets the error parser for objects to received from Dapr.
+     * See {@link DefaultDaprErrorResponseParser} as a default parser suited for deserializing the response to {@link DaprError}.
+     *
+     * @param responseParser Parser for objects received from Dapr.
+     * @return This instance.
+     */
+    public DaprClientBuilder withCustomErrorResponseParser(DaprErrorResponseParser responseParser) {
+        if (responseParser == null) {
+            throw new IllegalArgumentException("Response parser is required");
+        }
+
+        this.responseParser = responseParser;
+        return this;
+    }
 
   /**
    * Sets the serializer for objects to be persisted.
@@ -183,7 +204,7 @@ public class DaprClientBuilder {
    * @return DaprClient over HTTP.
    */
   private DaprClient buildDaprClientHttp() {
-    return new DaprClientHttp(this.daprHttpBuilder.build(), this.objectSerializer, this.stateSerializer);
+    return new DaprClientHttp(this.daprHttpBuilder.build(responseParser), this.objectSerializer, this.stateSerializer);
   }
 
 }

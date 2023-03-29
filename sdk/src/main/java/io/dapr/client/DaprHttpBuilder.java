@@ -46,13 +46,23 @@ public class DaprHttpBuilder {
   private static final int KEEP_ALIVE_DURATION = 30;
 
   /**
+   * A default parser for Dapr error responses.
+   */
+  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprErrorResponseParser();
+
+
+  /**
    * Build an instance of the Http client based on the provided setup.
    *
    * @return an instance of {@link DaprHttp}
    * @throws IllegalStateException if any required field is missing
    */
   public DaprHttp build() {
-    return buildDaprHttp();
+    return buildDaprHttp(null);
+  }
+
+  public DaprHttp build(DaprErrorResponseParser parser) {
+    return buildDaprHttp(parser);
   }
 
   /**
@@ -60,7 +70,7 @@ public class DaprHttpBuilder {
    *
    * @return Instance of {@link DaprHttp}
    */
-  private DaprHttp buildDaprHttp() {
+  private DaprHttp buildDaprHttp(DaprErrorResponseParser parser) {
     if (OK_HTTP_CLIENT == null) {
       synchronized (LOCK) {
         if (OK_HTTP_CLIENT == null) {
@@ -85,6 +95,7 @@ public class DaprHttpBuilder {
       }
     }
 
-    return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), OK_HTTP_CLIENT);
+    DaprErrorResponseParser parserToUse = parser == null ? DEFAULT_PARSER : parser;
+    return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), OK_HTTP_CLIENT, parserToUse);
   }
 }

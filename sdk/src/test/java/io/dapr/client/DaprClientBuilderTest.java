@@ -25,11 +25,13 @@ public class DaprClientBuilderTest {
   @Test
   public void build() {
     DaprObjectSerializer objectSerializer = mock(DaprObjectSerializer.class);
+    DaprErrorResponseParser errorResponseParser = mock(DaprErrorResponseParser.class);
     when(objectSerializer.getContentType()).thenReturn("application/json");
     DaprObjectSerializer stateSerializer = mock(DaprObjectSerializer.class);
     DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
     daprClientBuilder.withObjectSerializer(objectSerializer);
     daprClientBuilder.withStateSerializer(stateSerializer);
+    daprClientBuilder.withCustomErrorResponseParser(errorResponseParser);
     DaprClient daprClient = daprClientBuilder.build();
     assertNotNull(daprClient);
   }

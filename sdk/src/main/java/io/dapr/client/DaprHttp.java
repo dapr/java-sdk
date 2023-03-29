@@ -18,7 +18,6 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
-import io.dapr.exceptions.DaprHttpException;
 import io.dapr.utils.Version;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -72,6 +71,12 @@ public class DaprHttp implements AutoCloseable {
    */
   private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList("grpc-trace-bin", "traceparent", "tracestate")));
+
+
+  /**
+   * Error response parser.
+   */
+  private static DaprErrorResponseParser parser = new DefaultDaprErrorResponseParser();
 
   /**
    * HTTP Methods supported.
@@ -163,10 +168,11 @@ public class DaprHttp implements AutoCloseable {
    * @param port       Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String hostname, int port, OkHttpClient httpClient) {
+  DaprHttp(String hostname, int port, OkHttpClient httpClient, DaprErrorResponseParser parser) {
     this.hostname = hostname;
     this.port = port;
     this.httpClient = httpClient;
+    this.parser = parser;
   }
 
   /**
@@ -324,24 +330,6 @@ public class DaprHttp implements AutoCloseable {
     return future;
   }
 
-  /**
-   * Tries to parse an error from Dapr response body.
-   *
-   * @param json Response body from Dapr.
-   * @return DaprError or null if could not parse.
-   */
-  private static DaprError parseDaprError(byte[] json) {
-    if ((json == null) || (json.length == 0)) {
-      return null;
-    }
-
-    try {
-      return OBJECT_MAPPER.readValue(json, DaprError.class);
-    } catch (IOException e) {
-      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
-    }
-  }
-
   private static byte[] getBodyBytesOrEmptyArray(okhttp3.Response response) throws IOException {
     ResponseBody body = response.body();
     if (body != null) {
@@ -369,24 +357,8 @@ public class DaprHttp implements AutoCloseable {
     @Override
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
       if (!response.isSuccessful()) {
-        try {
-          DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
-          if ((error != null) && (error.getErrorCode() != null)) {
-            if (error.getMessage() != null) {
-              future.completeExceptionally(new DaprException(error));
-            } else {
-              future.completeExceptionally(
-                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code()));
-            }
-            return;
-          }
-
-          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
-          return;
-        } catch (DaprException e) {
-          future.completeExceptionally(new DaprHttpException(response));
-          return;
-        }
+        DaprException customException = parser.parse(response);
+        future.completeExceptionally(customException);
       }
 
       Map<String, String> mapHeaders = new HashMap<>();
