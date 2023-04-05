@@ -384,13 +384,13 @@ public class DaprClientHttp extends AbstractDaprClient {
         throw new IllegalArgumentException("Key cannot be null or empty.");
       }
       Map<String, String> optionsMap = Optional.ofNullable(options)
-              .map(o -> o.getStateOptionsAsMap())
-              .orElse(Collections.emptyMap());
+          .map(o -> o.getStateOptionsAsMap())
+          .orElse(Collections.emptyMap());
 
       final Map<String, List<String>> queryParams = new HashMap<>();
       queryParams.putAll(metadataToQueryArgs(metadata));
       queryParams.putAll(optionsMap.entrySet().stream().collect(
-              Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
+          Collectors.toMap(kv -> kv.getKey(), kv -> Collections.singletonList(kv.getValue()))));
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "state", stateStoreName, key };
 
