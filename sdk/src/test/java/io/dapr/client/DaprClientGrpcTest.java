@@ -95,7 +95,8 @@ public class DaprClientGrpcTest {
     daprStub = mock(DaprGrpc.DaprStub.class);
     when(daprStub.withInterceptors(any())).thenReturn(daprStub);
     DaprClient grpcClient = new DaprClientGrpc(
-        closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+        closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer(), null
+    );
     client = new DaprClientProxy(grpcClient);
     serializer = new ObjectSerializer();
     doNothing().when(closeable).close();
@@ -165,7 +166,7 @@ public class DaprClientGrpcTest {
   @Test
   public void publishEventSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer(), null);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -283,7 +284,7 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer(), null);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1444,7 +1445,7 @@ public class DaprClientGrpcTest {
   @Test
   public void executeTransactionSerializerExceptionTest() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, mockSerializer);
+    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, mockSerializer, null);
     String etag = "ETag1";
     String key = "key1";
     String data = "my data";

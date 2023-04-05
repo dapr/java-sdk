@@ -72,68 +72,21 @@ import java.util.stream.Collectors;
  */
 @Deprecated
 public class DaprClientHttp extends AbstractDaprClient {
-  /**
-   * Header for the conditional operation.
-   */
   private static final String HEADER_HTTP_ETAG_ID = "If-Match";
-
-  /**
-   * Metadata prefix in query params.
-   */
   private static final String METADATA_PREFIX = "metadata.";
-
-  /**
-   * Serializer for internal objects.
-   */
   private static final ObjectSerializer INTERNAL_SERIALIZER = new ObjectSerializer();
-
-  /**
-   * The HTTP client to be used.
-   *
-   * @see io.dapr.client.DaprHttp
-   */
   private final DaprHttp client;
-
-  /**
-   * Flag determining if object serializer's input and output is Dapr's default instead of user provided.
-   */
   private final boolean isObjectSerializerDefault;
-
-  /**
-   * Flag determining if state serializer is the default serializer instead of user provided.
-   */
   private final boolean isStateSerializerDefault;
-
-  /**
-   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
-   *
-   * @param client           Dapr's http client.
-   * @param objectSerializer Dapr's serializer for transient request/response objects.
-   * @param stateSerializer  Dapr's serializer for state objects.
-   * @see DaprClientBuilder
-   * @see DefaultObjectSerializer
-   */
   DaprClientHttp(DaprHttp client, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
     super(objectSerializer, stateSerializer);
     this.client = client;
     this.isObjectSerializerDefault = objectSerializer.getClass() == DefaultObjectSerializer.class;
     this.isStateSerializerDefault = stateSerializer.getClass() == DefaultObjectSerializer.class;
   }
-
-  /**
-   * Constructor useful for tests.
-   *
-   * @param client Dapr's http client.
-   * @see io.dapr.client.DaprClientBuilder
-   * @see DefaultObjectSerializer
-   */
   DaprClientHttp(DaprHttp client) {
     this(client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
   }
-
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
     return Mono.fromRunnable(() -> {
@@ -144,10 +97,6 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
     });
   }
-
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public Mono<Void> publishEvent(PublishEventRequest request) {
     try {
@@ -161,13 +110,9 @@ public class DaprClientHttp extends AbstractDaprClient {
       if (topic == null || topic.trim().isEmpty()) {
         throw new IllegalArgumentException("Topic name cannot be null or empty.");
       }
-
       Object data = request.getData();
       Map<String, String> metadata = request.getMetadata();
-
       byte[] serializedEvent = objectSerializer.serialize(data);
-      // Content-type can be overwritten on a per-request basis.
-      // It allows CloudEvents to be handled differently, for example.
       String contentType = request.getContentType();
       if (contentType == null || contentType.isEmpty()) {
         contentType = objectSerializer.getContentType();
@@ -186,18 +131,10 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(ex);
     }
   }
-
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request) {
     return DaprException.wrapMono(new UnsupportedOperationException());
   }
-
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
@@ -259,10 +196,6 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(ex);
     }
   }
-
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
     try {
@@ -936,13 +869,6 @@ public class DaprClientHttp extends AbstractDaprClient {
       return DaprException.wrapMono(ex);
     }
   }
-
-  /**
-   * Converts metadata map into Query params.
-   *
-   * @param metadata metadata map
-   * @return Query params
-   */
   private static Map<String, List<String>> metadataToQueryArgs(Map<String, String> metadata) {
     if (metadata == null) {
       return Collections.emptyMap();

@@ -195,7 +195,7 @@ public class DaprClientBuilder {
       }
     };
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    return new DaprClientGrpc(closeableChannel, asyncStub, this.objectSerializer, this.stateSerializer);
+    return new DaprClientGrpc(closeableChannel, asyncStub, this.objectSerializer, this.stateSerializer, this.responseParser);
   }
 
   /**

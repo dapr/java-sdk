@@ -169,7 +169,8 @@ public class DaprClientGrpcTelemetryTest {
     };
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
     client = new DaprClientGrpc(
-        closeableChannel, asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+        closeableChannel, asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer(), null
+    );
   }
 
   @Test

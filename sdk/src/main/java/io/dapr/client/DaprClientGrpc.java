@@ -62,6 +62,7 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -71,6 +72,7 @@ import reactor.util.context.Context;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -99,6 +101,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   private DaprGrpc.DaprStub asyncStub;
 
+  private DaprErrorResponseParser errorResponseParser;
+
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
@@ -112,10 +116,13 @@ public class DaprClientGrpc extends AbstractDaprClient {
       Closeable closeableChannel,
       DaprGrpc.DaprStub asyncStub,
       DaprObjectSerializer objectSerializer,
-      DaprObjectSerializer stateSerializer) {
+      DaprObjectSerializer stateSerializer,
+      DaprErrorResponseParser errorResponseParser
+  ) {
     super(objectSerializer, stateSerializer);
     this.channel = closeableChannel;
     this.asyncStub = intercept(asyncStub);
+    this.errorResponseParser = errorResponseParser == null ? new DefaultDaprGrpcErrorResponseParser() : errorResponseParser;
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -290,30 +297,66 @@ public class DaprClientGrpc extends AbstractDaprClient {
       Object body = invokeMethodRequest.getBody();
       HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
       DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
-          httpExtension,
-          appId,
-          method,
-          body);
-      // Regarding missing metadata in method invocation for gRPC:
-      // gRPC to gRPC does not handle metadata in Dapr runtime proto.
-      // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
+              httpExtension,
+              appId,
+              method,
+              body);
 
       return Mono.subscriberContext().flatMap(
-              context -> this.<CommonProtos.InvokeResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeService(envelope, it)
-              )
-          ).flatMap(
+              context -> this.<CommonProtos.InvokeResponse>createMonoWithErrorHandling(
+                      it -> intercept(context, asyncStub).invokeService(envelope, it),
+                      errorResponseParser)
+      ).flatMap(
               it -> {
                 try {
                   return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
-                } catch (IOException e)  {
-                  throw DaprException.propagate(e);
+                } catch (IOException e) {
+                  return Mono.error(DaprException.propagate(e));
                 }
               }
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  private <T> Mono<T> createMonoWithErrorHandling(
+          Consumer<StreamObserver<T>> consumer,
+          DaprErrorResponseParser errorResponseParser) {
+    return Mono.create(sink -> {
+      StreamObserver<T> streamObserver = new StreamObserver<T>() {
+        @Override
+        public void onNext(T value) {
+          sink.success(value);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+          if (t instanceof StatusRuntimeException) {
+            StatusRuntimeException statusException = (StatusRuntimeException) t;
+            int statusCode = statusException.getStatus().getCode().value();
+            byte[] errorDetails = statusException.getStatus().getDescription() != null
+                    ? statusException.getStatus().getDescription().getBytes(StandardCharsets.UTF_8)
+                    : new byte[0];
+            try {
+              DaprException exception = errorResponseParser.parse(statusCode, errorDetails);
+              sink.error(new ExecutionException(exception));
+            } catch (IOException e) {
+              sink.error(new ExecutionException(new DaprException("Error parsing error response", e.toString())));
+            }
+          } else {
+            sink.error(DaprException.propagate(new ExecutionException(t)));
+          }
+        }
+
+        @Override
+        public void onCompleted() {
+          sink.success();
+        }
+      };
+
+      DaprException.wrap(() -> consumer.accept(streamObserver)).run();
+    });
   }
 
   /**
@@ -900,7 +943,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
           Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
           while (itr.hasNext()) {
             Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
-            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
           }
           return Collections.unmodifiableMap(configMap);
         }
@@ -939,7 +982,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
           Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItemsMap().entrySet().iterator();
           while (itr.hasNext()) {
             Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
-            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
           }
           return new SubscribeConfigurationResponse(it.getId(), Collections.unmodifiableMap(configMap));
         }

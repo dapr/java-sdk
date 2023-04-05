@@ -268,7 +268,7 @@ public class DaprClientHttpTest {
     });
 
     assertEquals("PERMISSION_DENIED", exception.getErrorCode());
-    assertEquals("PERMISSION_DENIED: HTTP status code: 500", exception.getMessage());
+    assertEquals("PERMISSION_DENIED: { \"code\": 7 }", exception.getMessage());
   }
 
   @Test

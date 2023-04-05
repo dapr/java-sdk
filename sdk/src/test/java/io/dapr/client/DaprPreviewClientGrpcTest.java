@@ -89,7 +89,7 @@ public class DaprPreviewClientGrpcTest {
 		daprStub = mock(DaprGrpc.DaprStub.class);
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
 		previewClient = new DaprClientGrpc(
-				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer(), null);
 		doNothing().when(closeable).close();
 	}
 
@@ -153,7 +153,7 @@ public class DaprPreviewClientGrpcTest {
 	@Test
 	public void publishEventsSerializeException() throws IOException {
 		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-		previewClient = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+		previewClient = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer(), null);
 		doAnswer((Answer<Void>) invocation -> {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
