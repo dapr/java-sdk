@@ -153,7 +153,7 @@ Use the following command to run this example-
 <!-- STEP
 name: Run ConfigurationClient example
 expected_stdout_lines:
-  - "== APP == Using preview client..."
+  - "== APP == Using Dapr client..."
   - "== APP == *******trying to retrieve configurations for a list of keys********"
   - "== APP == val1 : key ->myconfig1"
   - "== APP == val2 : key ->myconfig2"
