@@ -44,7 +44,7 @@ public class ConfigurationClient {
   public static void main(String[] args) throws Exception {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
     try (DaprClient client = (new DaprClientBuilder()).build()) {
-      System.out.println("Using client...");
+      System.out.println("Using Dapr client...");
       getConfigurations(client);
       subscribeConfigurationRequest(client);
     }
