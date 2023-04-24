@@ -178,6 +178,26 @@ public class SubscriberController {
     });
   }
 
+  /**
+   * Handles a registered publish endpoint on this app adding a topic which manage to forward undeliverable messages.
+   *
+   * @param cloudEvent The cloud event received.
+   * @return A message containing the time.
+   */
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
+      deadLetterTopic = "${deadLetterProperty:deadTopic}")
+  @PostMapping(path = "/testingtopic")
+  public Mono<Void> handleMessageWithErrorHandler(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.println("Subscriber got: " + cloudEvent.getData());
+        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
   @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
           rule = @Rule(match = "event.type == 'myevent.v2'", priority = 1))
   @PostMapping(path = "/testingtopicV2")
@@ -191,7 +211,7 @@ public class SubscriberController {
       }
     });
   }
-
+  
   @BulkSubscribe()
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopicbulk")
