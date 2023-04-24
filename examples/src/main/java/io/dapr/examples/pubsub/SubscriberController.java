@@ -39,15 +39,37 @@ public class SubscriberController {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+
   /**
    * Handles a registered publish endpoint on this app.
-   * 
+   *
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
   @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.println("Subscriber got: " + cloudEvent.getData());
+        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+
+  /**
+   * Handles a registered publish endpoint on this app adding a topic which manage to forward undeliverable messages.
+   * 
+   * @param cloudEvent The cloud event received.
+   * @return A message containing the time.
+   */
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
+      deadLetterTopic = "${deadLetterProperty:deadTopic}")
+  @PostMapping(path = "/testingtopic")
+  public Mono<Void> handleMessageWithErrorHandler(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         System.out.println("Subscriber got: " + cloudEvent.getData());
@@ -66,6 +88,7 @@ public class SubscriberController {
    * @return A message containing the time.
    */
   @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
+      deadLetterTopic = "${deadLetterProperty:deadTopic}",
           rule = @Rule(match = "event.type == \"v2\"", priority = 1))
   @PostMapping(path = "/testingtopicV2")
   public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent cloudEvent) {
@@ -84,7 +107,8 @@ public class SubscriberController {
    * @param cloudEvent The cloud event received.
    * @return A message containing the time.
    */
-  @Topic(name = "bulkpublishtesting", pubsubName = "${myAppProperty:messagebus}")
+  @Topic(name = "bulkpublishtesting", pubsubName = "${myAppProperty:messagebus}",
+      deadLetterTopic = "${deadLetterProperty:deadTopic}")
   @PostMapping(path = "/bulkpublishtesting")
   public Mono<Void> handleBulkPublishMessage(@RequestBody(required = false) CloudEvent cloudEvent) {
     return Mono.fromRunnable(() -> {
@@ -104,7 +128,8 @@ public class SubscriberController {
    * @return A list of responses for each event.
    */
   @BulkSubscribe()
-  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}",
+      deadLetterTopic = "${deadLetterProperty:deadTopic}")
   @PostMapping(path = "/testingtopicbulk")
   public Mono<BulkSubscribeAppResponse> handleBulkMessage(
       @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
