@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
  * Internal Singleton to handle Dapr configuration.
  */
 class DaprRuntime {
+
   /**
    * The singleton instance.
    */
@@ -33,8 +34,8 @@ class DaprRuntime {
   private final Map<DaprTopicKey, DaprSubscriptionBuilder> subscriptionBuilders = new HashMap<>();
 
   /**
-   * DaprRuntime should be used as a singleton, using {@link DaprRuntime#getInstance()}.
-   * The constructor's default scope is available for unit tests only.
+   * DaprRuntime should be used as a singleton, using {@link DaprRuntime#getInstance()}. The
+   * constructor's default scope is available for unit tests only.
    */
   private DaprRuntime() {
   }
@@ -59,40 +60,45 @@ class DaprRuntime {
   /**
    * Adds a topic to the list of subscribed topics.
    *
-   * @param pubSubName PubSub name to subscribe to.
-   * @param topicName Name of the topic being subscribed to.
-   * @param match Match expression for this route.
-   * @param priority Priority for this match relative to others.
-   * @param route Destination route for requests.
-   * @param metadata Metadata for extended subscription functionality.
+   * @param pubSubName      PubSub name to subscribe to.
+   * @param topicName       Name of the topic being subscribed to.
+   * @param match           Match expression for this route.
+   * @param priority        Priority for this match relative to others.
+   * @param route           Destination route for requests.
+   * @param deadLetterTopic Name of topic to forward undeliverable messages. 
+   * @param metadata        Metadata for extended subscription functionality.
    */
   public synchronized void addSubscribedTopic(String pubSubName,
-                                              String topicName,
-                                              String match,
-                                              int priority,
-                                              String route,
-                                              Map<String,String> metadata) {
-    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, metadata, null);
+      String topicName,
+      String match,
+      int priority,
+      String route,
+      String deadLetterTopic,
+      Map<String, String> metadata) {
+    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, deadLetterTopic,
+        metadata, null);
   }
 
   /**
    * Adds a topic to the list of subscribed topics.
    *
-   * @param pubSubName PubSub name to subscribe to.
-   * @param topicName Name of the topic being subscribed to.
-   * @param match Match expression for this route.
-   * @param priority Priority for this match relative to others.
-   * @param route Destination route for requests.
-   * @param metadata Metadata for extended subscription functionality.
-   * @param bulkSubscribe Bulk subscribe configuration.
+   * @param pubSubName      PubSub name to subscribe to.
+   * @param topicName       Name of the topic being subscribed to.
+   * @param match           Match expression for this route.
+   * @param priority        Priority for this match relative to others.
+   * @param route           Destination route for requests.
+   * @param deadLetterTopic Name of topic to forward undeliverable messages.
+   * @param metadata        Metadata for extended subscription functionality.
+   * @param bulkSubscribe   Bulk subscribe configuration.
    */
   public synchronized void addSubscribedTopic(String pubSubName,
-                                              String topicName,
-                                              String match,
-                                              int priority,
-                                              String route,
-                                              Map<String,String> metadata,
-                                              DaprTopicBulkSubscribe bulkSubscribe) {
+      String topicName,
+      String match,
+      int priority,
+      String route,
+      String deadLetterTopic,
+      Map<String, String> metadata,
+      DaprTopicBulkSubscribe bulkSubscribe) {
     DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
 
     DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
@@ -111,6 +117,10 @@ class DaprRuntime {
       builder.setMetadata(metadata);
     }
 
+    if (deadLetterTopic != null && !deadLetterTopic.isEmpty()) {
+      builder.setDeadLetterTopic(deadLetterTopic);
+    }
+
     if (bulkSubscribe != null) {
       builder.setBulkSubscribe(bulkSubscribe);
     }
@@ -118,7 +128,7 @@ class DaprRuntime {
 
   public synchronized DaprTopicSubscription[] listSubscribedTopics() {
     List<DaprTopicSubscription> values = subscriptionBuilders.values().stream()
-            .map(b -> b.build()).collect(Collectors.toList());
+        .map(b -> b.build()).collect(Collectors.toList());
     return values.toArray(new DaprTopicSubscription[0]);
   }
 }

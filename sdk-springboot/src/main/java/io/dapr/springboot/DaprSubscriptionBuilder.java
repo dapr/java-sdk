@@ -21,9 +21,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 class DaprSubscriptionBuilder {
+
   private final String pubsubName;
   private final String topic;
   private final List<TopicRule> rules;
+  private String deadLetterTopic;
   private String defaultPath;
   private Map<String, String> metadata;
 
@@ -31,19 +33,22 @@ class DaprSubscriptionBuilder {
 
   /**
    * Create a subscription topic.
+   *
    * @param pubsubName The pubsub name to subscribe to.
-   * @param topic The topic to subscribe to.
+   * @param topic      The topic to subscribe to.
    */
   DaprSubscriptionBuilder(String pubsubName, String topic) {
     this.pubsubName = pubsubName;
     this.topic = topic;
     this.rules = new ArrayList<>();
+    this.deadLetterTopic = null;
     this.defaultPath = null;
     this.metadata = Collections.emptyMap();
   }
 
   /**
    * Sets the default path for the subscription.
+   *
    * @param path The default path.
    * @return this instance.
    */
@@ -51,9 +56,9 @@ class DaprSubscriptionBuilder {
     if (defaultPath != null) {
       if (!defaultPath.equals(path)) {
         throw new RuntimeException(
-                String.format(
-                        "a default route is already set for topic %s on pubsub %s (current: '%s', supplied: '%s')",
-                        this.topic, this.pubsubName, this.defaultPath, path));
+            String.format(
+                "a default route is already set for topic %s on pubsub %s (current: '%s', supplied: '%s')",
+                this.topic, this.pubsubName, this.defaultPath, path));
       }
     }
     defaultPath = path;
@@ -61,18 +66,38 @@ class DaprSubscriptionBuilder {
   }
 
   /**
+   * Sets the dead letter topic for the subscription.
+   *
+   * @param deadLetterTopic Name of dead letter topic.
+   * @return this instance.
+   */
+  DaprSubscriptionBuilder setDeadLetterTopic(String deadLetterTopic) {
+    if (this.deadLetterTopic != null) {
+      if (!this.deadLetterTopic.equals(deadLetterTopic)) {
+        throw new RuntimeException(
+            String.format(
+                "a default dead letter topic is already set for topic %s on pubsub %s (current: '%s', supplied: '%s')",
+                this.topic, this.pubsubName, this.deadLetterTopic, deadLetterTopic));
+      }
+    }
+    this.deadLetterTopic = deadLetterTopic;
+    return this;
+  }
+
+  /**
    * Adds a rule to the subscription.
-   * @param path The path to route to.
-   * @param match The CEL expression the event must match.
+   *
+   * @param path     The path to route to.
+   * @param match    The CEL expression the event must match.
    * @param priority The priority of the rule.
    * @return this instance.
    */
   public DaprSubscriptionBuilder addRule(String path, String match, int priority) {
     if (rules.stream().anyMatch(e -> e.getPriority() == priority)) {
       throw new RuntimeException(
-              String.format(
-                      "a rule priority of %d is already used for topic %s on pubsub %s",
-                      priority, this.topic, this.pubsubName));
+          String.format(
+              "a rule priority of %d is already used for topic %s on pubsub %s",
+              priority, this.topic, this.pubsubName));
     }
     rules.add(new TopicRule(path, match, priority));
     return this;
@@ -80,6 +105,7 @@ class DaprSubscriptionBuilder {
 
   /**
    * Sets the metadata for the subscription.
+   *
    * @param metadata The metadata.
    * @return this instance.
    */
@@ -90,6 +116,7 @@ class DaprSubscriptionBuilder {
 
   /**
    * Sets the bulkSubscribe configuration for the subscription.
+   *
    * @param bulkSubscribe The bulk subscribe configuration.
    * @return this instance.
    */
@@ -100,6 +127,7 @@ class DaprSubscriptionBuilder {
 
   /**
    * Builds the DaprTopicSubscription that is returned by the application to Dapr.
+   *
    * @return The DaprTopicSubscription.
    */
   public DaprTopicSubscription build() {
@@ -109,16 +137,19 @@ class DaprSubscriptionBuilder {
     if (!rules.isEmpty()) {
       Collections.sort(rules, Comparator.comparingInt(TopicRule::getPriority));
       List<DaprTopicRule> topicRules = rules.stream()
-              .map(e -> new DaprTopicRule(e.match, e.path)).collect(Collectors.toList());
+          .map(e -> new DaprTopicRule(e.match, e.path)).collect(Collectors.toList());
       routes = new DaprTopicRoutes(topicRules, defaultPath);
     } else {
       route = defaultPath;
     }
 
-    return new DaprTopicSubscription(this.pubsubName, this.topic, route, routes, metadata, bulkSubscribe);
+    return new DaprTopicSubscription(this.pubsubName, this.topic, route, this.deadLetterTopic,
+        routes, metadata,
+        bulkSubscribe);
   }
 
   private static class TopicRule {
+
     private final String path;
     private final String match;
     private final int priority;
