@@ -117,7 +117,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
             daprRuntime.addSubscribedTopic(
-                pubSubName, topicName, match, rule.priority(), route,deadLetterTopic, metadata, bulkSubscribe);
+                pubSubName, topicName, match, rule.priority(), route, deadLetterTopic, metadata, bulkSubscribe);
           }
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException("Error while parsing metadata: " + e);

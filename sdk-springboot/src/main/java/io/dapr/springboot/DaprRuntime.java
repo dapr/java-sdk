@@ -65,6 +65,27 @@ class DaprRuntime {
    * @param match           Match expression for this route.
    * @param priority        Priority for this match relative to others.
    * @param route           Destination route for requests.
+   * @param metadata        Metadata for extended subscription functionality.
+   */
+  public synchronized void addSubscribedTopic(String pubSubName,
+      String topicName,
+      String match,
+      int priority,
+      String route,
+      Map<String, String> metadata) {
+    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, "",
+        metadata);
+  }
+
+
+  /**
+   * Adds a topic to the list of subscribed topics.
+   *
+   * @param pubSubName      PubSub name to subscribe to.
+   * @param topicName       Name of the topic being subscribed to.
+   * @param match           Match expression for this route.
+   * @param priority        Priority for this match relative to others.
+   * @param route           Destination route for requests.
    * @param deadLetterTopic Name of topic to forward undeliverable messages. 
    * @param metadata        Metadata for extended subscription functionality.
    */

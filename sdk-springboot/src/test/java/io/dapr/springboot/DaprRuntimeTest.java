@@ -72,11 +72,11 @@ public class DaprRuntimeTest {
 
     Assert.assertNotNull(runtime);
     runtime.addSubscribedTopic(
-            pubSubName, topicName, match, rule.priority(), firstRoute,deadLetterTopic, metadata);
+            pubSubName, topicName, match, rule.priority(), firstRoute, deadLetterTopic, metadata);
 
     // Supplying the same pubsub bits but a different route should fail
     runtime.addSubscribedTopic(
-            pubSubName, topicName, match, rule.priority(), secondRoute,deadLetterTopic, metadata);
+            pubSubName, topicName, match, rule.priority(), secondRoute, deadLetterTopic, metadata);
 
   }
 
