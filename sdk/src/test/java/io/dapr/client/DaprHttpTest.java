@@ -50,8 +50,6 @@ public class DaprHttpTest {
   private static final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
-  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprHttpErrorResponseParser();
-
   private OkHttpClient okHttpClient;
 
   private MockInterceptor mockInterceptor;
@@ -72,7 +70,7 @@ public class DaprHttpTest {
         .respond(serializer.serialize(EXPECTED_RESULT));
     environmentVariables.set(Properties.API_TOKEN.getEnvName(), "xyz");
     assertEquals("xyz", Properties.API_TOKEN.get());
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, (byte[]) null, null, Context.empty());
     DaprHttp.Response response = mono.block();
@@ -88,7 +86,7 @@ public class DaprHttpTest {
         .hasHeader(Headers.DAPR_API_TOKEN)
         .respond(serializer.serialize(EXPECTED_RESULT));
     assertNull(Properties.API_TOKEN.get());
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, (byte[]) null, null, Context.empty());
     DaprHttp.Response response = mono.block();
@@ -104,7 +102,7 @@ public class DaprHttpTest {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3500/v1.0/state")
         .respond(serializer.serialize(EXPECTED_RESULT));
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, (byte[]) null, headers, Context.empty());
     DaprHttp.Response response = mono.block();
@@ -118,7 +116,7 @@ public class DaprHttpTest {
       .post("http://127.0.0.1:3500/v1.0/state")
       .respond(serializer.serialize(EXPECTED_RESULT))
       .addHeader("Header", "Value");
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, "", null, Context.empty());
     DaprHttp.Response response = mono.block();
@@ -131,7 +129,7 @@ public class DaprHttpTest {
     mockInterceptor.addRule()
       .delete("http://127.0.0.1:3500/v1.0/state")
       .respond(serializer.serialize(EXPECTED_RESULT));
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("DELETE", "v1.0/state".split("/"), null, (String) null, null, Context.empty());
     DaprHttp.Response response = mono.block();
@@ -144,7 +142,7 @@ public class DaprHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3500/v1.0/get")
       .respond(serializer.serialize(EXPECTED_RESULT));
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("GET", "v1.0/get".split("/"), null, null, Context.empty());
     DaprHttp.Response response = mono.block();
     String body = serializer.deserialize(response.getBody(), String.class);
@@ -161,7 +159,7 @@ public class DaprHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3500/v1.0/state/order?orderId=41")
       .respond(serializer.serialize(EXPECTED_RESULT));
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("GET", "v1.0/state/order".split("/"), urlParameters, headers, Context.empty());
     DaprHttp.Response response = mono.block();
@@ -174,7 +172,7 @@ public class DaprHttpTest {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500);
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
     DaprHttp.Response response = mono.block();
@@ -188,7 +186,7 @@ public class DaprHttpTest {
       .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("text"),
         "{\"errorCode\":null,\"message\":null}"));
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
     DaprHttp.Response response = mono.block();
     String body = serializer.deserialize(response.getBody(), String.class);
@@ -252,7 +250,7 @@ public class DaprHttpTest {
       .get("http://127.0.0.1:3500/" + urlExistingState)
       .respond(200, ResponseBody.create(MediaType.parse("application/json"),
         serializer.serialize(existingState)));
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient, DEFAULT_PARSER);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> response = daprHttp.invokeApi("GET", urlExistingState.split("/"), null, null, Context.empty());
     assertEquals(existingState, serializer.deserialize(response.block().getBody(), String.class));
     Mono<DaprHttp.Response> responseDeleted = daprHttp.invokeApi("GET", urlDeleteState.split("/"), null, null, Context.empty());

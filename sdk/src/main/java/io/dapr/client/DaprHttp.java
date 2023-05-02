@@ -175,6 +175,10 @@ public class DaprHttp implements AutoCloseable {
     this.parser = parser;
   }
 
+  DaprHttp(String hostname, int port, OkHttpClient httpClient) {
+    this(hostname, port, httpClient, parser);
+  }
+
   /**
    * Invokes an API asynchronously without payload that returns a text payload.
    *

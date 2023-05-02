@@ -89,7 +89,7 @@ public class DaprClientHttpTest {
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient, DEFAULT_PARSER);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientProxy(new DaprClientHttp(daprHttp));
     daprClientHttpXML = new DaprClientProxy(new DaprClientHttp(daprHttp, new XmlSerializer(), new XmlSerializer()));
   }
@@ -98,7 +98,7 @@ public class DaprClientHttpTest {
   public void waitForSidecarTimeout() throws Exception {
     int port = findFreePort();
     System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient, DEFAULT_PARSER);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
     assertThrows(RuntimeException.class, () -> daprClientHttp.waitForSidecar(1).block());
   }
@@ -116,7 +116,7 @@ public class DaprClientHttpTest {
         }
       });
       t.start();
-      daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient, DEFAULT_PARSER);
+      daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
       DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
       daprClientHttp.waitForSidecar(10000).block();
     }
@@ -128,7 +128,7 @@ public class DaprClientHttpTest {
         .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
         .respond(EXPECTED_RESULT);
     String event = "{ \"message\": \"This is a test\" }";
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient, DEFAULT_PARSER);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
     Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname", "A", event, null);
     assertNull(mono.block());
