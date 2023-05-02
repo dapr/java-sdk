@@ -66,7 +66,7 @@ import static org.mockito.Mockito.mock;
 
 public class DaprClientHttpTest {
 
-  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprErrorResponseParser();
+  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprHttpErrorResponseParser();
 
   private static final String STATE_STORE_NAME = "MyStateStore";
 

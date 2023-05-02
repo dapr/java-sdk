@@ -52,7 +52,7 @@ public class DaprPreviewClientHttpTest {
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient, new DefaultDaprErrorResponseParser());
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient, new DefaultDaprHttpErrorResponseParser());
     daprPreviewClientHttp = new DaprClientHttp(daprHttp);
   }
 

@@ -3,17 +3,17 @@ package io.dapr.client;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import static io.dapr.client.ObjectSerializer.OBJECT_MAPPER;
+import static io.dapr.config.Properties.STRING_CHARSET;
 
-public class DefaultDaprErrorResponseParser implements DaprErrorResponseParser {
+public class DefaultDaprHttpErrorResponseParser implements DaprErrorResponseParser {
 
     DaprError error;
 
     @Override
     public DaprException parse(int statusCode, byte[] response) {
-        String errorMessage = (response == null || new String(response).isEmpty()) ? "HTTP status code: " + statusCode : new String(response, StandardCharsets.UTF_8);
+        String errorMessage = (response == null || new String(response).isEmpty()) ? "HTTP status code: " + statusCode : new String(response, STRING_CHARSET.get());
         String errorCode = "UNKNOWN";
         DaprException unknownException = new DaprException(errorCode, errorMessage);
 
@@ -21,7 +21,7 @@ public class DefaultDaprErrorResponseParser implements DaprErrorResponseParser {
             try {
                 error = OBJECT_MAPPER.readValue(response, DaprError.class);
             } catch (IOException e) {
-                return new DaprException("UNKNOWN", new String(response, StandardCharsets.UTF_8));
+                return new DaprException("UNKNOWN", new String(response, STRING_CHARSET.get()));
             }
         }
 

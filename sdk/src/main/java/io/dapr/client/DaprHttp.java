@@ -76,7 +76,7 @@ public class DaprHttp implements AutoCloseable {
   /**
    * Error response parser.
    */
-  private static DaprErrorResponseParser parser = new DefaultDaprErrorResponseParser();
+  private static DaprErrorResponseParser parser = new DefaultDaprHttpErrorResponseParser();
 
   /**
    * HTTP Methods supported.

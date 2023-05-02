@@ -99,7 +99,7 @@ public class DaprClientBuilder {
 
     /**
      * Sets the error parser for objects to received from Dapr.
-     * See {@link DefaultDaprErrorResponseParser} as a default parser suited for deserializing the response to {@link DaprError}.
+     * See {@link DefaultDaprHttpErrorResponseParser} as a default parser suited for deserializing the response to {@link DaprError}.
      *
      * @param responseParser Parser for objects received from Dapr.
      * @return This instance.

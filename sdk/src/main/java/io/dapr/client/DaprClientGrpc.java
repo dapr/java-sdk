@@ -83,6 +83,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static io.dapr.config.Properties.STRING_CHARSET;
+
 /**
  * An adapter for the GRPC Client.
  *
@@ -340,7 +342,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
             StatusRuntimeException statusException = (StatusRuntimeException) t;
             int statusCode = statusException.getStatus().getCode().value();
             byte[] errorDetails = statusException.getStatus().getDescription() != null
-                    ? statusException.getStatus().getDescription().getBytes(StandardCharsets.UTF_8)
+                    ? statusException.getStatus().getDescription().getBytes(STRING_CHARSET.get())
                     : new byte[0];
             try {
               DaprException exception = errorResponseParser.parse(statusCode, errorDetails);

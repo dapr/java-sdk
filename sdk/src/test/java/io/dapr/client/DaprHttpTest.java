@@ -50,7 +50,7 @@ public class DaprHttpTest {
   private static final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
-  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprErrorResponseParser();
+  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprHttpErrorResponseParser();
 
   private OkHttpClient okHttpClient;
 

@@ -48,7 +48,7 @@ public class DaprHttpBuilder {
   /**
    * A default parser for Dapr error responses.
    */
-  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprErrorResponseParser();
+  private static final DaprErrorResponseParser DEFAULT_PARSER = new DefaultDaprHttpErrorResponseParser();
 
 
   /**
