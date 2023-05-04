@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-grpc-java-svc
+  namespace: dapr-playground
+  labels:
+    app: hello-grpc-java-svc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-grpc-java-svc
+  template:
+    metadata:
+      labels:
+        app: hello-grpc-java-svc
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "hellogrpc"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "5000"
+    spec:
+      containers:
+      - name: dapr-java-examples
+        # Replace below to your actual image url, for example:
+        #   docker.io/$DOCKER_USERNAME/dapr-java-examples:latest
+        image: $IMAGE_REGISTRY/dapr-java-examples:latest
+        # imagePullPolicy: IfNotPresent, Always, or Never
+        imagePullPolicy: IfNotPresent
+        args: [ "io.dapr.examples.invoke.grpc.HelloWorldService", "-p", "5000" ]
