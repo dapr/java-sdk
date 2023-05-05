@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.it.actors.app;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.ActorType;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
 import io.dapr.actors.runtime.Remindable;
@@ -25,25 +24,28 @@ import reactor.core.publisher.Mono;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
+import java.util.function.Function;
 
-@ActorType(name = "MyActorTest")
-public class MyActorImpl extends AbstractActor implements MyActor, Remindable<String> {
+public abstract class MyActorBase<T> extends AbstractActor implements MyActor, Remindable<T> {
   private final String TIMER_CALLBACK_METHOD = "clock";
 
   public static final List<String> ACTIVE_ACTOR = new ArrayList<>();
 
   // this tracks method entries and is used to validate turn-based concurrency.
-  public ArrayList<MethodEntryTracker> callLog = new ArrayList<MethodEntryTracker>();
+  public final ArrayList<MethodEntryTracker> callLog = new ArrayList<>();
 
-  public MyActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+  private ActorReminderDataParam actorReminderDataParam =
+          new ActorReminderDataParam("36", String.class.getSimpleName());
+
+  private Function<T, String> toStringFunc = Objects::toString;
+
+  private final TypeRef<T> reminderStateRef;
+
+  public MyActorBase(ActorRuntimeContext runtimeContext, ActorId id, TypeRef<T> reminderStateRef) {
     super(runtimeContext, id);
 
-    this.callLog = new ArrayList<MethodEntryTracker>();
+    this.reminderStateRef = reminderStateRef;
   }
 
   /**
@@ -73,12 +75,39 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
   }
 
   @Override
-  public void startReminder(String name) throws IllegalArgumentException {
+  public void setReminderData(ActorReminderDataParam param) {
+    this.formatAndLog(true, "setReminderData");
+
+    System.out.println("Setting reminder data with type hint: " + param.getTypeHint());
+    this.actorReminderDataParam = param;
+    this.formatAndLog(false, "setReminderData");
+  }
+
+  @Override
+  public void startReminder(String name) throws Exception {
     this.formatAndLog(true, "startReminder");
+
+    Object data = null;
+
+    switch (this.actorReminderDataParam.getTypeHint()) {
+      case "String":
+        data = actorReminderDataParam.getData();
+        break;
+      case "Binary":
+        data = actorReminderDataParam.getBinaryData();
+        toStringFunc = t -> Base64.getEncoder().encodeToString((byte[])t);
+        break;
+      case "Object":
+        data = actorReminderDataParam.asObject(TypeRef.get(MyObject.class));
+        break;
+      default:
+        throw new Exception("Invalid type hint: " + this.actorReminderDataParam.getTypeHint());
+    }
+
     try {
       super.registerReminder(
         name,
-        "36",
+        data,
         Duration.ofSeconds(1),
         Duration.ofSeconds(2)).block();
     } catch(Exception e) {
@@ -103,11 +132,11 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
     System.out.println("Enter startTimer with timer name " + name);
     try {
       super.registerActorTimer(
-        name,
-        TIMER_CALLBACK_METHOD,
-        "ping!",
-        Duration.ofSeconds(2),
-        Duration.ofSeconds(3)).block();
+              name,
+              TIMER_CALLBACK_METHOD,
+              "ping!",
+              Duration.ofSeconds(2),
+              Duration.ofSeconds(3)).block();
     } catch (Exception e) {
       // We don't throw, but the proxy side will know it failed because the test looks for the timer to fire later
       System.out.println("startTimer caught " + e);
@@ -140,30 +169,30 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
   }
 
   @Override
-  public Mono<Void> receiveReminder(String reminderName, String state, Duration dueTime, Duration period) {
+  public Mono<Void> receiveReminder(String reminderName, T state, Duration dueTime, Duration period) {
     return Mono.fromRunnable(() -> {
-      this.formatAndLog(true, "receiveReminder");
+      this.formatAndLog(true, "receiveReminder", toStringFunc.apply(state));
       Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
       String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
 
       // Handles the request by printing message.
       System.out.println(String.format(
           "> Server reminded actor %s of: %s for %s @ %s hosted by instance id %s",
-          this.getId(), reminderName, state, utcNowAsString, System.getenv("DAPR_HTTP_PORT")));
+          this.getId(), reminderName, toStringFunc.apply(state), utcNowAsString, System.getenv("DAPR_HTTP_PORT")));
 
-      this.formatAndLog(false, "receiveReminder");
+      this.formatAndLog(false, "receiveReminder", toStringFunc.apply(state));
     });
   }
 
   @Override
-  public TypeRef<String> getStateType() {
-    return TypeRef.STRING;
+  public TypeRef<T> getStateType() {
+    return reminderStateRef;
   }
 
 
   @Override
   public void clock(String message) {
-    this.formatAndLog(true, TIMER_CALLBACK_METHOD);
+    this.formatAndLog(true, TIMER_CALLBACK_METHOD, message);
 
     Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
     String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
@@ -173,7 +202,7 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
       super.getId() + ": " +
       (message == null ? "" : message + " @ " + utcNowAsString));
 
-    this.formatAndLog(false, TIMER_CALLBACK_METHOD);
+    this.formatAndLog(false, TIMER_CALLBACK_METHOD, message);
   }
 
   @Override
@@ -185,6 +214,9 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
       for (MethodEntryTracker m : this.callLog) {
         String s = m.getIsEnter() ? "Enter" : "Exit";
         s += "|" + m.getMethodName();
+        if (m.getMessage() != null) {
+          s += "|" + m.getMessage();
+        }
         s += "|" + m.getDate().toString();
         stringList.add(s);
       }
@@ -218,9 +250,14 @@ public class MyActorImpl extends AbstractActor implements MyActor, Remindable<St
   }
 
   private void formatAndLog(boolean isEnter, String methodName) {
+    this.formatAndLog(isEnter, methodName, null);
+  }
+
+  private void formatAndLog(boolean isEnter, String methodName, String message) {
     Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
 
-    MethodEntryTracker entry = new MethodEntryTracker(isEnter, methodName, utcNow.getTime());
+    MethodEntryTracker entry = new MethodEntryTracker(isEnter, methodName, message, utcNow.getTime());
     this.callLog.add(entry);
   }
+
 }
