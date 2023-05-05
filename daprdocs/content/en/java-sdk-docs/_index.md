@@ -211,7 +211,7 @@ public class SubscriberController {
       }
     });
   }
-  
+
   @BulkSubscribe()
   @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopicbulk")
