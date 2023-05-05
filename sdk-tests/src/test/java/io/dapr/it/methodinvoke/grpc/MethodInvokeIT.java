@@ -112,9 +112,12 @@ public class MethodInvokeIT extends BaseIT {
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
 
-            assertEquals("INTERNAL", exception.getErrorCode());
-            assertEquals("INTERNAL: fail to invoke, id: methodinvokeit-methodinvokeservice, err: message is nil",
-                exception.getMessage());
+            // The error messages should be improved once runtime has standardized error serialization in the API.
+            // This message is not ideal but last time it was improved, there was side effects reported by users.
+            // If this test fails, there might be a regression in runtime (like we had in 1.10.0).
+            // The expectations below are as per 1.9 release and (later on) hotfixed in 1.10.
+            assertEquals("UNKNOWN", exception.getErrorCode());
+            assertEquals("UNKNOWN: ", exception.getMessage());
         }
     }
 }
