@@ -60,23 +60,43 @@ class DaprRuntime {
   /**
    * Adds a topic to the list of subscribed topics.
    *
-   * @param pubSubName      PubSub name to subscribe to.
-   * @param topicName       Name of the topic being subscribed to.
-   * @param match           Match expression for this route.
-   * @param priority        Priority for this match relative to others.
-   * @param route           Destination route for requests.
-   * @param metadata        Metadata for extended subscription functionality.
+   * @param pubSubName PubSub name to subscribe to.
+   * @param topicName  Name of the topic being subscribed to.
+   * @param match      Match expression for this route.
+   * @param priority   Priority for this match relative to others.
+   * @param route      Destination route for requests.
+   * @param metadata   Metadata for extended subscription functionality.
    */
   public synchronized void addSubscribedTopic(String pubSubName,
-      String topicName,
-      String match,
-      int priority,
-      String route,
-      Map<String, String> metadata) {
-    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, "",
-        metadata);
+                                              String topicName,
+                                              String match,
+                                              int priority,
+                                              String route,
+                                              Map<String, String> metadata) {
+    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, metadata, null);
   }
 
+  /**
+   * Adds a topic to the list of subscribed topics.
+   *
+   * @param pubSubName    PubSub name to subscribe to.
+   * @param topicName     Name of the topic being subscribed to.
+   * @param match         Match expression for this route.
+   * @param priority      Priority for this match relative to others.
+   * @param route         Destination route for requests.
+   * @param metadata      Metadata for extended subscription functionality.
+   * @param bulkSubscribe Bulk subscribe configuration.
+   */
+  public synchronized void addSubscribedTopic(String pubSubName,
+                                              String topicName,
+                                              String match,
+                                              int priority,
+                                              String route,
+                                              Map<String, String> metadata,
+                                              DaprTopicBulkSubscribe bulkSubscribe) {
+    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, null,
+        metadata, bulkSubscribe);
+  }
 
   /**
    * Adds a topic to the list of subscribed topics.
@@ -86,16 +106,16 @@ class DaprRuntime {
    * @param match           Match expression for this route.
    * @param priority        Priority for this match relative to others.
    * @param route           Destination route for requests.
-   * @param deadLetterTopic Name of topic to forward undeliverable messages. 
+   * @param deadLetterTopic Name of topic to forward undeliverable messages.
    * @param metadata        Metadata for extended subscription functionality.
    */
   public synchronized void addSubscribedTopic(String pubSubName,
-      String topicName,
-      String match,
-      int priority,
-      String route,
-      String deadLetterTopic,
-      Map<String, String> metadata) {
+                                              String topicName,
+                                              String match,
+                                              int priority,
+                                              String route,
+                                              String deadLetterTopic,
+                                              Map<String, String> metadata) {
     this.addSubscribedTopic(pubSubName, topicName, match, priority, route, deadLetterTopic,
         metadata, null);
   }
@@ -113,13 +133,13 @@ class DaprRuntime {
    * @param bulkSubscribe   Bulk subscribe configuration.
    */
   public synchronized void addSubscribedTopic(String pubSubName,
-      String topicName,
-      String match,
-      int priority,
-      String route,
-      String deadLetterTopic,
-      Map<String, String> metadata,
-      DaprTopicBulkSubscribe bulkSubscribe) {
+                                              String topicName,
+                                              String match,
+                                              int priority,
+                                              String route,
+                                              String deadLetterTopic,
+                                              Map<String, String> metadata,
+                                              DaprTopicBulkSubscribe bulkSubscribe) {
     DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
 
     DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
