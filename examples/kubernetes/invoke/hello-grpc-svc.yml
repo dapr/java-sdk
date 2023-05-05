@@ -23,8 +23,8 @@ spec:
       containers:
       - name: dapr-java-examples
         # Replace below to your actual image url, for example:
-        #   docker.io/$DOCKER_USERNAME/dapr-java-examples:latest
-        image: $IMAGE_REGISTRY/dapr-java-examples:latest
+        #   docker.io/$DOCKER_USERNAME/dapr-java-examples:0.0.1
+        image: $IMAGE_REGISTRY/dapr-java-examples:0.0.1
         # imagePullPolicy: IfNotPresent, Always, or Never
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         args: [ "io.dapr.examples.invoke.grpc.HelloWorldService", "-p", "5000" ]

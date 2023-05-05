@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-grpc-spring-app
+  namespace: dapr-playground
+  labels:
+    app: hello-grpc-spring-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-grpc-spring-app
+  template:
+    metadata:
+      labels:
+        app: hello-grpc-spring-app
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "hellogrpc-spring-app"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "3000"
+    spec:
+      containers:
+      - name: dapr-java-examples
+        # Replace below to your actual image url, for example:
+        #   docker.io/$DOCKER_USERNAME/dapr-java-examples:0.0.1
+        image: $IMAGE_REGISTRY/dapr-java-examples:0.0.1
+        imagePullPolicy: Always
+        args: [ "io.dapr.examples.invoke.grpc.HelloWorldSpringApp", "-p", "3000" ]
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: hello-grpc-spring-app
+  namespace: dapr-playground
+  labels:
+    app: hello-grpc-spring-app
+spec:
+  type: NodePort
+  selector:
+    app: hello-grpc-spring-app
+  ports:
+  - port: 3000
+    targetPort: 3000
+    nodePort: 30007
