@@ -13,34 +13,32 @@ limitations under the License.
 
 package io.dapr.it.actors.app;
 
-import io.dapr.actors.ActorMethod;
+/**
+ * This class is for passing string or binary data to the Actor for registering reminder later on during test.
+ */
+public class MyObject {
 
-import java.util.ArrayList;
-import java.util.List;
+  private String name;
 
-public interface MyActor {
-  String say(String something);
+  private int age;
 
-  List<String> retrieveActiveActors();
+  public String getName() {
+    return name;
+  }
 
-  void setReminderData(ActorReminderDataParam param);
+  public void setName(String name) {
+    this.name = name;
+  }
 
-  void startReminder(String name) throws Exception;
+  public int getAge() {
+    return age;
+  }
 
-  void stopReminder(String name);
+  public void setAge(int age) {
+    this.age = age;
+  }
 
-  void startTimer(String name);
-
-  void stopTimer(String name);
-
-  void clock(String message);
-
-  ArrayList<String> getCallLog();
-
-  String getIdentifier();
-
-  void throwException();
-
-  @ActorMethod(name = "DotNetMethodAsync")
-  boolean dotNetMethod();
+  public String toString() {
+    return this.name + "," + this.age;
+  }
 }

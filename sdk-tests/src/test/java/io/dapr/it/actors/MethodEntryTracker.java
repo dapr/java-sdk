@@ -18,11 +18,17 @@ import java.util.Date;
 public class MethodEntryTracker {
   private boolean isEnter;
   private String methodName;
+  private String message;
   private Date date;
 
   public MethodEntryTracker(boolean isEnter, String methodName, Date date) {
+    this(isEnter, methodName, null, date);
+  }
+
+  public MethodEntryTracker(boolean isEnter, String methodName, String message, Date date) {
     this.isEnter = isEnter;
     this.methodName = methodName;
+    this.message = message;
     this.date = date;
   }
 
@@ -34,12 +40,16 @@ public class MethodEntryTracker {
     return this.methodName;
   }
 
+  public String getMessage() {
+    return this.message;
+  }
+
   public Date getDate() {
     return this.date;
   }
 
   @Override
   public String toString() {
-    return this.date + " " + this.isEnter + " " + this.methodName;
+    return this.date + " " + this.isEnter + " " + (this.message != null? this.message + " ":"") + this.methodName;
   }
 }
