@@ -14,6 +14,8 @@ limitations under the License.
 package io.dapr.examples.pubsub.grpc;
 
 import io.dapr.examples.DaprApplication;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -44,6 +46,13 @@ public class Subscriber {
 
     // If port string is not valid, it will throw an exception.
     int port = Integer.parseInt(cmd.getOptionValue("port"));
+
+    //start a grpc server
+    Server server = ServerBuilder.forPort(port)  
+        .addService(new SubscriberGrpcService())  
+        .build();  
+    server.start();  
+    server.awaitTermination();  
 
     // Start Dapr's callback endpoint.
     DaprApplication.start("grpc",port);

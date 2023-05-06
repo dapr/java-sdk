@@ -17,7 +17,6 @@ import com.google.protobuf.Empty;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.DaprAppCallbackProtos;
 import io.grpc.stub.StreamObserver;
-import net.devh.boot.grpc.server.service.GrpcService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +24,6 @@ import java.util.List;
 /**
  * Class that encapsulates all client-side logic for Grpc.
  */
-@GrpcService
 public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
   private final List<DaprAppCallbackProtos.TopicSubscription> topicSubscriptionList = new ArrayList<>();
   
@@ -50,7 +48,8 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
   public void onTopicEvent(DaprAppCallbackProtos.TopicEventRequest request,
       StreamObserver<DaprAppCallbackProtos.TopicEventResponse> responseObserver) {
     try {
-      System.out.println("Subscriber got: " + request.getData());
+      String data = request.getData().toStringUtf8().replace("\"", "");
+      System.out.println("Subscriber got: " + data);
       DaprAppCallbackProtos.TopicEventResponse response = DaprAppCallbackProtos.TopicEventResponse.newBuilder()
           .setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS)
           .build();
