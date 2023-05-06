@@ -139,6 +139,9 @@ sleep: 5
 ```bash
 dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol http -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
 ```
+
+<!-- END_STEP -->
+
 **gRPC Version**
 
 The Spring GrpcService implements the methods required for gRPC communication with Dapr\`s sidecar. 
@@ -193,8 +196,6 @@ Execute the follow script in order to run the gRPC Subscriber example:
 dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3000
 ```
 
-
-<!-- END_STEP -->
 
 ### Running the publisher
 
