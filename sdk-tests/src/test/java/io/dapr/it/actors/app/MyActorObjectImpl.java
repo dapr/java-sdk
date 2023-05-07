@@ -13,34 +13,17 @@ limitations under the License.
 
 package io.dapr.it.actors.app;
 
-import io.dapr.actors.ActorMethod;
+import io.dapr.actors.ActorId;
+import io.dapr.actors.ActorType;
+import io.dapr.actors.runtime.ActorRuntimeContext;
+import io.dapr.actors.runtime.Remindable;
+import io.dapr.utils.TypeRef;
 
-import java.util.ArrayList;
-import java.util.List;
+@ActorType(name = "MyActorObjectTest")
+public class MyActorObjectImpl extends MyActorBase<MyObject> implements MyActor, Remindable<MyObject> {
 
-public interface MyActor {
-  String say(String something);
+  public MyActorObjectImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+    super(runtimeContext, id, TypeRef.get(MyObject.class));
+  }
 
-  List<String> retrieveActiveActors();
-
-  void setReminderData(ActorReminderDataParam param);
-
-  void startReminder(String name) throws Exception;
-
-  void stopReminder(String name);
-
-  void startTimer(String name);
-
-  void stopTimer(String name);
-
-  void clock(String message);
-
-  ArrayList<String> getCallLog();
-
-  String getIdentifier();
-
-  void throwException();
-
-  @ActorMethod(name = "DotNetMethodAsync")
-  boolean dotNetMethod();
 }
