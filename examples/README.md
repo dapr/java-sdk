@@ -57,8 +57,7 @@ kubectl -n dapr-playground port-forward service/hello-grpc-spring-app 30007:3000
 # This will print below logs if successful:
 Forwarding from 127.0.0.1:30007 -> 3000
 Forwarding from [::1]:30007 -> 3000
-Handling connection for 30007
-Handling connection for 30007
 ```
 
 Now we can access the exposed service at `127.0.0.1:30007` from browser.
+For example, access `http://127.0.0.1:30007/invoke/grpc/say` to invoke the REST API to trigger GRPC call.

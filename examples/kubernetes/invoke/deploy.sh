@@ -5,6 +5,11 @@ set +e
 
 apps=${1:-all}
 
+if [[ -z $IMAGE_REGISTRY ]]; then
+  echo "env IMAGE_REGISTRY is required, exiting"
+  exit -1
+fi
+
 # Delete existing deployments first, then we apply the deployments for each:
 if [[ "$apps" == "svc" || "$apps" == "all" ]]; then
   set -x
