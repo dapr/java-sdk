@@ -22,6 +22,8 @@ docker image push ${DOCKER_USERNAME}/dapr-java-examples
 
 ### Deploy to Kubernetes
 
+> This takes the `invoke/grpc` as an example, others should be similar.
+
 Set your `IMAGE_REGISTRY` you just pushed to, for example:
 ```sh
 export IMAGE_REGISTRY="docker.io/$DOCKER_USERNAME"
