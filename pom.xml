@@ -7,7 +7,27 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.9.0-SNAPSHOT</version>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+      </dependency>
+      <dependency>
+          <groupId>com.microsoft</groupId>
+          <artifactId>durabletask-client</artifactId>
+          <version>1.0.0</version>
+          <scope>compile</scope>
+      </dependency>
+    </dependencies>
+    <version>1.9.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -88,7 +108,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.6</version>
+        <version>0.8.8</version>
         <executions>
           <execution>
             <goals>
@@ -301,6 +321,7 @@
     <module>sdk-autogen</module>
     <module>sdk</module>
     <module>sdk-actors</module>
+    <module>sdk-workflows</module>
     <module>sdk-springboot</module>
     <module>examples</module>
   </modules>
