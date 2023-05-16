@@ -1,7 +1,7 @@
 package io.dapr.it.configuration.http;
 
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
@@ -23,7 +23,7 @@ public class ConfigurationSubscribeIT extends BaseIT {
 
   private static DaprRun daprRun;
 
-  private static DaprPreviewClient daprPreviewClient;
+  private static DaprClient daprClient;
 
   private static String key = "myconfig1";
 
@@ -46,12 +46,12 @@ public class ConfigurationSubscribeIT extends BaseIT {
         true,
         60000);
     daprRun.switchToHTTP();
-    daprPreviewClient = new DaprClientBuilder().buildPreviewClient();
+    daprClient = new DaprClientBuilder().build();
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    daprPreviewClient.close();
+    daprClient.close();
   }
 
   @Before
@@ -62,14 +62,14 @@ public class ConfigurationSubscribeIT extends BaseIT {
   @Test
   public void subscribeAndUnsubscribeConfiguration() {
     AtomicReference<String> subId= new AtomicReference<>("");
-    Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
+    Flux<SubscribeConfigurationResponse> outFlux = daprClient
         .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
     outFlux.subscribe(items -> {
       subId.set(items.getSubscriptionId());
     });
     assertTrue(subId.get().length() > 0);
 
-    UnsubscribeConfigurationResponse res = daprPreviewClient.unsubscribeConfiguration(
+    UnsubscribeConfigurationResponse res = daprClient.unsubscribeConfiguration(
         subId.get(),
         CONFIG_STORE_NAME
     ).block();

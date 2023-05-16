@@ -17,17 +17,10 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
-import io.dapr.client.domain.SubscribeConfigurationRequest;
-import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.UnsubscribeConfigurationRequest;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.utils.TypeRef;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -39,99 +32,6 @@ import java.util.Map;
  * @see io.dapr.client.DaprClientBuilder for information on how to make instance for this interface.
  */
 public interface DaprPreviewClient extends AutoCloseable {
-
-  /**
-   * Retrieve a configuration based on a provided key.
-   *
-   * @param storeName Name of the configuration store
-   * @param key       key of the configuration item which is to be retrieved
-   * @return Mono of the Configuration Item
-   */
-  Mono<ConfigurationItem> getConfiguration(String storeName, String key);
-
-  /**
-   * Retrieve a configuration based on a provided key.
-   *
-   * @param storeName Name of the configuration store
-   * @param key       key of the configuration item which is to be retrieved
-   * @param metadata  optional metadata
-   * @return Mono of the Configuration Item
-   */
-  Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata);
-
-  /**
-   * Retrieve Map of configurations based on a provided variable number of keys.
-   *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be retrieved
-   * @return Mono of Map of ConfigurationItems
-   */
-  Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, String... keys);
-
-  /**
-   * Retrieve Map of configurations based on a provided variable number of keys.
-   *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be retrieved
-   * @param metadata  optional metadata
-   * @return Mono of Map of ConfigurationItems
-   */
-  Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, List<String> keys, 
-                                                          Map<String, String> metadata);
-
-  /**
-   * Retrieve Map of configurations based on a provided configuration request object.
-   *
-   * @param request request for retrieving Configurations for a list keys
-   * @return Mono of Map of ConfigurationItems
-   */
-
-  Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request);
-
-  /**
-   * Subscribe to the keys for any change.
-   *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be subscribed
-   * @return Flux of {@link SubscribeConfigurationResponse} instance
-   */
-  Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, String... keys);
-
-  /**
-   * Subscribe to the keys for any change.
-   *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be subscribed
-   * @param metadata  optional metadata
-   * @return Flux of {@link SubscribeConfigurationResponse} instance
-   */
-  Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, List<String> keys,
-                                                                Map<String, String> metadata);
-
-  /**
-   * Subscribe to the keys for any change.
-   *
-   * @param request request for subscribing to any change for the given keys in request
-   * @return Flux of {@link SubscribeConfigurationResponse} instance
-   */
-  Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request);
-
-  /**
-   * Subscribe to the keys for any change.
-   *
-   * @param id subscription id returned by subscribeConfiguration API.
-   * @param storeName Name of the configuration store.
-   * @return Mono of {@link UnsubscribeConfigurationResponse} instance.
-   */
-  Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(String id, String storeName);
-
-  /**
-   * Subscribe to the keys for any change.
-   *
-   * @param request request for unsubscribing to any change for the given subscription id in request
-   * @return Mono of {@link UnsubscribeConfigurationResponse} instance.
-   */
-  Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request);
 
   /**
    * Query for states using a query string.
