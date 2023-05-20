@@ -165,13 +165,23 @@ public class DaprClientHttp extends AbstractDaprClient {
       Object data = request.getData();
       Map<String, String> metadata = request.getMetadata();
 
-      byte[] serializedEvent = objectSerializer.serialize(data);
       // Content-type can be overwritten on a per-request basis.
       // It allows CloudEvents to be handled differently, for example.
       String contentType = request.getContentType();
       if (contentType == null || contentType.isEmpty()) {
         contentType = objectSerializer.getContentType();
       }
+
+      byte[] serializedEvent;
+      if (contentType.equals("text/plain")) 
+      {
+        serializedEvent = ((String)data).getBytes();
+      }
+      else
+      {
+        serializedEvent = objectSerializer.serialize(data);
+      }
+      
       Map<String, String> headers = Collections.singletonMap("content-type", contentType);
 
       String[] pathSegments = new String[]{ DaprHttp.API_VERSION, "publish", pubsubName, topic };
