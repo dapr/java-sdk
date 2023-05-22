@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.pubsub;
+package io.dapr.examples.pubsub.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Rule;

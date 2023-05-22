@@ -40,7 +40,7 @@ cd examples
 
 ### Running the subscriber
 
-The first is the subscriber. It will subscribe to the topic to be used by the publisher and read the messages published. The Subscriber uses the Spring Boot´s DaprApplication class for initializing the `SubscriberController`. In `Subscriber.java` file, you will find the `Subscriber` class and the `main` method. See the code snippet below:
+The first is the subscriber. It will subscribe to the topic to be used by the publisher and read the messages published. The Subscriber uses the Spring Boot´s DaprApplication class for initializing the `SubscriberController`. There are gRPC version and HTTP version of subscriber in grpc and http folders. In `Subscriber.java` file, you will find the `Subscriber` class and the `main` method. See the code snippet below:
 
 ```java
 public class Subscriber {
@@ -48,13 +48,15 @@ public class Subscriber {
   public static void main(String[] args) throws Exception {
     ///...
     // Start Dapr's callback endpoint.
-    DaprApplication.start(port);
+    DaprApplication.start([PROTOCAL],port); 
   }
 }
 ```
-`DaprApplication.start()` Method will run an Spring Boot application that registers the `SubscriberController`, which exposes the message retrieval as a POST request. The Dapr's sidecar is the one that performs the actual call to the controller, based on the pubsub features.
+`DaprApplication.start()` Method will run an Spring Boot application that registers the `SubscriberController`, which exposes the message retrieval as a POST request, or the `SubscriberGrpcService`, which implemente the grpc methods that sidecar will call. 
 
-This Spring Controller handles the message endpoint, printing the message which is received as the POST body. 
+**HTTP Version**
+
+The Dapr's sidecar is the one that performs the actual call to the controller, based on the pubsub features. This Spring Controller handles the message endpoint, printing the message which is received as the POST body. 
 
 The subscription's topic in Dapr is handled automatically via the `@Topic` annotation - which also supports the same expressions in 
 [Spring's @Value annotations](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations).
@@ -116,7 +118,9 @@ public class SubscriberController {
 }
 ```
 
-Execute the follow script in order to run the Subscriber example:
+
+
+Execute the follow script in order to run the HTTP Subscriber example:
 
 <!-- STEP
 name: Run Subscriber
@@ -133,10 +137,65 @@ sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Subscriber -p 3000
+dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol http -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
 ```
 
 <!-- END_STEP -->
+
+**gRPC Version**
+
+The Spring GrpcService implements the methods required for gRPC communication with Dapr\`s sidecar. 
+
+The `SubscriberGrpcService.java` snippet below shows the details. Dapr\`s sidecar will call `listTopicSubscriptions` to get topic and pubsubname that are contained in response before subscription starts. After the pubsub component in sidecar subscribes successfully from the specified topic, message will be sent to the method `onTopicEvent` in request parameter.
+
+```java
+@GrpcService
+public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
+	private final List<DaprAppCallbackProtos.TopicSubscription> topicSubscriptionList = new ArrayList<>();
+	private final DaprObjectSerializer objectSerializer = new DefaultObjectSerializer();
+	
+	@Override
+	public void listTopicSubscriptions(Empty request,
+			StreamObserver<DaprAppCallbackProtos.ListTopicSubscriptionsResponse> responseObserver) {
+			registerConsumer("messagebus","testingtopic");
+		try {
+			DaprAppCallbackProtos.ListTopicSubscriptionsResponse.Builder builder = DaprAppCallbackProtos.ListTopicSubscriptionsResponse
+					.newBuilder();
+			topicSubscriptionList.forEach(builder::addSubscriptions);
+			DaprAppCallbackProtos.ListTopicSubscriptionsResponse response = builder.build();
+			responseObserver.onNext(response);
+		} catch (Throwable e) {
+			responseObserver.onError(e);
+		} finally {
+			responseObserver.onCompleted();
+		}
+	}
+
+	@Override
+	public void onTopicEvent(DaprAppCallbackProtos.TopicEventRequest request,
+			StreamObserver<DaprAppCallbackProtos.TopicEventResponse> responseObserver) {
+		try {
+			System.out.println("Subscriber got: " + request.getData());
+			DaprAppCallbackProtos.TopicEventResponse response = DaprAppCallbackProtos.TopicEventResponse.newBuilder()
+					.setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS)
+					.build();
+			responseObserver.onNext(response);
+			responseObserver.onCompleted();
+		} catch (Throwable e) {
+			responseObserver.onError(e);
+		}
+	}
+  ///...
+}
+```
+
+
+Execute the follow script in order to run the gRPC Subscriber example:
+
+```bash
+dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3000
+```
+
 
 ### Running the publisher
 
