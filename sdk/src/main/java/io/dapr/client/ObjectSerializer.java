@@ -69,6 +69,10 @@ public class ObjectSerializer {
       return ((MessageLite) state).toByteArray();
     }
 
+    if(state instanceof String) {
+      return ((String)state).getBytes();
+    }
+
     // Not string, not primitive, so it is a complex type: we use JSON for that.
     return OBJECT_MAPPER.writeValueAsBytes(state);
   }
