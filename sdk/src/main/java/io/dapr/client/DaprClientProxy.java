@@ -13,23 +13,28 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.QueryStateRequest;
-import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.utils.TypeRef;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -498,6 +503,88 @@ class DaprClientProxy implements DaprClient {
   @Override
   public Mono<Map<String, Map<String, String>>> getBulkSecret(GetBulkSecretRequest request) {
     return client.getBulkSecret(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(String storeName, String key) {
+    return client.getConfiguration(storeName, key);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata) {
+    return client.getConfiguration(storeName, key, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, String... keys) {
+    return client.getConfiguration(storeName, keys);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, List<String> keys,
+                                                        Map<String, String> metadata) {
+    return client.getConfiguration(storeName, keys, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+    return client.getConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, String... keys) {
+    return client.subscribeConfiguration(storeName, keys);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, List<String> keys,
+                                                              Map<String, String> metadata) {
+    return client.subscribeConfiguration(storeName, keys, metadata);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request) {
+    return client.subscribeConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(String id, String storeName) {
+    return client.unsubscribeConfiguration(id, storeName);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
+    return client.unsubscribeConfiguration(request);
   }
 
   /**

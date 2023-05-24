@@ -881,18 +881,18 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
 
       DaprProtos.GetConfigurationRequest envelope = builder.build();
-      return this.getConfigurationAlpha1(envelope);
+      return this.getConfiguration(envelope);
 
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
   }
 
-  private Mono<Map<String, ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
+  private Mono<Map<String, ConfigurationItem>> getConfiguration(DaprProtos.GetConfigurationRequest envelope) {
     return Mono.deferContextual(
         context ->
             this.<DaprProtos.GetConfigurationResponse>createMono(
-                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelope, it)
+                it -> intercept(context, asyncStub).getConfiguration(envelope, it)
             )
     ).map(
         it -> {
@@ -932,7 +932,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.SubscribeConfigurationRequest envelope = builder.build();
       return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
-          it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelope, it)
+          it -> intercept(asyncStub).subscribeConfiguration(envelope, it)
       ).map(
         it -> {
           Map<String, ConfigurationItem> configMap = new HashMap<>();
@@ -972,7 +972,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.UnsubscribeConfigurationRequest envelope = builder.build();
 
       return this.<DaprProtos.UnsubscribeConfigurationResponse>createMono(
-          it -> intercept(asyncStub).unsubscribeConfigurationAlpha1(envelope, it)
+          it -> intercept(asyncStub).unsubscribeConfiguration(envelope, it)
       ).map(
           it -> new UnsubscribeConfigurationResponse(it.getOk(), it.getMessage())
       );

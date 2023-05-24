@@ -16,6 +16,7 @@ package io.dapr.client;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
@@ -24,7 +25,10 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -53,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -81,6 +86,8 @@ import static org.mockito.Mockito.when;
 public class DaprClientGrpcTest {
 
   private static final String STATE_STORE_NAME = "MyStateStore";
+
+  private static final String CONFIG_STORE_NAME = "MyConfigStore";
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
@@ -2096,6 +2103,248 @@ public class DaprClientGrpcTest {
     assertEquals(2, secrets.get("two").size());
     assertEquals("1", secrets.get("two").get("a"));
     assertEquals("2", secrets.get("two").get("b"));
+  }
+
+  @Test
+  public void getConfigurationTestErrorScenario() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.getConfiguration("", "key").block();
+    });
+  }
+
+  @Test
+  public void getSingleConfigurationTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getSingleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    ConfigurationItem ci = client.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void getSingleConfigurationWithMetadataTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getSingleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    Map<String, String> reqMetadata = new HashMap<>();
+    reqMetadata.put("meta1", "value1");
+    ConfigurationItem ci = client.getConfiguration(CONFIG_STORE_NAME, "configkey1", reqMetadata).block();
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void getMultipleConfigurationTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getMultipleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
+    assertEquals(2, cis.size());
+    assertTrue("configkey1", cis.containsKey("configkey1"));
+    assertEquals("configvalue1", cis.get("configkey1").getValue());
+    assertEquals("1", cis.get("configkey1").getVersion());
+    assertTrue("configkey2", cis.containsKey("configkey2"));
+    assertEquals("configvalue2", cis.get("configkey2").getValue());
+    assertEquals("1", cis.get("configkey2").getVersion());
+  }
+
+  @Test
+  public void getMultipleConfigurationWithMetadataTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getMultipleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    Map<String, String> reqMetadata = new HashMap<>();
+    reqMetadata.put("meta1", "value1");
+    List<String> keys = Arrays.asList("configkey1","configkey2");
+    Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
+    assertEquals(2, cis.size());
+    assertTrue("configkey1", cis.containsKey("configkey1"));
+    assertEquals("configvalue1", cis.get("configkey1").getValue());
+  }
+
+  @Test
+  public void subscribeConfigurationTest() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .setId("subscription_id")
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+
+    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertTrue(res.getItems().containsKey("configkey1"));
+    assertEquals("subscription_id", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void subscribeConfigurationTestWithMetadata() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .setId("subscription_id")
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+
+    Map<String, String> reqMetadata = new HashMap<>();
+    List<String> keys = Arrays.asList("configkey1");
+
+    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertTrue(res.getItems().containsKey("configkey1"));
+    assertEquals("subscription_id", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void subscribeConfigurationWithErrorTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onError(new RuntimeException());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+
+    assertThrowsDaprException(ExecutionException.class, () -> {
+      client.subscribeConfiguration(CONFIG_STORE_NAME, "key").blockFirst();
+    });
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.subscribeConfiguration("", "key").blockFirst();
+    });
+  }
+
+  @Test
+  public void unsubscribeConfigurationTest() {
+    DaprProtos.UnsubscribeConfigurationResponse responseEnvelope = DaprProtos.UnsubscribeConfigurationResponse.newBuilder()
+        .setOk(true)
+        .setMessage("unsubscribed_message")
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).unsubscribeConfiguration(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+
+    UnsubscribeConfigurationResponse
+        response = client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME).block();
+    assertTrue(response.getIsUnsubscribed());
+    assertEquals("unsubscribed_message", response.getMessage());
+  }
+
+  @Test
+  public void unsubscribeConfigurationTestWithError() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onError(new RuntimeException());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).unsubscribeConfiguration(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+
+    assertThrowsDaprException(ExecutionException.class, () -> {
+      client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME).block();
+    });
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.unsubscribeConfiguration("", CONFIG_STORE_NAME).block();
+    });
+
+    UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.unsubscribeConfiguration(req).block();
+    });
+  }
+
+  private DaprProtos.GetConfigurationResponse getSingleMockResponse() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .build();
+    return responseEnvelope;
+  }
+
+  private DaprProtos.GetConfigurationResponse getMultipleMockResponse() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    configs.put("configkey2", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue2")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .build();
+    return responseEnvelope;
   }
 
   /* If this test is failing, it means that a new value was added to StateOptions.Consistency

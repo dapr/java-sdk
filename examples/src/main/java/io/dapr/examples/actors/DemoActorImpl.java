@@ -43,11 +43,18 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
    */
   public DemoActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
     super(runtimeContext, id);
+  }
 
+  /**
+   * Register a timer.
+   */
+  @Override
+  public void registerTimer(String state) {
+    // For example, the state will be formatted as `ping! {INDEX}` where INDEX is the index of the actor related to ID.
     super.registerActorTimer(
         null,
         "clock",
-        "ping!",
+        state,
         Duration.ofSeconds(2),
         Duration.ofSeconds(1)).block();
   }
@@ -56,10 +63,11 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
    * Registers a reminder.
    */
   @Override
-  public void registerReminder() {
+  public void registerReminder(int index) {
+    // For this example, the state reminded by the reminder is deterministic to be the index(not ID) of the actor.
     super.registerReminder(
         "myremind",
-        (int) (Integer.MAX_VALUE * Math.random()),
+        index,
         Duration.ofSeconds(5),
         Duration.ofSeconds(2)).block();
   }
@@ -120,9 +128,9 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
     String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
 
     // Handles the request by printing message.
-    System.out.println("Server timer for actor "
-        + super.getId() + ": "
-        + (message == null ? "" : message + " @ " + utcNowAsString));
+    System.out.println("Server timer triggered with state "
+        + (message == null ? "" : message) + " for actor "
+        + super.getId() + "@ " + utcNowAsString);
   }
 
   /**
@@ -148,8 +156,8 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
       Calendar utcNow = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
       String utcNowAsString = DATE_FORMAT.format(utcNow.getTime());
 
-      String message = String.format("Server reminded actor %s of: %s for %d @ %s",
-          this.getId(), reminderName, state, utcNowAsString);
+      String message = String.format("Reminder %s with state {%d} triggered for actor %s @ %s",
+          reminderName, state, this.getId(), utcNowAsString);
 
       // Handles the request by printing message.
       System.out.println(message);

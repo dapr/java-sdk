@@ -1,7 +1,6 @@
 ## Retrieve Configurations via Configuration API
 
 This example provides the different capabilities provided by Dapr Java SDK for Configuration. For further information about Configuration APIs please refer to [this link](https://docs.dapr.io/developing-applications/building-blocks/configuration/)
-**This API is available in Preview Mode**.
 
 ### Using the ConfigurationAPI
 
@@ -63,7 +62,7 @@ public class ConfigurationClient {
    */
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      System.out.println("Using preview client...");
+      System.out.println("Using Dapr client...");
       getConfigurations(client);
       subscribeConfigurationRequestWithSubscribe(client);
       unsubscribeConfigurationItems(client);
@@ -134,7 +133,7 @@ Use the following command to run this example-
 <!-- STEP
 name: Run ConfigurationClient example
 expected_stdout_lines:
-  - "== APP == Using preview client..."
+  - "== APP == Using Dapr client..."
   - "== APP == *******trying to retrieve configurations for a list of keys********"
   - "== APP == val1 : key ->myconfig1"
   - "== APP == val2 : key ->myconfig2"
@@ -155,7 +154,7 @@ dapr run --components-path ./components/configuration --app-id configgrpc --log-
 
 ### Sample output
 ```
-== APP == Using preview client...
+== APP == Using Dapr client...
 == APP == *******trying to retrieve configurations for a list of keys********
 == APP == val1 : key ->myconfig1
 == APP == val2 : key ->myconfig2

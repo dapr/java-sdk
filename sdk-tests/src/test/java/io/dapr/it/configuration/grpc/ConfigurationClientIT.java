@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.it.configuration.grpc;
 
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
@@ -37,7 +37,7 @@ public class ConfigurationClientIT extends BaseIT {
 
     private static DaprRun daprRun;
 
-    private static DaprPreviewClient daprPreviewClient;
+    private static DaprClient daprClient;
 
     private static String key = "myconfig1";
 
@@ -63,12 +63,12 @@ public class ConfigurationClientIT extends BaseIT {
     public static void init() throws Exception {
         daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
         daprRun.switchToGRPC();
-        daprPreviewClient = new DaprClientBuilder().buildPreviewClient();
+        daprClient = new DaprClientBuilder().build();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        daprPreviewClient.close();
+        daprClient.close();
     }
 
     @Before
@@ -78,13 +78,13 @@ public class ConfigurationClientIT extends BaseIT {
 
     @Test
     public void getConfiguration() {
-        ConfigurationItem ci = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1").block();
+        ConfigurationItem ci = daprClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1").block();
         assertEquals(ci.getValue(), "myconfigvalue1");
     }
 
     @Test
     public void getConfigurations() {
-        Map<String, ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
+        Map<String, ConfigurationItem> cis = daprClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
         assertTrue(cis.size() == 2);
         assertTrue(cis.containsKey("myconfigkey1"));
         assertTrue(cis.containsKey("myconfigkey2"));
@@ -94,7 +94,7 @@ public class ConfigurationClientIT extends BaseIT {
     @Test
     public void subscribeConfiguration() {
         Runnable subscribeTask = () -> {
-            Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
+            Flux<SubscribeConfigurationResponse> outFlux = daprClient
                     .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
             outFlux.subscribe(update -> {
                 if (update.getItems().size() == 0 ) {
@@ -132,7 +132,7 @@ public class ConfigurationClientIT extends BaseIT {
         AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
         AtomicReference<String> subscriptionId = new AtomicReference<>();
         Runnable subscribeTask = () -> {
-            Flux<SubscribeConfigurationResponse> outFlux = daprPreviewClient
+            Flux<SubscribeConfigurationResponse> outFlux = daprClient
                     .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1");
             disposableAtomicReference.set(outFlux
                 .subscribe(update -> {
@@ -163,7 +163,7 @@ public class ConfigurationClientIT extends BaseIT {
         // To ensure key starts getting updated
         inducingSleepTime(1000);
 
-        UnsubscribeConfigurationResponse res = daprPreviewClient.unsubscribeConfiguration(
+        UnsubscribeConfigurationResponse res = daprClient.unsubscribeConfiguration(
             subscriptionId.get(),
             CONFIG_STORE_NAME
         ).block();
