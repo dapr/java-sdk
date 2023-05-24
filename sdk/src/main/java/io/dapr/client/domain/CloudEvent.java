@@ -17,8 +17,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -38,7 +40,8 @@ public class CloudEvent<T> {
    */
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-      .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+      .setSerializationInclusion(JsonInclude.Include.NON_NULL).findAndRegisterModules();
 
   /**
    * Identifier of the message being processed.
@@ -75,6 +78,37 @@ public class CloudEvent<T> {
    */
   @JsonProperty("data_base64")
   private byte[] binaryData;
+
+  /**
+   * The pubsub component this CloudEvent came from.
+   */
+  private String pubsubname;
+
+  /**
+   * The topic this CloudEvent came from.
+   */
+  private String topic;
+
+  /**
+   * The time this CloudEvent was created.
+   */
+  private OffsetDateTime time;
+
+  /**
+   * The trace id is the legacy name for trace parent.
+   */
+  @Deprecated
+  private String traceid;
+
+  /**
+   * The trace parent.
+   */
+  private String traceparent;
+
+  /**
+   * The trace state.
+   */
+  private String tracestate;
 
   /**
    * Instantiates a CloudEvent.
@@ -127,7 +161,89 @@ public class CloudEvent<T> {
     this.datacontenttype = "application/octet-stream";
     this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);;
   }
-    
+
+  /**
+   * Instantiates a CloudEvent.
+   * @param id              Identifier of the message being processed.
+   * @param source          Source for this event.
+   * @param type            Type of event.
+   * @param specversion     Version of the event spec.
+   * @param datacontenttype Type of the payload.
+   * @param data            Payload.
+   * @param pubsubname      Pubsub component name.
+   * @param topic           Topic name.
+   * @param time            Time.
+   * @param traceid         Trace id.
+   * @param traceparent     Trace parent.
+   * @param tracestate      Trace state.
+   */
+  public CloudEvent(
+      String id,
+      String source,
+      String type,
+      String specversion,
+      String datacontenttype,
+      T data,
+      String pubsubname,
+      String topic,
+      OffsetDateTime time,
+      String traceid,
+      String traceparent,
+      String tracestate) {
+    this.id = id;
+    this.source = source;
+    this.type = type;
+    this.specversion = specversion;
+    this.datacontenttype = datacontenttype;
+    this.data = data;
+    this.pubsubname = pubsubname;
+    this.topic = topic;
+    this.time = time;
+    this.traceid = traceid;
+    this.traceparent = traceparent;
+    this.tracestate = tracestate;
+  }
+
+  /**
+   * Instantiates a CloudEvent.
+   * @param id              Identifier of the message being processed.
+   * @param source          Source for this event.
+   * @param type            Type of event.
+   * @param specversion     Version of the event spec.
+   * @param binaryData      Payload.
+   * @param pubsubname      Pubsub component name.
+   * @param topic           Topic name.
+   * @param time            Time.
+   * @param traceid         Trace id.
+   * @param traceparent     Trace parent.
+   * @param tracestate      Trace state.
+   */
+  public CloudEvent(
+      String id,
+      String source,
+      String type,
+      String specversion,
+      byte[] binaryData,
+      String pubsubname,
+      String topic,
+      OffsetDateTime time,
+      String traceid,
+      String traceparent,
+      String tracestate) {
+    this.id = id;
+    this.source = source;
+    this.type = type;
+    this.specversion = specversion;
+    this.datacontenttype = "application/octet-stream";
+    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);
+    this.pubsubname = pubsubname;
+    this.topic = topic;
+    this.time = time;
+    this.traceid = traceid;
+    this.traceparent = traceparent;
+    this.tracestate = tracestate;
+  }
+
   /**
    * Deserialize a message topic from Dapr.
    *
@@ -256,6 +372,104 @@ public class CloudEvent<T> {
   }
 
   /**
+   * Gets the pubsub component name.
+   * @return the pubsub component name.
+   */
+  public String getPubsubname() {
+    return pubsubname;
+  }
+
+  /**
+   * Sets the pubsub component name.
+   * @param pubsubname the pubsub component name.
+   */
+  public void setPubsubname(String pubsubname) {
+    this.pubsubname = pubsubname;
+  }
+
+  /**
+   * Gets the topic name.
+   * @return the topic name.
+   */
+  public String getTopic() {
+    return topic;
+  }
+
+  /**
+   * Sets the topic name.
+   * @param topic the topic name.
+   */
+  public void setTopic(String topic) {
+    this.topic = topic;
+  }
+
+  /**
+   * Gets the time.
+   * @return the time.
+   */
+  public OffsetDateTime getTime() {
+    return time;
+  }
+
+  /**
+   * Sets the time.
+   * @param time the time.
+   */
+  public void setTime(OffsetDateTime time) {
+    this.time = time;
+  }
+
+  /**
+   * Gets the trace id which is the legacy name for trace parent.
+   * @return the trace id.
+   */
+  @Deprecated
+  public String getTraceid() {
+    return traceid;
+  }
+
+  /**
+   * Sets the trace id which is the legacy name for trace parent.
+   * @param traceid the trace id.
+   */
+  @Deprecated
+  public void setTraceid(String traceid) {
+    this.traceid = traceid;
+  }
+
+  /**
+   * Gets the trace parent.
+   * @return the trace parent.
+   */
+  public String getTraceparent() {
+    return traceparent;
+  }
+
+  /**
+   * Sets the trace parent.
+   * @param traceparent the trace parent.
+   */
+  public void setTraceparent(String traceparent) {
+    this.traceparent = traceparent;
+  }
+
+  /**
+   * Gets the trace state.
+   * @return the trace state.
+   */
+  public String getTracestate() {
+    return tracestate;
+  }
+
+  /**
+   * Sets the trace state.
+   * @param tracestate the trace state.
+   */
+  public void setTracestate(String tracestate) {
+    this.tracestate = tracestate;
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
@@ -273,7 +487,13 @@ public class CloudEvent<T> {
         && Objects.equals(specversion, that.specversion)
         && Objects.equals(datacontenttype, that.datacontenttype)
         && Objects.equals(data, that.data)
-        && Arrays.equals(binaryData, that.binaryData);
+        && Arrays.equals(binaryData, that.binaryData)
+        && Objects.equals(pubsubname, that.pubsubname)
+        && Objects.equals(topic, that.topic)
+        && ((time == null && that.time == null) || (time != null && that.time != null && time.isEqual(that.time)))
+        && Objects.equals(traceid, that.traceid)
+        && Objects.equals(traceparent, that.traceparent)
+        && Objects.equals(tracestate, that.tracestate);
   }
 
   /**
@@ -281,6 +501,7 @@ public class CloudEvent<T> {
    */
   @Override
   public int hashCode() {
-    return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData);
+    return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData, pubsubname, topic, time,
+        traceid, traceparent, tracestate);
   }
 }

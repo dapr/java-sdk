@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
 import org.junit.Test;
 
+import java.time.OffsetDateTime;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -42,7 +44,12 @@ public class CloudEventTest {
         "    \"comexampleextension1\" : \"value\",\n" +
         "    \"comexampleothervalue\" : 5,\n" +
         "    \"datacontenttype\" : \"application/json\",\n" +
-        "    \"data\" : {\"id\": 1, \"name\": \"hello world\"}\n" +
+        "    \"data\" : {\"id\": 1, \"name\": \"hello world\"},\n" +
+        "    \"pubsubname\" : \"mypubsubname\",\n" +
+        "    \"topic\" : \"mytopic\",\n" +
+        "    \"traceid\" : \"Z987-0987-0987\",\n" +
+        "    \"traceparent\" : \"Z987-0987-0987\",\n" +
+        "    \"tracestate\" : \"\"\n" +
         "}";
 
     MyClass expected = new MyClass() {{
@@ -51,7 +58,17 @@ public class CloudEventTest {
     }};
 
     CloudEvent cloudEvent = CloudEvent.deserialize(content.getBytes());
+    assertEquals("1.0", cloudEvent.getSpecversion());
+    assertEquals("com.github.pull_request.opened", cloudEvent.getType());
+    assertEquals("https://github.com/cloudevents/spec/pull", cloudEvent.getSource());
+    assertEquals("A234-1234-1234", cloudEvent.getId());
+    assertEquals(OffsetDateTime.parse("2018-04-05T17:31:00Z"), cloudEvent.getTime());
     assertEquals("application/json", cloudEvent.getDatacontenttype());
+    assertEquals("mypubsubname", cloudEvent.getPubsubname());
+    assertEquals("mytopic", cloudEvent.getTopic());
+    assertEquals("Z987-0987-0987", cloudEvent.getTraceid());
+    assertEquals("Z987-0987-0987", cloudEvent.getTraceparent());
+    assertEquals("", cloudEvent.getTracestate());
     MyClass myObject = OBJECT_MAPPER.convertValue(cloudEvent.getData(), MyClass.class);
     assertEquals(expected.id, myObject.id);
     assertEquals(expected.name, myObject.name);

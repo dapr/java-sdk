@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -56,6 +57,8 @@ public class DefaultObjectSerializerTest {
     private long longValue;
     private float floatValue;
     private double doubleValue;
+
+    private OffsetDateTime timeValue;
 
     public String getStringValue() {
       return stringValue;
@@ -129,6 +132,14 @@ public class DefaultObjectSerializerTest {
       this.doubleValue = doubleValue;
     }
 
+    public OffsetDateTime getTimeValue() {
+      return timeValue;
+    }
+
+    public void setTimeValue(OffsetDateTime timeValue) {
+      this.timeValue = timeValue;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -167,6 +178,9 @@ public class DefaultObjectSerializerTest {
       if (getStringValue() != null ? !getStringValue().equals(that.getStringValue()) : that.getStringValue() != null) {
         return false;
       }
+      if (getTimeValue() != null ? !getTimeValue().isEqual(that.getTimeValue()) : that.getTimeValue() != null) {
+        return false;
+      }
 
       return true;
     }
@@ -185,6 +199,7 @@ public class DefaultObjectSerializerTest {
       result = 31 * result + (getFloatValue() != +0.0f ? Float.floatToIntBits(getFloatValue()) : 0);
       temp = Double.doubleToLongBits(getDoubleValue());
       result = 31 * result + (int) (temp ^ (temp >>> 32));
+      result = 31 * result + getTimeValue().toInstant().hashCode();
       return result;
     }
 
@@ -200,6 +215,7 @@ public class DefaultObjectSerializerTest {
           ", longValue=" + longValue +
           ", floatValue=" + floatValue +
           ", doubleValue=" + doubleValue +
+          ", timeValue=" + timeValue +
           '}';
     }
   }
@@ -216,7 +232,8 @@ public class DefaultObjectSerializerTest {
     obj.setLongValue(9223372036854775807L);
     obj.setFloatValue(1.0f);
     obj.setDoubleValue(1000.0);
-    String expectedResult = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    obj.setTimeValue(OffsetDateTime.MIN);
+    String expectedResult = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"-999999999-01-01T00:00:00+18:00\"}";
 
     
     String serializedValue;
@@ -437,7 +454,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -448,6 +465,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
 
     try {
@@ -460,7 +478,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeArrayObjectTest() {
-    String jsonToDeserialize = "[{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}]";
+    String jsonToDeserialize = "[{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}]";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -471,6 +489,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     List<MyObjectTestToSerialize> result;
 
     try {
@@ -536,7 +555,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingStringPropertyTest() {
-    String jsonToDeserialize = "{\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setIntValue(2147483647);
     expectedResult.setBoolValue(true);
@@ -546,6 +565,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -558,7 +578,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingIntTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setBoolValue(true);
@@ -568,6 +588,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -580,7 +601,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingBooleanTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -590,6 +611,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -602,7 +624,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingCharTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -612,6 +634,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -624,7 +647,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingByteTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -634,6 +657,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -646,7 +670,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingShortTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -656,6 +680,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -668,7 +693,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingLongTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -678,6 +703,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setShortValue((short) 32767);
     expectedResult.setFloatValue(1.0f);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -690,7 +716,7 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingFloatTest() {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
     expectedResult.setIntValue(2147483647);
@@ -700,6 +726,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setShortValue((short) 32767);
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setDoubleValue(1000.0);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
     MyObjectTestToSerialize result;
     
     try {
@@ -712,6 +739,29 @@ public class DefaultObjectSerializerTest {
 
   @Test
   public void deserializeObjectMissingDoubleTest() {
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
+    MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
+    expectedResult.setStringValue("A String");
+    expectedResult.setIntValue(2147483647);
+    expectedResult.setBoolValue(true);
+    expectedResult.setCharValue('a');
+    expectedResult.setByteValue((byte) 65);
+    expectedResult.setShortValue((short) 32767);
+    expectedResult.setLongValue(9223372036854775807L);
+    expectedResult.setFloatValue(1.0f);
+    expectedResult.setTimeValue(OffsetDateTime.MAX);
+    MyObjectTestToSerialize result;
+    
+    try {
+      result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+    } catch (IOException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void deserializeObjectMissingTimeTest() {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0}";
     MyObjectTestToSerialize expectedResult = new MyObjectTestToSerialize();
     expectedResult.setStringValue("A String");
@@ -723,7 +773,7 @@ public class DefaultObjectSerializerTest {
     expectedResult.setLongValue(9223372036854775807L);
     expectedResult.setFloatValue(1.0f);
     MyObjectTestToSerialize result;
-    
+
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
       assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
@@ -733,15 +783,15 @@ public class DefaultObjectSerializerTest {
   }
 
   @Test(expected = IOException.class)
-  public void deserializeObjectIntExceedMaximunValueTest() throws Exception {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483648,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+  public void deserializeObjectIntExceedMaximumValueTest() throws Exception {
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483648,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     
     SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
   }
 
   @Test(expected = IOException.class)
   public void deserializeObjectNotACharTest() throws Exception {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"Not A Char\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"Not A Char\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     
     try {
       SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
@@ -753,16 +803,23 @@ public class DefaultObjectSerializerTest {
   }
 
   @Test(expected = IOException.class)
-  public void deserializeObjectShortExceededMaximunValueTest() throws Exception {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32768,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+  public void deserializeObjectShortExceededMaximumValueTest() throws Exception {
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32768,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     
     SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
   }
 
   @Test(expected = IOException.class)
   public void deserializeObjectLongExceededMaximumValueTest() throws Exception {
-    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775808,\"floatValue\":1.0,\"doubleValue\":1000.0}";
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775808,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
     
+    MyObjectTestToSerialize result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+  }
+
+  @Test(expected = IOException.class)
+  public void deserializeObjectTimeExceededMaximumValueTest() throws Exception {
+    String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+1000000000-12-31T23:59:59.999999999-18:00\"}";
+
     MyObjectTestToSerialize result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
   }
 
@@ -776,6 +833,7 @@ public class DefaultObjectSerializerTest {
     assertEquals(0, SERIALIZER.deserialize(null, double.class), 0);
     assertEquals(0, SERIALIZER.deserialize(null, float.class), 0);
     assertEquals(false, SERIALIZER.deserialize(null, boolean.class));
+    assertEquals(null, SERIALIZER.deserialize(null, OffsetDateTime.class));
 
     assertNull(SERIALIZER.deserialize(null, Character.class));
     assertNull(SERIALIZER.deserialize(null, Integer.class));
@@ -784,6 +842,7 @@ public class DefaultObjectSerializerTest {
     assertNull(SERIALIZER.deserialize(null, Double.class));
     assertNull(SERIALIZER.deserialize(null, Float.class));
     assertNull(SERIALIZER.deserialize(null, Boolean.class));
+    assertNull(SERIALIZER.deserialize(null, OffsetDateTime.class));
   }
 
   @Test
@@ -796,6 +855,7 @@ public class DefaultObjectSerializerTest {
     assertEquals(0, SERIALIZER.deserialize(new byte[0], double.class), 0);
     assertEquals(0, SERIALIZER.deserialize(new byte[0], float.class), 0);
     assertEquals(false, SERIALIZER.deserialize(new byte[0], boolean.class));
+    assertEquals(null, SERIALIZER.deserialize(new byte[0], OffsetDateTime.class));
 
     assertNull(SERIALIZER.deserialize(new byte[0], Character.class));
     assertNull(SERIALIZER.deserialize(new byte[0], Integer.class));
@@ -804,6 +864,7 @@ public class DefaultObjectSerializerTest {
     assertNull(SERIALIZER.deserialize(new byte[0], Double.class));
     assertNull(SERIALIZER.deserialize(new byte[0], Float.class));
     assertNull(SERIALIZER.deserialize(new byte[0], Boolean.class));
+    assertNull(SERIALIZER.deserialize(new byte[0], OffsetDateTime.class));
   }
 
   @Test
@@ -830,7 +891,13 @@ public class DefaultObjectSerializerTest {
         "text",
         "v2",
         "XML",
-        "<root></root>")));
+        "<root></root>",
+        "mypubsub",
+        "mytopic",
+        OffsetDateTime.now(),
+        "mytraceid",
+        "mytraceparent",
+        "mytracestate")));
     assertTrue(check.apply(
       new CloudEvent(
         "1234-65432",
@@ -838,7 +905,26 @@ public class DefaultObjectSerializerTest {
         "image",
         "v2",
         "byte",
-        Base64.getEncoder().encodeToString(new byte[] {0, 2, 99}))));
+        Base64.getEncoder().encodeToString(new byte[] {0, 2, 99}),
+        "pubsub",
+        "topic",
+        OffsetDateTime.now(),
+        "traceid",
+        "traceparent",
+        "tracestate")));
+    assertTrue(check.apply(
+      new CloudEvent(
+        "0987-0987",
+        "anothersource",
+        "anothertype",
+        "v3",
+        "blah".getBytes(),
+        "anotherpubsub",
+        "anothertopic",
+        OffsetDateTime.now(),
+        "anothertraceid",
+        "anothertraceparent",
+        "anothertracestate")));
   }
 
   @Test
@@ -873,9 +959,10 @@ public class DefaultObjectSerializerTest {
     assertEquals(new TreeMap<String, String>() {{
       put("id", "123");
       put("name", "Jon Doe");
-    }}, deserializeData.apply("{\"id\": \"123\", \"name\": \"Jon Doe\"}"));
-    assertEquals("{\"id\": \"123\", \"name\": \"Jon Doe\"}",
-        deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123\", \"name\": \"Jon Doe\"}")));
+      put("time", "1970-01-01-00:00:00+00:00");
+    }}, deserializeData.apply("{\"id\": \"123\", \"name\": \"Jon Doe\", \"time\": \"1970-01-01-00:00:00+00:00\"}"));
+    assertEquals("{\"id\": \"123\", \"name\": \"Jon Doe\", \"time\": \"1970-01-01-00:00:00+00:00\"}",
+        deserializeData.apply(new ObjectMapper().writeValueAsString("{\"id\": \"123\", \"name\": \"Jon Doe\", \"time\": \"1970-01-01-00:00:00+00:00\"}")));
   }
 
   @Test
