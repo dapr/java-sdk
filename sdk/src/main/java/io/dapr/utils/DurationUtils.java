@@ -13,9 +13,14 @@ limitations under the License.
 
 package io.dapr.utils;
 
+import com.google.common.base.Strings;
+
 import java.time.Duration;
 
-public class DurationUtils {
+public final class DurationUtils {
+
+  private DurationUtils() {
+  }
 
   /**
    * Converts time from the String format used by Dapr into a Duration.
@@ -113,7 +118,63 @@ public class DurationUtils {
   }
 
   /**
-   * Helper to get the "days" part of the Duration.  For example if the duration is 26 hours, this returns 1.
+   * This method uses the default {@link Duration#toString()} method that supports the ISO-8601 standard.
+   * In addition to the default implementation, this method allows for repetitions as well.
+   *
+   * @param repeatedDuration {@link RepeatedDuration} to parse to ISO-8601 format.
+   * @return String containing the parsed {@link RepeatedDuration} to the ISO-8601 format, possibly with repetitions.
+   *         Negative duration results in an empty string, meaning fire only once.
+   */
+  public static String convertRepeatedDurationToIso8601RepetitionFormat(RepeatedDuration repeatedDuration) {
+    StringBuilder sb = new StringBuilder();
+
+    if (repeatedDuration.getDuration().isNegative()) {
+      // Negative duration results in fire only once.
+      return sb.toString();
+    }
+
+    repeatedDuration.getRepetitions()
+        .ifPresent(value -> sb.append(String.format("R%d/", value)));
+
+    // Duration.ToString() returns the ISO-8601 representation of the duration.
+    sb.append(repeatedDuration.getDuration().toString());
+
+    return sb.toString();
+  }
+
+  /**
+   * This method uses the {@link Duration#parse(CharSequence)} method that supports parsing of an ISO-8601 string.
+   * In addition to the default implementation, this method allows for repetitions as well as the Dapr format.
+   * Example inputs: 'R4/PT2H', 'P3DT2H', '4h15m50s60ms'
+   *
+   * @param value The value in ISO-8601 format to convert to a {@link RepeatedDuration}.
+   * @return {@link RepeatedDuration} containing the duration and possible repetitions.
+   */
+  public static RepeatedDuration convertIso8601StringToRepeatedDuration(String value) {
+    if (Strings.isNullOrEmpty(value)) {
+      throw new IllegalArgumentException("Value can not be empty");
+    }
+
+    String[] splitOnRepetition = value.split("/");
+
+    if (splitOnRepetition.length == 1 && splitOnRepetition[0].charAt(0) == 'P') {
+      return new RepeatedDuration(Duration.parse(value));
+    } else if (splitOnRepetition.length == 1) {
+      return new RepeatedDuration(DurationUtils.convertDurationFromDaprFormat(value));
+    }
+
+    if (splitOnRepetition[0].charAt(0) != 'R') {
+      throw new IllegalArgumentException(String.format("Value: '%s' does not follow the ISO-8601 standard", value));
+    }
+
+    Integer repetitions = Integer.parseInt(splitOnRepetition[0].substring(1));
+    Duration parsedDuration = Duration.parse(splitOnRepetition[1]);
+
+    return new RepeatedDuration(parsedDuration, repetitions);
+  }
+
+  /**
+   * Helper to get the "days" part of the Duration. For example if the duration is 26 hours, this returns 1.
    *
    * @param d Duration
    * @return Number of days.

@@ -13,7 +13,10 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
+import io.dapr.utils.RepeatedDuration;
+
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * Parameters for Actor Reminder.
@@ -38,7 +41,26 @@ final class ActorReminderParams {
   /**
    * Interval between triggers.
    */
-  private final Duration period;
+  private final RepeatedDuration period;
+
+  /**
+   * Time at which or time interval after which the reminder will be expired and deleted.
+   * If ttl is omitted, no restrictions are applied.
+   */
+  private final RepeatedDuration ttl;
+
+  /**
+   * Instantiates a new instance for the params of a reminder.
+   *
+   * @param data    Data to be passed in as part of the reminder trigger.
+   * @param dueTime Time the reminder is due for the 1st time.
+   * @param period  Interval between triggers.
+   * @deprecated As of release 1.4, replace with {@link #ActorReminderParams(byte[], Duration, RepeatedDuration)}
+   */
+  @Deprecated
+  ActorReminderParams(byte[] data, Duration dueTime, Duration period) {
+    this(data, dueTime, new RepeatedDuration(period, null));
+  }
 
   /**
    * Instantiates a new instance for the params of a reminder.
@@ -47,12 +69,53 @@ final class ActorReminderParams {
    * @param dueTime Time the reminder is due for the 1st time.
    * @param period  Interval between triggers.
    */
-  ActorReminderParams(byte[] data, Duration dueTime, Duration period) {
+  ActorReminderParams(byte[] data, Duration dueTime, RepeatedDuration period) {
+    this(data, dueTime, period, null);
+  }
+
+  /**
+   * Instantiates a new instance for the params of a reminder.
+   *
+   * @param data    Data to be passed in as part of the reminder trigger.
+   * @param dueTime Time the reminder is due for the 1st time.
+   * @param period  Interval between triggers.
+   * @param ttl     Time at which or time interval after which the reminder will be expired and deleted.
+   */
+  ActorReminderParams(byte[] data, Duration dueTime, RepeatedDuration period, RepeatedDuration ttl) {
     validateDueTime("DueTime", dueTime);
-    validatePeriod("Period", period);
+    validatePeriod("Period", period.getDuration());
     this.data = data;
     this.dueTime = dueTime;
     this.period = period;
+    this.ttl = ttl;
+  }
+
+  /**
+   * Validates due time is valid, throws {@link IllegalArgumentException}.
+   *
+   * @param argName Name of the argument passed in.
+   * @param value   Vale being checked.
+   */
+  private static void validateDueTime(String argName, Duration value) {
+    if (value.compareTo(Duration.ZERO) < 0) {
+      String message = String.format(
+          "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, Duration.ZERO);
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  /**
+   * Validates reminder period is valid, throws {@link IllegalArgumentException}.
+   *
+   * @param argName Name of the argument passed in.
+   * @param value   Vale being checked.
+   */
+  private static void validatePeriod(String argName, Duration value) throws IllegalArgumentException {
+    if (value.compareTo(MIN_TIME_PERIOD) < 0) {
+      String message = String.format(
+          "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, MIN_TIME_PERIOD);
+      throw new IllegalArgumentException(message);
+    }
   }
 
   /**
@@ -70,7 +133,7 @@ final class ActorReminderParams {
    * @return Interval between triggers.
    */
   Duration getPeriod() {
-    return period;
+    return period.getDuration();
   }
 
   /**
@@ -83,30 +146,21 @@ final class ActorReminderParams {
   }
 
   /**
-   * Validates due time is valid, throws {@link IllegalArgumentException}.
+   * Gets the time at which or time interval after which the reminder will be expired and deleted.
    *
-   * @param argName Name of the argument passed in.
-   * @param value   Vale being checked.
+   * @return Time at which or time interval after which the reminder will be expired and deleted.
    */
-  private static void validateDueTime(String argName, Duration value) {
-    if (value.compareTo(Duration.ZERO) < 0) {
-      String message = String.format(
-            "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, Duration.ZERO);
-      throw new IllegalArgumentException(message);
-    }
+  Optional<RepeatedDuration> getTtl() {
+    return Optional.ofNullable(ttl);
   }
 
   /**
-   * Validates reminder period is valid, throws {@link IllegalArgumentException}.
+   * Gets the periodic time when the reminder will be invoked.
+   * Possibly contains repetitions to limit the the total number of callback invocations.
    *
-   * @param argName Name of the argument passed in.
-   * @param value   Vale being checked.
+   * @return Periodic time as {@link RepeatedDuration} when reminder will be invoked.
    */
-  private static void validatePeriod(String argName, Duration value) throws IllegalArgumentException {
-    if (value.compareTo(MIN_TIME_PERIOD) < 0) {
-      String message = String.format(
-            "argName: %s - Duration toMillis() - specified value must be greater than %s", argName, MIN_TIME_PERIOD);
-      throw new IllegalArgumentException(message);
-    }
+  RepeatedDuration getRepeatedPeriod() {
+    return period;
   }
 }
