@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.configuration.grpc;
 
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
@@ -44,8 +45,8 @@ public class ConfigurationClient {
    * @throws Exception throws Exception
    */
   public static void main(String[] args) throws Exception {
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      System.out.println("Using preview client...");
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
+      System.out.println("Using Dapr client...");
       getConfigurations(client);
       subscribeConfigurationRequest(client);
     }
@@ -56,7 +57,7 @@ public class ConfigurationClient {
    *
    * @param client DaprPreviewClient object
    */
-  public static void getConfigurations(DaprPreviewClient client) {
+  public static void getConfigurations(DaprClient client) {
     System.out.println("*******trying to retrieve configurations for a list of keys********");
     List<String> keys = new ArrayList<>();
     keys.add("myconfig1");
@@ -76,7 +77,7 @@ public class ConfigurationClient {
    *
    * @param client DaprPreviewClient object
    */
-  public static void subscribeConfigurationRequest(DaprPreviewClient client) {
+  public static void subscribeConfigurationRequest(DaprClient client) {
     System.out.println("Subscribing to key: myconfig1");
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
         CONFIG_STORE_NAME, Collections.singletonList("myconfig1"));

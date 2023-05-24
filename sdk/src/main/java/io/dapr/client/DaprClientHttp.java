@@ -809,7 +809,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       Map<String, List<String>> queryArgs = metadataToQueryArgs(metadata);
       queryParams.putAll(queryArgs);
 
-      String[] pathSegments = new String[] {DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName };
+      String[] pathSegments = new String[] {DaprHttp.API_VERSION, "configuration", configurationStoreName };
       return Mono.deferContextual(
           context -> this.client
               .invokeApi(
@@ -870,7 +870,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       queryParams.putAll(queryArgs);
 
       String[] pathSegments =
-          new String[] { DaprHttp.ALPHA_1_API_VERSION, "configuration", configurationStoreName, "subscribe" };
+          new String[] { DaprHttp.API_VERSION, "configuration", configurationStoreName, "subscribe" };
       SubscribeConfigurationResponse res = Mono.deferContextual(
           context -> this.client.invokeApi(
               DaprHttp.HttpMethods.GET.name(),
@@ -911,7 +911,7 @@ public class DaprClientHttp extends AbstractDaprClient {
       }
 
       String[] pathSegments = new String[]
-          { DaprHttp.ALPHA_1_API_VERSION, "configuration", configStoreName, id, "unsubscribe" };
+          { DaprHttp.API_VERSION, "configuration", configStoreName, id, "unsubscribe" };
 
       return Mono.deferContextual(
               context -> this.client

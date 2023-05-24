@@ -33,6 +33,7 @@ import java.util.UUID;
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
+import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
 import static org.junit.Assert.assertNotEquals;
 
 public class ActorTimerRecoveryIT extends BaseIT {
@@ -76,6 +77,7 @@ public class ActorTimerRecoveryIT extends BaseIT {
       logs.clear();
       logs.addAll(fetchMethodCallLogs(proxy));
       validateMethodCalls(logs, METHOD_NAME, 3);
+      validateMessageContent(logs, METHOD_NAME, "ping!");
     }, 5000);
 
     // Restarts app only.
