@@ -28,7 +28,7 @@ import static io.dapr.it.Retry.callWithRetry;
 public class AppRun implements Stoppable {
 
   private static final String APP_COMMAND =
-      "mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\" -D %s=%s -D %s=%s";
+      "mvn exec:java -B -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\" -D %s=%s -D %s=%s";
 
   private final DaprPorts ports;
 

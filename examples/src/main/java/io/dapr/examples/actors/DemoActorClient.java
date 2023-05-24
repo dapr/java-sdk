@@ -49,7 +49,8 @@ public class DemoActorClient {
         DemoActor actor = builder.build(actorId);
 
         // Start a thread per actor.
-        Thread thread = new Thread(() -> callActorForever(actorId.toString(), actor));
+        int finalI = i;
+        Thread thread = new Thread(() -> callActorForever(finalI, actorId.toString(), actor));
         thread.start();
         threads.add(thread);
       }
@@ -68,19 +69,23 @@ public class DemoActorClient {
    * @param actorId Actor's identifier.
    * @param actor Actor to be invoked.
    */
-  private static final void callActorForever(String actorId, DemoActor actor) {
+  private static final void callActorForever(int index, String actorId, DemoActor actor) {
     // First, register reminder.
-    actor.registerReminder();
+    actor.registerReminder(index);
+    // Second register timer.
+    actor.registerTimer("ping! {" + index + "} ");
 
     // Now, we run until thread is interrupted.
     while (!Thread.currentThread().isInterrupted()) {
       // Invoke actor method to increment counter by 1, then build message.
       int messageNumber = actor.incrementAndGet(1).block();
-      String message = String.format("Actor %s said message #%d", actorId, messageNumber);
+      String message = String.format("Message #%d received from actor at index %d with ID %s", messageNumber,
+          index, actorId);
 
       // Invoke the 'say' method in actor.
       String result = actor.say(message);
-      System.out.println(String.format("Actor %s got a reply: %s", actorId, result));
+      System.out.println(String.format("Reply %s received from actor at index %d with ID %s ", result,
+          index, actorId));
 
       try {
         // Waits for up to 1 second.

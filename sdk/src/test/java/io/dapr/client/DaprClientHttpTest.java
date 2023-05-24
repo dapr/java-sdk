@@ -15,6 +15,7 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetStateRequest;
@@ -23,7 +24,10 @@ import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -51,12 +55,15 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import reactor.util.context.ContextView;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -66,6 +73,8 @@ import static org.mockito.Mockito.mock;
 public class DaprClientHttpTest {
 
   private static final String STATE_STORE_NAME = "MyStateStore";
+
+  private static final String CONFIG_STORE_NAME = "MyConfigStore";
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
@@ -422,7 +431,7 @@ public class DaprClientHttpTest {
         .setBody("request")
         .setHttpExtension(HttpExtension.POST);
     Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
-        .subscriberContext(it -> it.putAll(context));
+        .contextWrite(it -> it.putAll((ContextView) context));
     result.block();
   }
 
@@ -1301,6 +1310,120 @@ public class DaprClientHttpTest {
     assertEquals(2, secrets.get("two").size());
     assertEquals("1", secrets.get("two").get("a"));
     assertEquals("2", secrets.get("two").get("b"));
+  }
+
+  @Test
+  public void getConfigurationTestErrorScenario() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getConfiguration("", "key").block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getConfiguration("  ", "key").block();
+    });
+  }
+
+  @Test
+  public void getConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore")
+        .param("key","configkey1")
+        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
+
+    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertNotNull(ci);
+    assertEquals("configkey1", ci.getKey());
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void getAllConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore")
+        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
+
+    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertNotNull(ci);
+    assertEquals("configkey1", ci.getKey());
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void subscribeConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/subscribe")
+        .param("key", "configkey1")
+        .respond("{\"id\":\"1234\"}");
+
+    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertEquals("1234", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void subscribeAllConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/subscribe")
+        .respond("{\"id\":\"1234\"}");
+
+    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertEquals("1234", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void unsubscribeConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
+        .respond("{\"ok\": true}");
+
+    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
+    assertTrue(res.getIsUnsubscribed());
+  }
+
+  @Test
+  public void unsubscribeConfigurationTestWithError() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.unsubscribeConfiguration("", CONFIG_STORE_NAME).block();
+    });
+
+    UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.unsubscribeConfiguration(req).block();
+    });
+
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
+        .respond("{\"ok\": false, \"message\": \"some error while unsubscribing\"}");
+    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
+    assertFalse(res.getIsUnsubscribed());
+  }
+
+  @Test
+  public void subscribeConfigurationTestWithError() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.subscribeConfiguration("", "key1").blockFirst();
+    });
+
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/subscribe")
+        .param("key", "configkey1")
+        .respond(500);
+    assertThrows(DaprException.class, () -> {
+      daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").blockFirst();
+    });
   }
 
   @Test
