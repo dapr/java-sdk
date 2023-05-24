@@ -82,7 +82,7 @@ public class CloudEvent<T> {
   /**
    * The pubsub component this CloudEvent came from.
    */
-  private String pubsubname;
+  private String pubsubName;
 
   /**
    * The topic this CloudEvent came from.
@@ -98,17 +98,17 @@ public class CloudEvent<T> {
    * The trace id is the legacy name for trace parent.
    */
   @Deprecated
-  private String traceid;
+  private String traceId;
 
   /**
    * The trace parent.
    */
-  private String traceparent;
+  private String traceParent;
 
   /**
    * The trace state.
    */
-  private String tracestate;
+  private String traceState;
 
   /**
    * Instantiates a CloudEvent.
@@ -160,88 +160,6 @@ public class CloudEvent<T> {
     this.specversion = specversion;
     this.datacontenttype = "application/octet-stream";
     this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);;
-  }
-
-  /**
-   * Instantiates a CloudEvent.
-   * @param id              Identifier of the message being processed.
-   * @param source          Source for this event.
-   * @param type            Type of event.
-   * @param specversion     Version of the event spec.
-   * @param datacontenttype Type of the payload.
-   * @param data            Payload.
-   * @param pubsubname      Pubsub component name.
-   * @param topic           Topic name.
-   * @param time            Time.
-   * @param traceid         Trace id.
-   * @param traceparent     Trace parent.
-   * @param tracestate      Trace state.
-   */
-  public CloudEvent(
-      String id,
-      String source,
-      String type,
-      String specversion,
-      String datacontenttype,
-      T data,
-      String pubsubname,
-      String topic,
-      OffsetDateTime time,
-      String traceid,
-      String traceparent,
-      String tracestate) {
-    this.id = id;
-    this.source = source;
-    this.type = type;
-    this.specversion = specversion;
-    this.datacontenttype = datacontenttype;
-    this.data = data;
-    this.pubsubname = pubsubname;
-    this.topic = topic;
-    this.time = time;
-    this.traceid = traceid;
-    this.traceparent = traceparent;
-    this.tracestate = tracestate;
-  }
-
-  /**
-   * Instantiates a CloudEvent.
-   * @param id              Identifier of the message being processed.
-   * @param source          Source for this event.
-   * @param type            Type of event.
-   * @param specversion     Version of the event spec.
-   * @param binaryData      Payload.
-   * @param pubsubname      Pubsub component name.
-   * @param topic           Topic name.
-   * @param time            Time.
-   * @param traceid         Trace id.
-   * @param traceparent     Trace parent.
-   * @param tracestate      Trace state.
-   */
-  public CloudEvent(
-      String id,
-      String source,
-      String type,
-      String specversion,
-      byte[] binaryData,
-      String pubsubname,
-      String topic,
-      OffsetDateTime time,
-      String traceid,
-      String traceparent,
-      String tracestate) {
-    this.id = id;
-    this.source = source;
-    this.type = type;
-    this.specversion = specversion;
-    this.datacontenttype = "application/octet-stream";
-    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);
-    this.pubsubname = pubsubname;
-    this.topic = topic;
-    this.time = time;
-    this.traceid = traceid;
-    this.traceparent = traceparent;
-    this.tracestate = tracestate;
   }
 
   /**
@@ -375,16 +293,16 @@ public class CloudEvent<T> {
    * Gets the pubsub component name.
    * @return the pubsub component name.
    */
-  public String getPubsubname() {
-    return pubsubname;
+  public String getPubsubName() {
+    return pubsubName;
   }
 
   /**
    * Sets the pubsub component name.
-   * @param pubsubname the pubsub component name.
+   * @param pubsubName the pubsub component name.
    */
-  public void setPubsubname(String pubsubname) {
-    this.pubsubname = pubsubname;
+  public void setPubsubName(String pubsubName) {
+    this.pubsubName = pubsubName;
   }
 
   /**
@@ -424,49 +342,49 @@ public class CloudEvent<T> {
    * @return the trace id.
    */
   @Deprecated
-  public String getTraceid() {
-    return traceid;
+  public String getTraceId() {
+    return traceId;
   }
 
   /**
    * Sets the trace id which is the legacy name for trace parent.
-   * @param traceid the trace id.
+   * @param traceId the trace id.
    */
   @Deprecated
-  public void setTraceid(String traceid) {
-    this.traceid = traceid;
+  public void setTraceId(String traceId) {
+    this.traceId = traceId;
   }
 
   /**
    * Gets the trace parent.
    * @return the trace parent.
    */
-  public String getTraceparent() {
-    return traceparent;
+  public String getTraceParent() {
+    return traceParent;
   }
 
   /**
    * Sets the trace parent.
-   * @param traceparent the trace parent.
+   * @param traceParent the trace parent.
    */
-  public void setTraceparent(String traceparent) {
-    this.traceparent = traceparent;
+  public void setTraceParent(String traceParent) {
+    this.traceParent = traceParent;
   }
 
   /**
    * Gets the trace state.
    * @return the trace state.
    */
-  public String getTracestate() {
-    return tracestate;
+  public String getTraceState() {
+    return traceState;
   }
 
   /**
    * Sets the trace state.
-   * @param tracestate the trace state.
+   * @param traceState the trace state.
    */
-  public void setTracestate(String tracestate) {
-    this.tracestate = tracestate;
+  public void setTraceState(String traceState) {
+    this.traceState = traceState;
   }
 
   /**
@@ -488,12 +406,12 @@ public class CloudEvent<T> {
         && Objects.equals(datacontenttype, that.datacontenttype)
         && Objects.equals(data, that.data)
         && Arrays.equals(binaryData, that.binaryData)
-        && Objects.equals(pubsubname, that.pubsubname)
+        && Objects.equals(pubsubName, that.pubsubName)
         && Objects.equals(topic, that.topic)
         && ((time == null && that.time == null) || (time != null && that.time != null && time.isEqual(that.time)))
-        && Objects.equals(traceid, that.traceid)
-        && Objects.equals(traceparent, that.traceparent)
-        && Objects.equals(tracestate, that.tracestate);
+        && Objects.equals(traceId, that.traceId)
+        && Objects.equals(traceParent, that.traceParent)
+        && Objects.equals(traceState, that.traceState);
   }
 
   /**
@@ -501,7 +419,7 @@ public class CloudEvent<T> {
    */
   @Override
   public int hashCode() {
-    return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData, pubsubname, topic, time,
-        traceid, traceparent, tracestate);
+    return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData, pubsubName, topic, time,
+            traceId, traceParent, traceState);
   }
 }

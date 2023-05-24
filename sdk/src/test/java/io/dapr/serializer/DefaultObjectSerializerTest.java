@@ -891,13 +891,7 @@ public class DefaultObjectSerializerTest {
         "text",
         "v2",
         "XML",
-        "<root></root>",
-        "mypubsub",
-        "mytopic",
-        OffsetDateTime.now(),
-        "mytraceid",
-        "mytraceparent",
-        "mytracestate")));
+        "<root></root>")));
     assertTrue(check.apply(
       new CloudEvent(
         "1234-65432",
@@ -905,26 +899,14 @@ public class DefaultObjectSerializerTest {
         "image",
         "v2",
         "byte",
-        Base64.getEncoder().encodeToString(new byte[] {0, 2, 99}),
-        "pubsub",
-        "topic",
-        OffsetDateTime.now(),
-        "traceid",
-        "traceparent",
-        "tracestate")));
+        Base64.getEncoder().encodeToString(new byte[] {0, 2, 99}))));
     assertTrue(check.apply(
       new CloudEvent(
         "0987-0987",
         "anothersource",
         "anothertype",
         "v3",
-        "blah".getBytes(),
-        "anotherpubsub",
-        "anothertopic",
-        OffsetDateTime.now(),
-        "anothertraceid",
-        "anothertraceparent",
-        "anothertracestate")));
+        "blah".getBytes())));
   }
 
   @Test

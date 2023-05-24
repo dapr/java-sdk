@@ -64,11 +64,11 @@ public class CloudEventTest {
     assertEquals("A234-1234-1234", cloudEvent.getId());
     assertEquals(OffsetDateTime.parse("2018-04-05T17:31:00Z"), cloudEvent.getTime());
     assertEquals("application/json", cloudEvent.getDatacontenttype());
-    assertEquals("mypubsubname", cloudEvent.getPubsubname());
+    assertEquals("mypubsubname", cloudEvent.getPubsubName());
     assertEquals("mytopic", cloudEvent.getTopic());
-    assertEquals("Z987-0987-0987", cloudEvent.getTraceid());
-    assertEquals("Z987-0987-0987", cloudEvent.getTraceparent());
-    assertEquals("", cloudEvent.getTracestate());
+    assertEquals("Z987-0987-0987", cloudEvent.getTraceId());
+    assertEquals("Z987-0987-0987", cloudEvent.getTraceParent());
+    assertEquals("", cloudEvent.getTraceState());
     MyClass myObject = OBJECT_MAPPER.convertValue(cloudEvent.getData(), MyClass.class);
     assertEquals(expected.id, myObject.id);
     assertEquals(expected.name, myObject.name);
