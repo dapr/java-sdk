@@ -17,17 +17,42 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Dapr's HTTP callback implementation via SpringBoot.
+ * Dapr's callback implementation via SpringBoot.
  */
 @SpringBootApplication
 public class DaprApplication {
 
   /**
-   * Starts Dapr's callback in a given port.
+   * Starts Dapr's callback in a given port and specified protocal.
+   * 
+   * @param port Port to listen to.
+   * @param protocal select Http or gRPC to run.
+   */
+  public static void start(String protocal, int port) {
+    SpringApplication app = new SpringApplication(DaprApplication.class);
+
+    String args;
+    if (protocal.equals("grpc")) {
+      args = String.format("--grpc.server.port=%d", port);
+    } else if (protocal.equals("http")) {
+      args = String.format("--server.port=%d", port);
+    } else {
+      System.out.println("please select protocal in grpc or http.");
+      return; 
+    }
+
+    app.run(args);
+  }
+
+  /**
+   * Starts Dapr's callback in a given port. HTTP is used by default.
+   * 
    * @param port Port to listen to.
    */
   public static void start(int port) {
+
     SpringApplication app = new SpringApplication(DaprApplication.class);
+
     app.run(String.format("--server.port=%d", port));
   }
 

@@ -20,7 +20,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Utility class for tests that use MyActor class.
@@ -39,10 +39,24 @@ public class MyActorTestUtils {
     // Counts number of times reminder is invoked.
     // Events for each actor method call include "enter" and "exit" calls, so they are divided by 2.
     List<MethodEntryTracker> calls =
-        logs.stream().filter(x -> x.getMethodName().equals(methodName)).collect(Collectors.toList());
+            logs.stream().filter(x -> x.getMethodName().equals(methodName)).collect(Collectors.toList());
     System.out.printf(
-        "Size of %s count list is %d, which means it's been invoked half that many times.\n", methodName, calls.size());
+            "Size of %s count list is %d, which means it's been invoked half that many times.\n", methodName, calls.size());
     return calls.size() / 2;
+  }
+
+  /**
+   * Checks if all entries for a method call contain the same message.
+   * @param logs logs with info about method entries and exits returned from the app
+   * @param methodName name of the method to be validated
+   * @param message expected message
+   */
+  static void validateMessageContent(List<MethodEntryTracker> logs, String methodName, String message) {
+    List<MethodEntryTracker> calls =
+            logs.stream().filter(x -> x.getMethodName().equals(methodName)).collect(Collectors.toList());
+    for (MethodEntryTracker m : calls) {
+      assertEquals(message, m.getMessage());
+    }
   }
 
   /**
@@ -66,11 +80,22 @@ public class MyActorTestUtils {
     ArrayList<MethodEntryTracker> trackers = new ArrayList<MethodEntryTracker>();
     for(String t : logs) {
       String[] toks = t.split("\\|");
-      MethodEntryTracker m = new MethodEntryTracker(
-          toks[0].equals("Enter") ? true : false,
-          toks[1],
-          new Date(toks[2]));
-      trackers.add(m);
+      if (toks.length == 3) {
+        MethodEntryTracker m = new MethodEntryTracker(
+                toks[0].equals("Enter") ? true : false,
+                toks[1],
+                new Date(toks[2]));
+        trackers.add(m);
+      } else if (toks.length == 4) {
+        MethodEntryTracker m = new MethodEntryTracker(
+                toks[0].equals("Enter") ? true : false,
+                toks[1],
+                toks[2],
+                new Date(toks[3]));
+        trackers.add(m);
+      } else {
+        fail("Invalid log entry");
+      }
     }
 
     return trackers;

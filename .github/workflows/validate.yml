@@ -32,16 +32,16 @@ jobs:
       matrix:
         java: [ 11, 13, 15, 16 ]
     env:
-      GOVER: 1.19
+      GOVER: "1.20"
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.9.1
-      DAPR_RUNTIME_VER: 1.9.3
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
+      DAPR_CLI_VER: 1.10.0
+      DAPR_RUNTIME_VER: 1.10.6-rc.2
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.10.0/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF: a8c698ad897e42d6624f5fc6ccfd0630e2a8fd00
+      DAPR_REF: 1415e23b14628db70adf9403f5a18876f40b6924
     steps:
       - uses: actions/checkout@v3
       - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -154,6 +154,10 @@ jobs:
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/configuration/http/README.md
+      - name: Validate actors example
+        working-directory: ./examples
+        run: |
+            mm.py ./src/main/java/io/dapr/examples/actors/README.md
       - name: Validate query state HTTP example
         working-directory: ./examples
         run: |

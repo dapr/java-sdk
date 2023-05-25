@@ -15,21 +15,39 @@ on:
 
 jobs:
   build:
+    name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
+      fail-fast: true
       matrix:
         java: [ 11, 13, 15, 16 ]
+        spring-boot-version: [ 2.7.8 ]
+        experimental: [ false ]
+        include:
+          - java: 11
+            spring-boot-version: 2.6.14
+            experimental: false
+          - java: 11
+            spring-boot-version: 2.5.7
+            experimental: false
+          - java: 11
+            spring-boot-version: 2.4.0
+            experimental: false
+          - java: 11
+            spring-boot-version: 2.3.6.RELEASE
+            experimental: false
     env:
-      GOVER: 1.19
+      GOVER: "1.20"
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.9.1
-      DAPR_RUNTIME_VER: 1.9.3
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
+      DAPR_CLI_VER: 1.10.0
+      DAPR_RUNTIME_VER: 1.10.6-rc.2
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.10.0/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF: a8c698ad897e42d6624f5fc6ccfd0630e2a8fd00
+      DAPR_REF: 1415e23b14628db70adf9403f5a18876f40b6924
     steps:
     - uses: actions/checkout@v3
     - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -92,18 +110,18 @@ jobs:
         docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
         docker ps
     - name: Clean up files
-      run: mvn clean
+      run: mvn clean -B
     - name: Build sdk
-      run: mvn compile -q
+      run: mvn compile -B -q
     - name: Unit tests
-      run: mvn test -q
+      run: mvn -B test -q
     - name: Codecov
-      uses: codecov/codecov-action@v3.1.1
+      uses: codecov/codecov-action@v3.1.4
     - name: Install jars
-      run: mvn install  -q
-    - name: Integration tests
+      run: mvn install -q -B -DskipTests
+    - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
-      run: mvn -f sdk-tests/pom.xml verify
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} mvn -B -f sdk-tests/pom.xml verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
@@ -145,7 +163,7 @@ jobs:
           java-version: ${{ env.JDK_VER }}
       - name: Get pom parent version
         run: |
-          PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          PARENT_VERSION=$(mvn -B -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
       - name: Is SNAPSHOT release ?
         if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
@@ -157,7 +175,7 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: mvn clean install -q
+        run: mvn clean install -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |
