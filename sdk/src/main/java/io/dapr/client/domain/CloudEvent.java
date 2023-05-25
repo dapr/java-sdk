@@ -82,6 +82,7 @@ public class CloudEvent<T> {
   /**
    * The pubsub component this CloudEvent came from.
    */
+  @JsonProperty("pubsubname")
   private String pubsubName;
 
   /**
@@ -98,16 +99,19 @@ public class CloudEvent<T> {
    * The trace id is the legacy name for trace parent.
    */
   @Deprecated
+  @JsonProperty("traceid")
   private String traceId;
 
   /**
    * The trace parent.
    */
+  @JsonProperty("traceparent")
   private String traceParent;
 
   /**
    * The trace state.
    */
+  @JsonProperty("tracestate")
   private String traceState;
 
   /**
