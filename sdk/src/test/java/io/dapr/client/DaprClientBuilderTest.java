@@ -31,7 +31,7 @@ public class DaprClientBuilderTest {
     DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
     daprClientBuilder.withObjectSerializer(objectSerializer);
     daprClientBuilder.withStateSerializer(stateSerializer);
-    daprClientBuilder.withCustomErrorResponseParser(errorResponseParser);
+    daprClientBuilder.withErrorParser(errorResponseParser);
     DaprClient daprClient = daprClientBuilder.build();
     assertNotNull(daprClient);
   }

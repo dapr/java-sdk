@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
@@ -73,10 +72,11 @@ public class DaprHttp implements AutoCloseable {
   private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
           Collections.unmodifiableSet(new HashSet<>(Arrays.asList("grpc-trace-bin", "traceparent", "tracestate")));
 
+  private static final DaprErrorResponseParser DEFAULT_ERROR_PARSER = new DefaultDaprHttpErrorResponseParser();
   /**
    * Error response parser.
    */
-  private static DaprErrorResponseParser parser = new DefaultDaprHttpErrorResponseParser();
+  private DaprErrorResponseParser errorParser;
 
   /**
    * HTTP Methods supported.
@@ -142,11 +142,6 @@ public class DaprHttp implements AutoCloseable {
   private static final byte[] EMPTY_BYTES = new byte[0];
 
   /**
-   * JSON Object Mapper.
-   */
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-  /**
    * Hostname used to communicate to Dapr's HTTP endpoint.
    */
   private final String hostname;
@@ -168,15 +163,15 @@ public class DaprHttp implements AutoCloseable {
    * @param port       Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String hostname, int port, OkHttpClient httpClient, DaprErrorResponseParser parser) {
+  DaprHttp(String hostname, int port, OkHttpClient httpClient, DaprErrorResponseParser errorParser) {
     this.hostname = hostname;
     this.port = port;
     this.httpClient = httpClient;
-    this.parser = parser;
+    this.errorParser = errorParser == null ? DEFAULT_ERROR_PARSER : errorParser;
   }
 
   DaprHttp(String hostname, int port, OkHttpClient httpClient) {
-    this(hostname, port, httpClient, parser);
+    this(hostname, port, httpClient, null);
   }
 
   /**
@@ -329,7 +324,7 @@ public class DaprHttp implements AutoCloseable {
 
 
     CompletableFuture<Response> future = new CompletableFuture<>();
-    this.httpClient.newCall(request).enqueue(new ResponseFutureCallback(future));
+    this.httpClient.newCall(request).enqueue(new ResponseFutureCallback(this.errorParser, future));
     return future;
   }
 
@@ -348,9 +343,12 @@ public class DaprHttp implements AutoCloseable {
    * Converts the okhttp3 response into the response object expected internally by the SDK.
    */
   private static class ResponseFutureCallback implements Callback {
+
+    private final DaprErrorResponseParser errorParser;
     private final CompletableFuture<Response> future;
 
-    public ResponseFutureCallback(CompletableFuture<Response> future) {
+    public ResponseFutureCallback(DaprErrorResponseParser errorParser, CompletableFuture<Response> future) {
+      this.errorParser = errorParser;
       this.future = future;
     }
 
@@ -363,7 +361,7 @@ public class DaprHttp implements AutoCloseable {
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
       if (!response.isSuccessful()) {
         byte[] errorDetails = getBodyBytesOrEmptyArray(response);
-        DaprException customException = parser.parse(response.code(), errorDetails);
+        DaprException customException = this.errorParser.parse(response.code(), errorDetails);
 
         future.completeExceptionally(customException);
       }

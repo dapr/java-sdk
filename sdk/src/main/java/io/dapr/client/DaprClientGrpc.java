@@ -94,6 +94,11 @@ import static io.dapr.config.Properties.STRING_CHARSET;
 public class DaprClientGrpc extends AbstractDaprClient {
 
   /**
+   * Default error parser for gRPC.
+   */
+  private static final DaprErrorResponseParser DEFAULT_ERROR_PARSER = new DefaultDaprGrpcErrorResponseParser();
+
+  /**
    * The GRPC managed channel to be used.
    */
   private Closeable channel;
@@ -103,6 +108,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   private DaprGrpc.DaprStub asyncStub;
 
+  /**
+   * Error parser.
+   */
   private DaprErrorResponseParser errorResponseParser;
 
   /**
@@ -124,7 +132,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     super(objectSerializer, stateSerializer);
     this.channel = closeableChannel;
     this.asyncStub = intercept(asyncStub);
-    this.errorResponseParser = errorResponseParser == null ? new DefaultDaprGrpcErrorResponseParser() : errorResponseParser;
+    this.errorResponseParser = errorResponseParser == null ? DEFAULT_ERROR_PARSER : errorResponseParser;
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {

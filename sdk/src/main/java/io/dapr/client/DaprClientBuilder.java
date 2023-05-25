@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprError;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.Version;
@@ -22,7 +23,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.dapr.exceptions.DaprError;
+
 import java.io.Closeable;
 
 /**
@@ -56,7 +57,7 @@ public class DaprClientBuilder {
   /**
    * Response parser used for custom handling of error responses from Dapr.
    */
-  private DaprErrorResponseParser responseParser;
+  private DaprErrorResponseParser errorParser;
 
   /**
    * Serializer used for state objects in DaprClient.
@@ -66,7 +67,7 @@ public class DaprClientBuilder {
   /**
    * Creates a constructor for DaprClient.
    *
-   * {@link DefaultObjectSerializer} is used for object and state serializers by defaul but is not recommended
+   * <p>{@link DefaultObjectSerializer} is used for object and state serializers by defaul but is not recommended
    * for production scenarios.
    */
   public DaprClientBuilder() {
@@ -97,21 +98,21 @@ public class DaprClientBuilder {
     return this;
   }
 
-    /**
-     * Sets the error parser for objects to received from Dapr.
-     * See {@link DefaultDaprHttpErrorResponseParser} as a default parser suited for deserializing the response to {@link DaprError}.
-     *
-     * @param responseParser Parser for objects received from Dapr.
-     * @return This instance.
-     */
-    public DaprClientBuilder withCustomErrorResponseParser(DaprErrorResponseParser responseParser) {
-        if (responseParser == null) {
-            throw new IllegalArgumentException("Response parser is required");
-        }
-
-        this.responseParser = responseParser;
-        return this;
+  /**
+   * Sets the error parser for objects to received from Dapr.
+   * See {@link DefaultDaprHttpErrorResponseParser} as a default parser for {@link DaprError}.
+   *
+   * @param errorParser Parser for objects received from Dapr.
+   * @return This instance.
+   */
+  public DaprClientBuilder withErrorParser(DaprErrorResponseParser errorParser) {
+    if (errorParser == null) {
+      throw new IllegalArgumentException("Response parser is required");
     }
+
+    this.errorParser = errorParser;
+    return this;
+  }
 
   /**
    * Sets the serializer for objects to be persisted.
@@ -170,9 +171,12 @@ public class DaprClientBuilder {
     }
 
     switch (protocol) {
-      case GRPC: return buildDaprClientGrpc();
-      case HTTP: return buildDaprClientHttp();
-      default: throw new IllegalStateException("Unsupported protocol: " + protocol.name());
+      case GRPC:
+        return buildDaprClientGrpc();
+      case HTTP:
+        return buildDaprClientHttp();
+      default:
+        throw new IllegalStateException("Unsupported protocol: " + protocol.name());
     }
   }
 
@@ -195,7 +199,9 @@ public class DaprClientBuilder {
       }
     };
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    return new DaprClientGrpc(closeableChannel, asyncStub, this.objectSerializer, this.stateSerializer, this.responseParser);
+
+    return new DaprClientGrpc(
+        closeableChannel, asyncStub, this.objectSerializer, this.stateSerializer, this.errorParser);
   }
 
   /**
@@ -204,7 +210,7 @@ public class DaprClientBuilder {
    * @return DaprClient over HTTP.
    */
   private DaprClient buildDaprClientHttp() {
-    return new DaprClientHttp(this.daprHttpBuilder.build(responseParser), this.objectSerializer, this.stateSerializer);
+    return new DaprClientHttp(this.daprHttpBuilder.build(errorParser), this.objectSerializer, this.stateSerializer);
   }
 
 }
