@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2023 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,13 +21,7 @@ import io.dapr.workflows.runtime.WorkflowRuntime;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Service for Workflow runtime.
- * 1. Build and install jars:
- * mvn clean install
- * 2. cd to [repo-root]/examples
- * 3. Run the server:
- * dapr run --components-path ./components/actors --app-id demoworkflowservice --dapr-grpc-port 4001
- * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.DemoWorkflowService
+ * For setup instructions, see the README.
  */
 public class DemoWorkflowService {
 
