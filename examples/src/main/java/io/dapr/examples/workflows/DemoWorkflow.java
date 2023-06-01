@@ -18,6 +18,7 @@ import io.dapr.workflows.runtime.Workflow;
 import io.dapr.workflows.runtime.WorkflowContext;
 
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Implementation of the DemoWorkflow for the server side.
@@ -26,13 +27,15 @@ public class DemoWorkflow extends Workflow {
 
   @Override
   public void run(WorkflowContext ctx) {
-    System.out.println("Hi, my name is " + ctx.getName());
-    System.out.println("Waiting for event: 'myEvent'...");
+    ctx.getOut().println("Starting Workflow: " + ctx.getName());
+    ctx.getOut().println("Instance ID: " + ctx.getInstanceId());
+    ctx.getOut().println("Waiting for event: 'myEvent'...");
     try {
-      ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(30)).await();
-      System.out.println("Received!");
+      ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).await();
+      ctx.getOut().println("Received!");
     } catch (TaskCanceledException e) {
-      System.out.println("Timed out");
+      ctx.getErr().println("Timed out");
+      ctx.getErr().println(e.getMessage());
     }
     ctx.complete("finished");
   }

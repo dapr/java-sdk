@@ -22,14 +22,10 @@ import java.lang.reflect.Constructor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class WorkflowRuntimeTest {
-
-  private static Constructor<WorkflowRuntime> constructor;
-  private DurableTaskGrpcWorkerBuilder mockWorkerBuilder;
-
-  public static class TestWorkflow extends Workflow{
-    @Override
-    public void run(WorkflowContext ctx) { }
-  }
+    public static class TestWorkflow extends Workflow {
+      @Override
+      public void run(WorkflowContext ctx) { }
+    }
 
   @Test
   public void registerValidWorkflowClass() {
@@ -37,7 +33,7 @@ public class WorkflowRuntimeTest {
   }
 
   @Test
-  public void startAndClose() {
+  public void startTest() {
     assertDoesNotThrow(() -> {
       WorkflowRuntime.getInstance().start();
       WorkflowRuntime.getInstance().close();

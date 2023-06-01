@@ -21,11 +21,12 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.TimeUnit;
 
 public class DaprWorkflowClient implements AutoCloseable {
 
-  private DurableTaskClient innerClient;
-  private ManagedChannel grpcChannel;
+  private final DurableTaskClient innerClient;
+  private final ManagedChannel grpcChannel;
 
   /**
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
@@ -79,21 +80,43 @@ public class DaprWorkflowClient implements AutoCloseable {
       throw new IllegalStateException("Invalid port.");
     }
 
-    ManagedChannel channel =  ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
         .usePlaintext()
         .userAgent(Version.getSdkVersion())
         .build();
-    return channel;
   }
 
   /**
    * Schedules a new workflow using DurableTask client.
    *
    * @param workflowName name of workflow to start.
-   * @return String for new Workflow instance id.
+   * @return the randomly-generated instance ID for new Workflow instance.
    */
   public String scheduleNewWorkflow(String workflowName) {
     return this.innerClient.scheduleNewOrchestrationInstance(workflowName);
+  }
+
+  /**
+   * Schedules a new workflow using DurableTask client.
+   *
+   * @param workflowName name of workflow to start.
+   * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
+   * @return the randomly-generated instance ID for new Workflow instance.
+   */
+  public String scheduleNewWorkflow(String workflowName, Object input) {
+    return this.innerClient.scheduleNewOrchestrationInstance(workflowName, input);
+  }
+
+  /**
+   * Schedules a new workflow using DurableTask client.
+   *
+   * @param workflowName name of workflow to start.
+   * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
+   * @param instanceId the unique ID of the orchestration instance to schedule
+   * @return the <code>instanceId</code> parameter value.
+   */
+  public String scheduleNewWorkflow(String workflowName, Object input, String instanceId) {
+    return this.innerClient.scheduleNewOrchestrationInstance(workflowName, input, instanceId);
   }
 
   /**
@@ -110,12 +133,12 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Closes the inner DurableTask client and shutdown the GRPC channel.
    *
    */
-  public void close() {
+  public void close() throws InterruptedException {
     if (this.innerClient != null) {
       this.innerClient.close();
     }
     if (this.grpcChannel != null && !this.grpcChannel.isShutdown()) {
-      this.grpcChannel.shutdown();
+      this.grpcChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
   }
 }

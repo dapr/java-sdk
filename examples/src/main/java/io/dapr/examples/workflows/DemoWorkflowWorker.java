@@ -13,17 +13,12 @@ limitations under the License.
 
 package io.dapr.examples.workflows;
 
-import com.microsoft.durabletask.DurableTaskClient;
-import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
-import com.microsoft.durabletask.NewOrchestrationInstanceOptions;
 import io.dapr.workflows.runtime.WorkflowRuntime;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * For setup instructions, see the README.
  */
-public class DemoWorkflowService {
+public class DemoWorkflowWorker {
 
   /**
    * The main method of this app.
@@ -34,7 +29,8 @@ public class DemoWorkflowService {
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the runtime.
     WorkflowRuntime.getInstance().registerWorkflow(DemoWorkflow.class);
-    WorkflowRuntime.getInstance().start();
     System.out.println("Start workflow runtime");
+    WorkflowRuntime.getInstance().startAndBlock();
+    System.exit(0);
   }
 }
