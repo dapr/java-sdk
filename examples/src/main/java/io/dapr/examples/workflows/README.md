@@ -64,7 +64,7 @@ This application uses `WorkflowRuntime.getInstance().registerWorkflow()` in orde
 
 Now, execute the following script in order to run DemoWorkflowWorker:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 4001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.DemoWorkflowWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.DemoWorkflowWorker
 ```
 
 ### Running the Workflow client
@@ -74,5 +74,5 @@ The `DemoWorkflowClient` starts instances of workflows that have been registered
 With the DemoWorkflowWorker running, use the follow command to start the workflow with the DemoWorkflowClient:
 
 ```sh
-dapr run --app-id demoworkflowclient --resources-path ./components/workflows --dapr-grpc-port 4001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.DemoWorkflowClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.DemoWorkflowClient
 ```
