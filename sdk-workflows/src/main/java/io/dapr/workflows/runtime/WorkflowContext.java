@@ -14,6 +14,8 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
+
+import java.io.PrintStream;
 import java.time.Duration;
 
 /**
@@ -23,11 +25,53 @@ import java.time.Duration;
  */
 public interface WorkflowContext {
 
+  /**
+   * Get the stdout PrintStream set by {@code System.out}
+   * only when {@code isReplaying} is false. Otherwise return
+   * a dummy PrintStream.
+   *
+   * @return PrintStream
+   */
+  PrintStream getOut();
+
+  /**
+   * Get the stderr PrintStream set by {@code System.err}
+   * only when {@code isReplaying} is false. Otherwise return
+   * a dummy PrintStream.
+   *
+   * @return PrintStream
+   */
+  public PrintStream getErr();
+
+  /**
+   * Gets the name of the current workflow.
+   *
+   * @return the name of the current workflow
+   */
   String getName();
 
+  /**
+   * Gets the instance ID of the current workflow.
+   *
+   * @return the instance ID of the current workflow
+   */
   String getInstanceId();
 
-  void complete(Object o);
+  /**
+   * Completes the current workflow.
+   *
+   * @param output the serializable output of the completed Workflow.
+   */
+  void complete(Object output);
 
+  /**
+   * Waits for an event to be raised with name and returns the event data.
+   *
+   * @param eventName The name of the event to wait for. Event names are case-insensitive.
+   *                  External event names can be reused any number of times; they are not
+   *                  required to be unique.
+   * @param timeout   The amount of time to wait before cancelling the external event task.
+   * @return Asynchronous task to {@code await()}.
+   */
   Task waitForExternalEvent(String eventName, Duration timeout);
 }

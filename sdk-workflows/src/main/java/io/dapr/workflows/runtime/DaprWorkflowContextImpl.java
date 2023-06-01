@@ -16,11 +16,13 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.time.Duration;
 
 public class DaprWorkflowContextImpl implements WorkflowContext {
-
   private final TaskOrchestrationContext innerContext;
+  private final PrintStream dummyStream;
 
   /**
    * Constructor for DaprWorkflowContextImpl.
@@ -34,21 +36,56 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
     } else {
       this.innerContext = context;
     }
+    this.dummyStream = new PrintStream(new OutputStream() {
+      public void write(int b) {
+      }
+    });
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  public PrintStream getOut() {
+    if (this.innerContext.getIsReplaying()) {
+      return this.dummyStream;
+    }
+    return System.out;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public PrintStream getErr() {
+    if (this.innerContext.getIsReplaying()) {
+      return this.dummyStream;
+    }
+    return System.err;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   public String getName() {
     return this.innerContext.getName();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public String getInstanceId() {
     return this.innerContext.getInstanceId();
   }
 
-  public void complete(Object o) {
-    this.innerContext.complete(o);
+  /**
+   * {@inheritDoc}
+   */
+  public void complete(Object output) {
+    this.innerContext.complete(output);
   }
 
-  @Override
+  /**
+   * {@inheritDoc}
+   */
   public Task<Void> waitForExternalEvent(String eventName, Duration timeout) {
     return innerContext.waitForExternalEvent(eventName, timeout);
   }

@@ -22,12 +22,12 @@ import org.junit.Test;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
 public class DaprWorkflowClientTest {
-  private DaprWorkflowClient client;
-
   private static Constructor<DaprWorkflowClient> constructor;
+  private DaprWorkflowClient client;
   private DurableTaskClient mockInnerClient;
   private ManagedChannel mockGrpcChannel;
 
@@ -45,15 +45,46 @@ public class DaprWorkflowClientTest {
   public void setUp() throws Exception {
     mockInnerClient = mock(DurableTaskClient.class);
     mockGrpcChannel = mock(ManagedChannel.class);
+    when(mockGrpcChannel.shutdown()).thenReturn(mockGrpcChannel);
+
     client = constructor.newInstance(mockInnerClient, mockGrpcChannel);
   }
 
   @Test
-  public void scheduleNewWorkflow() {
-    String expectedArgument = "TestWorkflow";
+  public void EmptyConstructor() {
+    assertDoesNotThrow(DaprWorkflowClient::new);
+  }
 
-    client.scheduleNewWorkflow(expectedArgument);
-    verify(mockInnerClient, times(1)).scheduleNewOrchestrationInstance(expectedArgument);
+  @Test
+  public void scheduleNewWorkflowWithArgName() {
+    String expectedName = "TestWorkflow";
+
+    client.scheduleNewWorkflow(expectedName);
+
+    verify(mockInnerClient, times(1)).scheduleNewOrchestrationInstance(expectedName);
+  }
+
+  @Test
+  public void scheduleNewWorkflowWithArgsNameInput() {
+    String expectedName = "TestWorkflow";
+    Object expectedInput = new Object();
+
+    client.scheduleNewWorkflow(expectedName, expectedInput);
+
+    verify(mockInnerClient, times(1))
+        .scheduleNewOrchestrationInstance(expectedName, expectedInput);
+  }
+
+  @Test
+  public void scheduleNewWorkflowWithArgsNameInputInstance() {
+    String expectedName = "TestWorkflow";
+    Object expectedInput = new Object();
+    String expectedInstanceId = "myTestInstance123";
+
+    client.scheduleNewWorkflow(expectedName, expectedInput, expectedInstanceId);
+
+    verify(mockInnerClient, times(1))
+        .scheduleNewOrchestrationInstance(expectedName, expectedInput, expectedInstanceId);
   }
 
   @Test
@@ -65,7 +96,7 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
-  public void close() {
+  public void close() throws InterruptedException {
     client.close();
     verify(mockInnerClient, times(1)).close();
     verify(mockGrpcChannel, times(1)).shutdown();

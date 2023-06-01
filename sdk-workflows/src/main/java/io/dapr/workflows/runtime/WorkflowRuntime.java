@@ -15,6 +15,7 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.DurableTaskGrpcWorker;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.config.Properties;
 
 /**
  * Contains methods to register workflows and activities.
@@ -31,7 +32,12 @@ public class WorkflowRuntime implements AutoCloseable {
       throw new IllegalStateException("WorkflowRuntime should only be constructed once");
     }
 
-    this.builder = new DurableTaskGrpcWorkerBuilder();
+    int port = Properties.GRPC_PORT.get();
+    if (port <= 0) {
+      throw new IllegalStateException("Invalid port.");
+    }
+
+    this.builder = new DurableTaskGrpcWorkerBuilder().port(port);
   }
 
   /**
@@ -67,11 +73,21 @@ public class WorkflowRuntime implements AutoCloseable {
   }
 
   /**
-   * Start the Workflow runtime.
+   * Start the Workflow runtime processing items on a non-blocking
+   * background thread indefinitely or until that thread is interrupted.
    */
   public void start() {
     this.worker = this.builder.build();
     this.worker.start();
+  }
+
+  /**
+   * Start the Workflow runtime processing items on the current thread
+   * and block indefinitely or until that thread is interrupted.
+   */
+  public void startAndBlock() {
+    this.worker = this.builder.build();
+    this.worker.startAndBlock();
   }
 
   /**
@@ -81,6 +97,7 @@ public class WorkflowRuntime implements AutoCloseable {
   public void close() {
     if (this.worker != null) {
       this.worker.close();
+      this.worker = null;
     }
   }
 }
