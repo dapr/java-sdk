@@ -15,51 +15,40 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
-
-import java.io.OutputStream;
-import java.io.PrintStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.NOPLogger;
 import java.time.Duration;
 
 public class DaprWorkflowContextImpl implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
-  private final PrintStream dummyStream;
+  private final Logger logger;
 
   /**
    * Constructor for DaprWorkflowContextImpl.
    *
    * @param context TaskOrchestrationContext
+   * @param logger optional Logger
    * @throws IllegalArgumentException if context is null
    */
-  public DaprWorkflowContextImpl(TaskOrchestrationContext context) throws IllegalArgumentException {
+  public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Inner context cannot be null");
     } else {
       this.innerContext = context;
     }
-    this.dummyStream = new PrintStream(new OutputStream() {
-      public void write(int b) {
-      }
-    });
+
+    this.logger = logger == null ? LoggerFactory.getLogger(WorkflowContext.class) : logger;
   }
 
   /**
    * {@inheritDoc}
    */
-  public PrintStream getOut() {
+  public Logger getLogger() {
     if (this.innerContext.getIsReplaying()) {
-      return this.dummyStream;
+      return NOPLogger.NOP_LOGGER;
     }
-    return System.out;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public PrintStream getErr() {
-    if (this.innerContext.getIsReplaying()) {
-      return this.dummyStream;
-    }
-    return System.err;
+    return this.logger;
   }
 
   /**

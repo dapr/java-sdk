@@ -27,15 +27,15 @@ public class DemoWorkflow extends Workflow {
 
   @Override
   public void run(WorkflowContext ctx) {
-    ctx.getOut().println("Starting Workflow: " + ctx.getName());
-    ctx.getOut().println("Instance ID: " + ctx.getInstanceId());
-    ctx.getOut().println("Waiting for event: 'myEvent'...");
+    ctx.getLogger().info("Starting Workflow: " + ctx.getName());
+    ctx.getLogger().info("Instance ID: " + ctx.getInstanceId());
+    ctx.getLogger().info("Waiting for event: 'myEvent'...");
     try {
       ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).await();
-      ctx.getOut().println("Received!");
+      ctx.getLogger().info("Received!");
     } catch (TaskCanceledException e) {
-      ctx.getErr().println("Timed out");
-      ctx.getErr().println(e.getMessage());
+      ctx.getLogger().warn("Timed out");
+      ctx.getLogger().warn(e.getMessage());
     }
     ctx.complete("finished");
   }
