@@ -14,6 +14,8 @@ limitations under the License.
 package io.dapr.workflows.client;
 
 import com.microsoft.durabletask.DurableTaskClient;
+import io.dapr.workflows.runtime.Workflow;
+import io.dapr.workflows.runtime.WorkflowContext;
 import io.grpc.ManagedChannel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,6 +32,12 @@ public class DaprWorkflowClientTest {
   private DaprWorkflowClient client;
   private DurableTaskClient mockInnerClient;
   private ManagedChannel mockGrpcChannel;
+
+  public class TestWorkflow extends Workflow {
+    @Override
+    public void run(WorkflowContext ctx) {
+    }
+  }
 
   @BeforeClass
   public static void beforeAll() {
@@ -57,19 +65,19 @@ public class DaprWorkflowClientTest {
 
   @Test
   public void scheduleNewWorkflowWithArgName() {
-    String expectedName = "TestWorkflow";
+    String expectedName = TestWorkflow.class.getCanonicalName();
 
-    client.scheduleNewWorkflow(expectedName);
+    client.scheduleNewWorkflow(TestWorkflow.class);
 
     verify(mockInnerClient, times(1)).scheduleNewOrchestrationInstance(expectedName);
   }
 
   @Test
   public void scheduleNewWorkflowWithArgsNameInput() {
-    String expectedName = "TestWorkflow";
+    String expectedName = TestWorkflow.class.getCanonicalName();
     Object expectedInput = new Object();
 
-    client.scheduleNewWorkflow(expectedName, expectedInput);
+    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput);
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput);
@@ -77,11 +85,11 @@ public class DaprWorkflowClientTest {
 
   @Test
   public void scheduleNewWorkflowWithArgsNameInputInstance() {
-    String expectedName = "TestWorkflow";
+    String expectedName = TestWorkflow.class.getCanonicalName();
     Object expectedInput = new Object();
     String expectedInstanceId = "myTestInstance123";
 
-    client.scheduleNewWorkflow(expectedName, expectedInput, expectedInstanceId);
+    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput, expectedInstanceId);
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput, expectedInstanceId);
@@ -89,7 +97,7 @@ public class DaprWorkflowClientTest {
 
   @Test
   public void terminateWorkflow() {
-    String expectedArgument = "TestWorkflow";
+    String expectedArgument = "TestWorkflowInstanceId";
 
     client.terminateWorkflow(expectedArgument, null);
     verify(mockInnerClient, times(1)).terminate(expectedArgument, null);

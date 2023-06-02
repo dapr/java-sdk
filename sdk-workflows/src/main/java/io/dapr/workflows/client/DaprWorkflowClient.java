@@ -17,6 +17,7 @@ import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
 import io.dapr.config.Properties;
 import io.dapr.utils.Version;
+import io.dapr.workflows.runtime.Workflow;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -77,7 +78,7 @@ public class DaprWorkflowClient implements AutoCloseable {
   private static ManagedChannel createGrpcChannel() throws IllegalStateException {
     int port = Properties.GRPC_PORT.get();
     if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
+      throw new IllegalStateException(String.format("Invalid port, %s. Must greater than 0", port));
     }
 
     return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
@@ -89,34 +90,37 @@ public class DaprWorkflowClient implements AutoCloseable {
   /**
    * Schedules a new workflow using DurableTask client.
    *
-   * @param workflowName name of workflow to start.
+   * @param <T> any Workflow type
+   * @param clazz Class extending Workflow to start an instance of.
    * @return the randomly-generated instance ID for new Workflow instance.
    */
-  public String scheduleNewWorkflow(String workflowName) {
-    return this.innerClient.scheduleNewOrchestrationInstance(workflowName);
+  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz) {
+    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName());
   }
 
   /**
    * Schedules a new workflow using DurableTask client.
    *
-   * @param workflowName name of workflow to start.
+   * @param <T> any Workflow type
+   * @param clazz Class extending Workflow to start an instance of.
    * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
    * @return the randomly-generated instance ID for new Workflow instance.
    */
-  public String scheduleNewWorkflow(String workflowName, Object input) {
-    return this.innerClient.scheduleNewOrchestrationInstance(workflowName, input);
+  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input) {
+    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input);
   }
 
   /**
    * Schedules a new workflow using DurableTask client.
    *
-   * @param workflowName name of workflow to start.
+   * @param <T> any Workflow type
+   * @param clazz Class extending Workflow to start an instance of.
    * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
    * @param instanceId the unique ID of the orchestration instance to schedule
    * @return the <code>instanceId</code> parameter value.
    */
-  public String scheduleNewWorkflow(String workflowName, Object input, String instanceId) {
-    return this.innerClient.scheduleNewOrchestrationInstance(workflowName, input, instanceId);
+  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
+    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
   }
 
   /**

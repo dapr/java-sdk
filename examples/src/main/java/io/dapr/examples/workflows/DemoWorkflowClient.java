@@ -32,8 +32,7 @@ public class DemoWorkflowClient {
 
     try (client) {
       System.out.println("*****");
-      String workflowName = DemoWorkflow.class.getCanonicalName();
-      String instanceId = client.scheduleNewWorkflow(workflowName);
+      String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
       System.out.printf("Started new workflow instance with random ID: %s%n", instanceId);
 
       System.out.println("Sleep and allow this workflow instance to timeout...");
@@ -41,7 +40,7 @@ public class DemoWorkflowClient {
 
       System.out.println("*****");
       String instanceToTerminateId = "terminateMe";
-      client.scheduleNewWorkflow(workflowName, null, instanceToTerminateId);
+      client.scheduleNewWorkflow(DemoWorkflow.class, null, instanceToTerminateId);
       System.out.printf("Started new workflow instance with specified ID: %s%n", instanceToTerminateId);
 
       TimeUnit.SECONDS.sleep(5);

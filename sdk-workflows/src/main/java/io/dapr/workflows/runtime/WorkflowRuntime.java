@@ -34,7 +34,7 @@ public class WorkflowRuntime implements AutoCloseable {
 
     int port = Properties.GRPC_PORT.get();
     if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
+      throw new IllegalStateException(String.format("Invalid port, %s. Must greater than 0", port));
     }
 
     this.builder = new DurableTaskGrpcWorkerBuilder().port(port);

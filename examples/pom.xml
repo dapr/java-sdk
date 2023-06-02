@@ -121,7 +121,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-workflows</artifactId>
-      <version>${project.version}</version>
+      <version>0.1.0-alpha-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.microsoft</groupId>

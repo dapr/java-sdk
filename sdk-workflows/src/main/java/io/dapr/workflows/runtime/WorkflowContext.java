@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
+import org.slf4j.Logger;
 
 import java.io.PrintStream;
 import java.time.Duration;
@@ -26,22 +27,13 @@ import java.time.Duration;
 public interface WorkflowContext {
 
   /**
-   * Get the stdout PrintStream set by {@code System.out}
-   * only when {@code isReplaying} is false. Otherwise return
-   * a dummy PrintStream.
+   * Get a logger only when {@code isReplaying} is false.
+   * Otherwise, return a NOP (no operation) logger.
    *
-   * @return PrintStream
+   * @return Logger
    */
-  PrintStream getOut();
+  Logger getLogger();
 
-  /**
-   * Get the stderr PrintStream set by {@code System.err}
-   * only when {@code isReplaying} is false. Otherwise return
-   * a dummy PrintStream.
-   *
-   * @return PrintStream
-   */
-  public PrintStream getErr();
 
   /**
    * Gets the name of the current workflow.

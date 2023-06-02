@@ -16,6 +16,7 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.junit.Test;
 import org.junit.Before;
+import org.slf4j.Logger;
 
 import java.io.PrintStream;
 import java.time.Duration;
@@ -29,7 +30,7 @@ public class DaprWorkflowContextImplTest {
   @Before
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
-    context = new DaprWorkflowContextImpl(mockInnerContext);
+    context = new DaprWorkflowContextImpl(mockInnerContext, null);
   }
 
   @Test
@@ -53,18 +54,9 @@ public class DaprWorkflowContextImplTest {
     verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
   }
 
-  @Test
-  public void waitForExternalEventTimeoutTest() {
-    String expectedEvent = "TestEvent";
-    Duration expectedDuration = Duration.ofSeconds(1);
-
-    context.waitForExternalEvent(expectedEvent, expectedDuration);
-    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
-  }
-
   @Test(expected = IllegalArgumentException.class)
   public void DaprWorkflowContextWithEmptyInnerContext() {
-    context = new DaprWorkflowContextImpl(null);
+    context = new DaprWorkflowContextImpl(null, null);
   }
 
   @Test
@@ -74,62 +66,26 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
-  public void getOutReplayingTest() {
-    PrintStream mockOut = mock(PrintStream.class);
-    PrintStream originalOut = System.out;
-    System.setOut(mockOut);
+  public void getLoggerReplayingTest() {
+    Logger mockLogger = mock(Logger.class);
     when(mockInnerContext.getIsReplaying()).thenReturn(true);
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
+    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
-    testContext.getOut().println(expectedArg);
+    testContext.getLogger().info(expectedArg);
 
-    verify(mockOut, times(0)).println(any(String.class));
-    System.setOut(originalOut);
+    verify(mockLogger, times(0)).info(any(String.class));
   }
 
   @Test
-  public void getOutFirstTimeTest() {
-    PrintStream mockOut = mock(PrintStream.class);
-    PrintStream originalOut = System.out;
-    System.setOut(mockOut);
+  public void getLoggerFirstTimeTest() {
+    Logger mockLogger = mock(Logger.class);
     when(mockInnerContext.getIsReplaying()).thenReturn(false);
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
+    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
-    testContext.getOut().println(expectedArg);
+    testContext.getLogger().info(expectedArg);
 
-    verify(mockOut, times(1)).println(expectedArg);
-    System.setOut(originalOut);
-  }
-
-  @Test
-  public void getErrReplayingTest() {
-    PrintStream mockErr = mock(PrintStream.class);
-    PrintStream originalErr = System.err;
-    System.setOut(mockErr);
-    when(mockInnerContext.getIsReplaying()).thenReturn(true);
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
-
-    String expectedArg = "test print";
-    testContext.getErr().println(expectedArg);
-
-    verify(mockErr, times(0)).println(any(String.class));
-    System.setOut(originalErr);
-  }
-
-  @Test
-  public void getErrFirstTimeTest() {
-    PrintStream mockErr = mock(PrintStream.class);
-    PrintStream originalErr = System.err;
-    System.setErr(mockErr);
-    when(mockInnerContext.getIsReplaying()).thenReturn(false);
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
-
-    String expectedArg = "test print";
-    testContext.getErr().println(expectedArg);
-
-    verify(mockErr, times(1)).println(expectedArg);
-    System.setOut(originalErr);
+    verify(mockLogger, times(1)).info(expectedArg);
   }
 }
