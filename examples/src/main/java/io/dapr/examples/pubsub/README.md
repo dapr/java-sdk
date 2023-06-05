@@ -516,7 +516,7 @@ expected_stdout_lines:
   - '== APP == Bulk Subscriber got: This is message #1'
   - '== APP == Bulk Subscriber got: This is message #2'
 background: true
-sleep: 5
+sleep: 15
 -->
 
 ```bash
@@ -627,12 +627,10 @@ match_order: none
 expected_stdout_lines:
   - '== APP == Subscriber got: This is message #1'
   - '== APP == Subscriber got: This is message #2'
-  - '== APP == Subscriber got from bulk published topic: This is message #2'
-  - '== APP == Subscriber got from bulk published topic: This is message #3'
-  - '== APP == Bulk Subscriber got: This is message #1'
-  - '== APP == Bulk Subscriber got: This is message #2'
+  - '== APP == Bulk Subscriber got: "This is message #1"'
+  - '== APP == Bulk Subscriber got: "This is message #2"'
 background: true
-sleep: 5
+sleep: 15
 -->
 ```bash
 // stop http subscriber if you have started one.
@@ -679,13 +677,13 @@ Messages will be subscribed by the gRPC Subscriber and will print the output as 
 If you run a bulk publisher using following command
 
 <!-- STEP
-name: Run Bulk Publisher
-match_order: sequential
+name: Run Publisher on bulk topic
 expected_stdout_lines:
-  - '== APP == Published the set of messages in a single call to Dapr'
+  - '== APP == Published message: This is message #0'
+  - '== APP == Published message: This is message #1'
 background: true
-sleep: 20
 -->
+
 ```bash
 dapr run --components-path ./components/pubsub --app-id publisher -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Publisher testingtopicbulk
 ```
@@ -824,11 +822,16 @@ For more details on Dapr Spring Boot integration, please refer to [Dapr Spring B
 <!-- STEP
 name: Cleanup
 -->
+Use the following command to stop your running http subscriber or gRPC subscriber.
+```bash
+dapr stop --app-id subscriber
+```
+<!-- END_STEP -->
+After completing publish , the application will automatically exit. However, you can still use the following command to stop your running publisher.
 
 ```bash
 dapr stop --app-id publisher
 dapr stop --app-id bulk-publisher
-dapr stop --app-id subscriber
 ```
 
-<!-- END_STEP -->
+
