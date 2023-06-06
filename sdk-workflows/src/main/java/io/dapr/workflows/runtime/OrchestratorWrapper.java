@@ -26,9 +26,13 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
   private final Constructor<T> workflowConstructor;
   private final String name;
 
-  public OrchestratorWrapper(Class<T> clazz) throws NoSuchMethodException {
+  public OrchestratorWrapper(Class<T> clazz) {
     this.name = clazz.getCanonicalName();
-    this.workflowConstructor = clazz.getDeclaredConstructor();
+    try {
+      this.workflowConstructor = clazz.getDeclaredConstructor();
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -41,7 +45,7 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
     return ctx -> {
       try {
         T workflow = this.workflowConstructor.newInstance();
-        workflow.run(new DaprWorkflowContextImpl(ctx, null));
+        workflow.run(new DaprWorkflowContextImpl(ctx));
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(e);
       }
