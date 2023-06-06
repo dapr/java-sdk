@@ -28,17 +28,31 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * Constructor for DaprWorkflowContextImpl.
    *
    * @param context TaskOrchestrationContext
-   * @param logger optional Logger
    * @throws IllegalArgumentException if context is null
+   */
+  public DaprWorkflowContextImpl(TaskOrchestrationContext context) throws IllegalArgumentException {
+    this(context, LoggerFactory.getLogger(WorkflowContext.class));
+  }
+
+  /**
+   * Constructor for DaprWorkflowContextImpl.
+   *
+   * @param context TaskOrchestrationContext
+   * @param logger Logger
+   * @throws IllegalArgumentException if context or logger is null
    */
   public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
     if (context == null) {
-      throw new IllegalArgumentException("Inner context cannot be null");
+      throw new IllegalArgumentException("Context cannot be null");
     } else {
       this.innerContext = context;
     }
 
-    this.logger = logger == null ? LoggerFactory.getLogger(WorkflowContext.class) : logger;
+    if (logger == null) {
+      throw new IllegalArgumentException("Logger cannot be null");
+    } else {
+      this.logger = logger;
+    }
   }
 
   /**
@@ -76,6 +90,6 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * {@inheritDoc}
    */
   public Task<Void> waitForExternalEvent(String eventName, Duration timeout) {
-    return innerContext.waitForExternalEvent(eventName, timeout);
+    return this.innerContext.waitForExternalEvent(eventName, timeout);
   }
 }

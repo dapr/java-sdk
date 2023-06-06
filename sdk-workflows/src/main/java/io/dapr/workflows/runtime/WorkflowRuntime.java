@@ -63,13 +63,9 @@ public class WorkflowRuntime implements AutoCloseable {
    * @param clazz the class being registered
    */
   public <T extends Workflow> void registerWorkflow(Class<T> clazz) {
-    try {
-      this.builder = this.builder.addOrchestration(
-          new OrchestratorWrapper<>(clazz)
-      );
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
-    }
+    this.builder = this.builder.addOrchestration(
+        new OrchestratorWrapper<>(clazz)
+    );
   }
 
   /**
@@ -77,8 +73,10 @@ public class WorkflowRuntime implements AutoCloseable {
    * background thread indefinitely or until that thread is interrupted.
    */
   public void start() {
-    this.worker = this.builder.build();
-    this.worker.start();
+    if (this.worker == null) {
+      this.worker = this.builder.build();
+      this.worker.start();
+    }
   }
 
   /**
@@ -86,8 +84,10 @@ public class WorkflowRuntime implements AutoCloseable {
    * and block indefinitely or until that thread is interrupted.
    */
   public void startAndBlock() {
-    this.worker = this.builder.build();
-    this.worker.startAndBlock();
+    if (this.worker == null) {
+      this.worker = this.builder.build();
+      this.worker.startAndBlock();
+    }
   }
 
   /**

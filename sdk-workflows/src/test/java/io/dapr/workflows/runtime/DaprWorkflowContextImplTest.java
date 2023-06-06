@@ -30,7 +30,7 @@ public class DaprWorkflowContextImplTest {
   @Before
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
-    context = new DaprWorkflowContextImpl(mockInnerContext, null);
+    context = new DaprWorkflowContextImpl(mockInnerContext);
   }
 
   @Test
