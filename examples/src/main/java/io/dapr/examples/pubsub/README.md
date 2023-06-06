@@ -834,4 +834,3 @@ dapr stop --app-id publisher
 dapr stop --app-id bulk-publisher
 ```
 
-
