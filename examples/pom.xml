@@ -124,11 +124,6 @@
       <version>0.1.0-alpha-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>com.microsoft</groupId>
-      <artifactId>durabletask-client</artifactId>
-      <version>1.1.0</version>
-    </dependency>
-    <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
       <version>${project.version}</version>
