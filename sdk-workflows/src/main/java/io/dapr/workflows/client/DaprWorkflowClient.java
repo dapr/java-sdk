@@ -16,6 +16,7 @@ package io.dapr.workflows.client;
 import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
 import com.microsoft.durabletask.OrchestrationMetadata;
+import com.microsoft.durabletask.PurgeResult;
 import io.dapr.config.Properties;
 import io.dapr.utils.Version;
 import io.dapr.workflows.runtime.Workflow;
@@ -207,6 +208,39 @@ public class DaprWorkflowClient implements AutoCloseable {
     OrchestrationMetadata metadata = 
         this.innerClient.waitForInstanceCompletion(instanceId, timeout, getInputsAndOutputs);
     return metadata == null ? null : new WorkflowState(metadata);
+  }
+
+  /**
+   *Sends an event notification message to awaiting workflow instance.
+   *
+   *@param workflowInstanceId The ID of the workflow instance that will handle the event.
+   *@param eventName The name of the event. Event names are case-insensitive.
+   *@param eventPayload The serializable data payload to include with the event.
+   */
+  public void raiseEvent(String workflowInstanceId, String eventName, Object eventPayload) {
+    this.innerClient.raiseEvent(workflowInstanceId, eventName, eventPayload);
+  }
+
+  /**
+   *Purges workflow instance state from the workflow state store.
+   *
+   *@param workflowInstanceId The unique ID of the workflow instance to purge.
+   *@return Return true if the workflow state was found and purged successfully otherwise false.
+   */
+  public boolean purgeInstance(String workflowInstanceId) {
+    PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
+    if (result != null) {
+      return result.getDeletedInstanceCount() > 0;
+    }
+    return false;
+  }
+
+  public void createTaskHub(boolean recreateIfExists) {
+    this.innerClient.createTaskHub(recreateIfExists);
+  }
+
+  public void deleteTaskHub() {
+    this.innerClient.deleteTaskHub();
   }
 
   /**

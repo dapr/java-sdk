@@ -173,6 +173,36 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
+  public void raiseEvent(){
+    String expectedInstanceId="TestWorkflowInstanceId";
+    String expectedEventName="TestEventName";
+    Object expectedEventPayload=new Object();
+    client.raiseEvent(expectedInstanceId,expectedEventName,expectedEventPayload);
+    verify(mockInnerClient,times(1)).raiseEvent(expectedInstanceId,
+            expectedEventName,expectedEventPayload);
+  }
+
+  @Test
+  public void purgeInstance(){
+    String expectedArgument="TestWorkflowInstanceId";
+    client.purgeInstance(expectedArgument);
+    verify(mockInnerClient,times(1)).purgeInstance(expectedArgument);
+  }
+
+  @Test
+  public void createTaskHub(){
+    boolean expectedArgument=true;
+    client.createTaskHub(expectedArgument);
+    verify(mockInnerClient,times(1)).createTaskHub(expectedArgument);
+  }
+
+  @Test
+  public void deleteTaskHub(){
+    client.deleteTaskHub();
+    verify(mockInnerClient,times(1)).deleteTaskHub();
+  }
+
+  @Test
   public void close() throws InterruptedException {
     client.close();
     verify(mockInnerClient, times(1)).close();

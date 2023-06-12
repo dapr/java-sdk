@@ -66,6 +66,26 @@ public class DemoWorkflowClient {
       }
 
       System.out.println(separatorStr);
+      System.out.println("**purgeInstance**");
+      try {
+        boolean purgeResult = client.purgeInstance(instanceId);
+        System.out.printf("purgeResult: %s%n",purgeResult);
+      } catch (Exception ex) {
+        System.out.printf("purgeInstance has an exception:%s%n", ex);
+      }
+
+      System.out.println(separatorStr);
+      System.out.println("**raiseEvent**");
+      try {
+        String eventInstanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
+        System.out.printf("Started new workflow instance with random ID: %s%n", eventInstanceId);
+        client.raiseEvent(eventInstanceId, "TestException", null);
+        System.out.printf("Event raised for workflow with instanceId: %s\n", eventInstanceId);
+      } catch (Exception ex) {
+        System.out.printf("raiseEvent has an exception:%s%n", ex);
+      }
+
+      System.out.println(separatorStr);
       String instanceToTerminateId = "terminateMe";
       client.scheduleNewWorkflow(DemoWorkflow.class, null, instanceToTerminateId);
       System.out.printf("Started new workflow instance with specified ID: %s%n", instanceToTerminateId);
