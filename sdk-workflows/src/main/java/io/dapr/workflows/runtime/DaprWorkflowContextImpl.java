@@ -20,6 +20,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
 import java.time.Duration;
 
+/**
+ * Dapr workflow context implementation.
+ */
 public class DaprWorkflowContextImpl implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
   private final Logger logger;
