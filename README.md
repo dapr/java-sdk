@@ -18,7 +18,7 @@ This is the Dapr SDK for Java, including the following features:
 ## Getting Started
 
 ### Pre-Requisites
-* SDKMAN! installed:
+* SDKMAN! installed (recommended):
     * [SDKMAN!](https://sdkman.io)
 * Java IDE installed:
     * [IntelliJ](https://www.jetbrains.com/idea/download/)
@@ -39,7 +39,8 @@ This is the Dapr SDK for Java, including the following features:
     * [Maven in 5 minutes](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
 
 ### Install JDK
-Execute `sdk env install` to install the required JDK.
+
+If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the required JDK.
 
 ### Importing Dapr's Java SDK
 For a Maven project, add the following to your `pom.xml` file:
