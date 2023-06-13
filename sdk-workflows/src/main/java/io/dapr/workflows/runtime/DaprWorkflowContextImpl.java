@@ -95,4 +95,9 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   public Task<Void> waitForExternalEvent(String eventName, Duration timeout) {
     return this.innerContext.waitForExternalEvent(eventName, timeout);
   }
+
+  @Override
+  public boolean getIsReplaying() {
+    return this.innerContext.getIsReplaying();
+  }
 }

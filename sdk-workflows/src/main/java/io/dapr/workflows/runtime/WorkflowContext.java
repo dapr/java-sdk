@@ -66,4 +66,21 @@ public interface WorkflowContext {
    * @return Asynchronous task to {@code await()}.
    */
   Task waitForExternalEvent(String eventName, Duration timeout);
+
+  /**
+   * Gets a value indicating whether the workflow is currently replaying a previous execution.
+   *
+   * <p>Workflow functions are "replayed" after being unloaded from memory to reconstruct local variable state.
+   * During a replay, previously executed tasks will be completed automatically with previously seen values
+   * that are stored in the workflow history. Once the workflow reaches the point where it's no longer
+   * replaying existing history, this method will return {@code false}.
+   *
+   * <p>You can use this method if you have logic that needs to run only when <em>not</em> replaying. For example,
+   * certain types of application logging may become too noisy when duplicated as part of replay. The
+   * application code could check to see whether the function is being replayed and then issue the log statements
+   * when this value is {@code false}.
+   *
+   * @return {@code true} if the workflow is replaying, otherwise {@code false}
+   */
+  boolean getIsReplaying();
 }

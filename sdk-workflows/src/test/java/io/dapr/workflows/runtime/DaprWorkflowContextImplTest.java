@@ -66,9 +66,15 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
+  public void getIsReplaying() {
+    context.getIsReplaying();
+    verify(mockInnerContext, times(1)).getIsReplaying();
+  }
+
+  @Test
   public void getLoggerReplayingTest() {
     Logger mockLogger = mock(Logger.class);
-    when(mockInnerContext.getIsReplaying()).thenReturn(true);
+    when(context.getIsReplaying()).thenReturn(true);
     DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
@@ -80,7 +86,7 @@ public class DaprWorkflowContextImplTest {
   @Test
   public void getLoggerFirstTimeTest() {
     Logger mockLogger = mock(Logger.class);
-    when(mockInnerContext.getIsReplaying()).thenReturn(false);
+    when(context.getIsReplaying()).thenReturn(false);
     DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
