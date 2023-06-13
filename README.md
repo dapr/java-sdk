@@ -18,11 +18,8 @@ This is the Dapr SDK for Java, including the following features:
 ## Getting Started
 
 ### Pre-Requisites
-* JDK 11 or above - the published jars are compatible with Java 8:
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [AdoptOpenJDK 11 - LTS](https://adoptopenjdk.net/)
-    * [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
-    * [OpenJDK](https://openjdk.java.net/)
+* SDKMAN! installed (recommended):
+    * [SDKMAN!](https://sdkman.io)
 * Java IDE installed:
     * [IntelliJ](https://www.jetbrains.com/idea/download/)
     * [Eclipse](https://www.eclipse.org/downloads/)
@@ -41,6 +38,10 @@ This is the Dapr SDK for Java, including the following features:
     * [New Maven project in IntelliJ](https://www.jetbrains.com/help/idea/maven-support.html#create_new_maven_project)
     * [Maven in 5 minutes](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
 
+### Install JDK
+
+If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the required JDK.
+
 ### Importing Dapr's Java SDK
 For a Maven project, add the following to your `pom.xml` file:
 ```xml
@@ -52,19 +53,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.8.0</version>
+      <version>1.9.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.8.0</version>
+      <version>1.9.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.8.0</version>
+      <version>1.9.0</version>
     </dependency>
     ...
   </dependencies>
@@ -78,11 +79,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.8.0')
+    compile('io.dapr:dapr-sdk:1.9.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.8.0')
+    compile('io.dapr:dapr-sdk-actors:1.9.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.8.0')
+    compile('io.dapr:dapr-sdk-springboot:1.9.0')
 }
 ```
 
