@@ -18,5 +18,6 @@ else
 fi
 
 rm -rf docs
-mvn clean install
+mvn -Dmaven.test.skip=false -Djacoco.skip=true clean install
 mvn site-deploy
+rm -f daprdocs/content/en/java-sdk-docs/_index.mdbak || echo
