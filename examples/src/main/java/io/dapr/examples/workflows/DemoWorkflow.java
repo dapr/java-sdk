@@ -29,6 +29,7 @@ public class DemoWorkflow extends Workflow {
   public void run(WorkflowContext ctx) {
     ctx.getLogger().info("Starting Workflow: " + ctx.getName());
     ctx.getLogger().info("Instance ID: " + ctx.getInstanceId());
+    ctx.getLogger().info("Current Orchestration Time: " + ctx.getCurrentInstant());
     ctx.getLogger().info("Waiting for event: 'myEvent'...");
     try {
       ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).await();

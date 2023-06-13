@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Dapr workflow context implementation.
@@ -80,6 +81,13 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    */
   public String getInstanceId() {
     return this.innerContext.getInstanceId();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Instant getCurrentInstant() {
+    return this.innerContext.getCurrentInstant();
   }
 
   /**

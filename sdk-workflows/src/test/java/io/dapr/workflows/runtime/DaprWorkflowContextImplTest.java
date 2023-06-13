@@ -46,6 +46,12 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
+  public void getCurrentInstantTest() {
+    context.getCurrentInstant();
+    verify(mockInnerContext, times(1)).getCurrentInstant();
+  }
+
+  @Test
   public void waitForExternalEventTest() {
     String expectedEvent = "TestEvent";
     Duration expectedDuration = Duration.ofSeconds(1);
