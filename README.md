@@ -18,11 +18,8 @@ This is the Dapr SDK for Java, including the following features:
 ## Getting Started
 
 ### Pre-Requisites
-* JDK 11 or above - the published jars are compatible with Java 8:
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [AdoptOpenJDK 11 - LTS](https://adoptopenjdk.net/)
-    * [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
-    * [OpenJDK](https://openjdk.java.net/)
+* SDKMAN! installed (recommended):
+    * [SDKMAN!](https://sdkman.io)
 * Java IDE installed:
     * [IntelliJ](https://www.jetbrains.com/idea/download/)
     * [Eclipse](https://www.eclipse.org/downloads/)
@@ -40,6 +37,10 @@ This is the Dapr SDK for Java, including the following features:
 * An existing Java Maven or Gradle project. You may also start a new project via one of the options below:
     * [New Maven project in IntelliJ](https://www.jetbrains.com/help/idea/maven-support.html#create_new_maven_project)
     * [Maven in 5 minutes](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
+
+### Install JDK
+
+If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the required JDK.
 
 ### Importing Dapr's Java SDK
 For a Maven project, add the following to your `pom.xml` file:
