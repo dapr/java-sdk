@@ -18,7 +18,6 @@ import io.dapr.workflows.runtime.Workflow;
 import io.dapr.workflows.runtime.WorkflowContext;
 
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Implementation of the DemoWorkflow for the server side.
