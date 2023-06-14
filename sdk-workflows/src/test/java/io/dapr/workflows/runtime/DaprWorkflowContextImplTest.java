@@ -14,14 +14,17 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskOrchestrationContext;
-import org.junit.Test;
 import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 
-import java.io.PrintStream;
 import java.time.Duration;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprWorkflowContextImplTest {
   private DaprWorkflowContextImpl context;
@@ -60,8 +63,23 @@ public class DaprWorkflowContextImplTest {
     verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
   }
 
+  @Test
+  public void callActivityTest() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+
+    context.callActivity(expectedName, expectedInput, String.class);
+    verify(mockInnerContext, times(1)).callActivity(expectedName, expectedInput, null, String.class);
+  }
+
+
   @Test(expected = IllegalArgumentException.class)
   public void DaprWorkflowContextWithEmptyInnerContext() {
+    context = new DaprWorkflowContextImpl(mockInnerContext, null);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void DaprWorkflowContextWithEmptyLogger() {
     context = new DaprWorkflowContextImpl(null, null);
   }
 

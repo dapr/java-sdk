@@ -14,10 +14,12 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
+
 import java.time.Duration;
 import java.time.Instant;
 
@@ -42,7 +44,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * Constructor for DaprWorkflowContextImpl.
    *
    * @param context TaskOrchestrationContext
-   * @param logger Logger
+   * @param logger  Logger
    * @throws IllegalArgumentException if context or logger is null
    */
   public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
@@ -103,9 +105,16 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   public Task<Void> waitForExternalEvent(String eventName, Duration timeout) {
     return this.innerContext.waitForExternalEvent(eventName, timeout);
   }
-
+  
   @Override
   public boolean getIsReplaying() {
     return this.innerContext.getIsReplaying();
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  public <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType) {
+    return this.innerContext.callActivity(name, input, options, returnType);
   }
 }

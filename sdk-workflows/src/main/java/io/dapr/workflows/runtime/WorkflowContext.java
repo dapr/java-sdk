@@ -14,9 +14,10 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.TaskFailedException;
+import com.microsoft.durabletask.TaskOptions;
 import org.slf4j.Logger;
 
-import java.io.PrintStream;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -52,6 +53,7 @@ public interface WorkflowContext {
 
   /**
    * Gets the current orchestration time in UTC.
+   *
    * @return the current orchestration time in UTC
    */
   Instant getCurrentInstant();
@@ -73,6 +75,91 @@ public interface WorkflowContext {
    * @return Asynchronous task to {@code await()}.
    */
   Task waitForExternalEvent(String eventName, Duration timeout);
+
+
+  /**
+   * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
+   * that completes when the activity completes. If the activity completes successfully, the returned {@code Task}'s
+   * value will be the activity's output. If the activity fails, the returned {@code Task} will complete exceptionally
+   * with a {@link TaskFailedException}.
+   *
+   * @param name       the name of the activity to call
+   * @param input      the serializable input to pass to the activity
+   * @param options    additional options that control the execution and processing of the activity
+   * @param returnType the expected class type of the activity output
+   * @param <V>        the expected type of the activity output
+   * @return a new {@link Task} that completes when the activity completes or fails
+   */
+  <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType);
+
+  /**
+   * Asynchronously invokes an activity by name and returns a new {@link Task} that completes when the activity
+   * completes. See {@link #callActivity(String, Object, TaskOptions, Class)} for a complete description.
+   *
+   * @param name the name of the activity to call
+   * @return a new {@link Task} that completes when the activity completes or fails
+   * @see #callActivity(String, Object, TaskOptions, Class)
+   */
+  default Task<Void> callActivity(String name) {
+    return this.callActivity(name, null, null, Void.class);
+  }
+
+  /**
+   * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
+   * that completes when the activity completes. See {@link #callActivity(String, Object, TaskOptions, Class)} for a
+   * complete description.
+   *
+   * @param name  the name of the activity to call
+   * @param input the serializable input to pass to the activity
+   * @return a new {@link Task} that completes when the activity completes or fails
+   */
+  default Task<Void> callActivity(String name, Object input) {
+    return this.callActivity(name, input, null, Void.class);
+  }
+
+  /**
+   * Asynchronously invokes an activity by name and returns a new {@link Task} that completes when the activity
+   * completes. If the activity completes successfully, the returned {@code Task}'s value will be the activity's
+   * output. See {@link #callActivity(String, Object, TaskOptions, Class)} for a complete description.
+   *
+   * @param name       the name of the activity to call
+   * @param returnType the expected class type of the activity output
+   * @param <V>        the expected type of the activity output
+   * @return a new {@link Task} that completes when the activity completes or fails
+   */
+  default <V> Task<V> callActivity(String name, Class<V> returnType) {
+    return this.callActivity(name, null, null, returnType);
+  }
+
+  /**
+   * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
+   * that completes when the activity completes.If the activity completes successfully, the returned {@code Task}'s
+   * value will be the activity's output. See {@link #callActivity(String, Object, TaskOptions, Class)} for a
+   * complete description.
+   *
+   * @param name       the name of the activity to call
+   * @param input      the serializable input to pass to the activity
+   * @param returnType the expected class type of the activity output
+   * @param <V>        the expected type of the activity output
+   * @return a new {@link Task} that completes when the activity completes or fails
+   */
+  default <V> Task<V> callActivity(String name, Object input, Class<V> returnType) {
+    return this.callActivity(name, input, null, returnType);
+  }
+
+  /**
+   * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
+   * that completes when the activity completes. See {@link #callActivity(String, Object, TaskOptions, Class)} for a
+   * complete description.
+   *
+   * @param name    the name of the activity to call
+   * @param input   the serializable input to pass to the activity
+   * @param options additional options that control the execution and processing of the activity
+   * @return a new {@link Task} that completes when the activity completes or fails
+   */
+  default Task<Void> callActivity(String name, Object input, TaskOptions options) {
+    return this.callActivity(name, input, options, Void.class);
+  }
 
   /**
    * Gets a value indicating whether the workflow is currently replaying a previous execution.

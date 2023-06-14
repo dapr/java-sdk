@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows;
 
+import com.microsoft.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowState;
 

@@ -11,20 +11,24 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.runtime;
+package io.dapr.examples.workflows;
 
-/**
- * Common interface for workflow implementations.
- */
-public abstract class Workflow {
-  public Workflow() {
+public class DemoActivityInput {
+
+  private String message;
+
+  public DemoActivityInput() {
   }
 
-  /**
-   * Executes the workflow logic.
-   *
-   * @param ctx provides access to methods for scheduling durable tasks and getting information about the current
-   *            workflow instance.
-   */
-  public abstract void run(WorkflowContext ctx);
+  public DemoActivityInput(String message) {
+    this.message = message;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
+  public void setMessage(String message) {
+    this.message = message;
+  }
 }

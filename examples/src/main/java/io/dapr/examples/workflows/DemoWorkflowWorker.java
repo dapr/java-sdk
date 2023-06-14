@@ -29,6 +29,7 @@ public class DemoWorkflowWorker {
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the runtime.
     WorkflowRuntime.getInstance().registerWorkflow(DemoWorkflow.class);
+    WorkflowRuntime.getInstance().registerActivity(DemoWorkflowActivity.class);
     System.out.println("Start workflow runtime");
     WorkflowRuntime.getInstance().startAndBlock();
     System.exit(0);

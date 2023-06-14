@@ -14,22 +14,32 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 
-import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import org.junit.Test;
-
-import java.lang.reflect.Constructor;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class WorkflowRuntimeTest {
-    public static class TestWorkflow extends Workflow {
-      @Override
-      public void run(WorkflowContext ctx) { }
+  public static class TestWorkflow extends Workflow {
+    @Override
+    public void run(WorkflowContext ctx) {
     }
+  }
+
+  public static class TestActivity extends WorkflowActivity {
+    @Override
+    public Object run(WorkflowActivityContext ctx) {
+      return null;
+    }
+  }
 
   @Test
   public void registerValidWorkflowClass() {
     assertDoesNotThrow(() -> WorkflowRuntime.getInstance().registerWorkflow(TestWorkflow.class));
+  }
+
+  @Test
+  public void registerValidActivityClass() {
+    assertDoesNotThrow(() -> WorkflowRuntime.getInstance().registerActivity(TestActivity.class));
   }
 
   @Test

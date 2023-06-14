@@ -30,7 +30,10 @@ import java.util.concurrent.TimeoutException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprWorkflowClientTest {
   private static Constructor<DaprWorkflowClient> constructor;
@@ -38,7 +41,7 @@ public class DaprWorkflowClientTest {
   private DurableTaskClient mockInnerClient;
   private ManagedChannel mockGrpcChannel;
 
-  public class TestWorkflow extends Workflow {
+  public static class TestWorkflow extends Workflow {
     @Override
     public void run(WorkflowContext ctx) {
     }
@@ -46,7 +49,7 @@ public class DaprWorkflowClientTest {
 
   @BeforeClass
   public static void beforeAll() {
-        constructor =
+    constructor =
         Constructor.class.cast(Arrays.stream(DaprWorkflowClient.class.getDeclaredConstructors())
             .filter(c -> c.getParameters().length == 2).map(c -> {
               c.setAccessible(true);

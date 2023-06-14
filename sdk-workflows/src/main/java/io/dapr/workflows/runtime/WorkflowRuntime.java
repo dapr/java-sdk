@@ -59,12 +59,24 @@ public class WorkflowRuntime implements AutoCloseable {
   /**
    * Registers a Workflow object.
    *
-   * @param <T> any Workflow type
+   * @param <T>   any Workflow type
    * @param clazz the class being registered
    */
   public <T extends Workflow> void registerWorkflow(Class<T> clazz) {
     this.builder = this.builder.addOrchestration(
         new OrchestratorWrapper<>(clazz)
+    );
+  }
+
+  /**
+   * Registers an Activity object.
+   *
+   * @param <T>   any Activity type
+   * @param clazz the class being registered
+   */
+  public <T extends WorkflowActivity> void registerActivity(Class<T> clazz) {
+    this.builder = this.builder.addActivity(
+        new ActivityWrapper<>(clazz)
     );
   }
 

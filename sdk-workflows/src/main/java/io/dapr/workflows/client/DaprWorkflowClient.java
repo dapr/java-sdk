@@ -96,7 +96,7 @@ public class DaprWorkflowClient implements AutoCloseable {
   /**
    * Schedules a new workflow using DurableTask client.
    *
-   * @param <T> any Workflow type
+   * @param <T>   any Workflow type
    * @param clazz Class extending Workflow to start an instance of.
    * @return the randomly-generated instance ID for new Workflow instance.
    */
@@ -107,7 +107,7 @@ public class DaprWorkflowClient implements AutoCloseable {
   /**
    * Schedules a new workflow using DurableTask client.
    *
-   * @param <T> any Workflow type
+   * @param <T>   any Workflow type
    * @param clazz Class extending Workflow to start an instance of.
    * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
    * @return the randomly-generated instance ID for new Workflow instance.
@@ -119,9 +119,9 @@ public class DaprWorkflowClient implements AutoCloseable {
   /**
    * Schedules a new workflow using DurableTask client.
    *
-   * @param <T> any Workflow type
-   * @param clazz Class extending Workflow to start an instance of.
-   * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
+   * @param <T>        any Workflow type
+   * @param clazz      Class extending Workflow to start an instance of.
+   * @param input      the input to pass to the scheduled orchestration instance. Must be serializable.
    * @param instanceId the unique ID of the orchestration instance to schedule
    * @return the <code>instanceId</code> parameter value.
    */
@@ -133,7 +133,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Terminates the workflow associated with the provided instance id.
    *
    * @param workflowInstanceId Workflow instance id to terminate.
-   * @param output the optional output to set for the terminated orchestration instance.
+   * @param output             the optional output to set for the terminated orchestration instance.
    */
   public void terminateWorkflow(String workflowInstanceId, @Nullable Object output) {
     this.innerClient.terminate(workflowInstanceId, output);
