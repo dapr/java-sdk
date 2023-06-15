@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskFailedException;
 import com.microsoft.durabletask.TaskOptions;
 import org.slf4j.Logger;
@@ -66,16 +67,72 @@ public interface WorkflowContext {
   void complete(Object output);
 
   /**
-   * Waits for an event to be raised with name and returns the event data.
+   * Waits for an event to be raised named {@code name} and returns a {@link Task} that completes when the event is
+   * received or is canceled when {@code timeout} expires.
    *
-   * @param eventName The name of the event to wait for. Event names are case-insensitive.
-   *                  External event names can be reused any number of times; they are not
-   *                  required to be unique.
-   * @param timeout   The amount of time to wait before cancelling the external event task.
-   * @return Asynchronous task to {@code await()}.
+   * <p>If the current orchestration is not yet waiting for an event named {@code name}, then the event will be saved in
+   * the orchestration instance state and dispatched immediately when this method is called. This event saving occurs
+   * even if the current orchestrator cancels the wait operation before the event is received.
+   *
+   * <p>Orchestrators can wait for the same event name multiple times, so waiting for multiple events with the same name
+   * is allowed. Each external event received by an orchestrator will complete just one task returned by this method.
+   *
+   * @param name     the case-insensitive name of the event to wait for
+   * @param timeout  the amount of time to wait before canceling the returned {@code Task}
+   * @param dataType the expected class type of the event data payload
+   * @param <V>      the expected type of the event data payload
+   * @return a new {@link Task} that completes when the external event is received or when {@code timeout} expires
+   * @throws TaskCanceledException if the specified {@code timeout} value expires before the event is received
    */
-  Task waitForExternalEvent(String eventName, Duration timeout);
+  <V> Task<V> waitForExternalEvent(String name, Duration timeout, Class<V> dataType) throws TaskCanceledException;
 
+  /**
+   * Waits for an event to be raised named {@code name} and returns a {@link Task} that completes when the event is
+   * received or is canceled when {@code timeout} expires.
+   *
+   * <p>See {@link #waitForExternalEvent(String, Duration, Class)} for a full description.
+   *
+   * @param name    the case-insensitive name of the event to wait for
+   * @param timeout the amount of time to wait before canceling the returned {@code Task}
+   * @return a new {@link Task} that completes when the external event is received or when {@code timeout} expires
+   * @throws TaskCanceledException if the specified {@code timeout} value expires before the event is received
+   */
+  default Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
+    return this.waitForExternalEvent(name, timeout, Void.class);
+  }
+
+  /**
+   * Waits for an event to be raised named {@code name} and returns a {@link Task} that completes when the event is
+   * received.
+   *
+   * <p>See {@link #waitForExternalEvent(String, Duration, Class)} for a full description.
+   *
+   * @param name the case-insensitive name of the event to wait for
+   * @return a new {@link Task} that completes when the external event is received
+   */
+  default Task<Void> waitForExternalEvent(String name) {
+    return this.waitForExternalEvent(name, Void.class);
+  }
+
+  /**
+   * Waits for an event to be raised named {@code name} and returns a {@link Task} that completes when the event is
+   * received.
+   *
+   * <p>See {@link #waitForExternalEvent(String, Duration, Class)} for a full description.
+   *
+   * @param name     the case-insensitive name of the event to wait for
+   * @param dataType the expected class type of the event data payload
+   * @param <V>      the expected type of the event data payload
+   * @return a new {@link Task} that completes when the external event is received
+   */
+  default <V> Task<V> waitForExternalEvent(String name, Class<V> dataType) {
+    try {
+      return this.waitForExternalEvent(name, null, dataType);
+    } catch (TaskCanceledException e) {
+      // This should never happen because of the max duration
+      throw new RuntimeException("An unexpected exception was throw while waiting for an external event.", e);
+    }
+  }
 
   /**
    * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}

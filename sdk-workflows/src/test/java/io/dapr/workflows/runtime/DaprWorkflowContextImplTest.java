@@ -60,7 +60,7 @@ public class DaprWorkflowContextImplTest {
     Duration expectedDuration = Duration.ofSeconds(1);
 
     context.waitForExternalEvent(expectedEvent, expectedDuration);
-    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
+    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration, Void.class);
   }
 
   @Test

@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.slf4j.Logger;
@@ -102,15 +103,17 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   /**
    * {@inheritDoc}
    */
-  public Task<Void> waitForExternalEvent(String eventName, Duration timeout) {
-    return this.innerContext.waitForExternalEvent(eventName, timeout);
+  @Override
+  public <V> Task<V> waitForExternalEvent(String name, Duration timeout, Class<V> dataType)
+      throws TaskCanceledException {
+    return this.innerContext.waitForExternalEvent(name, timeout, dataType);
   }
-  
+
   @Override
   public boolean getIsReplaying() {
     return this.innerContext.getIsReplaying();
   }
-  
+
   /**
    * {@inheritDoc}
    */
