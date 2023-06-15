@@ -123,8 +123,8 @@ public class DaprClientGrpcTest {
 
   @Test
   public void waitForSidecarOK() {
-    Mockito.doReturn(Mono.error(new RuntimeException())).when(channel).waitForChannelReady(10000);
-    assertThrows(RuntimeException.class, () -> client.waitForSidecar(10000).block());
+    Mockito.doReturn(Mono.empty()).when(channel).waitForChannelReady(10000);
+    client.waitForSidecar(10000).block();
   }
 
   @Test
