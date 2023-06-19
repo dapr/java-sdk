@@ -60,6 +60,19 @@ public class DemoWorkflowClient {
       client.raiseEvent(instanceId, "TestEvent", "TestEventPayload");
 
       System.out.println(separatorStr);
+      System.out.println("** Registering parallel Events to be captured by allOf(t1,t2,t3) **");
+      client.raiseEvent(instanceId, "event1", "TestEvent 1 Payload");
+      client.raiseEvent(instanceId, "event2", "TestEvent 2 Payload");
+      client.raiseEvent(instanceId, "event3", "TestEvent 3 Payload");
+      System.out.printf("Events raised for workflow with instanceId: %s\n", instanceId);
+
+      System.out.println(separatorStr);
+      System.out.println("** Registering Event to be captured by anyOf(t1,t2,t3) **");
+      client.raiseEvent(instanceId, "e2", "event 2 Payload");
+      System.out.printf("Event raised for workflow with instanceId: %s\n", instanceId);
+
+
+      System.out.println(separatorStr);
       System.out.println("**WaitForInstanceCompletion**");
       try {
         WorkflowState waitForInstanceCompletionResult =

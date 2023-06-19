@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
+import com.microsoft.durabletask.CompositeTaskFailedException;
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskFailedException;
@@ -21,6 +22,9 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Context object used by workflow implementations to perform actions such as scheduling activities,
@@ -234,4 +238,117 @@ public interface WorkflowContext {
    * @return {@code true} if the workflow is replaying, otherwise {@code false}
    */
   boolean getIsReplaying();
+
+  /**
+   * Returns a new {@code Task} that is completed when all the given {@code Task}s complete. If any of the given
+   * {@code Task}s complete with an exception, the returned {@code Task} will also complete with an
+   * {@link CompositeTaskFailedException} containing details of the first encountered failure.
+   * The value of the returned {@code Task} is an ordered list of the return values of the given tasks.
+   * If no tasks are provided, returns a {@code Task} completed with value
+   * {@code null}.
+   *
+   * <p>This method is useful for awaiting the completion of a set of independent tasks before continuing to the next
+   * step in the orchestration, as in the following example:
+   * <pre>{@code
+   * Task<String> t1 = ctx.callActivity("MyActivity", String.class);
+   * Task<String> t2 = ctx.callActivity("MyActivity", String.class);
+   * Task<String> t3 = ctx.callActivity("MyActivity", String.class);
+   *
+   * List<String> orderedResults = ctx.allOf(List.of(t1, t2, t3)).await();
+   * }</pre>
+   *
+   * <p>Exceptions in any of the given tasks results in an unchecked {@link CompositeTaskFailedException}.
+   * This exception can be inspected to obtain failure details of individual {@link Task}s.
+   * <pre>{@code
+   * try {
+   *     List<String> orderedResults = ctx.allOf(List.of(t1, t2, t3)).await();
+   * } catch (CompositeTaskFailedException e) {
+   *     List<Exception> exceptions = e.getExceptions()
+   * }
+   * }</pre>
+   *
+   * @param tasks the list of {@code Task} objects
+   * @param <V> the return type of the {@code Task} objects
+   * @return the values of the completed {@code Task} objects in the same order as the source list
+   * @throws CompositeTaskFailedException if the specified {@code timeout} value expires before the event is received
+   *
+   */
+  <V> Task<List<V>> allOf(List<Task<V>> tasks) throws CompositeTaskFailedException;
+
+  /**
+   * Returns a new {@code Task} that is completed when any of the tasks in {@code tasks} completes.
+   * See {@link #anyOf(Task[])} for more detailed information.
+   *
+   * @param tasks the list of {@code Task} objects
+   * @return a new {@code Task} that is completed when any of the given {@code Task}s complete
+   * @see #anyOf(Task[])
+   */
+  Task<Task<?>> anyOf(List<Task<?>> tasks);
+
+  /**
+   * Returns a new {@code Task} that is completed when any of the given {@code Task}s complete. The value of the
+   * new {@code Task} is a reference to the completed {@code Task} object. If no tasks are provided, returns a
+   * {@code Task} that never completes.
+   *
+   * <p>This method is useful for waiting on multiple concurrent tasks and performing a task-specific operation when the
+   * first task completes, as in the following example:
+   * <pre>{@code
+   * Task<Void> event1 = ctx.waitForExternalEvent("Event1");
+   * Task<Void> event2 = ctx.waitForExternalEvent("Event2");
+   * Task<Void> event3 = ctx.waitForExternalEvent("Event3");
+   *
+   * Task<?> winner = ctx.anyOf(event1, event2, event3).await();
+   * if (winner == event1) {
+   *     // ...
+   * } else if (winner == event2) {
+   *     // ...
+   * } else if (winner == event3) {
+   *     // ...
+   * }
+   * }</pre>
+   * The {@code anyOf} method can also be used for implementing long-running timeouts, as in the following example:
+   * <pre>{@code
+   * Task<Void> activityTask = ctx.callActivity("SlowActivity");
+   * Task<Void> timeoutTask = ctx.createTimer(Duration.ofMinutes(30));
+   *
+   * Task<?> winner = ctx.anyOf(activityTask, timeoutTask).await();
+   * if (winner == activityTask) {
+   *     // completion case
+   * } else {
+   *     // timeout case
+   * }
+   * }</pre>
+   *
+   * @param tasks the list of {@code Task} objects
+   * @return a new {@code Task} that is completed when any of the given {@code Task}s complete
+   */
+  default Task<Task<?>> anyOf(Task<?>... tasks) {
+    return this.anyOf(Arrays.asList(tasks));
+  }
+
+  /**
+   * Creates a durable timer that expires after the specified delay.
+   *
+   * <p>Specifying a long delay (for example, a delay of a few days or more) may result in the creation of multiple,
+   * internally-managed durable timers. The orchestration code doesn't need to be aware of this behavior. However,
+   * it may be visible in framework logs and the stored history state.
+   *
+   * @param duration the amount of time before the timer should expire
+   * @return a new {@code Task} that completes after the specified delay
+   */
+  Task<Void> createTimer(Duration duration);
+
+  /**
+   * Creates a durable timer that expires after the specified timestamp with specific zone.
+   *
+   * <p>Specifying a long delay (for example, a delay of a few days or more) may result in the creation of multiple,
+   * internally-managed timers. The workflow code doesn't need to be aware of this behavior. However,
+   * it may be visible in framework logs and the stored history state.
+   *
+   * @param zonedDateTime timestamp with specific zone when the timer should expire
+   * @return a new {@code Task} that completes after the specified delay
+   */
+  default Task<Void> createTimer(ZonedDateTime zonedDateTime) {
+    throw new UnsupportedOperationException("This method is not implemented.");
+  }
 }

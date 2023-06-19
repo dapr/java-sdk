@@ -13,12 +13,15 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
+import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -90,7 +93,7 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
-  public void getIsReplaying() {
+  public void getIsReplayingTest() {
     context.getIsReplaying();
     verify(mockInnerContext, times(1)).getIsReplaying();
   }
@@ -117,5 +120,34 @@ public class DaprWorkflowContextImplTest {
     testContext.getLogger().info(expectedArg);
 
     verify(mockLogger, times(1)).info(expectedArg);
+  }
+
+  @Test
+  public void allOfTest() {
+    Task<Void> t1 = mockInnerContext.callActivity("task1");
+    Task<Void> t2 = mockInnerContext.callActivity("task2");
+    List<Task<Void>> taskList = Arrays.asList(t1, t2);
+    context.allOf(taskList);
+    verify(mockInnerContext, times(1)).allOf(taskList);
+  }
+
+  @Test
+  public void anyOfTest() {
+    Task<Void> t1 = mockInnerContext.callActivity("task1");
+    Task<Void> t2 = mockInnerContext.callActivity("task2");
+    Task<Void> t3 = mockInnerContext.callActivity("task3");
+    List<Task<?>> taskList = Arrays.asList(t1, t2);
+
+    context.anyOf(taskList);
+    verify(mockInnerContext, times(1)).anyOf(taskList);
+
+    context.anyOf(t1, t2, t3);
+    verify(mockInnerContext, times(1)).anyOf(Arrays.asList(t1, t2, t3));
+  }
+
+  @Test
+  public void createTimerTest() {
+    context.createTimer(Duration.ofSeconds(10));
+    verify(mockInnerContext, times(1)).createTimer(Duration.ofSeconds(10));
   }
 }

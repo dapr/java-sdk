@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
+import com.microsoft.durabletask.CompositeTaskFailedException;
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
@@ -23,6 +24,7 @@ import org.slf4j.helpers.NOPLogger;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Dapr workflow context implementation.
@@ -119,5 +121,26 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    */
   public <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType) {
     return this.innerContext.callActivity(name, input, options, returnType);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public <V> Task<List<V>> allOf(List<Task<V>> tasks) throws CompositeTaskFailedException {
+    return this.innerContext.allOf(tasks);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Task<Task<?>> anyOf(List<Task<?>> tasks) {
+    return this.innerContext.anyOf(tasks);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Task<Void> createTimer(Duration duration) {
+    return this.innerContext.createTimer(duration);
   }
 }
