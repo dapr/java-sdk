@@ -85,6 +85,11 @@ public class DaprHttpBuilder {
       }
     }
 
+    String endpoint = Properties.HTTP_ENDPOINT.get();
+    if ((endpoint != null) && !endpoint.isEmpty()) {
+      return new DaprHttp(endpoint, OK_HTTP_CLIENT);
+    }
+
     return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), OK_HTTP_CLIENT);
   }
 }

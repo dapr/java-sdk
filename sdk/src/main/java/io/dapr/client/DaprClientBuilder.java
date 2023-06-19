@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.net.URI;
 
 /**
  * A builder for the DaprClient,
@@ -162,19 +163,28 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
    */
   private DaprClient buildDaprClientGrpc() {
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalArgumentException("Invalid port.");
-    }
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(
-        Properties.SIDECAR_IP.get(), port).usePlaintext().userAgent(Version.getSdkVersion()).build();
-    Closeable closeableChannel = () -> {
-      if (channel != null && !channel.isShutdown()) {
-        channel.shutdown();
-      }
-    };
+    final ManagedChannel channel = buildGrpcManagedChanel();
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    return new DaprClientGrpc(closeableChannel, asyncStub, this.objectSerializer, this.stateSerializer);
+    return new DaprClientGrpc(channelFacade, asyncStub, this.objectSerializer, this.stateSerializer);
+  }
+
+  private ManagedChannel buildGrpcManagedChanel() {
+    String host = Properties.SIDECAR_IP.get();
+    int port = Properties.GRPC_PORT.get();
+    boolean insecure = true;
+    String grpcEndpoint = Properties.GRPC_ENDPOINT.get();
+    if ((grpcEndpoint != null) && !grpcEndpoint.isEmpty()) {
+      URI uri = URI.create(grpcEndpoint);
+      insecure = uri.getScheme().equalsIgnoreCase("http");
+      port = uri.getPort() > 0 ? uri.getPort() : (insecure ? 80 : 443);
+    }
+    ManagedChannelBuilder builder = ManagedChannelBuilder.forAddress(host, port)
+        .userAgent(Version.getSdkVersion());
+    if (insecure) {
+      builder = builder.usePlaintext();
+    }
+    return builder.build();
   }
 
   /**
