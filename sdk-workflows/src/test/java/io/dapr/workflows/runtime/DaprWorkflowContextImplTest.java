@@ -23,7 +23,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -149,5 +149,14 @@ public class DaprWorkflowContextImplTest {
   public void createTimerTest() {
     context.createTimer(Duration.ofSeconds(10));
     verify(mockInnerContext, times(1)).createTimer(Duration.ofSeconds(10));
+  }
+
+  @Test
+  public void callSubWorkflow() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+
+    context.callSubWorkflow(expectedName, expectedInput, String.class);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
   }
 }

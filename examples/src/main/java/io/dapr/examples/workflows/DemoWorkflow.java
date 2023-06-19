@@ -91,6 +91,14 @@ public class DemoWorkflow extends Workflow {
     ctx.getLogger().info("Activity returned: " + output.getNewMessage());
     ctx.getLogger().info("Activity returned: " + output.getOriginalMessage());
 
+
+    ctx.getLogger().info("Child-Workflow> Calling ChildWorkflow...");
+    var childWorkflowInput = "Hello ChildWorkflow!";
+    var childWorkflowOutput = ctx.callSubWorkflow(DemoChildWorkflow.class.getName(), childWorkflowInput, 
+          String.class).await();
+
+    ctx.getLogger().info("Child-Workflow> returned: " + childWorkflowOutput);
+
     ctx.getLogger().info("Workflow finished");
     ctx.complete("finished");
   }

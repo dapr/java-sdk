@@ -20,6 +20,7 @@ import com.microsoft.durabletask.TaskFailedException;
 import com.microsoft.durabletask.TaskOptions;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -351,4 +352,131 @@ public interface WorkflowContext {
   default Task<Void> createTimer(ZonedDateTime zonedDateTime) {
     throw new UnsupportedOperationException("This method is not implemented.");
   }
+
+  /**
+   * Gets the deserialized input of the current task orchestration.
+   *
+   * @param targetType the {@link Class} object associated with {@code V}
+   * @param <V> the expected type of the workflow input
+   * @return the deserialized input as an object of type {@code V} or {@code null} if no input was provided.
+   */
+  <V> V getInput(Class<V> targetType);
+
+  /**
+   * Asynchronously invokes another workflow as a sub-workflow and returns a {@link Task} that completes
+   * when the sub-workflow completes.
+   * 
+   * <p>See {@link #callSubWorkflow(String, Object, String, TaskOptions, Class)} for a full description.
+   *
+   * @see #callSubWorkflow(String, Object, String, TaskOptions, Class)
+   * @param name the name of the workflow to invoke
+   * @return a new {@link Task} that completes when the sub-workflow completes or fails
+   */
+  default Task<Void> callSubWorkflow(String name) {
+    return this.callSubWorkflow(name, null);
+  }
+
+  /**
+   * Asynchronously invokes another workflow as a sub-workflow and returns a {@link Task} that completes
+   * when the sub-workflow completes.
+   * 
+   * <p>See {@link #callSubWorkflow(String, Object, String, TaskOptions, Class)} for a full description.
+   *
+   * @param name the name of the workflow to invoke
+   * @param input the serializable input to send to the sub-workflow
+   * @return a new {@link Task} that completes when the sub-workflow completes or fails
+   */
+  default Task<Void> callSubWorkflow(String name, Object input) {
+    return this.callSubWorkflow(name, input, null);
+  }
+
+  /**
+   * Asynchronously invokes another workflow as a sub-workflow and returns a {@link Task} that completes
+   * when the sub-workflow completes.
+   * 
+   * <p>See {@link #callSubWorkflow(String, Object, String, TaskOptions, Class)} for a full description.
+   *
+   * @param name the name of the workflow to invoke
+   * @param input the serializable input to send to the sub-workflow
+   * @param returnType the expected class type of the sub-workflow output
+   * @param <V> the expected type of the sub-workflow output
+   * @return a new {@link Task} that completes when the sub-workflow completes or fails
+   */
+  default <V> Task<V> callSubWorkflow(String name, Object input, Class<V> returnType) {
+    return this.callSubWorkflow(name, input, null, returnType);
+  }
+
+  /**
+   * Asynchronously invokes another workflow as a sub-workflow and returns a {@link Task} that completes
+   * when the sub-workflow completes.
+   * 
+   * <p>See {@link #callSubWorkflow(String, Object, String, TaskOptions, Class)} for a full description.
+   *
+   * @param name the name of the workflow to invoke
+   * @param input the serializable input to send to the sub-workflow
+   * @param instanceID the unique ID of the sub-workflow
+   * @param returnType the expected class type of the sub-workflow output
+   * @param <V> the expected type of the sub-workflow output
+   * @return a new {@link Task} that completes when the sub-workflow completes or fails
+   */
+  default <V> Task<V> callSubWorkflow(String name, Object input, String instanceID, Class<V> returnType) {
+    return this.callSubWorkflow(name, input, instanceID, null, returnType);
+  }
+
+  /**
+   * Asynchronously invokes another workflow as a sub-workflow and returns a {@link Task} that completes
+   * when the sub-workflow completes.
+   * 
+   * <p>See {@link #callSubWorkflow(String, Object, String, TaskOptions, Class)} for a full description.
+   *
+   * @param name the name of the workflow to invoke
+   * @param input the serializable input to send to the sub-workflow
+   * @param instanceID the unique ID of the sub-workflow
+   * @param options additional options that control the execution and processing of the activity
+   * @return a new {@link Task} that completes when the sub-workflow completes or fails
+   */
+  default Task<Void> callSubWorkflow(String name, Object input, String instanceID, TaskOptions options) {
+    return this.callSubWorkflow(name, input, instanceID, options, Void.class);
+  }
+
+  /**
+   * Asynchronously invokes another workflow as a sub-workflow and returns a {@link Task} that completes
+   * when the sub-workflow completes. If the sub-workflow completes successfully, the returned
+   * {@code Task}'s value will be the activity's output. If the sub-workflow fails, the returned {@code Task}
+   * will complete exceptionally with a {@link TaskFailedException}.
+   * 
+   * <p>A sub-workflow has its own instance ID, history, and status that is independent of the parent workflow
+   * that started it. There are many advantages to breaking down large orchestrations into sub-workflows:
+   * <ul>
+   *     <li>
+   *         Splitting large orchestrations into a series of smaller sub-workflows can make code more maintainable.
+   *     </li>
+   *     <li>
+   *         Distributing orchestration logic across multiple compute nodes concurrently is useful if
+   *         orchestration logic otherwise needs to coordinate a lot of tasks.
+   *     </li>
+   *     <li>
+   *         Memory usage and CPU overhead can be reduced by keeping the history of parent orchestrations smaller.
+   *     </li>
+   * </ul>
+   * The disadvantage is that there is overhead associated with starting a sub-workflow and processing its
+   * output. This is typically only an issue for very small orchestrations.
+   * 
+   * <p>Because sub-workflows are independent of their parents, terminating a parent orchestration does not affect
+   * any sub-workflows. sub-workflows must be terminated independently using their unique instance ID,
+   * which is specified using the {@code instanceID} parameter
+   *
+   * @param name the name of the workflow to invoke
+   * @param input the serializable input to send to the sub-workflow
+   * @param instanceID the unique ID of the sub-workflow
+   * @param options additional options that control the execution and processing of the activity
+   * @param returnType the expected class type of the sub-workflow output
+   * @param <V> the expected type of the sub-workflow output
+   * @return a new {@link Task} that completes when the sub-workflow completes or fails
+   */
+  <V> Task<V> callSubWorkflow(String name, 
+          @Nullable Object input,
+          @Nullable String instanceID,
+          @Nullable TaskOptions options,
+          Class<V> returnType);
 }
