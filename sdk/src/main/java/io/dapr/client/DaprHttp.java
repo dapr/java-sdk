@@ -32,6 +32,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,14 +142,9 @@ public class DaprHttp implements AutoCloseable {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
-   * Hostname used to communicate to Dapr's HTTP endpoint.
+   * Endpoint used to communicate to Dapr's HTTP endpoint.
    */
-  private final String hostname;
-
-  /**
-   * Port used to communicate to Dapr's HTTP endpoint.
-   */
-  private final int port;
+  private final URI uri;
 
   /**
    * Http client used for all API calls.
@@ -163,8 +159,18 @@ public class DaprHttp implements AutoCloseable {
    * @param httpClient RestClient used for all API calls in this new instance.
    */
   DaprHttp(String hostname, int port, OkHttpClient httpClient) {
-    this.hostname = hostname;
-    this.port = port;
+    this.uri = URI.create(DEFAULT_HTTP_SCHEME + "://" + hostname + ":" + port);
+    this.httpClient = httpClient;
+  }
+
+  /**
+   * Creates a new instance of {@link DaprHttp}.
+   *
+   * @param uri        Endpoint for calling Dapr. (e.g. "https://my-dapr-api.company.com")
+   * @param httpClient RestClient used for all API calls in this new instance.
+   */
+  DaprHttp(String uri, OkHttpClient httpClient) {
+    this.uri = URI.create(uri);
     this.httpClient = httpClient;
   }
 
@@ -273,9 +279,14 @@ public class DaprHttp implements AutoCloseable {
       body = RequestBody.Companion.create(content, mediaType);
     }
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-    urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
-        .host(this.hostname)
-        .port(this.port);
+    urlBuilder.scheme(uri.getScheme())
+        .host(uri.getHost());
+    if (uri.getPort() > 0) {
+      urlBuilder.port(uri.getPort());
+    }
+    if (uri.getPath() != null) {
+      urlBuilder.addPathSegments(uri.getPath());
+    }
     for (String pathSegment : pathSegments) {
       urlBuilder.addPathSegment(pathSegment);
     }

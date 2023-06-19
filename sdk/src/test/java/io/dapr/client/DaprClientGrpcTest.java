@@ -45,6 +45,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
@@ -91,52 +92,39 @@ public class DaprClientGrpcTest {
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
-  private Closeable closeable;
+  private GrpcChannelFacade channel;
   private DaprGrpc.DaprStub daprStub;
   private DaprClient client;
   private ObjectSerializer serializer;
 
   @Before
   public void setup() throws IOException {
-    closeable = mock(Closeable.class);
+    channel = mock(GrpcChannelFacade.class);
     daprStub = mock(DaprGrpc.DaprStub.class);
     when(daprStub.withInterceptors(any())).thenReturn(daprStub);
     DaprClient grpcClient = new DaprClientGrpc(
-        closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+        channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     client = new DaprClientProxy(grpcClient);
     serializer = new ObjectSerializer();
-    doNothing().when(closeable).close();
+    doNothing().when(channel).close();
   }
 
   @After
   public void tearDown() throws Exception {
     client.close();
-    verify(closeable).close();
-    verifyNoMoreInteractions(closeable);
+    verify(channel).close();
   }
 
   @Test
-  public void waitForSidecarTimeout() throws Exception {
-    int port = findFreePort();
-    System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
+  public void waitForSidecarTimeout() {
+    Mockito.doReturn(Mono.error(new RuntimeException())).when(channel).waitForChannelReady(1);
     assertThrows(RuntimeException.class, () -> client.waitForSidecar(1).block());
   }
 
   @Test
-  public void waitForSidecarTimeoutOK() throws Exception {
-    try (ServerSocket serverSocket = new ServerSocket(0)) {
-      final int port = serverSocket.getLocalPort();
-      System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
-      Thread t = new Thread(() -> {
-        try {
-          try (Socket socket = serverSocket.accept()) {
-          }
-        } catch (IOException e) {
-        }
-      });
-      t.start();
-      client.waitForSidecar(10000).block();
-    }
+  public void waitForSidecarOK() {
+    Mockito.doReturn(Mono.empty()).when(channel).waitForChannelReady(10000);
+    client.waitForSidecar(10000).block();
   }
 
   @Test
@@ -172,7 +160,7 @@ public class DaprClientGrpcTest {
   @Test
   public void publishEventSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -290,7 +278,7 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1451,7 +1439,7 @@ public class DaprClientGrpcTest {
   @Test
   public void executeTransactionSerializerExceptionTest() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, mockSerializer);
+    client = new DaprClientGrpc(channel, daprStub, mockSerializer, mockSerializer);
     String etag = "ETag1";
     String key = "key1";
     String data = "my data";
