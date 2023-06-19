@@ -20,7 +20,7 @@ import io.dapr.workflows.runtime.WorkflowContext;
 /**
  * Implementation of the DemoWorkflow for the server side.
  */
-public class DemoChildWorkflow extends Workflow {
+public class DemoSubWorkflow extends Workflow {
   @Override
   public void run(WorkflowContext ctx) {
 
