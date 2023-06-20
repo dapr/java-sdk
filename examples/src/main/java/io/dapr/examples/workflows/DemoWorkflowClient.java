@@ -104,6 +104,19 @@ public class DemoWorkflowClient {
       System.out.println("Terminate this workflow instance manually before the timeout is reached");
       client.terminateWorkflow(instanceToTerminateId, null);
       System.out.println(separatorStr);
+
+      String restartingInstanceId = "restarting";
+      client.scheduleNewWorkflow(DemoWorkflow.class, null, restartingInstanceId);
+      System.out.printf("Started new  workflow instance with ID: %s%n", restartingInstanceId);
+      System.out.println("Sleeping 30 seconds to restart the workflow");
+      TimeUnit.SECONDS.sleep(30);
+
+      System.out.println("**SendExternalMessage: RestartEvent**");
+      client.raiseEvent(restartingInstanceId, "RestartEvent", "RestartEventPayload");
+
+      System.out.println("Sleeping 30 seconds to terminate the eternal workflow");
+      TimeUnit.SECONDS.sleep(30);
+      client.terminateWorkflow(restartingInstanceId, null);
     }
 
     System.out.println("Exiting DemoWorkflowClient.");

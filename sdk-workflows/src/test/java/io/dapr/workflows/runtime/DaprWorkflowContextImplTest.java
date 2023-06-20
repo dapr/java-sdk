@@ -123,6 +123,13 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
+  public void continueAsNewTest() {
+    String expectedInput = "TestInput";
+    context.continueAsNew(expectedInput);
+    verify(mockInnerContext, times(1)).continueAsNew(expectedInput);
+  }
+
+  @Test
   public void allOfTest() {
     Task<Void> t1 = mockInnerContext.callActivity("task1");
     Task<Void> t2 = mockInnerContext.callActivity("task2");
