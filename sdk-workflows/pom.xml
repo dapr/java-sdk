@@ -19,6 +19,7 @@
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
     <grpc.version>1.42.1</grpc.version>
+    <jackson.version>2.12.3</jackson.version>
   </properties>
 
   <dependencies>
@@ -46,7 +47,32 @@
     <dependency>
       <groupId>com.microsoft</groupId>
       <artifactId>durabletask-client</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.1</version>
+    </dependency>
+    <!--
+    manually declare durabletask-client's jackson dependencies
+    which conflict with dapr-sdk's jackson dependencies
+    https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
+    -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
   </dependencies>
 
