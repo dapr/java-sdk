@@ -170,7 +170,7 @@ public class DaprClientBuilder {
   }
 
   private ManagedChannel buildGrpcManagedChanel() {
-    String host = Properties.SIDECAR_IP.get();
+    String address = Properties.SIDECAR_IP.get();
     int port = Properties.GRPC_PORT.get();
     boolean insecure = true;
     String grpcEndpoint = Properties.GRPC_ENDPOINT.get();
@@ -178,8 +178,12 @@ public class DaprClientBuilder {
       URI uri = URI.create(grpcEndpoint);
       insecure = uri.getScheme().equalsIgnoreCase("http");
       port = uri.getPort() > 0 ? uri.getPort() : (insecure ? 80 : 443);
+      address = uri.getHost();
+      if ((uri.getPath() != null) && !uri.getPath().isEmpty()) {
+        address += uri.getPath();
+      }
     }
-    ManagedChannelBuilder builder = ManagedChannelBuilder.forAddress(host, port)
+    ManagedChannelBuilder builder = ManagedChannelBuilder.forAddress(address, port)
         .userAgent(Version.getSdkVersion());
     if (insecure) {
       builder = builder.usePlaintext();
