@@ -7,13 +7,16 @@ option java_package = "io.dapr.examples";
 
 // User Code definitions
 service HelloWorld {
-  rpc Say (SayRequest) returns (SayResponse) {}
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
 }
 
-message SayRequest {
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
   string message = 1;
-}
-
-message SayResponse {
-  string timestamp = 1;
 }
