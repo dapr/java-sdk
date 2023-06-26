@@ -13,17 +13,12 @@ limitations under the License.
 
 package io.dapr.examples.invoke.grpc;
 
-import com.google.protobuf.Any;
-
 import io.dapr.examples.DaprExamplesProtos.HelloReply;
 import io.dapr.examples.DaprExamplesProtos.HelloRequest;
 import io.dapr.examples.HelloWorldGrpc;
-import io.dapr.v1.AppCallbackGrpc;
-import io.dapr.v1.CommonProtos;
 import io.grpc.Grpc;
 import io.grpc.InsecureServerCredentials;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -31,10 +26,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -51,8 +42,37 @@ import java.util.logging.Logger;
 public class HelloWorldService {
   private static final Logger logger = Logger.getLogger(HelloWorldService.class.getName());
 
+  /**
+   * Server mode: Grpc server.
+   */
   private Server server;
 
+  /**
+   * Server mode: class that encapsulates server-side handling logic for Grpc.
+   */
+  static class HelloWorldImpl extends HelloWorldGrpc.HelloWorldImplBase {
+
+    /**
+     * Handling of the 'sayHello' method.
+     *
+     * @param request Request to say something.
+     * @return Response with when it was said.
+     */
+    @Override
+    public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+      logger.info("greet to " + req.getName());
+      HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+    }
+  }
+  
+  /**
+   * Server mode: starts listening on given port.
+   *
+   * @param port Port to listen on.
+   * @throws IOException Errors while trying to start service.
+   */
   private void start(int port) throws IOException {
     server = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create())
         .addService(new HelloWorldImpl())
@@ -75,6 +95,11 @@ public class HelloWorldService {
     });
   }
 
+  /**
+   * Server mode: waits for shutdown trigger.
+   *
+   * @throws InterruptedException Propagated interrupted exception.
+   */
   private void stop() throws InterruptedException {
     if (server != null) {
       server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
@@ -110,16 +135,6 @@ public class HelloWorldService {
     final HelloWorldService service = new HelloWorldService();
     service.start(port);
     service.blockUntilShutdown();
-  }
-
-  static class HelloWorldImpl extends HelloWorldGrpc.HelloWorldImplBase {
-
-    @Override
-    public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
-      HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
-      responseObserver.onNext(reply);
-      responseObserver.onCompleted();
-    }
   }
 
 }

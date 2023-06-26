@@ -13,11 +13,6 @@ limitations under the License.
 
 package io.dapr.examples.invoke.grpc;
 
-import java.util.concurrent.TimeUnit;
-
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.HttpExtension;
 import io.dapr.examples.DaprExamplesProtos.HelloReply;
 import io.dapr.examples.DaprExamplesProtos.HelloRequest;
 import io.dapr.examples.HelloWorldGrpc;
@@ -27,6 +22,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.MetadataUtils;
+
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,23 +46,10 @@ public class HelloWorldClient {
    */
   public static void main(String[] args) throws Exception {
 
-    String user = "world";
+    String user = "World";
     // Access a service running on the local machine on port 50051
     String target = "localhost:50051";
-    // Allow passing in the user and target strings as command line arguments
-    if (args.length > 0) {
-      if ("--help".equals(args[0])) {
-        System.err.println("Usage: [name [target]]");
-        System.err.println("");
-        System.err.println("  name    The name you wish to be greeted by. Defaults to " + user);
-        System.err.println("  target  The server to connect to. Defaults to " + target);
-        System.exit(1);
-      }
-      user = args[0];
-    }
-    if (args.length > 1) {
-      target = args[1];
-    }
+
     ManagedChannel channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create())
         .build();
 
@@ -86,13 +70,9 @@ public class HelloWorldClient {
         logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
       }
     } finally {
-      // ManagedChannels use resources like threads and TCP connections. To prevent
-      // leaking these
-      // resources the channel should be shut down when it will no longer be used. If
-      // it may be used
-      // again leave it running.
+      // To prevent leaking resources like threads and TCP connections
+      // the channel should be shut down when it will no longer be used.
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
-
   }
 }
