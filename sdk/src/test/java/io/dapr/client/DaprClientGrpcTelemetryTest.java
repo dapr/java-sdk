@@ -163,14 +163,9 @@ public class DaprClientGrpcTelemetryTest {
 
     // Create a client channel and register for automatic graceful shutdown.
     ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
-    Closeable closeableChannel = () -> {
-      if (channel != null && !channel.isShutdown()) {
-        channel.shutdown();
-      }
-    };
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
     client = new DaprClientGrpc(
-        closeableChannel, asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+        new GrpcChannelFacade(channel), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
   }
 
   @Test
