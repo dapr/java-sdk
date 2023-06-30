@@ -140,6 +140,10 @@ public class DaprRun implements Stoppable {
     System.getProperties().setProperty(
         Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
         DaprApiProtocol.GRPC.name());
+    System.getProperties().setProperty(
+            Properties.GRPC_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getGrpcPort());
+    System.getProperties().setProperty(
+            Properties.HTTP_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getHttpPort());
   }
 
   public void switchToGRPC() {

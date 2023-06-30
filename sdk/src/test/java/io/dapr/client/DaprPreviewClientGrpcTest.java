@@ -69,25 +69,25 @@ public class DaprPreviewClientGrpcTest {
 
 	private static final String TOPIC_NAME = "testTopic";
 
-	private Closeable closeable;
+	private GrpcChannelFacade channel;
 	private DaprGrpc.DaprStub daprStub;
 	private DaprPreviewClient previewClient;
 
 	@Before
 	public void setup() throws IOException {
-		closeable = mock(Closeable.class);
+		channel = mock(GrpcChannelFacade.class);
 		daprStub = mock(DaprGrpc.DaprStub.class);
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
 		previewClient = new DaprClientGrpc(
-				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
-		doNothing().when(closeable).close();
+				channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+		doNothing().when(channel).close();
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		previewClient.close();
-		verify(closeable).close();
-		verifyNoMoreInteractions(closeable);
+		verify(channel).close();
+		verifyNoMoreInteractions(channel);
 	}
 
 	@Test
@@ -143,7 +143,7 @@ public class DaprPreviewClientGrpcTest {
 	@Test
 	public void publishEventsSerializeException() throws IOException {
 		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-		previewClient = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+		previewClient = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
 		doAnswer((Answer<Void>) invocation -> {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
