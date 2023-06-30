@@ -13,15 +13,10 @@ limitations under the License.
 
 package io.dapr.client;
 
-import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
-import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.UnsubscribeConfigurationRequest;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.config.Properties;
-import io.dapr.exceptions.DaprException;
 import io.dapr.utils.TypeRef;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
@@ -29,16 +24,12 @@ import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprPreviewClientHttpTest {
-  private static final String CONFIG_STORE_NAME = "MyConfigStore";
 
   private DaprPreviewClient daprPreviewClientHttp;
 
@@ -106,119 +97,5 @@ public class DaprPreviewClientHttpTest {
     assertEquals("result must be same", "1", response.getResults().get(0).getKey());
     assertEquals("result must be same", "testData", response.getResults().get(0).getValue());
     assertEquals("result must be same", "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag());
-  }
-
-  @Test
-  public void getConfigurationTestErrorScenario() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.getConfiguration("", "key").block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.getConfiguration("  ", "key").block();
-    });
-  }
-
-  @Test
-  public void getConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0-alpha1/configuration/MyConfigStore")
-        .param("key","configkey1")
-        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
-
-    ConfigurationItem ci = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-    assertNotNull(ci);
-    assertEquals("configkey1", ci.getKey());
-    assertEquals("configvalue1", ci.getValue());
-    assertEquals("1", ci.getVersion());
-  }
-
-  @Test
-  public void getAllConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0-alpha1/configuration/MyConfigStore")
-        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
-
-    ConfigurationItem ci = daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-    assertNotNull(ci);
-    assertEquals("configkey1", ci.getKey());
-    assertEquals("configvalue1", ci.getValue());
-    assertEquals("1", ci.getVersion());
-  }
-
-  @Test
-  public void subscribeConfigurationTest() {
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0-alpha1/configuration/MyConfigStore/subscribe")
-            .param("key", "configkey1")
-            .respond("{\"id\":\"1234\"}");
-
-    Iterator<SubscribeConfigurationResponse> itr = daprPreviewClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
-    assertTrue(itr.hasNext());
-    SubscribeConfigurationResponse res = itr.next();
-    assertEquals("1234", res.getSubscriptionId());
-    assertFalse(itr.hasNext());
-  }
-
-  @Test
-  public void subscribeAllConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0-alpha1/configuration/MyConfigStore/subscribe")
-        .respond("{\"id\":\"1234\"}");
-
-    Iterator<SubscribeConfigurationResponse> itr = daprPreviewClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
-    assertTrue(itr.hasNext());
-    SubscribeConfigurationResponse res = itr.next();
-    assertEquals("1234", res.getSubscriptionId());
-    assertFalse(itr.hasNext());
-  }
-
-  @Test
-  public void unsubscribeConfigurationTest() {
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0-alpha1/configuration/MyConfigStore/1234/unsubscribe")
-            .respond("{\"ok\": true}");
-
-    UnsubscribeConfigurationResponse res = daprPreviewClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
-    assertTrue(res.getIsUnsubscribed());
-  }
-
-  @Test
-  public void unsubscribeConfigurationTestWithError() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.unsubscribeConfiguration("", CONFIG_STORE_NAME).block();
-    });
-
-    UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.unsubscribeConfiguration(req).block();
-    });
-
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0-alpha1/configuration/MyConfigStore/1234/unsubscribe")
-            .respond("{\"ok\": false, \"message\": \"some error while unsubscribing\"}");
-    UnsubscribeConfigurationResponse res = daprPreviewClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
-    assertFalse(res.getIsUnsubscribed());
-  }
-
-  @Test
-  public void subscribeConfigurationTestWithError() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprPreviewClientHttp.subscribeConfiguration("", "key1").blockFirst();
-    });
-
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0-alpha1/configuration/MyConfigStore/subscribe")
-            .param("key", "configkey1")
-            .respond(500);
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").blockFirst();
-    });
   }
 }

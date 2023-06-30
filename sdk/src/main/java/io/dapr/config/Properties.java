@@ -100,6 +100,22 @@ public class Properties {
       DEFAULT_GRPC_PORT);
 
   /**
+   * GRPC endpoint for remote sidecar connectivity.
+   */
+  public static final Property<String> GRPC_ENDPOINT = new StringProperty(
+      "dapr.grpc.endpoint",
+      "DAPR_GRPC_ENDPOINT",
+      null);
+
+  /**
+   * GRPC endpoint for remote sidecar connectivity.
+   */
+  public static final Property<String> HTTP_ENDPOINT = new StringProperty(
+      "dapr.http.endpoint",
+      "DAPR_HTTP_ENDPOINT",
+      null);
+
+  /**
    * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.
    * @deprecated This attribute will be deleted at SDK version 1.10.
    */
