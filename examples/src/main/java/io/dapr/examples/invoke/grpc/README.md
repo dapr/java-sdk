@@ -166,4 +166,3 @@ dapr stop --app-id invokegrpc
 <!-- END_STEP -->
 
 Thanks for playing.
-
