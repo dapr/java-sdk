@@ -145,7 +145,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --app-id invokegrpc --app-protocol grpc --dapr-grpc-port 50051 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
+dapr run --app-id invokegrpc --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
 ```
 
 <!-- END_STEP -->

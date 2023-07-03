@@ -47,8 +47,7 @@ public class HelloWorldClient {
   public static void main(String[] args) throws Exception {
 
     String user = "World";
-    // Access a service running on the local machine on port 50051
-    String target = "localhost:50051";
+    String target = "localhost:" + System.getenv("DAPR_GRPC_PORT");
 
     ManagedChannel channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create())
         .build();
