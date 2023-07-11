@@ -15,12 +15,20 @@ package io.dapr.client.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -40,8 +48,7 @@ public class CloudEvent<T> {
    */
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-      .setSerializationInclusion(JsonInclude.Include.NON_NULL).findAndRegisterModules();
+      .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   /**
    * Identifier of the message being processed.
@@ -93,6 +100,8 @@ public class CloudEvent<T> {
   /**
    * The time this CloudEvent was created.
    */
+  @JsonSerialize(using = OffsetDateTimeSerializer.class)
+  @JsonDeserialize(using = OffsetDateTimeDeserializer.class)
   private OffsetDateTime time;
 
   /**
@@ -425,5 +434,19 @@ public class CloudEvent<T> {
   public int hashCode() {
     return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData, pubsubName, topic, time,
             traceId, traceParent, traceState);
+  }
+
+  private static class OffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
+    @Override
+    public void serialize(OffsetDateTime offsetDateTime, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+      jsonGenerator.writeString(offsetDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+    }
+  }
+
+  private static class OffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
+    @Override
+    public OffsetDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+      return OffsetDateTime.parse(jsonParser.getText());
+    }
   }
 }

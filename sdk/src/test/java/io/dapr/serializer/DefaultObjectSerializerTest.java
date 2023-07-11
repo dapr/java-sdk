@@ -13,8 +13,16 @@ limitations under the License.
 
 package io.dapr.serializer;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.MessageLite;
@@ -29,6 +37,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -58,6 +67,8 @@ public class DefaultObjectSerializerTest {
     private float floatValue;
     private double doubleValue;
 
+    @JsonSerialize(using = OffsetDateTimeSerializer.class)
+    @JsonDeserialize(using = OffsetDateTimeDeserializer.class)
     private OffsetDateTime timeValue;
 
     public String getStringValue() {
@@ -217,6 +228,20 @@ public class DefaultObjectSerializerTest {
           ", doubleValue=" + doubleValue +
           ", timeValue=" + timeValue +
           '}';
+    }
+
+    private static class OffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
+      @Override
+      public void serialize(OffsetDateTime offsetDateTime, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+        jsonGenerator.writeString(offsetDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+      }
+    }
+
+    private static class OffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
+      @Override
+      public OffsetDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+        return OffsetDateTime.parse(jsonParser.getText());
+      }
     }
   }
 
