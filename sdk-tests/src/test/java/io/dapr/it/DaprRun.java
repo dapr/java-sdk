@@ -130,20 +130,11 @@ public class DaprRun implements Stoppable {
   }
 
   public void use() {
-    if (this.ports.getHttpPort() != null) {
-      System.getProperties().setProperty(Properties.HTTP_PORT.getName(), String.valueOf(this.ports.getHttpPort()));
-    }
-    if (this.ports.getGrpcPort() != null) {
-      System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.ports.getGrpcPort()));
-    }
+    this.ports.use();
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
     System.getProperties().setProperty(
         Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
         DaprApiProtocol.GRPC.name());
-    System.getProperties().setProperty(
-            Properties.GRPC_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getGrpcPort());
-    System.getProperties().setProperty(
-            Properties.HTTP_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getHttpPort());
   }
 
   public void switchToGRPC() {
@@ -165,15 +156,15 @@ public class DaprRun implements Stoppable {
     System.getProperties().setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol.name());
   }
 
-  public int getGrpcPort() {
+  public Integer getGrpcPort() {
     return ports.getGrpcPort();
   }
 
-  public int getHttpPort() {
+  public Integer getHttpPort() {
     return ports.getHttpPort();
   }
 
-  public int getAppPort() {
+  public Integer getAppPort() {
     return ports.getAppPort();
   }
 

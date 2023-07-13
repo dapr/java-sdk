@@ -14,9 +14,12 @@ limitations under the License.
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
+import io.dapr.internal.resiliency.RetryPolicy;
+import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.CallOptions;
@@ -31,6 +34,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.ContextView;
 
+import java.sql.Time;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
@@ -40,17 +44,32 @@ import java.util.function.Consumer;
 class DaprGrpcClient implements DaprClient {
 
   /**
+   * Timeout policy for SDK calls to Dapr API.
+   */
+  private final TimeoutPolicy timeoutPolicy;
+
+  /**
+   * Retry policy for SDK calls to Dapr API.
+   */
+  private final RetryPolicy retryPolicy;
+
+  /**
    * The async gRPC stub.
    */
-  private DaprGrpc.DaprStub client;
+  private final DaprGrpc.DaprStub client;
 
   /**
    * Internal constructor.
    *
    * @param grpcClient Dapr's GRPC client.
+   * @param resiliencyOptions Client resiliency options (optional)
    */
-  DaprGrpcClient(DaprGrpc.DaprStub grpcClient) {
+  DaprGrpcClient(DaprGrpc.DaprStub grpcClient, ResiliencyOptions resiliencyOptions) {
     this.client = intercept(grpcClient);
+    this.timeoutPolicy = new TimeoutPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
+    this.retryPolicy = new RetryPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
   }
 
   /**
@@ -78,14 +97,14 @@ class DaprGrpcClient implements DaprClient {
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
+  private DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
     ClientInterceptor interceptor = new ClientInterceptor() {
       @Override
       public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
           MethodDescriptor<ReqT, RespT> methodDescriptor,
-          CallOptions callOptions,
+          CallOptions options,
           Channel channel) {
-        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
+        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, timeoutPolicy.apply(options));
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
           @Override
           public void start(final Listener<RespT> responseListener, final Metadata metadata) {
@@ -114,7 +133,8 @@ class DaprGrpcClient implements DaprClient {
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
-    return Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+    return retryPolicy.apply(
+        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
