@@ -4,6 +4,11 @@ title: "Dapr Java SDK"
 linkTitle: "Java"
 weight: 1000
 description: Java SDK packages for developing Dapr applications
+cascade:
+  github_repo: https://github.com/dapr/java-sdk
+  github_subdir: daprdocs/content/en/java-sdk-docs
+  path_base_for_github_subdir: content/en/developing-applications/sdks/java/
+  github_branch: master
 ---
 
 ## Pre-requisites
