@@ -14,10 +14,6 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Represents the configuration for the Actor Type.
@@ -43,12 +39,12 @@ public class ActorTypeConfig {
   }
 
   /**
-   * Adds a registered actor to the list of registered actors.
+   * Sets registered actors name.
    * 
    * @param actorTypeName Actor type that was registered.
    * @return This instance.
    */
-  ActorTypeConfig addRegisteredActorType(String actorTypeName) {
+  ActorTypeConfig setActorTypeName(String actorTypeName) {
     if (actorTypeName == null) {
       throw new IllegalArgumentException("Registered actor must have a type name.");
     }
@@ -58,12 +54,12 @@ public class ActorTypeConfig {
   }
 
   /**
-   * Gets the list of registered actor types.
+   * Gets registered actor types name.
    *
-   * @return List of registered actor types.
+   * @return Registered actor types name.
    */
-  Collection<String> getRegisteredActorTypes() {
-    return Collections.unmodifiableCollection(registeredActorTypes);
+  String getActorTypeName() {
+    return this.actorTypeName;
   }
 
   /**
