@@ -32,6 +32,8 @@ public class ActorTypeConfig {
 
   private volatile Integer remindersStoragePartitions;
 
+  private volatile ActorReentrancyConfig actorReentrancyConfig;
+
   /**
    * Instantiates a new config for the Actor Runtime.
    */
@@ -160,6 +162,26 @@ public class ActorTypeConfig {
   public ActorTypeConfig setRemindersStoragePartitions(Integer remindersStoragePartitions) {
     this.remindersStoragePartitions = remindersStoragePartitions;
     return this;
+  }
+
+  /**
+   * Sets actors reentrancy config.
+   * 
+   * @param actorReentrancyConfig Actor reentrancy type .
+   * @return This instance.
+   */
+  ActorTypeConfig setActorReentrancyConfig(ActorReentrancyConfig actorReentrancyConfig) {
+    this.actorReentrancyConfig = actorReentrancyConfig;
+    return this;
+  }
+
+  /**
+   * Gets actors reentrancy config.
+   *
+   * @return Actors reentrancy config.
+   */
+  ActorReentrancyConfig getActorReentrancyConfig() {
+    return actorReentrancyConfig;
   }
 
 }
