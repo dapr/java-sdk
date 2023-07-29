@@ -161,6 +161,22 @@ public class ActorRuntimeTest {
   }
 
   @Test
+  public void setActorReentrancyConfig() throws Exception {
+    ActorReentrancyConfig actorReentrancyConfig = new ActorReentrancyConfig(); 
+    actorReentrancyConfig.setEnabled(true);
+    actorReentrancyConfig.setMaxStackDepth(10);
+    this.runtime.getConfig().setActorReentrancyConfig(actorReentrancyConfig);
+    
+    Assert.assertEquals("{\"entities\":[],\"actorReentrancyConfig\":{\"enabled\":\"true\",\"maxStackDepth\":\"10\"}}",
+        new String(this.runtime.serializeConfig()));
+  }
+
+  @Test
+  public void addActorTypeConfig() throws Exception {
+  }
+
+
+  @Test
   public void setDrainOngoingCallTimeout() throws Exception {
     this.runtime.getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(123));
     Assert.assertEquals("{\"entities\":[],\"drainOngoingCallTimeout\":\"0h2m3s0ms\"}",

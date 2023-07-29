@@ -196,7 +196,7 @@ public class ActorObjectSerializer extends ObjectSerializer {
       JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
       generator.writeStartObject();
       if (config.getActorTypeName() != null) {
-        generator.writeStringField("actorTypeName", config.getActorTypeName());
+        generator.writeStringField("entitiesConfig", config.getActorTypeName());
       }
       if (config.getActorIdleTimeout() != null) {
         generator.writeStringField("actorIdleTimeout",
