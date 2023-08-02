@@ -13,12 +13,12 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
+import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
-import org.junit.Test;
 import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 
-import java.io.PrintStream;
 import java.time.Duration;
 
 import static org.mockito.Mockito.*;
@@ -35,22 +35,25 @@ public class DaprWorkflowContextImplTest {
 
   @Test
   public void getNameTest() {
-    context.getName();
+    context.getName().block();
     verify(mockInnerContext, times(1)).getName();
   }
 
   @Test
   public void getInstanceIdTest() {
-    context.getInstanceId();
+    context.getInstanceId().block();
     verify(mockInnerContext, times(1)).getInstanceId();
   }
 
   @Test
   public void waitForExternalEventTest() {
+    doReturn(mock(Task.class))
+        .when(mockInnerContext).waitForExternalEvent(any(String.class), any(Duration.class));
+    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
     String expectedEvent = "TestEvent";
     Duration expectedDuration = Duration.ofSeconds(1);
 
-    context.waitForExternalEvent(expectedEvent, expectedDuration);
+    testContext.waitForExternalEvent(expectedEvent, expectedDuration).block();
     verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
   }
 
@@ -61,7 +64,7 @@ public class DaprWorkflowContextImplTest {
 
   @Test
   public void completeTest() {
-    context.complete(null);
+    context.complete(null).block();
     verify(mockInnerContext, times(1)).complete(null);
   }
 

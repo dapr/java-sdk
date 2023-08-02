@@ -13,7 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.workflows.runtime.WorkflowContext;
+import com.google.protobuf.Empty;
+import reactor.core.publisher.Mono;
 
 /**
  * Common interface for workflow implementations.
@@ -25,8 +26,21 @@ public abstract class Workflow {
   /**
    * Executes the workflow logic.
    *
+   * @return A WorkflowStub.
+   */
+  public abstract WorkflowStub create();
+
+  /**
+   * Executes the workflow logic.
+   *
    * @param ctx provides access to methods for scheduling durable tasks and getting information about the current
    *            workflow instance.
+   * @return A Mono Plan of type Void.
    */
-  public abstract void run(WorkflowContext ctx);
+  public Mono<Void> runAsync(WorkflowContext ctx) {
+    return Mono.<Empty>create(it -> {
+      this.create().run(ctx);
+      it.success();
+    }).then();
+  }
 }

@@ -14,22 +14,19 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 
-import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import com.microsoft.durabletask.TaskOrchestrationContext;
-import com.microsoft.durabletask.TaskOrchestrationFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.lang.reflect.Constructor;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
 public class OrchestratorWrapperTest {
     public static class TestWorkflow extends Workflow{
       @Override
-      public void run(WorkflowContext ctx) {
-        ctx.getInstanceId();
+      public WorkflowStub create() {
+        return ctx -> {
+          ctx.getInstanceId().block();
+        };
       }
     }
 

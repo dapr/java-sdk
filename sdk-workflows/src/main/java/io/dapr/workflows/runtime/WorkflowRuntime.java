@@ -13,9 +13,11 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
+import com.google.protobuf.Empty;
 import com.microsoft.durabletask.DurableTaskGrpcWorker;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
-import io.dapr.config.Properties;
+import io.dapr.utils.NetworkUtils;
+import reactor.core.publisher.Mono;
 
 /**
  * Contains methods to register workflows and activities.
@@ -27,17 +29,11 @@ public class WorkflowRuntime implements AutoCloseable {
   private DurableTaskGrpcWorker worker;
 
   private WorkflowRuntime() throws IllegalStateException {
-
     if (instance != null) {
       throw new IllegalStateException("WorkflowRuntime should only be constructed once");
     }
 
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException(String.format("Invalid port, %s. Must greater than 0", port));
-    }
-
-    this.builder = new DurableTaskGrpcWorkerBuilder().port(port);
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(NetworkUtils.buildGrpcManagedChannel());
   }
 
   /**
@@ -69,25 +65,17 @@ public class WorkflowRuntime implements AutoCloseable {
   }
 
   /**
-   * Start the Workflow runtime processing items on a non-blocking
-   * background thread indefinitely or until that thread is interrupted.
+   * Start the Workflow runtime processing items.
+   *
+   * @return A Mono Plan of type Void.
    */
-  public void start() {
+  public Mono<Void> start() {
     if (this.worker == null) {
       this.worker = this.builder.build();
+    }
+    return Mono.<Empty>create(it -> {
       this.worker.start();
-    }
-  }
-
-  /**
-   * Start the Workflow runtime processing items on the current thread
-   * and block indefinitely or until that thread is interrupted.
-   */
-  public void startAndBlock() {
-    if (this.worker == null) {
-      this.worker = this.builder.build();
-      this.worker.startAndBlock();
-    }
+    }).then();
   }
 
   /**

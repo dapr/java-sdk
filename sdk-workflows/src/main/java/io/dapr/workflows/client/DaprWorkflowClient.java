@@ -15,11 +15,10 @@ package io.dapr.workflows.client;
 
 import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
-import io.dapr.config.Properties;
-import io.dapr.utils.Version;
+import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.runtime.Workflow;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +32,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
    */
   public DaprWorkflowClient() {
-    this(createGrpcChannel());
+    this(NetworkUtils.buildGrpcManagedChannel());
   }
 
   /**
@@ -70,32 +69,17 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Static method to create the GRPC Channel for the DurableTaskClient.
-   *
-   * @return a Managed GRPC channel.
-   * @throws IllegalStateException if the GRPC port is invalid.
-   */
-  private static ManagedChannel createGrpcChannel() throws IllegalStateException {
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException(String.format("Invalid port, %s. Must greater than 0", port));
-    }
-
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
-        .usePlaintext()
-        .userAgent(Version.getSdkVersion())
-        .build();
-  }
-
-  /**
    * Schedules a new workflow using DurableTask client.
    *
    * @param <T> any Workflow type
    * @param clazz Class extending Workflow to start an instance of.
-   * @return the randomly-generated instance ID for new Workflow instance.
+   * @return A Mono Plan of type String with the randomly-generated instance ID for new Workflow instance.
    */
-  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName());
+  public <T extends Workflow> Mono<String> scheduleNewWorkflow(Class<T> clazz) {
+    return Mono.create(it -> {
+      String response = this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName());
+      it.success(response);
+    });
   }
 
   /**
@@ -104,10 +88,13 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param <T> any Workflow type
    * @param clazz Class extending Workflow to start an instance of.
    * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
-   * @return the randomly-generated instance ID for new Workflow instance.
+   * @return A Mono Plan of type String with the randomly-generated instance ID for new Workflow instance.
    */
-  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input);
+  public <T extends Workflow> Mono<String> scheduleNewWorkflow(Class<T> clazz, Object input) {
+    return Mono.create(it -> {
+      String response = this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input);
+      it.success(response);
+    });
   }
 
   /**
@@ -117,10 +104,13 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param clazz Class extending Workflow to start an instance of.
    * @param input the input to pass to the scheduled orchestration instance. Must be serializable.
    * @param instanceId the unique ID of the orchestration instance to schedule
-   * @return the <code>instanceId</code> parameter value.
+   * @return A Mono Plan of type String with the <code>instanceId</code> parameter value.
    */
-  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
-    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+  public <T extends Workflow> Mono<String> scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
+    return Mono.create(it -> {
+      String response = this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+      it.success(response);
+    });
   }
 
   /**
@@ -128,9 +118,13 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    * @param workflowInstanceId Workflow instance id to terminate.
    * @param output the optional output to set for the terminated orchestration instance.
+   * @return A Mono Plan of type Void.
    */
-  public void terminateWorkflow(String workflowInstanceId, @Nullable Object output) {
-    this.innerClient.terminate(workflowInstanceId, output);
+  public Mono<Void> terminateWorkflow(String workflowInstanceId, @Nullable Object output) {
+    return Mono.create(it -> {
+      this.innerClient.terminate(workflowInstanceId, output);
+      it.success();
+    }).then();
   }
 
   /**

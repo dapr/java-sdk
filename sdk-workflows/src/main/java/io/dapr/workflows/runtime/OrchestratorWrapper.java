@@ -45,7 +45,7 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
     return ctx -> {
       try {
         T workflow = this.workflowConstructor.newInstance();
-        workflow.run(new DaprWorkflowContextImpl(ctx));
+        workflow.runAsync(new DaprWorkflowContextImpl(ctx)).block();
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(e);
       }

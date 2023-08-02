@@ -15,7 +15,7 @@ package io.dapr.examples.workflows;
 
 import com.microsoft.durabletask.TaskCanceledException;
 import io.dapr.workflows.runtime.Workflow;
-import io.dapr.workflows.runtime.WorkflowContext;
+import io.dapr.workflows.runtime.WorkflowStub;
 
 import java.time.Duration;
 
@@ -25,17 +25,19 @@ import java.time.Duration;
 public class DemoWorkflow extends Workflow {
 
   @Override
-  public void run(WorkflowContext ctx) {
-    ctx.getLogger().info("Starting Workflow: " + ctx.getName());
-    ctx.getLogger().info("Instance ID: " + ctx.getInstanceId());
-    ctx.getLogger().info("Waiting for event: 'myEvent'...");
-    try {
-      ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).await();
-      ctx.getLogger().info("Received!");
-    } catch (TaskCanceledException e) {
-      ctx.getLogger().warn("Timed out");
-      ctx.getLogger().warn(e.getMessage());
-    }
-    ctx.complete("finished");
+  public WorkflowStub create() {
+    return ctx -> {
+      ctx.getLogger().info("Starting Workflow: " + ctx.getName().block());
+      ctx.getLogger().info("Instance ID: " + ctx.getInstanceId().block());
+      ctx.getLogger().info("Waiting for event: 'myEvent'...");
+      try {
+        ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).block();
+        ctx.getLogger().info("Received!");
+      } catch (TaskCanceledException e) {
+        ctx.getLogger().warn("Timed out");
+        ctx.getLogger().warn(e.getMessage());
+      }
+      ctx.complete("finished").block();
+    };
   }
 }

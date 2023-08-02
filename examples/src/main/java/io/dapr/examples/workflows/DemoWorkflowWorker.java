@@ -30,7 +30,7 @@ public class DemoWorkflowWorker {
     // Register the Workflow with the runtime.
     WorkflowRuntime.getInstance().registerWorkflow(DemoWorkflow.class);
     System.out.println("Start workflow runtime");
-    WorkflowRuntime.getInstance().startAndBlock();
+    WorkflowRuntime.getInstance().start().block();
     System.exit(0);
   }
 }

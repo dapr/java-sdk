@@ -13,10 +13,9 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.Task;
 import org.slf4j.Logger;
+import reactor.core.publisher.Mono;
 
-import java.io.PrintStream;
 import java.time.Duration;
 
 /**
@@ -38,23 +37,24 @@ public interface WorkflowContext {
   /**
    * Gets the name of the current workflow.
    *
-   * @return the name of the current workflow
+   * @return Asynchronous result with the name of the current workflow
    */
-  String getName();
+  Mono<String> getName();
 
   /**
    * Gets the instance ID of the current workflow.
    *
-   * @return the instance ID of the current workflow
+   * @return Asynchronous result with the instance ID of the current workflow
    */
-  String getInstanceId();
+  Mono<String> getInstanceId();
 
   /**
    * Completes the current workflow.
    *
    * @param output the serializable output of the completed Workflow.
+   * @return A Mono Plan of type Void.
    */
-  void complete(Object output);
+  Mono<Void> complete(Object output);
 
   /**
    * Waits for an event to be raised with name and returns the event data.
@@ -63,7 +63,7 @@ public interface WorkflowContext {
    *                  External event names can be reused any number of times; they are not
    *                  required to be unique.
    * @param timeout   The amount of time to wait before cancelling the external event task.
-   * @return Asynchronous task to {@code await()}.
+   * @return A Mono Plan of type Void.
    */
-  Task waitForExternalEvent(String eventName, Duration timeout);
+  Mono<Void> waitForExternalEvent(String eventName, Duration timeout);
 }

@@ -32,7 +32,7 @@ public class DemoWorkflowClient {
 
     try (client) {
       System.out.println("*****");
-      String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
+      String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class).block();
       System.out.printf("Started new workflow instance with random ID: %s%n", instanceId);
 
       System.out.println("Sleep and allow this workflow instance to timeout...");
@@ -40,12 +40,12 @@ public class DemoWorkflowClient {
 
       System.out.println("*****");
       String instanceToTerminateId = "terminateMe";
-      client.scheduleNewWorkflow(DemoWorkflow.class, null, instanceToTerminateId);
+      client.scheduleNewWorkflow(DemoWorkflow.class, null, instanceToTerminateId).block();
       System.out.printf("Started new workflow instance with specified ID: %s%n", instanceToTerminateId);
 
       TimeUnit.SECONDS.sleep(5);
       System.out.println("Terminate this workflow instance manually before the timeout is reached");
-      client.terminateWorkflow(instanceToTerminateId, null);
+      client.terminateWorkflow(instanceToTerminateId, null).block();
       System.out.println("*****");
     }
 

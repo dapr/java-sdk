@@ -13,11 +13,13 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.Task;
+import com.google.protobuf.Empty;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
+import reactor.core.publisher.Mono;
+
 import java.time.Duration;
 
 public class DaprWorkflowContextImpl implements WorkflowContext {
@@ -68,28 +70,34 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   /**
    * {@inheritDoc}
    */
-  public String getName() {
-    return this.innerContext.getName();
+  public Mono<String> getName() {
+    return Mono.create(it -> it.success(this.innerContext.getName()));
   }
 
   /**
    * {@inheritDoc}
    */
-  public String getInstanceId() {
-    return this.innerContext.getInstanceId();
+  public Mono<String> getInstanceId() {
+    return Mono.create(it -> it.success(this.innerContext.getInstanceId()));
   }
 
   /**
    * {@inheritDoc}
    */
-  public void complete(Object output) {
-    this.innerContext.complete(output);
+  public Mono<Void> complete(Object output) {
+    return Mono.<Empty>create(it -> {
+      this.innerContext.complete(output);
+      it.success();
+    }).then();
   }
 
   /**
    * {@inheritDoc}
    */
-  public Task<Void> waitForExternalEvent(String eventName, Duration timeout) {
-    return this.innerContext.waitForExternalEvent(eventName, timeout);
+  public Mono<Void> waitForExternalEvent(String eventName, Duration timeout) {
+    return Mono.<Empty>create(it -> {
+      this.innerContext.waitForExternalEvent(eventName, timeout).await();
+      it.success();
+    }).then();
   }
 }

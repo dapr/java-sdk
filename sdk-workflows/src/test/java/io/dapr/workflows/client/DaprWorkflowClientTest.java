@@ -15,7 +15,7 @@ package io.dapr.workflows.client;
 
 import com.microsoft.durabletask.DurableTaskClient;
 import io.dapr.workflows.runtime.Workflow;
-import io.dapr.workflows.runtime.WorkflowContext;
+import io.dapr.workflows.runtime.WorkflowStub;
 import io.grpc.ManagedChannel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -35,7 +35,8 @@ public class DaprWorkflowClientTest {
 
   public class TestWorkflow extends Workflow {
     @Override
-    public void run(WorkflowContext ctx) {
+    public WorkflowStub create() {
+      return ctx -> { };
     }
   }
 
@@ -67,7 +68,7 @@ public class DaprWorkflowClientTest {
   public void scheduleNewWorkflowWithArgName() {
     String expectedName = TestWorkflow.class.getCanonicalName();
 
-    client.scheduleNewWorkflow(TestWorkflow.class);
+    client.scheduleNewWorkflow(TestWorkflow.class).block();
 
     verify(mockInnerClient, times(1)).scheduleNewOrchestrationInstance(expectedName);
   }
@@ -77,7 +78,7 @@ public class DaprWorkflowClientTest {
     String expectedName = TestWorkflow.class.getCanonicalName();
     Object expectedInput = new Object();
 
-    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput);
+    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput).block();
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput);
@@ -89,7 +90,7 @@ public class DaprWorkflowClientTest {
     Object expectedInput = new Object();
     String expectedInstanceId = "myTestInstance123";
 
-    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput, expectedInstanceId);
+    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput, expectedInstanceId).block();
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput, expectedInstanceId);
@@ -99,7 +100,7 @@ public class DaprWorkflowClientTest {
   public void terminateWorkflow() {
     String expectedArgument = "TestWorkflowInstanceId";
 
-    client.terminateWorkflow(expectedArgument, null);
+    client.terminateWorkflow(expectedArgument, null).block();
     verify(mockInnerClient, times(1)).terminate(expectedArgument, null);
   }
 
