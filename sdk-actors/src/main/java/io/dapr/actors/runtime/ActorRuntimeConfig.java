@@ -38,7 +38,7 @@ public class ActorRuntimeConfig {
 
   private volatile ActorReentrancyConfig actorReentrancyConfig;
 
-  private volatile List<ActorTypeConfig> actorTypeConfigs;
+  private volatile List<ActorTypeConfig> actorTypeConfigs = new CopyOnWriteArrayList<>();
 
   /**
    * Instantiates a new config for the Actor Runtime.

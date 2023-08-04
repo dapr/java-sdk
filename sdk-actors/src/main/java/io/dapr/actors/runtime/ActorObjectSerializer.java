@@ -147,36 +147,50 @@ public class ActorObjectSerializer extends ObjectSerializer {
         generator.writeNumberField("remindersStoragePartitions", config.getRemindersStoragePartitions());
       }
       if (config.getActorReentrancyConfig() != null) {
-        generator.writeFieldName("actorReentrancyConfig");
-        generator.writeBinary(serialize(config.getActorReentrancyConfig()));
+        generator.writeObjectFieldStart("actorReentrancyConfig");
+        generator.writeBooleanField("enabled", config.getActorReentrancyConfig().getEnabled());
+        generator.writeNumberField("maxStackDepth", config.getActorReentrancyConfig().getMaxStackDepth());
+        generator.writeEndObject();
       }
-      if (config.getActorTypeConfigs() != null) {
-        generator.writeArrayFieldStart("actorTypeConfigs");
+      if (!config.getActorTypeConfigs().isEmpty()) {
+
+        generator.writeArrayFieldStart("entitiesConfig");
         for (ActorTypeConfig actorTypeConfig : config.getActorTypeConfigs()) {
-          generator.writeBinary(serialize(actorTypeConfig));
+          generator.writeStartObject();
+          if (actorTypeConfig.getActorTypeName() != null) {
+            generator.writeArrayFieldStart("entities");
+            generator.writeString(actorTypeConfig.getActorTypeName());
+            generator.writeEndArray();
+          }
+          if (actorTypeConfig.getActorIdleTimeout() != null) {
+            generator.writeStringField("actorIdleTimeout",
+                DurationUtils.convertDurationToDaprFormat(actorTypeConfig.getActorIdleTimeout()));
+          }
+          if (actorTypeConfig.getActorScanInterval() != null) {
+            generator.writeStringField("actorScanInterval",
+                DurationUtils.convertDurationToDaprFormat(actorTypeConfig.getActorScanInterval()));
+          }
+          if (actorTypeConfig.getDrainOngoingCallTimeout() != null) {
+            generator.writeStringField("drainOngoingCallTimeout",
+                DurationUtils.convertDurationToDaprFormat(actorTypeConfig.getDrainOngoingCallTimeout()));
+          }
+          if (actorTypeConfig.getDrainBalancedActors() != null) {
+            generator.writeBooleanField("drainBalancedActors", actorTypeConfig.getDrainBalancedActors());
+          }
+          if (actorTypeConfig.getRemindersStoragePartitions() != null) {
+            generator.writeNumberField("remindersStoragePartitions", actorTypeConfig.getRemindersStoragePartitions());
+          }
+          if (actorTypeConfig.getActorReentrancyConfig() != null) {
+            generator.writeObjectFieldStart("actorReentrancyConfig");
+            generator.writeBooleanField("enabled", actorTypeConfig.getActorReentrancyConfig().getEnabled());
+            generator.writeNumberField("maxStackDepth", actorTypeConfig.getActorReentrancyConfig().getMaxStackDepth());
+            generator.writeEndObject();
+          }
+
+          generator.writeEndObject();
         }
         generator.writeEndArray();
       }
-      generator.writeEndObject();
-      generator.close();
-      writer.flush();
-      return writer.toByteArray();
-    }
-  }
-
-  /**
-   * Faster serialization for Actor's reentrancy configuration.
-   *
-   * @param config Configuration for Dapr's reentrancy configuration.
-   * @return JSON String.
-   * @throws IOException If cannot generate JSON.
-   */
-  private byte[] serialize(ActorReentrancyConfig config) throws IOException {
-    try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
-      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
-      generator.writeStartObject();
-      generator.writeBooleanField("enabled", config.getEnabled());
-      generator.writeNumberField("maxStackDepth", config.getMaxStackDepth());
       generator.writeEndObject();
       generator.close();
       writer.flush();
