@@ -199,50 +199,6 @@ public class ActorObjectSerializer extends ObjectSerializer {
   }
 
   /**
-   * Faster serialization for Actor's type configuration.
-   *
-   * @param config Configuration for Dapr's type configuration.
-   * @return JSON String.
-   * @throws IOException If cannot generate JSON.
-   */
-  private byte[] serialize(ActorTypeConfig config) throws IOException {
-    try (ByteArrayOutputStream writer = new ByteArrayOutputStream()) {
-      JsonGenerator generator = JSON_FACTORY.createGenerator(writer);
-      generator.writeStartObject();
-      if (config.getActorTypeName() != null) {
-        generator.writeStringField("entitiesConfig", config.getActorTypeName());
-      }
-      if (config.getActorIdleTimeout() != null) {
-        generator.writeStringField("actorIdleTimeout",
-            DurationUtils.convertDurationToDaprFormat(config.getActorIdleTimeout()));
-      }
-      if (config.getActorScanInterval() != null) {
-        generator.writeStringField("actorScanInterval",
-            DurationUtils.convertDurationToDaprFormat(config.getActorScanInterval()));
-      }
-      if (config.getDrainOngoingCallTimeout() != null) {
-        generator.writeStringField("drainOngoingCallTimeout",
-            DurationUtils.convertDurationToDaprFormat(config.getDrainOngoingCallTimeout()));
-      }
-      if (config.getDrainBalancedActors() != null) {
-        generator.writeBooleanField("drainBalancedActors", config.getDrainBalancedActors());
-      }
-      if (config.getRemindersStoragePartitions() != null) {
-        generator.writeNumberField("remindersStoragePartitions", config.getRemindersStoragePartitions());
-      }
-      if (config.getActorReentrancyConfig() != null) {
-        generator.writeFieldName("actorReentrancyConfig");
-        generator.writeBinary(serialize(config.getActorReentrancyConfig()));
-      }
-
-      generator.writeEndObject();
-      generator.close();
-      writer.flush();
-      return writer.toByteArray();
-    }
-  }
-
-  /**
    * {@inheritDoc}
    */
   @Override
