@@ -179,6 +179,10 @@ public class ActorRuntimeTest {
     actorTypeConfig1.setDrainOngoingCallTimeout(Duration.ofSeconds(123));
     actorTypeConfig1.setDrainBalancedActors(true);
     actorTypeConfig1.setRemindersStoragePartitions(1);
+    ActorReentrancyConfig actorReentrancyConfig1 = new ActorReentrancyConfig();
+    actorReentrancyConfig1.setEnabled(true);
+    actorReentrancyConfig1.setMaxStackDepth(10);
+    actorTypeConfig1.setActorReentrancyConfig(actorReentrancyConfig1);
     this.runtime.getConfig().addActorTypeConfig(actorTypeConfig1);
     this.runtime.getConfig().addRegisteredActorType("actor1");
 
@@ -189,12 +193,32 @@ public class ActorRuntimeTest {
     actorTypeConfig2.setDrainOngoingCallTimeout(Duration.ofSeconds(123));
     actorTypeConfig2.setDrainBalancedActors(false);
     actorTypeConfig2.setRemindersStoragePartitions(2);
+    ActorReentrancyConfig actorReentrancyConfig2 = new ActorReentrancyConfig();
+    actorReentrancyConfig2.setEnabled(true);
+    actorReentrancyConfig2.setMaxStackDepth(10);
+    actorTypeConfig2.setActorReentrancyConfig(actorReentrancyConfig2);
     this.runtime.getConfig().addActorTypeConfig(actorTypeConfig2);
     this.runtime.getConfig().addRegisteredActorType("actor2");
 
     Assert.assertEquals(
-        "{\"entities\":[\"actor1\",\"actor2\"],\"entitiesConfig\":[{\"entities\":[\"actor1\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":true,\"remindersStoragePartitions\":1},{\"entities\":[\"actor2\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":false,\"remindersStoragePartitions\":2}]}",
+        "{\"entities\":[\"actor1\",\"actor2\"],\"entitiesConfig\":[{\"entities\":[\"actor1\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":true,\"remindersStoragePartitions\":1,\"actorReentrancyConfig\":{\"enabled\":true,\"maxStackDepth\":10}},{\"entities\":[\"actor2\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":false,\"remindersStoragePartitions\":2,\"actorReentrancyConfig\":{\"enabled\":true,\"maxStackDepth\":10}}]}",
         new String(this.runtime.serializeConfig()));
+  }
+
+  @Test
+  public void addNullActorTypeConfig() throws Exception {
+    try {
+      this.runtime.getConfig().addActorTypeConfig(null);
+    } catch (Exception ex) {
+      Assert.assertTrue(ex instanceof IllegalArgumentException);
+      Assert.assertTrue(ex.getMessage().contains("Add actor type config failed."));
+    }
+    try {
+      this.runtime.getConfig().addRegisteredActorType(null);
+    } catch (Exception ex) {
+      Assert.assertTrue(ex instanceof IllegalArgumentException);
+      Assert.assertTrue(ex.getMessage().contains("Registered actor must have a type name."));
+    }
   }
 
   @Test
