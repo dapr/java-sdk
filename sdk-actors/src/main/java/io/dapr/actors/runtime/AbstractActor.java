@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Represents the base class for actors.
@@ -27,8 +28,6 @@ import java.util.UUID;
  * The state is preserved across actor garbage collections and fail-overs.
  */
 public abstract class AbstractActor {
-
-  private static final ActorObjectSerializer INTERNAL_SERIALIZER = new ActorObjectSerializer();
 
   /**
    * Type of tracing messages.
@@ -58,7 +57,7 @@ public abstract class AbstractActor {
   /**
    * Internal control to assert method invocation on start and finish in this SDK.
    */
-  private boolean started;
+  private final AtomicBoolean started;
 
   /**
    * Instantiates a new Actor.
@@ -74,7 +73,7 @@ public abstract class AbstractActor {
           runtimeContext.getActorTypeInformation().getName(),
           id);
     this.actorTrace = runtimeContext.getActorTrace();
-    this.started = false;
+    this.started = new AtomicBoolean(false);
   }
 
   /**
@@ -250,14 +249,16 @@ public abstract class AbstractActor {
 
   /**
    * Resets the cached state of this Actor.
+   *
+   * @param force Forces the rollback, even if not in a call.
    */
-  void rollback() {
-    if (!this.started) {
+  void rollback(boolean force) {
+    if (!force && !this.started.get()) {
       throw new IllegalStateException("Cannot reset state before starting call.");
     }
 
     this.resetState();
-    this.started = false;
+    this.started.set(false);
   }
 
   /**
@@ -302,11 +303,12 @@ public abstract class AbstractActor {
    */
   Mono<Void> onPreActorMethodInternal(ActorMethodContext actorMethodContext) {
     return Mono.fromRunnable(() -> {
-      if (this.started) {
-        throw new IllegalStateException("Cannot invoke a method before completing previous call.");
+      if (this.started.get()) {
+        throw new IllegalStateException(
+            "Cannot invoke a method before completing previous call. " + getId().toString());
       }
 
-      this.started = true;
+      this.started.set(true);
     }).then(this.onPreActorMethod(actorMethodContext));
   }
 
@@ -318,14 +320,13 @@ public abstract class AbstractActor {
    */
   Mono<Void> onPostActorMethodInternal(ActorMethodContext actorMethodContext) {
     return Mono.fromRunnable(() -> {
-      if (!this.started) {
+      if (!this.started.get()) {
         throw new IllegalStateException("Cannot complete a method before starting a call.");
       }
-    }).then(this.onPostActorMethod(actorMethodContext))
-          .then(this.saveState())
-          .then(Mono.fromRunnable(() -> {
-            this.started = false;
-          }));
+    })
+        .then(this.onPostActorMethod(actorMethodContext))
+        .then(this.saveState())
+        .then(Mono.fromRunnable(() -> this.started.set(false)));
   }
 
   /**
