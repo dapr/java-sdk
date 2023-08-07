@@ -21,8 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 11, 13, 15, 16 ]
-        spring-boot-version: [ 2.7.8 ]
+        java: [ 11, 13, 15, 16, 17 ]
+        spring-boot-version: [ 2.7.8, 3.1.2 ]
         experimental: [ false ]
         include:
           - java: 11
@@ -36,6 +36,9 @@ jobs:
             experimental: false
           - java: 11
             spring-boot-version: 2.3.6.RELEASE
+            experimental: false
+          - java: 17
+            spring-boot-version: 3.1.2
             experimental: false
     env:
       GOVER: "1.20"
