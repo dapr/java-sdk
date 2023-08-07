@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
@@ -102,7 +103,9 @@ public class DaprHttp implements AutoCloseable {
      */
     public Response(byte[] body, Map<String, String> headers, int statusCode) {
       this.body = body == null ? EMPTY_BYTES : Arrays.copyOf(body, body.length);
-      this.headers = headers;
+      /* Note that the headers-map is copied and changes to the supplied map will not affect the new Response. */
+      this.headers = new HashMap<>();
+      this.headers.putAll(headers);
       this.statusCode = statusCode;
     }
 
@@ -110,6 +113,7 @@ public class DaprHttp implements AutoCloseable {
       return Arrays.copyOf(this.body, this.body.length);
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "To be able to modify headers")
     public Map<String, String> getHeaders() {
       return headers;
     }
