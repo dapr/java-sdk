@@ -18,8 +18,7 @@
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <springboot.version>2.7.8</springboot.version>
-  </properties>
+    </properties>
 
   <dependencyManagement>
     <dependencies>
@@ -125,7 +124,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.6</version>
+        <version>${jacoco.mavenplugin.version}</version>
         <executions>
           <execution>
             <id>default-prepare-agent</id>

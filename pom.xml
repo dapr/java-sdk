@@ -26,10 +26,13 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <gpg.skip>true</gpg.skip>
-    <spotbugs.version>4.0.0-RC1</spotbugs.version>
+    <spotbugs.version>4.7.3</spotbugs.version>
+    <spotbugs.mavenplugin.version>4.7.3.4</spotbugs.mavenplugin.version>
     <spotbugs.fail>true</spotbugs.fail>
-    <springboot.version>2.7.8</springboot.version>
+    <springboot.version>3.1.2</springboot.version>
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+
+    <jacoco.mavenplugin.version>0.8.10</jacoco.mavenplugin.version>
   </properties>
 
   <distributionManagement>
@@ -88,7 +91,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.6</version>
+        <version>${jacoco.mavenplugin.version}</version>
         <executions>
           <execution>
             <goals>
@@ -107,7 +110,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.20</version>
+        <version>1.23</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
@@ -208,7 +211,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.1.4</version>
+        <version>${spotbugs.mavenplugin.version}</version>
         <dependencies>
           <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
           <dependency>
