@@ -18,7 +18,7 @@
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <grpc.version>1.42.1</grpc.version>
+    <grpc.version>1.57.1</grpc.version>
     <argLine>
       --add-opens java.base/java.util=ALL-UNNAMED
     </argLine>
@@ -41,10 +41,11 @@
       <artifactId>jackson-databind</artifactId>
       <version>2.13.4.1</version>
     </dependency>
+    <!-- Reactor version match version used in Spring Boot. -->
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
-      <version>3.5.0</version>
+      <version>3.5.8</version>
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
@@ -55,6 +56,11 @@
       <groupId>com.github.spotbugs</groupId>
       <artifactId>spotbugs-annotations</artifactId>
       <version>${spotbugs.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <version>2.1.1</version>
     </dependency>
 
     <dependency>
