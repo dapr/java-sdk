@@ -11,7 +11,9 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.runtime;
+package io.dapr.workflows;
+
+import io.dapr.workflows.WorkflowContext;
 
 @FunctionalInterface
 public interface WorkflowStub {

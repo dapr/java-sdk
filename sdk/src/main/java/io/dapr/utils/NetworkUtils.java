@@ -71,7 +71,7 @@ public final class NetworkUtils {
         address += uri.getPath();
       }
     }
-    ManagedChannelBuilder builder = ManagedChannelBuilder.forAddress(address, port)
+    ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forAddress(address, port)
         .userAgent(Version.getSdkVersion());
     if (insecure) {
       builder = builder.usePlaintext();

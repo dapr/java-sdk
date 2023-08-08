@@ -15,13 +15,15 @@ package io.dapr.workflows.runtime;
 
 
 import com.microsoft.durabletask.TaskOrchestrationContext;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowStub;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static org.mockito.Mockito.*;
 
 public class OrchestratorWrapperTest {
-    public static class TestWorkflow extends Workflow{
+    public static class TestWorkflow extends Workflow {
       @Override
       public WorkflowStub create() {
         return ctx -> {
@@ -32,7 +34,7 @@ public class OrchestratorWrapperTest {
 
   @Test
   public void getName() throws NoSuchMethodException {
-    OrchestratorWrapper<TestWorkflow> wrapper = new OrchestratorWrapper(TestWorkflow.class);
+    OrchestratorWrapper<TestWorkflow> wrapper = new OrchestratorWrapper<>(TestWorkflow.class);
     Assert.assertEquals(
         "io.dapr.workflows.runtime.OrchestratorWrapperTest.TestWorkflow",
         wrapper.getName()
@@ -42,7 +44,7 @@ public class OrchestratorWrapperTest {
   @Test
   public void createWithClass() throws NoSuchMethodException {
     TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
-    OrchestratorWrapper<Workflow> wrapper = new OrchestratorWrapper(TestWorkflow.class);
+    OrchestratorWrapper<TestWorkflow> wrapper = new OrchestratorWrapper<>(TestWorkflow.class);
     when( mockContext.getInstanceId() ).thenReturn("uuid");
     wrapper.create().run(mockContext);
     verify(mockContext, times(1)).getInstanceId();

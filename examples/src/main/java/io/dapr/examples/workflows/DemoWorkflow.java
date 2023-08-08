@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.examples.workflows;
 
 import com.microsoft.durabletask.TaskCanceledException;
-import io.dapr.workflows.runtime.Workflow;
-import io.dapr.workflows.runtime.WorkflowStub;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowStub;
 
 import java.time.Duration;
 

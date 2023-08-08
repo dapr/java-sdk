@@ -14,7 +14,13 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 
+import com.microsoft.durabletask.DurableTaskGrpcWorker;
+import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowStub;
 import org.junit.Test;
+
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -27,22 +33,20 @@ public class WorkflowRuntimeTest {
     }
 
   @Test
-  public void registerValidWorkflowClass() {
-    assertDoesNotThrow(() -> WorkflowRuntime.getInstance().registerWorkflow(TestWorkflow.class));
-  }
-
-  @Test
   public void startTest() {
-    assertDoesNotThrow(() -> {
-      WorkflowRuntime.getInstance().start();
-      WorkflowRuntime.getInstance().close();
-    });
+    DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
+    try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
+      assertDoesNotThrow(() -> {
+        runtime.start().block(Duration.ofSeconds(1));
+      });
+    }
   }
 
   @Test
   public void closeWithoutStarting() {
-    assertDoesNotThrow(() -> {
-      WorkflowRuntime.getInstance().close();
-    });
+    DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
+    try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
+      assertDoesNotThrow(runtime::close);
+    }
   }
 }

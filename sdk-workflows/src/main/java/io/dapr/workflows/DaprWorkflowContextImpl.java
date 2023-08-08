@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.runtime;
+package io.dapr.workflows;
 
 import com.google.protobuf.Empty;
 import com.microsoft.durabletask.TaskOrchestrationContext;
@@ -46,15 +46,13 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
-    } else {
-      this.innerContext = context;
     }
-
     if (logger == null) {
       throw new IllegalArgumentException("Logger cannot be null");
-    } else {
-      this.logger = logger;
     }
+
+    this.innerContext = context;
+    this.logger = logger;
   }
 
   /**

@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.runtime;
+package io.dapr.workflows;
 
 import com.google.protobuf.Empty;
 import reactor.core.publisher.Mono;

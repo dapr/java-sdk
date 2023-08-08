@@ -15,6 +15,8 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskOrchestration;
 import com.microsoft.durabletask.TaskOrchestrationFactory;
+import io.dapr.workflows.DaprWorkflowContextImpl;
+import io.dapr.workflows.Workflow;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -31,7 +33,9 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
     try {
       this.workflowConstructor = clazz.getDeclaredConstructor();
     } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(
+          String.format("No constructor found for workflow class '%s'.", this.name), e
+      );
     }
   }
 
@@ -43,12 +47,15 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
   @Override
   public TaskOrchestration create() {
     return ctx -> {
+      T workflow;
       try {
-        T workflow = this.workflowConstructor.newInstance();
-        workflow.runAsync(new DaprWorkflowContextImpl(ctx)).block();
+        workflow = this.workflowConstructor.newInstance();
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException(
+            String.format("Unable to instantiate instance of workflow class '%s'", this.name), e
+        );
       }
+      workflow.runAsync(new DaprWorkflowContextImpl(ctx)).block();
     };
 
   }

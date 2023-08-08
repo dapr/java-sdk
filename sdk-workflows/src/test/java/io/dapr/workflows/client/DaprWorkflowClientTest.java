@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.workflows.client;
 
 import com.microsoft.durabletask.DurableTaskClient;
-import io.dapr.workflows.runtime.Workflow;
-import io.dapr.workflows.runtime.WorkflowStub;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowStub;
 import io.grpc.ManagedChannel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
@@ -44,10 +45,7 @@ public class DaprWorkflowClientTest {
   public static void beforeAll() {
         constructor =
         Constructor.class.cast(Arrays.stream(DaprWorkflowClient.class.getDeclaredConstructors())
-            .filter(c -> c.getParameters().length == 2).map(c -> {
-              c.setAccessible(true);
-              return c;
-            }).findFirst().get());
+            .filter(c -> c.getParameters().length == 2).peek(c -> c.setAccessible(true)).findFirst().get());
   }
 
   @Before
@@ -107,6 +105,15 @@ public class DaprWorkflowClientTest {
   @Test
   public void close() throws InterruptedException {
     client.close();
+    verify(mockInnerClient, times(1)).close();
+    verify(mockGrpcChannel, times(1)).shutdown();
+  }
+
+  @Test
+  public void closeWithInnerClientRuntimeException() throws InterruptedException {
+    doThrow(RuntimeException.class).when(mockInnerClient).close();
+
+    assertThrows(RuntimeException.class, () -> { client.close(); });
     verify(mockInnerClient, times(1)).close();
     verify(mockGrpcChannel, times(1)).shutdown();
   }

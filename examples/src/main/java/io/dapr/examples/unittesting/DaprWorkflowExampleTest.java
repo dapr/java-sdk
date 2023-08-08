@@ -14,9 +14,9 @@ limitations under the License.
 package io.dapr.examples.unittesting;
 
 import com.microsoft.durabletask.TaskCanceledException;
-import io.dapr.workflows.runtime.Workflow;
-import io.dapr.workflows.runtime.WorkflowContext;
-import io.dapr.workflows.runtime.WorkflowStub;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowContext;
+import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;

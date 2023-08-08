@@ -15,12 +15,14 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
+import io.dapr.workflows.DaprWorkflowContextImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 
 import java.time.Duration;
 
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class DaprWorkflowContextImplTest {
@@ -31,6 +33,13 @@ public class DaprWorkflowContextImplTest {
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
     context = new DaprWorkflowContextImpl(mockInnerContext);
+  }
+
+  @Test
+  public void nullConstructorTest() {
+    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(mockInnerContext, null); });
+    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(null, mock(Logger.class)); });
+    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(null, null); });
   }
 
   @Test

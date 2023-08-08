@@ -16,7 +16,7 @@ package io.dapr.workflows.client;
 import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
 import io.dapr.utils.NetworkUtils;
-import io.dapr.workflows.runtime.Workflow;
+import io.dapr.workflows.Workflow;
 import io.grpc.ManagedChannel;
 import reactor.core.publisher.Mono;
 
@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 public class DaprWorkflowClient implements AutoCloseable {
 
-  private final DurableTaskClient innerClient;
-  private final ManagedChannel grpcChannel;
+  private DurableTaskClient innerClient;
+  private ManagedChannel grpcChannel;
 
   /**
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
@@ -132,11 +132,16 @@ public class DaprWorkflowClient implements AutoCloseable {
    *
    */
   public void close() throws InterruptedException {
-    if (this.innerClient != null) {
-      this.innerClient.close();
-    }
-    if (this.grpcChannel != null && !this.grpcChannel.isShutdown()) {
-      this.grpcChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    try {
+      if (this.innerClient != null) {
+        this.innerClient.close();
+        this.innerClient = null;
+      }
+    } finally {
+      if (this.grpcChannel != null && !this.grpcChannel.isShutdown()) {
+        this.grpcChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        this.grpcChannel = null;
+      }
     }
   }
 }
