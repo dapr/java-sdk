@@ -55,7 +55,7 @@ class Tracestate {
    * @return the value to which the specified key is mapped, or null if this map contains no mapping for the key.
    * @since 0.16
    */
-  @javax.annotation.Nullable
+  @jakarta.annotation.Nullable
   String get(String key) {
     for (Entry entry : getEntries()) {
       if (entry.getKey().equals(key)) {
@@ -92,7 +92,7 @@ class Tracestate {
    */
   static final class Builder {
     private final Tracestate parent;
-    @javax.annotation.Nullable
+    @jakarta.annotation.Nullable
     private ArrayList<Entry> entries;
 
     // Needs to be in this class to avoid initialization deadlock because super class depends on

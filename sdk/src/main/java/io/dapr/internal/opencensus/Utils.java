@@ -33,7 +33,7 @@ final class Utils {
    *                     {@link String#valueOf(Object)}.
    */
   static void checkArgument(
-      boolean isValid, @javax.annotation.Nullable Object errorMessage) {
+      boolean isValid, @jakarta.annotation.Nullable Object errorMessage) {
     if (!isValid) {
       throw new IllegalArgumentException(String.valueOf(errorMessage));
     }
@@ -59,7 +59,7 @@ final class Utils {
   static void checkArgument(
       boolean expression,
       String errorMessageTemplate,
-      @javax.annotation.Nullable Object... errorMessageArgs) {
+      @jakarta.annotation.Nullable Object... errorMessageArgs) {
     if (!expression) {
       throw new IllegalArgumentException(format(errorMessageTemplate, errorMessageArgs));
     }
@@ -73,7 +73,7 @@ final class Utils {
    * @param errorMessage the message to use for the exception. Will be converted to a string using
    *                     {@link String#valueOf(Object)}.
    */
-  static void checkState(boolean isValid, @javax.annotation.Nullable Object errorMessage) {
+  static void checkState(boolean isValid, @jakarta.annotation.Nullable Object errorMessage) {
     if (!isValid) {
       throw new IllegalStateException(String.valueOf(errorMessage));
     }
@@ -107,7 +107,7 @@ final class Utils {
    * @param <T>          Object checked.
    * @return the argument, if it passes the null check.
    */
-  public static <T> T checkNotNull(T arg, @javax.annotation.Nullable Object errorMessage) {
+  public static <T> T checkNotNull(T arg, @jakarta.annotation.Nullable Object errorMessage) {
     if (arg == null) {
       throw new NullPointerException(String.valueOf(errorMessage));
     }
@@ -127,7 +127,7 @@ final class Utils {
    *                 to strings using {@link String#valueOf(Object)}. Arguments can be null.
    */
   // Note that this is somewhat-improperly used from Verify.java as well.
-  private static String format(String template, @javax.annotation.Nullable Object... args) {
+  private static String format(String template, @jakarta.annotation.Nullable Object... args) {
     // If no arguments return the template.
     if (args == null) {
       return template;
