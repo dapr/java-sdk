@@ -66,7 +66,7 @@ public class DaprWorkflowClientTest {
   public void scheduleNewWorkflowWithArgName() {
     String expectedName = TestWorkflow.class.getCanonicalName();
 
-    client.scheduleNewWorkflow(TestWorkflow.class).block();
+    client.scheduleNewWorkflow(TestWorkflow.class);
 
     verify(mockInnerClient, times(1)).scheduleNewOrchestrationInstance(expectedName);
   }
@@ -76,7 +76,7 @@ public class DaprWorkflowClientTest {
     String expectedName = TestWorkflow.class.getCanonicalName();
     Object expectedInput = new Object();
 
-    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput).block();
+    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput);
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput);
@@ -88,7 +88,7 @@ public class DaprWorkflowClientTest {
     Object expectedInput = new Object();
     String expectedInstanceId = "myTestInstance123";
 
-    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput, expectedInstanceId).block();
+    client.scheduleNewWorkflow(TestWorkflow.class, expectedInput, expectedInstanceId);
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput, expectedInstanceId);
@@ -98,7 +98,7 @@ public class DaprWorkflowClientTest {
   public void terminateWorkflow() {
     String expectedArgument = "TestWorkflowInstanceId";
 
-    client.terminateWorkflow(expectedArgument, null).block();
+    client.terminateWorkflow(expectedArgument, null);
     verify(mockInnerClient, times(1)).terminate(expectedArgument, null);
   }
 

@@ -37,24 +37,23 @@ public interface WorkflowContext {
   /**
    * Gets the name of the current workflow.
    *
-   * @return Asynchronous result with the name of the current workflow
+   * @return the name of the current workflow
    */
-  Mono<String> getName();
+  String getName();
 
   /**
    * Gets the instance ID of the current workflow.
    *
-   * @return Asynchronous result with the instance ID of the current workflow
+   * @return the instance ID of the current workflow
    */
-  Mono<String> getInstanceId();
+  String getInstanceId();
 
   /**
    * Completes the current workflow.
    *
    * @param output the serializable output of the completed Workflow.
-   * @return A Mono Plan of type Void.
    */
-  Mono<Void> complete(Object output);
+  void complete(Object output);
 
   /**
    * Waits for an event to be raised with name and returns the event data.

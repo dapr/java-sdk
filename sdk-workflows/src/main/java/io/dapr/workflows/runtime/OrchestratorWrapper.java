@@ -55,7 +55,7 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
             String.format("Unable to instantiate instance of workflow class '%s'", this.name), e
         );
       }
-      workflow.runAsync(new DaprWorkflowContextImpl(ctx)).block();
+      workflow.run(new DaprWorkflowContextImpl(ctx));
     };
 
   }

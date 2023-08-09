@@ -13,9 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import com.google.protobuf.Empty;
-import reactor.core.publisher.Mono;
-
 /**
  * Common interface for workflow implementations.
  */
@@ -35,12 +32,8 @@ public abstract class Workflow {
    *
    * @param ctx provides access to methods for scheduling durable tasks and getting information about the current
    *            workflow instance.
-   * @return A Mono Plan of type Void.
    */
-  public Mono<Void> runAsync(WorkflowContext ctx) {
-    return Mono.<Empty>create(it -> {
-      this.create().run(ctx);
-      it.success();
-    }).then();
+  public void run(WorkflowContext ctx) {
+    this.create().run(ctx);
   }
 }

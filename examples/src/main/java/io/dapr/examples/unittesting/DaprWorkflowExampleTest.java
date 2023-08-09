@@ -46,15 +46,15 @@ public class DaprWorkflowExampleTest {
     @Override
     public WorkflowStub create() {
       return ctx -> {
-        String name = ctx.getName().block();
-        String id = ctx.getInstanceId().block();
+        String name = ctx.getName();
+        String id = ctx.getInstanceId();
         try {
           ctx.waitForExternalEvent(name, Duration.ofMillis(100)).block();
         } catch (TaskCanceledException e) {
           ctx.getLogger().warn("Timed out");
         }
         String output = name + ":" + id;
-        ctx.complete(output).block();
+        ctx.complete(output);
       };
     }
   }

@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import com.google.protobuf.Empty;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,34 +67,30 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   /**
    * {@inheritDoc}
    */
-  public Mono<String> getName() {
-    return Mono.create(it -> it.success(this.innerContext.getName()));
+  public String getName() {
+    return this.innerContext.getName();
   }
 
   /**
    * {@inheritDoc}
    */
-  public Mono<String> getInstanceId() {
-    return Mono.create(it -> it.success(this.innerContext.getInstanceId()));
+  public String getInstanceId() {
+    return this.innerContext.getInstanceId();
   }
 
   /**
    * {@inheritDoc}
    */
-  public Mono<Void> complete(Object output) {
-    return Mono.<Empty>create(it -> {
-      this.innerContext.complete(output);
-      it.success();
-    }).then();
+  public void complete(Object output) {
+    this.innerContext.complete(output);
   }
 
   /**
    * {@inheritDoc}
    */
   public Mono<Void> waitForExternalEvent(String eventName, Duration timeout) {
-    return Mono.<Empty>create(it -> {
+    return Mono.fromRunnable(() -> {
       this.innerContext.waitForExternalEvent(eventName, timeout).await();
-      it.success();
-    }).then();
+    });
   }
 }

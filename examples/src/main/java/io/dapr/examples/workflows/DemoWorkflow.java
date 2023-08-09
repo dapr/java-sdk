@@ -27,8 +27,8 @@ public class DemoWorkflow extends Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
-      ctx.getLogger().info("Starting Workflow: " + ctx.getName().block());
-      ctx.getLogger().info("Instance ID: " + ctx.getInstanceId().block());
+      ctx.getLogger().info("Starting Workflow: " + ctx.getName());
+      ctx.getLogger().info("Instance ID: " + ctx.getInstanceId());
       ctx.getLogger().info("Waiting for event: 'myEvent'...");
       try {
         ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).block();
@@ -37,7 +37,7 @@ public class DemoWorkflow extends Workflow {
         ctx.getLogger().warn("Timed out");
         ctx.getLogger().warn(e.getMessage());
       }
-      ctx.complete("finished").block();
+      ctx.complete("finished");
     };
   }
 }

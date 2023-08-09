@@ -44,13 +44,13 @@ public class DaprWorkflowContextImplTest {
 
   @Test
   public void getNameTest() {
-    context.getName().block();
+    context.getName();
     verify(mockInnerContext, times(1)).getName();
   }
 
   @Test
   public void getInstanceIdTest() {
-    context.getInstanceId().block();
+    context.getInstanceId();
     verify(mockInnerContext, times(1)).getInstanceId();
   }
 
@@ -73,7 +73,7 @@ public class DaprWorkflowContextImplTest {
 
   @Test
   public void completeTest() {
-    context.complete(null).block();
+    context.complete(null);
     verify(mockInnerContext, times(1)).complete(null);
   }
 
