@@ -7,11 +7,7 @@ DAPR_JAVA_SDK_VERSION=$1
 DAPR_WORKFLOW_SDK_VERSION=$(echo $DAPR_JAVA_SDK_VERSION | sed -E "s/[0-9]+\.(.*?)/0.\1/")
 
 mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION
-mvn versions:set-property -Dproperty=dapr.sdk-workflows.version -DnewVersion=$DAPR_WORKFLOW_SDK_VERSION
+mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-tests/pom.xml
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  sed -i bak "s/<dapr.sdk.version>.*<\/dapr.sdk.version>/<dapr.sdk.version>${DAPR_JAVA_SDK_VERSION}<\/dapr.sdk.version>/g" sdk-tests/pom.xml
-  rm sdk-tests/pom.xmlbak
-else
-  sed -i "s/<dapr.sdk.version>.*<\/dapr.sdk.version>/<dapr.sdk.version>${DAPR_JAVA_SDK_VERSION}<\/dapr.sdk.version>/g" sdk-tests/pom.xml
-fi
+mvn versions:set -DnewVersion=$DAPR_WORKFLOW_SDK_VERSION -f sdk-workflows/pom.xml
+mvn versions:set-property -Dproperty=dapr.sdk-workflows.version -DnewVersion=$DAPR_WORKFLOW_SDK_VERSION

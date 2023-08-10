@@ -65,7 +65,7 @@ public class DaprWorkflowExampleTest {
     String id = workflowDefaultId;
     WorkflowContext mockContext = createMockContext(name, id);
 
-    new DemoWorkflow().runAsync(mockContext).block();
+    new DemoWorkflow().run(mockContext);
 
     String expectedOutput = name + ":" + id;
     Mockito.verify(mockContext, Mockito.times(1)).complete(expectedOutput);
@@ -77,7 +77,7 @@ public class DaprWorkflowExampleTest {
     Logger mockLogger = Mockito.mock(Logger.class);
     Mockito.doReturn(mockLogger).when(mockContext).getLogger();
 
-    new DemoWorkflow().runAsync(mockContext).block();
+    new DemoWorkflow().run(mockContext);
 
     Mockito.verify(mockLogger, Mockito.times(1)).warn("Timed out");
   }
@@ -88,7 +88,7 @@ public class DaprWorkflowExampleTest {
     Logger mockLogger = Mockito.mock(Logger.class);
     Mockito.doReturn(mockLogger).when(mockContext).getLogger();
 
-    new DemoWorkflow().runAsync(mockContext).block();
+    new DemoWorkflow().run(mockContext);
 
     Mockito.verify(mockLogger, Mockito.times(0)).warn(anyString());
   }
@@ -96,14 +96,12 @@ public class DaprWorkflowExampleTest {
   private WorkflowContext createMockContext(String name, String id) {
     WorkflowContext mockContext = Mockito.mock(WorkflowContext.class);
 
-    Mockito.doReturn(Mono.just(name)).when(mockContext).getName();
-    Mockito.doReturn(Mono.just(id)).when(mockContext).getInstanceId();
+    Mockito.doReturn(name).when(mockContext).getName();
+    Mockito.doReturn(id).when(mockContext).getInstanceId();
     Mockito.doReturn(Mono.empty().then())
         .when(mockContext).waitForExternalEvent(startsWith(noTimeoutWorkflow), any(Duration.class));
     Mockito.doThrow(TaskCanceledException.class)
         .when(mockContext).waitForExternalEvent(startsWith(timeoutWorkflow), any(Duration.class));
-    Mockito.doReturn(Mono.empty().then())
-        .when(mockContext).complete(any(Object.class));
 
     return mockContext;
   }
