@@ -34,7 +34,7 @@ public class DemoWorkflowWorker {
     // Build and then start the workflow runtime pulling and executing tasks
     try (WorkflowRuntime runtime = builder.build()) {
       System.out.println("Start workflow runtime");
-      runtime.start().block();
+      runtime.start();
     }
 
     System.exit(0);

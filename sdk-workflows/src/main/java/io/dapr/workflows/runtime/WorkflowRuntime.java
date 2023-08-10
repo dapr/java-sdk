@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.DurableTaskGrpcWorker;
-import reactor.core.publisher.Mono;
 
 /**
  * Contains methods to register workflows and activities.
@@ -28,14 +27,24 @@ public class WorkflowRuntime implements AutoCloseable {
   }
 
   /**
+   * Start the Workflow runtime processing items and block.
+   *
+   */
+  public void start() {
+    this.start(true);
+  }
+
+  /**
    * Start the Workflow runtime processing items.
    *
-   * @return A Mono Plan of type Void.
+   * @param block block the thread if true
    */
-  public Mono<Void> start() {
-    return Mono.fromRunnable(() -> {
+  public void start(boolean block) {
+    if (block) {
+      this.worker.startAndBlock();
+    } else {
       this.worker.start();
-    }).then();
+    }
   }
 
   /**

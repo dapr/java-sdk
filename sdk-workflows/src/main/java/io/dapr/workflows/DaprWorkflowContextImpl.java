@@ -13,11 +13,11 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
@@ -88,9 +88,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   /**
    * {@inheritDoc}
    */
-  public Mono<Void> waitForExternalEvent(String eventName, Duration timeout) {
-    return Mono.fromRunnable(() -> {
-      this.innerContext.waitForExternalEvent(eventName, timeout).await();
-    });
+  public Task<Void> waitForExternalEvent(String eventName, Duration timeout) {
+    return this.innerContext.waitForExternalEvent(eventName, timeout);
   }
 }

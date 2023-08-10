@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.runtime;
+package io.dapr.workflows;
 
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
@@ -62,7 +62,7 @@ public class DaprWorkflowContextImplTest {
     String expectedEvent = "TestEvent";
     Duration expectedDuration = Duration.ofSeconds(1);
 
-    testContext.waitForExternalEvent(expectedEvent, expectedDuration).block();
+    testContext.waitForExternalEvent(expectedEvent, expectedDuration).await();
     verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
   }
 

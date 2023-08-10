@@ -20,8 +20,6 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.junit.Test;
 
-import java.time.Duration;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class WorkflowRuntimeTest {
@@ -37,7 +35,7 @@ public class WorkflowRuntimeTest {
     DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
     try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
       assertDoesNotThrow(() -> {
-        runtime.start().block(Duration.ofSeconds(1));
+        runtime.start(false);
       });
     }
   }

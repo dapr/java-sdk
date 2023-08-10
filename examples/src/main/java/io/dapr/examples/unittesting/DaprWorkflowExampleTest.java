@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.unittesting;
 
+import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
@@ -20,13 +21,13 @@ import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.mock;
 
 /**
  * 1. Build and install jars:
@@ -49,7 +50,7 @@ public class DaprWorkflowExampleTest {
         String name = ctx.getName();
         String id = ctx.getInstanceId();
         try {
-          ctx.waitForExternalEvent(name, Duration.ofMillis(100)).block();
+          ctx.waitForExternalEvent(name, Duration.ofMillis(100)).await();
         } catch (TaskCanceledException e) {
           ctx.getLogger().warn("Timed out");
         }
@@ -74,7 +75,7 @@ public class DaprWorkflowExampleTest {
   @Test
   public void testWorkflowWaitForEventTimeout() {
     WorkflowContext mockContext = createMockContext(timeoutWorkflow, workflowDefaultId);
-    Logger mockLogger = Mockito.mock(Logger.class);
+    Logger mockLogger = mock(Logger.class);
     Mockito.doReturn(mockLogger).when(mockContext).getLogger();
 
     new DemoWorkflow().run(mockContext);
@@ -85,7 +86,7 @@ public class DaprWorkflowExampleTest {
   @Test
   public void testWorkflowWaitForEventNoTimeout() {
     WorkflowContext mockContext = createMockContext(noTimeoutWorkflow, workflowDefaultId);
-    Logger mockLogger = Mockito.mock(Logger.class);
+    Logger mockLogger = mock(Logger.class);
     Mockito.doReturn(mockLogger).when(mockContext).getLogger();
 
     new DemoWorkflow().run(mockContext);
@@ -94,11 +95,11 @@ public class DaprWorkflowExampleTest {
   }
 
   private WorkflowContext createMockContext(String name, String id) {
-    WorkflowContext mockContext = Mockito.mock(WorkflowContext.class);
+    WorkflowContext mockContext = mock(WorkflowContext.class);
 
     Mockito.doReturn(name).when(mockContext).getName();
     Mockito.doReturn(id).when(mockContext).getInstanceId();
-    Mockito.doReturn(Mono.empty().then())
+    Mockito.doReturn(mock(Task.class))
         .when(mockContext).waitForExternalEvent(startsWith(noTimeoutWorkflow), any(Duration.class));
     Mockito.doThrow(TaskCanceledException.class)
         .when(mockContext).waitForExternalEvent(startsWith(timeoutWorkflow), any(Duration.class));

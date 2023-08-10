@@ -31,7 +31,7 @@ public class DemoWorkflow extends Workflow {
       ctx.getLogger().info("Instance ID: " + ctx.getInstanceId());
       ctx.getLogger().info("Waiting for event: 'myEvent'...");
       try {
-        ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).block();
+        ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).await();
         ctx.getLogger().info("Received!");
       } catch (TaskCanceledException e) {
         ctx.getLogger().warn("Timed out");

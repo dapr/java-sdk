@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import com.microsoft.durabletask.Task;
 import org.slf4j.Logger;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
@@ -62,7 +62,7 @@ public interface WorkflowContext {
    *                  External event names can be reused any number of times; they are not
    *                  required to be unique.
    * @param timeout   The amount of time to wait before cancelling the external event task.
-   * @return A Mono Plan of type Void.
+   * @return An asynchronous durabletask.Task to await.
    */
-  Mono<Void> waitForExternalEvent(String eventName, Duration timeout);
+  Task<Void> waitForExternalEvent(String eventName, Duration timeout);
 }
