@@ -105,7 +105,9 @@ public class DaprHttp implements AutoCloseable {
       this.body = body == null ? EMPTY_BYTES : Arrays.copyOf(body, body.length);
       /* Note that the headers-map is copied and changes to the supplied map will not affect the new Response. */
       this.headers = new HashMap<>();
-      this.headers.putAll(headers);
+      if (headers != null) {
+        this.headers.putAll(headers);
+      }
       this.statusCode = statusCode;
     }
 
