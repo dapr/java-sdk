@@ -13,9 +13,14 @@ limitations under the License.
 
 package io.dapr.utils;
 
+import io.dapr.config.Properties;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.URI;
 
 /**
  * Utility methods for network, internal to Dapr SDK.
@@ -46,5 +51,31 @@ public final class NetworkUtils {
         throw new RuntimeException(e);
       }
     }, timeoutInMilliseconds);
+  }
+
+  /**
+   * Creates a GRPC managed channel.
+   * @return GRPC managed channel to communicate with the sidecar.
+   */
+  public static ManagedChannel buildGrpcManagedChannel() {
+    String address = Properties.SIDECAR_IP.get();
+    int port = Properties.GRPC_PORT.get();
+    boolean insecure = true;
+    String grpcEndpoint = Properties.GRPC_ENDPOINT.get();
+    if ((grpcEndpoint != null) && !grpcEndpoint.isEmpty()) {
+      URI uri = URI.create(grpcEndpoint);
+      insecure = uri.getScheme().equalsIgnoreCase("http");
+      port = uri.getPort() > 0 ? uri.getPort() : (insecure ? 80 : 443);
+      address = uri.getHost();
+      if ((uri.getPath() != null) && !uri.getPath().isEmpty()) {
+        address += uri.getPath();
+      }
+    }
+    ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forAddress(address, port)
+        .userAgent(Version.getSdkVersion());
+    if (insecure) {
+      builder = builder.usePlaintext();
+    }
+    return builder.build();
   }
 }
