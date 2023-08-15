@@ -79,13 +79,13 @@ public class TracingIT extends BaseIT {
             try (Scope scope = span.makeCurrent()) {
                 SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
                 client.invokeMethod(daprRun.getAppName(), "sleepOverGRPC", req.toByteArray(), HttpExtension.POST)
-                    .subscriberContext(getReactorContext())
+                    .contextWrite(getReactorContext())
                     .block();
             }
         }
         span.end();
         OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
 
-        Validation.validate(spanName, "calllocal/tracingit_service/sleepovergrpc");
+        Validation.validate(spanName, "calllocal/tracingit-service/sleepovergrpc");
     }
 }

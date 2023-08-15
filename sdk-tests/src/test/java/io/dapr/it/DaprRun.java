@@ -58,7 +58,9 @@ public class DaprRun implements Stoppable {
                   DaprApiProtocol protocol,
                   DaprApiProtocol appProtocol) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
-    this.appName = serviceClass == null ? testName : String.format("%s_%s", testName, serviceClass.getSimpleName());
+    this.appName = serviceClass == null ?
+        testName.toLowerCase() :
+        String.format("%s-%s", testName, serviceClass.getSimpleName()).toLowerCase();
     this.startCommand =
         new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, protocol, appProtocol));
     this.listCommand = new Command(
@@ -138,6 +140,10 @@ public class DaprRun implements Stoppable {
     System.getProperties().setProperty(
         Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
         DaprApiProtocol.GRPC.name());
+    System.getProperties().setProperty(
+            Properties.GRPC_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getGrpcPort());
+    System.getProperties().setProperty(
+            Properties.HTTP_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getHttpPort());
   }
 
   public void switchToGRPC() {

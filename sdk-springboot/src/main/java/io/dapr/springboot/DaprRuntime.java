@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.springboot;
 
-import io.dapr.Rule;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +22,6 @@ import java.util.stream.Collectors;
  * Internal Singleton to handle Dapr configuration.
  */
 class DaprRuntime {
-
   /**
    * The singleton instance.
    */
@@ -36,7 +33,8 @@ class DaprRuntime {
   private final Map<DaprTopicKey, DaprSubscriptionBuilder> subscriptionBuilders = new HashMap<>();
 
   /**
-   * Private constructor to make this singleton.
+   * DaprRuntime should be used as a singleton, using {@link DaprRuntime#getInstance()}.
+   * The constructor's default scope is available for unit tests only.
    */
   private DaprRuntime() {
   }
@@ -61,23 +59,45 @@ class DaprRuntime {
   /**
    * Adds a topic to the list of subscribed topics.
    *
-   * @param pubsubName Pubsub name to subcribe to.
+   * @param pubSubName PubSub name to subscribe to.
    * @param topicName Name of the topic being subscribed to.
-   * @param rule The optional rule for this route.
+   * @param match Match expression for this route.
+   * @param priority Priority for this match relative to others.
    * @param route Destination route for requests.
    * @param metadata Metadata for extended subscription functionality.
    */
-  public synchronized void addSubscribedTopic(String pubsubName,
+  public synchronized void addSubscribedTopic(String pubSubName,
                                               String topicName,
                                               String match,
                                               int priority,
                                               String route,
                                               Map<String,String> metadata) {
-    DaprTopicKey topicKey = new DaprTopicKey(pubsubName, topicName);
+    this.addSubscribedTopic(pubSubName, topicName, match, priority, route, metadata, null);
+  }
+
+  /**
+   * Adds a topic to the list of subscribed topics.
+   *
+   * @param pubSubName PubSub name to subscribe to.
+   * @param topicName Name of the topic being subscribed to.
+   * @param match Match expression for this route.
+   * @param priority Priority for this match relative to others.
+   * @param route Destination route for requests.
+   * @param metadata Metadata for extended subscription functionality.
+   * @param bulkSubscribe Bulk subscribe configuration.
+   */
+  public synchronized void addSubscribedTopic(String pubSubName,
+                                              String topicName,
+                                              String match,
+                                              int priority,
+                                              String route,
+                                              Map<String,String> metadata,
+                                              DaprTopicBulkSubscribe bulkSubscribe) {
+    DaprTopicKey topicKey = new DaprTopicKey(pubSubName, topicName);
 
     DaprSubscriptionBuilder builder = subscriptionBuilders.get(topicKey);
     if (builder == null) {
-      builder = new DaprSubscriptionBuilder(pubsubName, topicName);
+      builder = new DaprSubscriptionBuilder(pubSubName, topicName);
       subscriptionBuilders.put(topicKey, builder);
     }
 
@@ -89,6 +109,10 @@ class DaprRuntime {
 
     if (metadata != null && !metadata.isEmpty()) {
       builder.setMetadata(metadata);
+    }
+
+    if (bulkSubscribe != null) {
+      builder.setBulkSubscribe(bulkSubscribe);
     }
   }
 

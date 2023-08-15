@@ -27,4 +27,9 @@ class Headers {
    * Token for authentication from Application to Dapr runtime.
    */
   static final String DAPR_API_TOKEN = "dapr-api-token";
+
+  /**
+   * Header for Api Logging User-Agent.
+   */
+  static final String DAPR_USER_AGENT = "User-Agent";  
 }

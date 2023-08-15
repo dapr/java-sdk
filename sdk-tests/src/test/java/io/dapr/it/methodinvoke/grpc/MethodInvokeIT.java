@@ -9,12 +9,8 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 
 import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest;
@@ -25,32 +21,16 @@ import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class MethodInvokeIT extends BaseIT {
 
     //Number of messages to be sent: 10
     private static final int NUM_MESSAGES = 10;
 
     /**
-     * Parameters for this test.
-     * Param #1: useGrpc.
-     * @return Collection of parameter tuples.
-     */
-    @Parameters
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] { { false }, { true } });
-    }
-
-    /**
      * Run of a Dapr application.
      */
     private DaprRun daprRun = null;
-
-    @Parameter
-    public boolean useGrpc;
 
     @Before
     public void init() throws Exception {
@@ -60,13 +40,7 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.class,
           DaprApiProtocol.GRPC,  // appProtocol
           60000);
-
-        if (this.useGrpc) {
-            daprRun.switchToGRPC();
-        } else {
-            daprRun.switchToHTTP();
-        }
-
+        daprRun.switchToGRPC();
         // Wait since service might be ready even after port is available.
         Thread.sleep(2000);
     }
@@ -127,7 +101,7 @@ public class MethodInvokeIT extends BaseIT {
                     .block(Duration.ofMillis(10))).getMessage();
             long delay = System.currentTimeMillis() - started;
             assertTrue(delay <= 500);  // 500 ms is a reasonable delay if the request timed out.
-            assertEquals("Timeout on blocking read for 10 MILLISECONDS", message);
+            assertEquals("Timeout on blocking read for 10000000 NANOSECONDS", message);
         }
     }
 
@@ -138,12 +112,12 @@ public class MethodInvokeIT extends BaseIT {
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
 
+            // The error messages should be improved once runtime has standardized error serialization in the API.
+            // This message is not ideal but last time it was improved, there was side effects reported by users.
+            // If this test fails, there might be a regression in runtime (like we had in 1.10.0).
+            // The expectations below are as per 1.9 release and (later on) hotfixed in 1.10.
             assertEquals("UNKNOWN", exception.getErrorCode());
-            if (this.useGrpc) {
-                assertEquals("UNKNOWN: ", exception.getMessage());
-            } else {
-                assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
-            }
+            assertEquals("UNKNOWN: ", exception.getMessage());
         }
     }
 }

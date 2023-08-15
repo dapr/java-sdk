@@ -17,7 +17,6 @@ import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.config.Properties;
-import io.dapr.exceptions.DaprException;
 import io.dapr.utils.TypeRef;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
@@ -25,12 +24,12 @@ import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
 import org.junit.Test;
 
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprPreviewClientHttpTest {
-  private static final String CONFIG_STORE_NAME = "MyConfigurationStore";
 
   private DaprPreviewClient daprPreviewClientHttp;
 
@@ -46,27 +45,6 @@ public class DaprPreviewClientHttpTest {
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprPreviewClientHttp = new DaprClientHttp(daprHttp);
-  }
-
-  @Test
-  public void getConfigurationWithSingleKey() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "key").block();
-    });
-  }
-
-  @Test
-  public void getConfiguration() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.getConfiguration(CONFIG_STORE_NAME, "key1", "key2").block();
-    });
-  }
-
-  @Test
-  public void subscribeConfigurations() {
-    assertThrows(DaprException.class, () -> {
-      daprPreviewClientHttp.subscribeToConfiguration(CONFIG_STORE_NAME, "key1", "key2").blockFirst();
-    });
   }
 
   @Test

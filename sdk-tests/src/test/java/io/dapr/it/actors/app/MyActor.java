@@ -23,7 +23,9 @@ public interface MyActor {
 
   List<String> retrieveActiveActors();
 
-  void startReminder(String name);
+  void setReminderData(ActorReminderDataParam param);
+
+  void startReminder(String name) throws Exception;
 
   void stopReminder(String name);
 

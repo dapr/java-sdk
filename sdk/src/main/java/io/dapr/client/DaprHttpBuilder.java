@@ -23,7 +23,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A builder for the DaprHttp.
+ * @deprecated Use {@link DaprClientBuilder} instead, this will be removed in a future release.
  */
+@Deprecated
 public class DaprHttpBuilder {
 
   /**
@@ -81,6 +83,11 @@ public class DaprHttpBuilder {
           OK_HTTP_CLIENT = builder.build();
         }
       }
+    }
+
+    String endpoint = Properties.HTTP_ENDPOINT.get();
+    if ((endpoint != null) && !endpoint.isEmpty()) {
+      return new DaprHttp(endpoint, OK_HTTP_CLIENT);
     }
 
     return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), OK_HTTP_CLIENT);

@@ -17,38 +17,40 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
-import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.query.Query;
+import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
+import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -61,231 +63,226 @@ import static org.mockito.Mockito.when;
 public class DaprPreviewClientGrpcTest {
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
-	private static final String CONFIG_STORE_NAME = "MyConfigStore";
 	private static final String QUERY_STORE_NAME = "testQueryStore";
 
-	private Closeable closeable;
+	private static final String PUBSUB_NAME = "testPubsub";
+
+	private static final String TOPIC_NAME = "testTopic";
+
+	private GrpcChannelFacade channel;
 	private DaprGrpc.DaprStub daprStub;
 	private DaprPreviewClient previewClient;
 
 	@Before
 	public void setup() throws IOException {
-		closeable = mock(Closeable.class);
+		channel = mock(GrpcChannelFacade.class);
 		daprStub = mock(DaprGrpc.DaprStub.class);
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
 		previewClient = new DaprClientGrpc(
-				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
-		doNothing().when(closeable).close();
+				channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+		doNothing().when(channel).close();
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		previewClient.close();
-		verify(closeable).close();
-		verifyNoMoreInteractions(closeable);
+		verify(channel).close();
+		verifyNoMoreInteractions(channel);
 	}
 
 	@Test
-	public void getConfigurationTestErrorScenario() {
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfiguration(CONFIG_STORE_NAME, "").block();
-		});
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfiguration("", "key").block();
-		});
-		GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, null);
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.getConfiguration(req).block();
-		});
-	}
-
-	@Test
-	public void getSingleConfigurationTest() {
+	public void publishEventsExceptionThrownTest() {
 		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(getSingleMockResponse());
+			throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument");
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		assertThrowsDaprException(
+				StatusRuntimeException.class,
+				"INVALID_ARGUMENT",
+				"INVALID_ARGUMENT: bad bad argument",
+				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+						Collections.EMPTY_LIST)).block());
+	}
+
+	@Test
+	public void publishEventsCallbackExceptionThrownTest() {
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
+			return null;
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
+
+		assertThrowsDaprException(
+				ExecutionException.class,
+				"INVALID_ARGUMENT",
+				"INVALID_ARGUMENT: bad bad argument",
+				() -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+						Collections.EMPTY_LIST)).block());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void publishEventsContentTypeMismatchException() throws IOException {
+		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
+		doAnswer((Answer<Void>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
 			observer.onCompleted();
 			return null;
-		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		ConfigurationItem ci = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-		assertEquals("configkey1", ci.getKey());
-		assertEquals("configvalue1", ci.getValue());
-		assertEquals("1", ci.getVersion());
+
+		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "testEntry"
+				, "application/octet-stream", null);
+		BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
+		previewClient.publishEvents(wrongReq).block();
 	}
 
 	@Test
-	public void getSingleConfigurationWithMetadataTest() {
+	public void publishEventsSerializeException() throws IOException {
+		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
+		previewClient = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
 		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(getSingleMockResponse());
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
 			observer.onCompleted();
 			return null;
-		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
+		}).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
+		BulkPublishEntry<Map<String, String>> entry = new BulkPublishEntry<>("1", new HashMap<>(),
+				"application/json", null);
+		BulkPublishRequest<Map<String, String>> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
+		when(mockSerializer.serialize(any())).thenThrow(IOException.class);
+		Mono<BulkPublishResponse<Map<String, String>>> result = previewClient.publishEvents(req);
 
-		Map<String, String> reqMetadata = new HashMap<>();
-		reqMetadata.put("meta1", "value1");
-		ConfigurationItem ci = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1", reqMetadata).block();
-		assertEquals("configkey1", ci.getKey());
-		assertEquals("configvalue1", ci.getValue());
-		assertEquals("1", ci.getVersion());
+		assertThrowsDaprException(
+				IOException.class,
+				"UNKNOWN",
+				"UNKNOWN: ",
+				() -> result.block());
 	}
 
 	@Test
-	public void getMultipleConfigurationTest() {
-		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(getMultipleMockResponse());
+	public void publishEventsTest() {
+		doAnswer((Answer<BulkPublishResponse>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
+			observer.onNext(builder.build());
 			observer.onCompleted();
 			return null;
-		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		List<ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
-		assertEquals(2, cis.size());
-		assertEquals("configkey1", cis.stream().findFirst().get().getKey());
-		assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
-		assertEquals("1", cis.stream().findFirst().get().getVersion());
-
-		assertEquals("configkey2", cis.stream().skip(1).findFirst().get().getKey());
-		assertEquals("configvalue2", cis.stream().skip(1).findFirst().get().getValue());
-		assertEquals("1", cis.stream().skip(1).findFirst().get().getVersion());
+		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "test",
+				"text/plain", null);
+		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
+		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(req);
+		BulkPublishResponse res = result.block();
+		Assert.assertNotNull(res);
+		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
 	}
 
 	@Test
-	public void getMultipleConfigurationWithMetadataTest() {
-		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.GetConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(getMultipleMockResponse());
+	public void publishEventsWithoutMetaTest() {
+		doAnswer((Answer<BulkPublishResponse>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
+			observer.onNext(builder.build());
 			observer.onCompleted();
 			return null;
-		}).when(daprStub).getConfigurationAlpha1(any(DaprProtos.GetConfigurationRequest.class), any());
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		Map<String, String> reqMetadata = new HashMap<>();
-		reqMetadata.put("meta1", "value1");
-		List<String> keys = Arrays.asList("configkey1","configkey2");
-		List<ConfigurationItem> cis = previewClient.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
-		assertEquals(2, cis.size());
-		assertEquals("configkey1", cis.stream().findFirst().get().getKey());
-		assertEquals("configvalue1", cis.stream().findFirst().get().getValue());
+		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
+				"text/plain", Collections.singletonList("test"));
+		BulkPublishResponse<String> res = result.block();
+		Assert.assertNotNull(res);
+		assertEquals("expected no entries in failed entries list", 0, res.getFailedEntries().size());
 	}
 
 	@Test
-	public void subscribeConfigurationTest() {
-		Map<String, String> metadata = new HashMap<>();
-		metadata.put("meta1", "value1");
-		DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
-				.build();
-
-		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(responseEnvelope);
+	public void publishEventsWithRequestMetaTest() {
+		doAnswer((Answer<BulkPublishResponse>) invocation -> {
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
+			observer.onNext(builder.build());
 			observer.onCompleted();
 			return null;
-		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+		}).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
-		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
-		assertTrue(itr.hasNext());
-		assertEquals("configkey1", itr.next().get(0).getKey());
-		assertFalse(itr.hasNext());
+		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
+				 "text/plain", new HashMap<String, String>(){{
+					put("ttlInSeconds", "123");
+				}}, Collections.singletonList("test"));
+		BulkPublishResponse<String> res = result.block();
+		Assert.assertNotNull(res);
+		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
 	}
 
 	@Test
-	public void subscribeConfigurationTestWithMetadata() {
-		Map<String, String> metadata = new HashMap<>();
-		metadata.put("meta1", "value1");
-		DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
-				.build();
-
+	public void publishEventsObjectTest() {
 		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
-			observer.onNext(responseEnvelope);
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
 			observer.onCompleted();
 			return null;
-		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+		}).when(daprStub).bulkPublishEventAlpha1(ArgumentMatchers.argThat(bulkPublishRequest -> {
+			DaprProtos.BulkPublishRequestEntry entry = bulkPublishRequest.getEntries(0);
+			if (!"application/json".equals(bulkPublishRequest.getEntries(0).getContentType())) {
+				return false;
+			}
 
-		Map<String, String> reqMetadata = new HashMap<>();
-		List<String> keys = Arrays.asList("configkey1");
+			if (!"{\"id\":1,\"value\":\"Event\"}".equals(new String(entry.getEvent().toByteArray())) &&
+					!"{\"value\":\"Event\",\"id\":1}".equals(new String(entry.getEvent().toByteArray()))) {
+				return false;
+			}
+			return true;
+		}), any());
 
-		Iterator<List<ConfigurationItem>> itr = previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
-		assertTrue(itr.hasNext());
-		assertEquals("configkey1", itr.next().get(0).getKey());
-		assertFalse(itr.hasNext());
+
+		DaprClientGrpcTest.MyObject event = new DaprClientGrpcTest.MyObject(1, "Event");
+		BulkPublishEntry<DaprClientGrpcTest.MyObject> entry = new BulkPublishEntry<>("1", event,
+				"application/json", null);
+		BulkPublishRequest<DaprClientGrpcTest.MyObject> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
+		BulkPublishResponse<DaprClientGrpcTest.MyObject> result = previewClient.publishEvents(req).block();
+		Assert.assertNotNull(result);
+		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
 	}
 
 	@Test
-	public void subscribeConfigurationWithErrorTest() {
+	public void publishEventsContentTypeOverrideTest() {
 		doAnswer((Answer<Void>) invocation -> {
-			StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
-					(StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
-			observer.onError(new RuntimeException());
+			StreamObserver<DaprProtos.BulkPublishResponse> observer =
+					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+			observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
 			observer.onCompleted();
 			return null;
-		}).when(daprStub).subscribeConfigurationAlpha1(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+		}).when(daprStub).bulkPublishEventAlpha1(ArgumentMatchers.argThat(bulkPublishRequest -> {
+			DaprProtos.BulkPublishRequestEntry entry = bulkPublishRequest.getEntries(0);
+			if (!"application/json".equals(entry.getContentType())) {
+				return false;
+			}
 
-		assertThrowsDaprException(ExecutionException.class, () -> {
-			previewClient.subscribeToConfiguration(CONFIG_STORE_NAME, "key").blockFirst();
-		});
+			if (!"\"hello\"".equals(new String(entry.getEvent().toByteArray()))) {
+				return false;
+			}
+			return true;
+		}), any());
 
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.subscribeToConfiguration("", "key").blockFirst();
-		});
-
-		SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(CONFIG_STORE_NAME, null);
-		assertThrows(IllegalArgumentException.class, () -> {
-			previewClient.subscribeToConfiguration(req).blockFirst();
-		});
-	}
-
-	private DaprProtos.GetConfigurationResponse getSingleMockResponse() {
-		Map<String, String> metadata = new HashMap<>();
-		metadata.put("meta1", "value1");
-		DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build()
-				).build();
-		return responseEnvelope;
-	}
-
-	private DaprProtos.GetConfigurationResponse getMultipleMockResponse() {
-		Map<String, String> metadata = new HashMap<>();
-		metadata.put("meta1", "value1");
-		DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey1")
-						.setValue("configvalue1")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
-				.addItems(CommonProtos.ConfigurationItem.newBuilder()
-						.setKey("configkey2")
-						.setValue("configvalue2")
-						.setVersion("1")
-						.putAllMetadata(metadata)
-						.build())
-				.build();
-		return responseEnvelope;
+		BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "hello",
+				"", null);
+		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+				Collections.singletonList(entry));
+		BulkPublishResponse<String> result = previewClient.publishEvents(req).block();
+		Assert.assertNotNull(result);
+		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
 	}
 
 	@Test
@@ -387,5 +384,9 @@ public class DaprPreviewClientGrpcTest {
 			it.setError(item.getError());
 		}
 		return it.build();
+	}
+
+	private static StatusRuntimeException newStatusRuntimeException(String status, String message) {
+		return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(status)).withDescription(message));
 	}
 }

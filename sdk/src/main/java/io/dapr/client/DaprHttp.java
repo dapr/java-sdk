@@ -18,6 +18,7 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
+import io.dapr.utils.Version;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -28,9 +29,10 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -140,14 +142,9 @@ public class DaprHttp implements AutoCloseable {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
-   * Hostname used to communicate to Dapr's HTTP endpoint.
+   * Endpoint used to communicate to Dapr's HTTP endpoint.
    */
-  private final String hostname;
-
-  /**
-   * Port used to communicate to Dapr's HTTP endpoint.
-   */
-  private final int port;
+  private final URI uri;
 
   /**
    * Http client used for all API calls.
@@ -162,8 +159,18 @@ public class DaprHttp implements AutoCloseable {
    * @param httpClient RestClient used for all API calls in this new instance.
    */
   DaprHttp(String hostname, int port, OkHttpClient httpClient) {
-    this.hostname = hostname;
-    this.port = port;
+    this.uri = URI.create(DEFAULT_HTTP_SCHEME + "://" + hostname + ":" + port);
+    this.httpClient = httpClient;
+  }
+
+  /**
+   * Creates a new instance of {@link DaprHttp}.
+   *
+   * @param uri        Endpoint for calling Dapr. (e.g. "https://my-dapr-api.company.com")
+   * @param httpClient RestClient used for all API calls in this new instance.
+   */
+  DaprHttp(String uri, OkHttpClient httpClient) {
+    this.uri = URI.create(uri);
     this.httpClient = httpClient;
   }
 
@@ -182,7 +189,7 @@ public class DaprHttp implements AutoCloseable {
       String[] pathSegments,
       Map<String, List<String>> urlParameters,
       Map<String, String> headers,
-      Context context) {
+      ContextView context) {
     return this.invokeApi(method, pathSegments, urlParameters, (byte[]) null, headers, context);
   }
 
@@ -203,7 +210,7 @@ public class DaprHttp implements AutoCloseable {
       Map<String, List<String>> urlParameters,
       String content,
       Map<String, String> headers,
-      Context context) {
+      ContextView context) {
 
     return this.invokeApi(
         method, pathSegments, urlParameters, content == null
@@ -223,12 +230,12 @@ public class DaprHttp implements AutoCloseable {
    * @return Asynchronous response
    */
   public Mono<Response> invokeApi(
-          String method,
-          String[] pathSegments,
-          Map<String, List<String>> urlParameters,
-          byte[] content,
-          Map<String, String> headers,
-          Context context) {
+      String method,
+      String[] pathSegments,
+      Map<String, List<String>> urlParameters,
+      byte[] content,
+      Map<String, String> headers,
+      ContextView context) {
     // fromCallable() is needed so the invocation does not happen early, causing a hot mono.
     return Mono.fromCallable(() -> doInvokeApi(method, pathSegments, urlParameters, content, headers, context))
         .flatMap(f -> Mono.fromFuture(f));
@@ -255,10 +262,10 @@ public class DaprHttp implements AutoCloseable {
    * @return CompletableFuture for Response.
    */
   private CompletableFuture<Response> doInvokeApi(String method,
-                               String[] pathSegments,
-                               Map<String, List<String>> urlParameters,
-                               byte[] content, Map<String, String> headers,
-                               Context context) {
+      String[] pathSegments,
+      Map<String, List<String>> urlParameters,
+      byte[] content, Map<String, String> headers,
+      ContextView context) {
     final String requestId = UUID.randomUUID().toString();
     RequestBody body;
 
@@ -272,17 +279,22 @@ public class DaprHttp implements AutoCloseable {
       body = RequestBody.Companion.create(content, mediaType);
     }
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-    urlBuilder.scheme(DEFAULT_HTTP_SCHEME)
-        .host(this.hostname)
-        .port(this.port);
+    urlBuilder.scheme(uri.getScheme())
+        .host(uri.getHost());
+    if (uri.getPort() > 0) {
+      urlBuilder.port(uri.getPort());
+    }
+    if (uri.getPath() != null) {
+      urlBuilder.addPathSegments(uri.getPath());
+    }
     for (String pathSegment : pathSegments) {
       urlBuilder.addPathSegment(pathSegment);
     }
     Optional.ofNullable(urlParameters).orElse(Collections.emptyMap()).entrySet().stream()
         .forEach(urlParameter ->
             Optional.ofNullable(urlParameter.getValue()).orElse(Collections.emptyList()).stream()
-              .forEach(urlParameterValue ->
-                  urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameterValue)));
+                .forEach(urlParameterValue ->
+                    urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameterValue)));
 
     Request.Builder requestBuilder = new Request.Builder()
         .url(urlBuilder.build())
@@ -304,6 +316,7 @@ public class DaprHttp implements AutoCloseable {
     if (daprApiToken != null) {
       requestBuilder.addHeader(Headers.DAPR_API_TOKEN, daprApiToken);
     }
+    requestBuilder.addHeader(Headers.DAPR_USER_AGENT, Version.getSdkVersion());
 
     if (headers != null) {
       Optional.ofNullable(headers.entrySet()).orElse(Collections.emptySet()).stream()

@@ -14,6 +14,9 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -32,13 +35,17 @@ import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -115,7 +122,8 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     InvokeMethodRequest req = new InvokeMethodRequest(appId, methodName)
         .setBody(data)
         .setHttpExtension(httpExtension)
-        .setContentType(objectSerializer.getContentType());
+        .setContentType(objectSerializer.getContentType())
+        .setMetadata(metadata);
 
     return this.invokeMethod(req, type);
   }
@@ -392,6 +400,50 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        List<T> events) {
+    return publishEvents(pubsubName, topicName, contentType, null, events);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        T... events) {
+    return publishEvents(pubsubName, topicName, contentType, null, events);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        Map<String, String> requestMetadata, T... events) {
+    return publishEvents(pubsubName, topicName, contentType, requestMetadata, Arrays.asList(events));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                        Map<String, String> requestMetadata, List<T> events) {
+    if (events == null || events.size() == 0) {
+      throw new IllegalArgumentException("list of events cannot be null or empty");
+    }
+    List<BulkPublishEntry<T>> entries = new ArrayList<>();
+    for (int i = 0; i < events.size(); i++) {
+      // entryID field is generated based on order of events in the request
+      entries.add(new BulkPublishEntry<>("" + i, events.get(i), contentType, null));
+    }
+    return publishEvents(new BulkPublishRequest<>(pubsubName, topicName, entries, requestMetadata));
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public <T> Mono<List<State<T>>> getBulkState(String storeName, List<String> keys, TypeRef<T> type) {
     return this.getBulkState(new GetBulkStateRequest(storeName, keys), type);
   }
@@ -503,7 +555,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   @Override
   public Mono<ConfigurationItem> getConfiguration(String storeName, String key) {
     GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
-    return this.getConfiguration(request).map(data -> data.get(0));
+    return this.getConfiguration(request).map(data -> data.get(key));
   }
 
   /**
@@ -513,14 +565,14 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   public Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata) {
     GetConfigurationRequest request = new GetConfigurationRequest(storeName, filterEmptyKeys(key));
     request.setMetadata(metadata);
-    return this.getConfiguration(request).map(data -> data.get(0));
+    return this.getConfiguration(request).map(data -> data.get(key));
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(String storeName, String... keys) {
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(String storeName, String... keys) {
     List<String> listOfKeys = filterEmptyKeys(keys);
     GetConfigurationRequest request = new GetConfigurationRequest(storeName, listOfKeys);
     return this.getConfiguration(request);
@@ -530,7 +582,7 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {
@@ -542,22 +594,32 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
   /**
    * {@inheritDoc}
    */
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys) {
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(String storeName, String... keys) {
     List<String> listOfKeys = filterEmptyKeys(keys);
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, listOfKeys);
-    return this.subscribeToConfiguration(request);
+    return this.subscribeConfiguration(request);
   }
 
   /**
    * {@inheritDoc}
    */
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(
       String storeName,
       List<String> keys,
       Map<String, String> metadata) {
     SubscribeConfigurationRequest request = new SubscribeConfigurationRequest(storeName, keys);
     request.setMetadata(metadata);
-    return this.subscribeToConfiguration(request);
+    return this.subscribeConfiguration(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(
+      String id,
+      String storeName) {
+    UnsubscribeConfigurationRequest request = new UnsubscribeConfigurationRequest(id, storeName);
+    return this.unsubscribeConfiguration(request);
   }
 
   private List<String> filterEmptyKeys(String... keys) {

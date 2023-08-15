@@ -101,8 +101,26 @@ public class Properties {
       DEFAULT_GRPC_PORT);
 
   /**
-   * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.
+   * GRPC endpoint for remote sidecar connectivity.
    */
+  public static final Property<String> GRPC_ENDPOINT = new StringProperty(
+      "dapr.grpc.endpoint",
+      "DAPR_GRPC_ENDPOINT",
+      null);
+
+  /**
+   * GRPC endpoint for remote sidecar connectivity.
+   */
+  public static final Property<String> HTTP_ENDPOINT = new StringProperty(
+      "dapr.http.endpoint",
+      "DAPR_HTTP_ENDPOINT",
+      null);
+
+  /**
+   * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.
+   * @deprecated This attribute will be deleted at SDK version 1.10.
+   */
+  @Deprecated
   public static final Property<DaprApiProtocol> API_PROTOCOL = new GenericProperty<>(
       "dapr.api.protocol",
       "DAPR_API_PROTOCOL",
@@ -111,7 +129,9 @@ public class Properties {
 
   /**
    * Determines if Dapr client should use gRPC or HTTP for Dapr's service method invocation APIs.
+   * @deprecated This attribute will be deleted at SDK version 1.10.
    */
+  @Deprecated
   public static final Property<DaprApiProtocol> API_METHOD_INVOCATION_PROTOCOL = new GenericProperty<>(
       "dapr.api.methodInvocation.protocol",
       "DAPR_API_METHOD_INVOCATION_PROTOCOL",

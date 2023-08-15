@@ -46,6 +46,6 @@ public class Subscriber {
     int port = Integer.parseInt(cmd.getOptionValue("port"));
 
     // Start Dapr's callback endpoint.
-    DaprApplication.start(port);
+    DaprApplication.start("http",port);
   }
 }

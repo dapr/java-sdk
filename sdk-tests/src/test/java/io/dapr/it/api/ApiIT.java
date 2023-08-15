@@ -44,6 +44,8 @@ public class ApiIT extends BaseIT {
             run.switchToHTTP();
         }
 
+        // TODO(artursouza): change this to wait for the sidecar to be healthy (new method needed in DaprClient).
+        Thread.sleep(3000);
         try (DaprClient client = new DaprClientBuilder().build()) {
             logger.info("Sending shutdown request.");
             client.shutdown().block();
