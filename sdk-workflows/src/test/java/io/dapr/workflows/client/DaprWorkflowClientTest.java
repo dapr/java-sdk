@@ -16,12 +16,14 @@ package io.dapr.workflows.client;
 import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
-import io.dapr.workflows.runtime.Workflow;
-import io.dapr.workflows.runtime.WorkflowContext;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowContext;
+import io.dapr.workflows.WorkflowStub;
 import io.grpc.ManagedChannel;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.Arrays;
@@ -43,7 +45,8 @@ public class DaprWorkflowClientTest {
 
   public static class TestWorkflow extends Workflow {
     @Override
-    public void run(WorkflowContext ctx) {
+    public WorkflowStub create() {
+      return WorkflowContext::getInstanceId;
     }
   }
 
@@ -176,33 +179,33 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
-  public void raiseEvent(){
-    String expectedInstanceId="TestWorkflowInstanceId";
-    String expectedEventName="TestEventName";
-    Object expectedEventPayload=new Object();
-    client.raiseEvent(expectedInstanceId,expectedEventName,expectedEventPayload);
-    verify(mockInnerClient,times(1)).raiseEvent(expectedInstanceId,
-            expectedEventName,expectedEventPayload);
+  public void raiseEvent() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedEventName = "TestEventName";
+    Object expectedEventPayload = new Object();
+    client.raiseEvent(expectedInstanceId, expectedEventName, expectedEventPayload);
+    verify(mockInnerClient, times(1)).raiseEvent(expectedInstanceId,
+        expectedEventName, expectedEventPayload);
   }
 
   @Test
-  public void purgeInstance(){
-    String expectedArgument="TestWorkflowInstanceId";
+  public void purgeInstance() {
+    String expectedArgument = "TestWorkflowInstanceId";
     client.purgeInstance(expectedArgument);
-    verify(mockInnerClient,times(1)).purgeInstance(expectedArgument);
+    verify(mockInnerClient, times(1)).purgeInstance(expectedArgument);
   }
 
   @Test
-  public void createTaskHub(){
-    boolean expectedArgument=true;
+  public void createTaskHub() {
+    boolean expectedArgument = true;
     client.createTaskHub(expectedArgument);
-    verify(mockInnerClient,times(1)).createTaskHub(expectedArgument);
+    verify(mockInnerClient, times(1)).createTaskHub(expectedArgument);
   }
 
   @Test
-  public void deleteTaskHub(){
+  public void deleteTaskHub() {
     client.deleteTaskHub();
-    verify(mockInnerClient,times(1)).deleteTaskHub();
+    verify(mockInnerClient, times(1)).deleteTaskHub();
   }
 
   @Test
