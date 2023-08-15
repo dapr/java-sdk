@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.examples.workflows;
 
 import io.dapr.workflows.runtime.WorkflowRuntime;
+import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 
 /**
  * For setup instructions, see the README.
@@ -27,12 +28,16 @@ public class DemoWorkflowWorker {
    * @throws Exception An Exception.
    */
   public static void main(String[] args) throws Exception {
-    // Register the Workflow with the runtime.
-    WorkflowRuntime.getInstance().registerWorkflow(DemoWorkflow.class);
-    WorkflowRuntime.getInstance().registerWorkflow(DemoSubWorkflow.class);
-    WorkflowRuntime.getInstance().registerActivity(DemoWorkflowActivity.class);
-    System.out.println("Start workflow runtime");
-    WorkflowRuntime.getInstance().startAndBlock();
+    // Register the Workflow with the builder.
+    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(DemoWorkflow.class);
+    builder.registerActivity(DemoWorkflowActivity.class);
+
+    // Build and then start the workflow runtime pulling and executing tasks
+    try (WorkflowRuntime runtime = builder.build()) {
+      System.out.println("Start workflow runtime");
+      runtime.start();
+    }
+
     System.exit(0);
   }
 }

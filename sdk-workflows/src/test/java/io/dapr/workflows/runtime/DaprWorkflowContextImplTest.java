@@ -15,6 +15,7 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
+import io.dapr.workflows.DaprWorkflowContextImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;

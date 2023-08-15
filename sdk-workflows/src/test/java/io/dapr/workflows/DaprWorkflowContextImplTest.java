@@ -15,7 +15,6 @@ package io.dapr.workflows;
 
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
-import io.dapr.workflows.DaprWorkflowContextImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -23,7 +22,12 @@ import org.slf4j.Logger;
 import java.time.Duration;
 
 import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprWorkflowContextImplTest {
   private DaprWorkflowContextImpl context;
@@ -37,9 +41,15 @@ public class DaprWorkflowContextImplTest {
 
   @Test
   public void nullConstructorTest() {
-    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(mockInnerContext, null); });
-    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(null, mock(Logger.class)); });
-    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(null, null); });
+    assertThrows(IllegalArgumentException.class, () -> {
+      new DaprWorkflowContextImpl(mockInnerContext, null);
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      new DaprWorkflowContextImpl(null, mock(Logger.class));
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      new DaprWorkflowContextImpl(null, null);
+    });
   }
 
   @Test
@@ -56,14 +66,15 @@ public class DaprWorkflowContextImplTest {
 
   @Test
   public void waitForExternalEventTest() {
-    doReturn(mock(Task.class))
-        .when(mockInnerContext).waitForExternalEvent(any(String.class), any(Duration.class));
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
     String expectedEvent = "TestEvent";
     Duration expectedDuration = Duration.ofSeconds(1);
 
-    testContext.waitForExternalEvent(expectedEvent, expectedDuration).await();
-    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
+    doReturn(mock(Task.class)).when(mockInnerContext)
+        .waitForExternalEvent(expectedEvent, expectedDuration, String.class);
+    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
+
+    testContext.waitForExternalEvent(expectedEvent, expectedDuration, String.class).await();
+    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration, String.class);
   }
 
   @Test(expected = IllegalArgumentException.class)
