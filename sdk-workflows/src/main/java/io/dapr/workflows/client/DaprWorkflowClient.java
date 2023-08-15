@@ -22,7 +22,7 @@ import io.dapr.utils.Version;
 import io.dapr.workflows.runtime.Workflow;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-
+import io.dapr.utils.NetworkUtils;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +40,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
    */
   public DaprWorkflowClient() {
-    this(createGrpcChannel());
+    this(NetworkUtils.buildGrpcManagedChannel());
   }
 
   /**
@@ -72,24 +72,6 @@ public class DaprWorkflowClient implements AutoCloseable {
   private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel) {
     return new DurableTaskGrpcClientBuilder()
         .grpcChannel(grpcChannel)
-        .build();
-  }
-
-  /**
-   * Static method to create the GRPC Channel for the DurableTaskClient.
-   *
-   * @return a Managed GRPC channel.
-   * @throws IllegalStateException if the GRPC port is invalid.
-   */
-  private static ManagedChannel createGrpcChannel() throws IllegalStateException {
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException(String.format("Invalid port, %s. Must greater than 0", port));
-    }
-
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
-        .usePlaintext()
-        .userAgent(Version.getSdkVersion())
         .build();
   }
 

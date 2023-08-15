@@ -14,91 +14,36 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.DurableTaskGrpcWorker;
-import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
-import io.dapr.config.Properties;
 
 /**
  * Contains methods to register workflows and activities.
  */
 public class WorkflowRuntime implements AutoCloseable {
 
-  private static volatile WorkflowRuntime instance;
-  private DurableTaskGrpcWorkerBuilder builder;
   private DurableTaskGrpcWorker worker;
 
-  private WorkflowRuntime() throws IllegalStateException {
-
-    if (instance != null) {
-      throw new IllegalStateException("WorkflowRuntime should only be constructed once");
-    }
-
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException(String.format("Invalid port, %s. Must greater than 0", port));
-    }
-
-    this.builder = new DurableTaskGrpcWorkerBuilder().port(port);
+  public WorkflowRuntime(DurableTaskGrpcWorker worker) {
+    this.worker = worker;
   }
 
   /**
-   * Returns an WorkflowRuntime object.
+   * Start the Workflow runtime processing items and block.
    *
-   * @return An WorkflowRuntime object.
-   */
-  public static WorkflowRuntime getInstance() {
-    if (instance == null) {
-      synchronized (WorkflowRuntime.class) {
-        if (instance == null) {
-          instance = new WorkflowRuntime();
-        }
-      }
-    }
-    return instance;
-  }
-
-  /**
-   * Registers a Workflow object.
-   *
-   * @param <T>   any Workflow type
-   * @param clazz the class being registered
-   */
-  public <T extends Workflow> void registerWorkflow(Class<T> clazz) {
-    this.builder = this.builder.addOrchestration(
-        new OrchestratorWrapper<>(clazz)
-    );
-  }
-
-  /**
-   * Registers an Activity object.
-   *
-   * @param <T>   any Activity type
-   * @param clazz the class being registered
-   */
-  public <T extends WorkflowActivity> void registerActivity(Class<T> clazz) {
-    this.builder = this.builder.addActivity(
-        new ActivityWrapper<>(clazz)
-    );
-  }
-
-  /**
-   * Start the Workflow runtime processing items on a non-blocking
-   * background thread indefinitely or until that thread is interrupted.
    */
   public void start() {
-    if (this.worker == null) {
-      this.worker = this.builder.build();
-      this.worker.start();
-    }
+    this.start(true);
   }
 
   /**
-   * Start the Workflow runtime processing items on the current thread
-   * and block indefinitely or until that thread is interrupted.
+   * Start the Workflow runtime processing items.
+   *
+   * @param block block the thread if true
    */
-  public void startAndBlock() {
-    if (this.worker == null) {
-      this.worker = this.builder.build();
+  public void start(boolean block) {
+    if (block) {
       this.worker.startAndBlock();
+    } else {
+      this.worker.start();
     }
   }
 
