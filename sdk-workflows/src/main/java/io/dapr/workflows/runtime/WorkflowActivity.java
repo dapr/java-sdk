@@ -29,7 +29,7 @@ package io.dapr.workflows.runtime;
  * <p>Because activities only guarantee at least once execution, it's recommended that activity logic be implemented as
  * idempotent whenever possible.
  *
- * <p>Activities are scheduled by orchestrators using one of the {@link WorkflowContext#callActivity} method
+ * <p>Activities are scheduled by orchestrators using one of the {@link io.dapr.workflows.WorkflowContext#callActivity} method
  * overloads.
  */
 public abstract class WorkflowActivity {

@@ -44,7 +44,7 @@ public class WorkflowRuntimeBuilder {
   /**
    * Registers a Workflow object.
    *
-   * @param <T> any Workflow type
+   * @param <T>   any Workflow type
    * @param clazz the class being registered
    * @return the WorkflowRuntimeBuilder
    */
@@ -54,5 +54,23 @@ public class WorkflowRuntimeBuilder {
     );
 
     return this;
+  }
+
+  public <T extends WorkflowActivity> void registerActivity(Class<T> clazz) {
+    this.builder = this.builder.addActivity(
+        new ActivityWrapper<>(clazz)
+    );
+  }
+
+
+  public WorkflowRuntime getInstance() {
+    if (instance == null) {
+      synchronized (WorkflowRuntime.class) {
+        if (instance == null) {
+          instance = new WorkflowRuntime(this.builder.build());
+        }
+      }
+    }
+    return instance;
   }
 }
