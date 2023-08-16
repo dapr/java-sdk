@@ -438,14 +438,16 @@ public class CloudEvent<T> {
 
   private static class OffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
     @Override
-    public void serialize(OffsetDateTime offsetDateTime, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(OffsetDateTime offsetDateTime, JsonGenerator jsonGenerator,
+                          SerializerProvider serializerProvider) throws IOException {
       jsonGenerator.writeString(offsetDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
     }
   }
 
   private static class OffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
     @Override
-    public OffsetDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+    public OffsetDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+        throws IOException {
       return OffsetDateTime.parse(jsonParser.getText());
     }
   }
