@@ -306,15 +306,16 @@ class ActorManager<T extends AbstractActor> {
                 this.runtimeContext.getActorTypeInformation().getName()));
       }
 
-      return actor.onPreActorMethodInternal(context)
+      return Mono.fromRunnable(() -> actor.rollback(true))
+          .onErrorMap(throwable -> {
+            actor.rollback(false);
+            return throwable;
+          })
+          .then(actor.onPreActorMethodInternal(context))
           .then((Mono<Object>) func.apply(actor))
           .switchIfEmpty(
               actor.onPostActorMethodInternal(context))
           .flatMap(r -> actor.onPostActorMethodInternal(context).thenReturn(r))
-          .onErrorMap(throwable -> {
-            actor.rollback();
-            return throwable;
-          })
           .map(o -> (T) o);
     } catch (Exception e) {
       return Mono.error(e);
