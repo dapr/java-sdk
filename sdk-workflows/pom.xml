@@ -19,7 +19,7 @@
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
     <grpc.version>1.42.1</grpc.version>
-    <jackson.version>2.12.3</jackson.version>
+    <jackson.version>2.12.7.1</jackson.version>
   </properties>
 
   <dependencies>
