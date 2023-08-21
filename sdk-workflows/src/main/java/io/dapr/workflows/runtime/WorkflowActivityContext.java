@@ -31,9 +31,8 @@ public class WorkflowActivityContext implements TaskActivityContext {
   public WorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
-    } else {
-      this.innerContext = context;
     }
+    this.innerContext = context;
   }
 
   /**
