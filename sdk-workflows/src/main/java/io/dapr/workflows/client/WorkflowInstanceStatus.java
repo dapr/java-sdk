@@ -18,6 +18,8 @@ import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.WorkflowRuntimeStatus;
 
+import javax.annotation.Nullable;
+
 import java.time.Instant;
 
 /**
@@ -26,8 +28,10 @@ import java.time.Instant;
  */
 public class WorkflowInstanceStatus {
 
-  OrchestrationMetadata orchestrationMetadata;
-  WorkflowFailureDetails failureDetails;
+  private final OrchestrationMetadata orchestrationMetadata;
+
+  @Nullable
+  private final WorkflowFailureDetails failureDetails;
 
   /**
    * Class constructor.
@@ -36,10 +40,11 @@ public class WorkflowInstanceStatus {
    */
   public WorkflowInstanceStatus(OrchestrationMetadata orchestrationMetadata) {
     this.orchestrationMetadata = orchestrationMetadata;
-    // This value will be null if the workflow doesn't exist.
     FailureDetails details = orchestrationMetadata.getFailureDetails();
     if (details != null) {
       this.failureDetails = new WorkflowFailureDetails(details);
+    } else {
+      this.failureDetails = null;
     }
   }
 
@@ -118,6 +123,7 @@ public class WorkflowInstanceStatus {
    *
    * @return the failure details of the failed workflow instance or {@code null}
    */
+  @Nullable
   public WorkflowFailureDetails getFailureDetails() {
     return this.failureDetails;
   }
