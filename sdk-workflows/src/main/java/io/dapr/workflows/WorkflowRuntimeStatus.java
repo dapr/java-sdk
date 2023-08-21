@@ -60,12 +60,7 @@ public enum WorkflowRuntimeStatus {
   /**
    * The workflow was suspended.
    */
-  SUSPENDED,
-
-  /**
-   * The status of the workflow is unknown.
-   */
-  UNKNOWN;
+  SUSPENDED;
 
   /**
    * Convert runtime OrchestrationRuntimeStatus to WorkflowRuntimeStatus.
@@ -74,9 +69,8 @@ public enum WorkflowRuntimeStatus {
    * @return The runtime status of the workflow.
    */
   public static WorkflowRuntimeStatus fromOrchestrationRuntimeStatus(OrchestrationRuntimeStatus status) {
-
     if (status == null) {
-      return WorkflowRuntimeStatus.UNKNOWN;
+      throw new IllegalArgumentException("status cannot be null");
     }
 
     switch (status) {
@@ -97,7 +91,7 @@ public enum WorkflowRuntimeStatus {
       case SUSPENDED:
         return WorkflowRuntimeStatus.SUSPENDED;
       default:
-        return WorkflowRuntimeStatus.UNKNOWN;
+        throw new RuntimeException(String.format("Unknown status value: %s", status));
     }
   }
 

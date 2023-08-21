@@ -55,10 +55,6 @@ public class WorkflowRuntimeStatusTest {
 
     Assert.assertEquals(WorkflowRuntimeStatus.fromOrchestrationRuntimeStatus(OrchestrationRuntimeStatus.SUSPENDED),
         WorkflowRuntimeStatus.SUSPENDED);
-
-    Assert.assertEquals(WorkflowRuntimeStatus.fromOrchestrationRuntimeStatus(null),
-        WorkflowRuntimeStatus.UNKNOWN);
-
   }
 
   @Test
@@ -87,9 +83,15 @@ public class WorkflowRuntimeStatusTest {
 
     Assert.assertEquals(WorkflowRuntimeStatus.toOrchestrationRuntimeStatus(WorkflowRuntimeStatus.SUSPENDED),
         OrchestrationRuntimeStatus.SUSPENDED);
+  }
 
-    Assert.assertEquals(WorkflowRuntimeStatus.toOrchestrationRuntimeStatus(WorkflowRuntimeStatus.UNKNOWN),
-        null);
-
+  @Test
+  public void fromOrchestrationRuntimeStatusThrowsIllegalArgumentException() {
+    try {
+      WorkflowRuntimeStatus.fromOrchestrationRuntimeStatus(null);
+      Assert.fail("Expected exception not thrown");
+    } catch (IllegalArgumentException e) {
+      Assert.assertEquals("status cannot be null", e.getMessage());
+    }
   }
 }
