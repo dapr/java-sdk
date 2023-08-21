@@ -16,6 +16,8 @@ package io.dapr.workflows.client;
 import com.microsoft.durabletask.FailureDetails;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
+import io.dapr.workflows.WorkflowRuntimeStatus;
+
 import java.time.Instant;
 
 /**
@@ -65,7 +67,7 @@ public class WorkflowState {
    * object was fetched.
    *
    * @return the current runtime status of the workflow instance at the time this
-   *         object was fetched
+   * object was fetched
    */
   public WorkflowRuntimeStatus getRuntimeStatus() {
     return WorkflowRuntimeStatus.fromOrchestrationRuntimeStatus(orchestrationMetadata.getRuntimeStatus());
@@ -126,7 +128,7 @@ public class WorkflowState {
    * this object was fetched.
    *
    * @return {@code true} if the workflow existed and was in a running state;
-   *         otherwise {@code false}
+   * otherwise {@code false}
    */
   public boolean isRunning() {
     return orchestrationMetadata.isRunning();
@@ -142,7 +144,7 @@ public class WorkflowState {
    * {@link WorkflowRuntimeStatus#TERMINATED}.
    *
    * @return {@code true} if the workflow was in a terminal state; otherwise
-   *         {@code false}
+   * {@code false}
    */
   public boolean isCompleted() {
     return orchestrationMetadata.isCompleted();

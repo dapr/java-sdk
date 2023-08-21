@@ -16,9 +16,11 @@ package io.dapr.workflows.client;
 import com.microsoft.durabletask.FailureDetails;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
+import io.dapr.workflows.WorkflowRuntimeStatus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
 import java.time.Instant;
 
 import static org.mockito.Mockito.mock;
@@ -104,7 +106,7 @@ public class WorkflowStateTest {
 
     OrchestrationMetadata orchestrationMetadata = mock(OrchestrationMetadata.class);
     when(orchestrationMetadata.getFailureDetails()).thenReturn(mockFailureDetails);
- 
+
     // Act
     WorkflowState metadata = new WorkflowState(orchestrationMetadata);
     WorkflowFailureDetails result = metadata.getFailureDetails();

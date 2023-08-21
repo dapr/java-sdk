@@ -11,9 +11,10 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.client;
+package io.dapr.workflows;
 
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -138,7 +139,7 @@ public enum WorkflowRuntimeStatus {
    */
   public static List<OrchestrationRuntimeStatus> toOrchestrationRuntimeStatus(List<WorkflowRuntimeStatus> statuses) {
     return statuses.stream()
-                   .map(x -> toOrchestrationRuntimeStatus(x)) 
-                   .collect(Collectors.toList());
+        .map(x -> toOrchestrationRuntimeStatus(x))
+        .collect(Collectors.toList());
   }
 }
