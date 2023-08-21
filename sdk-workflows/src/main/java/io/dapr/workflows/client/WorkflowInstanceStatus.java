@@ -70,8 +70,7 @@ public class WorkflowInstanceStatus {
    * Gets the current runtime status of the workflow instance at the time this
    * object was fetched.
    *
-   * @return the current runtime status of the workflow instance at the time this
-   * object was fetched
+   * @return the current runtime status of the workflow instance at the time this object was fetched
    */
   public WorkflowRuntimeStatus getRuntimeStatus() {
     return WorkflowRuntimeStatus.fromOrchestrationRuntimeStatus(orchestrationMetadata.getRuntimeStatus());
@@ -132,8 +131,7 @@ public class WorkflowInstanceStatus {
    * Gets a value indicating whether the workflow instance was running at the time
    * this object was fetched.
    *
-   * @return {@code true} if the workflow existed and was in a running state;
-   * otherwise {@code false}
+   * @return {@code true} if the workflow existed and was in a running state otherwise {@code false}
    */
   public boolean isRunning() {
     return orchestrationMetadata.isRunning();
