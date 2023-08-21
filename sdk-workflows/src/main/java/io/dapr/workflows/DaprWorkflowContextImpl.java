@@ -139,7 +139,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   }
 
   @Override
-  public boolean getIsReplaying() {
+  public boolean isReplaying() {
     return this.innerContext.getIsReplaying();
   }
 

@@ -237,7 +237,7 @@ public interface WorkflowContext {
    *
    * @return {@code true} if the workflow is replaying, otherwise {@code false}
    */
-  boolean getIsReplaying();
+  boolean isReplaying();
 
   /**
    * Returns a new {@code Task} that is completed when all the given {@code Task}s complete. If any of the given
