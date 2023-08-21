@@ -35,9 +35,8 @@ public class WorkflowInstanceStatus {
    * @param orchestrationMetadata Durable task orchestration metadata
    */
   public WorkflowInstanceStatus(OrchestrationMetadata orchestrationMetadata) {
-    // This value will be null if the workflow doesn't exist.
     this.orchestrationMetadata = orchestrationMetadata;
-
+    // This value will be null if the workflow doesn't exist.
     FailureDetails details = orchestrationMetadata.getFailureDetails();
     if (details != null) {
       this.failureDetails = new WorkflowFailureDetails(details);
