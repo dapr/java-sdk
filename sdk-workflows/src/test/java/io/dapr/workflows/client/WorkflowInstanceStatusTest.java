@@ -29,15 +29,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
-public class WorkflowStateTest {
+public class WorkflowInstanceStatusTest {
 
   private OrchestrationMetadata mockOrchestrationMetadata;
-  private WorkflowState workflowMetadata;
+  private WorkflowInstanceStatus workflowMetadata;
 
   @Before
   public void setUp() throws Exception {
     mockOrchestrationMetadata = mock(OrchestrationMetadata.class);
-    workflowMetadata = new WorkflowState(mockOrchestrationMetadata);
+    workflowMetadata = new WorkflowInstanceStatus(mockOrchestrationMetadata);
   }
 
   @Test
@@ -108,7 +108,7 @@ public class WorkflowStateTest {
     when(orchestrationMetadata.getFailureDetails()).thenReturn(mockFailureDetails);
 
     // Act
-    WorkflowState metadata = new WorkflowState(orchestrationMetadata);
+    WorkflowInstanceStatus metadata = new WorkflowInstanceStatus(orchestrationMetadata);
     WorkflowFailureDetails result = metadata.getFailureDetails();
 
     // Assert

@@ -21,10 +21,10 @@ import io.dapr.workflows.WorkflowRuntimeStatus;
 import java.time.Instant;
 
 /**
- * Represents a snapshot of an workflow instance's current state, including
+ * Represents a snapshot of a workflow instance's current state, including
  * metadata.
  */
-public class WorkflowState {
+public class WorkflowInstanceStatus {
 
   OrchestrationMetadata orchestrationMetadata;
   WorkflowFailureDetails failureDetails;
@@ -34,7 +34,7 @@ public class WorkflowState {
    *
    * @param orchestrationMetadata Durable task orchestration metadata
    */
-  public WorkflowState(OrchestrationMetadata orchestrationMetadata) {
+  public WorkflowInstanceStatus(OrchestrationMetadata orchestrationMetadata) {
     // This value will be null if the workflow doesn't exist.
     this.orchestrationMetadata = orchestrationMetadata;
 

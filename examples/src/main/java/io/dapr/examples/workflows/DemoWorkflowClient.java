@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.examples.workflows;
 
 import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.client.WorkflowState;
+import io.dapr.workflows.client.WorkflowInstanceStatus;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -42,13 +42,13 @@ public class DemoWorkflowClient {
 
       System.out.println(separatorStr);
       System.out.println("**GetInstanceMetadata:Running Workflow**");
-      WorkflowState workflowMetadata = client.getInstanceState(instanceId, true);
+      WorkflowInstanceStatus workflowMetadata = client.getInstanceState(instanceId, true);
       System.out.printf("Result: %s%n", workflowMetadata);
 
       System.out.println(separatorStr);
       System.out.println("**WaitForInstanceStart**");
       try {
-        WorkflowState waitForInstanceStartResult =
+        WorkflowInstanceStatus waitForInstanceStartResult =
             client.waitForInstanceStart(instanceId, Duration.ofSeconds(60), true);
         System.out.printf("Result: %s%n", waitForInstanceStartResult);
       } catch (TimeoutException ex) {
@@ -75,7 +75,7 @@ public class DemoWorkflowClient {
       System.out.println(separatorStr);
       System.out.println("**WaitForInstanceCompletion**");
       try {
-        WorkflowState waitForInstanceCompletionResult =
+        WorkflowInstanceStatus waitForInstanceCompletionResult =
             client.waitForInstanceCompletion(instanceId, Duration.ofSeconds(60), true);
         System.out.printf("Result: %s%n", waitForInstanceCompletionResult);
       } catch (TimeoutException ex) {
