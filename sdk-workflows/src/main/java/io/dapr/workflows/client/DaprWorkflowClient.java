@@ -32,8 +32,8 @@ import java.util.concurrent.TimeoutException;
  */
 public class DaprWorkflowClient implements AutoCloseable {
 
-  private final DurableTaskClient innerClient;
-  private final ManagedChannel grpcChannel;
+  DurableTaskClient innerClient;
+  ManagedChannel grpcChannel;
 
   /**
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
@@ -229,9 +229,11 @@ public class DaprWorkflowClient implements AutoCloseable {
   public void close() throws InterruptedException {
     if (this.innerClient != null) {
       this.innerClient.close();
+      this.innerClient = null;
     }
     if (this.grpcChannel != null && !this.grpcChannel.isShutdown()) {
       this.grpcChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+      this.grpcChannel = null;
     }
   }
 }
