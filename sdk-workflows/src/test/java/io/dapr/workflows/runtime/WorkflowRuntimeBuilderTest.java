@@ -37,4 +37,9 @@ public class WorkflowRuntimeBuilderTest {
   public void getInstanceTest() {
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().getInstance());
   }
+
+  @Test
+  public void buildTest() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().build());
+  }
 }

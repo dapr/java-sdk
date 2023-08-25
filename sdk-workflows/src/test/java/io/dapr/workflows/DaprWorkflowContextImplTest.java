@@ -13,13 +13,16 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import com.microsoft.durabletask.RetryPolicy;
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -58,12 +61,21 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
-  public void waitForExternalEventTest() {
+  public void waitForExternalEventWithEventAndDurationTest() {
     String expectedEvent = "TestEvent";
     Duration expectedDuration = Duration.ofSeconds(1);
 
     context.waitForExternalEvent(expectedEvent, expectedDuration);
     verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration, Void.class);
+  }
+
+  @Test
+  public void waitForExternalEventTest() {
+    String expectedEvent = "TestEvent";
+    Duration expectedDuration = Duration.ofSeconds(1);
+
+    context.waitForExternalEvent(expectedEvent, expectedDuration, String.class);
+    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration, String.class);
   }
 
   @Test
@@ -156,6 +168,31 @@ public class DaprWorkflowContextImplTest {
   public void createTimerTest() {
     context.createTimer(Duration.ofSeconds(10));
     verify(mockInnerContext, times(1)).createTimer(Duration.ofSeconds(10));
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void createTimerWithZonedDateTimeThrowsTest() {
+    context.createTimer(ZonedDateTime.now());
+  }
+
+  @Test
+  public void callSubWorkflowWithName() {
+    String expectedName = "TestActivity";
+
+    context.callSubWorkflow(expectedName);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, null, null, null, null);
+  }
+
+  @Test
+  public void callSubWorkflowWithOptions() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+    TaskOptions expectedOptions = new TaskOptions(new RetryPolicy(1, Duration.ofSeconds(10)));
+
+    context.callSubWorkflow(expectedName, expectedInput, expectedInstanceId, expectedOptions, String.class);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, expectedInstanceId,
+        expectedOptions, String.class);
   }
 
   @Test
