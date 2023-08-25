@@ -227,13 +227,16 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Closes the inner DurableTask client and shutdown the GRPC channel.
    */
   public void close() throws InterruptedException {
-    if (this.innerClient != null) {
-      this.innerClient.close();
-      this.innerClient = null;
-    }
-    if (this.grpcChannel != null && !this.grpcChannel.isShutdown()) {
-      this.grpcChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-      this.grpcChannel = null;
+    try {
+      if (this.innerClient != null) {
+        this.innerClient.close();
+        this.innerClient = null;
+      }
+    } finally {
+      if (this.grpcChannel != null && !this.grpcChannel.isShutdown()) {
+        this.grpcChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        this.grpcChannel = null;
+      }
     }
   }
 }
