@@ -83,7 +83,25 @@ public class Command {
       }
     });
 
+    final Thread stderrReader = new Thread(() -> {
+      try {
+        try (InputStream stderr = this.process.getErrorStream()) {
+          try (InputStreamReader isr = new InputStreamReader(stderr)) {
+            try (BufferedReader br = new BufferedReader(isr)) {
+              String line;
+              while ((line = br.readLine()) != null) {
+                System.err.println(line);
+              }
+            }
+          }
+        }
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
+    });
+
     stdoutReader.start();
+    stderrReader.start();
     // Waits for success to happen within 1 minute.
     finished.tryAcquire(SUCCESS_WAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
     if (!success.get()) {

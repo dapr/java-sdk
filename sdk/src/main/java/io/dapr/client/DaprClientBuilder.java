@@ -13,18 +13,15 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.utils.Version;
+import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.net.URI;
 
 /**
  * A builder for the DaprClient,
@@ -58,6 +55,11 @@ public class DaprClientBuilder {
    * Serializer used for state objects in DaprClient.
    */
   private DaprObjectSerializer stateSerializer;
+
+  /**
+   * Resiliency configuration for DaprClient.
+   */
+  private ResiliencyOptions resiliencyOptions;
 
   /**
    * Creates a constructor for DaprClient.
@@ -106,6 +108,17 @@ public class DaprClientBuilder {
     }
 
     this.stateSerializer = stateSerializer;
+    return this;
+  }
+
+  /**
+   * Sets the resiliency options for DaprClient.
+   *
+   * @param options Serializer for objects to be persisted.
+   * @return This instance.
+   */
+  public DaprClientBuilder withResiliencyOptions(ResiliencyOptions options) {
+    this.resiliencyOptions = options;
     return this;
   }
 
@@ -163,32 +176,15 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
    */
   private DaprClient buildDaprClientGrpc() {
-    final ManagedChannel channel = buildGrpcManagedChanel();
+    final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    return new DaprClientGrpc(channelFacade, asyncStub, this.objectSerializer, this.stateSerializer);
-  }
-
-  private ManagedChannel buildGrpcManagedChanel() {
-    String address = Properties.SIDECAR_IP.get();
-    int port = Properties.GRPC_PORT.get();
-    boolean insecure = true;
-    String grpcEndpoint = Properties.GRPC_ENDPOINT.get();
-    if ((grpcEndpoint != null) && !grpcEndpoint.isEmpty()) {
-      URI uri = URI.create(grpcEndpoint);
-      insecure = uri.getScheme().equalsIgnoreCase("http");
-      port = uri.getPort() > 0 ? uri.getPort() : (insecure ? 80 : 443);
-      address = uri.getHost();
-      if ((uri.getPath() != null) && !uri.getPath().isEmpty()) {
-        address += uri.getPath();
-      }
-    }
-    ManagedChannelBuilder builder = ManagedChannelBuilder.forAddress(address, port)
-        .userAgent(Version.getSdkVersion());
-    if (insecure) {
-      builder = builder.usePlaintext();
-    }
-    return builder.build();
+    return new DaprClientGrpc(
+        channelFacade,
+        asyncStub,
+        this.objectSerializer,
+        this.stateSerializer,
+        this.resiliencyOptions);
   }
 
   /**
