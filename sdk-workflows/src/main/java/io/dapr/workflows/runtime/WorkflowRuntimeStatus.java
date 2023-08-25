@@ -121,7 +121,7 @@ public enum WorkflowRuntimeStatus {
       case SUSPENDED:
         return OrchestrationRuntimeStatus.SUSPENDED;
       default:
-        return null;
+        throw new RuntimeException(String.format("Unknown status value: %s", status));
     }
   }
 
