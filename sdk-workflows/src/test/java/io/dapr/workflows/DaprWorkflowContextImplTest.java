@@ -11,11 +11,10 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.runtime;
+package io.dapr.workflows;
 
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOrchestrationContext;
-import io.dapr.workflows.DaprWorkflowContextImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
