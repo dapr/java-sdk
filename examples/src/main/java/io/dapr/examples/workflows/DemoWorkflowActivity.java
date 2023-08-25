@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class DemoWorkflowActivity extends WorkflowActivity {
+public class DemoWorkflowActivity implements WorkflowActivity {
 
   @Override
   public DemoActivityOutput run(WorkflowActivityContext ctx) {

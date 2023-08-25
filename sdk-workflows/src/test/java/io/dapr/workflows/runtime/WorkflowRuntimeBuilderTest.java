@@ -16,7 +16,7 @@ public class WorkflowRuntimeBuilderTest {
     }
   }
 
-  public static class TestActivity extends WorkflowActivity {
+  public static class TestActivity implements WorkflowActivity {
     @Override
     public Object run(WorkflowActivityContext ctx) {
       return null;

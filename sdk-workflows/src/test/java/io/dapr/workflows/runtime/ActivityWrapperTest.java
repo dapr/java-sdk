@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 
 public class ActivityWrapperTest {
-  public static class TestActivity extends WorkflowActivity {
+  public static class TestActivity implements WorkflowActivity {
     @Override
     public Object run(WorkflowActivityContext ctx) {
       String activityContextName = ctx.getName();

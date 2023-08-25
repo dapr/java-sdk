@@ -32,7 +32,7 @@ package io.dapr.workflows.runtime;
  * <p>Activities are scheduled by orchestrators using one of the {@link io.dapr.workflows.WorkflowContext#callActivity}
  * method overloads.
  */
-public abstract class WorkflowActivity {
+public interface WorkflowActivity {
   /**
    * Executes the activity logic and returns a value which will be serialized and
    * returned to the calling orchestrator.
@@ -41,5 +41,5 @@ public abstract class WorkflowActivity {
    *            data provided to it by the orchestrator.
    * @return any serializable value to be returned to the calling orchestrator.
    */
-  public abstract Object run(WorkflowActivityContext ctx);
+  Object run(WorkflowActivityContext ctx);
 }
