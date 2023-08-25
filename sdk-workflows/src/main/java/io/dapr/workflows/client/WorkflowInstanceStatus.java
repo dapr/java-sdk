@@ -39,6 +39,9 @@ public class WorkflowInstanceStatus {
    * @param orchestrationMetadata Durable task orchestration metadata
    */
   public WorkflowInstanceStatus(OrchestrationMetadata orchestrationMetadata) {
+    if (orchestrationMetadata == null) {
+      throw new IllegalArgumentException("OrchestrationMetadata cannot be null");
+    }
     this.orchestrationMetadata = orchestrationMetadata;
     FailureDetails details = orchestrationMetadata.getFailureDetails();
     if (details != null) {
