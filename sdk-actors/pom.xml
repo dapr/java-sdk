@@ -7,14 +7,19 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.10.0-SNAPSHOT</version>
+    <version>1.9.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk-actors</artifactId>
   <packaging>jar</packaging>
-  <version>1.10.0-SNAPSHOT</version>
+  <version>1.9.0-SNAPSHOT</version>
   <name>dapr-sdk-actors</name>
   <description>SDK for Actors on Dapr</description>
+
+  <properties>
+    <maven.deploy.skip>false</maven.deploy.skip>
+    <grpc.version>1.42.1</grpc.version>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -41,13 +46,8 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.7.2</version>
+      <version>5.5.2</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-      <version>5.7.0</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
@@ -139,6 +139,7 @@
               </rules>
             </configuration>
           </execution>
+
         </executions>
       </plugin>
     </plugins>
