@@ -44,13 +44,15 @@ import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
+import io.dapr.internal.resiliency.RetryPolicy;
+import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
-import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -69,7 +71,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.ContextView;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,30 +93,63 @@ public class DaprClientGrpc extends AbstractDaprClient {
   /**
    * The GRPC managed channel to be used.
    */
-  private Closeable channel;
+  private final GrpcChannelFacade channel;
+
+  /**
+   * The timeout policy.
+   */
+  private final TimeoutPolicy timeoutPolicy;
+
+  /**
+   * The retry policy.
+   */
+  private final RetryPolicy retryPolicy;
 
   /**
    * The async gRPC stub.
    */
-  private DaprGrpc.DaprStub asyncStub;
+  private final DaprGrpc.DaprStub asyncStub;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
-   * @param closeableChannel A closeable for a Managed GRPC channel
-   * @param asyncStub        async gRPC stub
-   * @param objectSerializer Serializer for transient request/response objects.
-   * @param stateSerializer  Serializer for state objects.
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
    * @see DaprClientBuilder
    */
   DaprClientGrpc(
-      Closeable closeableChannel,
+      GrpcChannelFacade channel,
       DaprGrpc.DaprStub asyncStub,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
+    this(channel, asyncStub, objectSerializer, stateSerializer, null);
+  }
+
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
+   * @param resiliencyOptions Client-level override for resiliency options.
+   * @see DaprClientBuilder
+   */
+  DaprClientGrpc(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer,
+      ResiliencyOptions resiliencyOptions) {
     super(objectSerializer, stateSerializer);
-    this.channel = closeableChannel;
+    this.channel = channel;
     this.asyncStub = intercept(asyncStub);
+    this.timeoutPolicy = new TimeoutPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
+    this.retryPolicy = new RetryPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -145,13 +179,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
-    return Mono.fromRunnable(() -> {
-      try {
-        NetworkUtils.waitForSocket(Properties.SIDECAR_IP.get(), Properties.GRPC_PORT.get(), timeoutInMilliseconds);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return this.channel.waitForChannelReady(timeoutInMilliseconds);
   }
 
   /**
@@ -193,7 +221,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
-   *
    * {@inheritDoc}
    */
   @Override
@@ -209,7 +236,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
         throw new IllegalArgumentException("pubsubName and topic name cannot be null or empty");
       }
 
-      for (BulkPublishEntry<?> entry: request.getEntries()) {
+      for (BulkPublishEntry<?> entry : request.getEntries()) {
         Object event = entry.getEvent();
         byte[] data;
         String contentType = entry.getContentType();
@@ -251,7 +278,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
 
       Map<String, BulkPublishEntry<T>> entryMap = new HashMap<>();
-      for (BulkPublishEntry<T> entry: request.getEntries()) {
+      for (BulkPublishEntry<T> entry : request.getEntries()) {
         entryMap.put(entry.getEntryId(), entry);
       }
       return Mono.deferContextual(
@@ -299,17 +326,17 @@ public class DaprClientGrpc extends AbstractDaprClient {
       // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
 
       return Mono.deferContextual(
-              context -> this.<CommonProtos.InvokeResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeService(envelope, it)
-              )
-          ).flatMap(
-              it -> {
-                try {
-                  return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
-                } catch (IOException e)  {
-                  throw DaprException.propagate(e);
-                }
-              }
+          context -> this.<CommonProtos.InvokeResponse>createMono(
+              it -> intercept(context, asyncStub).invokeService(envelope, it)
+          )
+      ).flatMap(
+          it -> {
+            try {
+              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
+            } catch (IOException e) {
+              throw DaprException.propagate(e);
+            }
+          }
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -346,17 +373,17 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
       return Mono.deferContextual(
-              context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeBinding(envelope, it)
-              )
-          ).flatMap(
-              it -> {
-                try {
-                  return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
-                } catch (IOException e) {
-                  throw DaprException.propagate(e);
-                }
-              }
+          context -> this.<DaprProtos.InvokeBindingResponse>createMono(
+              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+          )
+      ).flatMap(
+          it -> {
+            try {
+              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
+            } catch (IOException e) {
+              throw DaprException.propagate(e);
+            }
+          }
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -442,12 +469,12 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.GetBulkStateRequest envelope = builder.build();
 
       return Mono.deferContextual(
-              context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
-                  .getBulkState(envelope, it)
-              )
-          ).map(
-              it ->
-                it
+          context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+              .getBulkState(envelope, it)
+          )
+      ).map(
+          it ->
+              it
                   .getItemsList()
                   .stream()
                   .map(b -> {
@@ -705,8 +732,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
 
     DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
-              .setStoreName(secretStoreName)
-              .setKey(key);
+        .setStoreName(secretStoreName)
+        .setKey(key);
 
     if (metadata != null) {
       requestBuilder.putAllMetadata(metadata);
@@ -740,18 +767,18 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context ->
-            this.<DaprProtos.GetBulkSecretResponse>createMono(
-                it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
-            )
+              this.<DaprProtos.GetBulkSecretResponse>createMono(
+                  it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
+              )
       ).map(it -> {
         Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
         if (secretsMap == null) {
           return Collections.emptyMap();
         }
         return secretsMap
-          .entrySet()
-          .stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
       });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -805,7 +832,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
                   try {
                     return buildQueryStateKeyValue(v, type);
                   } catch (Exception e) {
-                    throw  DaprException.propagate(e);
+                    throw DaprException.propagate(e);
                   }
                 })
                 .collect(Collectors.toList());
@@ -900,7 +927,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
           Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
           while (itr.hasNext()) {
             Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
-            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
           }
           return Collections.unmodifiableMap(configMap);
         }
@@ -934,15 +961,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
       return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
           it -> intercept(asyncStub).subscribeConfiguration(envelope, it)
       ).map(
-        it -> {
-          Map<String, ConfigurationItem> configMap = new HashMap<>();
-          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItemsMap().entrySet().iterator();
-          while (itr.hasNext()) {
-            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
-            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));       
+          it -> {
+            Map<String, ConfigurationItem> configMap = new HashMap<>();
+            Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItemsMap().entrySet().iterator();
+            while (itr.hasNext()) {
+              Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+              configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
+            }
+            return new SubscribeConfigurationResponse(it.getId(), Collections.unmodifiableMap(configMap));
           }
-          return new SubscribeConfigurationResponse(it.getId(), Collections.unmodifiableMap(configMap));
-        }
       );
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
@@ -990,8 +1017,8 @@ public class DaprClientGrpc extends AbstractDaprClient {
   private ConfigurationItem buildConfigurationItem(
       CommonProtos.ConfigurationItem configurationItem, String key) {
     return new ConfigurationItem(
-      key,
-      configurationItem.getValue(),
+        key,
+        configurationItem.getValue(),
         configurationItem.getVersion(),
         configurationItem.getMetadataMap()
     );
@@ -1003,14 +1030,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
+  private DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
     ClientInterceptor interceptor = new ClientInterceptor() {
       @Override
       public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
           MethodDescriptor<ReqT, RespT> methodDescriptor,
-          CallOptions callOptions,
+          CallOptions options,
           Channel channel) {
-        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
+        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, timeoutPolicy.apply(options));
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
           @Override
           public void start(final Listener<RespT> responseListener, final Metadata metadata) {
@@ -1018,7 +1045,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
             if (daprApiToken != null) {
               metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
             }
-
             super.start(responseListener, metadata);
           }
         };
@@ -1039,11 +1065,13 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
-    return Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+    return retryPolicy.apply(
+        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
   }
 
   private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
-    return Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+    return retryPolicy.apply(
+        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {

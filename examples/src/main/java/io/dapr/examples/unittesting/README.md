@@ -33,7 +33,9 @@ cd examples
 ```
 
 ### Understanding the code
-This example will simulate an application code via the App class:
+
+#### Example App Test
+This example, found in `DaprExampleTest.java`, will simulate an application code via the App class:
 
 ```java
   private static final class MyApp {
@@ -115,7 +117,7 @@ The second test uses a mock implementation of the factory method and checks the 
 ```
 
 
-### Running the example
+##### Running the example
 <!-- STEP
 name: Check state example
 expected_stdout_lines:
@@ -159,4 +161,137 @@ Test run finished after 1210 ms
 [         0 tests aborted         ]
 [         2 tests successful      ]
 [         0 tests failed          ]
+```
+
+#### Example Workflow Test
+This example, found in `DaprWorkflowExampleTest.java`, shows how to mock and test a dapr workflow:
+
+```java
+private class DemoWorkflow extends Workflow {
+
+  @Override
+  public void run(WorkflowContext ctx) {
+    String name = ctx.getName();
+    String id = ctx.getInstanceId();
+    try {
+      ctx.waitForExternalEvent("myEvent", Duration.ofSeconds(10)).await();
+    } catch (TaskCanceledException e) {
+      ctx.getLogger().warn("Timed out");
+    }
+    String output = name + ":" + id;
+    ctx.complete(output);
+  }
+}
+```
+
+The example provides its own workflow, but for a production system you would want to import and use your own workflow. The goal of unit testing a workflow is to ensure that the business logic functions as expected.  For our example that is these two sections:
+
+```java
+String output = name + ":" + id;
+```
+
+```java
+} catch (TaskCanceledException e) {
+    ctx.getLogger().warn("Timed out");
+}
+```
+
+
+The first test validates the output of our workflow by mocking the `WorkflowContext` and verifying the `.complete` method:
+```java
+  @Test
+  public void testWorkflow() {
+    WorkflowContext mockContext = Mockito.mock(WorkflowContext.class);
+    String name = "DemoWorkflow";
+    String id = "my-workflow-123";
+  
+    Mockito.when(mockContext.getName()).thenReturn(name);
+    Mockito.when(mockContext.getInstanceId()).thenReturn(id);
+  
+    new DemoWorkflow().run(mockContext);
+  
+    String expectedOutput = name + ":" + id;
+    Mockito.verify(mockContext, times(1)).complete(expectedOutput);
+  }
+```
+
+The second test validates the `catch` block of our workflow by throwing the expected exception from our mock and verifying the expected call on our mock `Logger`:
+```java
+  @Test
+  public void testWorkflowWaitForEventTimeout() {
+    WorkflowContext mockContext = Mockito.mock(WorkflowContext.class);
+    Logger mockLogger = Mockito.mock(Logger.class);
+  
+    Mockito.when(mockContext.getLogger()).thenReturn(mockLogger);
+    Mockito.when(mockContext.waitForExternalEvent(anyString(),any(Duration.class)))
+    .thenThrow(TaskCanceledException.class);
+  
+    new DemoWorkflow().run(mockContext);
+  
+    Mockito.verify(mockLogger, times(1)).warn("Timed out");
+}
+```
+
+The third test is similar but validates the inverse of the test above, ensuring that a code path we do not expect to be triggered is indeed avoided:
+```java
+  @Test
+  public void testWorkflowWaitForEventNoTimeout() {
+    WorkflowContext mockContext = Mockito.mock(WorkflowContext.class);
+    Logger mockLogger = Mockito.mock(Logger.class);
+
+    Mockito.when(mockContext.getLogger()).thenReturn(mockLogger);
+
+    new DemoWorkflow().run(mockContext);
+
+    Mockito.verify(mockLogger, times(0)).warn(anyString());
+}
+```
+
+
+##### Running the example
+<!-- STEP
+name: Check state example
+expected_stdout_lines:
+  - "[         3 tests found           ]"
+  - "[         0 tests skipped         ]"
+  - "[         3 tests started         ]"
+  - "[         0 tests aborted         ]"
+  - "[         3 tests successful      ]"
+  - "[         0 tests failed          ]"
+background: true
+sleep: 5
+-->
+
+Run this example with the following command:
+```bash
+java -jar target/dapr-java-sdk-examples-exec.jar org.junit.platform.console.ConsoleLauncher --select-class=io.dapr.examples.unittesting.DaprWorkflowExampleTest
+```
+
+<!-- END_STEP -->
+
+After running, Junit should print the output as follows:
+
+```txt
+╷
+├─ JUnit Jupiter ✔
+│  └─ DaprWorkflowExampleTest ✔
+│     ├─ testWorkflowWaitForEventTimeout() ✔
+│     ├─ testWorkflowWaitForEventNoTimeout() ✔
+│     └─ testWorkflow() ✔
+└─ JUnit Vintage ✔
+
+Test run finished after 815 ms
+[         3 containers found      ]
+[         0 containers skipped    ]
+[         3 containers started    ]
+[         0 containers aborted    ]
+[         3 containers successful ]
+[         0 containers failed     ]
+[         3 tests found           ]
+[         0 tests skipped         ]
+[         3 tests started         ]
+[         0 tests aborted         ]
+[         3 tests successful      ]
+[         0 tests failed          ]
+
 ```

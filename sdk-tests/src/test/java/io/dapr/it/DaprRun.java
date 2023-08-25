@@ -30,7 +30,7 @@ public class DaprRun implements Stoppable {
 
   private static final String DAPR_RUN = "dapr run --app-id %s --app-protocol %s " +
       "--config ./configurations/configuration.yaml " +
-      "--components-path ./components";
+      "--resources-path ./components";
 
   // the arg in -Dexec.args is the app's port
   private static final String DAPR_COMMAND =
@@ -130,12 +130,7 @@ public class DaprRun implements Stoppable {
   }
 
   public void use() {
-    if (this.ports.getHttpPort() != null) {
-      System.getProperties().setProperty(Properties.HTTP_PORT.getName(), String.valueOf(this.ports.getHttpPort()));
-    }
-    if (this.ports.getGrpcPort() != null) {
-      System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.ports.getGrpcPort()));
-    }
+    this.ports.use();
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
     System.getProperties().setProperty(
         Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
@@ -161,15 +156,15 @@ public class DaprRun implements Stoppable {
     System.getProperties().setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol.name());
   }
 
-  public int getGrpcPort() {
+  public Integer getGrpcPort() {
     return ports.getGrpcPort();
   }
 
-  public int getHttpPort() {
+  public Integer getHttpPort() {
     return ports.getHttpPort();
   }
 
-  public int getAppPort() {
+  public Integer getAppPort() {
     return ports.getAppPort();
   }
 

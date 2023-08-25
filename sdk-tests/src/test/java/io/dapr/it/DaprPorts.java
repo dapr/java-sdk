@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.it;
 
+import io.dapr.config.Properties;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
@@ -43,6 +45,20 @@ public class DaprPorts {
           grpcPort ? freePorts.get(2) : null);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public void use() {
+    if (this.httpPort != null) {
+      System.getProperties().setProperty(Properties.HTTP_PORT.getName(), String.valueOf(this.httpPort));
+      System.getProperties().setProperty(
+              Properties.HTTP_ENDPOINT.getName(), "http://127.0.0.1:" + this.httpPort);
+    }
+
+    if (this.grpcPort != null) {
+      System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.grpcPort));
+      System.getProperties().setProperty(
+              Properties.GRPC_ENDPOINT.getName(), "http://127.0.0.1:" + this.grpcPort);
     }
   }
 
