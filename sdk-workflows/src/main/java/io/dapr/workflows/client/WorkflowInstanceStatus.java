@@ -16,7 +16,7 @@ package io.dapr.workflows.client;
 import com.microsoft.durabletask.FailureDetails;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
-import io.dapr.workflows.WorkflowRuntimeStatus;
+import io.dapr.workflows.runtime.WorkflowRuntimeStatus;
 
 import javax.annotation.Nullable;
 

@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.workflows;
+package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
 
