@@ -36,7 +36,9 @@ public class ActivityWrapper<T extends WorkflowActivity> implements TaskActivity
     try {
       this.activityConstructor = clazz.getDeclaredConstructor();
     } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(
+          String.format("No constructor found for activity class '%s'.", this.name), e
+      );
     }
   }
 
@@ -54,7 +56,9 @@ public class ActivityWrapper<T extends WorkflowActivity> implements TaskActivity
         T activity = this.activityConstructor.newInstance();
         result = activity.run(new WorkflowActivityContext(ctx));
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException(
+            String.format("Unable to instantiate instance of activity class '%s'", this.name), e
+        );
       }
       return result;
     };
