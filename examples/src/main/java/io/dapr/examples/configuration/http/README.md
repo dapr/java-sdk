@@ -1,7 +1,6 @@
 ## Retrieve Configurations via Configuration API
 
 This example provides the different capabilities provided by Dapr Java SDK for Configuration. For further information about Configuration APIs please refer to [this link](https://docs.dapr.io/developing-applications/building-blocks/configuration/)
-**This API is available in Preview Mode**.
 
 ### Using the ConfigurationAPI
 
@@ -51,7 +50,7 @@ docker exec dapr_redis redis-cli MSET myconfig1 "val1||1" myconfig2 "val2||1" my
 
 This example uses the Java SDK Dapr client in order to **Get, Subscribe and Unsubscribe** from configuration items and utilizes `Redis` as configuration store.
 `ConfigurationClient.java` is the example class demonstrating all 3 features.
-Kindly check [DaprPreviewClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprPreviewClient.java) for detailed description of the supported APIs.
+Check [DaprClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprClient.java) for detailed description of the supported APIs.
 
 ```java
 public class ConfigurationClient {
@@ -63,7 +62,7 @@ public class ConfigurationClient {
    */
   public static void main(String[] args) throws Exception {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
       System.out.println("Using Dapr client...");
       getConfigurations(client);
       subscribeConfigurationRequest(client);
@@ -73,9 +72,9 @@ public class ConfigurationClient {
   /**
    * Gets configurations for a list of keys.
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
-  public static void getConfigurations(DaprPreviewClient client) {
+  public static void getConfigurations(DaprClient client) {
     System.out.println("*******trying to retrieve configurations for a list of keys********");
     GetConfigurationRequest req = new GetConfigurationRequest(CONFIG_STORE_NAME, keys);
     try {
@@ -89,9 +88,9 @@ public class ConfigurationClient {
   /**
    * Subscribe to a list of keys.
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
-  public static void subscribeConfigurationRequest(DaprPreviewClient client) {
+  public static void subscribeConfigurationRequest(DaprClient client) {
     // ...
     SubscribeConfigurationRequest req = new SubscribeConfigurationRequest(
         CONFIG_STORE_NAME, Collections.singletonList("myconfig2"));

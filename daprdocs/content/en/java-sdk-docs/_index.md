@@ -347,15 +347,15 @@ public interface DemoActor {
 > Note this is a preview API and thus will only be accessible via the DaprPreviewClient interface and not the normal DaprClient interface
 
 ```java
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+try (DaprClient client = (new DaprClientBuilder()).build()) {
   // Get configuration for a single key
   Mono<ConfigurationItem> item = client.getConfiguration(CONFIG_STORE_NAME, CONFIG_KEY).block();
 
