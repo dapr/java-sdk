@@ -16,8 +16,7 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.TaskActivityContext;
 
 /**
- * Interface that provides {@link WorkflowActivity} implementations with activity context,
- * such as an activity's name and its input.
+ * Wrapper for Durable Task Framework {@link TaskActivityContext}.
  */
 public class WorkflowActivityContext implements TaskActivityContext {
   private final TaskActivityContext innerContext;
