@@ -52,14 +52,17 @@ public class ActivityWrapper<T extends WorkflowActivity> implements TaskActivity
   public TaskActivity create() {
     return ctx -> {
       Object result;
+      T activity;
+      
       try {
-        T activity = this.activityConstructor.newInstance();
-        result = activity.run(new WorkflowActivityContext(ctx));
+        activity = this.activityConstructor.newInstance();
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(
             String.format("Unable to instantiate instance of activity class '%s'", this.name), e
         );
       }
+
+      result = activity.run(new WorkflowActivityContext(ctx));
       return result;
     };
   }
