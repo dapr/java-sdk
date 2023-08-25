@@ -67,21 +67,4 @@ public class WorkflowRuntimeBuilder {
         new ActivityWrapper<>(clazz)
     );
   }
-
-
-  /**
-   * Returns a WorkflowRuntime object.
-   *
-   * @return WorkflowRuntime
-   */
-  public WorkflowRuntime getInstance() {
-    if (instance == null) {
-      synchronized (WorkflowRuntime.class) {
-        if (instance == null) {
-          instance = new WorkflowRuntime(this.builder.build());
-        }
-      }
-    }
-    return instance;
-  }
 }
