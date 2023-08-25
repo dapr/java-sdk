@@ -11,11 +11,10 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.client;
+package io.dapr.workflows;
 
 
 import com.microsoft.durabletask.OrchestrationRuntimeStatus;
-import io.dapr.workflows.WorkflowRuntimeStatus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
