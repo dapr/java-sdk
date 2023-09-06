@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.utils;
 
 import io.dapr.config.Properties;
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -59,7 +60,7 @@ public final class NetworkUtils {
    * Creates a GRPC managed channel.
    * @return GRPC managed channel to communicate with the sidecar.
    */
-  public static ManagedChannel buildGrpcManagedChannel() {
+  public static ManagedChannel buildGrpcManagedChannel(ClientInterceptor... interceptors) {
     String address = Properties.SIDECAR_IP.get();
     int port = Properties.GRPC_PORT.get();
     boolean insecure = true;
@@ -77,6 +78,9 @@ public final class NetworkUtils {
         .userAgent(Version.getSdkVersion());
     if (insecure) {
       builder = builder.usePlaintext();
+    }
+    if (interceptors == null) {
+      builder = builder.intercept(interceptors);
     }
     return builder.build();
   }
