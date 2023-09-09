@@ -11,26 +11,33 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows;
+package io.dapr.examples.workflows.console;
 
+import io.dapr.examples.workflows.console.activities.NotifyActivity;
+import io.dapr.examples.workflows.console.activities.ProcessPaymentActivity;
+import io.dapr.examples.workflows.console.activities.RequestApprovalActivity;
+import io.dapr.examples.workflows.console.activities.ReserveInventoryActivity;
+import io.dapr.examples.workflows.console.activities.UpdateInventoryActivity;
+import io.dapr.examples.workflows.console.workflows.OrderProcessingWorkflow;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 
-/**
- * For setup instructions, see the README.
- */
-public class DemoWorkflowWorker {
+public class WorkflowConsoleApp {
 
   /**
-   * The main method of this app.
+   * The main method of this console app.
    *
    * @param args The port the app will listen on.
    * @throws Exception An Exception.
    */
   public static void main(String[] args) throws Exception {
-    // Register the Workflow with the builder.
-    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(DemoWorkflow.class);
-    builder.registerActivity(DemoWorkflowActivity.class);
+    // Register the OrderProcessingWorkflow and its activities with the builder.
+    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(OrderProcessingWorkflow.class);
+    builder.registerActivity(NotifyActivity.class);
+    builder.registerActivity(ProcessPaymentActivity.class);
+    builder.registerActivity(RequestApprovalActivity.class);
+    builder.registerActivity(ReserveInventoryActivity.class);
+    builder.registerActivity(UpdateInventoryActivity.class);
 
     // Build and then start the workflow runtime pulling and executing tasks
     try (WorkflowRuntime runtime = builder.build()) {
