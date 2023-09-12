@@ -21,9 +21,9 @@ import io.dapr.client.DaprHttp;
 import io.dapr.client.DaprHttpBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.app.MyActorService;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +32,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
@@ -52,7 +51,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
   private static final String ACTOR_ID = "1";
 
-  @After
+  @AfterEach
   public void cleanUpTestCase() {
     // Delete the reminder in case the test failed, otherwise it may interfere with future tests since it is persisted.
     DaprHttp client = new DaprHttpBuilder().build();
@@ -185,7 +184,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
       } else {
         String msg = "Error - Enter and Exit should alternate.  Incorrect entry: " + s.toString();
         System.out.println(msg);
-        Assert.fail(msg);
+        Assertions.fail(msg);
       }
     }
   }

@@ -13,8 +13,8 @@
 
 package io.dapr.springboot;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.StringValueResolver;
 
 import java.lang.reflect.Constructor;
@@ -42,7 +42,7 @@ public class DaprBeanPostProcessorSubscribeTest {
     DaprTopicSubscription[] topicSubscriptions = runtime.listSubscribedTopics();
 
     // There should be three subscriptions.
-    Assert.assertEquals(2, topicSubscriptions.length);
+    Assertions.assertEquals(2, topicSubscriptions.length);
 
     DaprTopicSubscription[] expectedDaprTopicSubscriptions = getTestDaprTopicSubscriptions();
 
@@ -55,16 +55,16 @@ public class DaprBeanPostProcessorSubscribeTest {
   }
 
   private void assertTopicSubscriptionEquality(DaprTopicSubscription s1, DaprTopicSubscription s2) {
-    Assert.assertEquals(s1.getPubsubName(), s2.getPubsubName());
-    Assert.assertEquals(s1.getTopic(), s2.getTopic());
-    Assert.assertEquals(s1.getRoute(), s2.getRoute());
-    Assert.assertEquals(s1.getMetadata(), s2.getMetadata());
+    Assertions.assertEquals(s1.getPubsubName(), s2.getPubsubName());
+    Assertions.assertEquals(s1.getTopic(), s2.getTopic());
+    Assertions.assertEquals(s1.getRoute(), s2.getRoute());
+    Assertions.assertEquals(s1.getMetadata(), s2.getMetadata());
     if (s1.getBulkSubscribe() == null) {
-      Assert.assertNull(s2.getBulkSubscribe());
+      Assertions.assertNull(s2.getBulkSubscribe());
     } else {
-      Assert.assertEquals(s1.getBulkSubscribe().isEnabled(), s2.getBulkSubscribe().isEnabled());
-      Assert.assertEquals(s1.getBulkSubscribe().getMaxAwaitDurationMs(), s2.getBulkSubscribe().getMaxAwaitDurationMs());
-      Assert.assertEquals(s1.getBulkSubscribe().getMaxMessagesCount(), s2.getBulkSubscribe().getMaxMessagesCount());
+      Assertions.assertEquals(s1.getBulkSubscribe().isEnabled(), s2.getBulkSubscribe().isEnabled());
+      Assertions.assertEquals(s1.getBulkSubscribe().getMaxAwaitDurationMs(), s2.getBulkSubscribe().getMaxAwaitDurationMs());
+      Assertions.assertEquals(s1.getBulkSubscribe().getMaxMessagesCount(), s2.getBulkSubscribe().getMaxMessagesCount());
     }
   }
 

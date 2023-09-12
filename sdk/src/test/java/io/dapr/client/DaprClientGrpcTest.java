@@ -41,7 +41,9 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
@@ -67,13 +69,13 @@ import java.util.stream.Collectors;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -97,7 +99,7 @@ public class DaprClientGrpcTest {
   private DaprClient client;
   private ObjectSerializer serializer;
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
     channel = mock(GrpcChannelFacade.class);
     daprStub = mock(DaprGrpc.DaprStub.class);
@@ -109,7 +111,7 @@ public class DaprClientGrpcTest {
     doNothing().when(channel).close();
   }
 
-  @After
+  @AfterEach
   public void tearDown() throws Exception {
     client.close();
     verify(channel).close();
@@ -600,7 +602,7 @@ public class DaprClientGrpcTest {
         .build();
     String expected = "Value";
 
-    doAnswer((Answer<Void>) invocation -> {
+    doAnswer(invocation -> {
       StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
@@ -926,7 +928,7 @@ public class DaprClientGrpcTest {
     String expectedValue = "Expected state";
     State<String> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), null);
     DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
-    doAnswer((Answer<Void>) invocation -> {
+    doAnswer(invocation -> {
       StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
@@ -2144,10 +2146,10 @@ public class DaprClientGrpcTest {
 
     Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
     assertEquals(2, cis.size());
-    assertTrue("configkey1", cis.containsKey("configkey1"));
+    assertTrue(cis.containsKey("configkey1"), "configkey1");
     assertEquals("configvalue1", cis.get("configkey1").getValue());
     assertEquals("1", cis.get("configkey1").getVersion());
-    assertTrue("configkey2", cis.containsKey("configkey2"));
+    assertTrue(cis.containsKey("configkey2"), "configkey2");
     assertEquals("configvalue2", cis.get("configkey2").getValue());
     assertEquals("1", cis.get("configkey2").getVersion());
   }
@@ -2167,7 +2169,7 @@ public class DaprClientGrpcTest {
     List<String> keys = Arrays.asList("configkey1","configkey2");
     Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
     assertEquals(2, cis.size());
-    assertTrue("configkey1", cis.containsKey("configkey1"));
+    assertTrue(cis.containsKey("configkey1"), "configkey1");
     assertEquals("configvalue1", cis.get("configkey1").getValue());
   }
 

@@ -32,10 +32,13 @@
         -->
     <jackson.version>2.12.3</jackson.version>
     <gpg.skip>true</gpg.skip>
-    <spotbugs.version>4.0.0-RC1</spotbugs.version>
+    <spotbugs.version>4.7.3</spotbugs.version>
     <spotbugs.fail>true</spotbugs.fail>
+    <spotbugs.exclude.filter.file>../spotbugs-exclude.xml</spotbugs.exclude.filter.file>
     <springboot.version>2.7.8</springboot.version>
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+    <failsafe.version>3.1.2</failsafe.version>
+    <surefire.version>3.1.2</surefire.version>
   </properties>
 
   <distributionManagement>
@@ -69,16 +72,11 @@
         <version>${grpc.version}</version>
       </dependency>
       <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.13.2</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
         <version>5.7.2</version>
-        <scope>test</scope>
+        <scope>import</scope>
+        <type>pom</type>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
@@ -90,6 +88,33 @@
   </dependencyManagement>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${failsafe.version}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+              <configuration>
+                <!--suppress UnresolvedMavenProperty -->
+                <skip>${skipITs}</skip>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
     <plugins>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -99,13 +124,6 @@
           <execution>
             <goals>
               <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>report</id>
-            <phase>test</phase>
-            <goals>
-              <goal>report</goal>
             </goals>
           </execution>
         </executions>
@@ -165,23 +183,6 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>failsafe-maven-plugin</artifactId>
-        <version>2.4.3-alpha-1</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <!--suppress UnresolvedMavenProperty -->
-              <skip>${skipITs}</skip>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>3.1.1</version>
@@ -214,7 +215,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.1.4</version>
+        <version>4.7.3.4</version>
         <dependencies>
           <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
           <dependency>
@@ -224,6 +225,7 @@
           </dependency>
         </dependencies>
         <configuration>
+          <excludeFilterFile>${spotbugs.exclude.filter.file}</excludeFilterFile>
           <failOnError>${spotbugs.fail}</failOnError>
           <xmlOutput>true</xmlOutput>
         </configuration>

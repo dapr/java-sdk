@@ -14,14 +14,14 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorId;
 import io.dapr.utils.TypeRef;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.time.Duration;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ActorTypeUtilitiesTest {
 

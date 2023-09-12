@@ -14,9 +14,11 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.serializer.DaprObjectSerializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,19 +36,19 @@ public class DaprClientBuilderTest {
     assertNotNull(daprClient);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void noObjectSerializer() {
-    new DaprClientBuilder().withObjectSerializer(null);
+    assertThrows(IllegalArgumentException.class, () -> { new DaprClientBuilder().withObjectSerializer(null);});
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void blankContentTypeInObjectSerializer() {
-    new DaprClientBuilder().withObjectSerializer(mock(DaprObjectSerializer.class));
+    assertThrows(IllegalArgumentException.class, () -> { new DaprClientBuilder().withObjectSerializer(mock(DaprObjectSerializer.class));});
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void noStateSerializer() {
-    new DaprClientBuilder().withStateSerializer(null);
+      assertThrows(IllegalArgumentException.class, () -> { new DaprClientBuilder().withStateSerializer(null);});
   }
 
 }

@@ -28,7 +28,7 @@ import io.dapr.client.domain.query.Sorting;
 import io.dapr.client.domain.query.filters.EqFilter;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -39,13 +39,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Common test cases for Dapr client (GRPC and HTTP).
@@ -244,9 +244,9 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //review that the update was success action
-    assertNotNull("expected non null response", myDataResponse);
-    assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
-    assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
+    assertNotNull(myDataResponse, "expected non null response");
+    assertEquals(myDataResponse.getValue().getPropertyA(), "data in property A");
+    assertEquals(myDataResponse.getValue().getPropertyB(), "data in property B2");
   }
 
   @Test
@@ -391,7 +391,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     assertEquals(0, stateNullValue.getMetadata().size());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveUpdateAndGetStateWithWrongEtag() {
     final String stateKey = "keyToBeUpdatedWithWrongEtag";
 
@@ -484,7 +484,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
   }
 
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveAndDeleteStateWithWrongEtag() {
     final String stateKey = "myeKeyToBeDeletedWithWrongEtag";
 
@@ -524,7 +524,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     assertNull(myDataResponse.getValue());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveUpdateAndGetStateWithEtagAndStateOptionsFirstWrite() {
     final String stateKey = "keyToBeUpdatedWithEtagAndOptions";
 
