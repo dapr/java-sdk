@@ -13,17 +13,24 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import com.microsoft.durabletask.RetryPolicy;
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
-import io.dapr.workflows.DaprWorkflowContextImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.List;
 
-import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprWorkflowContextImplTest {
   private DaprWorkflowContextImpl context;
@@ -33,13 +40,6 @@ public class DaprWorkflowContextImplTest {
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
     context = new DaprWorkflowContextImpl(mockInnerContext);
-  }
-
-  @Test
-  public void nullConstructorTest() {
-    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(mockInnerContext, null); });
-    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(null, mock(Logger.class)); });
-    assertThrows(IllegalArgumentException.class, () -> { new DaprWorkflowContextImpl(null, null); });
   }
 
   @Test
@@ -55,19 +55,46 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
-  public void waitForExternalEventTest() {
-    doReturn(mock(Task.class))
-        .when(mockInnerContext).waitForExternalEvent(any(String.class), any(Duration.class));
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext);
+  public void getCurrentInstantTest() {
+    context.getCurrentInstant();
+    verify(mockInnerContext, times(1)).getCurrentInstant();
+  }
+
+  @Test
+  public void waitForExternalEventWithEventAndDurationTest() {
     String expectedEvent = "TestEvent";
     Duration expectedDuration = Duration.ofSeconds(1);
 
-    testContext.waitForExternalEvent(expectedEvent, expectedDuration).await();
-    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration);
+    context.waitForExternalEvent(expectedEvent, expectedDuration);
+    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration, Void.class);
   }
+
+  @Test
+  public void waitForExternalEventTest() {
+    String expectedEvent = "TestEvent";
+    Duration expectedDuration = Duration.ofSeconds(1);
+
+    context.waitForExternalEvent(expectedEvent, expectedDuration, String.class);
+    verify(mockInnerContext, times(1)).waitForExternalEvent(expectedEvent, expectedDuration, String.class);
+  }
+
+  @Test
+  public void callActivityTest() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+
+    context.callActivity(expectedName, expectedInput, String.class);
+    verify(mockInnerContext, times(1)).callActivity(expectedName, expectedInput, null, String.class);
+  }
+
 
   @Test(expected = IllegalArgumentException.class)
   public void DaprWorkflowContextWithEmptyInnerContext() {
+    context = new DaprWorkflowContextImpl(mockInnerContext, null);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void DaprWorkflowContextWithEmptyLogger() {
     context = new DaprWorkflowContextImpl(null, null);
   }
 
@@ -78,9 +105,15 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
+  public void getIsReplayingTest() {
+    context.isReplaying();
+    verify(mockInnerContext, times(1)).getIsReplaying();
+  }
+
+  @Test
   public void getLoggerReplayingTest() {
     Logger mockLogger = mock(Logger.class);
-    when(mockInnerContext.getIsReplaying()).thenReturn(true);
+    when(context.isReplaying()).thenReturn(true);
     DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
@@ -92,12 +125,82 @@ public class DaprWorkflowContextImplTest {
   @Test
   public void getLoggerFirstTimeTest() {
     Logger mockLogger = mock(Logger.class);
-    when(mockInnerContext.getIsReplaying()).thenReturn(false);
+    when(context.isReplaying()).thenReturn(false);
     DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
     testContext.getLogger().info(expectedArg);
 
     verify(mockLogger, times(1)).info(expectedArg);
+  }
+
+  @Test
+  public void continueAsNewTest() {
+    String expectedInput = "TestInput";
+    context.continueAsNew(expectedInput);
+    verify(mockInnerContext, times(1)).continueAsNew(expectedInput);
+  }
+
+  @Test
+  public void allOfTest() {
+    Task<Void> t1 = mockInnerContext.callActivity("task1");
+    Task<Void> t2 = mockInnerContext.callActivity("task2");
+    List<Task<Void>> taskList = Arrays.asList(t1, t2);
+    context.allOf(taskList);
+    verify(mockInnerContext, times(1)).allOf(taskList);
+  }
+
+  @Test
+  public void anyOfTest() {
+    Task<Void> t1 = mockInnerContext.callActivity("task1");
+    Task<Void> t2 = mockInnerContext.callActivity("task2");
+    Task<Void> t3 = mockInnerContext.callActivity("task3");
+    List<Task<?>> taskList = Arrays.asList(t1, t2);
+
+    context.anyOf(taskList);
+    verify(mockInnerContext, times(1)).anyOf(taskList);
+
+    context.anyOf(t1, t2, t3);
+    verify(mockInnerContext, times(1)).anyOf(Arrays.asList(t1, t2, t3));
+  }
+
+  @Test
+  public void createTimerTest() {
+    context.createTimer(Duration.ofSeconds(10));
+    verify(mockInnerContext, times(1)).createTimer(Duration.ofSeconds(10));
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void createTimerWithZonedDateTimeThrowsTest() {
+    context.createTimer(ZonedDateTime.now());
+  }
+
+  @Test
+  public void callSubWorkflowWithName() {
+    String expectedName = "TestActivity";
+
+    context.callSubWorkflow(expectedName);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, null, null, null, null);
+  }
+
+  @Test
+  public void callSubWorkflowWithOptions() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+    TaskOptions expectedOptions = new TaskOptions(new RetryPolicy(1, Duration.ofSeconds(10)));
+
+    context.callSubWorkflow(expectedName, expectedInput, expectedInstanceId, expectedOptions, String.class);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, expectedInstanceId,
+        expectedOptions, String.class);
+  }
+
+  @Test
+  public void callSubWorkflow() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+
+    context.callSubWorkflow(expectedName, expectedInput, String.class);
+    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
   }
 }
