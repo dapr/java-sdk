@@ -76,7 +76,7 @@ In the code above:
 - `WorkflowRuntime.getInstance().registerWorkflow()` registers `DemoWorkflow` as a workflow in the Dapr Workflow runtime.
 - `runtime.start();` builds and starts the engine within the Dapr Workflow runtime.
 
-Execute the following command to run `DemoWorkflowWorker`:
+In the terminal, execute the following command to kick off the `DemoWorkflowWorker`:
 
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.DemoWorkflowWorker
@@ -85,12 +85,18 @@ dapr run --app-id demoworkflowworker --resources-path ./components/workflows --d
 **Expected output**
 
 ```
-todo
+You're up and running! Both Dapr and your app logs will appear here.
+
+...
+
+== APP == Start workflow runtime
+== APP == Sep 13, 2023 9:02:03 AM com.microsoft.durabletask.DurableTaskGrpcWorker startAndBlock
+== APP == INFO: Durable Task worker is connecting to sidecar at 127.0.0.1:50001.
 ```
 
 ## Run the `DemoWorkflowClient
 
-Now that the workflow worker is running, you can start workflow instances registered with Dapr using the `DemoWorkflowClient`. In the following excerpt from the [`DemoWorkflowClient.java` file](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/workflows/DemoWorkflowClient.java), notice the `DemoWorkflowClient` class and the main method that starts the workflow instances.
+Now that the workflow worker is ready to go, you can start workflow instances registered with Dapr using the `DemoWorkflowClient`. In the following excerpt from the [`DemoWorkflowClient.java` file](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/workflows/DemoWorkflowClient.java), notice the `DemoWorkflowClient` class and the main method that starts the workflow instances.
 
 ```java
 public class DemoWorkflowClient {
@@ -124,23 +130,61 @@ public class DemoWorkflowClient {
 }
 ```
 
-Start the workflow by running the following command:
+In a second terminal window, start the workflow by running the following command:
 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.DemoWorkflowClient
 ```
 
-**Expected output:**
+**Expected output**
 
 ```
-todo
+*******
+Started new workflow instance with random ID: 0b4cc0d5-413a-4c1c-816a-a71fa24740d4
+*******
+**GetInstanceMetadata:Running Workflow**
+Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: RUNNING, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:30.699Z, Input: '"input data"', Output: '']
+*******
+**WaitForInstanceStart**
+Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: RUNNING, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:30.699Z, Input: '"input data"', Output: '']
+*******
+**SendExternalMessage**
+*******
+** Registering parallel Events to be captured by allOf(t1,t2,t3) **
+Events raised for workflow with instanceId: 0b4cc0d5-413a-4c1c-816a-a71fa24740d4
+*******
+** Registering Event to be captured by anyOf(t1,t2,t3) **
+Event raised for workflow with instanceId: 0b4cc0d5-413a-4c1c-816a-a71fa24740d4
+*******
+**WaitForInstanceCompletion**
+Result: [Name: 'io.dapr.examples.workflows.DemoWorkflow', ID: '0b4cc0d5-413a-4c1c-816a-a71fa24740d4', RuntimeStatus: FAILED, CreatedAt: 2023-09-13T13:02:30.547Z, LastUpdatedAt: 2023-09-13T13:02:55.054Z, Input: '"input data"', Output: '']
+*******
+**purgeInstance**
+purgeResult: true
+*******
+**raiseEvent**
+Started new workflow instance with random ID: 7707d141-ebd0-4e54-816e-703cb7a52747
+Event raised for workflow with instanceId: 7707d141-ebd0-4e54-816e-703cb7a52747
+*******
+Started new workflow instance with specified ID: terminateMe
+Terminate this workflow instance manually before the timeout is reached
+*******
+Started new  workflow instance with ID: restarting
+Sleeping 30 seconds to restart the workflow
+**SendExternalMessage: RestartEvent**
+Sleeping 30 seconds to terminate the eternal workflow
+Exiting DemoWorkflowClient.
 ```
 
 ## What happened?
 
 1. When you ran `dapr run`, the workflow worker registered the workflow (`DemoWorkflow`) and its actvities to the Dapr Workflow engine. 
-1. When you ran `java`, the workflow client started the workflow instances.
-
+1. When you ran `java`, the workflow client started the workflow instance with the following activities. You can follow along with the output in the terminal where you ran `dapr run`.
+   1. The workflow is started, raises three parallel tasks, and waits for them to complete.
+   1. The workflow client calls the activity and sends the "Hello Activity" message to the console.
+   1. The workflow times out and is purged.
+   1. The workflow client starts a new workflow instance with a random ID, uses another workflow instance called `terminateMe` to terminate it, and restarts it with the workflow called `restarting`.
+   1. The worfklow client is then exited.
 
 ## Next steps
 - [Learn more about Dapr workflow]({{< ref workflow >}})
