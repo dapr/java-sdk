@@ -29,6 +29,7 @@
     <gpg.skip>true</gpg.skip>
     <spotbugs.version>4.0.0-RC1</spotbugs.version>
     <spotbugs.fail>true</spotbugs.fail>
+    <spotbugs.exclude.filter.file>../spotbugs-exclude.xml</spotbugs.exclude.filter.file>
     <springboot.version>2.7.8</springboot.version>
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
   </properties>
@@ -219,6 +220,7 @@
           </dependency>
         </dependencies>
         <configuration>
+          <excludeFilterFile>${spotbugs.exclude.filter.file}</excludeFilterFile>
           <failOnError>${spotbugs.fail}</failOnError>
           <xmlOutput>true</xmlOutput>
         </configuration>
