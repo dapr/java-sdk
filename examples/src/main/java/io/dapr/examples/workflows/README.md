@@ -41,9 +41,13 @@ Get into the `examples` directory.
 cd examples
 ```
 
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ### Running the demo Workflow worker
 
-The first Java class to consider is `DemoWorkflowWorker`. Its job is to register an implementation of `DemoWorkflow` in the Dapr's workflow runtime engine. In `DemoWorkflowWorker.java` file, you will find the `DemoWorkflowWorker` class and the `main` method. See the code snippet below:
+The first Java class to consider is `DemoWorkflowWorker`. It's job is to register an implementation of `DemoWorkflow` in Dapr's workflow runtime engine. In the `DemoWorkflowWorker.java` file, you will find the `DemoWorkflowWorker` class and the `main` method. See the code snippet below:
 
 ```java
 public class DemoWorkflowWorker {
@@ -60,7 +64,7 @@ public class DemoWorkflowWorker {
 
 This application uses `WorkflowRuntime.getInstance().registerWorkflow()` in order to register `DemoWorkflow` as a Workflow in the Dapr Workflow runtime.
 
-`WorkflowRuntime.getInstance().start()` method will build and start the engine within the Dapr workflow runtime.
+The `WorkflowRuntime.getInstance().start()` method will build and start the engine within the Dapr workflow runtime.
 
 Now, execute the following script in order to run DemoWorkflowWorker:
 ```sh
