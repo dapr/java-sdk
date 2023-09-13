@@ -25,7 +25,12 @@
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-
+    <!--
+        manually declare durabletask-client's jackson dependencies for workflows sdk
+        which conflict with dapr-sdk's jackson dependencies
+        https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
+        -->
+    <jackson.version>2.12.3</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.version>4.0.0-RC1</spotbugs.version>
     <spotbugs.fail>true</spotbugs.fail>
@@ -272,7 +277,8 @@
           <failOnWarnings>false</failOnWarnings>
           <failOnError>true</failOnError>
           <goal>site</goal>
-          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*</excludePackageNames>
+          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*
+          </excludePackageNames>
         </configuration>
       </plugin>
     </plugins>
@@ -295,9 +301,9 @@
   </developers>
 
   <scm>
-      <url>https://github.com/dapr/java-sdk</url>
-      <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
-      <tag>HEAD</tag>
+    <url>https://github.com/dapr/java-sdk</url>
+    <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
+    <tag>HEAD</tag>
   </scm>
 
   <modules>
