@@ -30,6 +30,7 @@ public class DemoWorkflowWorker {
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the builder.
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(DemoWorkflow.class);
+    builder.registerActivity(DemoWorkflowActivity.class);
 
     // Build and then start the workflow runtime pulling and executing tasks
     try (WorkflowRuntime runtime = builder.build()) {
