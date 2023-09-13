@@ -58,6 +58,7 @@ public final class NetworkUtils {
 
   /**
    * Creates a GRPC managed channel.
+   * @param interceptors Optional interceptors to add to the channel.
    * @return GRPC managed channel to communicate with the sidecar.
    */
   public static ManagedChannel buildGrpcManagedChannel(ClientInterceptor... interceptors) {
@@ -79,7 +80,7 @@ public final class NetworkUtils {
     if (insecure) {
       builder = builder.usePlaintext();
     }
-    if (interceptors == null) {
+    if (interceptors != null && interceptors.length > 0) {
       builder = builder.intercept(interceptors);
     }
     return builder.build();

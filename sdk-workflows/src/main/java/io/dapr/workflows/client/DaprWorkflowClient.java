@@ -17,7 +17,6 @@ import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.PurgeResult;
-
 import io.dapr.client.Headers;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
@@ -42,8 +41,8 @@ import java.util.concurrent.TimeoutException;
  */
 public class DaprWorkflowClient implements AutoCloseable {
 
-  DurableTaskClient innerClient;
-  ManagedChannel grpcChannel;
+  private DurableTaskClient innerClient;
+  private ManagedChannel grpcChannel;
 
   /**
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
