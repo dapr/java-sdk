@@ -20,10 +20,11 @@ import com.microsoft.durabletask.FailureDetails;
  */
 public class WorkflowFailureDetails {
 
-  FailureDetails workflowFailureDetails;
+  private final FailureDetails workflowFailureDetails;
 
   /**
    * Class constructor.
+   *
    * @param failureDetails failure Details
    */
   public WorkflowFailureDetails(FailureDetails failureDetails) {
