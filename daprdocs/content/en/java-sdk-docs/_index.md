@@ -104,7 +104,7 @@ Put the Dapr Java SDK to the test. Walk through the Java quickstarts adn tutoria
 
 | SDK samples | Description |
 | ----------- | ----------- |
-| [Quickstarts] | Experience Dapr's API building blocks in just a few minutes using the Java SDK. |
+| [Quickstarts]({{< ref quickstarts >}}) | Experience Dapr's API building blocks in just a few minutes using the Java SDK. |
 | [SDK samples](https://github.com/dapr/java-sdk/tree/master/examples) | Clone the SDK repo to try out some examples and get started. |
 
 ## More information

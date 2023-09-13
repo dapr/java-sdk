@@ -7,8 +7,9 @@ description: How to get up and running with workflows using the Dapr Java SDK
 ---
 
 {{% alert title="Note" color="primary" %}}
-Dapr Workflow is currently in alpha.
+Dapr Workflow is currently in beta. [See known limitations for {{% dapr-latest-version cli="true" %}}]({{< ref "workflow-overview.md#limitations" >}}).
 {{% /alert %}}
+
 
 Let’s create a Dapr workflow and invoke it using the console. With the [provided workflow example](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/workflows), you will:
 
