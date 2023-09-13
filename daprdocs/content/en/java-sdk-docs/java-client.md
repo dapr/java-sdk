@@ -6,75 +6,9 @@ weight: 2000
 description: Java SDK packages for developing Dapr applications
 ---
 
-## Pre-requisites
+## Prerequisites
 
-- [Dapr CLI]({{< ref install-dapr-cli.md >}}) installed
-- Initialized [Dapr environment]({{< ref install-dapr-selfhost.md >}})
-- JDK 11 or above - the published jars are compatible with Java 8:
-    - [AdoptOpenJDK 11 - LTS](https://adoptopenjdk.net/)
-    - [Oracle's JDK 15](https://www.oracle.com/java/technologies/javase-downloads.html)
-    - [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
-    - [OpenJDK](https://openjdk.java.net/)
-- Install one of the following build tools for Java:
-    - [Maven 3.x](https://maven.apache.org/install.html)
-    - [Gradle 6.x](https://gradle.org/install/)
-
-## Importing Dapr's Java SDK
-
-For a Maven project, add the following to your `pom.xml` file: 
-```xml
-<project>
-  ...
-  <dependencies>
-    ...
-    <!-- Dapr's core SDK with all features, except Actors. -->
-    <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk</artifactId>
-      <version>1.9.0</version>
-    </dependency>
-    <!-- Dapr's SDK for Actors (optional). -->
-    <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.9.0</version>
-    </dependency>
-    <!-- Dapr's SDK integration with SpringBoot (optional). -->
-    <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.9.0</version>
-    </dependency>
-    ...
-  </dependencies>
-  ...
-</project>
-```
-
-For a Gradle project, add the following to your `build.gradle` file:
-
-```java
-dependencies {
-...
-    // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.9.0')
-    // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.9.0')
-    // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.9.0')
-}
-```
-
-If you are also using Spring Boot, you may run into a common issue where the OkHttp version that the Dapr SDK uses conflicts with the one specified in the Spring Boot _Bill of Materials_.
-You can fix this by specifying a compatible OkHttp version in your project to match the version that the Dapr SDK uses:
-
-```xml
-<dependency>
-  <groupId>com.squareup.okhttp3</groupId>
-  <artifactId>okhttp</artifactId>
-  <version>4.9.0</version>
-</dependency>
-```
+[Complete initial setup and import the Java SDK into your project]({{< ref java-sdk-docs >}})
 
 ## Building blocks
 

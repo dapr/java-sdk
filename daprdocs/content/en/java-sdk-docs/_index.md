@@ -11,7 +11,7 @@ cascade:
   github_branch: master
 ---
 
-## Pre-requisites
+## Prerequisites
 
 - [Dapr CLI]({{< ref install-dapr-cli.md >}}) installed
 - Initialized [Dapr environment]({{< ref install-dapr-selfhost.md >}})
@@ -24,15 +24,79 @@ cascade:
     - [Maven 3.x](https://maven.apache.org/install.html)
     - [Gradle 6.x](https://gradle.org/install/)
 
-## Installation
+## Import Dapr's Java SDK
 
-Install the required JDK using [SDKMAN!](https://sdkman.io/):
+Next, import the Java SDK packages to get started. Select your preferred build tool to learn how to import.
 
-```bash
-sdk env install
+{{< tabs Maven Gradle >}}
+
+{{% codetab %}}
+<!--Maven-->
+
+For a Maven project, add the following to your `pom.xml` file: 
+
+```xml
+<project>
+  ...
+  <dependencies>
+    ...
+    <!-- Dapr's core SDK with all features, except Actors. -->
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk</artifactId>
+      <version>1.9.0</version>
+    </dependency>
+    <!-- Dapr's SDK for Actors (optional). -->
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+      <version>1.9.0</version>
+    </dependency>
+    <!-- Dapr's SDK integration with SpringBoot (optional). -->
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
+      <version>1.9.0</version>
+    </dependency>
+    ...
+  </dependencies>
+  ...
+</project>
+```
+{{% /codetab %}}
+
+{{% codetab %}}
+<!--Gradle-->
+
+For a Gradle project, add the following to your `build.gradle` file:
+
+```java
+dependencies {
+...
+    // Dapr's core SDK with all features, except Actors.
+    compile('io.dapr:dapr-sdk:1.9.0')
+    // Dapr's SDK for Actors (optional).
+    compile('io.dapr:dapr-sdk-actors:1.9.0')
+    // Dapr's SDK integration with SpringBoot (optional).
+    compile('io.dapr:dapr-sdk-springboot:1.9.0')
+}
 ```
 
-[Next, import the Java SDK packages to get started]({{< ref java-client.md >}}). 
+{{% /codetab %}}
+
+{{< /tabs >}}
+
+If you are also using Spring Boot, you may run into a common issue where the `OkHttp` version that the Dapr SDK uses conflicts with the one specified in the Spring Boot _Bill of Materials_.
+
+You can fix this by specifying a compatible `OkHttp` version in your project to match the version that the Dapr SDK uses:
+
+```xml
+<dependency>
+  <groupId>com.squareup.okhttp3</groupId>
+  <artifactId>okhttp</artifactId>
+  <version>4.9.0</version>
+</dependency>
+```
 
 ## Try it out
 
