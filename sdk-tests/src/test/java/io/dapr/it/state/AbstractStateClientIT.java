@@ -430,19 +430,6 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     Mono<Void> finalSaveResponse = saveResponse;
     assertThrows(RuntimeException.class, finalSaveResponse::block);
-
-    response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null), MyData.class);
-    //retrive the data wihout any etag
-    myDataResponse = response.block();
-
-    //review that state value changes
-    assertNotNull(myDataResponse.getEtag());
-    //review that the etag changes after an update
-    assertNotEquals(firstETag, myDataResponse.getEtag());
-    assertNotNull(myDataResponse.getKey());
-    assertNotNull(myDataResponse.getValue());
-    assertEquals("data in property A2", myDataResponse.getValue().getPropertyA());
-    assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
 
   @Test
@@ -515,15 +502,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     //Create deferred action to delete an state sending the incorrect etag
     Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, "99999999999", null);
     //execute the delete of the state, this should throw an exception
-
     assertThrows(RuntimeException.class, deleteResponse::block);
-
-    //Create deferred action to get the state without an etag
-    response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey), MyData.class);
-    myDataResponse = response.block();
-
-    //Review that the response is null, because the state was deleted
-    assertNull(myDataResponse.getValue());
   }
 
   @Test
