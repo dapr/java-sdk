@@ -17,6 +17,7 @@
     <grpc.version>1.42.1</grpc.version>
     <protobuf.version>3.17.3</protobuf.version>
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.11.0-rc.5/dapr/proto</dapr.proto.baseurl>
+    <dapr.sdk-workflows.version>0.10.0-SNAPSHOT</dapr.sdk-workflows.version>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
@@ -24,7 +25,12 @@
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-
+    <!--
+        manually declare durabletask-client's jackson dependencies for workflows sdk
+        which conflict with dapr-sdk's jackson dependencies
+        https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
+        -->
+    <jackson.version>2.12.3</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.version>4.0.0-RC1</spotbugs.version>
     <spotbugs.fail>true</spotbugs.fail>
@@ -269,7 +275,8 @@
           <failOnWarnings>false</failOnWarnings>
           <failOnError>true</failOnError>
           <goal>site</goal>
-          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*</excludePackageNames>
+          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*
+          </excludePackageNames>
         </configuration>
       </plugin>
     </plugins>
@@ -292,15 +299,16 @@
   </developers>
 
   <scm>
-      <url>https://github.com/dapr/java-sdk</url>
-      <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
-      <tag>HEAD</tag>
+    <url>https://github.com/dapr/java-sdk</url>
+    <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
+    <tag>HEAD</tag>
   </scm>
 
   <modules>
     <module>sdk-autogen</module>
     <module>sdk</module>
     <module>sdk-actors</module>
+    <module>sdk-workflows</module>
     <module>sdk-springboot</module>
     <module>examples</module>
   </modules>

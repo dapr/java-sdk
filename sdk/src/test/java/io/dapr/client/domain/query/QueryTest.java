@@ -28,7 +28,7 @@ public class QueryTest {
     orFilter.addClause(new EqFilter<>("v2", true));
     orFilter.addClause(new InFilter<>("v3", 1.3, 1.5));
 
-    filter.addClause(orFilter);
+    filter.addClause((Filter<?>) orFilter);
 
     // Add Filter
     q.setFilter(filter);
@@ -110,7 +110,7 @@ public class QueryTest {
     orFilter.addClause(new EqFilter<>("v2", true));
     // invalid OR filter
 
-    filter.addClause(orFilter);
+    filter.addClause((Filter<?>) orFilter);
 
     // Add Filter
     q.setFilter(filter);

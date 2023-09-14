@@ -48,6 +48,7 @@ jobs:
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.11.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
+      TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
     - uses: actions/checkout@v3
     - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -101,14 +102,20 @@ jobs:
         docker stop dapr_placement
         cd dapr
         ./dist/linux_amd64/release/placement &
-    - name: Install Local kafka using docker-compose
+    - name: Install local Kafka using docker-compose
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
         docker ps
-    - name: Install Local mongo database using docker-compose
+    - name: Install local Mongo database using docker-compose
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
         docker ps
+    - name: Install local ToxiProxy to simulate connectivity issues to Dapr sidecar
+      run: |
+        mkdir -p /home/runner/.local/bin
+        wget -q ${{ env.TOXIPROXY_URL }} -O /home/runner/.local/bin/toxiproxy-server
+        chmod +x /home/runner/.local/bin/toxiproxy-server
+        /home/runner/.local/bin/toxiproxy-server --version
     - name: Clean up files
       run: mvn clean -B
     - name: Build sdk
