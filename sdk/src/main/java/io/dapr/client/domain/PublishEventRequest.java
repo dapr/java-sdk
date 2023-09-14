@@ -30,7 +30,7 @@ public class PublishEventRequest {
 
   private String contentType;
 
-  private Map<String, String> metadata = new HashMap<>();
+  private Map<String, String> metadata = Collections.emptyMap();
 
   /**
    * Constructor for PublishEventRequest.
