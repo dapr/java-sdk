@@ -513,7 +513,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     //Create deferred action to delete an state sending the incorrect etag
     Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, "99999999999", null);
-    //execute the delete of the state, this should trhow an exception
+    //execute the delete of the state, this should throw an exception
     deleteResponse.block();
 
     //Create deferred action to get the sate without an etag
