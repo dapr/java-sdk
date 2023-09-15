@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 public class MockControllerWithSubscribe {
   public static final String pubSubName = "mockPubSub";
   public static final String topicName = "mockTopic";
+  public static final String deadLetterTopic = "deadLetterTopic";
   public static final String bulkTopicName = "mockBulkTopic";
   public static final String bulkTopicNameV2 = "mockBulkTopicV2";
   public static final String subscribeRoute = "mockRoute";
@@ -27,12 +28,12 @@ public class MockControllerWithSubscribe {
   public static final int maxMessagesCount = 500;
   public static final int maxAwaitDurationMs = 1000;
 
-  @Topic(name = topicName, pubsubName = pubSubName)
+  @Topic(name = topicName, pubsubName = pubSubName, deadLetterTopic = deadLetterTopic)
   @PostMapping(path = subscribeRoute)
   public void handleMessages() {}
 
   @BulkSubscribe(maxMessagesCount = maxMessagesCount, maxAwaitDurationMs = maxAwaitDurationMs)
-  @Topic(name = bulkTopicName, pubsubName = pubSubName)
+  @Topic(name = bulkTopicName, pubsubName = pubSubName,deadLetterTopic = deadLetterTopic)
   @PostMapping(path = bulkSubscribeRoute)
   public void handleBulkMessages() {}
 }

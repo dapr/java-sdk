@@ -74,6 +74,7 @@ public class DaprBeanPostProcessorSubscribeTest {
             MockControllerWithSubscribe.pubSubName,
             MockControllerWithSubscribe.topicName,
             MockControllerWithSubscribe.subscribeRoute,
+            MockControllerWithSubscribe.deadLetterTopic,
             new HashMap<>());
 
     DaprTopicBulkSubscribe bulkSubscribe = new DaprTopicBulkSubscribe(true);
@@ -84,6 +85,7 @@ public class DaprBeanPostProcessorSubscribeTest {
             MockControllerWithSubscribe.pubSubName,
             MockControllerWithSubscribe.bulkTopicName,
             MockControllerWithSubscribe.bulkSubscribeRoute,
+            MockControllerWithSubscribe.deadLetterTopic,
             new HashMap<>(),
             bulkSubscribe);
 
