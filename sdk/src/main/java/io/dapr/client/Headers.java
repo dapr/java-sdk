@@ -16,7 +16,7 @@ package io.dapr.client;
 /**
  * Common headers for GRPC and HTTP communication.
  */
-public class Headers {
+public final class Headers {
 
   /**
    * OpenCensus's metadata for GRPC.
