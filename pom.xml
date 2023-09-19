@@ -38,6 +38,7 @@
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
     <failsafe.version>3.1.2</failsafe.version>
     <surefire.version>3.1.2</surefire.version>
+    <junit-bom.version>5.7.2</junit-bom.version>
   </properties>
 
   <distributionManagement>
@@ -73,7 +74,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.7.2</version>
+        <version>${junit-bom.version}</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
