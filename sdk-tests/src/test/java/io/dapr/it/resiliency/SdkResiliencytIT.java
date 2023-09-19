@@ -64,7 +64,7 @@ public class SdkResiliencytIT extends BaseIT {
 
   @BeforeAll
   public static void init() throws Exception {
-    daprRun = startDaprApp(SdkResiliencytIT.class.getSimpleName(), 5000);
+    daprRun = startDaprApp(SdkResiliencytIT.class.getSimpleName(), 10000);
     // HTTP client is deprecated, so SDK resiliency is for gRPC client only.
     daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder().build();
