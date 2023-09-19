@@ -43,6 +43,10 @@ Then get into the examples directory:
 cd examples
 ```
 
+### Initialize Dapr
+
+Initialize Dapr in Self-Hosted Mode by running: `dapr init`
+
 ### Running the Demo service sample
 
 The Demo service application is meant to expose a method that can be remotely invoked. In this example, the service code has two parts:
@@ -95,7 +99,7 @@ public class DemoServiceController {
 }
 ```
 
-Use the follow command to execute the demo service example:
+Use the following command to execute the demo service example:
 
 <!-- STEP
 name: Run demo service
