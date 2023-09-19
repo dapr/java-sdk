@@ -22,7 +22,7 @@ This sample uses the Client provided in Dapr Java SDK invoking a remote method a
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
     * [OpenJDK 11](https://jdk.java.net/11/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
-* [Configure Redis](https://docs.dapr.io/getting-started/configure-redis/) as a state store for Dapr.
+* [Configure Redis](https://docs.dapr.io/developing-applications/building-blocks/state-management/query-state-store/query-redis-store/) as a state store for Dapr.
 
 ### Checking out the code
 
@@ -46,9 +46,13 @@ Then get into the examples directory:
 cd examples
 ```
 
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ### Verify Zipkin is running
 
-Run `docker ps` to see if the container `dapr_zipkin` is running locally: 
+Run `docker ps` to verify the container `dapr_zipkin` is running locally: 
 
 ```bash
 CONTAINER ID        IMAGE                  COMMAND                  CREATED             STATUS              PORTS                              NAMES
@@ -78,7 +82,7 @@ public class TracingDemoService {
 }
 ```
 
-`DaprApplication.start()` Method will run a Spring Boot application that registers the `TracingDemoServiceController`, which exposes the invoking actions as POST requests. The Dapr's sidecar is the one that performs the actual call to the controller, triggered by client invocations or [bindings](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/).
+`DaprApplication.start()` Method will run a Spring Boot application that registers the `TracingDemoServiceController`, which exposes the invoking actions as POST requests. Dapr's sidecar is the one that performs the actual call to the controller, triggered by client invocations or [bindings](https://docs.dapr.io/developing-applications/building-blocks/bindings/bindings-overview/).
 
 This Rest Controller exposes the `echo` and `sleep` methods. The `echo` method retrieves metadata from the headers and prints them along with the current date in console. The actual response from method is the formatted current date. See the code snippet below:
 
@@ -111,7 +115,7 @@ public class TracingDemoServiceController {
 }
 ```
 
-The `sleep` methods simply waits for one second to simulate a slow operation.
+The `sleep` method simply waits for one second to simulate a slow operation.
 ```java
 @RestController
 public class TracingDemoServiceController {
@@ -127,7 +131,7 @@ public class TracingDemoServiceController {
 
 The instrumentation for the service happens via the `OpenTelemetryIterceptor` class. This class uses the [OpenTelemetrySDK](https://github.com/open-telemetry/opentelemetry-java) for Java.
 
-Use the follow command to execute the service:
+Use the following command to execute the service:
 
 <!-- STEP
 name: Run demo service
@@ -172,7 +176,7 @@ public class TracingDemoMiddleServiceController {
 }
 ```
 
-The request attribute `opentelemetry-context` in created by parsing the tracing headers in the [OpenTelemetryInterceptor](../OpenTelemetryInterceptor.java) class. See the code below:
+The request attribute `opentelemetry-context` is created by parsing the tracing headers in the [OpenTelemetryInterceptor](../OpenTelemetryInterceptor.java) class. See the code below:
 
 ```java
 @Component
@@ -214,7 +218,7 @@ public class OpenTelemetryConfig {
 }
 ```
 
-Use the follow command to execute the service:
+Use the following command to execute the service:
 
 <!-- STEP
 name: Run proxy service
@@ -270,7 +274,7 @@ private static final String SERVICE_APP_ID = "tracingdemoproxy";
 }
 ```
 
-The class knows the app id for the remote application. It uses `invokeMethod` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
+The class knows the app id for the remote application. It uses the `invokeMethod` method to invoke API calls on the service endpoint. The request object includes an instance of `io.opentelemetry.context.Context` for the proper tracing headers to be propagated.
  
 Execute the follow script in order to run the InvokeClient example, passing two messages for the remote method:
 
