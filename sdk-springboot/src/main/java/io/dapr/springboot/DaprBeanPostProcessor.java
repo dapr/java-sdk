@@ -18,11 +18,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Rule;
 import io.dapr.Topic;
+import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.EmbeddedValueResolver;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringValueResolver;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -40,7 +42,6 @@ import java.util.Map;
 public class DaprBeanPostProcessor implements BeanPostProcessor {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
-
   private final EmbeddedValueResolver embeddedValueResolver;
 
   DaprBeanPostProcessor(ConfigurableBeanFactory beanFactory) {
@@ -56,7 +57,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       return null;
     }
 
-    subscribeToTopics(bean.getClass(), embeddedValueResolver);
+    subscribeToTopics(bean.getClass(), embeddedValueResolver, DaprRuntime.getInstance());
 
     return bean;
   }
@@ -70,35 +71,53 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
   }
 
   /**
-   * Subscribe to topics based on {@link Topic} annotations on the given class and any of ancestor classes.
+   * Subscribe to topics based on {@link Topic} annotations on the given class and
+   * any of ancestor classes.
+   * 
    * @param clazz Controller class where {@link Topic} is expected.
    */
-  private static void subscribeToTopics(Class clazz, EmbeddedValueResolver embeddedValueResolver) {
+  private static void subscribeToTopics(
+      Class clazz, StringValueResolver stringValueResolver, DaprRuntime daprRuntime) {
     if (clazz == null) {
       return;
     }
 
-    subscribeToTopics(clazz.getSuperclass(), embeddedValueResolver);
+    subscribeToTopics(clazz.getSuperclass(), stringValueResolver, daprRuntime);
     for (Method method : clazz.getDeclaredMethods()) {
       Topic topic = method.getAnnotation(Topic.class);
       if (topic == null) {
         continue;
       }
 
+      DaprTopicBulkSubscribe bulkSubscribe = null;
+      BulkSubscribe bulkSubscribeAnnotation = method.getAnnotation(BulkSubscribe.class);
+      if (bulkSubscribeAnnotation != null) {
+        bulkSubscribe = new DaprTopicBulkSubscribe(true);
+        int maxMessagesCount = bulkSubscribeAnnotation.maxMessagesCount();
+        if (maxMessagesCount != -1) {
+          bulkSubscribe.setMaxMessagesCount(maxMessagesCount);
+        }
+
+        int maxAwaitDurationMs = bulkSubscribeAnnotation.maxAwaitDurationMs();
+        if (maxAwaitDurationMs != -1) {
+          bulkSubscribe.setMaxAwaitDurationMs(maxAwaitDurationMs);
+        }
+      }
 
       Rule rule = topic.rule();
-      String topicName = embeddedValueResolver.resolveStringValue(topic.name());
-      String pubSubName = embeddedValueResolver.resolveStringValue(topic.pubsubName());
-      String match = embeddedValueResolver.resolveStringValue(rule.match());
+      String topicName = stringValueResolver.resolveStringValue(topic.name());
+      String pubSubName = stringValueResolver.resolveStringValue(topic.pubsubName());
+      String deadLetterTopic = stringValueResolver.resolveStringValue(topic.deadLetterTopic());
+      String match = stringValueResolver.resolveStringValue(rule.match());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
-          TypeReference<HashMap<String, String>> typeRef
-                  = new TypeReference<HashMap<String, String>>() {};
+          TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String, String>>() {
+          };
           Map<String, String> metadata = MAPPER.readValue(topic.metadata(), typeRef);
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
-            DaprRuntime.getInstance().addSubscribedTopic(
-                pubSubName, topicName, match, rule.priority(), route, metadata);
+            daprRuntime.addSubscribedTopic(
+                pubSubName, topicName, match, rule.priority(), route, deadLetterTopic, metadata, bulkSubscribe);
           }
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException("Error while parsing metadata: " + e);
@@ -108,7 +127,8 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
   }
 
   /**
-   * Method to provide all possible complete routes list fos this post method present in this controller class,
+   * Method to provide all possible complete routes list fos this post method
+   * present in this controller class,
    * for mentioned topic.
    *
    * @param clazz     Controller class
@@ -118,8 +138,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
    */
   private static List<String> getAllCompleteRoutesForPost(Class clazz, Method method, String topicName) {
     List<String> routesList = new ArrayList<>();
-    RequestMapping clazzRequestMapping =
-        (RequestMapping) clazz.getAnnotation(RequestMapping.class);
+    RequestMapping clazzRequestMapping = (RequestMapping) clazz.getAnnotation(RequestMapping.class);
     String[] clazzLevelRoute = null;
     if (clazzRequestMapping != null) {
       clazzLevelRoute = clazzRequestMapping.value();
@@ -141,7 +160,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
   }
 
   private static String[] getRoutesForPost(Method method, String topicName) {
-    String[] postValueArray = new String[] {topicName};
+    String[] postValueArray = new String[] { topicName };
     PostMapping postMapping = method.getAnnotation(PostMapping.class);
     if (postMapping != null) {
       if (postMapping.path() != null && postMapping.path().length >= 1) {

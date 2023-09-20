@@ -15,7 +15,9 @@ package io.dapr.client;
 
 /**
  * Transport protocol for Dapr's API.
+ * @deprecated This class will be deleted at SDK version 1.10.
  */
+@Deprecated
 public enum DaprApiProtocol {
 
   GRPC,

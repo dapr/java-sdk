@@ -7,7 +7,7 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.8.0-SNAPSHOT</version>
+  <version>1.10.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -16,7 +16,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <grpc.version>1.42.1</grpc.version>
     <protobuf.version>3.17.3</protobuf.version>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.9.0-rc.3/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.11.0-rc.5/dapr/proto</dapr.proto.baseurl>
+    <dapr.sdk-workflows.version>0.10.0-SNAPSHOT</dapr.sdk-workflows.version>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
@@ -24,11 +25,17 @@
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-
+    <!--
+        manually declare durabletask-client's jackson dependencies for workflows sdk
+        which conflict with dapr-sdk's jackson dependencies
+        https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
+        -->
+    <jackson.version>2.12.3</jackson.version>
     <gpg.skip>true</gpg.skip>
     <spotbugs.version>4.0.0-RC1</spotbugs.version>
     <spotbugs.fail>true</spotbugs.fail>
-    <springboot.version>2.3.5.RELEASE</springboot.version>
+    <spotbugs.exclude.filter.file>../spotbugs-exclude.xml</spotbugs.exclude.filter.file>
+    <springboot.version>2.7.8</springboot.version>
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
   </properties>
 
@@ -65,7 +72,7 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.13.1</version>
+        <version>4.13.2</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -218,6 +225,7 @@
           </dependency>
         </dependencies>
         <configuration>
+          <excludeFilterFile>${spotbugs.exclude.filter.file}</excludeFilterFile>
           <failOnError>${spotbugs.fail}</failOnError>
           <xmlOutput>true</xmlOutput>
         </configuration>
@@ -269,7 +277,8 @@
           <failOnWarnings>false</failOnWarnings>
           <failOnError>true</failOnError>
           <goal>site</goal>
-          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*</excludePackageNames>
+          <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*
+          </excludePackageNames>
         </configuration>
       </plugin>
     </plugins>
@@ -292,15 +301,16 @@
   </developers>
 
   <scm>
-      <url>https://github.com/dapr/java-sdk</url>
-      <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
-      <tag>HEAD</tag>
+    <url>https://github.com/dapr/java-sdk</url>
+    <connection>scm:git:https://github.com/dapr/java-sdk.git</connection>
+    <tag>HEAD</tag>
   </scm>
 
   <modules>
     <module>sdk-autogen</module>
     <module>sdk</module>
     <module>sdk-actors</module>
+    <module>sdk-workflows</module>
     <module>sdk-springboot</module>
     <module>examples</module>
   </modules>

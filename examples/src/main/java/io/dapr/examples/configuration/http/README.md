@@ -34,6 +34,17 @@ Then build the Maven project:
 # make sure you are in the `java-sdk` directory.
 mvn install
 ```
+
+Then get into the examples directory:
+
+```sh
+cd examples
+```
+
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ## Store few dummy configurations in configurationstore
 <!-- STEP
 name: Set configuration value
@@ -64,7 +75,7 @@ public class ConfigurationClient {
   public static void main(String[] args) throws Exception {
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
     try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      System.out.println("Using preview client...");
+      System.out.println("Using Dapr client...");
       getConfigurations(client);
       subscribeConfigurationRequest(client);
     }
@@ -153,7 +164,7 @@ Use the following command to run this example-
 <!-- STEP
 name: Run ConfigurationClient example
 expected_stdout_lines:
-  - "== APP == Using preview client..."
+  - "== APP == Using Dapr client..."
   - "== APP == *******trying to retrieve configurations for a list of keys********"
   - "== APP == val1 : key ->myconfig1"
   - "== APP == val2 : key ->myconfig2"
@@ -184,7 +195,7 @@ docker exec dapr_redis redis-cli MSET myconfig2 "updated_val2||1"
 
 ### Sample output
 ```
-== APP == Using preview client...
+== APP == Using Dapr client...
 == APP == *******trying to retrieve configurations for a list of keys********
 == APP == val1 : key ->myconfig1
 == APP == val2 : key ->myconfig2

@@ -4,6 +4,11 @@ title: "Dapr Java SDK"
 linkTitle: "Java"
 weight: 1000
 description: Java SDK packages for developing Dapr applications
+cascade:
+  github_repo: https://github.com/dapr/java-sdk
+  github_subdir: daprdocs/content/en/java-sdk-docs
+  path_base_for_github_subdir: content/en/developing-applications/sdks/java/
+  github_branch: master
 ---
 
 ## Pre-requisites
@@ -31,19 +36,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.7.1</version>
+      <version>1.9.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.7.1</version>
+      <version>1.9.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.7.1</version>
+      <version>1.9.0</version>
     </dependency>
     ...
   </dependencies>
@@ -57,11 +62,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.7.1')
+    compile('io.dapr:dapr-sdk:1.9.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.7.1')
+    compile('io.dapr:dapr-sdk-actors:1.9.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.7.1')
+    compile('io.dapr:dapr-sdk-springboot:1.9.0')
 }
 ```
 
@@ -148,7 +153,13 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.Topic;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
+import io.dapr.client.domain.BulkSubscribeMessage;
+import io.dapr.client.domain.BulkSubscribeMessageEntry;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -162,6 +173,26 @@ public class SubscriberController {
   @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
   @PostMapping(path = "/testingtopic")
   public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent<?> cloudEvent) {
+    return Mono.fromRunnable(() -> {
+      try {
+        System.out.println("Subscriber got: " + cloudEvent.getData());
+        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  /**
+   * Handles a registered publish endpoint on this app adding a topic which manage to forward undeliverable messages.
+   *
+   * @param cloudEvent The cloud event received.
+   * @return A message containing the time.
+   */
+  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
+      deadLetterTopic = "${deadLetterProperty:deadTopic}")
+  @PostMapping(path = "/testingtopic")
+  public Mono<Void> handleMessageWithErrorHandler(@RequestBody(required = false) CloudEvent<String> cloudEvent) {
     return Mono.fromRunnable(() -> {
       try {
         System.out.println("Subscriber got: " + cloudEvent.getData());
@@ -186,6 +217,62 @@ public class SubscriberController {
     });
   }
 
+  @BulkSubscribe()
+  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
+  @PostMapping(path = "/testingtopicbulk")
+  public Mono<BulkSubscribeAppResponse> handleBulkMessage(
+          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
+    return Mono.fromCallable(() -> {
+      if (bulkMessage.getEntries().size() == 0) {
+        return new BulkSubscribeAppResponse(new ArrayList<BulkSubscribeAppResponseEntry>());
+      }
+
+      System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
+
+      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
+      for (BulkSubscribeMessageEntry<?> entry : bulkMessage.getEntries()) {
+        try {
+          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
+          CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
+          System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
+        } catch (Exception e) {
+          e.printStackTrace();
+          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
+        }
+      }
+      return new BulkSubscribeAppResponse(entries);
+    });
+  }
+}
+```
+
+##### Bulk Publish Messages
+> Note: API is in Alpha stage
+
+
+```java
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import java.util.ArrayList;
+import java.util.List;
+class Solution {
+  public void publishMessages() {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+      // Create a list of messages to publish
+      List<String> messages = new ArrayList<>();
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        String message = String.format("This is message #%d", i);
+        messages.add(message);
+        System.out.println("Going to publish message : " + message);
+      }
+
+      // Publish list of messages using the bulk publish API
+      BulkPublishResponse<String> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, "text/plain", messages).block()
+    }
+  }
 }
 ```
 
@@ -250,7 +337,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/secrets) for code samples and instructions to try out retrieving secrets
 
 ### Actors
-An actor is an isolated, independent unit of compute and state with single-threaded execution. Dapr provides an actor implementation based on the [Virtual Actor pattern](https://www.microsoft.com/en-us/research/project/orleans-virtual-actors/), which provides a single-threaded programming model and where actors are garbage collected when not in use. With Dapr's implementaiton, you write your Dapr actors according to the Actor model, and Dapr leverages the scalability and reliability that the underlying platform provides. 
+An actor is an isolated, independent unit of compute and state with single-threaded execution. Dapr provides an actor implementation based on the [Virtual Actor pattern](https://www.microsoft.com/en-us/research/project/orleans-virtual-actors/), which provides a single-threaded programming model and where actors are garbage collected when not in use. With Dapr's implementation, you write your Dapr actors according to the Actor model, and Dapr leverages the scalability and reliability that the underlying platform provides. 
 
 ```java
 import io.dapr.actors.ActorMethod;

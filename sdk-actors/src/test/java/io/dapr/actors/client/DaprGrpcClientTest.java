@@ -105,7 +105,7 @@ public class DaprGrpcClientTest {
         InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
     // Create a HelloWorldClient using the in-process channel;
-    client = new DaprGrpcClient(DaprGrpc.newStub(channel));
+    client = new DaprGrpcClient(DaprGrpc.newStub(channel), null);
   }
 
   @Test

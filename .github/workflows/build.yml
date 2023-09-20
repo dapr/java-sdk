@@ -15,21 +15,40 @@ on:
 
 jobs:
   build:
+    name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
+      fail-fast: false
       matrix:
         java: [ 11, 13, 15, 16 ]
+        spring-boot-version: [ 2.7.8 ]
+        experimental: [ false ]
+        include:
+          - java: 11
+            spring-boot-version: 2.6.14
+            experimental: false
+          - java: 11
+            spring-boot-version: 2.5.7
+            experimental: false
+          - java: 11
+            spring-boot-version: 2.4.0
+            experimental: false
+          - java: 11
+            spring-boot-version: 2.3.6.RELEASE
+            experimental: false
     env:
-      GOVER: 1.19
+      GOVER: "1.20"
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.9.1
-      DAPR_RUNTIME_VER: 1.9.3
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.9.1/install/install.sh
+      DAPR_CLI_VER: 1.11.0-rc.1
+      DAPR_RUNTIME_VER: 1.11.0-rc.5
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.11.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
+      TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
     - uses: actions/checkout@v3
     - name: Set up OpenJDK ${{ env.JDK_VER }}
@@ -83,26 +102,33 @@ jobs:
         docker stop dapr_placement
         cd dapr
         ./dist/linux_amd64/release/placement &
-    - name: Install Local kafka using docker-compose
+    - name: Install local Kafka using docker-compose
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
         docker ps
-    - name: Install Local mongo database using docker-compose
+    - name: Install local Mongo database using docker-compose
       run: |
         docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
         docker ps
+    - name: Install local ToxiProxy to simulate connectivity issues to Dapr sidecar
+      run: |
+        mkdir -p /home/runner/.local/bin
+        wget -q ${{ env.TOXIPROXY_URL }} -O /home/runner/.local/bin/toxiproxy-server
+        chmod +x /home/runner/.local/bin/toxiproxy-server
+        /home/runner/.local/bin/toxiproxy-server --version
     - name: Clean up files
-      run: mvn clean
+      run: mvn clean -B
     - name: Build sdk
-      run: mvn compile -q
+      run: mvn compile -B -q
     - name: Unit tests
-      run: mvn test -q
+      run: mvn -B test -q
     - name: Codecov
-      uses: codecov/codecov-action@v3.1.0
+      uses: codecov/codecov-action@v3.1.4
     - name: Install jars
-      run: mvn install -q
-    - name: Integration tests
-      run: mvn -f sdk-tests/pom.xml verify -q
+      run: mvn install -q -B -DskipTests
+    - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
+      id: integration_tests
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} mvn -B -f sdk-tests/pom.xml verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
@@ -113,6 +139,19 @@ jobs:
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
+    - name: Upload failsafe test report for sdk-tests on failure
+      if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
+      uses: actions/upload-artifact@master
+      with:
+        name: failsafe-report-sdk-tests
+        path: sdk-tests/target/failsafe-reports
+    - name: Upload surefire test report for sdk-tests on failure
+      if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
+      uses: actions/upload-artifact@master
+      with:
+        name: surefire-report-sdk-tests
+        path: sdk-tests/target/surefire-reports
+
   publish:
     runs-on: ubuntu-latest
     needs: build
@@ -131,7 +170,7 @@ jobs:
           java-version: ${{ env.JDK_VER }}
       - name: Get pom parent version
         run: |
-          PARENT_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          PARENT_VERSION=$(mvn -B -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
       - name: Is SNAPSHOT release ?
         if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
@@ -143,7 +182,7 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: mvn clean install -q
+        run: mvn clean install -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |

@@ -32,6 +32,10 @@ Then change into the `examples` directory:
 cd examples
 ```
 
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ### Running the StateClient
 This example uses the Java SDK Dapr client in order to save, retrieve and delete a state, in this case, an instance of a class. Multiple state stores are supported since Dapr 0.4. See the code snippet bellow: 
 
@@ -128,7 +132,7 @@ This example performs multiple operations:
 * `client.getState(...)` operation in order to retrieve back the persisted state using the same key. 
 * `client.executeStateTransaction(...)` operation in order to update existing state and add new state. 
 * `client.getBulkState(...)` operation in order to retrieve back the persisted states using the same keys.
-* `client.deleteState(...)` operation to remove  one of the persisted states. An example of etag mismatch error if a different than current etag is added to request.
+* `client.deleteState(...)` operation to remove one of the persisted states. An example of etag mismatch error is if something other than the current etag is added to request.
 * `client.executeStateTransaction(...)` operation in order to remove the other persisted state.
 
 Finally, the code tries to retrieve the deleted states, which should not be found. 
@@ -162,7 +166,7 @@ sleep: 5
 
 Run this example with the following command:
 ```bash
-dapr run --components-path ./components/state --app-id state_example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
+dapr run --components-path ./components/state --app-id state-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
 
 <!-- END_STEP -->
@@ -198,7 +202,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id state_example
+dapr stop --app-id state-example
 ```
 
 <!-- END_STEP -->

@@ -1,6 +1,6 @@
 # Dapr Actors Sample
 
-In this example, we'll use Dapr to test the actor pattern capabilities such as concurrency, state, life-cycle management for actor activation/deactivation and timers and reminders to wake-up actors.
+In this example, we'll use Dapr to test the actor pattern capabilities such as concurrency, state, life-cycle management for actor activation/deactivation, timers, and reminders to wake-up actors.
 
 Visit [this](https://docs.dapr.io/developing-applications/building-blocks/actors/) link for more information about the Actor pattern.
 
@@ -41,9 +41,13 @@ Get into the examples directory.
 cd examples
 ```
 
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ### Running the Demo actor service
 
-The first Java class is `DemoActorService`. Its job is to register an implementation of `DemoActor` in the Dapr's Actor runtime. In `DemoActorService.java` file, you will find the `DemoActorService` class and the `main` method. See the code snippet below:
+The first Java class is `DemoActorService`. It's job is to register an implementation of `DemoActor` in the Dapr's Actor runtime. In the `DemoActorService.java` file, you will find the `DemoActorService` class and the `main` method. See the code snippet below:
 
 ```java
 public class DemoActorService {
@@ -62,7 +66,7 @@ public class DemoActorService {
 This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
  
 
-`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](https://github.com/dapr/java-sdk/blob/master/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
+`DaprApplication.start()` method will run the Spring Boot [DaprApplication](https://github.com/dapr/java-sdk/blob/master/sdk-tests/src/test/java/io/dapr/it/actors/services/springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](https://github.com/dapr/java-sdk/blob/master/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
 
 See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of an actor:
 ```java
@@ -75,7 +79,12 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
   }
 
   @Override
-  public void registerReminder() {
+  public void registerTimer(String state) {
+    //...
+  }
+
+  @Override
+  public void registerReminder(int index) {
     //...
   }
 
@@ -105,7 +114,7 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
   }
 }
 ```
-An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`. The `DemoActor` interface is used by the Actor runtime and also client. See how `DemoActor` interface can be annotated as Dapr Actor.
+An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`. The `DemoActor` interface is used by the Actor runtime and also client. See how the `DemoActor` interface can be annotated as a Dapr Actor.
 
 ```java
 import io.dapr.actors.ActorMethod;
@@ -115,8 +124,10 @@ import io.dapr.actors.ActorMethod;
  */
 @ActorType(name = "DemoActor")
 public interface DemoActor {
-
-  void registerReminder();
+  
+  void registerTimer(String state);
+  
+  void registerReminder(int index);
 
   @ActorMethod(name = "echo_message")
   String say(String something);
@@ -134,12 +145,35 @@ The `@ActorType` annotation indicates the Dapr Java SDK that this interface is a
 The `@ActorMethod` annotation can be applied to an interface method to specify configuration for that method. In this example, the `say` method, is renamed to `echo_message` - this can be used when invoking an actor method implemented in a different programming language (like C# or Python) and the method name does not match Java's naming conventions.
 Some methods can return a `Mono` object. In these cases, the `@ActorMethod` annotation is used to hint the Dapr Java SDK of the type encapsulated in the `Mono` object. You can read more about Java generic type erasure [here](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html).  
 
+<!-- STEP
+name: Run Demo Actor Service
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Message #2 received from actor at index 1 with ID'
+  - 'Message #2 received from actor at index 2 with ID'
+  - 'Message #2 received from actor at index 0 with ID'
+  - 'Message #1 received from actor at index 1 with ID'
+  - 'Message #1 received from actor at index 0 with ID'
+  - 'Message #3 received from actor at index 2 with ID'
+  - 'Server timer triggered with state ping! {2}  for actor'
+  - 'Server timer triggered with state ping! {1}  for actor'
+  - 'Server timer triggered with state ping! {0}  for actor'
+  - 'Reminder myremind with state {2} triggered for actor'
+  - 'Reminder myremind with state {0} triggered for actor'
+  - 'Reminder myremind with state {1} triggered for actor'
+background: true
+sleep: 10
+timeout_seconds: 90
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
 
 Now, execute the following script in order to run DemoActorService:
 ```sh
 dapr run --components-path ./components/actors --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
 ```
-
+<!-- END_STEP -->
 ### Running the Actor client
 
 The actor client is a simple java class with a main method that uses the Dapr Actor capabilities in order to create the actors and execute the different methods based on the Actor pattern.
@@ -167,19 +201,23 @@ public class DemoActorClient {
     }
   }
 
-  private static final void callActorForever(String actorId, DemoActor actor) {
+  private static final void callActorForever(int index, String actorId, DemoActor actor) {
     // First, register reminder.
-    actor.registerReminder();
+    actor.registerReminder(index);
+    // Second register timer.
+    actor.registerTimer("ping! {" + index + "} ");
  
     // Now, we run until thread is interrupted.
     while (!Thread.currentThread().isInterrupted()) {
       // Invoke actor method to increment counter by 1, then build message.
       int messageNumber = actor.incrementAndGet(1).block();
-      String message = String.format("Actor %s said message #%d", actorId, messageNumber);
+      String message = String.format("Message #%d received from actor at index %d with ID %s", messageNumber,
+              index, actorId);
    
       // Invoke the 'say' method in actor.
       String result = actor.say(message);
-      System.out.println(String.format("Actor %s got a reply: %s", actorId, result));
+      System.out.println(String.format("Reply %s received from actor at index %d with ID %s ", result,
+              index, actorId));
     
       try {
         // Waits for up to 1 second.
@@ -195,67 +233,82 @@ public class DemoActorClient {
 
 First, the client defines how many actors it is going to create. The main method declares a `ActorClient` and `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. `ActorClient` is reusable for different actor types and should be instantiated only once in your code. `ActorClient` also implements `AutoCloseable`, which means it holds resources that need to be closed. In this example, we use the "try-resource" feature in Java.
 
-Then, the code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
+Then, the code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally, `say` method will print a message containing the received string along with the formatted server time. 
 
-Use the follow command to execute the DemoActorClient:
+Use the following command to execute the DemoActorClient:
+
+<!-- STEP
+name: Run Demo Actor Client
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'received from actor at index 2 with ID'
+  - 'received from actor at index 1 with ID'
+  - 'received from actor at index 0 with ID '
+background: true
+sleep: 20
+timeout_seconds: 45 
+-->
+
 
 ```sh
 dapr run --components-path ./components/actors --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
 ```
 
+<!-- END_STEP -->
+
 Once running, the `demoactorservice` logs will start displaying the different steps: 
 First, we can see actors being activated and the `say` method being invoked:
 ```text
-== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-1] INFO  io.dapr.actors.ActorTrace - Actor:b7b8e745-bc1b-44ff-a0d3-c9a71f68956c Activating ...
+== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-5] INFO  io.dapr.actors.ActorTrace - Actor:a855706e-f477-4530-9bff-d7b1cd2988f8 Activating ...
 
-== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-2] INFO  io.dapr.actors.ActorTrace - Actor:d0455670-557b-4ff5-ab4c-8743aca9a423 Activating ...
+== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-6] INFO  io.dapr.actors.ActorTrace - Actor:4720f646-baaa-4fae-86dd-aec2fc2ead6e Activating ...
 
-== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-10] INFO  io.dapr.actors.ActorTrace - Actor:56d741b6-b685-45df-974b-9e94efb3e7b4 Activating ...
+== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-7] INFO  io.dapr.actors.ActorTrace - Actor:d54592a5-5b5b-4925-8974-6cf309fbdbbf Activating ...
 
-== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-10] INFO  io.dapr.actors.ActorTrace - Actor:56d741b6-b685-45df-974b-9e94efb3e7b4 Activated
+== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-5] INFO  io.dapr.actors.ActorTrace - Actor:a855706e-f477-4530-9bff-d7b1cd2988f8 Activated
 
-== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-1] INFO  io.dapr.actors.ActorTrace - Actor:b7b8e745-bc1b-44ff-a0d3-c9a71f68956c Activated
+== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-7] INFO  io.dapr.actors.ActorTrace - Actor:d54592a5-5b5b-4925-8974-6cf309fbdbbf Activated
 
-== APP == 2021-03-10 21:08:28,941 {HH:mm:ss.SSS} [http-nio-3000-exec-2] INFO  io.dapr.actors.ActorTrace - Actor:d0455670-557b-4ff5-ab4c-8743aca9a423 Activated
+== APP == 2023-05-23 11:04:47,348 {HH:mm:ss.SSS} [http-nio-3000-exec-6] INFO  io.dapr.actors.ActorTrace - Actor:4720f646-baaa-4fae-86dd-aec2fc2ead6e Activated
 
-== APP == Server say method for actor 56d741b6-b685-45df-974b-9e94efb3e7b4: Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 said message #1 @ 2021-03-10 21:08:29.170
+== APP == Server say method for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf: Message #2 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:48.459
 
-== APP == Server say method for actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c: Actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c said message #1 @ 2021-03-10 21:08:29.170
+== APP == Server say method for actor 4720f646-baaa-4fae-86dd-aec2fc2ead6e: Message #4 received from actor at index 2 with ID 4720f646-baaa-4fae-86dd-aec2fc2ead6e @ 2023-05-23 11:04:48.695
 
-== APP == Server say method for actor d0455670-557b-4ff5-ab4c-8743aca9a423: Actor d0455670-557b-4ff5-ab4c-8743aca9a423 said message #1 @ 2021-03-10 21:08:29.170
+== APP == Server say method for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf: Message #3 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:48.708
 ```
 
 Then we can see reminders and timers in action:
 ```text
-== APP == Server timer for actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c: ping! @ 2021-03-10 21:08:32.945
+== APP == Server timer triggered with state ping! {0}  for actor a855706e-f477-4530-9bff-d7b1cd2988f8@ 2023-05-23 11:04:49.021
 
-== APP == Server timer for actor d0455670-557b-4ff5-ab4c-8743aca9a423: ping! @ 2021-03-10 21:08:32.945
+== APP == Server timer triggered with state ping! {1}  for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf@ 2023-05-23 11:04:49.021
 
-== APP == Server timer for actor 56d741b6-b685-45df-974b-9e94efb3e7b4: ping! @ 2021-03-10 21:08:32.945
+== APP == Reminder myremind with state {2} triggered for actor 4720f646-baaa-4fae-86dd-aec2fc2ead6e @ 2023-05-23 11:04:52.012
 
-== APP == Server reminded actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c of: myremind for 1251123938 @ 2021-03-10 21:08:33.007
+== APP == Reminder myremind with state {1} triggered for actor d54592a5-5b5b-4925-8974-6cf309fbdbbf @ 2023-05-23 11:04:52.012
 
+== APP == Reminder myremind with state {0} triggered for actor a855706e-f477-4530-9bff-d7b1cd2988f8 @ 2023-05-23 11:04:52.012
 ```
 
 Finally, the console for `demoactorclient` got the service responses:
 ```text
-== APP == Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 got a reply: 2021-03-10 21:08:29.170
+== APP == Reply 2023-05-23 11:04:49.288 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
 
-== APP == Actor b7b8e745-bc1b-44ff-a0d3-c9a71f68956c got a reply: 2021-03-10 21:08:29.170
+== APP == Reply 2023-05-23 11:04:49.408 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
 
-== APP == Actor d0455670-557b-4ff5-ab4c-8743aca9a423 got a reply: 2021-03-10 21:08:29.170
+== APP == Reply 2023-05-23 11:04:49.515 received from actor at index 1 with ID d54592a5-5b5b-4925-8974-6cf309fbdbbf 
 
-== APP == Actor d0455670-557b-4ff5-ab4c-8743aca9a423 got a reply: 2021-03-10 21:08:29.292
+== APP == Reply 2023-05-23 11:04:49.740 received from actor at index 0 with ID a855706e-f477-4530-9bff-d7b1cd2988f8 
 
-== APP == Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 got a reply: 2021-03-10 21:08:29.752
-
-== APP == Actor 56d741b6-b685-45df-974b-9e94efb3e7b4 got a reply: 2021-03-10 21:08:29.804
+== APP == Reply 2023-05-23 11:04:49.863 received from actor at index 2 with ID 4720f646-baaa-4fae-86dd-aec2fc2ead6e 
 ```
 
-For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java) Application implementation.
+For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](https://github.com/dapr/java-sdk/blob/master/sdk-tests/src/test/java/io/dapr/it/actors/services/springboot/DaprApplication.java) Application implementation.
 
 ### Limitations
 
 Currently, these are the limitations in the Java SDK for Dapr:
-* Actor interface cannot have overloaded methods (methods with same name but different signature).
+* Actor interface cannot have overloaded methods (methods with same name, but different signature).
 * Actor methods can only have zero or one parameter.

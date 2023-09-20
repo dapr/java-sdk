@@ -29,7 +29,11 @@ Then change into the `examples` directory:
 cd examples
 ```
 
-### Running the StateClient
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
+### Running the State Client
 This example uses the Java SDK Dapr client in order to save bulk state and query state, in this case, an instance of a class. See the code snippets below:
 
 The class saved and queried for is as below:
@@ -134,7 +138,7 @@ public class QuerySavedState {
   private static final String THIRD_KEY_NAME = "key3";
 
   /**
-   * Executes the sate actions.
+   * Executes the state actions.
    * @param args messages to be sent as state value.
    */
   public static void main(String[] args) throws Exception {
@@ -204,12 +208,12 @@ public class QuerySavedState {
   }
 }
 ```
-The code uses the `DaprClient` created by the `DaprClientBuilder` for waiting for sidecar to start as well as to save state. Notice that this builder uses default settings. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
+The code uses the `DaprClient` created by the `DaprClientBuilder` for waiting for the sidecar to start as well as to save state. Notice that this builder uses default settings. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
 
-The code uses the `DaprPreviewClient` created by the `DaprClientBuilder` is used for the `queryState` preview API.
+The code uses the `DaprPreviewClient` created by the `DaprClientBuilder` which is used for the `queryState` preview API.
 
 This example performs multiple operations:
-* `client.waitForSidecar(...)` for waiting until Dapr sidecar is ready.
+* `client.waitForSidecar(...)` for waiting until Dapr's sidecar is ready.
 * `client.saveBulkState(...)` for persisting an instance of `Listing`.
 * `client.query(...)` operation in order to query for persisted state.
 
@@ -239,7 +243,7 @@ sleep: 10
 
 Run this example with the following command:
 ```bash
-dapr run --components-path ./components/state --app-id query_state_example -H 3600 -- java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.querystate.QuerySavedState
+dapr run --components-path ./components/state --app-id query-state-example -H 3600 -- java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.querystate.QuerySavedState
 ```
 
 <!-- END_STEP -->
@@ -262,7 +266,7 @@ Once running, the QuerySaveState example should print the output as follows:
 == APP == Data: Listing{propertyType='apartment', id=1000, city='Seattle', state='WA'}
 == APP == Done
 ```
-Note that the output is got in the descending order of the field `id` and all the `propertyType` field values are the same `apartment`.
+Note that the output is in descending order of the field `id`, and all the `propertyType` field values are the same `apartment`.
 
 ### Cleanup
 
@@ -273,7 +277,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id query_state_example
+dapr stop --app-id query-state-example
 ```
 
 <!-- END_STEP -->

@@ -33,7 +33,7 @@ cd examples
 ```
 
 ### Running the StateClient
-This example uses the Java SDK Dapr client in order perform an invalid operartion, causing Dapr runtime to return an error. See the code snippet bellow: 
+This example uses the Java SDK Dapr client in order to perform an invalid operation, causing Dapr runtime to return an error. See the code snippet below: 
 
 ```java
 public class Client {
@@ -56,7 +56,7 @@ public class Client {
 
 }
 ```
-The code uses the `DaprClient` created by the `DaprClientBuilder`. It tries to get a state from state store but provides an unknown state store. It causes Dapr sidecar to return error, which is converted to a `DaprException` to the application. To be compatible with Project Reactor, `DaprException` extends from `RuntimeException` - making it an unchecked exception. Applications might also get `IllegalArgumentException` when invoking methods with invalid input parameters that are validated at the client side.
+The code uses the `DaprClient` created by the `DaprClientBuilder`. It tries to get a state from state store, but provides an unknown state store. It causes the Dapr sidecar to return an error, which is converted to a `DaprException` to the application. To be compatible with Project Reactor, `DaprException` extends from `RuntimeException` - making it an unchecked exception. Applications might also get an `IllegalArgumentException` when invoking methods with invalid input parameters that are validated at the client side.
 
 The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
@@ -74,7 +74,7 @@ sleep: 5
 -->
 
 ```bash
-dapr run --app-id exception_example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
+dapr run --app-id exception-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.exception.Client
 ```
 
 <!-- END_STEP -->
@@ -124,7 +124,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id exception_example
+dapr stop --app-id exception-example
 ```
 
 <!-- END_STEP -->

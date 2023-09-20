@@ -16,20 +16,20 @@ package io.dapr.client;
 /**
  * Common headers for GRPC and HTTP communication.
  */
-class Headers {
+public final class Headers {
 
   /**
    * OpenCensus's metadata for GRPC.
    */
-  static final String GRPC_TRACE_BIN = "grpc-trace-bin";
+  public static final String GRPC_TRACE_BIN = "grpc-trace-bin";
 
   /**
    * Token for authentication from Application to Dapr runtime.
    */
-  static final String DAPR_API_TOKEN = "dapr-api-token";
+  public static final String DAPR_API_TOKEN = "dapr-api-token";
 
   /**
    * Header for Api Logging User-Agent.
    */
-  static final String DAPR_USER_AGENT = "User-Agent";  
+  public static final String DAPR_USER_AGENT = "User-Agent";
 }
