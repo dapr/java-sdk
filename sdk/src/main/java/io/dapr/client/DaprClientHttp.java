@@ -716,7 +716,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{DaprHttp.ALPHA_1_API_VERSION, "lock", stateStoreName};
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
               context -> this.client
                       .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, null, requestBody, null, context)
       ).flatMap(response -> {
@@ -759,7 +759,7 @@ public class DaprClientHttp extends AbstractDaprClient {
 
       String[] pathSegments = new String[]{DaprHttp.ALPHA_1_API_VERSION, "unlock", stateStoreName};
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
               context -> this.client
                       .invokeApi(DaprHttp.HttpMethods.POST.name(), pathSegments, null, requestBody, null, context)
       ).flatMap(response -> {

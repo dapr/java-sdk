@@ -820,7 +820,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.TryLockRequest tryLockRequest = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
               context -> this.<DaprProtos.TryLockResponse>createMono(
                       it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)
               )
@@ -863,7 +863,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.UnlockRequest unlockRequest = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
               context -> this.<DaprProtos.UnlockResponse>createMono(
                       it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)
               )
