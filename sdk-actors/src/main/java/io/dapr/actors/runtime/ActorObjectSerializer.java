@@ -146,12 +146,6 @@ public class ActorObjectSerializer extends ObjectSerializer {
       if (config.getRemindersStoragePartitions() != null) {
         generator.writeNumberField("remindersStoragePartitions", config.getRemindersStoragePartitions());
       }
-      if (config.getActorReentrancyConfig() != null) {
-        generator.writeObjectFieldStart("actorReentrancyConfig");
-        generator.writeBooleanField("enabled", config.getActorReentrancyConfig().getEnabled());
-        generator.writeNumberField("maxStackDepth", config.getActorReentrancyConfig().getMaxStackDepth());
-        generator.writeEndObject();
-      }
       if (!config.getActorTypeConfigs().isEmpty()) {
 
         generator.writeArrayFieldStart("entitiesConfig");
@@ -179,12 +173,6 @@ public class ActorObjectSerializer extends ObjectSerializer {
           }
           if (actorTypeConfig.getRemindersStoragePartitions() != null) {
             generator.writeNumberField("remindersStoragePartitions", actorTypeConfig.getRemindersStoragePartitions());
-          }
-          if (actorTypeConfig.getActorReentrancyConfig() != null) {
-            generator.writeObjectFieldStart("actorReentrancyConfig");
-            generator.writeBooleanField("enabled", actorTypeConfig.getActorReentrancyConfig().getEnabled());
-            generator.writeNumberField("maxStackDepth", actorTypeConfig.getActorReentrancyConfig().getMaxStackDepth());
-            generator.writeEndObject();
           }
 
           generator.writeEndObject();

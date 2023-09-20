@@ -36,8 +36,6 @@ public class ActorRuntimeConfig {
 
   private volatile Integer remindersStoragePartitions;
 
-  private volatile ActorReentrancyConfig actorReentrancyConfig;
-
   private volatile List<ActorTypeConfig> actorTypeConfigs = new CopyOnWriteArrayList<>();
 
   /**
@@ -193,25 +191,4 @@ public class ActorRuntimeConfig {
   Collection<ActorTypeConfig> getActorTypeConfigs() {
     return Collections.unmodifiableCollection(actorTypeConfigs);
   }
-
-  /**
-   * Sets actors reentrancy config.
-   * 
-   * @param actorReentrancyConfig Actor reentrancy type .
-   * @return This instance.
-   */
-  ActorRuntimeConfig setActorReentrancyConfig(ActorReentrancyConfig actorReentrancyConfig) {
-    this.actorReentrancyConfig = actorReentrancyConfig;
-    return this;
-  }
-
-  /**
-   * Gets actors reentrancy config.
-   *
-   * @return Actors reentrancy config.
-   */
-  ActorReentrancyConfig getActorReentrancyConfig() {
-    return actorReentrancyConfig;
-  }
-
 }
