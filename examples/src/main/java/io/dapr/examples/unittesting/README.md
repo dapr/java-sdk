@@ -1,6 +1,6 @@
 ## Unit testing sample
 
-This sample illustrates how applications can write unit testing with Dapr's Java SDK, JUnit 5 and Mockito.
+This sample illustrates how applications can write unit tests with Dapr's Java SDK, JUnit 5 and Mockito.
 
 ## Pre-requisites
 
@@ -31,6 +31,10 @@ Then change into the `examples` directory:
 ```sh
 cd examples
 ```
+
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
 
 ### Understanding the code
 
@@ -76,7 +80,7 @@ This example, found in `DaprExampleTest.java`, will simulate an application code
 ```
 
 This class has two constructors. The first one can be used by production code by passing the proper instances of `DaprClient` and `ActorClient`.
-Then, it contains two methods: `getState()` will retrieve a state from `DaprClient`, while `invokeActor()` will create an instance of Actor proxy for `MyActor` interface and invoke a method on it.
+The second, contains two methods: `getState()` will retrieve a state from the `DaprClient`, while `invokeActor()` will create an instance of the Actor proxy for `MyActor` interface and invoke a method on it.
 
 ```java
   @ActorType(name = "MyActor")
@@ -117,7 +121,7 @@ The second test uses a mock implementation of the factory method and checks the 
 ```
 
 
-##### Running the example
+#### Running the example
 <!-- STEP
 name: Check state example
 expected_stdout_lines:
@@ -184,7 +188,7 @@ private class DemoWorkflow extends Workflow {
 }
 ```
 
-The example provides its own workflow, but for a production system you would want to import and use your own workflow. The goal of unit testing a workflow is to ensure that the business logic functions as expected.  For our example that is these two sections:
+The example provides its own workflow, but for a production system you would want to import and use your own workflow. The goal of unit testing a workflow is to ensure that the business logic functions as expected.  For our example, that involves the following two sections:
 
 ```java
 String output = name + ":" + id;
@@ -248,7 +252,7 @@ The third test is similar but validates the inverse of the test above, ensuring 
 ```
 
 
-##### Running the example
+#### Running the example
 <!-- STEP
 name: Check state example
 expected_stdout_lines:
