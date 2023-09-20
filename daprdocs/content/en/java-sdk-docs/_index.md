@@ -100,7 +100,7 @@ You can fix this by specifying a compatible `OkHttp` version in your project to 
 
 ## Try it out
 
-Put the Dapr Java SDK to the test. Walk through the Java quickstarts adn tutorials to see Dapr in action:
+Put the Dapr Java SDK to the test. Walk through the Java quickstarts and tutorials to see Dapr in action:
 
 | SDK samples | Description |
 | ----------- | ----------- |

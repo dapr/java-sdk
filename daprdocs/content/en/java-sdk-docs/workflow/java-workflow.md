@@ -42,7 +42,7 @@ cd java-sdk
 Run the following command to install the requirements for running this workflow sample with the Dapr Java SDK.
 
 ```bash
-mvn install
+mvn clean install
 ```
 
 From the Java SDK root directory, navigate to the Dapr Workflow example.
@@ -53,21 +53,16 @@ cd examples
 
 ## Run the `DemoWorkflowWorker`
 
-The `DemoWorkflowWorker` registers an implementation of `DemoWorkflow` in the Dapr Workflow runtime engine. In the following excerpt from the [`DemoWorkflowWorker.java` file](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/workflows/DemoWorkflowWorker.java), notice the `DemoWorkflowWorker` class and the main method.
+The `DemoWorkflowWorker` class registers an implementation of `DemoWorkflow` in Dapr's workflow runtime engine. In the `DemoWorkflowWorker.java` file, you can find the `DemoWorkflowWorker` class and the `main` method:
 
 ```java
 public class DemoWorkflowWorker {
 
   public static void main(String[] args) throws Exception {
-    // Register the Workflow with the builder.
-    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(DemoWorkflow.class);
-
-    // Build and then start the workflow runtime pulling and executing tasks
-    try (WorkflowRuntime runtime = builder.build()) {
-      System.out.println("Start workflow runtime");
-      runtime.start();
-    }
-
+    // Register the Workflow with the runtime.
+    WorkflowRuntime.getInstance().registerWorkflow(DemoWorkflow.class);
+    System.out.println("Start workflow runtime");
+    WorkflowRuntime.getInstance().startAndBlock();
     System.exit(0);
   }
 }
@@ -75,7 +70,7 @@ public class DemoWorkflowWorker {
 
 In the code above:
 - `WorkflowRuntime.getInstance().registerWorkflow()` registers `DemoWorkflow` as a workflow in the Dapr Workflow runtime.
-- `runtime.start();` builds and starts the engine within the Dapr Workflow runtime.
+- `WorkflowRuntime.getInstance().start()` builds and starts the engine within the Dapr Workflow runtime.
 
 In the terminal, execute the following command to kick off the `DemoWorkflowWorker`:
 
@@ -97,24 +92,78 @@ You're up and running! Both Dapr and your app logs will appear here.
 
 ## Run the `DemoWorkflowClient
 
-Now that the workflow worker is ready to go, you can start workflow instances registered with Dapr using the `DemoWorkflowClient`. In the following excerpt from the [`DemoWorkflowClient.java` file](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/workflows/DemoWorkflowClient.java), notice the `DemoWorkflowClient` class and the main method that starts the workflow instances.
+The `DemoWorkflowClient` starts instances of workflows that have been registered with Dapr.
+
 
 ```java
 public class DemoWorkflowClient {
 
+  // ...
   public static void main(String[] args) throws InterruptedException {
     DaprWorkflowClient client = new DaprWorkflowClient();
-    
-    // Start the workflow instances
+
     try (client) {
-      System.out.println("*****");
-      String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
+      String separatorStr = "*******";
+      System.out.println(separatorStr);
+      String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class, "input data");
       System.out.printf("Started new workflow instance with random ID: %s%n", instanceId);
 
-      System.out.println("Sleep and allow this workflow instance to timeout...");
-      TimeUnit.SECONDS.sleep(10);
+      System.out.println(separatorStr);
+      System.out.println("**GetInstanceMetadata:Running Workflow**");
+      WorkflowInstanceStatus workflowMetadata = client.getInstanceState(instanceId, true);
+      System.out.printf("Result: %s%n", workflowMetadata);
 
-      System.out.println("*****");
+      System.out.println(separatorStr);
+      System.out.println("**WaitForInstanceStart**");
+      try {
+        WorkflowInstanceStatus waitForInstanceStartResult =
+            client.waitForInstanceStart(instanceId, Duration.ofSeconds(60), true);
+        System.out.printf("Result: %s%n", waitForInstanceStartResult);
+      } catch (TimeoutException ex) {
+        System.out.printf("waitForInstanceStart has an exception:%s%n", ex);
+      }
+
+      System.out.println(separatorStr);
+      System.out.println("**SendExternalMessage**");
+      client.raiseEvent(instanceId, "TestEvent", "TestEventPayload");
+
+      System.out.println(separatorStr);
+      System.out.println("** Registering parallel Events to be captured by allOf(t1,t2,t3) **");
+      client.raiseEvent(instanceId, "event1", "TestEvent 1 Payload");
+      client.raiseEvent(instanceId, "event2", "TestEvent 2 Payload");
+      client.raiseEvent(instanceId, "event3", "TestEvent 3 Payload");
+      System.out.printf("Events raised for workflow with instanceId: %s\n", instanceId);
+
+      System.out.println(separatorStr);
+      System.out.println("** Registering Event to be captured by anyOf(t1,t2,t3) **");
+      client.raiseEvent(instanceId, "e2", "event 2 Payload");
+      System.out.printf("Event raised for workflow with instanceId: %s\n", instanceId);
+
+
+      System.out.println(separatorStr);
+      System.out.println("**WaitForInstanceCompletion**");
+      try {
+        WorkflowInstanceStatus waitForInstanceCompletionResult =
+            client.waitForInstanceCompletion(instanceId, Duration.ofSeconds(60), true);
+        System.out.printf("Result: %s%n", waitForInstanceCompletionResult);
+      } catch (TimeoutException ex) {
+        System.out.printf("waitForInstanceCompletion has an exception:%s%n", ex);
+      }
+
+      System.out.println(separatorStr);
+      System.out.println("**purgeInstance**");
+      boolean purgeResult = client.purgeInstance(instanceId);
+      System.out.printf("purgeResult: %s%n", purgeResult);
+
+      System.out.println(separatorStr);
+      System.out.println("**raiseEvent**");
+
+      String eventInstanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
+      System.out.printf("Started new workflow instance with random ID: %s%n", eventInstanceId);
+      client.raiseEvent(eventInstanceId, "TestException", null);
+      System.out.printf("Event raised for workflow with instanceId: %s\n", eventInstanceId);
+
+      System.out.println(separatorStr);
       String instanceToTerminateId = "terminateMe";
       client.scheduleNewWorkflow(DemoWorkflow.class, null, instanceToTerminateId);
       System.out.printf("Started new workflow instance with specified ID: %s%n", instanceToTerminateId);
@@ -122,7 +171,20 @@ public class DemoWorkflowClient {
       TimeUnit.SECONDS.sleep(5);
       System.out.println("Terminate this workflow instance manually before the timeout is reached");
       client.terminateWorkflow(instanceToTerminateId, null);
-      System.out.println("*****");
+      System.out.println(separatorStr);
+
+      String restartingInstanceId = "restarting";
+      client.scheduleNewWorkflow(DemoWorkflow.class, null, restartingInstanceId);
+      System.out.printf("Started new  workflow instance with ID: %s%n", restartingInstanceId);
+      System.out.println("Sleeping 30 seconds to restart the workflow");
+      TimeUnit.SECONDS.sleep(30);
+
+      System.out.println("**SendExternalMessage: RestartEvent**");
+      client.raiseEvent(restartingInstanceId, "RestartEvent", "RestartEventPayload");
+
+      System.out.println("Sleeping 30 seconds to terminate the eternal workflow");
+      TimeUnit.SECONDS.sleep(30);
+      client.terminateWorkflow(restartingInstanceId, null);
     }
 
     System.out.println("Exiting DemoWorkflowClient.");
