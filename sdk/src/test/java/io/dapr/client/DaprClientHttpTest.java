@@ -29,6 +29,7 @@ import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -101,11 +102,35 @@ public class DaprClientHttpTest {
   }
 
   @Test
+  public void waitForSidecarBadHealthCheck() throws Exception {
+    int port = findFreePort();
+    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(404, ResponseBody.create("" +
+                    "{\"errorCode\":\"ERR_COMPONENTS_NOT_INITIALIZED\"," +
+                    "\"message\":\"error message\"}", MediaTypes.MEDIATYPE_JSON));
+
+    assertThrows(IllegalStateException.class, () -> daprClientHttp.waitForSidecar(1).block());
+  }
+
+  @Test
   public void waitForSidecarTimeout() throws Exception {
     int port = findFreePort();
     System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(200);
+
+
     assertThrows(RuntimeException.class, () -> daprClientHttp.waitForSidecar(1).block());
   }
 

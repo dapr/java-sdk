@@ -251,7 +251,7 @@ public class DaprHttpTest {
     mockInterceptor.addRule()
       .get("http://127.0.0.1:3500/" + urlDeleteState)
       .respond(404, ResponseBody.create(MediaType.parse("application/json"),
-        "{\"errorCode\":\"404\",\"message\":\"State Not Fuund\"}"));
+        "{\"errorCode\":\"404\",\"message\":\"State Not Found\"}"));
     try {
       responseDeleted.block();
       fail("Expected DaprException");

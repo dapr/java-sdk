@@ -136,12 +136,21 @@ public class DaprClientHttp extends AbstractDaprClient {
    */
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
-    return Mono.fromRunnable(() -> {
+    return Mono.defer(() -> {
       try {
+        String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
+
+        Mono<DaprHttp.Response> responseMono = this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments, null, "", null, null);
+        responseMono.block();
+
         NetworkUtils.waitForSocket(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), timeoutInMilliseconds);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
+      } catch (DaprException e) {
+        throw new IllegalStateException(String.format("Components aren't initialized"));
       }
+
+      return Mono.empty();
     });
   }
 
