@@ -34,6 +34,17 @@ Then build the Maven project:
 # make sure you are in the `java-sdk` directory.
 mvn install
 ```
+
+Then get into the examples directory:
+
+```sh
+cd examples
+```
+
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ## Store few dummy configurations in configurationstore
 <!-- STEP
 name: Set configuration value
