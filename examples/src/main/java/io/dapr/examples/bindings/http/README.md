@@ -10,7 +10,7 @@ Visit [this](https://docs.dapr.io/developing-applications/building-blocks/bindin
  
 ## Binding sample using the Java-SDK
 
-In this example, the component used is Kafka but others are also available.
+In this example, the component used is Kafka, but others are also available.
 
 Visit [this](https://github.com/dapr/components-contrib/tree/master/bindings) link for more information about binding implementations.
 
@@ -46,11 +46,15 @@ Then, go into the examples directory:
 cd examples
 ```
 
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ### Setting Kafka locally
 
-Before getting into the application code, follow these steps in order to set up a local instance of Kafka. This is needed for the local instances. Steps are:
+Before getting into the application code, follow these steps in order to set up a local instance of Kafka. This is needed for the local instances.
 
-1. To run container locally run:
+1. Run the container locally:
 
 <!-- STEP
 name: Setup kafka container
@@ -109,7 +113,7 @@ public class InputBindingController {
 }
 ```
 
- Execute the follow script in order to run the Input Binding example:
+Execute the following command to run the Input Binding example:
 
 <!-- STEP
 name: Run input binding
@@ -130,9 +134,9 @@ dapr run --components-path ./components/bindings --app-id inputbinding --app-por
 
 ### Running the Output binding sample
 
-The output binding application is a simple java class with a main method that uses the Dapr Client to invoke binding.
+The output binding application is a simple Java class with a main method that uses the Dapr Client to invoke binding.
 
-In the `OutputBindingExample.java` file, you will find the `OutputBindingExample` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted. The client publishes events using `invokeBinding` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below: 
+In the `OutputBindingExample.java` file, you will find the `OutputBindingExample` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: one is for Dapr's sent and recieved objects, and the second is for objects to be persisted. The client publishes events using the `invokeBinding` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below: 
 ```java
 public class OutputBindingExample{
 ///...
@@ -179,7 +183,7 @@ public class OutputBindingExample{
 
 This example binds two events: A user-defined data object (using the `myClass` object as parameter) and a simple string using the same `invokeBinding` method.
 
-Use the follow command to execute the Output Binding example:
+Execute the following command to run the Output Binding example:
 
 <!-- STEP
 name: Run output binding
@@ -251,4 +255,4 @@ docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-
 
 <!-- END_STEP -->
 
-For more details on Dapr Spring Boot integration, please refer to [Dapr Spring Boot](../../DaprApplication.java)  Application implementation.
+For more details on the Dapr Spring Boot integration, please refer to the [Dapr Spring Boot](../../DaprApplication.java)  Application implementation.
