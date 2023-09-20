@@ -136,6 +136,10 @@ public class DaprClientHttpTest {
 
   @Test
   public void waitForSidecarTimeoutOK() throws Exception {
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(200);
     try (ServerSocket serverSocket = new ServerSocket(0)) {
       final int port = serverSocket.getLocalPort();
       System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
