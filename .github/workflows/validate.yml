@@ -105,11 +105,11 @@ jobs:
           docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
           docker ps
       - name: Clean up files
-        run: mvn clean
+        run: ./mvnw clean
       - name: Build sdk
-        run: mvn compile -q
+        run: ./mvnw compile -q
       - name: Install jars
-        run: mvn install -q
+        run: ./mvnw install -q
       - name: Validate invoke http example
         working-directory: ./examples
         run: |
