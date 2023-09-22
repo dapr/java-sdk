@@ -20,8 +20,8 @@ import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -296,28 +297,28 @@ public class ActorStatefulTest {
   @Test
   public void happyGetSetDeleteContains() {
     ActorProxy proxy = newActorProxy();
-    Assert.assertEquals(
+    Assertions.assertEquals(
       proxy.getActorId().toString(), proxy.invokeMethod("getIdString", String.class).block());
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     proxy.invokeMethod("setMessage", "hello world").block();
-    Assert.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       "hello world", proxy.invokeMethod("getMessage", String.class).block());
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       executeSayMethod("hello world"),
       proxy.invokeMethod("setMessage", "hello world", String.class).block());
 
     proxy.invokeMethod("deleteMessage").block();
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void lazyGet() {
     ActorProxy proxy = newActorProxy();
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
     proxy.invokeMethod("setMessage", "first message").block();
 
     // Creates the mono plan but does not call it yet.
@@ -326,30 +327,30 @@ public class ActorStatefulTest {
     proxy.invokeMethod("deleteMessage").block();
 
     // Call should fail because the message was deleted.
-    getMessageCall.block();
+    assertThrows(IllegalStateException.class, () -> getMessageCall.block());
   }
 
   @Test
   public void lazySet() {
     ActorProxy proxy = newActorProxy();
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     // Creates the mono plan but does not call it yet.
     Mono<Void> setMessageCall = proxy.invokeMethod("setMessage", "first message");
 
     // No call executed yet, so message should not be set.
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     setMessageCall.block();
 
     // Now the message has been set.
-    Assert.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
   }
 
   @Test
   public void lazyContains() {
     ActorProxy proxy = newActorProxy();
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     // Creates the mono plan but does not call it yet.
     Mono<Boolean> hasMessageCall = proxy.invokeMethod("hasMessage", Boolean.class);
@@ -361,46 +362,46 @@ public class ActorStatefulTest {
     hasMessageCall.block();
 
     // Now the message should be set.
-    Assert.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
   }
 
   @Test
   public void lazyDelete() {
     ActorProxy proxy = newActorProxy();
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     proxy.invokeMethod("setMessage", "first message").block();
 
     // Message is set.
-    Assert.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     // Created the mono plan but does not execute it yet.
     Mono<Void> deleteMessageCall = proxy.invokeMethod("deleteMessage");
 
     // Message is still set.
-    Assert.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     deleteMessageCall.block();
 
     // Now message is not set.
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
   }
 
   @Test
   public void lazyAdd() {
     ActorProxy proxy = newActorProxy();
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     proxy.invokeMethod("setMessage", "first message").block();
 
     // Message is set.
-    Assert.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     // Created the mono plan but does not execute it yet.
     Mono<Void> addMessageCall = proxy.invokeMethod("addMessage", "second message");
 
     // Message is still set.
-    Assert.assertEquals("first message",
+    Assertions.assertEquals("first message",
       proxy.invokeMethod("getMessage", String.class).block());
 
     // Delete message
@@ -410,7 +411,7 @@ public class ActorStatefulTest {
     addMessageCall.block();
 
     // New message is still set.
-    Assert.assertEquals("second message",
+    Assertions.assertEquals("second message",
       proxy.invokeMethod("getMessage", String.class).block());
   }
 
@@ -418,14 +419,14 @@ public class ActorStatefulTest {
   public void onActivateAndOnDeactivate() {
     ActorProxy proxy = newActorProxy();
 
-    Assert.assertTrue(proxy.invokeMethod("isActive", Boolean.class).block());
-    Assert.assertFalse(DEACTIVATED_ACTOR_IDS.contains(proxy.getActorId().toString()));
+    Assertions.assertTrue(proxy.invokeMethod("isActive", Boolean.class).block());
+    Assertions.assertFalse(DEACTIVATED_ACTOR_IDS.contains(proxy.getActorId().toString()));
 
     proxy.invokeMethod("hasMessage", Boolean.class).block();
 
     this.manager.deactivateActor(proxy.getActorId()).block();
 
-    Assert.assertTrue(DEACTIVATED_ACTOR_IDS.contains(proxy.getActorId().toString()));
+    Assertions.assertTrue(DEACTIVATED_ACTOR_IDS.contains(proxy.getActorId().toString()));
   }
 
   @Test
@@ -436,13 +437,13 @@ public class ActorStatefulTest {
 
     MyMethodContext preContext =
       proxy.invokeMethod("getPreCallMethodContext", MyMethodContext.class).block();
-    Assert.assertEquals("hasMessage", preContext.getName());
-    Assert.assertEquals(ActorCallType.ACTOR_INTERFACE_METHOD.toString(), preContext.getType());
+    Assertions.assertEquals("hasMessage", preContext.getName());
+    Assertions.assertEquals(ActorCallType.ACTOR_INTERFACE_METHOD.toString(), preContext.getType());
 
     MyMethodContext postContext =
       proxy.invokeMethod("getPostCallMethodContext", MyMethodContext.class).block();
-    Assert.assertEquals("hasMessage", postContext.getName());
-    Assert.assertEquals(ActorCallType.ACTOR_INTERFACE_METHOD.toString(), postContext.getType());
+    Assertions.assertEquals("hasMessage", postContext.getName());
+    Assertions.assertEquals(ActorCallType.ACTOR_INTERFACE_METHOD.toString(), postContext.getType());
   }
 
   @Test
@@ -453,22 +454,23 @@ public class ActorStatefulTest {
 
     MyMethodContext preContext =
       proxy.invokeMethod("getPreCallMethodContext", MyMethodContext.class).block();
-    Assert.assertEquals("mytimer", preContext.getName());
-    Assert.assertEquals(ActorCallType.TIMER_METHOD.toString(), preContext.getType());
+    Assertions.assertEquals("mytimer", preContext.getName());
+    Assertions.assertEquals(ActorCallType.TIMER_METHOD.toString(), preContext.getType());
 
     MyMethodContext postContext =
       proxy.invokeMethod("getPostCallMethodContext", MyMethodContext.class).block();
-    Assert.assertEquals("mytimer", postContext.getName());
-    Assert.assertEquals(ActorCallType.TIMER_METHOD.toString(), postContext.getType());
+    Assertions.assertEquals("mytimer", postContext.getName());
+    Assertions.assertEquals(ActorCallType.TIMER_METHOD.toString(), postContext.getType());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void invokeTimerAfterDeactivate() {
     ActorProxy proxy = newActorProxy();
 
     this.manager.deactivateActor(proxy.getActorId()).block();
 
-    this.manager.invokeTimer(proxy.getActorId(), "mytimer", "{ \"callback\": \"hasMessage\" }".getBytes()).block();
+    assertThrows(IllegalArgumentException.class, () ->
+    this.manager.invokeTimer(proxy.getActorId(), "mytimer", "{ \"callback\": \"hasMessage\" }".getBytes()).block());
   }
 
   @Test
@@ -499,16 +501,16 @@ public class ActorStatefulTest {
 
     MyMethodContext preContext =
       proxy.invokeMethod("getPreCallMethodContext", MyMethodContext.class).block();
-    Assert.assertEquals("myreminder", preContext.getName());
-    Assert.assertEquals(ActorCallType.REMINDER_METHOD.toString(), preContext.getType());
+    Assertions.assertEquals("myreminder", preContext.getName());
+    Assertions.assertEquals(ActorCallType.REMINDER_METHOD.toString(), preContext.getType());
 
     MyMethodContext postContext =
       proxy.invokeMethod("getPostCallMethodContext", MyMethodContext.class).block();
-    Assert.assertEquals("myreminder", postContext.getName());
-    Assert.assertEquals(ActorCallType.REMINDER_METHOD.toString(), postContext.getType());
+    Assertions.assertEquals("myreminder", postContext.getName());
+    Assertions.assertEquals(ActorCallType.REMINDER_METHOD.toString(), postContext.getType());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void invokeReminderAfterDeactivate() throws Exception {
     ActorProxy proxy = newActorProxy();
 
@@ -516,7 +518,7 @@ public class ActorStatefulTest {
 
     byte[] params = createReminderParams("anything");
 
-    this.manager.invokeReminder(proxy.getActorId(), "myreminder", params).block();
+    assertThrows(IllegalArgumentException.class, () -> this.manager.invokeReminder(proxy.getActorId(), "myreminder", params).block());
   }
 
   @Test
@@ -528,58 +530,60 @@ public class ActorStatefulTest {
     proxy.invokeMethod("setMethodContext", expectedContext).block();
     MyMethodContext context = proxy.invokeMethod("getMethodContext", MyMethodContext.class).block();
 
-    Assert.assertEquals(expectedContext.getName(), context.getName());
-    Assert.assertEquals(expectedContext.getType(), context.getType());
+    Assertions.assertEquals(expectedContext.getName(), context.getName());
+    Assertions.assertEquals(expectedContext.getType(), context.getType());
   }
 
   @Test
   public void intTypeRequestResponseInStateStore() {
     ActorProxy proxy = newActorProxy();
 
-    Assert.assertEquals(1, (int)proxy.invokeMethod("incrementAndGetCount", 1, int.class).block());
-    Assert.assertEquals(6, (int)proxy.invokeMethod("incrementAndGetCount", 5, int.class).block());
+    Assertions.assertEquals(1, (int)proxy.invokeMethod("incrementAndGetCount", 1, int.class).block());
+    Assertions.assertEquals(6, (int)proxy.invokeMethod("incrementAndGetCount", 5, int.class).block());
   }
 
-  @Test(expected = NumberFormatException.class)
+  @Test
   public void intTypeWithMethodException() {
     ActorProxy proxy = newActorProxy();
 
     // Zero is a magic input that will make method throw an exception.
-    proxy.invokeMethod("incrementAndGetCount", 0, int.class).block();
+    assertThrows(NumberFormatException.class, () -> proxy.invokeMethod("incrementAndGetCount", 0, int.class).block());
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void intTypeWithRuntimeException() {
     ActorProxy proxy = newActorProxy();
 
-    proxy.invokeMethod("getCountButThrowsException", int.class).block();
+    assertThrows(RuntimeException.class, () ->
+      proxy.invokeMethod("getCountButThrowsException", int.class).block());
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void actorRuntimeException() {
     ActorProxy proxy = newActorProxy();
 
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
-    proxy.invokeMethod("forceDuplicateException").block();
+    assertThrows(RuntimeException.class, () ->
+      proxy.invokeMethod("forceDuplicateException").block());
   }
 
-  @Test(expected = IllegalCharsetNameException.class)
+  @Test
   public void actorMethodException() {
     ActorProxy proxy = newActorProxy();
 
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
-    proxy.invokeMethod("throwsWithoutSaving").block();
+    assertThrows(IllegalCharsetNameException.class, () -> proxy.invokeMethod("throwsWithoutSaving").block());
 
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
   }
 
   @Test
   public void rollbackChanges() {
     ActorProxy proxy = newActorProxy();
 
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     // Runs a method that will add one message but fail because tries to add a second one.
     proxy.invokeMethod("forceDuplicateException")
@@ -587,14 +591,14 @@ public class ActorStatefulTest {
       .block();
 
     // No message is set
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
   }
 
   @Test
   public void partialChanges() {
     ActorProxy proxy = newActorProxy();
 
-    Assert.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     // Runs a method that will add one message, commit but fail because tries to add a second one.
     proxy.invokeMethod("forcePartialChange")
@@ -602,10 +606,10 @@ public class ActorStatefulTest {
       .block();
 
     // Message is set.
-    Assert.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     // It is first message and not the second due to a save() in the middle but an exception in the end.
-    Assert.assertEquals("first message",
+    Assertions.assertEquals("first message",
       proxy.invokeMethod("getMessage", String.class).block());
   }
 

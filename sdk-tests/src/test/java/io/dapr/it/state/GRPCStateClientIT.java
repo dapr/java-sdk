@@ -17,9 +17,9 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.it.DaprRun;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -34,14 +34,14 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
 
   private static DaprClient daprClient;
 
-  @BeforeClass
+  @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(GRPCStateClientIT.class.getSimpleName(), 5000);
     daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder().build();
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws Exception {
     daprClient.close();
   }

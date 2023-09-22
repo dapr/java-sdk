@@ -20,9 +20,9 @@ import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.ToxiProxyRun;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -30,15 +30,15 @@ import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test SDK resiliency.
  */
 public class SdkResiliencytIT extends BaseIT {
 
-  private static final int NUM_ITERATIONS = 20;
+  private static final int NUM_ITERATIONS = 25;
 
   private static final Duration TIMEOUT = Duration.ofMillis(100);
 
@@ -62,16 +62,18 @@ public class SdkResiliencytIT extends BaseIT {
 
   private final String randomStateKeyPrefix = UUID.randomUUID().toString();
 
-  @BeforeClass
+  @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(SdkResiliencytIT.class.getSimpleName(), 5000);
     // HTTP client is deprecated, so SDK resiliency is for gRPC client only.
     daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder().build();
+    daprClient.waitForSidecar(8000).block();
 
     toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
     toxiProxyRun.start();
     toxiProxyRun.use();
+
     daprToxiClient = new DaprClientBuilder()
             .withResiliencyOptions(
                     new ResiliencyOptions().setTimeout(TIMEOUT))
@@ -91,7 +93,7 @@ public class SdkResiliencytIT extends BaseIT {
     assertTrue(daprRetriesOnceClient instanceof DaprClientGrpc);
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws Exception {
     if (daprClient != null) {
       daprClient.close();

@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -43,7 +43,7 @@ public class ActorTimerTest {
 
     String expected = "{\"period\":\"1h0m3s0ms\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
     // Deep comparison via JsonNode.equals method.
-    Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
+    Assertions.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }
 
   @Test
@@ -67,6 +67,6 @@ public class ActorTimerTest {
     // A negative period will be serialized to an empty string which is interpreted by Dapr to mean fire once only.
     String expected = "{\"period\":\"\",\"dueTime\":\"0h7m17s0ms\", \"callback\": \"myfunction\"}";
     // Deep comparison via JsonNode.equals method.
-    Assert.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
+    Assertions.assertEquals(OBJECT_MAPPER.readTree(expected), OBJECT_MAPPER.readTree(s));
   }
 }

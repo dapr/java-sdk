@@ -33,7 +33,7 @@ public class GetConfigurationRequest {
    */
   public GetConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
-    this.keys = keys == null ? Collections.EMPTY_LIST : Collections.unmodifiableList(keys);
+    this.keys = keys == null ? Collections.emptyList() : Collections.unmodifiableList(keys);
   }
 
   public GetConfigurationRequest setMetadata(Map<String, String> metadata) {
