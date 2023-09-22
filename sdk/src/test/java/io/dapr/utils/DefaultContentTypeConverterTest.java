@@ -17,14 +17,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DefaultContentTypeConverterTest {
 
@@ -37,18 +39,18 @@ public class DefaultContentTypeConverterTest {
   public void testToBytesHttpStringEventCorrectContentType() throws IOException {
     String event = "string event";
     byte[] res = DefaultContentTypeConverter.convertEventToBytesForHttp(event, "text/plain");
-    Assert.assertNotNull("expected correct byte array response", res);
+    Assertions.assertNotNull(res, "expected correct byte array response");
     byte[] expected = event.getBytes(StandardCharsets.UTF_8);
-    Assert.assertArrayEquals("expected response to be matched with expectation", expected, res);
+    Assertions.assertArrayEquals(expected, res, "expected response to be matched with expectation");
   }
 
   @Test
   public void testToBytesHttpNumberEventCorrectContentType() throws IOException {
     Number event = 123;
     byte[] res = DefaultContentTypeConverter.convertEventToBytesForHttp(event, "text/plain");
-    Assert.assertNotNull("expected correct byte array response", res);
+    Assertions.assertNotNull( res, "expected correct byte array response");
     byte[] expected = "123".getBytes(StandardCharsets.UTF_8);
-    Assert.assertArrayEquals("expected response to be matched with expectation", expected, res);
+    Assertions.assertArrayEquals( expected, res, "expected response to be matched with expectation");
   }
 
   @Test
@@ -56,15 +58,16 @@ public class DefaultContentTypeConverterTest {
     String event = "string event";
     byte[] data = event.getBytes(StandardCharsets.UTF_8);
     byte[] res = DefaultContentTypeConverter.convertEventToBytesForHttp(data, "application/octet-stream");
-    Assert.assertNotNull("expected correct byte array response", res);
+    Assertions.assertNotNull(res, "expected correct byte array response");
     byte[] expected = Base64.getEncoder().encode(data);
-    Assert.assertArrayEquals("expected response to be matched with expectation", expected, res);
+    Assertions.assertArrayEquals(expected, res, "expected response to be matched with expectation");
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToBytesHttpBinEventInCorrectContentType() throws IOException {
     String event = "string event";
-    DefaultContentTypeConverter.convertEventToBytesForHttp(event, "application/octet-stream");
+    assertThrows(IllegalArgumentException.class, () ->
+    DefaultContentTypeConverter.convertEventToBytesForHttp(event, "application/octet-stream"));
   }
 
   @Test
@@ -74,18 +77,19 @@ public class DefaultContentTypeConverterTest {
       put("test2", "val2");
     }};
     byte[] res = DefaultContentTypeConverter.convertEventToBytesForHttp(event, "application/json");
-    Assert.assertNotNull("expected correct byte array response", res);
+    Assertions.assertNotNull(res, "expected correct byte array response");
     byte[] expected = MAPPER.writeValueAsBytes(event);
-    Assert.assertArrayEquals("expected response to be matched with expectation", expected, res);
+    Assertions.assertArrayEquals(expected, res, "expected response to be matched with expectation");
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToBytesHttpJsonEventInCorrectContentType() throws IOException {
     Map<String, String> event = new HashMap<String, String>() {{
       put("test1", "val1");
       put("test2", "val2");
     }};
-    DefaultContentTypeConverter.convertEventToBytesForHttp(event, "application/xml");
+
+    assertThrows(IllegalArgumentException.class, () -> DefaultContentTypeConverter.convertEventToBytesForHttp(event, "application/xml"));
   }
 
   @Test
@@ -99,12 +103,12 @@ public class DefaultContentTypeConverterTest {
     event.setDatacontenttype("text/plain");
     event.setSource("dapr test");
     byte[] res = DefaultContentTypeConverter.convertEventToBytesForHttp(event, "application/cloudevents+json");
-    Assert.assertNotNull("expected correct byte array response", res);
+    Assertions.assertNotNull(res, "expected correct byte array response");
     byte[] expected = MAPPER.writeValueAsBytes(event);
-    Assert.assertArrayEquals("expected response to be matched with expectation", expected, res);
+    Assertions.assertArrayEquals(expected, res, "expected response to be matched with expectation");
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToBytesHttpCloudEventInCorrectContentType() throws IOException {
     // Make sure that the MAPPER is configured same as the DefaultObjectSerializer config
     CloudEvent<String> event = new CloudEvent<>();
@@ -114,30 +118,30 @@ public class DefaultContentTypeConverterTest {
     event.setData("test data");
     event.setDatacontenttype("text/plain");
     event.setSource("dapr test");
-    DefaultContentTypeConverter.convertEventToBytesForHttp(event, "image/png");
+    assertThrows(IllegalArgumentException.class, () ->     DefaultContentTypeConverter.convertEventToBytesForHttp(event, "image/png"));
   }
 
   @Test
   public void testToBytesGrpcBinEventCorrectContentType() throws IOException {
     byte[] event = "test event".getBytes(StandardCharsets.UTF_8);
     byte[] res = DefaultContentTypeConverter.convertEventToBytesForGrpc(event, "application/octet-stream");
-    Assert.assertNotNull("expected correct byte array response", res);
-    Assert.assertArrayEquals("expected response to be matched with expectation", event, res);
+    Assertions.assertNotNull(res, "expected correct byte array response");
+    Assertions.assertArrayEquals( event, res, "expected response to be matched with expectation");
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToBytesGrpcBinEventInCorrectContentType() throws IOException {
     byte[] event = "test event".getBytes(StandardCharsets.UTF_8);
-    DefaultContentTypeConverter.convertEventToBytesForGrpc(event, "application/xml");
+    assertThrows(IllegalArgumentException.class, () -> DefaultContentTypeConverter.convertEventToBytesForGrpc(event, "application/xml"));
   }
 
   @Test
   public void testToBytesGrpcStringEventCorrectContentType() throws IOException {
     String event = "string event";
     byte[] res = DefaultContentTypeConverter.convertEventToBytesForGrpc(event, "text/plain");
-    Assert.assertNotNull("expected correct byte array response", res);
+    Assertions.assertNotNull(res, "expected correct byte array response");
     byte[] expected = event.getBytes(StandardCharsets.UTF_8);
-    Assert.assertArrayEquals("expected response to be matched with expectation", expected, res);
+    Assertions.assertArrayEquals(expected, res, "expected response to be matched with expectation");
   }
 
   @Test
@@ -145,8 +149,8 @@ public class DefaultContentTypeConverterTest {
     byte[] event = "string event".getBytes(StandardCharsets.UTF_8);
     String res = DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
         "text/plain", TypeRef.STRING);
-    Assert.assertNotNull("expected not null response", res);
-    Assert.assertEquals("expected res to match expectation", "string event", res);
+    Assertions.assertNotNull( res, "expected not null response");
+    Assertions.assertEquals("string event", res, "expected res to match expectation");
   }
 
   @Test
@@ -155,8 +159,8 @@ public class DefaultContentTypeConverterTest {
     byte[] event = Base64.getEncoder().encode(expected);
     byte[] res = DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
         "application/octet-stream", TypeRef.BYTE_ARRAY);
-    Assert.assertNotNull("expected not null response", res);
-    Assert.assertArrayEquals("expected res to match expectation", expected, res);
+    Assertions.assertNotNull(res, "expected not null response");
+    Assertions.assertArrayEquals(expected, res, "expected res to match expectation");
   }
 
   @Test
@@ -164,15 +168,15 @@ public class DefaultContentTypeConverterTest {
     byte[] expected = "string event".getBytes(StandardCharsets.UTF_8);
     byte[] res = DefaultContentTypeConverter.convertBytesToEventFromGrpc(expected,
         "application/octet-stream", TypeRef.BYTE_ARRAY);
-    Assert.assertNotNull("expected not null response", res);
-    Assert.assertArrayEquals("expected res to match expectation", expected, res);
+    Assertions.assertNotNull(res, "expected not null response");
+    Assertions.assertArrayEquals(expected, res, "expected res to match expectation");
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToBytesGrpcBinDataInCorrectContentType() throws IOException {
     String event = "string event";
-    DefaultContentTypeConverter.convertEventToBytesForGrpc(event,
-        "application/octet-stream");
+    assertThrows(IllegalArgumentException.class, () -> DefaultContentTypeConverter.convertEventToBytesForGrpc(event,
+        "application/octet-stream"));
   }
 
   @Test
@@ -180,8 +184,8 @@ public class DefaultContentTypeConverterTest {
     byte[] expected = "string event".getBytes(StandardCharsets.UTF_8);
     String res = DefaultContentTypeConverter.convertBytesToEventFromGrpc(expected,
         "text/plain", TypeRef.STRING);
-    Assert.assertNotNull("expected not null response", res);
-    Assert.assertEquals("expected res to match expectation", "string event", res);
+    Assertions.assertNotNull( res, "expected not null response");
+    Assertions.assertEquals("string event", res, "expected res to match expectation");
   }
 
 
@@ -191,8 +195,8 @@ public class DefaultContentTypeConverterTest {
     byte[] data = DefaultContentTypeConverter.convertEventToBytesForHttp(expected, "text/plain");
     Integer res = DefaultContentTypeConverter.convertBytesToEventFromHttp(data,
         "text/plain", TypeRef.INT);
-    Assert.assertNotNull("expected not null response", res);
-    Assert.assertEquals("expected res to match expectation", expected, res);
+    Assertions.assertNotNull(res, "expected not null response");
+    Assertions.assertEquals(expected, res, "expected res to match expectation");
   }
 
   @Test
@@ -208,31 +212,31 @@ public class DefaultContentTypeConverterTest {
     CloudEvent<String> res = DefaultContentTypeConverter.convertBytesToEventFromHttp(data,
         "application/cloudevents+json", new TypeRef<CloudEvent<String>>() {
         });
-    Assert.assertNotNull("expected not null response", res);
-    Assert.assertEquals("expected res to match expectation", event, res);
+    Assertions.assertNotNull(res,"expected not null response");
+    Assertions.assertEquals(event, res, "expected res to match expectation");
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToEventHttpBinDataInCorrectContentType() throws IOException {
     byte[] data = "string event".getBytes(StandardCharsets.UTF_8);
     byte[] event = Base64.getEncoder().encode(data);
-    DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
-        "text/plain", TypeRef.BYTE_ARRAY);
+    assertThrows(IllegalArgumentException.class, () -> DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
+        "text/plain", TypeRef.BYTE_ARRAY));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToEventHttpBinDataNullCorrectContentType() throws IOException {
     byte[] data = "string event".getBytes(StandardCharsets.UTF_8);
     byte[] event = Base64.getEncoder().encode(data);
-    DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
-        null, TypeRef.BYTE_ARRAY);
+    assertThrows(IllegalArgumentException.class, () -> DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
+        null, TypeRef.BYTE_ARRAY));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testToEventHttpBinDataCharsetInCorrectContentType() throws IOException {
     byte[] data = "string event".getBytes(StandardCharsets.UTF_8);
     byte[] event = Base64.getEncoder().encode(data);
-    DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
-        "text/plain;charset=utf-8", TypeRef.BYTE_ARRAY);
+    assertThrows(IllegalArgumentException.class, () -> DefaultContentTypeConverter.convertBytesToEventFromHttp(event,
+        "text/plain;charset=utf-8", TypeRef.BYTE_ARRAY));
   }
 }

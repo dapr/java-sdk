@@ -15,11 +15,11 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class CloudEventTest {
 

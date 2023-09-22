@@ -7,8 +7,8 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.Map;
@@ -18,9 +18,9 @@ import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse;
 import static io.dapr.it.MethodInvokeServiceProtos.PostMessageRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MethodInvokeIT extends BaseIT {
 
@@ -32,7 +32,7 @@ public class MethodInvokeIT extends BaseIT {
      */
     private DaprRun daprRun = null;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         daprRun = startDaprApp(
           MethodInvokeIT.class.getSimpleName(),

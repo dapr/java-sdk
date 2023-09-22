@@ -18,8 +18,8 @@ import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -37,7 +37,7 @@ public class OrchestratorWrapperTest {
   @Test
   public void getName() {
     OrchestratorWrapper<TestWorkflow> wrapper = new OrchestratorWrapper<>(TestWorkflow.class);
-    Assert.assertEquals(
+    Assertions.assertEquals(
         "io.dapr.workflows.runtime.OrchestratorWrapperTest.TestWorkflow",
         wrapper.getName()
     );
