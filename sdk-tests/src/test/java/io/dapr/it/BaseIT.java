@@ -17,7 +17,7 @@ import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -184,7 +184,7 @@ public abstract class BaseIT {
     return runs;
   }
 
-  @AfterClass
+  @AfterAll
   public static void cleanUp() throws Exception {
     while (!TO_BE_CLOSED.isEmpty()) {
       TO_BE_CLOSED.remove().close();

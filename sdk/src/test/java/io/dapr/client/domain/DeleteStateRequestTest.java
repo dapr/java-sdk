@@ -1,13 +1,13 @@
 package io.dapr.client.domain;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class DeleteStateRequestTest {
 
@@ -26,6 +26,6 @@ public class DeleteStateRequestTest {
     request.setMetadata(metadata);
     Map<String, String> initial = request.getMetadata();
     request.setMetadata(metadata);
-    Assert.assertNotSame("Should not be same map", request.getMetadata(), initial);
+    Assertions.assertNotSame(request.getMetadata(), initial, "Should not be same map");
   }
 }

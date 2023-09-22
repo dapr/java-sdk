@@ -21,21 +21,19 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
 import io.dapr.it.actors.services.springboot.StatefulActorService;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-@RunWith(Parameterized.class)
 public class ActorStateIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorStateIT.class);
@@ -45,24 +43,18 @@ public class ActorStateIT extends BaseIT {
    * Param #1: useGrpc.
    * @return Collection of parameter tuples.
    */
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] {
-        { DaprApiProtocol.HTTP, DaprApiProtocol.HTTP },
-        { DaprApiProtocol.HTTP, DaprApiProtocol.GRPC },
-        { DaprApiProtocol.GRPC, DaprApiProtocol.HTTP },
-        { DaprApiProtocol.GRPC, DaprApiProtocol.GRPC },
-    });
+  public static Stream<Arguments> data() {
+    return Stream.of(
+                    Arguments.of(DaprApiProtocol.HTTP, DaprApiProtocol.HTTP ),
+                    Arguments.of(DaprApiProtocol.HTTP, DaprApiProtocol.GRPC ),
+                    Arguments.of(DaprApiProtocol.GRPC, DaprApiProtocol.HTTP ),
+                    Arguments.of(DaprApiProtocol.GRPC, DaprApiProtocol.GRPC )
+    );
   }
 
-  @Parameterized.Parameter(0)
-  public DaprApiProtocol daprClientProtocol;
-
-  @Parameterized.Parameter(1)
-  public DaprApiProtocol serviceAppProtocol;
-
-  @Test
-  public void writeReadState() throws Exception {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void writeReadState(DaprApiProtocol daprClientProtocol, DaprApiProtocol serviceAppProtocol) throws Exception {
     logger.debug("Starting actor runtime ...");
     // The call below will fail if service cannot start successfully.
     DaprRun runtime = startDaprApp(
@@ -73,13 +65,13 @@ public class ActorStateIT extends BaseIT {
       60000,
       serviceAppProtocol);
 
-    runtime.switchToProtocol(this.daprClientProtocol);
+    runtime.switchToProtocol(daprClientProtocol);
 
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
     ActorId actorId = new ActorId(
-        String.format("%d-%b-%b", System.currentTimeMillis(), this.daprClientProtocol, this.serviceAppProtocol));
+        String.format("%d-%b-%b", System.currentTimeMillis(), daprClientProtocol, serviceAppProtocol));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder =
@@ -166,7 +158,7 @@ public class ActorStateIT extends BaseIT {
         60000,
         serviceAppProtocol);
 
-    runtime.switchToProtocol(this.daprClientProtocol);
+    runtime.switchToProtocol(daprClientProtocol);
 
     // Need new proxy builder because the proxy builder holds the channel.
     proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());

@@ -33,8 +33,11 @@ import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
 import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -53,14 +56,13 @@ import java.util.Set;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-@RunWith(Parameterized.class)
 public class PubSubIT extends BaseIT {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -88,21 +90,6 @@ public class PubSubIT extends BaseIT {
   // Topic to test bulk subscribe.
   private static final String BULK_SUB_TOPIC_NAME = "topicBulkSub";
 
-
-  /**
-   * Parameters for this test.
-   * Param #1: useGrpc.
-   *
-   * @return Collection of parameter tuples.
-   */
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][]{{false}, {true}});
-  }
-
-  @Parameterized.Parameter
-  public boolean useGrpc;
-
   private final List<DaprRun> runs = new ArrayList<>();
 
   private DaprRun closeLater(DaprRun run) {
@@ -110,19 +97,20 @@ public class PubSubIT extends BaseIT {
     return run;
   }
 
-  @After
+  @AfterEach
   public void tearDown() throws Exception {
     for (DaprRun run : runs) {
       run.stop();
     }
   }
 
-  @Test
-  public void publishPubSubNotFound() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void publishPubSubNotFound(boolean useGrpc) throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -130,7 +118,7 @@ public class PubSubIT extends BaseIT {
 
     try (DaprClient client = new DaprClientBuilder().build()) {
 
-      if (this.useGrpc) {
+      if (useGrpc) {
         assertThrowsDaprException(
             "INVALID_ARGUMENT",
             "INVALID_ARGUMENT: pubsub unknown pubsub not found",
@@ -144,12 +132,13 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  @Test
-  public void testBulkPublishPubSubNotFound() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testBulkPublishPubSubNotFound(boolean useGrpc) throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       // No HTTP implementation for bulk publish
@@ -165,8 +154,9 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  @Test
-  public void testBulkPublish() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testBulkPublish(boolean useGrpc) throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -174,7 +164,7 @@ public class PubSubIT extends BaseIT {
         true,
         60000));
     // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       System.out.println("HTTP BulkPublish is not implemented. So skipping tests");
@@ -208,8 +198,8 @@ public class PubSubIT extends BaseIT {
       BulkPublishResponse response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "", messages).block();
       System.out.println(String.format("Published %d messages to topic '%s' pubsub_name '%s'",
           NUM_MESSAGES, TOPIC_BULK, PUBSUB_NAME));
-      assertNotNull("expected not null bulk publish response", response);
-      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+      assertNotNull(response, "expected not null bulk publish response");
+      assertEquals( 0, response.getFailedEntries().size(), "expected no failures in the response");
 
       //Publishing an object.
       MyObject object = new MyObject();
@@ -217,16 +207,16 @@ public class PubSubIT extends BaseIT {
       response = previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK,
           "application/json", Collections.singletonList(object)).block();
       System.out.println("Published one object.");
-      assertNotNull("expected not null bulk publish response", response);
-      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+      assertNotNull(response, "expected not null bulk publish response");
+      assertEquals(0, response.getFailedEntries().size(), "expected no failures in the response");
 
       //Publishing a single byte: Example of non-string based content published
       previewClient.publishEvents(PUBSUB_NAME, TOPIC_BULK, "",
           Collections.singletonList(new byte[]{1})).block();
       System.out.println("Published one byte.");
 
-      assertNotNull("expected not null bulk publish response", response);
-      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+      assertNotNull(response, "expected not null bulk publish response");
+      assertEquals(0, response.getFailedEntries().size(), "expected no failures in the response");
 
       CloudEvent cloudEvent = new CloudEvent();
       cloudEvent.setId("1234");
@@ -242,8 +232,8 @@ public class PubSubIT extends BaseIT {
 
       //Publishing a cloud event.
       previewClient.publishEvents(req).block();
-      assertNotNull("expected not null bulk publish response", response);
-      Assert.assertEquals("expected no failures in the response", 0, response.getFailedEntries().size());
+      assertNotNull(response, "expected not null bulk publish response");
+      assertEquals(0, response.getFailedEntries().size(), "expected no failures in the response");
 
       System.out.println("Published one cloud event.");
 
@@ -260,48 +250,49 @@ public class PubSubIT extends BaseIT {
             null,
             HttpExtension.GET,
             CLOUD_EVENT_LIST_TYPE_REF).block();
-        assertEquals("expected 13 messages to be received on subscribe", 13, cloudEventMessages.size());
+        assertEquals(13, cloudEventMessages.size(), "expected 13 messages to be received on subscribe");
         for (int i = 0; i < NUM_MESSAGES; i++) {
           final int messageId = i;
-          assertTrue("expected data content to match", cloudEventMessages
+          assertTrue(cloudEventMessages
               .stream()
               .filter(m -> m.getData() != null)
               .map(m -> m.getData())
               .filter(m -> m.equals(String.format("This is message #%d on topic %s", messageId, TOPIC_BULK)))
-              .count() == 1);
+              .count() == 1, "expected data content to match");
         }
 
         // Validate object payload.
-        assertTrue("expected data content 123 to match", cloudEventMessages
+        assertTrue(cloudEventMessages
             .stream()
             .filter(m -> m.getData() != null)
             .filter(m -> m.getData() instanceof LinkedHashMap)
             .map(m -> (LinkedHashMap) m.getData())
             .filter(m -> "123".equals(m.get("id")))
-            .count() == 1);
+            .count() == 1, "expected data content 123 to match");
 
         // Validate byte payload.
-        assertTrue("expected bin data to match", cloudEventMessages
+        assertTrue(cloudEventMessages
             .stream()
             .filter(m -> m.getData() != null)
             .map(m -> m.getData())
             .filter(m -> "AQ==".equals(m))
-            .count() == 1);
+            .count() == 1, "expected bin data to match");
 
         // Validate cloudevent payload.
-        assertTrue("expected data to match",cloudEventMessages
+        assertTrue( cloudEventMessages
             .stream()
             .filter(m -> m.getData() != null)
             .map(m -> m.getData())
             .filter(m -> "message from cloudevent".equals(m))
-            .count() == 1);
+            .count() == 1, "expected data to match");
       }, 2000);
     }
 
   }
 
-  @Test
-  public void testPubSub() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testPubSub(boolean useGrpc) throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -309,7 +300,7 @@ public class PubSubIT extends BaseIT {
         true,
         60000));
     // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -520,8 +511,9 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  @Test
-  public void testPubSubBinary() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testPubSubBinary(boolean useGrpc) throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -529,7 +521,7 @@ public class PubSubIT extends BaseIT {
         true,
         60000));
     // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -576,12 +568,13 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  @Test
-  public void testPubSubTTLMetadata() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testPubSubTTLMetadata(boolean useGrpc) throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -612,7 +605,7 @@ public class PubSubIT extends BaseIT {
         SubscriberService.class,
         true,
         60000));
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -633,15 +626,16 @@ public class PubSubIT extends BaseIT {
     daprRun.stop();
   }
 
-  @Test
-  public void testPubSubBulkSubscribe() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testPubSubBulkSubscribe(boolean useGrpc) throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
             this.getClass().getSimpleName(),
             SubscriberService.SUCCESS_MESSAGE,
             SubscriberService.class,
             true,
             60000));
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -695,8 +689,9 @@ public class PubSubIT extends BaseIT {
     daprRun.stop();
   }
 
-  @Test
-  public void testLongValues() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testLongValues(boolean useGrpc) throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
@@ -704,7 +699,7 @@ public class PubSubIT extends BaseIT {
         true,
         60000));
     // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -755,7 +750,7 @@ public class PubSubIT extends BaseIT {
         for (CloudEvent<ConvertToLong> message : messages) {
           actual.add(message.getData());
         }
-        Assert.assertEquals(values, actual);
+        Assertions.assertEquals(values, actual);
       }, 2000);
     }
   }
