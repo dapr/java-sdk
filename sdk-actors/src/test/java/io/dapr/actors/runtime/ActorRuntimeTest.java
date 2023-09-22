@@ -16,7 +16,6 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,11 +103,12 @@ public class ActorRuntimeTest {
 
   @BeforeAll
   public static void beforeAll() throws Exception {
-    constructor = (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
-            .filter(c -> c.getParameters().length == 2).map(c -> {
-              c.setAccessible(true);
-              return c;
-            }).findFirst().get();
+    constructor =
+            (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
+                    .filter(c -> c.getParameters().length == 2).map(c -> {
+                      c.setAccessible(true);
+                      return c;
+                    }).findFirst().get();
   }
 
   @BeforeEach
@@ -125,42 +125,41 @@ public class ActorRuntimeTest {
   @Test
   public void registerActorNullFactory() {
     assertThrows(IllegalArgumentException.class, () -> this.runtime.registerActor(MyActorImpl.class, null, new DefaultObjectSerializer(),
-            new DefaultObjectSerializer()));
+        new DefaultObjectSerializer()));
   }
 
   @Test
   public void registerActorNullSerializer() {
     assertThrows(IllegalArgumentException.class, () -> this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(), null,
-            new DefaultObjectSerializer()));
+        new DefaultObjectSerializer()));
   }
 
   @Test
   public void registerActorNullStateSerializer() {
     assertThrows(IllegalArgumentException.class, () -> this.runtime.registerActor(MyActorImpl.class, new DefaultActorFactory<>(),
-            new DefaultObjectSerializer(), null));
+        new DefaultObjectSerializer(), null));
   }
 
   @Test
   public void setActorIdleTimeout() throws Exception {
     this.runtime.getConfig().setActorIdleTimeout(Duration.ofSeconds(123));
     Assertions.assertEquals("{\"entities\":[],\"actorIdleTimeout\":\"0h2m3s0ms\"}",
-            new String(this.runtime.serializeConfig()));
+        new String(this.runtime.serializeConfig()));
   }
 
   @Test
   public void setActorScanInterval() throws Exception {
     this.runtime.getConfig().setActorScanInterval(Duration.ofSeconds(123));
     Assertions.assertEquals("{\"entities\":[],\"actorScanInterval\":\"0h2m3s0ms\"}",
-            new String(this.runtime.serializeConfig()));
+        new String(this.runtime.serializeConfig()));
   }
 
   @Test
   public void setDrainBalancedActors() throws Exception {
     this.runtime.getConfig().setDrainBalancedActors(true);
     Assertions.assertEquals("{\"entities\":[],\"drainBalancedActors\":true}",
-            new String(this.runtime.serializeConfig()));
+        new String(this.runtime.serializeConfig()));
   }
-
 
   @Test
   public void addActorTypeConfig() throws Exception {
@@ -190,7 +189,6 @@ public class ActorRuntimeTest {
     );
   }
 
-
   @Test
   public void addNullActorTypeConfig() throws Exception {
     try {
@@ -206,18 +204,19 @@ public class ActorRuntimeTest {
       Assertions.assertTrue(ex.getMessage().contains("Registered actor must have a type name."));
     }
   }
-    @Test
+
+  @Test
   public void setDrainOngoingCallTimeout() throws Exception {
     this.runtime.getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(123));
     Assertions.assertEquals("{\"entities\":[],\"drainOngoingCallTimeout\":\"0h2m3s0ms\"}",
-            new String(this.runtime.serializeConfig()));
+        new String(this.runtime.serializeConfig()));
   }
 
   @Test
   public void setRemindersStoragePartitions() throws Exception {
     this.runtime.getConfig().setRemindersStoragePartitions(12);
     Assertions.assertEquals("{\"entities\":[],\"remindersStoragePartitions\":12}",
-            new String(this.runtime.serializeConfig()));
+        new String(this.runtime.serializeConfig()));
   }
 
   @Test
@@ -257,8 +256,8 @@ public class ActorRuntimeTest {
     deactivateCall.block();
 
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
-            .doOnError(e -> Assertions.assertTrue(e.getMessage().contains("Could not find actor")))
-            .doOnSuccess(s -> Assertions.fail()).onErrorReturn("".getBytes()).block();
+        .doOnError(e -> Assertions.assertTrue(e.getMessage().contains("Could not find actor")))
+        .doOnSuccess(s -> Assertions.fail()).onErrorReturn("".getBytes()).block();
   }
 
   @Test
