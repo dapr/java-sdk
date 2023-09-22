@@ -1,21 +1,21 @@
 package io.dapr.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TypeRefTest {
 
   @Test
   public void testTypeRefIsPrimitive() {
-    Assert.assertTrue("expected this to be true as boolean is primitive", TypeRef.isPrimitive(TypeRef.BOOLEAN));
-    Assert.assertTrue("expected this to be true as short is primitive", TypeRef.isPrimitive(TypeRef.SHORT));
-    Assert.assertTrue("expected this to be true as float is primitive", TypeRef.isPrimitive(TypeRef.FLOAT));
-    Assert.assertTrue("expected this to be true as double is primitive", TypeRef.isPrimitive(TypeRef.DOUBLE));
-    Assert.assertTrue("expected this to be true as integer is primitive", TypeRef.isPrimitive(TypeRef.INT));
+    Assertions.assertTrue(TypeRef.isPrimitive(TypeRef.BOOLEAN), "expected this to be true as boolean is primitive");
+    Assertions.assertTrue(TypeRef.isPrimitive(TypeRef.SHORT), "expected this to be true as short is primitive");
+    Assertions.assertTrue(TypeRef.isPrimitive(TypeRef.FLOAT), "expected this to be true as float is primitive");
+    Assertions.assertTrue(TypeRef.isPrimitive(TypeRef.DOUBLE), "expected this to be true as double is primitive");
+    Assertions.assertTrue(TypeRef.isPrimitive(TypeRef.INT), "expected this to be true as integer is primitive");
 
-    Assert.assertFalse("expected this to be false as string is not primitive",
-        TypeRef.isPrimitive(TypeRef.STRING));
-    Assert.assertFalse("expected this to be false as string array is not primitive",
-        TypeRef.isPrimitive(TypeRef.STRING_ARRAY));
+    Assertions.assertFalse(TypeRef.isPrimitive(TypeRef.STRING),
+      "expected this to be false as string is not primitive");
+    Assertions.assertFalse(TypeRef.isPrimitive(TypeRef.STRING_ARRAY),
+      "expected this to be false as string array is not primitive");
   }
 }

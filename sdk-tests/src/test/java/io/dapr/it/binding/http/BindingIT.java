@@ -19,24 +19,20 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Service for input and output binding example.
  */
-@RunWith(Parameterized.class)
 public class BindingIT extends BaseIT {
 
   private static final String BINDING_NAME = "sample123";
@@ -50,23 +46,11 @@ public class BindingIT extends BaseIT {
     public String message;
   }
 
-  /**
-   * Parameters for this test.
-   * Param #1: useGrpc.
-   * @return Collection of parameter tuples.
-   */
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] { { false }, { true } });
-  }
-
-  @Parameterized.Parameter
-  public boolean useGrpc;
-
-  @Test
-  public void inputOutputBinding() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void inputOutputBinding(boolean useGrpc) throws Exception {
     System.out.println("Working Directory = " + System.getProperty("user.dir"));
-    String serviceNameVariant = this.useGrpc ? "-grpc" : "-http";
+    String serviceNameVariant = useGrpc ? "-grpc" : "-http";
 
     DaprRun daprRun = startDaprApp(
         this.getClass().getSimpleName() + serviceNameVariant,
@@ -75,7 +59,7 @@ public class BindingIT extends BaseIT {
         true,
         60000);
     // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (this.useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();

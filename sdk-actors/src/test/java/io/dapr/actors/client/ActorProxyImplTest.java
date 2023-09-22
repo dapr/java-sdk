@@ -18,11 +18,12 @@ import io.dapr.actors.ActorMethod;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,8 +39,8 @@ public class ActorProxyImplTest {
         new ActorId("100"),
         serializer,
         daprClient);
-    Assert.assertEquals(actorProxy.getActorId().toString(), "100");
-    Assert.assertEquals(actorProxy.getActorType(), "myActorType");
+    Assertions.assertEquals(actorProxy.getActorId().toString(), "100");
+    Assertions.assertEquals(actorProxy.getActorType(), "myActorType");
   }
 
   @Test()
@@ -59,9 +60,9 @@ public class ActorProxyImplTest {
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
     MyData myData = result.block();
-    Assert.assertNotNull(myData);
-    Assert.assertEquals("valueA", myData.getPropertyA());
-    Assert.assertEquals("valueB", myData.getPropertyB());// propertyB=null
+    Assertions.assertNotNull(myData);
+    Assertions.assertEquals("valueA", myData.getPropertyA());
+    Assertions.assertEquals("valueB", myData.getPropertyB());// propertyB=null
   }
 
   @Test()
@@ -80,9 +81,9 @@ public class ActorProxyImplTest {
         daprClient);
 
     MyData myData = (MyData) actorProxy.invoke(actorProxy, Actor.class.getMethod("getData"), null);
-    Assert.assertNotNull(myData);
-    Assert.assertEquals("valueA", myData.getPropertyA());
-    Assert.assertEquals("valueB", myData.getPropertyB());// propertyB=null
+    Assertions.assertNotNull(myData);
+    Assertions.assertEquals("valueA", myData.getPropertyA());
+    Assertions.assertEquals("valueB", myData.getPropertyB());// propertyB=null
   }
 
   @Test()
@@ -101,11 +102,11 @@ public class ActorProxyImplTest {
         daprClient);
 
     Mono<MyData> res = (Mono<MyData>) actorProxy.invoke(actorProxy, Actor.class.getMethod("getDataMono"), null);
-    Assert.assertNotNull(res);
+    Assertions.assertNotNull(res);
     MyData myData = res.block();
-    Assert.assertNotNull(myData);
-    Assert.assertEquals("valueA", myData.getPropertyA());
-    Assert.assertEquals("valueB", myData.getPropertyB());// propertyB=null
+    Assertions.assertNotNull(myData);
+    Assertions.assertEquals("valueA", myData.getPropertyA());
+    Assertions.assertEquals("valueB", myData.getPropertyB());// propertyB=null
   }
 
   @Test()
@@ -128,7 +129,7 @@ public class ActorProxyImplTest {
         Actor.class.getMethod("echo", String.class),
         new Object[] { "hello world" } );
 
-    Assert.assertEquals("OK", res);
+    Assertions.assertEquals("OK", res);
   }
 
   @Test()
@@ -151,8 +152,8 @@ public class ActorProxyImplTest {
         Actor.class.getMethod("echoMono", String.class),
         new Object[] { "hello world" } );
 
-    Assert.assertNotNull(res);
-    Assert.assertEquals("OK", res.block());
+    Assertions.assertNotNull(res);
+    Assertions.assertEquals("OK", res.block());
   }
 
   @Test()
@@ -170,7 +171,7 @@ public class ActorProxyImplTest {
         daprClient);
 
     Object myData = actorProxy.invoke(actorProxy, Actor.class.getMethod("doSomething"), null);
-    Assert.assertNull(myData);
+    Assertions.assertNull(myData);
   }
 
   @Test()
@@ -188,8 +189,8 @@ public class ActorProxyImplTest {
         daprClient);
 
     Mono<Void> myData = (Mono<Void>)actorProxy.invoke(actorProxy, Actor.class.getMethod("doSomethingMono"), null);
-    Assert.assertNotNull(myData);
-    Assert.assertNull(myData.block());
+    Assertions.assertNotNull(myData);
+    Assertions.assertNull(myData.block());
   }
 
   @Test()
@@ -211,11 +212,11 @@ public class ActorProxyImplTest {
         Actor.class.getMethod("doSomethingMonoWithArg", String.class),
         new Object[] { "hello world" });
 
-    Assert.assertNotNull(myData);
-    Assert.assertNull(myData.block());
+    Assertions.assertNotNull(myData);
+    Assertions.assertNull(myData.block());
   }
 
-  @Test(expected = UnsupportedOperationException.class)
+  @Test
   public void invokeActorMethodWithTooManyArgsViaReflection() throws NoSuchMethodException {
     final ActorClient daprClient = mock(ActorClient.class);
 
@@ -225,13 +226,10 @@ public class ActorProxyImplTest {
         new DefaultObjectSerializer(),
         daprClient);
 
-    Mono<Void> myData = (Mono<Void>)actorProxy.invoke(
+    assertThrows(UnsupportedOperationException.class, () -> actorProxy.invoke(
         actorProxy,
         Actor.class.getMethod("tooManyArgs", String.class, String.class),
-        new Object[] { "hello", "world" });
-
-    Assert.assertNotNull(myData);
-    Assert.assertNull(myData.block());
+        new Object[] { "hello", "world" }));
   }
 
   @Test()
@@ -253,7 +251,7 @@ public class ActorProxyImplTest {
         Actor.class.getMethod("process", String.class),
         new Object[] { "hello world" } );
 
-    Assert.assertNull(res);
+    Assertions.assertNull(res);
   }
 
   @Test()
@@ -270,10 +268,10 @@ public class ActorProxyImplTest {
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
     MyData myData = result.block();
-    Assert.assertNull(myData);
+    Assertions.assertNull(myData);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokeActorMethodWithIncorrectReturnType() {
     final ActorClient daprClient = mock(ActorClient.class);
     when(daprClient.invoke(anyString(), anyString(), anyString(), Mockito.isNull()))
@@ -287,10 +285,7 @@ public class ActorProxyImplTest {
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", MyData.class);
 
-    result.doOnSuccess(x ->
-        Assert.fail("Not exception was throw"))
-        .doOnError(Throwable::printStackTrace
-        ).block();
+    assertThrows(DaprException.class, () ->result.block());
   }
 
   @Test()
@@ -312,13 +307,13 @@ public class ActorProxyImplTest {
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
     MyData myData = result.block();
-    Assert.assertNotNull(myData);
-    Assert.assertEquals("valueA", myData.getPropertyA());
-    Assert.assertEquals("valueB", myData.getPropertyB());//propertyB=null
+    Assertions.assertNotNull(myData);
+    Assertions.assertEquals("valueA", myData.getPropertyA());
+    Assertions.assertEquals("valueB", myData.getPropertyB());//propertyB=null
 
   }
 
-  @Test(expected = DaprException.class)
+  @Test
   public void invokeActorMethodSavingDataWithIncorrectReturnType() {
     final ActorClient daprClient = mock(ActorClient.class);
     when(daprClient.invoke(anyString(), anyString(), anyString(), Mockito.isNotNull()))
@@ -335,10 +330,7 @@ public class ActorProxyImplTest {
     saveData.setPropertyB("valueB");
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
-    result.doOnSuccess(x ->
-        Assert.fail("Not exception was throw"))
-        .doOnError(Throwable::printStackTrace
-        ).block();
+    assertThrows(DaprException.class, () ->result.block());
 
   }
 
@@ -360,11 +352,11 @@ public class ActorProxyImplTest {
 
     Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
     MyData myData = result.block();
-    Assert.assertNull(myData);
+    Assertions.assertNull(myData);
   }
 
 
-  @Test(expected = DaprException.class)
+  @Test
   public void invokeActorMethodSavingDataWithIncorrectInputType() {
     final ActorClient daprClient = mock(ActorClient.class);
     when(daprClient.invoke(anyString(), anyString(), anyString(), Mockito.isNotNull()))
@@ -381,12 +373,7 @@ public class ActorProxyImplTest {
     saveData.setPropertyB("valueB");
     saveData.setMyData(saveData);
 
-    Mono<MyData> result = actorProxy.invokeMethod("getData", saveData, MyData.class);
-    result.doOnSuccess(x ->
-        Assert.fail("Not exception was throw"))
-        .doOnError(Throwable::printStackTrace
-        ).block();
-
+    assertThrows(DaprException.class, () -> actorProxy.invokeMethod("getData", saveData, MyData.class));
   }
 
   @Test()
@@ -407,11 +394,11 @@ public class ActorProxyImplTest {
 
     Mono<Void> result = actorProxy.invokeMethod("getData", saveData);
     Void emptyResponse = result.block();
-    Assert.assertNull(emptyResponse);
+    Assertions.assertNull(emptyResponse);
   }
 
 
-  @Test(expected = DaprException.class)
+  @Test
   public void invokeActorMethodWithDataWithVoidIncorrectInputType() {
     MyData saveData = new MyData();
     saveData.setPropertyA("valueA");
@@ -428,9 +415,7 @@ public class ActorProxyImplTest {
         new DefaultObjectSerializer(),
         daprClient);
 
-    Mono<Void> result = actorProxy.invokeMethod("getData", saveData);
-    Void emptyResponse = result.doOnError(Throwable::printStackTrace).block();
-    Assert.assertNull(emptyResponse);
+    assertThrows(DaprException.class, () -> actorProxy.invokeMethod("getData", saveData));
   }
 
   @Test()
@@ -447,7 +432,7 @@ public class ActorProxyImplTest {
 
     Mono<Void> result = actorProxy.invokeMethod("getData");
     Void emptyResponse = result.block();
-    Assert.assertNull(emptyResponse);
+    Assertions.assertNull(emptyResponse);
   }
 
   interface Actor {

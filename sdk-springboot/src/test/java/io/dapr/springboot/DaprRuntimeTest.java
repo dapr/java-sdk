@@ -1,11 +1,13 @@
 package io.dapr.springboot;
 
 import io.dapr.Rule;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprRuntimeTest {
 
@@ -33,7 +35,7 @@ public class DaprRuntimeTest {
     };
 
     DaprRuntime runtime = DaprRuntime.getInstance();
-    Assert.assertNotNull(runtime);
+    Assertions.assertNotNull(runtime);
 
     // We should be able to register the same route multiple times
     runtime.addSubscribedTopic(
@@ -42,7 +44,7 @@ public class DaprRuntimeTest {
             pubSubName, topicName, match, rule.priority(), route,deadLetterTopic, metadata);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void testPubsubDefaultPathDifferentRegistration() {
     String pubSubName = "pubsub";
     String topicName = "topic";
@@ -70,14 +72,13 @@ public class DaprRuntimeTest {
 
     DaprRuntime runtime = DaprRuntime.getInstance();
 
-    Assert.assertNotNull(runtime);
+    Assertions.assertNotNull(runtime);
     runtime.addSubscribedTopic(
             pubSubName, topicName, match, rule.priority(), firstRoute, deadLetterTopic, metadata);
 
     // Supplying the same pubsub bits but a different route should fail
-    runtime.addSubscribedTopic(
-            pubSubName, topicName, match, rule.priority(), secondRoute, deadLetterTopic, metadata);
-
+    assertThrows(RuntimeException.class, () -> runtime.addSubscribedTopic(
+            pubSubName, topicName, match, rule.priority(), secondRoute, deadLetterTopic, metadata));
   }
 
 }

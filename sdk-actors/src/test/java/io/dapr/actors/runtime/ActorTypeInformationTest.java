@@ -15,8 +15,8 @@ package io.dapr.actors.runtime;
 
 import io.dapr.actors.ActorType;
 import io.dapr.utils.TypeRef;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -52,13 +52,13 @@ public class ActorTypeInformationTest {
     }
 
     ActorTypeInformation info = ActorTypeInformation.create(A.class);
-    Assert.assertNotNull(info);
-    Assert.assertEquals("A", info.getName());
-    Assert.assertEquals(A.class, info.getImplementationClass());
-    Assert.assertFalse(info.isAbstractClass());
-    Assert.assertFalse(info.isRemindable());
-    Assert.assertEquals(1, info.getInterfaces().size());
-    Assert.assertTrue(info.getInterfaces().contains(MyActor.class));
+    Assertions.assertNotNull(info);
+    Assertions.assertEquals("A", info.getName());
+    Assertions.assertEquals(A.class, info.getImplementationClass());
+    Assertions.assertFalse(info.isAbstractClass());
+    Assertions.assertFalse(info.isRemindable());
+    Assertions.assertEquals(1, info.getInterfaces().size());
+    Assertions.assertTrue(info.getInterfaces().contains(MyActor.class));
   }
 
   /**
@@ -84,14 +84,14 @@ public class ActorTypeInformationTest {
     }
 
     ActorTypeInformation info = ActorTypeInformation.create(A.class);
-    Assert.assertNotNull(info);
-    Assert.assertEquals("A", info.getName());
-    Assert.assertEquals(A.class, info.getImplementationClass());
-    Assert.assertFalse(info.isAbstractClass());
-    Assert.assertTrue(info.isRemindable());
-    Assert.assertEquals(2, info.getInterfaces().size());
-    Assert.assertTrue(info.getInterfaces().contains(Remindable.class));
-    Assert.assertTrue(info.getInterfaces().contains(MyActor.class));
+    Assertions.assertNotNull(info);
+    Assertions.assertEquals("A", info.getName());
+    Assertions.assertEquals(A.class, info.getImplementationClass());
+    Assertions.assertFalse(info.isAbstractClass());
+    Assertions.assertTrue(info.isRemindable());
+    Assertions.assertEquals(2, info.getInterfaces().size());
+    Assertions.assertTrue(info.getInterfaces().contains(Remindable.class));
+    Assertions.assertTrue(info.getInterfaces().contains(MyActor.class));
   }
 
   /**
@@ -107,13 +107,13 @@ public class ActorTypeInformationTest {
     }
 
     ActorTypeInformation info = ActorTypeInformation.create(A.class);
-    Assert.assertNotNull(info);
-    Assert.assertEquals("B", info.getName());
-    Assert.assertEquals(A.class, info.getImplementationClass());
-    Assert.assertFalse(info.isAbstractClass());
-    Assert.assertFalse(info.isRemindable());
-    Assert.assertEquals(1, info.getInterfaces().size());
-    Assert.assertTrue(info.getInterfaces().contains(MyActor.class));
+    Assertions.assertNotNull(info);
+    Assertions.assertEquals("B", info.getName());
+    Assertions.assertEquals(A.class, info.getImplementationClass());
+    Assertions.assertFalse(info.isAbstractClass());
+    Assertions.assertFalse(info.isRemindable());
+    Assertions.assertEquals(1, info.getInterfaces().size());
+    Assertions.assertTrue(info.getInterfaces().contains(MyActor.class));
   }
 
   /**
@@ -128,13 +128,13 @@ public class ActorTypeInformationTest {
     }
 
     ActorTypeInformation info = ActorTypeInformation.create(A.class);
-    Assert.assertNotNull(info);
-    Assert.assertEquals("MyActorWithAnnotation", info.getName());
-    Assert.assertEquals(A.class, info.getImplementationClass());
-    Assert.assertFalse(info.isAbstractClass());
-    Assert.assertFalse(info.isRemindable());
-    Assert.assertEquals(1, info.getInterfaces().size());
-    Assert.assertTrue(info.getInterfaces().contains(MyActorAnnotated.class));
+    Assertions.assertNotNull(info);
+    Assertions.assertEquals("MyActorWithAnnotation", info.getName());
+    Assertions.assertEquals(A.class, info.getImplementationClass());
+    Assertions.assertFalse(info.isAbstractClass());
+    Assertions.assertFalse(info.isRemindable());
+    Assertions.assertEquals(1, info.getInterfaces().size());
+    Assertions.assertTrue(info.getInterfaces().contains(MyActorAnnotated.class));
   }
 
   /**
@@ -149,6 +149,6 @@ public class ActorTypeInformationTest {
     }
 
     ActorTypeInformation info = ActorTypeInformation.tryCreate(A.class);
-    Assert.assertNull(info);
+    Assertions.assertNull(info);
   }
 }
