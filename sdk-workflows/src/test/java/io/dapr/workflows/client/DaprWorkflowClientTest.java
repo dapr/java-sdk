@@ -14,7 +14,10 @@ limitations under the License.
 package io.dapr.workflows.client;
 
 import com.microsoft.durabletask.DurableTaskClient;
+import com.microsoft.durabletask.OrchestrationMetadata;
+import com.microsoft.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
 import io.grpc.ManagedChannel;
 import org.junit.Before;
@@ -22,11 +25,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprWorkflowClientTest {
   private static Constructor<DaprWorkflowClient> constructor;
@@ -34,18 +43,21 @@ public class DaprWorkflowClientTest {
   private DurableTaskClient mockInnerClient;
   private ManagedChannel mockGrpcChannel;
 
-  public class TestWorkflow extends Workflow {
+  public static class TestWorkflow extends Workflow {
     @Override
     public WorkflowStub create() {
-      return ctx -> { };
+      return WorkflowContext::getInstanceId;
     }
   }
 
   @BeforeClass
   public static void beforeAll() {
-        constructor =
+    constructor =
         Constructor.class.cast(Arrays.stream(DaprWorkflowClient.class.getDeclaredConstructors())
-            .filter(c -> c.getParameters().length == 2).peek(c -> c.setAccessible(true)).findFirst().get());
+            .filter(c -> c.getParameters().length == 2).map(c -> {
+              c.setAccessible(true);
+              return c;
+            }).findFirst().get());
   }
 
   @Before
@@ -103,17 +115,102 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
-  public void close() throws InterruptedException {
-    client.close();
-    verify(mockInnerClient, times(1)).close();
-    verify(mockGrpcChannel, times(1)).shutdown();
+  public void getInstanceMetadata() {
+
+    // Arrange
+    String instanceId = "TestWorkflowInstanceId";
+
+    OrchestrationMetadata expectedMetadata = mock(OrchestrationMetadata.class);
+    when(expectedMetadata.getInstanceId()).thenReturn(instanceId);
+    when(expectedMetadata.getName()).thenReturn("WorkflowName");
+    when(expectedMetadata.getRuntimeStatus()).thenReturn(OrchestrationRuntimeStatus.RUNNING);
+    when(mockInnerClient.getInstanceMetadata(instanceId, true)).thenReturn(expectedMetadata);
+
+    // Act
+    WorkflowInstanceStatus metadata = client.getInstanceState(instanceId, true);
+
+    // Assert
+    verify(mockInnerClient, times(1)).getInstanceMetadata(instanceId, true);
+    assertNotEquals(metadata, null);
+    assertEquals(metadata.getInstanceId(), expectedMetadata.getInstanceId());
+    assertEquals(metadata.getName(), expectedMetadata.getName());
+    assertEquals(metadata.isRunning(), expectedMetadata.isRunning());
+    assertEquals(metadata.isCompleted(), expectedMetadata.isCompleted());
   }
 
   @Test
-  public void closeWithInnerClientRuntimeException() throws InterruptedException {
-    doThrow(RuntimeException.class).when(mockInnerClient).close();
+  public void waitForInstanceStart() throws TimeoutException {
 
-    assertThrows(RuntimeException.class, () -> { client.close(); });
+    // Arrange
+    String instanceId = "TestWorkflowInstanceId";
+    Duration timeout = Duration.ofSeconds(10);
+
+    OrchestrationMetadata expectedMetadata = mock(OrchestrationMetadata.class);
+    when(expectedMetadata.getInstanceId()).thenReturn(instanceId);
+    when(mockInnerClient.waitForInstanceStart(instanceId, timeout, true)).thenReturn(expectedMetadata);
+
+    // Act
+    WorkflowInstanceStatus result = client.waitForInstanceStart(instanceId, timeout, true);
+
+    // Assert
+    verify(mockInnerClient, times(1)).waitForInstanceStart(instanceId, timeout, true);
+    assertNotEquals(result, null);
+    assertEquals(result.getInstanceId(), expectedMetadata.getInstanceId());
+  }
+
+  @Test
+  public void waitForInstanceCompletion() throws TimeoutException {
+
+    // Arrange
+    String instanceId = "TestWorkflowInstanceId";
+    Duration timeout = Duration.ofSeconds(10);
+
+    OrchestrationMetadata expectedMetadata = mock(OrchestrationMetadata.class);
+    when(expectedMetadata.getInstanceId()).thenReturn(instanceId);
+    when(mockInnerClient.waitForInstanceCompletion(instanceId, timeout, true)).thenReturn(expectedMetadata);
+
+    // Act
+    WorkflowInstanceStatus result = client.waitForInstanceCompletion(instanceId, timeout, true);
+
+    // Assert
+    verify(mockInnerClient, times(1)).waitForInstanceCompletion(instanceId, timeout, true);
+    assertNotEquals(result, null);
+    assertEquals(result.getInstanceId(), expectedMetadata.getInstanceId());
+  }
+
+  @Test
+  public void raiseEvent() {
+    String expectedInstanceId = "TestWorkflowInstanceId";
+    String expectedEventName = "TestEventName";
+    Object expectedEventPayload = new Object();
+    client.raiseEvent(expectedInstanceId, expectedEventName, expectedEventPayload);
+    verify(mockInnerClient, times(1)).raiseEvent(expectedInstanceId,
+        expectedEventName, expectedEventPayload);
+  }
+
+  @Test
+  public void purgeInstance() {
+    String expectedArgument = "TestWorkflowInstanceId";
+    client.purgeInstance(expectedArgument);
+    verify(mockInnerClient, times(1)).purgeInstance(expectedArgument);
+  }
+
+  @Test
+  public void createTaskHub() {
+    boolean expectedArgument = true;
+    client.createTaskHub(expectedArgument);
+    verify(mockInnerClient, times(1)).createTaskHub(expectedArgument);
+  }
+
+  @Test
+  public void deleteTaskHub() {
+    client.deleteTaskHub();
+    verify(mockInnerClient, times(1)).deleteTaskHub();
+  }
+
+  @Test
+  public void close() throws InterruptedException {
+    client.close();
     verify(mockInnerClient, times(1)).close();
     verify(mockGrpcChannel, times(1)).shutdown();
   }
