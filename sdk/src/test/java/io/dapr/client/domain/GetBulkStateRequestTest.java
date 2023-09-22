@@ -1,14 +1,17 @@
 package io.dapr.client.domain;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 public class GetBulkStateRequestTest {
 
@@ -32,7 +35,7 @@ public class GetBulkStateRequestTest {
     request.setMetadata(metadata);
     Map<String, String> initial = request.getMetadata();
     request.setMetadata(metadata);
-    assertNotSame("Should not be same map", request.getMetadata(), initial);
+    assertNotSame(request.getMetadata(), initial, "Should not be same map");
 
     // Var args constructor
     request = new GetBulkStateRequest(STORE_NAME, "test var key");
@@ -53,6 +56,6 @@ public class GetBulkStateRequestTest {
     request.setMetadata(metadata);
     initial = request.getMetadata();
     request.setMetadata(metadata);
-    assertNotSame("Should not be same map", request.getMetadata(), initial);
+    assertNotSame( request.getMetadata(), initial, "Should not be same map");
   }
 }

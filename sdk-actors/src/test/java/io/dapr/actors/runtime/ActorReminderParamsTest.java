@@ -13,18 +13,20 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ActorReminderParamsTest {
 
   private static final ActorObjectSerializer SERIALIZER = new ActorObjectSerializer();
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void outOfRangeDueTime() {
-    ActorReminderParams info = new ActorReminderParams(null, Duration.ZERO.plusSeconds(-10), Duration.ZERO.plusMinutes(1));
+    assertThrows(IllegalArgumentException.class, () -> new ActorReminderParams(null, Duration.ZERO.plusSeconds(-10), Duration.ZERO.plusMinutes(1)));
   }
 
   @Test
@@ -33,9 +35,9 @@ public class ActorReminderParamsTest {
     ActorReminderParams info = new ActorReminderParams(null, Duration.ZERO.plusMinutes(1), Duration.ZERO.plusMillis(-1));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void outOfRangePeriod() {
-    ActorReminderParams info = new ActorReminderParams(null, Duration.ZERO.plusMinutes(1), Duration.ZERO.plusMinutes(-10));
+    assertThrows(IllegalArgumentException.class, () ->new ActorReminderParams(null, Duration.ZERO.plusMinutes(1), Duration.ZERO.plusMinutes(-10)));
   }
 
   @Test
@@ -48,12 +50,12 @@ public class ActorReminderParamsTest {
     }
     catch(Exception e) {
       System.out.println("The error is: " + e);
-      Assert.fail();
+      Assertions.fail();
     }
 
-    Assert.assertArrayEquals(original.getData(), recreated.getData());
-    Assert.assertEquals(original.getDueTime(), recreated.getDueTime());
-    Assert.assertEquals(original.getPeriod(), recreated.getPeriod());
+    Assertions.assertArrayEquals(original.getData(), recreated.getData());
+    Assertions.assertEquals(original.getDueTime(), recreated.getDueTime());
+    Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
   }
 
   @Test
@@ -66,11 +68,11 @@ public class ActorReminderParamsTest {
     }
     catch(Exception e) {
       System.out.println("The error is: " + e);
-      Assert.fail();
+      Assertions.fail();
     }
 
-    Assert.assertArrayEquals(original.getData(), recreated.getData());
-    Assert.assertEquals(original.getDueTime(), recreated.getDueTime());
-    Assert.assertEquals(original.getPeriod(), recreated.getPeriod());
+    Assertions.assertArrayEquals(original.getData(), recreated.getData());
+    Assertions.assertEquals(original.getDueTime(), recreated.getDueTime());
+    Assertions.assertEquals(original.getPeriod(), recreated.getPeriod());
   }
 }

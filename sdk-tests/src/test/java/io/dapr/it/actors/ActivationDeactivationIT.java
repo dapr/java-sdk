@@ -18,7 +18,7 @@ import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.services.springboot.DemoActor;
 import io.dapr.it.actors.services.springboot.DemoActorService;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ActivationDeactivationIT extends BaseIT {
 
@@ -62,14 +62,14 @@ public class ActivationDeactivationIT extends BaseIT {
     logger.debug("Retrieving active Actors");
     List<String> activeActors = proxy.retrieveActiveActors();
     logger.debug("Active actors: [" + activeActors.toString() + "]");
-    assertTrue("Expecting actorId:[" + actorId1.toString() + "]", activeActors.contains(actorId1.toString()));
+    assertTrue(activeActors.contains(actorId1.toString()),"Expecting actorId:[" + actorId1.toString() + "]");
 
     ActorId actorId2 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     DemoActor proxy2 = proxyBuilder.build(actorId2);
     callWithRetry(() -> {
       List<String> activeActorsSecondTry = proxy2.retrieveActiveActors();
       logger.debug("Active actors: [" + activeActorsSecondTry.toString() + "]");
-      assertFalse("NOT Expecting actorId:[" + actorId1.toString() + "]", activeActorsSecondTry.contains(actorId1.toString()));
+      assertFalse(activeActorsSecondTry.contains(actorId1.toString()), "NOT Expecting actorId:[" + actorId1.toString() + "]");
     }, 15000);
   }
 }

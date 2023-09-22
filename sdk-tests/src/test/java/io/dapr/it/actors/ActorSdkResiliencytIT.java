@@ -23,17 +23,17 @@ import io.dapr.it.DaprRun;
 import io.dapr.it.ToxiProxyRun;
 import io.dapr.it.actors.services.springboot.DemoActor;
 import io.dapr.it.actors.services.springboot.DemoActorService;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test SDK resiliency.
@@ -66,7 +66,7 @@ public class ActorSdkResiliencytIT extends BaseIT {
 
   private static DemoActor oneRetryDemoActor;
 
-  @BeforeClass
+  @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(
             ActorSdkResiliencytIT.class.getSimpleName(),
@@ -98,7 +98,7 @@ public class ActorSdkResiliencytIT extends BaseIT {
     return builder.build(ACTOR_ID);
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws Exception {
     if (toxiProxyRun != null) {
       toxiProxyRun.stop();
@@ -106,7 +106,7 @@ public class ActorSdkResiliencytIT extends BaseIT {
   }
 
   @Test
-  @Ignore("Flaky when running on GitHub actions")
+  @Disabled("Flaky when running on GitHub actions")
   public void retryAndTimeout() {
     AtomicInteger toxiClientErrorCount = new AtomicInteger();
     AtomicInteger retryOneClientErrorCount = new AtomicInteger();
