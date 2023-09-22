@@ -13,7 +13,11 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -27,29 +31,14 @@ import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class TracingIT extends BaseIT {
-
-    /**
-     * Parameters for this test.
-     * Param #1: useGrpc.
-     * @return Collection of parameter tuples.
-     */
-    @Parameters
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] { { false }, { true } });
-    }
 
     /**
      * Run of a Dapr application.
      */
     private DaprRun daprRun = null;
 
-    @Parameter
-    public boolean useGrpc;
-
-    @Before
-    public void init() throws Exception {
+    public void setup(boolean useGrpc) throws Exception {
         daprRun = startDaprApp(
           TracingIT.class.getSimpleName(),
           Service.SUCCESS_MESSAGE,
@@ -57,7 +46,7 @@ public class TracingIT extends BaseIT {
           DaprApiProtocol.GRPC,  // appProtocol
           60000);
 
-        if (this.useGrpc) {
+        if (useGrpc) {
             daprRun.switchToGRPC();
         } else {
             daprRun.switchToHTTP();
@@ -67,8 +56,11 @@ public class TracingIT extends BaseIT {
         Thread.sleep(2000);
     }
 
-    @Test
-    public void testInvoke() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testInvoke(boolean useGrpc) throws Exception {
+        setup(useGrpc);
+
         final OpenTelemetry openTelemetry = createOpenTelemetry("service over grpc");
         final Tracer tracer = openTelemetry.getTracer("grpc integration test tracer");
 

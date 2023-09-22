@@ -22,7 +22,12 @@ import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -35,15 +40,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Secrets Store APIs using local file.
  *
  * 1. create secret file locally:
  */
-@RunWith(Parameterized.class)
 public class SecretsClientIT extends BaseIT {
 
   /**
@@ -61,24 +66,12 @@ public class SecretsClientIT extends BaseIT {
 
   private static DaprRun daprRun;
 
-  /**
-   * Parameters for this test.
-   * Param #1: useGrpc.
-   * @return Collection of parameter tuples.
-   */
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] { { false }, { true } });
-  }
-
-  @Parameterized.Parameter
-  public boolean useGrpc = true;
 
   private DaprClient daprClient;
 
   private static File localSecretFile;
 
-  @BeforeClass
+  @BeforeAll
   public static void init() throws Exception {
 
     localSecretFile = new File(LOCAL_SECRET_FILE_PATH);
@@ -89,9 +82,8 @@ public class SecretsClientIT extends BaseIT {
     daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
   }
 
-  @Before
-  public void setup() {
-    if (this.useGrpc) {
+  public void setup(boolean useGrpc) {
+    if (useGrpc) {
       daprRun.switchToGRPC();
     } else {
       daprRun.switchToHTTP();
@@ -100,14 +92,16 @@ public class SecretsClientIT extends BaseIT {
     this.daprClient = new DaprClientBuilder().build();
   }
 
-  @After
+  @AfterEach
   public void tearDown() throws Exception {
     daprClient.close();
     clearSecretFile();
   }
 
-  @Test
-  public void getSecret() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans =  {true, false})
+  public void getSecret(boolean useGrpc) throws Exception {
+    setup(useGrpc);
 
     Map<String, String> data = daprClient.getSecret(SECRETS_STORE_NAME, KEY1).block();
     assertEquals(2, data.size());
@@ -115,8 +109,10 @@ public class SecretsClientIT extends BaseIT {
     assertEquals("2020", data.get("year"));
   }
 
-  @Test
-  public void getBulkSecret() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans =  {true, false})
+  public void getBulkSecret(boolean useGrpc) throws Exception {
+    setup(useGrpc);
 
     Map<String, Map<String, String>> data = daprClient.getBulkSecret(SECRETS_STORE_NAME).block();
     // There can be other keys from other runs or test cases, so we are good with at least two.
@@ -128,14 +124,20 @@ public class SecretsClientIT extends BaseIT {
     assertEquals("Jon Doe", data.get(KYE2).get("name"));
   }
 
-  @Test(expected = RuntimeException.class)
-  public void getSecretKeyNotFound() {
-    daprClient.getSecret(SECRETS_STORE_NAME, "unknownKey").block();
+  @ParameterizedTest
+  @ValueSource(booleans =  {true, false})
+  public void getSecretKeyNotFound(boolean useGrpc) {
+    setup(useGrpc);
+
+    assertThrows(RuntimeException.class, () -> daprClient.getSecret(SECRETS_STORE_NAME, "unknownKey").block());
   }
 
-  @Test(expected = RuntimeException.class)
-  public void getSecretStoreNotFound() throws Exception {
-    daprClient.getSecret("unknownStore", "unknownKey").block();
+  @ParameterizedTest
+  @ValueSource(booleans =  {true, false})
+  public void getSecretStoreNotFound(boolean useGrpc) throws Exception {
+    setup(useGrpc);
+
+    assertThrows(RuntimeException.class, () -> daprClient.getSecret("unknownStore", "unknownKey").block());
   }
 
   private static void initSecretFile() throws Exception {

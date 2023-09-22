@@ -13,12 +13,14 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for ActorMethodInfoMap.
@@ -33,23 +35,24 @@ public class ActorMethodInfoMapTest {
 
     try {
       Method m1 = m.get("getData");
-      Assert.assertEquals("getData", m1.getName());
+      Assertions.assertEquals("getData", m1.getName());
       Class c = m1.getReturnType();
-      Assert.assertEquals(c.getClass(), String.class.getClass());
+      Assertions.assertEquals(c.getClass(), String.class.getClass());
       Parameter[] p = m1.getParameters();
-      Assert.assertEquals(p[0].getType().getClass(), String.class.getClass());
+      Assertions.assertEquals(p[0].getType().getClass(), String.class.getClass());
     } catch (Exception e) {
-      Assert.fail("Exception not expected.");
+      Assertions.fail("Exception not expected.");
     }
   }
 
-  @Test(expected = NoSuchMethodException.class)
+  @Test
   public void lookUpNonExistingMethod() throws NoSuchMethodException {
     ArrayList<Class<?>> interfaceTypes = new ArrayList<>();
     interfaceTypes.add(TestActor.class);
     ActorMethodInfoMap m = new ActorMethodInfoMap(interfaceTypes);
 
-    m.get("thisMethodDoesNotExist");
+    assertThrows(NoSuchMethodException.class, () ->
+    m.get("thisMethodDoesNotExist"));
   }
 
   /**
