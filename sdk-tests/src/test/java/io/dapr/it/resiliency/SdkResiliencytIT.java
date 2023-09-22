@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class SdkResiliencytIT extends BaseIT {
 
-  private static final int NUM_ITERATIONS = 20;
+  private static final int NUM_ITERATIONS = 25;
 
   private static final Duration TIMEOUT = Duration.ofMillis(100);
 
