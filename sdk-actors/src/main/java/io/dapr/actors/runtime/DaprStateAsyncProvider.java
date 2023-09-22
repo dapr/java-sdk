@@ -23,6 +23,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 /**
@@ -76,6 +77,19 @@ class DaprStateAsyncProvider {
           return Mono.empty();
         }
 
+        if (!this.isStateSerializerDefault) {
+          if (s.length == 0) {
+            return Mono.empty();
+          }
+          s = OBJECT_MAPPER.readValue(s, byte[].class);
+          if (type.getType().equals(String.class) && s[0] != '"') {
+            byte[] out = new byte[s.length + 2];
+            out[0] = '"';
+            System.arraycopy(s, 0, out, 1, s.length);
+            out[out.length - 1] = '"';
+            s = out;
+          }
+        }
         T response = this.stateSerializer.deserialize(s, type);
         if (this.isStateSerializerDefault && (response instanceof byte[])) {
           if (s.length == 0) {
