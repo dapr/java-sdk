@@ -24,13 +24,13 @@ import io.dapr.utils.TypeRef;
 import okhttp3.OkHttpClient;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprPreviewClientHttpTest {
@@ -45,7 +45,7 @@ public class DaprPreviewClientHttpTest {
 
   private MockInterceptor mockInterceptor;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
@@ -99,10 +99,10 @@ public class DaprPreviewClientHttpTest {
             + "\"etag\": \"6f54ad94-dfb9-46f0-a371-e42d550adb7d\"}]}");
     QueryStateResponse<String> response = daprPreviewClientHttp.queryState("testStore", "query", String.class).block();
     assertNotNull(response);
-    assertEquals("result size must be 1", 1, response.getResults().size());
-    assertEquals("result must be same", "1", response.getResults().get(0).getKey());
-    assertEquals("result must be same", "testData", response.getResults().get(0).getValue());
-    assertEquals("result must be same", "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag());
+    assertEquals(1, response.getResults().size(), "result size must be 1");
+    assertEquals( "1", response.getResults().get(0).getKey(), "result must be same");
+    assertEquals("testData", response.getResults().get(0).getValue(), "result must be same");
+    assertEquals( "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag(), "result must be same");
   }
 
   @Test

@@ -17,8 +17,9 @@ import com.microsoft.durabletask.RetryPolicy;
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -31,12 +32,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprWorkflowContextImplTest {
   private DaprWorkflowContextImpl context;
   private TaskOrchestrationContext mockInnerContext;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
     context = new DaprWorkflowContextImpl(mockInnerContext);
@@ -87,15 +89,17 @@ public class DaprWorkflowContextImplTest {
     verify(mockInnerContext, times(1)).callActivity(expectedName, expectedInput, null, String.class);
   }
 
-
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void DaprWorkflowContextWithEmptyInnerContext() {
-    context = new DaprWorkflowContextImpl(mockInnerContext, null);
-  }
+    assertThrows(IllegalArgumentException.class, () -> {
+      context = new DaprWorkflowContextImpl(mockInnerContext, null);
+    });  }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void DaprWorkflowContextWithEmptyLogger() {
-    context = new DaprWorkflowContextImpl(null, null);
+    assertThrows(IllegalArgumentException.class, () -> {
+      context = new DaprWorkflowContextImpl(null, null);
+    });
   }
 
   @Test
@@ -170,9 +174,9 @@ public class DaprWorkflowContextImplTest {
     verify(mockInnerContext, times(1)).createTimer(Duration.ofSeconds(10));
   }
 
-  @Test(expected = UnsupportedOperationException.class)
+  @Test
   public void createTimerWithZonedDateTimeThrowsTest() {
-    context.createTimer(ZonedDateTime.now());
+    assertThrows(UnsupportedOperationException.class, () -> context.createTimer(ZonedDateTime.now()));
   }
 
   @Test

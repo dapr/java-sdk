@@ -20,17 +20,17 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
 import io.grpc.ManagedChannel;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -50,7 +50,7 @@ public class DaprWorkflowClientTest {
     }
   }
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeAll() {
     constructor =
         Constructor.class.cast(Arrays.stream(DaprWorkflowClient.class.getDeclaredConstructors())
@@ -60,7 +60,7 @@ public class DaprWorkflowClientTest {
             }).findFirst().get());
   }
 
-  @Before
+  @BeforeEach
   public void setUp() throws Exception {
     mockInnerClient = mock(DurableTaskClient.class);
     mockGrpcChannel = mock(ManagedChannel.class);

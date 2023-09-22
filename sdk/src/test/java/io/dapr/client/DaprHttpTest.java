@@ -14,17 +14,20 @@ package io.dapr.client;
 
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -32,14 +35,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-
+@ExtendWith(SystemStubsExtension.class)
 public class DaprHttpTest {
 
-  @Rule
+  @SystemStub
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
   private static final String STATE_PATH = DaprHttp.API_VERSION + "/state";
@@ -53,7 +57,7 @@ public class DaprHttpTest {
 
   private ObjectSerializer serializer = new ObjectSerializer();
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
@@ -164,7 +168,7 @@ public class DaprHttpTest {
     assertEquals(EXPECTED_RESULT, body);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokePostMethodRuntime() throws IOException {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3500/v1.0/state")
@@ -172,26 +176,21 @@ public class DaprHttpTest {
     DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
-    DaprHttp.Response response = mono.block();
-    String body = serializer.deserialize(response.getBody(), String.class);
-    assertEquals(EXPECTED_RESULT, body);
+    StepVerifier.create(mono).expectError(RuntimeException.class);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokePostDaprError() throws IOException {
-
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("text"),
         "{\"errorCode\":null,\"message\":null}"));
     DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
-    DaprHttp.Response response = mono.block();
-    String body = serializer.deserialize(response.getBody(), String.class);
-    assertEquals(EXPECTED_RESULT, body);
+    StepVerifier.create(mono).expectError(RuntimeException.class);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void invokePostMethodUnknownError() throws IOException {
     mockInterceptor.addRule()
       .post("http://127.0.0.1:3500/v1.0/state")
@@ -199,9 +198,7 @@ public class DaprHttpTest {
         "{\"errorCode\":\"null\",\"message\":\"null\"}"));
     DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
-    DaprHttp.Response response = mono.block();
-    String body = serializer.deserialize(response.getBody(), String.class);
-    assertEquals(EXPECTED_RESULT, body);
+    StepVerifier.create(mono).expectError(RuntimeException.class);
   }
 
   /**

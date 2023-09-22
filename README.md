@@ -240,15 +240,13 @@ Similarly, all of these need to be run for running the ITs either individually o
 Run the following commands from the root of the repo to start all the docker containers that the tests depend on.
 
 ```bash
-docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
-docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
+docker-compose -f ./sdk-tests/deploy/local-test.yml up -d
 ```
 
 To stop the containers and services, run the following commands.
 
 ```bash
-docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml down
-docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml down
+docker-compose -f ./sdk-tests/deploy/local-test.yml down
 ```
 
 

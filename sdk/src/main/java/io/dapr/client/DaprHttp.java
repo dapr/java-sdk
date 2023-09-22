@@ -102,7 +102,7 @@ public class DaprHttp implements AutoCloseable {
      */
     public Response(byte[] body, Map<String, String> headers, int statusCode) {
       this.body = body == null ? EMPTY_BYTES : Arrays.copyOf(body, body.length);
-      this.headers = headers;
+      this.headers = headers == null ? null : Collections.unmodifiableMap(headers);
       this.statusCode = statusCode;
     }
 

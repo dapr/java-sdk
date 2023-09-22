@@ -33,7 +33,7 @@ public class SubscribeConfigurationRequest {
    */
   public SubscribeConfigurationRequest(String storeName, List<String> keys) {
     this.storeName = storeName;
-    this.keys = keys == null ? Collections.EMPTY_LIST : Collections.unmodifiableList(keys);
+    this.keys = keys == null ? Collections.emptyList() : Collections.unmodifiableList(keys);
   }
 
   public SubscribeConfigurationRequest setMetadata(Map<String, String> metadata) {
