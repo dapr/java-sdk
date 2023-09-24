@@ -23,16 +23,16 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.*;
 
@@ -91,7 +91,7 @@ public class DaprGrpcClientTest {
 
   private DaprGrpcClient client;
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
     // Generate a unique in-process server name.
     String serverName = InProcessServerBuilder.generateName();

@@ -28,7 +28,7 @@ import io.dapr.client.domain.query.Sorting;
 import io.dapr.client.domain.query.filters.EqFilter;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -39,13 +39,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Common test cases for Dapr client (GRPC and HTTP).
@@ -244,7 +244,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     State<MyData> myDataResponse = response.block();
 
     //review that the update was success action
-    assertNotNull("expected non null response", myDataResponse);
+    assertNotNull(myDataResponse, "expected non null response");
     assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
     assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
   }
@@ -391,7 +391,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     assertEquals(0, stateNullValue.getMetadata().size());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveUpdateAndGetStateWithWrongEtag() {
     final String stateKey = "keyToBeUpdatedWithWrongEtag";
 
@@ -402,7 +402,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     data.setPropertyA("data in property A");
     data.setPropertyB("data in property B");
 
-    //Create deferred action to save the sate
+    //Create deferred action to save the state
     Mono<Void> saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, null, data, null);
     //execute the save state action
     saveResponse.block();
@@ -427,21 +427,9 @@ public abstract class AbstractStateClientIT extends BaseIT {
     data.setPropertyB("data in property B2");
     //Create deferred action to update the data using the incorrect etag
     saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, "99999999999999", data, null);
-    saveResponse.block();
 
-
-    response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null), MyData.class);
-    //retrive the data wihout any etag
-    myDataResponse = response.block();
-
-    //review that state value changes
-    assertNotNull(myDataResponse.getEtag());
-    //review that the etag changes after an update
-    assertNotEquals(firstETag, myDataResponse.getEtag());
-    assertNotNull(myDataResponse.getKey());
-    assertNotNull(myDataResponse.getValue());
-    assertEquals("data in property A2", myDataResponse.getValue().getPropertyA());
-    assertEquals("data in property B2", myDataResponse.getValue().getPropertyB());
+    Mono<Void> finalSaveResponse = saveResponse;
+    assertThrows(RuntimeException.class, finalSaveResponse::block);
   }
 
   @Test
@@ -484,7 +472,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
   }
 
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveAndDeleteStateWithWrongEtag() {
     final String stateKey = "myeKeyToBeDeletedWithWrongEtag";
 
@@ -513,18 +501,11 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
     //Create deferred action to delete an state sending the incorrect etag
     Mono<Void> deleteResponse = daprClient.deleteState(STATE_STORE_NAME, stateKey, "99999999999", null);
-    //execute the delete of the state, this should trhow an exception
-    deleteResponse.block();
-
-    //Create deferred action to get the sate without an etag
-    response = daprClient.getState(STATE_STORE_NAME, new State(stateKey), MyData.class);
-    myDataResponse = response.block();
-
-    //Review that the response is null, because the state was deleted
-    assertNull(myDataResponse.getValue());
+    //execute the delete of the state, this should throw an exception
+    assertThrows(RuntimeException.class, deleteResponse::block);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void saveUpdateAndGetStateWithEtagAndStateOptionsFirstWrite() {
     final String stateKey = "keyToBeUpdatedWithEtagAndOptions";
 
@@ -545,7 +526,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     saveResponse.block();
 
 
-    //crate deferred action to retrieve the state
+    //create deferred action to retrieve the state
     Mono<State<MyData>> response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions),
         MyData.class);
     //execute the retrieve of the state using options
@@ -557,7 +538,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
     assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
-    //change data to be udpated
+    //change data to be updated
     data.setPropertyA("data in property A2");
     data.setPropertyB("data in property B2");
     //create deferred action to update the action with options
@@ -570,8 +551,10 @@ public abstract class AbstractStateClientIT extends BaseIT {
     data.setPropertyB("data in property B2");
     //create deferred action to update the action with the same etag
     saveResponse = daprClient.saveState(STATE_STORE_NAME, stateKey, myDataResponse.getEtag(), data, stateOptions);
-    //throws an exception, the state was already udpated
-    saveResponse.block();
+    //throws an exception, the state was already updated
+
+    Mono<Void> finalSaveResponse2 = saveResponse;
+    assertThrows(RuntimeException.class, () -> finalSaveResponse2.block());
 
     response = daprClient.getState(STATE_STORE_NAME, new State(stateKey, null, stateOptions), MyData.class);
     State<MyData> myLastDataResponse = response.block();

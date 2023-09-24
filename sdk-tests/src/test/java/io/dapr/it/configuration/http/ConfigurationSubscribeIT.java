@@ -6,17 +6,17 @@ import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationSubscribeIT extends BaseIT {
   private static final String CONFIG_STORE_NAME = "redisconfigstore";
@@ -37,7 +37,7 @@ public class ConfigurationSubscribeIT extends BaseIT {
       "myconfigkey3", "myconfigvalue3||1"
   };
 
-  @BeforeClass
+  @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(
         ConfigurationIT.class.getSimpleName(),
@@ -49,12 +49,12 @@ public class ConfigurationSubscribeIT extends BaseIT {
     daprClient = new DaprClientBuilder().build();
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws Exception {
     daprClient.close();
   }
 
-  @Before
+  @BeforeEach
   public void setupConfigStore() {
     executeDockerCommand(insertCmd);
   }

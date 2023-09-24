@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,8 +33,7 @@ public final class BulkSubscribeAppResponse {
   @JsonCreator
   public BulkSubscribeAppResponse(
           @JsonProperty("statuses") List<BulkSubscribeAppResponseEntry> statuses) {
-    this.statuses = new ArrayList<>();
-    this.statuses.addAll(statuses);
+    this.statuses = Collections.unmodifiableList(statuses);
   }
 
   public List<BulkSubscribeAppResponseEntry> getStatuses() {

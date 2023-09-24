@@ -15,51 +15,53 @@ package io.dapr.actors.client;
 
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ActorProxyBuilderTest {
 
   private static ActorClient actorClient;
 
-  @BeforeClass
+  @BeforeAll
   public static void initClass() {
     actorClient = new ActorClient();
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDownClass() {
     actorClient.close();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void buildWithNullActorId() {
-    new ActorProxyBuilder("test", Object.class, actorClient)
-        .build(null);
+    assertThrows(IllegalArgumentException.class, () -> new ActorProxyBuilder("test", Object.class, actorClient)
+        .build(null));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void buildWithEmptyActorType() {
-    new ActorProxyBuilder("", Object.class, actorClient);
+    assertThrows(IllegalArgumentException.class, () -> new ActorProxyBuilder("", Object.class, actorClient));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void buildWithNullActorType() {
-    new ActorProxyBuilder(null, Object.class, actorClient);
+    assertThrows(IllegalArgumentException.class, () -> new ActorProxyBuilder(null, Object.class, actorClient));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void buildWithNullSerializer() {
-    new ActorProxyBuilder("MyActor", Object.class, actorClient)
+    assertThrows(IllegalArgumentException.class, () -> new ActorProxyBuilder("MyActor", Object.class, actorClient)
       .withObjectSerializer(null)
-      .build(new ActorId("100"));
+      .build(new ActorId("100")));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void buildWithNullClient() {
-    new ActorProxyBuilder("MyActor", Object.class, null);
+    assertThrows(IllegalArgumentException.class, () -> new ActorProxyBuilder("MyActor", Object.class, null));
   }
 
   @Test()
@@ -67,9 +69,9 @@ public class ActorProxyBuilderTest {
     ActorProxyBuilder<ActorProxy> builder = new ActorProxyBuilder("test", ActorProxy.class, actorClient);
     ActorProxy actorProxy = builder.build(new ActorId("100"));
 
-    Assert.assertNotNull(actorProxy);
-    Assert.assertEquals("test", actorProxy.getActorType());
-    Assert.assertEquals("100", actorProxy.getActorId().toString());
+    Assertions.assertNotNull(actorProxy);
+    Assertions.assertEquals("test", actorProxy.getActorType());
+    Assertions.assertEquals("100", actorProxy.getActorId().toString());
   }
 
   @Test()
@@ -77,7 +79,7 @@ public class ActorProxyBuilderTest {
     ActorProxyBuilder<MyActor> builder = new ActorProxyBuilder(MyActor.class, actorClient);
     MyActor actorProxy = builder.build(new ActorId("100"));
 
-    Assert.assertNotNull(actorProxy);
+    Assertions.assertNotNull(actorProxy);
   }
 
   @Test()
@@ -85,7 +87,7 @@ public class ActorProxyBuilderTest {
     ActorProxyBuilder<ActorWithDefaultName> builder = new ActorProxyBuilder(ActorWithDefaultName.class, actorClient);
     ActorWithDefaultName actorProxy = builder.build(new ActorId("100"));
 
-    Assert.assertNotNull(actorProxy);
+    Assertions.assertNotNull(actorProxy);
   }
 
   @ActorType(name = "MyActor")

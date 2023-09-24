@@ -20,14 +20,15 @@ import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Proxy;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -153,7 +154,7 @@ public class ActorNoStateTest {
   public void actorId() {
     ActorProxy proxy = createActorProxy();
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
             proxy.getActorId().toString(),
             proxy.invokeMethod("getMyId", String.class).block());
   }
@@ -163,7 +164,7 @@ public class ActorNoStateTest {
     ActorProxy proxy = createActorProxy();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
+    Assertions.assertEquals(
       "abcabc",
       proxy.invokeMethod("stringInStringOut", "abc", String.class).block());
   }
@@ -173,21 +174,22 @@ public class ActorNoStateTest {
     ActorProxy proxy = createActorProxy();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
+    Assertions.assertEquals(
       false,
       proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       true,
       proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
 
-  @Test(expected = IllegalMonitorStateException.class)
+  @Test
   public void stringInVoidOutIntentionallyThrows() {
     ActorProxy actorProxy = createActorProxy();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
+    assertThrows(IllegalMonitorStateException.class, () ->
+    actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block());
   }
 
   @Test
@@ -204,30 +206,31 @@ public class ActorNoStateTest {
     // this should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     MyData response = actorProxy.invokeMethod("classInClassOut", d, MyData.class).block();
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       "hihi",
       response.getName());
-    Assert.assertEquals(
+    Assertions.assertEquals(
       6,
       response.getNum());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testBadTimerCallbackName() {
     MyActor actor = createActorProxy(MyActor.class);
-    actor.registerBadCallbackName().block();
+
+    assertThrows(IllegalArgumentException.class, () -> actor.registerBadCallbackName().block());
   }
 
   @Test
   public void testAutoTimerName() {
     MyActor actor = createActorProxy(MyActor.class);
     String firstTimer = actor.registerTimerAutoName();
-    Assert.assertTrue((firstTimer != null) && !firstTimer.isEmpty());
+    Assertions.assertTrue((firstTimer != null) && !firstTimer.isEmpty());
 
     String secondTimer = actor.registerTimerAutoName();
-    Assert.assertTrue((secondTimer != null) && !secondTimer.isEmpty());
+    Assertions.assertTrue((secondTimer != null) && !secondTimer.isEmpty());
 
-    Assert.assertNotEquals(firstTimer, secondTimer);
+    Assertions.assertNotEquals(firstTimer, secondTimer);
   }
 
   private static ActorId newActorId() {
