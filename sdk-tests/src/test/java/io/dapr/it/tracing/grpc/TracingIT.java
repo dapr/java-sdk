@@ -58,7 +58,7 @@ public class TracingIT extends BaseIT {
         Span span = tracer.spanBuilder(spanName).setSpanKind(Span.Kind.CLIENT).startSpan();
 
         try (DaprClient client = new DaprClientBuilder().build()) {
-            client.waitForSidecar(10000);
+            client.waitForSidecar(10000).block();
             try (Scope scope = span.makeCurrent()) {
                 SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
                 client.invokeMethod(daprRun.getAppName(), "sleepOverGRPC", req.toByteArray(), HttpExtension.POST)

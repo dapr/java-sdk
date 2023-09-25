@@ -94,6 +94,7 @@ public class MethodInvokeService {
     @Override
     public void onInvoke(CommonProtos.InvokeRequest request,
                          StreamObserver<CommonProtos.InvokeResponse> responseObserver) {
+      System.out.println("Server: received " + request.getMethod() + " ...");
       try {
         if ("postMessage".equals(request.getMethod())) {
           PostMessageRequest req = PostMessageRequest.parseFrom(request.getData().getValue().toByteArray());
