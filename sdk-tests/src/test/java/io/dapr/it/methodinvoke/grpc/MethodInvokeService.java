@@ -37,6 +37,8 @@ import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
 public class MethodInvokeService {
 
+  private static final long STARTUP_DELAY_SECONDS = 10;
+
   public static final String SUCCESS_MESSAGE = "application discovered on port ";
 
   /**
@@ -164,8 +166,12 @@ public class MethodInvokeService {
   public static void main(String[] args) throws Exception {
     int port = Integer.parseInt(args[0]);
 
-    System.out.printf("Service starting on port %d ...\n", port);
+    System.out.printf("Service to start on port %d ...\n", port);
 
+    // The artificial delay is useful to detect bugs in app health, where the app is invoked too soon.
+    System.out.printf("Artificial delay of %d seconds ...\n", STARTUP_DELAY_SECONDS);
+    Thread.sleep(STARTUP_DELAY_SECONDS * 1000);
+    System.out.printf("Now starting ...\n", STARTUP_DELAY_SECONDS);
     final MyDaprService service = new MyDaprService();
     service.start(port);
     service.awaitTermination();
