@@ -47,7 +47,7 @@ jobs:
       DAPR_RUNTIME_VER: 1.12.0-rc.4
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0-rc.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF: 65e117433284388535f5a967456611a72773cf6b
+      DAPR_REF: f770694b3fbf7222c162a4ee4e13818a5afc3b01
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
     - uses: actions/checkout@v3
