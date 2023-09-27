@@ -15,6 +15,7 @@ package io.dapr.it.methodinvoke.grpc;
 
 import com.google.protobuf.Any;
 import io.dapr.grpc.GrpcHealthCheckService;
+import io.dapr.it.DaprRunConfig;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.CommonProtos;
 import io.grpc.Server;
@@ -35,6 +36,9 @@ import static io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
+@DaprRunConfig(
+        enableAppHealthCheck = true
+)
 public class MethodInvokeService {
 
   private static final long STARTUP_DELAY_SECONDS = 10;

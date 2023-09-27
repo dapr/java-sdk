@@ -203,6 +203,14 @@ public class DaprRun implements Stoppable {
                     ports.getAppPort() != null ? ports.getAppPort().toString() : "",
                     Properties.API_PROTOCOL.getName(), protocol,
                     Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol));
+    if (serviceClass != null) {
+      DaprRunConfig daprRunConfig = (DaprRunConfig) serviceClass.getAnnotation(DaprRunConfig.class);
+      if (daprRunConfig != null) {
+        if (daprRunConfig.enableAppHealthCheck()) {
+          stringBuilder.append(" --enable-app-health-check");
+        }
+      }
+    }
     return stringBuilder.toString();
   }
 
