@@ -42,8 +42,7 @@ public class TracingIT extends BaseIT {
             daprRun.switchToHTTP();
         }
 
-        // Wait since service might be ready even after port is available.
-        Thread.sleep(2000);
+        daprRun.waitForAppHealth(10000);
     }
 
     @ParameterizedTest

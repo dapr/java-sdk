@@ -14,12 +14,15 @@ limitations under the License.
 package io.dapr.it;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
  * Customizes an app run for Dapr.
  */
 @Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface DaprRunConfig {
 
     boolean enableAppHealthCheck() default false;

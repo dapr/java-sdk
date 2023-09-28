@@ -41,8 +41,7 @@ public class MethodInvokeIT extends BaseIT {
           true,
           30000);
         daprRun.switchToHTTP();
-        // Wait since service might be ready even after port is available.
-        Thread.sleep(2000);
+        daprRun.waitForAppHealth(20000);
     }
 
     @Test
