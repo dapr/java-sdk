@@ -187,7 +187,7 @@ public class DaprRun implements Stoppable {
           try {
             stub.healthCheck(Empty.getDefaultInstance());
             // artursouza: workaround due to race condition with runtime's probe on app's health.
-            Thread.sleep(3000);
+            Thread.sleep(5000);
             return;
           } catch (Exception e) {
             Thread.sleep(1000);
@@ -223,7 +223,7 @@ public class DaprRun implements Stoppable {
       }
 
       // artursouza: workaround due to race condition with runtime's probe on app's health.
-      Thread.sleep(3000);
+      Thread.sleep(5000);
     }
   }
 
