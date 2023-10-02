@@ -11,21 +11,13 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import org.junit.Before;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.UUID;
 
 import static io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry;
 import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
 public class TracingIT extends BaseIT {
 
@@ -36,7 +28,7 @@ public class TracingIT extends BaseIT {
 
     public void setup(boolean useGrpc) throws Exception {
         daprRun = startDaprApp(
-          TracingIT.class.getSimpleName(),
+          TracingIT.class.getSimpleName() + "http",
           Service.SUCCESS_MESSAGE,
           Service.class,
           true,
@@ -64,6 +56,7 @@ public class TracingIT extends BaseIT {
         Span span = tracer.spanBuilder(spanName).setSpanKind(Span.Kind.CLIENT).startSpan();
 
         try (DaprClient client = new DaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
             try (Scope scope = span.makeCurrent()) {
                 client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
                     .contextWrite(getReactorContext())
@@ -73,7 +66,7 @@ public class TracingIT extends BaseIT {
         span.end();
         OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
 
-        Validation.validate(spanName, "calllocal/tracingit-service/sleep");
+        Validation.validate(spanName, "calllocal/tracingithttp-service/sleep");
     }
 
 }
