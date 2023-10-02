@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.it.methodinvoke.http;
 
+import io.dapr.it.DaprRunConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -20,15 +21,23 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Service for subscriber.
  */
+@DaprRunConfig(
+        enableAppHealthCheck = true
+)
 @SpringBootApplication
 public class MethodInvokeService {
 
+  private static final long STARTUP_DELAY_SECONDS = 10;
+
   public static final String SUCCESS_MESSAGE = "Completed initialization in";
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException {
     int port = Integer.parseInt(args[0]);
 
-    System.out.printf("Service starting on port %d ...\n", port);
+    System.out.printf("Service to start on port %d ...\n", port);
+    System.out.printf("Artificial delay of %d seconds ...\n", STARTUP_DELAY_SECONDS);
+    Thread.sleep(STARTUP_DELAY_SECONDS * 1000);
+    System.out.printf("Now starting ...\n", STARTUP_DELAY_SECONDS);
 
     // Start Dapr's callback endpoint.
     start(port);

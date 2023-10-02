@@ -12,24 +12,14 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import org.junit.Before;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.UUID;
 
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry;
 import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
 public class TracingIT extends BaseIT {
 
@@ -40,7 +30,7 @@ public class TracingIT extends BaseIT {
 
     public void setup(boolean useGrpc) throws Exception {
         daprRun = startDaprApp(
-          TracingIT.class.getSimpleName(),
+          TracingIT.class.getSimpleName() + "grpc",
           Service.SUCCESS_MESSAGE,
           Service.class,
           DaprApiProtocol.GRPC,  // appProtocol
@@ -52,8 +42,7 @@ public class TracingIT extends BaseIT {
             daprRun.switchToHTTP();
         }
 
-        // Wait since service might be ready even after port is available.
-        Thread.sleep(2000);
+        daprRun.waitForAppHealth(10000);
     }
 
     @ParameterizedTest
@@ -68,6 +57,7 @@ public class TracingIT extends BaseIT {
         Span span = tracer.spanBuilder(spanName).setSpanKind(Span.Kind.CLIENT).startSpan();
 
         try (DaprClient client = new DaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
             try (Scope scope = span.makeCurrent()) {
                 SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
                 client.invokeMethod(daprRun.getAppName(), "sleepOverGRPC", req.toByteArray(), HttpExtension.POST)
@@ -78,6 +68,6 @@ public class TracingIT extends BaseIT {
         span.end();
         OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
 
-        Validation.validate(spanName, "calllocal/tracingit-service/sleepovergrpc");
+        Validation.validate(spanName, "calllocal/tracingitgrpc-service/sleepovergrpc");
     }
 }

@@ -104,11 +104,11 @@ public class ActorRuntimeTest {
   @BeforeAll
   public static void beforeAll() throws Exception {
     constructor =
-        (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
-            .filter(c -> c.getParameters().length == 2).map(c -> {
-              c.setAccessible(true);
-              return c;
-            }).findFirst().get();
+            (Constructor<ActorRuntime>) Arrays.stream(ActorRuntime.class.getDeclaredConstructors())
+                    .filter(c -> c.getParameters().length == 2).map(c -> {
+                      c.setAccessible(true);
+                      return c;
+                    }).findFirst().get();
   }
 
   @BeforeEach
@@ -159,6 +159,50 @@ public class ActorRuntimeTest {
     this.runtime.getConfig().setDrainBalancedActors(true);
     Assertions.assertEquals("{\"entities\":[],\"drainBalancedActors\":true}",
         new String(this.runtime.serializeConfig()));
+  }
+
+  @Test
+  public void addActorTypeConfig() throws Exception {
+    ActorTypeConfig actorTypeConfig1 = new ActorTypeConfig();
+    actorTypeConfig1.setActorTypeName("actor1");
+    actorTypeConfig1.setActorIdleTimeout(Duration.ofSeconds(123));
+    actorTypeConfig1.setActorScanInterval(Duration.ofSeconds(123));
+    actorTypeConfig1.setDrainOngoingCallTimeout(Duration.ofSeconds(123));
+    actorTypeConfig1.setDrainBalancedActors(true);
+    actorTypeConfig1.setRemindersStoragePartitions(1);
+    this.runtime.getConfig().addActorTypeConfig(actorTypeConfig1);
+    this.runtime.getConfig().addRegisteredActorType("actor1");
+
+    ActorTypeConfig actorTypeConfig2 = new ActorTypeConfig();
+    actorTypeConfig2.setActorTypeName("actor2");
+    actorTypeConfig2.setActorIdleTimeout(Duration.ofSeconds(123));
+    actorTypeConfig2.setActorScanInterval(Duration.ofSeconds(123));
+    actorTypeConfig2.setDrainOngoingCallTimeout(Duration.ofSeconds(123));
+    actorTypeConfig2.setDrainBalancedActors(false);
+    actorTypeConfig2.setRemindersStoragePartitions(2);
+    this.runtime.getConfig().addActorTypeConfig(actorTypeConfig2);
+    this.runtime.getConfig().addRegisteredActorType("actor2");
+
+    Assertions.assertEquals(
+            "{\"entities\":[\"actor1\",\"actor2\"],\"entitiesConfig\":[{\"entities\":[\"actor1\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":true,\"remindersStoragePartitions\":1},{\"entities\":[\"actor2\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":false,\"remindersStoragePartitions\":2}]}",
+            new String(this.runtime.serializeConfig())
+    );
+  }
+
+  @Test
+  public void addNullActorTypeConfig() throws Exception {
+    try {
+      this.runtime.getConfig().addActorTypeConfig(null);
+    } catch (Exception ex) {
+      Assertions.assertTrue(ex instanceof IllegalArgumentException);
+      Assertions.assertTrue(ex.getMessage().contains("Add actor type config failed."));
+    }
+    try {
+      this.runtime.getConfig().addRegisteredActorType(null);
+    } catch (Exception ex) {
+      Assertions.assertTrue(ex instanceof IllegalArgumentException);
+      Assertions.assertTrue(ex.getMessage().contains("Registered actor must have a type name."));
+    }
   }
 
   @Test
