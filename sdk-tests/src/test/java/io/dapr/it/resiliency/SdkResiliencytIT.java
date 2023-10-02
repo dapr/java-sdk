@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class SdkResiliencytIT extends BaseIT {
 
-  private static final int NUM_ITERATIONS = 25;
+  private static final int NUM_ITERATIONS = 30;
 
   private static final Duration TIMEOUT = Duration.ofMillis(100);
 
@@ -139,6 +139,9 @@ public class SdkResiliencytIT extends BaseIT {
       assertEquals(value, savedValue);
     }
 
+    // Asserts that we had at least one success per client.
+    assertTrue(toxiClientErrorCount.get() < NUM_ITERATIONS);
+    assertTrue(retryOneClientErrorCount.get() < NUM_ITERATIONS);
     // This assertion makes sure that toxicity is on
     assertTrue(toxiClientErrorCount.get() > 0);
     assertTrue(retryOneClientErrorCount.get() > 0);
