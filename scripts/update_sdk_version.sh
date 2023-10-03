@@ -2,6 +2,8 @@
 
 set -uex
 
+DAPR_JAVA_SDK_VERSION=$1
+
 # The workflows sdk tracks the regular SDK minor and patch versions, just not the major.
 # Replaces the workflows SDK major version to 0 until it is stable.
 DAPR_JAVA_WORKFLOWS_SDK_VERSION=`echo $DAPR_JAVA_SDK_VERSION | sed 's/^[0-9]*\./0./'`
