@@ -8,7 +8,7 @@ description: Java SDK packages for developing Dapr applications
 
 ## Prerequisites
 
-[Complete initial setup and import the Java SDK into your project]({{< ref java-sdk-docs >}})
+[Complete initial setup and import the Java SDK into your project]({{< ref java >}})
 
 ## Building blocks
 
