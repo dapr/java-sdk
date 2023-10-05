@@ -16,6 +16,7 @@ package io.dapr.it;
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import eu.rekawek.toxiproxy.model.ToxicDirection;
+import io.dapr.utils.NetworkUtils;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -53,6 +54,7 @@ public class ToxiProxyRun implements Stoppable {
 
   public void start() throws IOException, InterruptedException {
     this.toxiProxyServer.run();
+    NetworkUtils.waitForSocket("127.0.0.1", this.toxiProxyPorts.getAppPort(), 10000);
     this.toxiproxyClient = new ToxiproxyClient("127.0.0.1", this.toxiProxyPorts.getAppPort());
 
     if (this.daprRun.getGrpcPort() != null) {

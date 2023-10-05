@@ -15,6 +15,7 @@ package io.dapr.it.tracing.grpc;
 
 import com.google.protobuf.Any;
 import io.dapr.grpc.GrpcHealthCheckService;
+import io.dapr.it.DaprRunConfig;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.CommonProtos;
 import io.grpc.Server;
@@ -26,6 +27,9 @@ import java.io.IOException;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
+@DaprRunConfig(
+        enableAppHealthCheck = true
+)
 public class Service {
 
   public static final String SUCCESS_MESSAGE = "application discovered on port ";
