@@ -8,7 +8,7 @@ description: Java SDK packages for developing Dapr applications
 
 ## Prerequisites
 
-[Complete initial setup and import the Java SDK into your project]({{< ref java-sdk-docs >}})
+[Complete initial setup and import the Java SDK into your project]({{< ref java >}})
 
 ## Building blocks
 
@@ -373,6 +373,72 @@ try (DaprClient client = builder.build(); DaprPreviewClient previewClient = buil
 ```
 - For a full how-to on query state, visit [How-To: Query state]({{< ref howto-state-query-api.md >}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/querystate) for complete code sample.
+
+### Distributed lock
+
+```java
+package io.dapr.examples.lock.grpc;
+
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.LockRequest;
+import io.dapr.client.domain.UnlockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
+import reactor.core.publisher.Mono;
+
+public class DistributedLockGrpcClient {
+  private static final String LOCK_STORE_NAME = "lockstore";
+
+  /**
+   * Executes various methods to check the different apis.
+   *
+   * @param args arguments
+   * @throws Exception throws Exception
+   */
+  public static void main(String[] args) throws Exception {
+    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+      System.out.println("Using preview client...");
+      tryLock(client);
+      unlock(client);
+    }
+  }
+
+  /**
+   * Trying to get lock.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void tryLock(DaprPreviewClient client) {
+    System.out.println("*******trying to get a free distributed lock********");
+    try {
+      LockRequest lockRequest = new LockRequest(LOCK_STORE_NAME, "resouce1", "owner1", 5);
+      Mono<Boolean> result = client.tryLock(lockRequest);
+      System.out.println("Lock result -> " + (Boolean.TRUE.equals(result.block()) ? "SUCCESS" : "FAIL"));
+    } catch (Exception ex) {
+      System.out.println(ex.getMessage());
+    }
+  }
+
+  /**
+   * Unlock a lock.
+   *
+   * @param client DaprPreviewClient object
+   */
+  public static void unlock(DaprPreviewClient client) {
+    System.out.println("*******unlock a distributed lock********");
+    try {
+      UnlockRequest unlockRequest = new UnlockRequest(LOCK_STORE_NAME, "resouce1", "owner1");
+      Mono<UnlockResponseStatus> result = client.unlock(unlockRequest);
+      System.out.println("Unlock result ->" + result.block().name());
+    } catch (Exception ex) {
+      System.out.println(ex.getMessage());
+    }
+  }
+}
+```
+
+- For a full how-to on distributed lock, visit [How-To: Use a Lock]({{< ref howto-use-distributed-lock.md >}})
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/lock) for complete code sample.
 
 ### Workflow
 

@@ -39,12 +39,12 @@ public class TransactionalStateRequest<T> {
    * @param metadata    Metadata used for transactional operations.
    */
   public TransactionalStateRequest(List<TransactionalStateOperation<T>> operations, Map<String, String> metadata) {
-    this.operations = operations;
-    this.metadata = metadata;
+    this.operations = operations == null ? null : Collections.unmodifiableList(operations);
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
   }
 
   public List<TransactionalStateOperation<T>> getOperations() {
-    return Collections.unmodifiableList(operations);
+    return operations;
   }
 
   public Map<String, String> getMetadata() {

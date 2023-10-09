@@ -13,8 +13,8 @@
 
 package io.dapr.springboot;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,12 +26,12 @@ public class DaprTopicBulkSubscribeTest {
     bulkSubscribe.setMaxMessagesCount(100);
     bulkSubscribe.setMaxAwaitDurationMs(200);
 
-    Assert.assertTrue(bulkSubscribe.isEnabled());
-    Assert.assertEquals(100, bulkSubscribe.getMaxMessagesCount().longValue());
-    Assert.assertEquals(200, bulkSubscribe.getMaxAwaitDurationMs().longValue());
+    Assertions.assertTrue(bulkSubscribe.isEnabled());
+    Assertions.assertEquals(100, bulkSubscribe.getMaxMessagesCount().longValue());
+    Assertions.assertEquals(200, bulkSubscribe.getMaxAwaitDurationMs().longValue());
 
     bulkSubscribe.setEnabled(false);
-    Assert.assertFalse(bulkSubscribe.isEnabled());
+    Assertions.assertFalse(bulkSubscribe.isEnabled());
   }
 
   @Test
@@ -48,9 +48,9 @@ public class DaprTopicBulkSubscribeTest {
     for (Map.Entry<Integer, Boolean> testCase: testCases.entrySet()) {
       try {
         bulkSubscribe.setMaxMessagesCount(testCase.getKey());
-        Assert.assertFalse(testCase.getValue());
+        Assertions.assertFalse(testCase.getValue());
       } catch (IllegalArgumentException e) {
-        Assert.assertTrue(testCase.getValue());
+        Assertions.assertTrue(testCase.getValue());
       }
     }
   }
@@ -69,9 +69,9 @@ public class DaprTopicBulkSubscribeTest {
     for (Map.Entry<Integer, Boolean> testCase: testCases.entrySet()) {
       try {
         bulkSubscribe.setMaxAwaitDurationMs(testCase.getKey());
-        Assert.assertFalse(testCase.getValue());
+        Assertions.assertFalse(testCase.getValue());
       } catch (IllegalArgumentException e) {
-        Assert.assertTrue(testCase.getValue());
+        Assertions.assertTrue(testCase.getValue());
       }
     }
   }

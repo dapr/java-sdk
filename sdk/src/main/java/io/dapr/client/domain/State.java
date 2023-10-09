@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -116,7 +117,7 @@ public class State<T> {
     this.value = value;
     this.key = key;
     this.etag = etag;
-    this.metadata = metadata;
+    this.metadata = metadata == null ? null : Collections.unmodifiableMap(metadata);
     this.options = options;
     this.error = null;
   }

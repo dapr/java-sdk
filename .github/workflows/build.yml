@@ -43,9 +43,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.11.0
-      DAPR_RUNTIME_VER: 1.11.3
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.11.0/install/install.sh
+      DAPR_CLI_VER: 1.12.0-rc.1
+      DAPR_RUNTIME_VER: 1.12.0-rc.5
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
@@ -102,13 +102,9 @@ jobs:
         docker stop dapr_placement
         cd dapr
         ./dist/linux_amd64/release/placement &
-    - name: Install local Kafka using docker-compose
+    - name: Spin local environment
       run: |
-        docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
-        docker ps
-    - name: Install local Mongo database using docker-compose
-      run: |
-        docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
+        docker-compose -f ./sdk-tests/deploy/local-test.yml up -d mongo kafka
         docker ps
     - name: Install local ToxiProxy to simulate connectivity issues to Dapr sidecar
       run: |
@@ -117,18 +113,18 @@ jobs:
         chmod +x /home/runner/.local/bin/toxiproxy-server
         /home/runner/.local/bin/toxiproxy-server --version
     - name: Clean up files
-      run: mvn clean -B
+      run: ./mvnw clean -B
     - name: Build sdk
-      run: mvn compile -B -q
+      run: ./mvnw compile -B -q
     - name: Unit tests
-      run: mvn -B test -q
+      run: ./mvnw -B test -q
     - name: Codecov
       uses: codecov/codecov-action@v3.1.4
     - name: Install jars
-      run: mvn install -q -B -DskipTests
+      run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} mvn -B -f sdk-tests/pom.xml verify
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -f sdk-tests/pom.xml verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
@@ -170,7 +166,7 @@ jobs:
           java-version: ${{ env.JDK_VER }}
       - name: Get pom parent version
         run: |
-          PARENT_VERSION=$(mvn -B -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          PARENT_VERSION=$(./mvnw -B -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
       - name: Is SNAPSHOT release ?
         if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
@@ -182,11 +178,11 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: mvn clean install -B -q
+        run: ./mvnw clean install -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
-          mvn -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
+          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples

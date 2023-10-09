@@ -1,13 +1,13 @@
 package io.dapr.client.domain;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class SaveStateRequestTest {
 
@@ -24,11 +24,11 @@ public class SaveStateRequestTest {
     request.setStates(states);
     List<State<?>> initial = request.getStates();
     request.setStates(states);
-    assertNotSame("Should not be same list", request.getStates(), initial);
+    assertNotSame( request.getStates(), initial, "Should not be same list");
 
     // With var args method
     request.setStates(new State<>("test var args 1"), new State<>("test var args 2"));
-    assertEquals("Value incorrectly set", "test var args 1", request.getStates().get(0).getKey());
-    assertEquals("Value incorrectly set", "test var args 2", request.getStates().get(1).getKey());
+    assertEquals("test var args 1", request.getStates().get(0).getKey(), "Value incorrectly set");
+    assertEquals("test var args 2", request.getStates().get(1).getKey(), "Value incorrectly set");
   }
 }
