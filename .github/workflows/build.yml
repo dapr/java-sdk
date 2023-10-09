@@ -113,18 +113,18 @@ jobs:
         chmod +x /home/runner/.local/bin/toxiproxy-server
         /home/runner/.local/bin/toxiproxy-server --version
     - name: Clean up files
-      run: mvn clean -B
+      run: ./mvnw clean -B
     - name: Build sdk
-      run: mvn compile -B -q
+      run: ./mvnw compile -B -q
     - name: Unit tests
-      run: mvn -B test -q
+      run: ./mvnw -B test -q
     - name: Codecov
       uses: codecov/codecov-action@v3.1.4
     - name: Install jars
-      run: mvn install -q -B -DskipTests
+      run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} mvn -B -f sdk-tests/pom.xml verify
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -f sdk-tests/pom.xml verify
     - name: Upload test report for sdk
       uses: actions/upload-artifact@master
       with:
@@ -166,7 +166,7 @@ jobs:
           java-version: ${{ env.JDK_VER }}
       - name: Get pom parent version
         run: |
-          PARENT_VERSION=$(mvn -B -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          PARENT_VERSION=$(./mvnw -B -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "PARENT_VERSION=$PARENT_VERSION" >> $GITHUB_ENV
       - name: Is SNAPSHOT release ?
         if: contains(github.ref, 'master') && contains(env.PARENT_VERSION, '-SNAPSHOT')
@@ -178,11 +178,11 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: mvn clean install -B -q
+        run: ./mvnw clean install -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
-          mvn -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
+          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
