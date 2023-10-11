@@ -1,0 +1,6 @@
+<FindBugsFilter>
+    <!--Ignoring checking for examples-->
+    <Match>
+        <Package name="~io\.dapr\.examples.*"/>
+    </Match>
+</FindBugsFilter>
