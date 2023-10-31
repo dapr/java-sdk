@@ -13,10 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
-import com.microsoft.durabletask.DurableTaskClient;
-import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
-import com.microsoft.durabletask.OrchestrationMetadata;
-import com.microsoft.durabletask.PurgeResult;
+import com.microsoft.durabletask.*;
 import io.dapr.client.Headers;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
@@ -117,6 +114,18 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
     return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+  }
+
+  /**
+   * Schedules a new workflow with a specified set of options for execution.
+   *
+   * @param <T>        any Workflow type
+   * @param clazz      Class extending Workflow to start an instance of.
+   * @param options the options for the new workflow, including input, instance ID, etc.
+   * @return the <code>instanceId</code> parameter value.
+   */
+  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOption options) {
+    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), options.getNewOrchestrationInstanceOptions());
   }
 
   /**
