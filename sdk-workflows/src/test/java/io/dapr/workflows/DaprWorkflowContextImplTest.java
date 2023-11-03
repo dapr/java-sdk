@@ -207,4 +207,10 @@ public class DaprWorkflowContextImplTest {
     context.callSubWorkflow(expectedName, expectedInput, String.class);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
   }
+
+  @Test
+  public void newUuidTest() {
+    context.newUuid();
+    verify(mockInnerContext, times(1)).newUUID();
+  }
 }
