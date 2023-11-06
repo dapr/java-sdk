@@ -54,19 +54,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     ...
   </dependencies>
@@ -80,11 +80,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.9.0')
+    compile('io.dapr:dapr-sdk:1.10.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.9.0')
+    compile('io.dapr:dapr-sdk-actors:1.10.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.9.0')
+    compile('io.dapr:dapr-sdk-springboot:1.10.0')
 }
 ```
 
@@ -99,7 +99,7 @@ Then head over to build the [Maven](https://maven.apache.org/install.html) (Apac
 
 ```sh
 # make sure you are in the `java-sdk` directory.
-mvn clean install
+./mvnw clean install
 ```
 
 Try the following examples to learn more about Dapr's Java SDK:
@@ -196,7 +196,8 @@ Most exceptions thrown from the SDK are instances of `DaprException`. `DaprExcep
 ### Update URL to fetch proto files
 
 Change the `dapr.proto.baseurl` property below in [pom.xml](./pom.xml) to point to the URL for the desired commit hash in Git if you need to target a proto file that is not been merged into master yet. 
-Note: You may need to run `mvn clean` after changing this setting to remove any auto-generated files, so that the new proto files get downloaded and compiled.
+
+Note: You may need to run `./mvnw clean` after changing this setting to remove any auto-generated files so that the new proto files get downloaded and compiled.
 
 ```xml
 <project>
@@ -229,7 +230,8 @@ Note: You may need to run `mvn clean` after changing this setting to remove any 
 The code for the tests are present inside the project [sdk-tests](./sdk-tests). This module alone can be imported as a separate project in IDEs. 
 This project depends on the rest of the JARs built by the other modules in the repo like [sdk](./sdk), [sdk-springboot](./sdk-springboot) etc.
 
-As a starting point for running the Integration Tests, first run `mvn clean install` from the root of the repo to build the JARs for the different modules, except the `sdk-tests` module.
+As a starting point for running Integration Tests, first run `./mvnw clean install` from the root of the repo to build the JARs for the different modules
+except the `sdk-tests` module.
 
 #### Run all the dependent services spun up during build
 
@@ -256,7 +258,7 @@ From the `java-sdk` repo root, change to the `sdk-tests` directory and run the f
 ```bash
 ## with current directory as /java-sdk/sdk-tests/
 
-mvn clean install
+../mvnw clean install
 ```
 
 The above command runs all the integration tests present in the `sdk-tests` project. 
