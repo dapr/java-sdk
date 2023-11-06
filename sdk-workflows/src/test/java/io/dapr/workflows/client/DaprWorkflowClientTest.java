@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
@@ -104,6 +105,19 @@ public class DaprWorkflowClientTest {
 
     verify(mockInnerClient, times(1))
         .scheduleNewOrchestrationInstance(expectedName, expectedInput, expectedInstanceId);
+  }
+
+  @Test
+  public void scheduleNewWorkflowWithNewWorkflowOption() {
+    String expectedName = TestWorkflow.class.getCanonicalName();
+    Object expectedInput = new Object();
+    NewWorkflowOption newWorkflowOption = new NewWorkflowOption();
+    newWorkflowOption.setInput(expectedInput).setStartTime(Instant.now());
+
+    client.scheduleNewWorkflow(TestWorkflow.class, newWorkflowOption);
+
+    verify(mockInnerClient, times(1))
+        .scheduleNewOrchestrationInstance(expectedName, newWorkflowOption.getNewOrchestrationInstanceOptions());
   }
 
   @Test
