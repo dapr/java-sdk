@@ -13,13 +13,21 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.config.Properties;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
+import okhttp3.mock.Behavior;
+import okhttp3.mock.MockInterceptor;
+import org.junit.Before;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -36,6 +44,16 @@ public class GrpcChannelFacadeTest {
   private static int port;
 
   public static Server server;
+
+  private MockInterceptor mockInterceptor;
+
+  /**
+   * Enable the waitForSidecar to allow the gRPC to check the http endpoint for the health check
+   */
+  @BeforeEach
+  public void setUp() {
+    mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
+  }
 
   @BeforeAll
   public static void setup() throws IOException {
@@ -73,13 +91,19 @@ public class GrpcChannelFacadeTest {
 
   @Test
   public void waitForSidecarOK() {
-      ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
-          .usePlaintext().build();
-      final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
-      
-      StepVerifier.create(channelFacade.waitForChannelReady(10000))
-            .expectComplete()
-            .verify();
-  }
+    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
+        .usePlaintext().build();
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
 
+    // add since this is doing a check against the http health check endpoint
+    // for parity with dotnet
+    mockInterceptor.addRule()
+          .get()
+          .path("/v1.0/healthz/outbound")
+          .respond(204, ResponseBody.create("No Content", MediaType.get("application/json")));
+
+    StepVerifier.create(channelFacade.waitForChannelReady(4000))
+          .expectComplete()
+          .verify();
+  }
 }
