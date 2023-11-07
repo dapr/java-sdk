@@ -13,13 +13,16 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 
 /**
  * Facade for common operations on gRPC channel.
@@ -60,48 +63,24 @@ class GrpcChannelFacade implements Closeable {
   }
 
   public Mono<Void> waitForChannelReady(int timeoutInMilliseconds) {
-    return Mono.create(emitter -> {
-      boolean isReady = false;
-      long startTime = System.currentTimeMillis();
-      while (!isReady && System.currentTimeMillis() - startTime < timeoutInMilliseconds) {
-        isReady = checkHealthz();
-        if (!isReady) {
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            emitter.error(new RuntimeException("Waiting for health check interrupted.", e));
-            return;
-          }
-        }
-      }
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
+    int maxRetries = 5;
 
-      if (isReady) {
-        emitter.success();
-      } else {
-        emitter.error(new RuntimeException("Timeout waiting for health check to be ready."));
-      }
-    });
-  }
+    Retry retrySpec = Retry
+            .fixedDelay(maxRetries, Duration.ofMillis(500))
+            .doBeforeRetry(retrySignal -> {
+              System.out.println("Retrying component health check...");
+            });
+    // Do the Dapr Http endpoint check to have parity with Dotnet
+    Mono<DaprHttp.Response> responseMono = this.daprHttpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+            null, "", null, null);
 
-  private boolean checkHealthz() {
-    try {
-      String[] pathSegments = new String[] {DaprHttp.API_VERSION, "healthz", "outbound"};
-      Mono<DaprHttp.Response> responseMono = this.daprHttpClient.invokeApi(
-              DaprHttp.HttpMethods.GET.name(), pathSegments,
-              null, "", null, null);
-
-      return responseMono
-              .flatMap(response -> {
-                int statusCode = response.getStatusCode();
-
-                // Return true if the status code is in the 2xx range
-                return statusCode >= 200 && statusCode < 300 ? Mono.just(true) : Mono.just(false);
-              })
-              .block(); // Block to get the result
-
-    } catch (Exception e) {
-      return false;
-    }
+    return responseMono
+            .retryWhen(retrySpec)
+            .timeout(Duration.ofMillis(timeoutInMilliseconds))
+            .onErrorResume(DaprException.class, e ->
+                    Mono.error(new RuntimeException(e)))
+            .switchIfEmpty(Mono.error(new RuntimeException("Health check timed out")))
+            .then();
   }
 }

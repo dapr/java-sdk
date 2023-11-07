@@ -143,9 +143,10 @@ public class DaprClientHttp extends AbstractDaprClient {
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
     return Mono.defer(() -> {
       String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
+      int maxRetries = 5;
 
       Retry retrySpec = Retry
-              .fixedDelay(5, Duration.ofMillis(500))
+              .fixedDelay(maxRetries, Duration.ofMillis(500))
               .doBeforeRetry(retrySignal -> {
                 System.out.println("Retrying component health check...");
               });

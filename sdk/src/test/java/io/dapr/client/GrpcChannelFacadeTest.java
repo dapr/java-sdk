@@ -21,8 +21,12 @@ import io.grpc.ServerBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,12 +55,20 @@ public class GrpcChannelFacadeTest {
 
   @Test
   public void waitForSidecarTimeout() throws Exception {
+    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
+    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
+    int timeoutInMilliseconds = 1000;
+
     int unusedPort = findFreePort();
     ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", unusedPort)
         .usePlaintext().build();
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
 
-    assertThrows(RuntimeException.class, () -> channelFacade.waitForChannelReady(1).block());
+    StepVerifier.create(channelFacade.waitForChannelReady(timeoutInMilliseconds))
+            .expectSubscription()
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(timeoutInMilliseconds + timeoutInMilliseconds))) // Advance time to trigger the timeout
+            .expectError(TimeoutException.class)
+            .verify();
   }
 
   @Test
@@ -64,7 +76,10 @@ public class GrpcChannelFacadeTest {
       ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
           .usePlaintext().build();
       final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
-      channelFacade.waitForChannelReady(10000).block();
+      
+      StepVerifier.create(channelFacade.waitForChannelReady(10000))
+            .expectComplete()
+            .verify();
   }
 
 }
