@@ -82,12 +82,13 @@ class GrpcChannelFacade implements Closeable {
         emitter.error(new RuntimeException("Timeout waiting for health check to be ready."));
       }
     });
-}
+  }
 
   private boolean checkHealthz() {
     try {
       String[] pathSegments = new String[] {DaprHttp.API_VERSION, "healthz", "outbound"};
-      Mono<DaprHttp.Response> responseMono = this.daprHttpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+      Mono<DaprHttp.Response> responseMono = this.daprHttpClient.invokeApi(
+              DaprHttp.HttpMethods.GET.name(), pathSegments,
               null, "", null, null);
 
       return responseMono
@@ -103,4 +104,4 @@ class GrpcChannelFacade implements Closeable {
       return false;
     }
   }
-  }
+}
