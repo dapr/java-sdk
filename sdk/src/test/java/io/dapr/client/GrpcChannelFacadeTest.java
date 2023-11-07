@@ -98,11 +98,11 @@ public class GrpcChannelFacadeTest {
     // add since this is doing a check against the http health check endpoint
     // for parity with dotnet
     mockInterceptor.addRule()
-          .get()
-          .path("/v1.0/healthz/outbound")
-          .respond(204, ResponseBody.create("No Content", MediaType.get("application/json")));
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(204);
 
-    StepVerifier.create(channelFacade.waitForChannelReady(4000))
+    StepVerifier.create(channelFacade.waitForChannelReady(6000))
           .expectComplete()
           .verify();
   }

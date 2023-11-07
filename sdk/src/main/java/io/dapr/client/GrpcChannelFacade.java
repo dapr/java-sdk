@@ -80,7 +80,7 @@ class GrpcChannelFacade implements Closeable {
             .timeout(Duration.ofMillis(timeoutInMilliseconds))
             .onErrorResume(DaprException.class, e ->
                     Mono.error(new RuntimeException(e)))
-            .switchIfEmpty(Mono.error(new RuntimeException("Health check timed out")))
+            .switchIfEmpty(DaprException.wrapMono(new RuntimeException("Health check timed out")))
             .then();
   }
 }
