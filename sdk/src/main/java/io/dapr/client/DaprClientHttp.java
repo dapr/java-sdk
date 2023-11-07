@@ -53,8 +53,10 @@ import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -140,21 +142,24 @@ public class DaprClientHttp extends AbstractDaprClient {
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
     return Mono.defer(() -> {
-      try {
-        String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
+      String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
 
-        Mono<DaprHttp.Response> responseMono = this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
-                null, "", null, null);
-        responseMono.block();
+      Retry retrySpec = Retry
+              .fixedDelay(5, Duration.ofMillis(500))
+              .doBeforeRetry(retrySignal -> {
+                System.out.println("Retrying component health check...");
+              });
 
-        NetworkUtils.waitForSocket(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), timeoutInMilliseconds);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      } catch (DaprException e) {
-        throw new IllegalStateException(String.format("Components aren't initialized"));
-      }
+      Mono<DaprHttp.Response> responseMono = this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+              null, "", null, null);
 
-      return Mono.empty();
+      return responseMono
+              .retryWhen(retrySpec)
+              .timeout(Duration.ofMillis(timeoutInMilliseconds))
+              .onErrorResume(DaprException.class, e ->
+                      Mono.error(new RuntimeException(e)))
+              .switchIfEmpty(DaprException.wrapMono(new RuntimeException("Health check timed out")))
+              .then();
     });
   }
 

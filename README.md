@@ -166,9 +166,9 @@ This SDK provides a basic serialization for request/response objects, and state 
 
 ### Debug a Java application or Dapr's Java SDK
 
-**In IntelliJ Community Edition, consider [debugging in IntelliJ](https://www.jetbrains.com/help/idea/debugging-your-first-java-application.html).**
+**In IntelliJ Community Edition, consider [debugging in IntelliJ](https://docs.dapr.io/developing-applications/local-development/ides/intellij/).**
 
-**In Visual Studio Code, consider [debugging in Visual Studio Code](https://code.visualstudio.com/docs/editor/debugging).**
+**In Visual Studio Code, consider [debugging in Visual Studio Code](https://docs.dapr.io/developing-applications/local-development/ides/vscode/).**
 
 If you need to debug your Application, run the Dapr sidecar separately, and then start the application from your IDE (IntelliJ or Eclipse, for example).
 For Linux and MacOS:
@@ -189,7 +189,7 @@ Now you can go to your IDE and debug your Java application, using port `3500` to
 
 ### Exception handling
 
-Most exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extended from `RuntimeException`, making it compatible with Project Reactor. See the [exception example](./examples/src/main/java/io/dapr/examples/exception) for more details.
+Most exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extends from `RuntimeException`, making it compatible with Project Reactor. See the [exception example](./examples/src/main/java/io/dapr/examples/exception) for more details.
 
 ## Development
 
@@ -230,8 +230,7 @@ Note: You may need to run `./mvnw clean` after changing this setting to remove a
 The code for the tests are present inside the project [sdk-tests](./sdk-tests). This module alone can be imported as a separate project in IDEs. 
 This project depends on the rest of the JARs built by the other modules in the repo like [sdk](./sdk), [sdk-springboot](./sdk-springboot) etc.
 
-As a starting point for running Integration Tests, first run `./mvnw clean install` from the root of the repo to build the JARs for the different modules
-except the `sdk-tests` module.
+As a starting point for running the Integration Tests, first run `./mvnw clean install` from the root of the repo to build the JARs for the different modules, except the `sdk-tests` module.
 
 #### Run all the dependent services spun up during build
 

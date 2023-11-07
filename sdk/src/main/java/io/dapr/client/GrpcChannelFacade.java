@@ -34,6 +34,11 @@ class GrpcChannelFacade implements Closeable {
    */
   private final ManagedChannel channel;
 
+  /**
+   * The reference to the DaprHttp client.
+   */
+  private final DaprHttp daprHttpClient = new DaprHttpBuilder().build();
+
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -45,6 +50,8 @@ class GrpcChannelFacade implements Closeable {
     this.channel = channel;
   }
 
+
+
   @Override
   public void close() throws IOException {
     if (channel != null && !channel.isShutdown()) {
@@ -53,24 +60,47 @@ class GrpcChannelFacade implements Closeable {
   }
 
   public Mono<Void> waitForChannelReady(int timeoutInMilliseconds) {
-    return Mono.fromRunnable(() -> {
+    return Mono.create(emitter -> {
       boolean isReady = false;
       long startTime = System.currentTimeMillis();
       while (!isReady && System.currentTimeMillis() - startTime < timeoutInMilliseconds) {
-        isReady = this.channel.getState(true) == ConnectivityState.READY;
+        isReady = checkHealthz();
         if (!isReady) {
           try {
             Thread.sleep(500);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Waiting for gRPC channel ready interrupted.", e);
+            emitter.error(new RuntimeException("Waiting for health check interrupted.", e));
+            return;
           }
         }
       }
 
-      if (!isReady) {
-        throw new RuntimeException("Timeout waiting for gRPC channel to be ready.");
+      if (isReady) {
+        emitter.success();
+      } else {
+        emitter.error(new RuntimeException("Timeout waiting for health check to be ready."));
       }
     });
-  }
 }
+
+  private boolean checkHealthz() {
+    try {
+      String[] pathSegments = new String[] {DaprHttp.API_VERSION, "healthz", "outbound"};
+      Mono<DaprHttp.Response> responseMono = this.daprHttpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+              null, "", null, null);
+
+      return responseMono
+              .flatMap(response -> {
+                int statusCode = response.getStatusCode();
+
+                // Return true if the status code is in the 2xx range
+                return statusCode >= 200 && statusCode < 300 ? Mono.just(true) : Mono.just(false);
+              })
+              .block(); // Block to get the result
+
+    } catch (Exception e) {
+      return false;
+    }
+  }
+  }

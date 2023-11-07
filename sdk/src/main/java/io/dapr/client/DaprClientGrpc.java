@@ -32,7 +32,6 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
@@ -43,8 +42,6 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.UnlockRequest;
-import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
@@ -782,97 +779,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
-      });
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<Boolean> tryLock(LockRequest request) {
-    try {
-      final String stateStoreName = request.getStoreName();
-      final String resourceId = request.getResourceId();
-      final String lockOwner = request.getLockOwner();
-      final Integer expiryInSeconds = request.getExpiryInSeconds();
-
-      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("State store name cannot be null or empty.");
-      }
-      if (resourceId == null || resourceId.isEmpty()) {
-        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
-      }
-      if (lockOwner == null || lockOwner.isEmpty()) {
-        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
-      }
-      if (expiryInSeconds < 0) {
-        throw new IllegalArgumentException("ExpiryInSeconds cannot be negative.");
-      }
-
-      DaprProtos.TryLockRequest.Builder builder = DaprProtos.TryLockRequest.newBuilder()
-              .setStoreName(stateStoreName)
-              .setResourceId(resourceId)
-              .setLockOwner(lockOwner)
-              .setExpiryInSeconds(expiryInSeconds);
-
-      DaprProtos.TryLockRequest tryLockRequest = builder.build();
-
-      return Mono.deferContextual(
-              context -> this.<DaprProtos.TryLockResponse>createMono(
-                      it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)
-              )
-      ).flatMap(response -> {
-        try {
-          return Mono.just(response.getSuccess());
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
-      });
-    } catch (Exception ex) {
-      return DaprException.wrapMono(ex);
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Mono<UnlockResponseStatus> unlock(UnlockRequest request) {
-    try {
-      final String stateStoreName = request.getStoreName();
-      final String resourceId = request.getResourceId();
-      final String lockOwner = request.getLockOwner();
-
-      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
-        throw new IllegalArgumentException("State store name cannot be null or empty.");
-      }
-      if (resourceId == null || resourceId.isEmpty()) {
-        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
-      }
-      if (lockOwner == null || lockOwner.isEmpty()) {
-        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
-      }
-
-      DaprProtos.UnlockRequest.Builder builder = DaprProtos.UnlockRequest.newBuilder()
-              .setStoreName(stateStoreName)
-              .setResourceId(resourceId)
-              .setLockOwner(lockOwner);
-
-      DaprProtos.UnlockRequest unlockRequest = builder.build();
-
-      return Mono.deferContextual(
-              context -> this.<DaprProtos.UnlockResponse>createMono(
-                      it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)
-              )
-      ).flatMap(response -> {
-        try {
-          return Mono.just(UnlockResponseStatus.valueOf(response.getStatus().getNumber()));
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
       });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
