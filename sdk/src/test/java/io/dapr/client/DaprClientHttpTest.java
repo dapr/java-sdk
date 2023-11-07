@@ -209,7 +209,7 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void waitForSidecarTimeout() throws Exception {
+  public void waitForSidecarSuccess() throws Exception {
     int port = findFreePort();
     System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
@@ -220,9 +220,10 @@ public class DaprClientHttpTest {
             .path("/v1.0/healthz/outbound")
             .respond(204);
 
-
-    assertThrows(RuntimeException.class, () -> daprClientHttp.waitForSidecar(1).block());
-  }
+    StepVerifier.create(daprClientHttp.waitForSidecar(20))
+            .expectSubscription()
+            .expectComplete()
+            .verify();  }
 
   @Test
   public void waitForSidecarTimeoutOK() throws Exception {
