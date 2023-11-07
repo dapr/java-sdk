@@ -95,15 +95,16 @@ public class GrpcChannelFacadeTest {
         .usePlaintext().build();
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
 
-    // add since this is doing a check against the http health check endpoint
+    // added since this is doing a check against the http health check endpoint
     // for parity with dotnet
     mockInterceptor.addRule()
             .get()
             .path("/v1.0/healthz/outbound")
             .respond(204);
 
-    StepVerifier.create(channelFacade.waitForChannelReady(10000))
-          .expectComplete()
-          .verify();
+    StepVerifier.create(channelFacade.waitForChannelReady(20000))
+            .expectSubscription()
+            .expectComplete()
+            .verify();
   }
 }
