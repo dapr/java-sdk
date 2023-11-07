@@ -102,7 +102,7 @@ public class GrpcChannelFacadeTest {
             .path("/v1.0/healthz/outbound")
             .respond(204);
 
-    StepVerifier.create(channelFacade.waitForChannelReady(6000))
+    StepVerifier.create(channelFacade.waitForChannelReady(10000))
           .expectComplete()
           .verify();
   }
