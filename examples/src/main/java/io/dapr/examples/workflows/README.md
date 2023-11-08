@@ -125,6 +125,26 @@ public class ToUpperCaseActivity implements WorkflowActivity {
   }
 }
 ```
+<!-- STEP
+name: Run Chaining Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Starting Workflow: io.dapr.examples.workflows.chain.DemoChainWorkflow'
+  - 'Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
+  - 'Message Received from input: Tokyo'
+  - 'Sending message to output: TOKYO'
+  - 'Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
+  - 'Message Received from input: London'
+  - 'Sending message to output: LONDON'
+  - 'Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
+  - 'Message Received from input: Seattle'
+  - 'Sending message to output: SEATTLE'
+  - 'Workflow finished with result: TOKYO, LONDON, SEATTLE'
+background: true
+sleep: 10
+timeout_seconds: 45
+-->
 Execute the following script in order to run DemoChainWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker
@@ -140,6 +160,7 @@ Then, execute the following script in order to run DemoChainClient:
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient
 ```
+<!-- END_STEP -->
 
 Now you can see the worker logs showing the acitvity is invoked in sequnce and the status of each activity:
 ```text
@@ -216,6 +237,32 @@ public class CountWordsActivity implements WorkflowActivity {
 }
 ```
 
+<!-- STEP
+name: Run Fan-out/Fan-in Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Starting Workflow: io.dapr.examples.workflows.faninout.DemoFanInOutWorkflow'
+  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
+  - 'Activity returned: 2'
+  - 'Activity finished'
+  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
+  - 'Activity returned: 9'
+  - 'Activity finished'
+  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
+  - 'Activity returned: 21'
+  - 'Activity finished'
+  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
+  - 'Activity returned: 17'
+  - 'Activity finished'
+  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
+  - 'Activity returned: 11'
+  - 'Activity finished - Workflow finished with result: 60'
+background: true
+sleep: 10
+timeout_seconds: 45
+-->
+
 Execute the following script in order to run DemoFanInOutWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
@@ -224,6 +271,7 @@ Execute the following script in order to run DemoFanInOutClient:
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient
 ```
+<!-- END_STEP -->
 
 Now you can see the logs from worker:
 ```text
@@ -305,6 +353,20 @@ public class CleanUpActivity implements WorkflowActivity {
 }
 ```
 
+<!-- STEP
+name: Run Continue As New Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow'
+  - 'call CleanUpActivity to do the clean up'
+  - 'Starting Activity: io.dapr.examples.workflows.continueasnew.CleanUpActivity'
+  - 'start clean up work, it may take few seconds to finish...'
+background: true
+sleep: 20
+timeout_seconds: 45 
+-->
+
 Once you start the workflow and client using the following commands:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorker
@@ -312,6 +374,8 @@ dapr run --app-id demoworkflowworker --resources-path ./components/workflows --d
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewClient
 ````
+<!-- END_STEP -->
+
 You will see the logs from worker showing the `CleanUpActivity` is invoked every 10 seconds after previous one is finished:
 ```text
 == APP == 2023-11-07 14:44:42,004 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorkflow
@@ -373,6 +437,36 @@ In the `DemoExternalEventClient` class we send out Approval event to tell our wo
 ```java
 client.raiseEvent(instanceId, "Approval", true);
 ```
+
+Start the workflow and client using the following commands:
+
+<!-- STEP
+name: Run External Event Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Starting Workflow: io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow'
+  - 'Waiting for approval...'
+  - 'approval granted - do the approved action'
+  - 'Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity'
+  - 'Running approval activity...'
+  - 'approval-activity finished'
+
+background: true
+sleep: 20
+timeout_seconds: 45 
+-->
+
+ex
+```sh
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
+```
+
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventClient
+```
+
+<!-- END_STEP -->
 
 The worker logs:
 ```text
@@ -455,6 +549,40 @@ public class ReverseActivity implements WorkflowActivity {
   }
 }
 ```
+
+Start the workflow and client using the following commands:
+
+<!-- STEP
+name: Run Sub-workflow Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+ - 'Starting Workflow: io.dapr.examples.workflows.subworkflow.DemoWorkflow'
+ - 'calling subworkflow with input: Hello Dapr Workflow!'
+ - 'Starting SubWorkflow: io.dapr.examples.workflows.subworkflow.DemoSubWorkflow'
+ - 'SubWorkflow received input: Hello Dapr Workflow!'
+ - 'SubWorkflow is calling Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity'
+ - 'Starting Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity'
+ - 'Message Received from input: Hello Dapr Workflow!'
+ - 'Sending message to output: !wolfkroW rpaD olleH'
+ - 'SubWorkflow finished with: !wolfkroW rpaD olleH'
+ - 'subworkflow finished with: !wolfkroW rpaD olleH'
+
+background: true
+sleep: 20
+timeout_seconds: 45 
+-->
+
+ex
+```sh
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
+```
+
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventClient
+```
+
+<!-- END_STEP -->
 
 The log from worker:
 ```text
