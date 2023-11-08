@@ -147,18 +147,12 @@ Now you can see the worker logs showing the acitvity is invoked in sequnce and t
 == APP == 2023-11-07 11:03:14,229 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
 == APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Tokyo
 == APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: TOKYO
-== APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Activity returned: TOKYO
-== APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Activity finished
 == APP == 2023-11-07 11:03:14,266 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
 == APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: London
 == APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: LONDON
-== APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Activity returned: LONDON
-== APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Activity finished
 == APP == 2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
 == APP == 2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Seattle
 == APP == 2023-11-07 11:03:14,283 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: SEATTLE
-== APP == 2023-11-07 11:03:14,283 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Activity returned: SEATTLE
-== APP == 2023-11-07 11:03:14,283 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Activity finished
 == APP == 2023-11-07 11:03:14,298 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Workflow finished with result: TOKYO, LONDON, SEATTLE
 ```
 and the client logs showing the workflow is started and finished with expected result:
@@ -259,13 +253,16 @@ workflow instance with ID: 092c1928-b5dd-4576-9468-300bf6aed986 completed with r
 ```
 
 ### Continue As New Pattern
-`ContinueAsNew` API allows you to estart the workflow.
+`ContinueAsNew` API allows you to restart the workflow with a new input.
 
-The `DemoContinueAsNewWorkflow` class defines the workflow. It simulates a periodic clean up work that happen every 10 seconds after previous one is finished. See the code snippet below:
+The `DemoContinueAsNewWorkflow` class defines the workflow. It simulates periodic cleanup work that happen every 10 seconds, after previous cleanup has finished. See the code snippet below:
 ```java
 public class DemoContinueAsNewWorkflow extends Workflow {
   /*
-  In this example, however, if the cleanup takes 30 minutes,
+  Compared with a CRON schedule, this periodic workflow example will never overlap.
+  For example, a CRON schedule that executes a cleanup every hour will execute it at 1:00, 2:00, 3:00 etc.
+  and could potentially run into overlap issues if the cleanup takes longer than an hour.
+  In this example, however, if the cleanup takes 30 minutes, and we create a timer for 1 hour between cleanups,
   then it will be scheduled at 1:00, 2:30, 4:00, etc. and there is no chance of overlap.
    */
   @Override
@@ -461,18 +458,16 @@ public class ReverseActivity implements WorkflowActivity {
 
 The log from worker:
 ```text
-== APP == 2023-11-07 17:17:10,686 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.subworkflow.DemoWorkflow
-== APP == 2023-11-07 17:17:10,689 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling subworkflow with input: Hello Dapr Workflow!
-== APP == 2023-11-07 17:17:10,731 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting SubWorkflow: io.dapr.examples.workflows.subworkflow.DemoSubWorkflow
-== APP == 2023-11-07 17:17:10,735 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow received input: Hello Dapr Workflow!
-== APP == 2023-11-07 17:17:10,735 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow is calling Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
-== APP == 2023-11-07 17:17:10,749 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
-== APP == 2023-11-07 17:17:10,749 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
-== APP == 2023-11-07 17:17:10,749 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
-== APP == 2023-11-07 17:17:10,749 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Activity returned: !wolfkroW rpaD olleH
-== APP == 2023-11-07 17:17:10,749 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Activity finished
-== APP == 2023-11-07 17:17:10,768 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow finished with: !wolfkroW rpaD olleH
-== APP == 2023-11-07 17:17:10,797 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - subworkflow finished with: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,521 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.subworkflow.DemoWorkflow
+== APP == 2023-11-07 20:08:52,523 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling subworkflow with input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,561 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting SubWorkflow: io.dapr.examples.workflows.subworkflow.DemoSubWorkflow
+== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow received input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow is calling Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
+== APP == 2023-11-07 20:08:52,576 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
+== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,596 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow finished with: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,611 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - subworkflow finished with: !wolfkroW rpaD olleH
 ```
 
 The log from client:

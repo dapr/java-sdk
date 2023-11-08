@@ -33,7 +33,5 @@ public class DemoFanInOutWorker {
       System.out.println("Start workflow runtime");
       runtime.start();
     }
-
-    System.exit(0);
   }
 }

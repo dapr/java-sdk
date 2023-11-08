@@ -33,7 +33,5 @@ public class DemoChainWorker {
       System.out.println("Start workflow runtime");
       runtime.start();
     }
-
-    System.exit(0);
   }
 }

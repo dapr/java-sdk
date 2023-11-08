@@ -32,9 +32,6 @@ public class ToUpperCaseActivity implements WorkflowActivity {
     logger.info("Message Received from input: " + message);
     logger.info("Sending message to output: " + newMessage);
 
-    logger.info("Activity returned: " + newMessage);
-    logger.info("Activity finished");
-
     return newMessage;
   }
 }

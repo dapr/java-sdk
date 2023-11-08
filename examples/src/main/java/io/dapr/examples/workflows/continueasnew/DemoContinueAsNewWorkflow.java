@@ -20,7 +20,10 @@ import java.time.Duration;
 
 public class DemoContinueAsNewWorkflow extends Workflow {
   /*
-  In this example, however, if the cleanup takes 30 minutes,
+  Compared with a CRON schedule, this periodic workflow example will never overlap.
+  For example, a CRON schedule that executes a cleanup every hour will execute it at 1:00, 2:00, 3:00 etc.
+  and could potentially run into overlap issues if the cleanup takes longer than an hour.
+  In this example, however, if the cleanup takes 30 minutes, and we create a timer for 1 hour between cleanups,
   then it will be scheduled at 1:00, 2:30, 4:00, etc. and there is no chance of overlap.
    */
   @Override

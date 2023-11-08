@@ -35,7 +35,5 @@ public class DemoSubWorkflowWorker {
       System.out.println("Start workflow runtime");
       runtime.start();
     }
-
-    System.exit(0);
   }
 }
