@@ -11,43 +11,30 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows;
+package io.dapr.examples.workflows.chain;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import io.dapr.workflows.runtime.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowActivityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class DemoWorkflowActivity implements WorkflowActivity {
+public class ToUpperCaseActivity implements WorkflowActivity {
 
   @Override
-  public DemoActivityOutput run(WorkflowActivityContext ctx) {
-    Logger logger = LoggerFactory.getLogger(DemoWorkflowActivity.class);
+  public Object run(WorkflowActivityContext ctx) {
+    Logger logger = LoggerFactory.getLogger(ToUpperCaseActivity.class);
     logger.info("Starting Activity: " + ctx.getName());
 
-    var message = ctx.getInput(DemoActivityInput.class).getMessage();
-    var newMessage = message + " World!, from Activity";
+    var message = ctx.getInput(String.class);
+    var newMessage = message.toUpperCase();
+
     logger.info("Message Received from input: " + message);
     logger.info("Sending message to output: " + newMessage);
 
-    logger.info("Sleeping for 5 seconds to simulate long running operation...");
-
-    try {
-      TimeUnit.SECONDS.sleep(5);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-
-
+    logger.info("Activity returned: " + newMessage);
     logger.info("Activity finished");
 
-    var output = new DemoActivityOutput(message, newMessage);
-    logger.info("Activity returned: " + output);
-
-    return output;
+    return newMessage;
   }
 }
