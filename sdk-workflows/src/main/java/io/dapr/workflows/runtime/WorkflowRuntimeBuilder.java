@@ -16,10 +16,19 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRuntimeBuilder.class);
+  private static volatile Set<String> activity_Set = new HashSet<String>(); 
+  private static volatile Set<String> workflow_Set = new HashSet<String>(); 
+
 
   public WorkflowRuntimeBuilder() {
     this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(NetworkUtils.buildGrpcManagedChannel());
@@ -38,6 +47,8 @@ public class WorkflowRuntimeBuilder {
         }
       }
     }
+    LOGGER.info("List of registered workflows: " + workflow_Set);
+    LOGGER.info("List of registered activites: " + activity_Set);
     return instance;
   }
 
@@ -52,7 +63,7 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addOrchestration(
         new OrchestratorWrapper<>(clazz)
     );
-
+    WorkflowRuntimeBuilder.workflow_Set.add(clazz.getCanonicalName());
     return this;
   }
 
@@ -66,5 +77,6 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addActivity(
         new ActivityWrapper<>(clazz)
     );
+    WorkflowRuntimeBuilder.activity_Set.add(clazz.getCanonicalName());
   }
 }
