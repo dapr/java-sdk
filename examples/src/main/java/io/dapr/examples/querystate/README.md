@@ -4,7 +4,7 @@ This sample illustrates the capabilities provided by Dapr Java SDK for querying 
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
