@@ -131,19 +131,18 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
   - 'Starting Workflow: io.dapr.examples.workflows.chain.DemoChainWorkflow'
-  - 'Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
+  - 'Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
   - 'Message Received from input: Tokyo'
   - 'Sending message to output: TOKYO'
-  - 'Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
+  - 'Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
   - 'Message Received from input: London'
   - 'Sending message to output: LONDON'
-  - 'Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
+  - 'Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity'
   - 'Message Received from input: Seattle'
   - 'Sending message to output: SEATTLE'
   - 'Workflow finished with result: TOKYO, LONDON, SEATTLE'
 background: true
-sleep: 10
-timeout_seconds: 45
+sleep: 20
 -->
 Execute the following script in order to run DemoChainWorker:
 ```sh
@@ -165,13 +164,13 @@ java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chai
 Now you can see the worker logs showing the acitvity is invoked in sequnce and the status of each activity:
 ```text
 == APP == 2023-11-07 11:03:14,178 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.chain.DemoChainWorkflow
-== APP == 2023-11-07 11:03:14,229 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
+== APP == 2023-11-07 11:03:14,229 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
 == APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Tokyo
 == APP == 2023-11-07 11:03:14,235 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: TOKYO
-== APP == 2023-11-07 11:03:14,266 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
+== APP == 2023-11-07 11:03:14,266 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
 == APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: London
 == APP == 2023-11-07 11:03:14,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: LONDON
-== APP == 2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Chaining Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
+== APP == 2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Starting Activity: io.dapr.examples.workflows.chain.ToUpperCaseActivity
 == APP == 2023-11-07 11:03:14,282 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Message Received from input: Seattle
 == APP == 2023-11-07 11:03:14,283 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.chain.ToUpperCaseActivity - Sending message to output: SEATTLE
 == APP == 2023-11-07 11:03:14,298 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Workflow finished with result: TOKYO, LONDON, SEATTLE
@@ -259,8 +258,7 @@ expected_stdout_lines:
   - 'Activity returned: 11'
   - 'Activity finished - Workflow finished with result: 60'
 background: true
-sleep: 10
-timeout_seconds: 45
+sleep: 20
 -->
 
 Execute the following script in order to run DemoFanInOutWorker:
@@ -439,7 +437,6 @@ expected_stdout_lines:
 
 background: true
 sleep: 20
-timeout_seconds: 45 
 -->
 
 ex
@@ -555,16 +552,15 @@ expected_stdout_lines:
 
 background: true
 sleep: 20
-timeout_seconds: 45 
 -->
 
 ex
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkflowWorker
 ```
 
 ```sh
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkerflowClient
 ```
 
 <!-- END_STEP -->
