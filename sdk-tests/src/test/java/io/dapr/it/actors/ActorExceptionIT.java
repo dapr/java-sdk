@@ -14,22 +14,17 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
-import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.app.MyActor;
 import io.dapr.it.actors.app.MyActorService;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutionException;
-
 import static io.dapr.it.Retry.callWithRetry;
-import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static io.dapr.it.TestUtils.assertThrowsDaprExceptionSubstring;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+
 
 public class ActorExceptionIT extends BaseIT {
 
@@ -59,8 +54,5 @@ public class ActorExceptionIT extends BaseIT {
           "INTERNAL: error invoke actor method: error from actor service",
           () ->  proxy.throwException());
     }, 5000);
-
-
-
   }
 }

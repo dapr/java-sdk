@@ -19,8 +19,8 @@ import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DaprObjectSerializer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.Serializable;
@@ -108,8 +108,8 @@ public class ActorCustomSerializerTest {
 
     MyData response = actorProxy.invokeMethod("classInClassOut", d, MyData.class).block();
 
-    Assert.assertEquals("hihi", response.getName());
-    Assert.assertEquals(6, response.getNum());
+    Assertions.assertEquals("hihi", response.getName());
+    Assertions.assertEquals(6, response.getNum());
   }
 
   @Test
@@ -117,7 +117,7 @@ public class ActorCustomSerializerTest {
     ActorProxy actorProxy = createActorProxy();
     String response = actorProxy.invokeMethod("stringInStringOut", "oi", String.class).block();
 
-    Assert.assertEquals("oioi", response);
+    Assertions.assertEquals("oioi", response);
   }
 
   @Test
@@ -125,7 +125,7 @@ public class ActorCustomSerializerTest {
     ActorProxy actorProxy = createActorProxy();
     int response = actorProxy.invokeMethod("intInIntOut", 2, int.class).block();
 
-    Assert.assertEquals(4, response);
+    Assertions.assertEquals(4, response);
   }
 
   private static ActorId newActorId() {

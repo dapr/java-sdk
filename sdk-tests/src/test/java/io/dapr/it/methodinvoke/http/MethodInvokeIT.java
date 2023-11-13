@@ -7,8 +7,8 @@ import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.MethodInvokeServiceProtos;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -17,10 +17,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MethodInvokeIT extends BaseIT {
 
@@ -32,17 +32,16 @@ public class MethodInvokeIT extends BaseIT {
      */
     private DaprRun daprRun = null;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         daprRun = startDaprApp(
-          MethodInvokeIT.class.getSimpleName(),
+          MethodInvokeIT.class.getSimpleName() + "http",
           MethodInvokeService.SUCCESS_MESSAGE,
           MethodInvokeService.class,
           true,
           30000);
         daprRun.switchToHTTP();
-        // Wait since service might be ready even after port is available.
-        Thread.sleep(2000);
+        daprRun.waitForAppHealth(20000);
     }
 
     @Test
@@ -51,6 +50,7 @@ public class MethodInvokeIT extends BaseIT {
         // At this point, it is guaranteed that the service above is running and all ports being listened to.
 
         try (DaprClient client = new DaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
                 //Publishing messages
@@ -76,6 +76,7 @@ public class MethodInvokeIT extends BaseIT {
     @Test
     public void testInvokeWithObjects() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 Person person = new Person();
                 person.setName(String.format("Name %d", i));
@@ -111,6 +112,7 @@ public class MethodInvokeIT extends BaseIT {
     @Test
     public void testInvokeTimeout() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
             long started = System.currentTimeMillis();
             String message = assertThrows(IllegalStateException.class, () -> {
                 client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
@@ -125,6 +127,7 @@ public class MethodInvokeIT extends BaseIT {
     @Test
     public void testInvokeException() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
             MethodInvokeServiceProtos.SleepRequest req = MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", -9, HttpExtension.POST).block());

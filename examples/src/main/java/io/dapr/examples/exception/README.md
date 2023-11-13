@@ -4,7 +4,7 @@ This sample illustrates how to handle exceptions in Dapr.
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -33,7 +33,7 @@ cd examples
 ```
 
 ### Running the StateClient
-This example uses the Java SDK Dapr client in order perform an invalid operartion, causing Dapr runtime to return an error. See the code snippet bellow: 
+This example uses the Java SDK Dapr client in order to perform an invalid operation, causing Dapr runtime to return an error. See the code snippet below: 
 
 ```java
 public class Client {
@@ -56,7 +56,7 @@ public class Client {
 
 }
 ```
-The code uses the `DaprClient` created by the `DaprClientBuilder`. It tries to get a state from state store but provides an unknown state store. It causes Dapr sidecar to return error, which is converted to a `DaprException` to the application. To be compatible with Project Reactor, `DaprException` extends from `RuntimeException` - making it an unchecked exception. Applications might also get `IllegalArgumentException` when invoking methods with invalid input parameters that are validated at the client side.
+The code uses the `DaprClient` created by the `DaprClientBuilder`. It tries to get a state from state store, but provides an unknown state store. It causes the Dapr sidecar to return an error, which is converted to a `DaprException` to the application. To be compatible with Project Reactor, `DaprException` extends from `RuntimeException` - making it an unchecked exception. Applications might also get an `IllegalArgumentException` when invoking methods with invalid input parameters that are validated at the client side.
 
 The Dapr client is also within a try-with-resource block to properly close the client at the end.
 

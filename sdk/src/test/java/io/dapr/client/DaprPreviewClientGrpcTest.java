@@ -23,6 +23,7 @@ import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -31,15 +32,14 @@ import io.dapr.v1.DaprProtos;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,8 +49,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -63,31 +63,34 @@ import static org.mockito.Mockito.when;
 public class DaprPreviewClientGrpcTest {
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
+
 	private static final String QUERY_STORE_NAME = "testQueryStore";
 
 	private static final String PUBSUB_NAME = "testPubsub";
 
 	private static final String TOPIC_NAME = "testTopic";
 
-	private Closeable closeable;
+	private static final String LOCK_STORE_NAME = "MyLockStore";
+
+	private GrpcChannelFacade channel;
 	private DaprGrpc.DaprStub daprStub;
 	private DaprPreviewClient previewClient;
 
-	@Before
+	@BeforeEach
 	public void setup() throws IOException {
-		closeable = mock(Closeable.class);
+		channel = mock(GrpcChannelFacade.class);
 		daprStub = mock(DaprGrpc.DaprStub.class);
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
 		previewClient = new DaprClientGrpc(
-				closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
-		doNothing().when(closeable).close();
+				channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+		doNothing().when(channel).close();
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() throws Exception {
 		previewClient.close();
-		verify(closeable).close();
-		verifyNoMoreInteractions(closeable);
+		verify(channel).close();
+		verifyNoMoreInteractions(channel);
 	}
 
 	@Test
@@ -121,7 +124,7 @@ public class DaprPreviewClientGrpcTest {
 						Collections.EMPTY_LIST)).block());
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void publishEventsContentTypeMismatchException() throws IOException {
 		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
 		doAnswer((Answer<Void>) invocation -> {
@@ -137,13 +140,14 @@ public class DaprPreviewClientGrpcTest {
 				, "application/octet-stream", null);
 		BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
 				Collections.singletonList(entry));
-		previewClient.publishEvents(wrongReq).block();
+
+    assertThrows(IllegalArgumentException.class, () -> previewClient.publishEvents(wrongReq).block());
 	}
 
 	@Test
 	public void publishEventsSerializeException() throws IOException {
 		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-		previewClient = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+		previewClient = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
 		doAnswer((Answer<Void>) invocation -> {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
@@ -182,8 +186,8 @@ public class DaprPreviewClientGrpcTest {
 				Collections.singletonList(entry));
 		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(req);
 		BulkPublishResponse res = result.block();
-		Assert.assertNotNull(res);
-		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
+		Assertions.assertNotNull(res);
+		assertEquals( 0, res.getFailedEntries().size(), "expected no entry in failed entries list");
 	}
 
 	@Test
@@ -200,8 +204,8 @@ public class DaprPreviewClientGrpcTest {
 		Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
 				"text/plain", Collections.singletonList("test"));
 		BulkPublishResponse<String> res = result.block();
-		Assert.assertNotNull(res);
-		assertEquals("expected no entries in failed entries list", 0, res.getFailedEntries().size());
+		Assertions.assertNotNull(res);
+		assertEquals( 0, res.getFailedEntries().size(), "expected no entries in failed entries list");
 	}
 
 	@Test
@@ -220,8 +224,8 @@ public class DaprPreviewClientGrpcTest {
 					put("ttlInSeconds", "123");
 				}}, Collections.singletonList("test"));
 		BulkPublishResponse<String> res = result.block();
-		Assert.assertNotNull(res);
-		assertEquals("expected no entry in failed entries list", 0, res.getFailedEntries().size());
+		Assertions.assertNotNull(res);
+		assertEquals( 0, res.getFailedEntries().size(), "expected no entry in failed entries list");
 	}
 
 	@Test
@@ -252,8 +256,8 @@ public class DaprPreviewClientGrpcTest {
 		BulkPublishRequest<DaprClientGrpcTest.MyObject> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
 				Collections.singletonList(entry));
 		BulkPublishResponse<DaprClientGrpcTest.MyObject> result = previewClient.publishEvents(req).block();
-		Assert.assertNotNull(result);
-		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
+		Assertions.assertNotNull(result);
+		Assertions.assertEquals(0, result.getFailedEntries().size(), "expected no entries to be failed");
 	}
 
 	@Test
@@ -281,8 +285,8 @@ public class DaprPreviewClientGrpcTest {
 		BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
 				Collections.singletonList(entry));
 		BulkPublishResponse<String> result = previewClient.publishEvents(req).block();
-		Assert.assertNotNull(result);
-		Assert.assertEquals("expected no entries to be failed", 0, result.getFailedEntries().size());
+		Assertions.assertNotNull(result);
+		Assertions.assertEquals( 0, result.getFailedEntries().size(), "expected no entries to be failed");
 	}
 
 	@Test
@@ -312,8 +316,8 @@ public class DaprPreviewClientGrpcTest {
 		List<QueryStateItem<?>> resp = new ArrayList<>();
 		resp.add(new QueryStateItem<Object>("1", (Object)"testData", "6f54ad94-dfb9-46f0-a371-e42d550adb7d"));
 		DaprProtos.QueryStateResponse responseEnvelope = buildQueryStateResponse(resp, "");
-		doAnswer((Answer<Void>) invocation -> {
-			DaprProtos.QueryStateRequest req = invocation.getArgument(0);
+		doAnswer(invocation -> {
+			DaprProtos.QueryStateRequest req = (DaprProtos.QueryStateRequest) invocation.getArgument(0);
 			assertEquals(QUERY_STORE_NAME, req.getStoreName());
 			assertEquals("query", req.getQuery());
 			assertEquals(0, req.getMetadataCount());
@@ -327,10 +331,10 @@ public class DaprPreviewClientGrpcTest {
 
 		QueryStateResponse<String> response = previewClient.queryState(QUERY_STORE_NAME, "query", String.class).block();
 		assertNotNull(response);
-		assertEquals("result size must be 1", 1, response.getResults().size());
-		assertEquals("result must be same", "1", response.getResults().get(0).getKey());
-		assertEquals("result must be same", "testData", response.getResults().get(0).getValue());
-		assertEquals("result must be same", "6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag());
+		assertEquals(1, response.getResults().size(), "result size must be 1");
+		assertEquals("1", response.getResults().get(0).getKey(), "result must be same");
+		assertEquals("testData", response.getResults().get(0).getValue(), "result must be same");
+		assertEquals("6f54ad94-dfb9-46f0-a371-e42d550adb7d", response.getResults().get(0).getEtag(), "result must be same");
 	}
 
 	@Test
@@ -338,8 +342,8 @@ public class DaprPreviewClientGrpcTest {
 		List<QueryStateItem<?>> resp = new ArrayList<>();
 		resp.add(new QueryStateItem<Object>("1", null, "error data"));
 		DaprProtos.QueryStateResponse responseEnvelope = buildQueryStateResponse(resp, "");
-		doAnswer((Answer<Void>) invocation -> {
-			DaprProtos.QueryStateRequest req = invocation.getArgument(0);
+		doAnswer(invocation -> {
+			DaprProtos.QueryStateRequest req = (DaprProtos.QueryStateRequest) invocation.getArgument(0);
 			assertEquals(QUERY_STORE_NAME, req.getStoreName());
 			assertEquals("query", req.getQuery());
 			assertEquals(1, req.getMetadataCount());
@@ -355,9 +359,60 @@ public class DaprPreviewClientGrpcTest {
 		QueryStateResponse<String> response = previewClient.queryState(QUERY_STORE_NAME, "query",
 				new HashMap<String, String>(){{ put("key", "error"); }}, String.class).block();
 		assertNotNull(response);
-		assertEquals("result size must be 1", 1, response.getResults().size());
-		assertEquals("result must be same", "1", response.getResults().get(0).getKey());
-		assertEquals("result must be same", "error data", response.getResults().get(0).getError());
+		assertEquals(1, response.getResults().size(), "result size must be 1");
+		assertEquals( "1", response.getResults().get(0).getKey(), "result must be same");
+		assertEquals( "error data", response.getResults().get(0).getError(), "result must be same");
+	}
+
+	@Test
+	public void tryLock() {
+
+		DaprProtos.TryLockResponse.Builder builder = DaprProtos.TryLockResponse.newBuilder()
+				.setSuccess(true);
+
+		DaprProtos.TryLockResponse response = builder.build();
+
+		doAnswer((Answer<Void>) invocation -> {
+			DaprProtos.TryLockRequest req = invocation.getArgument(0);
+			assertEquals(LOCK_STORE_NAME, req.getStoreName());
+			assertEquals("1", req.getResourceId());
+			assertEquals("owner", req.getLockOwner());
+			assertEquals(10, req.getExpiryInSeconds());
+
+			StreamObserver<DaprProtos.TryLockResponse> observer =
+					(StreamObserver<DaprProtos.TryLockResponse>) invocation.getArguments()[1];
+			observer.onNext(response);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).tryLockAlpha1(any(DaprProtos.TryLockRequest.class), any());
+
+		Boolean result = previewClient.tryLock("MyLockStore", "1", "owner", 10).block();
+		assertEquals(Boolean.TRUE, result);
+	}
+
+	@Test
+	public void unLock() {
+
+		DaprProtos.UnlockResponse.Builder builder = DaprProtos.UnlockResponse.newBuilder()
+				.setStatus(DaprProtos.UnlockResponse.Status.SUCCESS);
+
+		DaprProtos.UnlockResponse response = builder.build();
+
+		doAnswer((Answer<Void>) invocation -> {
+			DaprProtos.UnlockRequest req = invocation.getArgument(0);
+			assertEquals(LOCK_STORE_NAME, req.getStoreName());
+			assertEquals("1", req.getResourceId());
+			assertEquals("owner", req.getLockOwner());
+
+			StreamObserver<DaprProtos.UnlockResponse> observer =
+					(StreamObserver<DaprProtos.UnlockResponse>) invocation.getArguments()[1];
+			observer.onNext(response);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).unlockAlpha1(any(DaprProtos.UnlockRequest.class), any());
+
+		UnlockResponseStatus result = previewClient.unlock("MyLockStore", "1", "owner").block();
+		assertEquals(UnlockResponseStatus.SUCCESS, result);
 	}
 
 	private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)

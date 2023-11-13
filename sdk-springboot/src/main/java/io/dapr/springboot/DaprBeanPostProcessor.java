@@ -107,6 +107,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
       Rule rule = topic.rule();
       String topicName = stringValueResolver.resolveStringValue(topic.name());
       String pubSubName = stringValueResolver.resolveStringValue(topic.pubsubName());
+      String deadLetterTopic = stringValueResolver.resolveStringValue(topic.deadLetterTopic());
       String match = stringValueResolver.resolveStringValue(rule.match());
       if ((topicName != null) && (topicName.length() > 0) && pubSubName != null && pubSubName.length() > 0) {
         try {
@@ -116,7 +117,7 @@ public class DaprBeanPostProcessor implements BeanPostProcessor {
           List<String> routes = getAllCompleteRoutesForPost(clazz, method, topicName);
           for (String route : routes) {
             daprRuntime.addSubscribedTopic(
-                pubSubName, topicName, match, rule.priority(), route, metadata, bulkSubscribe);
+                pubSubName, topicName, match, rule.priority(), route, deadLetterTopic, metadata, bulkSubscribe);
           }
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException("Error while parsing metadata: " + e);

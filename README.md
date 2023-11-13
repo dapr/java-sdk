@@ -18,11 +18,8 @@ This is the Dapr SDK for Java, including the following features:
 ## Getting Started
 
 ### Pre-Requisites
-* JDK 11 or above - the published jars are compatible with Java 8:
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [AdoptOpenJDK 11 - LTS](https://adoptopenjdk.net/)
-    * [Oracle's JDK 11 - LTS](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
-    * [OpenJDK](https://openjdk.java.net/)
+* SDKMAN! installed (recommended):
+    * [SDKMAN!](https://sdkman.io)
 * Java IDE installed:
     * [IntelliJ](https://www.jetbrains.com/idea/download/)
     * [Eclipse](https://www.eclipse.org/downloads/)
@@ -41,6 +38,10 @@ This is the Dapr SDK for Java, including the following features:
     * [New Maven project in IntelliJ](https://www.jetbrains.com/help/idea/maven-support.html#create_new_maven_project)
     * [Maven in 5 minutes](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
 
+### Install JDK
+
+If using [SDKMAN!](https://sdkman.io), execute `sdk env install` to install the required JDK.
+
 ### Importing Dapr's Java SDK
 For a Maven project, add the following to your `pom.xml` file:
 ```xml
@@ -52,19 +53,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.8.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.8.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.8.0</version>
+      <version>1.10.0</version>
     </dependency>
     ...
   </dependencies>
@@ -78,11 +79,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.8.0')
+    compile('io.dapr:dapr-sdk:1.10.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.8.0')
+    compile('io.dapr:dapr-sdk-actors:1.10.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.8.0')
+    compile('io.dapr:dapr-sdk-springboot:1.10.0')
 }
 ```
 
@@ -97,14 +98,14 @@ Then head over to build the [Maven](https://maven.apache.org/install.html) (Apac
 
 ```sh
 # make sure you are in the `java-sdk` directory.
-mvn clean install
+./mvnw clean install
 ```
 
 Try the following examples to learn more about Dapr's Java SDK:
 * [Invoking a Http service](./examples/src/main/java/io/dapr/examples/invoke/http)
 * [Invoking a Grpc service](./examples/src/main/java/io/dapr/examples/invoke/grpc)
 * [State management](./examples/src/main/java/io/dapr/examples/state)
-* [PubSub with subscriber over Http](./examples/src/main/java/io/dapr/examples/pubsub/http)
+* [PubSub with subscriber](./examples/src/main/java/io/dapr/examples/pubsub/)
 * [Binding with input over Http](./examples/src/main/java/io/dapr/examples/bindings/http)
 * [Actors](./examples/src/main/java/io/dapr/examples/actors/)
 * [Secrets management](./examples/src/main/java/io/dapr/examples/secrets)
@@ -194,7 +195,7 @@ Most exceptions thrown from the SDK are instances of `DaprException`. `DaprExcep
 ### Update URL to fetch proto files
 
 Change the `dapr.proto.baseurl` property below in [pom.xml](./pom.xml) to point to the URL for the desired commit hash in Git if you need to target a proto file that is not been merged into master yet. 
-Note: You may need to run `mvn clean` after changing this setting to remove any auto-generated files so that the new proto files get downloaded and compiled.
+Note: You may need to run `./mvnw clean` after changing this setting to remove any auto-generated files so that the new proto files get downloaded and compiled.
 
 ```xml
 <project>
@@ -228,7 +229,7 @@ Along with the pre-requisites for [SDK](#pre-requisites) the following are neede
 The code for the tests are present inside the project [sdk-tests](./sdk-tests). This module alone can be imported as a separate project in IDEs. 
 This project depends on the rest of the JARs built by the other modules in the repo like [sdk](./sdk), [sdk-springboot](./sdk-springboot) etc.
 
-As a starting point for running Integration Tests, first run `mvn clean install` from the root of the repo to build the JARs for the different modules
+As a starting point for running Integration Tests, first run `./mvnw clean install` from the root of the repo to build the JARs for the different modules
 except the `sdk-tests` module.
 
 #### Run all the dependent services spun up during build
@@ -240,17 +241,13 @@ Similarly, all of these need to be run for running the ITs either individually o
 Run the following commands from the root of the repo to start all the docker containers that the tests depend on.
 
 ```bash
-docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
-docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
-docker-compose -f ./sdk-tests/deploy/local-test-vault.yml up -d
+docker-compose -f ./sdk-tests/deploy/local-test.yml up -d
 ```
 
 To stop the containers and services, run the following commands.
 
 ```bash
-docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml down
-docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml down
-docker-compose -f ./sdk-tests/deploy/local-test-vault.yml down
+docker-compose -f ./sdk-tests/deploy/local-test.yml down
 ```
 
 
@@ -260,7 +257,7 @@ From the `java-sdk` repo root, change to the `sdk-tests` directory and run the f
 ```bash
 ## with current directory as /java-sdk/sdk-tests/
 
-mvn clean install
+../mvnw clean install
 ```
 
 The above command runs all the integration tests present in the `sdk-tests` project. 

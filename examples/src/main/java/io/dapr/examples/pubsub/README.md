@@ -1,6 +1,6 @@
 # Dapr Pub-Sub Sample
 
-In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subscribe pattern. The publisher will generate messages of a specific topic, while subscriber will listen for messages of specific topic. See [Why Pub-Sub](#why-pub-sub) to understand when this pattern might be a good choice for your software architecture.
+In this sample, we'll create a publisher and a subscriber java applications using Dapr, based on the publish-subscribe pattern. The publisher will generate messages of a specific topic, while a subscriber will listen for messages of specific topic. See the [Dapr Pub-Sub docs](https://docs.dapr.io/developing-applications/building-blocks/pubsub/) to understand when this pattern might be a good choice for your software architecture.
 
 Visit [this](https://docs.dapr.io/developing-applications/building-blocks/pubsub/pubsub-overview/) link for more information about Dapr and Pub-Sub.
  
@@ -9,7 +9,7 @@ Visit [this](https://docs.dapr.io/developing-applications/building-blocks/pubsub
 This sample uses the HTTP Springboot integration provided in Dapr Java SDK for subscribing, and gRPC client for publishing. This example uses Redis Streams (enabled in Redis versions => 5).
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -38,9 +38,13 @@ Then get into the examples directory:
 cd examples
 ```
 
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ### Running the subscriber
 
-The first is the subscriber. It will subscribe to the topic to be used by the publisher and read the messages published. The Subscriber uses the Spring Boot´s DaprApplication class for initializing the `SubscriberController`. In `Subscriber.java` file, you will find the `Subscriber` class and the `main` method. See the code snippet below:
+The subscriber will subscribe to the topic to be used by the publisher and read the messages published. The subscriber uses the Spring Boot´s DaprApplication class for initializing the `SubscriberController`. There is a gRPC version and HTTP version of the subscriber in the grpc and http folders. In `Subscriber.java` file, you will find the `Subscriber` class and the `main` method. See the code snippet below:
 
 ```java
 public class Subscriber {
@@ -48,13 +52,15 @@ public class Subscriber {
   public static void main(String[] args) throws Exception {
     ///...
     // Start Dapr's callback endpoint.
-    DaprApplication.start(port);
+    DaprApplication.start([PROTOCAL],port); 
   }
 }
 ```
-`DaprApplication.start()` Method will run an Spring Boot application that registers the `SubscriberController`, which exposes the message retrieval as a POST request. The Dapr's sidecar is the one that performs the actual call to the controller, based on the pubsub features.
+`DaprApplication.start()` Method will run a Spring Boot application that registers the `SubscriberController`, which exposes the message retrieval as a POST request, or the `SubscriberGrpcService`, which implement the grpc methods that the sidecar will call. 
 
-This Spring Controller handles the message endpoint, printing the message which is received as the POST body. 
+**HTTP Version**
+
+The Dapr sidecar is the one that performs the actual call to the controller, based on the pubsub features. This Spring Controller handles the message endpoint, printing the message which is received as the POST body. 
 
 The subscription's topic in Dapr is handled automatically via the `@Topic` annotation - which also supports the same expressions in 
 [Spring's @Value annotations](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-value-annotations).
@@ -84,7 +90,7 @@ public class SubscriberController {
 }
 ```
 
-The `@BulkSubscribe` annotation can be used with `@Topic` to receive multiple messages at once. See the example on how to handle the bulk messages and respond correctly.
+The `@BulkSubscribe` annotation can be used with `@Topic` to receive multiple messages at once. See the example below on how to handle the bulk messages and respond correctly.
 
 ```java
 @RestController
@@ -116,7 +122,8 @@ public class SubscriberController {
 }
 ```
 
-Execute the follow script in order to run the Subscriber example:
+
+Execute the following command to run the HTTP Subscriber example:
 
 <!-- STEP
 name: Run Subscriber
@@ -133,17 +140,71 @@ sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.Subscriber -p 3000
+dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol http -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.http.Subscriber -p 3000
 ```
 
 <!-- END_STEP -->
 
+**gRPC Version**
+
+The Spring GrpcService implements the methods required for gRPC communication with Dapr\`s sidecar. 
+
+The `SubscriberGrpcService.java` snippet below shows the details. Dapr\`s sidecar will call `listTopicSubscriptions` to get the topic and pubsub name that are contained in the response before the subscription starts. After the pubsub component in the sidecar subscribes successfully to the specified topic, a message will be sent to the method `onTopicEvent` in the request parameter.
+
+```java
+@GrpcService
+public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
+	private final List<DaprAppCallbackProtos.TopicSubscription> topicSubscriptionList = new ArrayList<>();
+	private final DaprObjectSerializer objectSerializer = new DefaultObjectSerializer();
+	
+	@Override
+	public void listTopicSubscriptions(Empty request,
+			StreamObserver<DaprAppCallbackProtos.ListTopicSubscriptionsResponse> responseObserver) {
+			registerConsumer("messagebus","testingtopic");
+		try {
+			DaprAppCallbackProtos.ListTopicSubscriptionsResponse.Builder builder = DaprAppCallbackProtos.ListTopicSubscriptionsResponse
+					.newBuilder();
+			topicSubscriptionList.forEach(builder::addSubscriptions);
+			DaprAppCallbackProtos.ListTopicSubscriptionsResponse response = builder.build();
+			responseObserver.onNext(response);
+		} catch (Throwable e) {
+			responseObserver.onError(e);
+		} finally {
+			responseObserver.onCompleted();
+		}
+	}
+
+	@Override
+	public void onTopicEvent(DaprAppCallbackProtos.TopicEventRequest request,
+			StreamObserver<DaprAppCallbackProtos.TopicEventResponse> responseObserver) {
+		try {
+			System.out.println("Subscriber got: " + request.getData());
+			DaprAppCallbackProtos.TopicEventResponse response = DaprAppCallbackProtos.TopicEventResponse.newBuilder()
+					.setStatus(DaprAppCallbackProtos.TopicEventResponse.TopicEventResponseStatus.SUCCESS)
+					.build();
+			responseObserver.onNext(response);
+			responseObserver.onCompleted();
+		} catch (Throwable e) {
+			responseObserver.onError(e);
+		}
+	}
+  ///...
+}
+```
+
+Execute the following command to run the gRPC Subscriber example:
+
+```bash
+dapr run --components-path ./components/pubsub --app-id subscriber --app-port 3000 --app-protocol grpc -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.grpc.Subscriber -p 3000
+```
+
+
 ### Running the publisher
 
-Another component is the publisher. It is a simple java application with a main method that uses the Dapr gRPC Client to publish 10 messages to a specific topic.
+The publisher is a simple Java application with a main method that uses the Dapr gRPC Client to publish 10 messages to a specific topic.
 
-In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and received objects, and second is for objects to be persisted. The client publishes messages using `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
-Dapr sidecar will automatically wrap the payload received into a CloudEvent object, which will later on parsed by the subscriber.
+In the `Publisher.java` file, you will find the `Publisher` class, containing the main method. The main method declares a Dapr Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: one is for Dapr's sent and received objects, and the second is for objects to be persisted. The client publishes messages using the `publishEvent` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
+Dapr's sidecar will automatically wrap the payload received into a CloudEvent object, which will later on be parsed by the subscriber.
 ```java
 public class Publisher {
   private static final int NUM_MESSAGES = 10;
@@ -174,7 +235,7 @@ public class Publisher {
 ```
 
 The `CloudEventPublisher.java` file shows how the same can be accomplished if the application must send a CloudEvent object instead of relying on Dapr's automatic CloudEvent "wrapping".
-In this case, the app MUST override the content-type parameter via `withContentType()`, so Dapr sidecar knows that the payload is already a CloudEvent object.
+In this case, the app MUST override the content-type parameter via `withContentType()`, so that Dapr's sidecar knows that the payload is already a CloudEvent object.
 
 ```java
 public class CloudEventPublisher {
@@ -205,7 +266,7 @@ public class CloudEventPublisher {
 }
 ```
 
-Use the follow command to execute the Publisher example:
+Execute the following command to run the Publisher example:
 
 <!-- STEP
 name: Run Publisher
@@ -294,11 +355,11 @@ Messages have been retrieved from the topic.
 > Note : This API is currently in Alpha stage in Dapr runtime, hence the API methods in SDK are part of the DaprPreviewClient class.  
 
 Another feature provided by the SDK is to allow users to publish multiple messages in a single call to the Dapr sidecar.
-For this example, we have a simple java application with a main method that uses the Dapr gPRC Preview Client to publish 10 messages to a specific topic in a single call.
+For this example, we have a simple Java application with a main method that uses the Dapr gPRC Preview Client to publish 10 messages to a specific topic in a single call.
 
-In the `BulkPublisher.java` file, you will find the `BulkPublisher` class, containing the main method. The main method declares a Dapr Preview Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: One is for Dapr's sent and recieved objects, and second is for objects to be persisted.
+In the `BulkPublisher.java` file, you will find the `BulkPublisher` class, containing the main method. The main method declares a Dapr Preview Client using the `DaprClientBuilder` class. Notice that this builder gets two serializer implementations in the constructor: one is for Dapr's sent and recieved objects, and the second is for objects to be persisted.
 The client publishes messages using `publishEvents` method. The Dapr client is also within a try-with-resource block to properly close the client at the end. See the code snippet below:
-Dapr sidecar will automatically wrap the payload received into a CloudEvent object, which will later on be parsed by the subscriber.
+Dapr's sidecar will automatically wrap the payload received into a CloudEvent object, which will later on be parsed by the subscriber.
 
 ```java
 public class BulkPublisher {
@@ -350,7 +411,7 @@ public class BulkPublisher {
 ```
 The code uses the `DaprPreviewClient` created by the `DaprClientBuilder` is used for the `publishEvents` (BulkPublish) preview API.
 
-In this case, when `publishEvents` call is made, one of the argument to the method is the content type of data, this being `text/plain` in the example.
+In this case, when the `publishEvents` call is made, one of the arguments to the method is the content type of data, this being `text/plain` in the example.
 In this case, when parsing and printing the response, there is a concept of EntryID, which is automatically generated or can be set manually when using the `BulkPublishRequest` object.
 The EntryID is a request scoped ID, in this case automatically generated as the index of the message in the list of messages in the `publishEvents` call.
 
@@ -359,7 +420,7 @@ The response, will be empty if all events are published successfully or it will 
 The code also shows the scenario where it is possible to start tracing in code and pass on that tracing context to Dapr.
 
 The `CloudEventBulkPublisher.java` file shows how the same can be accomplished if the application must send a CloudEvent object instead of relying on Dapr's automatic CloudEvent "wrapping".
-In this case, the application **MUST** override the content-type parameter via `withContentType()`, so Dapr sidecar knows that the payload is already a CloudEvent object.
+In this case, the application **MUST** override the content-type parameter via `withContentType()`, so Dapr's sidecar knows that the payload is already a CloudEvent object.
 
 ```java
 public class CloudEventBulkPublisher {
@@ -408,7 +469,7 @@ public class CloudEventBulkPublisher {
 }
 ```
 
-Use the follow command to execute the BulkPublisher example:
+Execute the following command to run the BulkPublisher example:
 
 <!-- STEP
 name: Run Bulk Publisher
@@ -474,7 +535,7 @@ The Subscriber started previously [here](#running-the-subscriber) should print t
 == APP == Subscriber got: {"id":"df20d841-296e-4c6b-9dcb-dd17920538e7","source":"bulk-publisher","type":"com.dapr.event.sent","specversion":"1.0","datacontenttype":"text/plain","data":"This is message #8","data_base64":null}
 ```
 
-> Note: Redis pubsub component does not have a native and uses Dapr runtime's default bulk publish implementation which is concurrent, thus the order of the events that are published are not guaranteed.
+> Note: the Redis pubsub component does not have a native bulk publish implementation, and uses Dapr runtime's default bulk publish implementation which is concurrent. Therefore, the order of the events that are published are not guaranteed.
 
 Messages have been retrieved from the topic.
 

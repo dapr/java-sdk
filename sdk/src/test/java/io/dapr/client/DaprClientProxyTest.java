@@ -13,7 +13,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.client.domain.HttpExtension;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
