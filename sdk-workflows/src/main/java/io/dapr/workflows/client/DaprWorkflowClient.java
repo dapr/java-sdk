@@ -17,9 +17,18 @@ import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.PurgeResult;
+import io.dapr.client.Headers;
+import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
+import io.grpc.ForwardingClientCall;
 import io.grpc.ManagedChannel;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
 
 import javax.annotation.Nullable;
 
@@ -39,7 +48,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
    */
   public DaprWorkflowClient() {
-    this(NetworkUtils.buildGrpcManagedChannel());
+    this(NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
   }
 
   /**
@@ -108,6 +117,19 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, Object input, String instanceId) {
     return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(), input, instanceId);
+  }
+
+  /**
+   * Schedules a new workflow with a specified set of options for execution.
+   *
+   * @param <T>        any Workflow type
+   * @param clazz      Class extending Workflow to start an instance of.
+   * @param options the options for the new workflow, including input, instance ID, etc.
+   * @return the <code>instanceId</code> parameter value.
+   */
+  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOption options) {
+    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
+        options.getNewOrchestrationInstanceOptions());
   }
 
   /**
@@ -239,4 +261,26 @@ public class DaprWorkflowClient implements AutoCloseable {
       }
     }
   }
+
+  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ClientInterceptor() {
+    @Override
+    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+        MethodDescriptor<ReqT, RespT> methodDescriptor,
+        CallOptions options,
+        Channel channel) {
+      // TBD: do we need timeout in workflow client?
+      ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, options);
+      return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
+        @Override
+        public void start(final Listener<RespT> responseListener, final Metadata metadata) {
+          String daprApiToken = Properties.API_TOKEN.get();
+          if (daprApiToken != null) {
+            metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
+          }
+          super.start(responseListener, metadata);
+        }
+      };
+    }
+  };
 }
+

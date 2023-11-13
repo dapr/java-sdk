@@ -64,7 +64,7 @@ public class DaprClientBuilder {
   /**
    * Creates a constructor for DaprClient.
    *
-   * {@link DefaultObjectSerializer} is used for object and state serializers by defaul but is not recommended
+   * {@link DefaultObjectSerializer} is used for object and state serializers by default but is not recommended
    * for production scenarios.
    */
   public DaprClientBuilder() {

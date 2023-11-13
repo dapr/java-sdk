@@ -18,14 +18,14 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprClientHttp;
 import io.dapr.client.domain.State;
 import io.dapr.it.DaprRun;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test State HTTP DAPR capabilities using a DAPR instance with an empty service running
@@ -36,7 +36,7 @@ public class HttpStateClientIT extends AbstractStateClientIT {
 
   private static DaprClient daprClient;
 
-  @BeforeClass
+  @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(HttpStateClientIT.class.getSimpleName(), 5000);
     daprRun.switchToHTTP();
@@ -44,7 +44,7 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     assertTrue(daprClient instanceof DaprClientHttp);
   }
 
-  @AfterClass
+  @AfterAll
   public static void tearDown() throws Exception {
     daprClient.close();
   }

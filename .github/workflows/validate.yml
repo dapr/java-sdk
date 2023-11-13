@@ -37,9 +37,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.11.0-rc.1
-      DAPR_RUNTIME_VER: 1.11.0-rc.5
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.11.0-rc.1/install/install.sh
+      DAPR_CLI_VER: 1.12.0-rc.1
+      DAPR_RUNTIME_VER: 1.12.0-rc.5
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
     steps:
@@ -102,14 +102,14 @@ jobs:
           pip3 install mechanical-markdown
       - name: Install Local mongo database using docker-compose
         run: |
-          docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
+          docker-compose -f ./sdk-tests/deploy/local-test.yml up -d mongo
           docker ps
       - name: Clean up files
-        run: mvn clean
+        run: ./mvnw clean
       - name: Build sdk
-        run: mvn compile -q
+        run: ./mvnw compile -q
       - name: Install jars
-        run: mvn install -q
+        run: ./mvnw install -q
       - name: Validate invoke http example
         working-directory: ./examples
         run: |
