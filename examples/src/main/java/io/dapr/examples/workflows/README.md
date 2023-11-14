@@ -141,7 +141,8 @@ expected_stdout_lines:
   - 'Message Received from input: Seattle'
   - 'Sending message to output: SEATTLE'
   - 'Workflow finished with result: TOKYO, LONDON, SEATTLE'
-sleep: 10
+background: true
+sleep: 60
 -->
 Execute the following script in order to run DemoChainWorker:
 ```sh
@@ -256,7 +257,8 @@ expected_stdout_lines:
   - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
   - 'Activity returned: 11'
   - 'Activity finished - Workflow finished with result: 60'
-sleep: 10
+background: true
+sleep: 60
 -->
 
 Execute the following script in order to run DemoFanInOutWorker:
@@ -432,8 +434,8 @@ expected_stdout_lines:
   - 'Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity'
   - 'Running approval activity...'
   - 'approval-activity finished'
-
-sleep: 10
+background: true
+sleep: 60
 -->
 
 ex
@@ -546,8 +548,8 @@ expected_stdout_lines:
  - 'Sending message to output: !wolfkroW rpaD olleH'
  - 'SubWorkflow finished with: !wolfkroW rpaD olleH'
  - 'subworkflow finished with: !wolfkroW rpaD olleH'
-
-sleep: 10
+background: true
+sleep: 60
 -->
 
 ex
