@@ -13,20 +13,25 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import com.microsoft.durabletask.CompositeTaskFailedException;
 import com.microsoft.durabletask.RetryPolicy;
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -37,11 +42,95 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class DaprWorkflowContextImplTest {
   private DaprWorkflowContextImpl context;
   private TaskOrchestrationContext mockInnerContext;
+  private WorkflowContext testWorkflowContext;
 
   @BeforeEach
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
     context = new DaprWorkflowContextImpl(mockInnerContext);
+    testWorkflowContext = new WorkflowContext() {
+      @Override
+      public Logger getLogger() {
+        return null;
+      }
+
+      @Override
+      public String getName() {
+        return null;
+      }
+
+      @Override
+      public String getInstanceId() {
+        return null;
+      }
+
+      @Override
+      public Instant getCurrentInstant() {
+        return null;
+      }
+
+      @Override
+      public void complete(Object output) {
+
+      }
+
+      @Override
+      public <V> Task<V> waitForExternalEvent(String name, Duration timeout, Class<V> dataType)
+          throws TaskCanceledException {
+        return null;
+      }
+
+      @Override
+      public <V> Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
+        return null;
+      }
+
+      @Override
+      public <V> Task<Void> waitForExternalEvent(String name) throws TaskCanceledException {
+        return null;
+      }
+
+      @Override
+      public <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType) {
+        return null;
+      }
+
+      @Override
+      public boolean isReplaying() {
+        return false;
+      }
+
+      @Override
+      public <V> Task<List<V>> allOf(List<Task<V>> tasks) throws CompositeTaskFailedException {
+        return null;
+      }
+
+      @Override
+      public Task<Task<?>> anyOf(List<Task<?>> tasks) {
+        return null;
+      }
+
+      @Override
+      public Task<Void> createTimer(Duration duration) {
+        return null;
+      }
+
+      @Override
+      public <V> V getInput(Class<V> targetType) {
+        return null;
+      }
+
+      @Override
+      public <V> Task<V> callSubWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
+                                         @Nullable TaskOptions options, Class<V> returnType) {
+        return null;
+      }
+
+      @Override
+      public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
+
+      }
+    };
   }
 
   @Test
@@ -206,5 +295,18 @@ public class DaprWorkflowContextImplTest {
 
     context.callSubWorkflow(expectedName, expectedInput, String.class);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
+  }
+
+  @Test
+  public void newUuidTest() {
+    context.newUuid();
+    verify(mockInnerContext, times(1)).newUUID();
+  }
+
+  @Test
+  public void newUuidTestNoImplementationExceptionTest() {
+    RuntimeException runtimeException = assertThrows(RuntimeException.class, testWorkflowContext::newUuid);
+    String expectedMessage = "No implementation found.";
+    assertEquals(expectedMessage, runtimeException.getMessage());
   }
 }
