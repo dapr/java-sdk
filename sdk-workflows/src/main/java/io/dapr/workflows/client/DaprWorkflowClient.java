@@ -120,6 +120,19 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Schedules a new workflow with a specified set of options for execution.
+   *
+   * @param <T>        any Workflow type
+   * @param clazz      Class extending Workflow to start an instance of.
+   * @param options the options for the new workflow, including input, instance ID, etc.
+   * @return the <code>instanceId</code> parameter value.
+   */
+  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOption options) {
+    return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
+        options.getNewOrchestrationInstanceOptions());
+  }
+
+  /**
    * Terminates the workflow associated with the provided instance id.
    *
    * @param workflowInstanceId Workflow instance id to terminate.
