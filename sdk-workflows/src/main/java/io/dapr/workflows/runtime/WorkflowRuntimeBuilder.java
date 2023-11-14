@@ -26,8 +26,8 @@ public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRuntimeBuilder.class);
-  private static volatile Set<String> activity_Set = new HashSet<String>(); 
-  private static volatile Set<String> workflow_Set = new HashSet<String>(); 
+  private volatile Set<String> activity_Set = new HashSet<String>(); 
+  private volatile Set<String> workflow_Set = new HashSet<String>(); 
 
 
   public WorkflowRuntimeBuilder() {
