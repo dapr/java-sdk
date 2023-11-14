@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.config.Properties;
+import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -47,12 +48,15 @@ public class GrpcChannelFacadeTest {
 
   private MockInterceptor mockInterceptor;
 
+  private OkHttpClient okHttpClient;
+
   /**
    * Enable the waitForSidecar to allow the gRPC to check the http endpoint for the health check
    */
   @BeforeEach
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
+    okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
 
   @BeforeAll
@@ -72,15 +76,20 @@ public class GrpcChannelFacadeTest {
   }
 
   @Test
-  public void waitForSidecarTimeout() throws Exception {
+  public void waitForSidecarTimeoutHealthCheck() throws Exception {
     VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
     StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
     int timeoutInMilliseconds = 1000;
 
     int unusedPort = findFreePort();
+
+    OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
+
     ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", unusedPort)
-        .usePlaintext().build();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
+        .usePlaintext()
+            .build();
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
 
     StepVerifier.create(channelFacade.waitForChannelReady(timeoutInMilliseconds))
             .expectSubscription()
@@ -91,9 +100,13 @@ public class GrpcChannelFacadeTest {
 
   @Test
   public void waitForSidecarOK() {
+    OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
+
     ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
         .usePlaintext().build();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
 
     // added since this is doing a check against the http health check endpoint
     // for parity with dotnet

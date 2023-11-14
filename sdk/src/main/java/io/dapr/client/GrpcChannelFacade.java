@@ -13,10 +13,12 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
+import okhttp3.OkHttpClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
@@ -40,8 +42,19 @@ class GrpcChannelFacade implements Closeable {
   /**
    * The reference to the DaprHttp client.
    */
-  private final DaprHttp daprHttpClient = new DaprHttpBuilder().build();
+  private final DaprHttp daprHttp;
 
+
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   *
+   * @param channel A Managed GRPC channel
+   * @see DaprClientBuilder
+   */
+  GrpcChannelFacade(ManagedChannel channel, DaprHttp daprHttp) {
+    this.channel = channel;
+    this.daprHttp = daprHttp;
+  }
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -51,9 +64,9 @@ class GrpcChannelFacade implements Closeable {
    */
   GrpcChannelFacade(ManagedChannel channel) {
     this.channel = channel;
+    OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+    this.daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
   }
-
-
 
   @Override
   public void close() throws IOException {
@@ -87,7 +100,7 @@ class GrpcChannelFacade implements Closeable {
     */
 
     // Do the Dapr Http endpoint check to have parity with Dotnet
-    Mono<DaprHttp.Response> responseMono = this.daprHttpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+    Mono<DaprHttp.Response> responseMono = this.daprHttp.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
             null, "", null, null);
 
     return responseMono
