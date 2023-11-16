@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.saga;
 
-import com.microsoft.durabletask.OrchestratorBlockedException;
 import com.microsoft.durabletask.Task;
+import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.WorkflowContext;
 
 import java.util.ArrayList;

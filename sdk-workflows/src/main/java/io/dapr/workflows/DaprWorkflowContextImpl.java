@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 public class DaprWorkflowContextImpl implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
@@ -229,6 +230,14 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   @Override
   public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
     this.innerContext.continueAsNew(input, preserveUnprocessedEvents);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public UUID newUuid() {
+    return this.innerContext.newUUID();
   }
 
   /**
