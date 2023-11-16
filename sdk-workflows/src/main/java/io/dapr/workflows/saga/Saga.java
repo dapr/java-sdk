@@ -26,34 +26,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public final class Saga {
-
-  /**
-   * get the compensation activity class name for a given workflow activity class
-   * name.
-   * 
-   * @param activityClassName workflow activity class name
-   * @return compensation activity class name, null if not found
-   */
-  public static String getCompentationActivityClassName(String activityClassName) {
-    try {
-      Class<?> activityClass = Class.forName(activityClassName);
-      if (!CompensatableWorkflowActivity.class.isAssignableFrom(activityClass)) {
-        return null;
-      }
-
-      // TODO：we have to initialize the activity instance to just get the compensation
-      // activity class
-      CompensatableWorkflowActivity compensatableActivity = (CompensatableWorkflowActivity) activityClass
-          .getDeclaredConstructor()
-          .newInstance();
-      return compensatableActivity.getCompensationActivity().getCanonicalName();
-    } catch (Exception e) {
-      return null;
-    }
-  }
-
   private final SagaConfiguration config;
-  private final List<CompensatationContext> compensationActivities = new ArrayList<>();
+  private final List<CompensatationInformation> compensationActivities = new ArrayList<>();
 
   /**
    * Build up a Saga with its config.
@@ -72,15 +46,12 @@ public final class Saga {
    * 
    * @param activityClassName name of the activity class
    * @param activityInput     input of the activity to be compensated
-   * @param activityOutput    output of the activity to be compensated
    */
-  public void registerCompensation(String activityClassName,
-      Object activityInput, Object activityOutput) {
+  public void registerCompensation(String activityClassName, Object activityInput) {
     if (activityClassName == null || activityClassName.isEmpty()) {
       throw new IllegalArgumentException("activityClassName is required and should not be null or empty.");
     }
-    this.compensationActivities.add(
-        new CompensatationContext(activityClassName, activityInput, activityOutput));
+    this.compensationActivities.add(new CompensatationInformation(activityClassName, activityInput));
   }
 
   /**
@@ -93,12 +64,9 @@ public final class Saga {
     // Specical case: when parallel compensation is enabled and there is only one
     // compensation, we still
     // compensate sequentially.
-    System.out.println("============ compensationActivities.size()" + compensationActivities.size());
     if (config.isParallelCompensation() && compensationActivities.size() > 1) {
-      System.out.println("============ start compensateInParallel");
       compensateInParallel(ctx);
     } else {
-      System.out.println("============ start compensateSequentially");
       compensateSequentially(ctx);
     }
   }
@@ -112,7 +80,7 @@ public final class Saga {
 
     ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
     List<Callable<String>> compensationTasks = new ArrayList<>();
-    for (CompensatationContext compensationActivity : compensationActivities) {
+    for (CompensatationInformation compensationActivity : compensationActivities) {
       Callable<String> compensationTask = new Callable<String>() {
         @Override
         public String call() {
@@ -170,12 +138,11 @@ public final class Saga {
     }
   }
 
-  private String executeCompensateActivity(WorkflowContext ctx, CompensatationContext context)
+  private String executeCompensateActivity(WorkflowContext ctx, CompensatationInformation context)
       throws SagaCompensationException {
-    String activityClassName = context.getActivityClassName();
-    System.out.println("============ executeCompensateActivity" + activityClassName);
+    String activityClassName = context.getCompensatationActivityClassName();
     try {
-      Task<Void> task = ctx.callActivity(activityClassName, context);
+      Task<Void> task = ctx.callActivity(activityClassName, context.getCompensatationActivityInput());
       if (task != null) {
         task.await();
       }

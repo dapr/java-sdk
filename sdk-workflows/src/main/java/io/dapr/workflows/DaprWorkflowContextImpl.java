@@ -32,7 +32,6 @@ import java.util.List;
 public class DaprWorkflowContextImpl implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
   private final Logger logger;
-  private final boolean isSagaEnabled;
   private final Saga saga;
 
   /**
@@ -79,14 +78,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
 
     this.innerContext = context;
     this.logger = logger;
-
-    if (saga != null) {
-      this.isSagaEnabled = true;
-      this.saga = saga;
-    } else {
-      this.isSagaEnabled = false;
-      this.saga = null;
-    }
+    this.saga = saga;
   }
 
   /**
@@ -182,16 +174,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * {@inheritDoc}
    */
   public <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType) {
-    Task<V> activityOutput = this.innerContext.callActivity(name, input, options, returnType);
-    if (this.isSagaEnabled) {
-      // if saga is enabled and the activity is compensatable, auto register the
-      // corresponding activity in saga
-      String compentationActivityClassName = Saga.getCompentationActivityClassName(name);
-      if (compentationActivityClassName != null && !compentationActivityClassName.isEmpty()) {
-        saga.registerCompensation(compentationActivityClassName, input, activityOutput);
-      }
-    }
-    return activityOutput;
+    return this.innerContext.callActivity(name, input, options, returnType);
   }
 
   /**
@@ -248,6 +231,9 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
     this.innerContext.continueAsNew(input, preserveUnprocessedEvents);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Saga getSaga() {
     return this.saga;

@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows.saga;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,18 +49,6 @@ public class SagaTest {
   }
 
   @Test
-  public void testGetCompentationActivityClassName() {
-    String compentationActivityClassName = Saga.getCompentationActivityClassName(MockActivity.class.getName());
-    assertEquals(compentationActivityClassName, MockCompentationActivity.class.getCanonicalName());
-
-    compentationActivityClassName = Saga.getCompentationActivityClassName(MockActivity2.class.getName());
-    assertNull(compentationActivityClassName);
-
-    compentationActivityClassName = Saga.getCompentationActivityClassName("not.exist.class");
-    assertNull(compentationActivityClassName);
-  }
-
-  @Test
   public void testSaga_IllegalArgument() {
     assertThrows(IllegalArgumentException.class, () -> {
       new Saga(null);
@@ -75,7 +62,7 @@ public class SagaTest {
         .setContinueWithError(true).build();
     Saga saga = new Saga(config);
 
-    saga.registerCompensation(MockActivity.class.getName(), new MockActivityInput(), new MockActivityOutput());
+    saga.registerCompensation(MockActivity.class.getName(), new MockActivityInput());
   }
 
   @Test
@@ -86,10 +73,10 @@ public class SagaTest {
     Saga saga = new Saga(config);
 
     assertThrows(IllegalArgumentException.class, () -> {
-      saga.registerCompensation(null, "input", "output");
+      saga.registerCompensation(null, "input");
     });
     assertThrows(IllegalArgumentException.class, () -> {
-      saga.registerCompensation("", "input", "output");
+      saga.registerCompensation("", "input");
     });
   }
 
@@ -102,13 +89,13 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     saga.compensate(new MockWorkflowContext());
 
@@ -124,14 +111,14 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(new MockWorkflowContext());
@@ -151,15 +138,15 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
     input3.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(new MockWorkflowContext());
@@ -179,13 +166,13 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     saga.compensate(new MockWorkflowContext());
 
@@ -208,14 +195,14 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(new MockWorkflowContext());
@@ -241,15 +228,15 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
     input3.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(new MockWorkflowContext());
@@ -274,14 +261,14 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3, new MockActivityOutput());
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(new MockWorkflowContext());
@@ -295,12 +282,7 @@ public class SagaTest {
     assertEquals(Integer.valueOf(3), MockCompentationActivity.compensateOrder.get(0));
   }
 
-  public static class MockActivity implements WorkflowActivity, CompensatableWorkflowActivity {
-
-    @Override
-    public Class<? extends WorkflowActivity> getCompensationActivity() {
-      return MockCompentationActivity.class;
-    }
+  public static class MockActivity implements WorkflowActivity {
 
     @Override
     public Object run(WorkflowActivityContext ctx) {
@@ -310,24 +292,13 @@ public class SagaTest {
     }
   }
 
-  public static class MockActivity2 implements WorkflowActivity {
-
-    @Override
-    public Object run(WorkflowActivityContext ctx) {
-      MockActivityOutput output = new MockActivityOutput();
-      output.setSucceed(true);
-      return output;
-    }
-  }
-
-  public static class MockCompentationActivity implements WorkflowActivity {
+  public static class MockCompentationActivity implements CompensatableWorkflowActivity {
 
     private static List<Integer> compensateOrder = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public Object run(WorkflowActivityContext ctx) {
-      CompensatationContext compentationContext = ctx.getInput(CompensatationContext.class);
-      MockActivityInput input = (MockActivityInput) compentationContext.getActivityInput();
+      MockActivityInput input = ctx.getInput(MockActivityInput.class);
 
       if (input.isThrowException()) {
         throw new RuntimeException("compensate failed: order=" + input.getOrder());

@@ -60,10 +60,10 @@ public class SagaIntegrationTest {
     boolean workflowSuccess = false;
 
     // reset count to zero
-    synchronized(countLock) {
+    synchronized (countLock) {
       count = 0;
     }
-    
+
     Integer addInput = 100;
     Integer subtractInput = 20;
     Integer multiplyInput = 10;
@@ -72,10 +72,10 @@ public class SagaIntegrationTest {
     try {
       // step1: add activity
       String result = callActivity(AddActivity.class.getName(), addInput, String.class);
-      saga.registerCompensation(AddCompentationActivity.class.getName(), addInput, result);
+      saga.registerCompensation(AddCompentationActivity.class.getName(), addInput);
       // step2: subtract activity
       result = callActivity(SubtractActivity.class.getName(), subtractInput, String.class);
-      saga.registerCompensation(SubtractCompentationActivity.class.getName(), subtractInput, result);
+      saga.registerCompensation(SubtractCompentationActivity.class.getName(), subtractInput);
 
       if (parallelCompensation) {
         // only add/subtract activities support parallel compensation
@@ -83,19 +83,19 @@ public class SagaIntegrationTest {
 
         // step3: add activity again
         result = callActivity(AddActivity.class.getName(), addInput, String.class);
-        saga.registerCompensation(AddCompentationActivity.class.getName(), addInput, result);
+        saga.registerCompensation(AddCompentationActivity.class.getName(), addInput);
 
         // step4: substract activity again
         result = callActivity(SubtractActivity.class.getName(), subtractInput, String.class);
-        saga.registerCompensation(SubtractCompentationActivity.class.getName(), subtractInput, result);
+        saga.registerCompensation(SubtractCompentationActivity.class.getName(), subtractInput);
       } else {
         // step3: multiply activity
         result = callActivity(MultiplyActivity.class.getName(), multiplyInput, String.class);
-        saga.registerCompensation(MultiplyCompentationActivity.class.getName(), multiplyInput, result);
+        saga.registerCompensation(MultiplyCompentationActivity.class.getName(), multiplyInput);
 
         // step4: divide activity
         result = callActivity(DivideActivity.class.getName(), divideInput, String.class);
-        saga.registerCompensation(DivideCompentationActivity.class.getName(), divideInput, result);
+        saga.registerCompensation(DivideCompentationActivity.class.getName(), divideInput);
       }
 
       randomFail();
@@ -154,7 +154,7 @@ public class SagaIntegrationTest {
     }
   }
 
-  public static class AddActivity implements WorkflowActivity, CompensatableWorkflowActivity {
+  public static class AddActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
@@ -173,20 +173,13 @@ public class SagaIntegrationTest {
       // System.out.println(resultString);
       return resultString;
     }
-
-    @Override
-    public Class<? extends WorkflowActivity> getCompensationActivity() {
-      return AddCompentationActivity.class;
-    }
   }
 
-  public static class AddCompentationActivity implements WorkflowActivity {
+  public static class AddCompentationActivity implements CompensatableWorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
-      CompensatationContext compensatationContext = ctx.getInput(CompensatationContext.class);
-      Integer input = (Integer) compensatationContext.getActivityInput();
-      String output = (String)compensatationContext.getActivityOutput();
+      Integer input = ctx.getInput(Integer.class);
 
       int originalCount = 0;
       int updatedCount = 0;
@@ -203,7 +196,7 @@ public class SagaIntegrationTest {
     }
   }
 
-  public static class SubtractActivity implements WorkflowActivity, CompensatableWorkflowActivity {
+  public static class SubtractActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
@@ -222,20 +215,13 @@ public class SagaIntegrationTest {
       // System.out.println(resultString);
       return resultString;
     }
-
-    @Override
-    public Class<? extends WorkflowActivity> getCompensationActivity() {
-      return SubtractCompentationActivity.class;
-    }
   }
 
-  public static class SubtractCompentationActivity implements WorkflowActivity {
+  public static class SubtractCompentationActivity implements CompensatableWorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
-      CompensatationContext compensatationContext = ctx.getInput(CompensatationContext.class);
-      Integer input = (Integer) compensatationContext.getActivityInput();
-      String output = (String)compensatationContext.getActivityOutput();
+      Integer input = ctx.getInput(Integer.class);
 
       int originalCount = 0;
       int updatedCount = 0;
@@ -252,7 +238,7 @@ public class SagaIntegrationTest {
     }
   }
 
-  public static class MultiplyActivity implements WorkflowActivity, CompensatableWorkflowActivity {
+  public static class MultiplyActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
@@ -271,21 +257,13 @@ public class SagaIntegrationTest {
       // System.out.println(resultString);
       return resultString;
     }
-
-    @Override
-    public Class<? extends WorkflowActivity> getCompensationActivity() {
-      return MultiplyCompentationActivity.class;
-    }
   }
 
-  public static class MultiplyCompentationActivity implements WorkflowActivity {
+  public static class MultiplyCompentationActivity implements CompensatableWorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
-      CompensatationContext compensatationContext = ctx.getInput(CompensatationContext.class);
-      Integer input = (Integer) compensatationContext.getActivityInput();
-            String output = (String)compensatationContext.getActivityOutput();
-
+      Integer input = ctx.getInput(Integer.class);
 
       int originalCount = 0;
       int updatedCount = 0;
@@ -302,8 +280,7 @@ public class SagaIntegrationTest {
     }
   }
 
-
-  public static class DivideActivity implements WorkflowActivity, CompensatableWorkflowActivity {
+  public static class DivideActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
@@ -322,21 +299,13 @@ public class SagaIntegrationTest {
       // System.out.println(resultString);
       return resultString;
     }
-
-    @Override
-    public Class<? extends WorkflowActivity> getCompensationActivity() {
-      return DivideCompentationActivity.class;
-    }
   }
 
-  public static class DivideCompentationActivity implements WorkflowActivity {
+  public static class DivideCompentationActivity implements CompensatableWorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
-      CompensatationContext compensatationContext = ctx.getInput(CompensatationContext.class);
-      Integer input = (Integer) compensatationContext.getActivityInput();
-            String output = (String)compensatationContext.getActivityOutput();
-
+      Integer input = ctx.getInput(Integer.class);
 
       int originalCount = 0;
       int updatedCount = 0;

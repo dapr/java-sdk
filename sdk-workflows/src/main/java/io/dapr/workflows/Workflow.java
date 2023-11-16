@@ -47,16 +47,13 @@ public abstract class Workflow {
       stub.run(ctx);
     } else {
       // saga enabled
-      System.out.println("============ saga enabled");
       try {
         stub.run(ctx);
       } catch (OrchestratorBlockedException e) {
         throw e;
       } catch (Exception e) {
-        System.out.println("============ exception");
         e.printStackTrace();
         try {
-          System.out.println("============ start compensate");
           saga.compensate(ctx);
         } catch (Exception se) {
           se.addSuppressed(e);

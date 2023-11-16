@@ -516,8 +516,17 @@ public interface WorkflowContext {
    */
   void continueAsNew(Object input, boolean preserveUnprocessedEvents);
 
+
   /**
-   * get Saga if saga is enabled.
+   * is Saga enabled.
+   * @return true if saga is enabled
+   */
+  default boolean isSagaEnabled() {
+    return this.getSaga() != null;
+  }
+
+  /**
+   * get Saga.
    * 
    * @return saga, null if saga is disabled
    */

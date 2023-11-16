@@ -18,12 +18,6 @@ import io.dapr.workflows.runtime.WorkflowActivity;
 /**
  * Interface for a compensatable workflow activity.
  */
-public interface CompensatableWorkflowActivity {
+public interface CompensatableWorkflowActivity extends WorkflowActivity {
 
-  /**
-   * get the compensation activity class.
-   * 
-   * @return the compensation activity class
-   */
-  Class<? extends WorkflowActivity> getCompensationActivity();
 }
