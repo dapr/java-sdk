@@ -92,13 +92,13 @@ public class DaprWorkflowContextImplTest {
   @Test
   public void DaprWorkflowContextWithEmptyInnerContext() {
     assertThrows(IllegalArgumentException.class, () -> {
-      context = new DaprWorkflowContextImpl(mockInnerContext, null);
+      context = new DaprWorkflowContextImpl(mockInnerContext, (Logger)null);
     });  }
 
   @Test
   public void DaprWorkflowContextWithEmptyLogger() {
     assertThrows(IllegalArgumentException.class, () -> {
-      context = new DaprWorkflowContextImpl(null, null);
+      context = new DaprWorkflowContextImpl(null, (Logger)null);
     });
   }
 

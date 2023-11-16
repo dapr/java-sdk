@@ -18,6 +18,7 @@ import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskFailedException;
 import com.microsoft.durabletask.TaskOptions;
+import io.dapr.workflows.saga.Saga;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -514,4 +515,11 @@ public interface WorkflowContext {
    *                                  history, otherwise {@code false}
    */
   void continueAsNew(Object input, boolean preserveUnprocessedEvents);
+
+  /**
+   * get Saga if saga is enabled.
+   * 
+   * @return saga, null if saga is disabled
+   */
+  Saga getSaga();
 }

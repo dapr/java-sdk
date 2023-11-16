@@ -13,14 +13,17 @@ limitations under the License.
 
 package io.dapr.workflows.saga;
 
+import io.dapr.workflows.runtime.WorkflowActivity;
+
 /**
  * Interface for a compensatable workflow activity.
  */
 public interface CompensatableWorkflowActivity {
+
   /**
-   * Compensate the activity.
-   * @param activityInput input of the activity to be compensated
-   * @param activityOutput output of the activity to be compensated
+   * get the compensation activity class.
+   * 
+   * @return the compensation activity class
    */
-  void compensate(Object activityInput, Object activityOutput);
+  Class<? extends WorkflowActivity> getCompensationActivity();
 }

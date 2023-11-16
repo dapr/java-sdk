@@ -13,16 +13,45 @@ limitations under the License.
 
 package io.dapr.workflows.saga;
 
+import com.microsoft.durabletask.OrchestratorBlockedException;
+import com.microsoft.durabletask.Task;
+import io.dapr.workflows.WorkflowContext;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public final class Saga {
+
+  /**
+   * get the compensation activity class name for a given workflow activity class
+   * name.
+   * 
+   * @param activityClassName workflow activity class name
+   * @return compensation activity class name, null if not found
+   */
+  public static String getCompentationActivityClassName(String activityClassName) {
+    try {
+      Class<?> activityClass = Class.forName(activityClassName);
+      if (!CompensatableWorkflowActivity.class.isAssignableFrom(activityClass)) {
+        return null;
+      }
+
+      // TODO：we have to initialize the activity instance to just get the compensation
+      // activity class
+      CompensatableWorkflowActivity compensatableActivity = (CompensatableWorkflowActivity) activityClass
+          .getDeclaredConstructor()
+          .newInstance();
+      return compensatableActivity.getCompensationActivity().getCanonicalName();
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   private final SagaConfiguration config;
   private final List<CompensatationContext> compensationActivities = new ArrayList<>();
 
@@ -56,20 +85,25 @@ public final class Saga {
 
   /**
    * Compensate all registered activities.
+   * 
+   * @param ctx Workflow context.
    */
-  public void compensate() {
+  public void compensate(WorkflowContext ctx) {
     // Check if parallel compensation is enabled
     // Specical case: when parallel compensation is enabled and there is only one
     // compensation, we still
     // compensate sequentially.
+    System.out.println("============ compensationActivities.size()" + compensationActivities.size());
     if (config.isParallelCompensation() && compensationActivities.size() > 1) {
-      compensateInParallel();
+      System.out.println("============ start compensateInParallel");
+      compensateInParallel(ctx);
     } else {
-      compensateSequentially();
+      System.out.println("============ start compensateSequentially");
+      compensateSequentially(ctx);
     }
   }
 
-  private void compensateInParallel() {
+  private void compensateInParallel(WorkflowContext ctx) {
     // thread number should be limited by maxParallelThread
     int threadNumber = compensationActivities.size();
     if (threadNumber > config.getMaxParallelThread()) {
@@ -82,7 +116,7 @@ public final class Saga {
       Callable<String> compensationTask = new Callable<String>() {
         @Override
         public String call() {
-          return executeCompensateActivity(compensationActivity);
+          return executeCompensateActivity(ctx, compensationActivity);
         }
       };
       compensationTasks.add(compensationTask);
@@ -99,12 +133,6 @@ public final class Saga {
     for (Future<String> resultFuture : resultFutures) {
       try {
         resultFuture.get();
-      } catch (ExecutionException e) {
-        if (sagaException == null) {
-          sagaException = (SagaCompensationException) e.getCause();
-        } else {
-          sagaException.addSuppressed(e.getCause());
-        }
       } catch (Exception e) {
         if (sagaException == null) {
           sagaException = new SagaCompensationException("Failed to compensate in parallel.", e);
@@ -119,55 +147,45 @@ public final class Saga {
     }
   }
 
-  private void compensateSequentially() {
+  private void compensateSequentially(WorkflowContext ctx) {
+    SagaCompensationException sagaException = null;
     for (int i = compensationActivities.size() - 1; i >= 0; i--) {
       try {
-        executeCompensateActivity(compensationActivities.get(i));
+        executeCompensateActivity(ctx, compensationActivities.get(i));
       } catch (SagaCompensationException e) {
+        if (sagaException == null) {
+          sagaException = e;
+        } else {
+          sagaException.addSuppressed(e);
+        }
+
         if (!config.isContinueWithError()) {
-          throw e;
+          throw sagaException;
         }
       }
     }
+
+    if (sagaException != null) {
+      throw sagaException;
+    }
   }
 
-  private String executeCompensateActivity(CompensatationContext context) throws SagaCompensationException {
+  private String executeCompensateActivity(WorkflowContext ctx, CompensatationContext context)
+      throws SagaCompensationException {
     String activityClassName = context.getActivityClassName();
+    System.out.println("============ executeCompensateActivity" + activityClassName);
     try {
-      Class<?> activityClass = Class.forName(activityClassName);
-      CompensatableWorkflowActivity compensatableActivity = (CompensatableWorkflowActivity) activityClass
-          .getDeclaredConstructor()
-          .newInstance();
-      compensatableActivity.compensate(context.getActivityInput(), context.getActivityOutput());
+      Task<Void> task = ctx.callActivity(activityClassName, context);
+      if (task != null) {
+        task.await();
+      }
       // return activityClassName for logs and tracing
       return activityClassName;
+    } catch (OrchestratorBlockedException e) {
+      throw e;
     } catch (Exception e) {
+      e.printStackTrace();
       throw new SagaCompensationException("Exception in saga compensatation: activity=" + activityClassName, e);
-    }
-  }
-
-  private static class CompensatationContext {
-    private final String activityClassName;
-    private final Object activityInput;
-    private final Object activityOutput;
-
-    public CompensatationContext(String activityClassName, Object activityInput,
-        Object activityOutput) {
-      this.activityClassName = activityClassName;
-      this.activityInput = activityInput;
-      this.activityOutput = activityOutput;
-    }
-
-    public String getActivityClassName() {
-      return activityClassName;
-    }
-
-    public Object getActivityInput() {
-      return activityInput;
-    }
-
-    public Object getActivityOutput() {
-      return activityOutput;
     }
   }
 }

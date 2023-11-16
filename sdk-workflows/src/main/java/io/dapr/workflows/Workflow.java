@@ -13,11 +13,15 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import com.microsoft.durabletask.OrchestratorBlockedException;
+import io.dapr.workflows.saga.Saga;
+import io.dapr.workflows.saga.SagaConfiguration;
+
 /**
  * Common interface for workflow implementations.
  */
 public abstract class Workflow {
-  public Workflow(){
+  public Workflow() {
   }
 
   /**
@@ -30,10 +34,49 @@ public abstract class Workflow {
   /**
    * Executes the workflow logic.
    *
-   * @param ctx provides access to methods for scheduling durable tasks and getting information about the current
+   * @param ctx provides access to methods for scheduling durable tasks and
+   *            getting information about the current
    *            workflow instance.
    */
   public void run(WorkflowContext ctx) {
-    this.create().run(ctx);
+    WorkflowStub stub = this.create();
+
+    Saga saga = ctx.getSaga();
+    if (saga == null) {
+      // saga disabled
+      stub.run(ctx);
+    } else {
+      // saga enabled
+      System.out.println("============ saga enabled");
+      try {
+        stub.run(ctx);
+      } catch (OrchestratorBlockedException e) {
+        throw e;
+      } catch (Exception e) {
+        System.out.println("============ exception");
+        e.printStackTrace();
+        try {
+          System.out.println("============ start compensate");
+          saga.compensate(ctx);
+        } catch (Exception se) {
+          se.addSuppressed(e);
+          throw se;
+        }
+
+        // TODO: should we complete the workflow here, or just re-throw the exception
+        // ctx.complete(...);
+        // throw new RuntimeException(e);
+        throw e;
+      }
+    }
+  }
+
+  /**
+   * get saga configuration.
+   * 
+   * @return saga configuration
+   */
+  public SagaConfiguration getSagaConfiguration() {
+    return null;
   }
 }
