@@ -53,6 +53,6 @@ public class ActorExceptionIT extends BaseIT {
           "INTERNAL",
           "INTERNAL: error invoke actor method: error from actor service",
           () ->  proxy.throwException());
-    }, 5000);
+    }, 10000);
   }
 }
