@@ -41,7 +41,7 @@ public class MethodInvokeIT extends BaseIT {
           DaprApiProtocol.GRPC,  // appProtocol
           60000);
         daprRun.switchToGRPC();
-        daprRun.waitForAppHealth(20000);
+        daprRun.waitForAppHealth(30000);
     }
 
     @Test
