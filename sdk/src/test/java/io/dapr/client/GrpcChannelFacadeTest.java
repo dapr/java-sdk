@@ -74,7 +74,14 @@ public class GrpcChannelFacadeTest {
     server.shutdown();
     server.awaitTermination();
   }
-
+  private void addMockRulesForBadHealthCheck() {
+    for (int i = 0; i < 6; i++) {
+      mockInterceptor.addRule()
+              .get()
+              .path("/v1.0/healthz/outbound")
+              .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
+    }
+  }
   @Test
   public void waitForSidecarTimeoutHealthCheck() throws Exception {
     VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
@@ -90,6 +97,8 @@ public class GrpcChannelFacadeTest {
         .usePlaintext()
             .build();
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
+
+    addMockRulesForBadHealthCheck();
 
     StepVerifier.create(channelFacade.waitForChannelReady(timeoutInMilliseconds))
             .expectSubscription()
