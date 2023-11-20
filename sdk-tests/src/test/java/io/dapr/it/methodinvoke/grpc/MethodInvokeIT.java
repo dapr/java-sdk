@@ -40,18 +40,16 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.class,
           DaprApiProtocol.GRPC,  // appProtocol
           60000);
-        System.out.println("#### startDaprApp ");
         daprRun.switchToGRPC();
-        System.out.println("#### switchToGRPC ");
         daprRun.waitForAppHealth(40000);
-        System.out.println("#### waitForAppHealth ");
     }
 
     @Test
     public void testInvoke() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
-            System.out.println("#### waitForSidecar ");
+            daprRun.waitForAppHealth(10000);
+            
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
 
@@ -99,6 +97,8 @@ public class MethodInvokeIT extends BaseIT {
     public void testInvokeTimeout() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
+            daprRun.waitForAppHealth(10000);
+
             long started = System.currentTimeMillis();
             SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
             String message = assertThrows(IllegalStateException.class, () ->
@@ -124,8 +124,6 @@ public class MethodInvokeIT extends BaseIT {
             // This message is not ideal but last time it was improved, there was side effects reported by users.
             // If this test fails, there might be a regression in runtime (like we had in 1.10.0).
             // The expectations below are as per 1.9 release and (later on) hotfixed in 1.10.
-            System.out.println("#### "+exception.getErrorCode());
-            System.out.println("#### "+exception.getMessage());
             assertEquals("UNKNOWN", exception.getErrorCode());
             assertEquals("UNKNOWN: ", exception.getMessage());
         }
