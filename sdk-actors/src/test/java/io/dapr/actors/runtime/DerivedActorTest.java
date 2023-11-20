@@ -19,12 +19,13 @@ import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -229,7 +230,7 @@ public class DerivedActorTest {
     ActorProxy proxy = createActorProxyForActorChild();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
+    Assertions.assertEquals(
       "abcabc",
       proxy.invokeMethod("stringInStringOut", "abc", String.class).block());
   }
@@ -239,11 +240,11 @@ public class DerivedActorTest {
     ActorProxy proxy = createActorProxyForActorChild();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
+    Assertions.assertEquals(
       false,
       proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       true,
       proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
@@ -253,24 +254,26 @@ public class DerivedActorTest {
     ActorProxy actorProxy = createActorProxyForActorChild();
 
     // stringInVoidOut() has not been invoked so this is false
-    Assert.assertEquals(
+    Assertions.assertEquals(
       false,
       actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     actorProxy.invokeMethod("stringInVoidOut", "hello world").block();
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       true,
       actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
   }
 
-  @Test(expected = IllegalMonitorStateException.class)
+  @Test
   public void stringInVoidOutIntentionallyThrows() {
     ActorProxy actorProxy = createActorProxyForActorChild();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block();
+
+    assertThrows(IllegalMonitorStateException.class, () ->
+    actorProxy.invokeMethod("stringInVoidOutIntentionallyThrows", "hello world").block());
   }
 
   @Test
@@ -281,10 +284,10 @@ public class DerivedActorTest {
     // this should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
     MyData response = actorProxy.invokeMethod("classInClassOut", d, MyData.class).block();
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       "hihi",
       response.getName());
-    Assert.assertEquals(
+    Assertions.assertEquals(
       6,
       response.getNum());
   }
@@ -294,33 +297,33 @@ public class DerivedActorTest {
   public void testInheritedActorMethods() {
     ActorProxy actorProxy = createActorProxyForActorChild();
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       "www",
       actorProxy.invokeMethod("onlyImplementedInParentStringInStringOut", "w", String.class).block());
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       true,
       actorProxy.invokeMethod("onlyImplementedInParentStringInBooleanOut", "icecream", Boolean.class).block());
 
     // onlyImplementedInParentStringInVoidOut() has not been invoked so this is false
-    Assert.assertEquals(
+    Assertions.assertEquals(
       false,
       actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
 
     actorProxy.invokeMethod("onlyImplementedInParentStringInVoidOut", "icecream", Boolean.class).block();
 
     // now it should return true.
-    Assert.assertEquals(
+    Assertions.assertEquals(
       true,
       actorProxy.invokeMethod("methodReturningVoidInvoked", Boolean.class).block());
 
     MyData d = new MyData("hi", 3);
     MyData response = actorProxy.invokeMethod("onlyImplementedInParentClassInClassOut", d, MyData.class).block();
 
-    Assert.assertEquals(
+    Assertions.assertEquals(
       "hihihi",
       response.getName());
-    Assert.assertEquals(
+    Assertions.assertEquals(
       9,
       response.getNum());
   }

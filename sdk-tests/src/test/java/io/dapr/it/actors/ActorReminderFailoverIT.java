@@ -19,9 +19,9 @@ import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.MyActorService;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ import java.util.UUID;
 import static io.dapr.it.actors.MyActorTestUtils.countMethodCalls;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ActorReminderFailoverIT extends BaseIT {
 
@@ -47,7 +47,7 @@ public class ActorReminderFailoverIT extends BaseIT {
 
   private DaprRun clientAppRun;
 
-  @Before
+  @BeforeEach
   public void init() throws Exception {
     firstAppRun = startDaprApp(
         ActorReminderFailoverIT.class.getSimpleName() + "One",
@@ -78,7 +78,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     proxy = proxyBuilder.build(actorId);
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     // call unregister
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");

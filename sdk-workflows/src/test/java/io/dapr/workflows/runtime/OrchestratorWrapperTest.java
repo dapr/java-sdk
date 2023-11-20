@@ -18,23 +18,26 @@ import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class OrchestratorWrapperTest {
-    public static class TestWorkflow extends Workflow {
-      @Override
-      public WorkflowStub create() {
-        return WorkflowContext::getInstanceId;
-      }
+  public static class TestWorkflow extends Workflow {
+    @Override
+    public WorkflowStub create() {
+      return WorkflowContext::getInstanceId;
     }
+  }
 
   @Test
   public void getName() {
     OrchestratorWrapper<TestWorkflow> wrapper = new OrchestratorWrapper<>(TestWorkflow.class);
-    Assert.assertEquals(
+    Assertions.assertEquals(
         "io.dapr.workflows.runtime.OrchestratorWrapperTest.TestWorkflow",
         wrapper.getName()
     );
@@ -44,7 +47,7 @@ public class OrchestratorWrapperTest {
   public void createWithClass() {
     TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
     OrchestratorWrapper<TestWorkflow> wrapper = new OrchestratorWrapper<>(TestWorkflow.class);
-    when( mockContext.getInstanceId() ).thenReturn("uuid");
+    when(mockContext.getInstanceId()).thenReturn("uuid");
     wrapper.create().run(mockContext);
     verify(mockContext, times(1)).getInstanceId();
   }

@@ -21,7 +21,10 @@ import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
@@ -29,7 +32,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfigurationClientIT extends BaseIT {
 
@@ -59,19 +62,19 @@ public class ConfigurationClientIT extends BaseIT {
             "myconfigkey3", "update_myconfigvalue3||2"
     };
 
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
         daprRun.switchToGRPC();
         daprClient = new DaprClientBuilder().build();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         daprClient.close();
     }
 
-    @Before
+    @BeforeEach
     public void setupConfigStore() {
         executeDockerCommand(insertCmd);
     }

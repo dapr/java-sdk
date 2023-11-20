@@ -11,7 +11,7 @@ cascade:
   github_branch: master
 ---
 
-## Pre-requisites
+## Prerequisites
 
 - [Dapr CLI]({{< ref install-dapr-cli.md >}}) installed
 - Initialized [Dapr environment]({{< ref install-dapr-selfhost.md >}})
@@ -24,9 +24,17 @@ cascade:
     - [Maven 3.x](https://maven.apache.org/install.html)
     - [Gradle 6.x](https://gradle.org/install/)
 
-## Importing Dapr's Java SDK
+## Import Dapr's Java SDK
+
+Next, import the Java SDK packages to get started. Select your preferred build tool to learn how to import.
+
+{{< tabs Maven Gradle >}}
+
+{{% codetab %}}
+<!--Maven-->
 
 For a Maven project, add the following to your `pom.xml` file: 
+
 ```xml
 <project>
   ...
@@ -36,25 +44,29 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     ...
   </dependencies>
   ...
 </project>
 ```
+{{% /codetab %}}
+
+{{% codetab %}}
+<!--Gradle-->
 
 For a Gradle project, add the following to your `build.gradle` file:
 
@@ -62,204 +74,38 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.9.0')
+    compile('io.dapr:dapr-sdk:1.10.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.9.0')
+    compile('io.dapr:dapr-sdk-actors:1.10.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.9.0')
+    compile('io.dapr:dapr-sdk-springboot:1.10.0')
 }
 ```
 
-If you are also using Spring Boot, you may run into a common issue where the OkHttp version that the Dapr SDK uses conflicts with the one specified in the Spring Boot _Bill of Materials_.
-You can fix this by specifying a compatible OkHttp version in your project to match the version that the Dapr SDK uses:
+{{% /codetab %}}
+
+{{< /tabs >}}
+
+If you are also using Spring Boot, you may run into a common issue where the `OkHttp` version that the Dapr SDK uses conflicts with the one specified in the Spring Boot _Bill of Materials_.
+
+You can fix this by specifying a compatible `OkHttp` version in your project to match the version that the Dapr SDK uses:
 
 ```xml
 <dependency>
   <groupId>com.squareup.okhttp3</groupId>
   <artifactId>okhttp</artifactId>
-  <version>4.9.0</version>
+  <version>1.10.0</version>
 </dependency>
 ```
 
-## Building blocks
+## Try it out
 
-The Java SDK allows you to interface with all of the [Dapr building blocks]({{< ref building-blocks >}}).
+Put the Dapr Java SDK to the test. Walk through the Java quickstarts and tutorials to see Dapr in action:
 
-### Invoke a service
-
-```java
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-
-try (DaprClient client = (new DaprClientBuilder()).build()) {
-  // invoke a 'GET' method (HTTP) skipping serialization: \say with a Mono<byte[]> return type
-  // for gRPC set HttpExtension.NONE parameters below
-  response = client.invokeMethod(SERVICE_TO_INVOKE, METHOD_TO_INVOKE, "{\"name\":\"World!\"}", HttpExtension.GET, byte[].class).block();
-
-  // invoke a 'POST' method (HTTP) skipping serialization: to \say with a Mono<byte[]> return type     
-  response = client.invokeMethod(SERVICE_TO_INVOKE, METHOD_TO_INVOKE, "{\"id\":\"100\", \"FirstName\":\"Value\", \"LastName\":\"Value\"}", HttpExtension.POST, byte[].class).block();
-
-  System.out.println(new String(response));
-
-  // invoke a 'POST' method (HTTP) with serialization: \employees with a Mono<Employee> return type      
-  Employee newEmployee = new Employee("Nigel", "Guitarist");
-  Employee employeeResponse = client.invokeMethod(SERVICE_TO_INVOKE, "employees", newEmployee, HttpExtension.POST, Employee.class).block();
-}
-```
-
-- For a full guide on service invocation visit [How-To: Invoke a service]({{< ref howto-invoke-discover-services.md >}}).
-- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/invoke) for code samples and instructions to try out service invocation
-
-### Save & get application state
-
-```java
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.State;
-import reactor.core.publisher.Mono;
-
-try (DaprClient client = (new DaprClientBuilder()).build()) {
-  // Save state
-  client.saveState(STATE_STORE_NAME, FIRST_KEY_NAME, myClass).block();
-
-  // Get state
-  State<MyClass> retrievedMessage = client.getState(STATE_STORE_NAME, FIRST_KEY_NAME, MyClass.class).block();
-
-  // Delete state
-  client.deleteState(STATE_STORE_NAME, FIRST_KEY_NAME).block();
-}
-```
-
-- For a full list of state operations visit [How-To: Get & save state]({{< ref howto-get-save-state.md >}}).
-- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/state) for code samples and instructions to try out state management
-
-### Publish & subscribe to messages
-
-##### Publish messages
-
-```java
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.Metadata;
-import static java.util.Collections.singletonMap;
-
-try (DaprClient client = (new DaprClientBuilder()).build()) {
-  client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message, singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS)).block();
-}
-```
-
-##### Subscribe to messages
-
-```java
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.Topic;
-import io.dapr.client.domain.BulkSubscribeAppResponse;
-import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
-import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
-import io.dapr.client.domain.BulkSubscribeMessage;
-import io.dapr.client.domain.BulkSubscribeMessageEntry;
-import io.dapr.client.domain.CloudEvent;
-import io.dapr.springboot.annotations.BulkSubscribe;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Mono;
-
-@RestController
-public class SubscriberController {
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}")
-  @PostMapping(path = "/testingtopic")
-  public Mono<Void> handleMessage(@RequestBody(required = false) CloudEvent<?> cloudEvent) {
-    return Mono.fromRunnable(() -> {
-      try {
-        System.out.println("Subscriber got: " + cloudEvent.getData());
-        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
-  }
-
-  @Topic(name = "testingtopic", pubsubName = "${myAppProperty:messagebus}",
-          rule = @Rule(match = "event.type == 'myevent.v2'", priority = 1))
-  @PostMapping(path = "/testingtopicV2")
-  public Mono<Void> handleMessageV2(@RequestBody(required = false) CloudEvent envelope) {
-    return Mono.fromRunnable(() -> {
-      try {
-        System.out.println("Subscriber got: " + cloudEvent.getData());
-        System.out.println("Subscriber got: " + OBJECT_MAPPER.writeValueAsString(cloudEvent));
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
-  }
-
-  @BulkSubscribe()
-  @Topic(name = "testingtopicbulk", pubsubName = "${myAppProperty:messagebus}")
-  @PostMapping(path = "/testingtopicbulk")
-  public Mono<BulkSubscribeAppResponse> handleBulkMessage(
-          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
-    return Mono.fromCallable(() -> {
-      if (bulkMessage.getEntries().size() == 0) {
-        return new BulkSubscribeAppResponse(new ArrayList<BulkSubscribeAppResponseEntry>());
-      }
-
-      System.out.println("Bulk Subscriber received " + bulkMessage.getEntries().size() + " messages.");
-
-      List<BulkSubscribeAppResponseEntry> entries = new ArrayList<BulkSubscribeAppResponseEntry>();
-      for (BulkSubscribeMessageEntry<?> entry : bulkMessage.getEntries()) {
-        try {
-          System.out.printf("Bulk Subscriber message has entry ID: %s\n", entry.getEntryId());
-          CloudEvent<?> cloudEvent = (CloudEvent<?>) entry.getEvent();
-          System.out.printf("Bulk Subscriber got: %s\n", cloudEvent.getData());
-          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
-        } catch (Exception e) {
-          e.printStackTrace();
-          entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
-        }
-      }
-      return new BulkSubscribeAppResponse(entries);
-    });
-  }
-}
-```
-
-##### Bulk Publish Messages
-> Note: API is in Alpha stage
-
-
-```java
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
-import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseFailedEntry;
-import java.util.ArrayList;
-import java.util.List;
-class Solution {
-  public void publishMessages() {
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
-      // Create a list of messages to publish
-      List<String> messages = new ArrayList<>();
-      for (int i = 0; i < NUM_MESSAGES; i++) {
-        String message = String.format("This is message #%d", i);
-        messages.add(message);
-        System.out.println("Going to publish message : " + message);
-      }
-
-      // Publish list of messages using the bulk publish API
-      BulkPublishResponse<String> res = client.publishEvents(PUBSUB_NAME, TOPIC_NAME, "text/plain", messages).block()
-    }
-  }
-}
-```
-
-- For a full guide on publishing messages and subscribing to a topic [How-To: Publish & subscribe]({{< ref howto-publish-subscribe.md >}}).
-- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/pubsub/http) for code samples and instructions to try out pub/sub
-
-### Interact with output bindings
+| SDK samples | Description |
+| ----------- | ----------- |
+| [Quickstarts]({{< ref quickstarts >}}) | Experience Dapr's API building blocks in just a few minutes using the Java SDK. |
+| [SDK samples](https://github.com/dapr/java-sdk/tree/master/examples) | Clone the SDK repo to try out some examples and get started. |
 
 ```java
 import io.dapr.client.DaprClient;
@@ -446,5 +292,4 @@ try (DaprClient client = builder.build(); DaprPreviewClient previewClient = buil
 - For a full list of configuration operations visit [How-To: Query state]({{< ref howto-state-query-api.md >}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/querystate) for complete code sample.
 
-## Related links
-- [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)
+Learn more about the [Dapr Java SDK packages available to add to your Java applications](https://dapr.github.io/java-sdk/).

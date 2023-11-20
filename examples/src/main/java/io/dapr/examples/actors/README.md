@@ -1,6 +1,6 @@
 # Dapr Actors Sample
 
-In this example, we'll use Dapr to test the actor pattern capabilities such as concurrency, state, life-cycle management for actor activation/deactivation and timers and reminders to wake-up actors.
+In this example, we'll use Dapr to test the actor pattern capabilities such as concurrency, state, life-cycle management for actor activation/deactivation, timers, and reminders to wake-up actors.
 
 Visit [this](https://docs.dapr.io/developing-applications/building-blocks/actors/) link for more information about the Actor pattern.
 
@@ -13,7 +13,7 @@ This example contains the follow classes:
  
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -41,9 +41,13 @@ Get into the examples directory.
 cd examples
 ```
 
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
 ### Running the Demo actor service
 
-The first Java class is `DemoActorService`. Its job is to register an implementation of `DemoActor` in the Dapr's Actor runtime. In `DemoActorService.java` file, you will find the `DemoActorService` class and the `main` method. See the code snippet below:
+The first Java class is `DemoActorService`. It's job is to register an implementation of `DemoActor` in the Dapr's Actor runtime. In the `DemoActorService.java` file, you will find the `DemoActorService` class and the `main` method. See the code snippet below:
 
 ```java
 public class DemoActorService {
@@ -62,7 +66,7 @@ public class DemoActorService {
 This application uses `ActorRuntime.getInstance().registerActor()` in order to register `DemoActorImpl` as an actor in the Dapr Actor runtime. Internally, it is using `DefaultObjectSerializer` for two properties: `objectSerializer` is for Dapr's sent and received objects, and `stateSerializer` is for objects to be persisted.
  
 
-`DaprApplication.start()` method will run the Spring Boot [DaprApplication](../../../springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](https://github.com/dapr/java-sdk/blob/master/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
+`DaprApplication.start()` method will run the Spring Boot [DaprApplication](https://github.com/dapr/java-sdk/blob/master/sdk-tests/src/test/java/io/dapr/it/actors/services/springboot/DaprApplication.java), which registers the Dapr Spring Boot controller [DaprController](https://github.com/dapr/java-sdk/blob/master/sdk-springboot/src/main/java/io/dapr/springboot/DaprController.java). This controller contains all Actor methods implemented as endpoints. The Dapr's sidecar will call into the controller.
 
 See [DemoActorImpl](DemoActorImpl.java) for details on the implementation of an actor:
 ```java
@@ -110,7 +114,7 @@ public class DemoActorImpl extends AbstractActor implements DemoActor, Remindabl
   }
 }
 ```
-An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`. The `DemoActor` interface is used by the Actor runtime and also client. See how `DemoActor` interface can be annotated as Dapr Actor.
+An actor inherits from `AbstractActor` and implements the constructor to pass through `ActorRuntimeContext` and `ActorId`. By default, the actor's name will be the same as the class' name. Optionally, it can be annotated with `ActorType` and override the actor's name. The actor's methods can be synchronously or use [Project Reactor's Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) return type. Finally, state management is done via methods in `super.getActorStateManager()`. The `DemoActor` interface is used by the Actor runtime and also client. See how the `DemoActor` interface can be annotated as a Dapr Actor.
 
 ```java
 import io.dapr.actors.ActorMethod;
@@ -229,9 +233,9 @@ public class DemoActorClient {
 
 First, the client defines how many actors it is going to create. The main method declares a `ActorClient` and `ActorProxyBuilder` to create instances of the `DemoActor` interface, which are implemented automatically by the SDK and make remote calls to the equivalent methods in Actor runtime. `ActorClient` is reusable for different actor types and should be instantiated only once in your code. `ActorClient` also implements `AutoCloseable`, which means it holds resources that need to be closed. In this example, we use the "try-resource" feature in Java.
 
-Then, the code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally `say` method which will print a message containing the received string along with the formatted server time. 
+Then, the code executes the `callActorForever` private method once per actor. Initially, it will invoke `registerReminder()`, which sets the due time and period for the reminder. Then, `incrementAndGet()` increments a counter, persists it and sends it back as response. Finally, `say` method will print a message containing the received string along with the formatted server time. 
 
-Use the follow command to execute the DemoActorClient:
+Use the following command to execute the DemoActorClient:
 
 <!-- STEP
 name: Run Demo Actor Client
@@ -301,10 +305,10 @@ Finally, the console for `demoactorclient` got the service responses:
 == APP == Reply 2023-05-23 11:04:49.863 received from actor at index 2 with ID 4720f646-baaa-4fae-86dd-aec2fc2ead6e 
 ```
 
-For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](../../../springboot/DaprApplication.java) Application implementation.
+For more details on Dapr SpringBoot integration, please refer to [Dapr Spring Boot](https://github.com/dapr/java-sdk/blob/master/sdk-tests/src/test/java/io/dapr/it/actors/services/springboot/DaprApplication.java) Application implementation.
 
 ### Limitations
 
 Currently, these are the limitations in the Java SDK for Dapr:
-* Actor interface cannot have overloaded methods (methods with same name but different signature).
+* Actor interface cannot have overloaded methods (methods with same name, but different signature).
 * Actor methods can only have zero or one parameter.

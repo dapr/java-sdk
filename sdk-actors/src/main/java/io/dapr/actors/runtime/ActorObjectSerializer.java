@@ -146,6 +146,39 @@ public class ActorObjectSerializer extends ObjectSerializer {
       if (config.getRemindersStoragePartitions() != null) {
         generator.writeNumberField("remindersStoragePartitions", config.getRemindersStoragePartitions());
       }
+      if (!config.getActorTypeConfigs().isEmpty()) {
+
+        generator.writeArrayFieldStart("entitiesConfig");
+        for (ActorTypeConfig actorTypeConfig : config.getActorTypeConfigs()) {
+          generator.writeStartObject();
+          if (actorTypeConfig.getActorTypeName() != null) {
+            generator.writeArrayFieldStart("entities");
+            generator.writeString(actorTypeConfig.getActorTypeName());
+            generator.writeEndArray();
+          }
+          if (actorTypeConfig.getActorIdleTimeout() != null) {
+            generator.writeStringField("actorIdleTimeout",
+                DurationUtils.convertDurationToDaprFormat(actorTypeConfig.getActorIdleTimeout()));
+          }
+          if (actorTypeConfig.getActorScanInterval() != null) {
+            generator.writeStringField("actorScanInterval",
+                DurationUtils.convertDurationToDaprFormat(actorTypeConfig.getActorScanInterval()));
+          }
+          if (actorTypeConfig.getDrainOngoingCallTimeout() != null) {
+            generator.writeStringField("drainOngoingCallTimeout",
+                DurationUtils.convertDurationToDaprFormat(actorTypeConfig.getDrainOngoingCallTimeout()));
+          }
+          if (actorTypeConfig.getDrainBalancedActors() != null) {
+            generator.writeBooleanField("drainBalancedActors", actorTypeConfig.getDrainBalancedActors());
+          }
+          if (actorTypeConfig.getRemindersStoragePartitions() != null) {
+            generator.writeNumberField("remindersStoragePartitions", actorTypeConfig.getRemindersStoragePartitions());
+          }
+
+          generator.writeEndObject();
+        }
+        generator.writeEndArray();
+      }
       generator.writeEndObject();
       generator.close();
       writer.flush();

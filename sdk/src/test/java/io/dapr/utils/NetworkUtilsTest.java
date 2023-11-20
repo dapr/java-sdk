@@ -2,14 +2,14 @@ package io.dapr.utils;
 
 import io.dapr.config.Properties;
 import io.grpc.ManagedChannel;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class NetworkUtilsTest {
   private final int defaultGrpcPort = 4000;
   private final String defaultSidecarIP = "127.0.0.1";
-  @Before
+  @BeforeEach
   public void setUp() {
     System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(defaultGrpcPort));
     System.setProperty(Properties.SIDECAR_IP.getName(), defaultSidecarIP);
@@ -21,7 +21,7 @@ public class NetworkUtilsTest {
     ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
 
     String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
-    Assert.assertEquals(expectedAuthority, channel.authority());
+    Assertions.assertEquals(expectedAuthority, channel.authority());
   }
 
   @Test
@@ -30,7 +30,7 @@ public class NetworkUtilsTest {
     ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
 
     String expectedAuthority = "example.com:80";
-    Assert.assertEquals(expectedAuthority, channel.authority());
+    Assertions.assertEquals(expectedAuthority, channel.authority());
   }
 
   @Test
@@ -39,7 +39,7 @@ public class NetworkUtilsTest {
     ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
 
     String expectedAuthority = "example.com:3000";
-    Assert.assertEquals(expectedAuthority, channel.authority());
+    Assertions.assertEquals(expectedAuthority, channel.authority());
   }
 
   @Test
@@ -48,7 +48,7 @@ public class NetworkUtilsTest {
     ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
 
     String expectedAuthority = "example.com:443";
-    Assert.assertEquals(expectedAuthority, channel.authority());
+    Assertions.assertEquals(expectedAuthority, channel.authority());
   }
 
   @Test
@@ -57,6 +57,6 @@ public class NetworkUtilsTest {
     ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
 
     String expectedAuthority = "example.com:3000";
-    Assert.assertEquals(expectedAuthority, channel.authority());
+    Assertions.assertEquals(expectedAuthority, channel.authority());
   }
 }
