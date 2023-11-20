@@ -122,6 +122,8 @@ public class MethodInvokeIT extends BaseIT {
             // This message is not ideal but last time it was improved, there was side effects reported by users.
             // If this test fails, there might be a regression in runtime (like we had in 1.10.0).
             // The expectations below are as per 1.9 release and (later on) hotfixed in 1.10.
+            System.out.println("#### "+exception.getErrorCode());
+            System.out.println("#### "+exception.getMessage());
             assertEquals("UNKNOWN", exception.getErrorCode());
             assertEquals("UNKNOWN: ", exception.getMessage());
         }
