@@ -40,14 +40,18 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.class,
           DaprApiProtocol.GRPC,  // appProtocol
           60000);
+        System.out.println("#### startDaprApp ");
         daprRun.switchToGRPC();
+        System.out.println("#### switchToGRPC ");
         daprRun.waitForAppHealth(30000);
+        System.out.println("#### waitForAppHealth ");
     }
 
     @Test
     public void testInvoke() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
+            System.out.println("#### waitForSidecar ");
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
 
