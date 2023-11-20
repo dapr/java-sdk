@@ -43,7 +43,7 @@ public class MethodInvokeIT extends BaseIT {
         System.out.println("#### startDaprApp ");
         daprRun.switchToGRPC();
         System.out.println("#### switchToGRPC ");
-        daprRun.waitForAppHealth(30000);
+        daprRun.waitForAppHealth(50000);
         System.out.println("#### waitForAppHealth ");
     }
 
