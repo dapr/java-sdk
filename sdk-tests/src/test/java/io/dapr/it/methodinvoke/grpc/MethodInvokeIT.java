@@ -43,7 +43,7 @@ public class MethodInvokeIT extends BaseIT {
         System.out.println("#### startDaprApp ");
         daprRun.switchToGRPC();
         System.out.println("#### switchToGRPC ");
-        daprRun.waitForAppHealth(50000);
+        daprRun.waitForAppHealth(40000);
         System.out.println("#### waitForAppHealth ");
     }
 
@@ -114,6 +114,8 @@ public class MethodInvokeIT extends BaseIT {
     public void testInvokeException() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
+            daprRun.waitForAppHealth(10000);
+            
             SleepRequest req = SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
