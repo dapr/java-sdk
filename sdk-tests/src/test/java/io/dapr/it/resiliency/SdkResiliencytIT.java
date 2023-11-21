@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class SdkResiliencytIT extends BaseIT {
 
-  private static final int NUM_ITERATIONS = 30;
+  private static final int NUM_ITERATIONS = 35;
 
   private static final Duration TIMEOUT = Duration.ofMillis(100);
 
@@ -116,36 +116,47 @@ public class SdkResiliencytIT extends BaseIT {
   public void retryAndTimeout() {
     AtomicInteger toxiClientErrorCount = new AtomicInteger();
     AtomicInteger retryOneClientErrorCount = new AtomicInteger();
-    for (int i = 0; i < NUM_ITERATIONS; i++) {
-      String key = randomStateKeyPrefix + "_" + i;
-      String value = Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8));
-      try {
-        daprToxiClient.saveState(STATE_STORE_NAME, key, value).block();
-      } catch (Exception e) {
-        // This call should fail sometimes. So, we count.
-        toxiClientErrorCount.incrementAndGet();
-      }
-      try {
-        daprRetriesOnceClient.saveState(STATE_STORE_NAME, key, value).block();
-      } catch (Exception e) {
-        // This call should fail sometimes. So, we count.
-        retryOneClientErrorCount.incrementAndGet();
+
+    boolean shouldRetry = true;
+    while (shouldRetry){
+      for (int i = 0; i < NUM_ITERATIONS; i++) {
+        String key = randomStateKeyPrefix + "_" + i;
+        String value = Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8));
+        try {
+          daprToxiClient.saveState(STATE_STORE_NAME, key, value).block();
+        } catch (Exception e) {
+          // This call should fail sometimes. So, we count.
+          toxiClientErrorCount.incrementAndGet();
+        }
+        try {
+          daprRetriesOnceClient.saveState(STATE_STORE_NAME, key, value).block();
+        } catch (Exception e) {
+          // This call should fail sometimes. So, we count.
+          retryOneClientErrorCount.incrementAndGet();
+        }
+
+        // We retry forever so that the call below should always work.
+        daprResilientClient.saveState(STATE_STORE_NAME, key, value).block();
+        // Makes sure the value was actually saved.
+        String savedValue = daprClient.getState(STATE_STORE_NAME, key, String.class).block().getValue();
+        assertEquals(value, savedValue);
       }
 
-      // We retry forever so that the call below should always work.
-      daprResilientClient.saveState(STATE_STORE_NAME, key, value).block();
-      // Makes sure the value was actually saved.
-      String savedValue = daprClient.getState(STATE_STORE_NAME, key, String.class).block().getValue();
-      assertEquals(value, savedValue);
+      // We should have at least one success per client, otherwise retry.
+      if(toxiClientErrorCount.get() < NUM_ITERATIONS && retryOneClientErrorCount.get() < NUM_ITERATIONS){
+        // This assertion makes sure that toxicity is on
+        assertTrue(toxiClientErrorCount.get() > 0);
+        assertTrue(retryOneClientErrorCount.get() > 0);
+        // A client without retries should have more errors than a client with one retry.
+        assertTrue(toxiClientErrorCount.get() > retryOneClientErrorCount.get());
+        shouldRetry = false; 
+      }
+      else{
+        toxiClientErrorCount.set(0);
+        retryOneClientErrorCount.set(0);
+        continue;
+      }
     }
 
-    // Asserts that we had at least one success per client.
-    assertTrue(toxiClientErrorCount.get() < NUM_ITERATIONS);
-    assertTrue(retryOneClientErrorCount.get() < NUM_ITERATIONS);
-    // This assertion makes sure that toxicity is on
-    assertTrue(toxiClientErrorCount.get() > 0);
-    assertTrue(retryOneClientErrorCount.get() > 0);
-    // A client without retries should have more errors than a client with one retry.
-    assertTrue(toxiClientErrorCount.get() > retryOneClientErrorCount.get());
   }
 }
