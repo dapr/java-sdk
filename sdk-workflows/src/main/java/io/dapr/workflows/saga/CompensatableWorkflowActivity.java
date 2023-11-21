@@ -20,7 +20,6 @@ public interface CompensatableWorkflowActivity {
   /**
    * Compensate the activity.
    * @param activityInput input of the activity to be compensated
-   * @param activityOutput output of the activity to be compensated
    */
-  void compensate(Object activityInput, Object activityOutput);
+  void compensate(Object activityInput);
 }

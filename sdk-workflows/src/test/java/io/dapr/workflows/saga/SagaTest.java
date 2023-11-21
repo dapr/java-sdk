@@ -26,7 +26,7 @@ public class SagaTest {
     Saga saga = new Saga(config);
 
     assertThrows(IllegalArgumentException.class, () -> {
-      saga.registerCompensation(null, "input", "output");
+      saga.registerCompensation(null, "input");
     });
   }
 
@@ -39,13 +39,13 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockActivity.class.getName(), input1, "output");
+    saga.registerCompensation(MockActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
-    saga.registerCompensation(MockActivity.class.getName(), input2, "output2");
+    saga.registerCompensation(MockActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockActivity.class.getName(), input3, "output3");
+    saga.registerCompensation(MockActivity.class.getName(), input3);
 
     saga.compensate();
 
@@ -61,15 +61,15 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockActivity.class.getName(), input1, "output");
+    saga.registerCompensation(MockActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     // set throw exception to true
     input2.setThrowException(true);
-    saga.registerCompensation(MockActivity.class.getName(), input2, "output2");
+    saga.registerCompensation(MockActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockActivity.class.getName(), input3, "output3");
+    saga.registerCompensation(MockActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate();
@@ -90,17 +90,17 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockActivity.class.getName(), input1, "output");
+    saga.registerCompensation(MockActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     // set throw exception to true
     input2.setThrowException(true);
-    saga.registerCompensation(MockActivity.class.getName(), input2, "output2");
+    saga.registerCompensation(MockActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
     // set throw exception to true
     input3.setThrowException(true);
-    saga.registerCompensation(MockActivity.class.getName(), input3, "output3");
+    saga.registerCompensation(MockActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate();
@@ -122,13 +122,13 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockActivity.class.getName(), input1, "output");
+    saga.registerCompensation(MockActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
-    saga.registerCompensation(MockActivity.class.getName(), input2, "output2");
+    saga.registerCompensation(MockActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockActivity.class.getName(), input3, "output3");
+    saga.registerCompensation(MockActivity.class.getName(), input3);
 
     saga.compensate();
 
@@ -148,15 +148,15 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockActivity.class.getName(), input1, "output");
+    saga.registerCompensation(MockActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     // set throw exception to true
     input2.setThrowException(true);
-    saga.registerCompensation(MockActivity.class.getName(), input2, "output2");
+    saga.registerCompensation(MockActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockActivity.class.getName(), input3, "output3");
+    saga.registerCompensation(MockActivity.class.getName(), input3);
 
     saga.compensate();
 
@@ -176,15 +176,15 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockActivity.class.getName(), input1, "output");
+    saga.registerCompensation(MockActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     // set throw exception to true
     input2.setThrowException(true);
-    saga.registerCompensation(MockActivity.class.getName(), input2, "output2");
+    saga.registerCompensation(MockActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockActivity.class.getName(), input3, "output3");
+    saga.registerCompensation(MockActivity.class.getName(), input3);
 
     assertThrows(SagaCompensationException.class, () -> {
       saga.compensate();
@@ -201,7 +201,7 @@ public class SagaTest {
     private static List<Integer> compensateOrder = new ArrayList<>();
 
     @Override
-    public void compensate(Object activityInput, Object activityOutput) {
+    public void compensate(Object activityInput) {
       MockActivityInput input = (MockActivityInput) activityInput;
       compensateOrder.add(input.getOrder());
 

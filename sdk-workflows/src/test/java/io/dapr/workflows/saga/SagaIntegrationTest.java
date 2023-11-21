@@ -65,32 +65,32 @@ public class SagaIntegrationTest {
 
     try {
       // step1: add activity
-      String result = callActiviry(AddActivity.class.getName(), addInput, String.class);
-      saga.registerCompensation(AddActivity.class.getName(), addInput, result);
+      callActiviry(AddActivity.class.getName(), addInput, String.class);
+      saga.registerCompensation(AddActivity.class.getName(), addInput);
 
       // step2: subtract activity
-      result = callActiviry(SubtractActivity.class.getName(), subtractInput, String.class);
-      saga.registerCompensation(SubtractActivity.class.getName(), subtractInput, result);
+      callActiviry(SubtractActivity.class.getName(), subtractInput, String.class);
+      saga.registerCompensation(SubtractActivity.class.getName(), subtractInput);
 
       if (parallelCompensation) {
         // only add/subtract activities support parallel compensation
         // so in step3 and step4 we repeat add/subtract activities
 
         // step3: add activity again
-        result = callActiviry(AddActivity.class.getName(), addInput, String.class);
-        saga.registerCompensation(AddActivity.class.getName(), addInput, result);
+        callActiviry(AddActivity.class.getName(), addInput, String.class);
+        saga.registerCompensation(AddActivity.class.getName(), addInput);
 
         // step4: substract activity again
-        result = callActiviry(SubtractActivity.class.getName(), subtractInput, String.class);
-        saga.registerCompensation(SubtractActivity.class.getName(), subtractInput, result);
+        callActiviry(SubtractActivity.class.getName(), subtractInput, String.class);
+        saga.registerCompensation(SubtractActivity.class.getName(), subtractInput);
       } else {
         // step3: multiply activity
-        result = callActiviry(MultiplyActivity.class.getName(), multiplyInput, String.class);
-        saga.registerCompensation(MultiplyActivity.class.getName(), multiplyInput, result);
+        callActiviry(MultiplyActivity.class.getName(), multiplyInput, String.class);
+        saga.registerCompensation(MultiplyActivity.class.getName(), multiplyInput);
 
         // step4: divide activity
-        result = callActiviry(DivideActivity.class.getName(), divideInput, String.class);
-        saga.registerCompensation(DivideActivity.class.getName(), divideInput, result);
+        callActiviry(DivideActivity.class.getName(), divideInput, String.class);
+        saga.registerCompensation(DivideActivity.class.getName(), divideInput);
       }
 
       randomFail();
@@ -171,7 +171,7 @@ public class SagaIntegrationTest {
     }
 
     @Override
-    public void compensate(Object activityRequest, Object activityResult) {
+    public void compensate(Object activityRequest) {
       int input = (Integer) activityRequest;
       int originalCount = 0;
       int updatedCount = 0;
@@ -204,7 +204,7 @@ public class SagaIntegrationTest {
     }
 
     @Override
-    public void compensate(Object activityRequest, Object activityResult) {
+    public void compensate(Object activityRequest) {
       int input = (Integer) activityRequest;
       int originalCount = 0;
       int updatedCount = 0;
@@ -237,7 +237,7 @@ public class SagaIntegrationTest {
     }
 
     @Override
-    public void compensate(Object activityRequest, Object activityResult) {
+    public void compensate(Object activityRequest) {
       int input = (Integer) activityRequest;
       int originalCount = 0;
       int updatedCount = 0;
@@ -270,8 +270,8 @@ public class SagaIntegrationTest {
     }
 
     @Override
-    public void compensate(Object activityRequest, Object activityResult) {
-      int input = (Integer) activityRequest;
+    public void compensate(Object activityInput) {
+      int input = (Integer) activityInput;
       int originalCount = 0;
       int updatedCount = 0;
       synchronized (countLock) {
