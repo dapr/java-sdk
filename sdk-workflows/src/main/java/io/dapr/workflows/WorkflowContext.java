@@ -533,20 +533,16 @@ public interface WorkflowContext {
   }
 
   /**
-   * is Saga enabled.
+   * Register a compensation activity.
    * 
-   * @return true if saga is enabled
+   * @param activityClassName name of the activity class
+   * @param activityInput     input of the activity to be compensated
    */
-  default boolean isSagaEnabled() {
-    return this.getSaga() != null;
-  }
+  void registerCompensation(String activityClassName, Object activityInput);
 
   /**
-   * get Saga.
+   * Compensate all registered activities.
    * 
-   * @return saga, null if saga is disabled
    */
-  default Saga getSaga() {
-    return null;
-  }
+  void compensate();
 }

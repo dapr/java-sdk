@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.workflows;
 
 import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
-import io.dapr.workflows.saga.Saga;
-import io.dapr.workflows.saga.SagaConfiguration;
+import io.dapr.workflows.saga.SagaCompensationException;
+import io.dapr.workflows.saga.SagaOption;
 
 /**
  * Common interface for workflow implementations.
@@ -41,8 +41,7 @@ public abstract class Workflow {
   public void run(WorkflowContext ctx) {
     WorkflowStub stub = this.create();
 
-    Saga saga = ctx.getSaga();
-    if (saga == null) {
+    if (!this.isSagaEnabled()) {
       // saga disabled
       stub.run(ctx);
     } else {
@@ -51,21 +50,25 @@ public abstract class Workflow {
         stub.run(ctx);
       } catch (OrchestratorBlockedException e) {
         throw e;
+      } catch (SagaCompensationException e) {
+        // Saga compensation is triggered gracefully but failed in exception
+        // don't need to trigger compensation again
+        throw e;
       } catch (Exception e) {
-        e.printStackTrace();
         try {
-          saga.compensate(ctx);
+          ctx.compensate();
         } catch (Exception se) {
           se.addSuppressed(e);
           throw se;
         }
 
-        // TODO: should we complete the workflow here, or just re-throw the exception
-        // ctx.complete(...);
-        // throw new RuntimeException(e);
         throw e;
       }
     }
+  }
+
+  public boolean isSagaEnabled() {
+    return this.getSagaOption() != null;
   }
 
   /**
@@ -73,7 +76,7 @@ public abstract class Workflow {
    * 
    * @return saga configuration
    */
-  public SagaConfiguration getSagaConfiguration() {
+  public SagaOption getSagaOption() {
     return null;
   }
 }

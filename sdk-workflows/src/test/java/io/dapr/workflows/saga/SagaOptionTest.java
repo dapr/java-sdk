@@ -5,34 +5,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.Test;
 
-public class SagaConfigurationTest {
+public class SagaOptionTest {
 
   @Test
   public void testBuild() {
-    SagaConfiguration.Builder builder = SagaConfiguration.newBuilder();
+    SagaOption.Builder builder = SagaOption.newBuilder();
     builder.setParallelCompensation(true);
     builder.setMaxParallelThread(32);
     builder.setContinueWithError(false);
-    SagaConfiguration config = builder.build();
+    SagaOption option = builder.build();
 
-    assertEquals(true, config.isParallelCompensation());
-    assertEquals(32, config.getMaxParallelThread());
-    assertEquals(false, config.isContinueWithError());
+    assertEquals(true, option.isParallelCompensation());
+    assertEquals(32, option.getMaxParallelThread());
+    assertEquals(false, option.isContinueWithError());
   }
 
   @Test
   public void testBuild_default() {
-    SagaConfiguration.Builder builder = SagaConfiguration.newBuilder();
-    SagaConfiguration config = builder.build();
+    SagaOption.Builder builder = SagaOption.newBuilder();
+    SagaOption option = builder.build();
 
-    assertEquals(false, config.isParallelCompensation());
-    assertEquals(16, config.getMaxParallelThread());
-    assertEquals(true, config.isContinueWithError());
+    assertEquals(false, option.isParallelCompensation());
+    assertEquals(16, option.getMaxParallelThread());
+    assertEquals(true, option.isContinueWithError());
   }
 
   @Test
   public void testsetMaxParallelThread() {
-    SagaConfiguration.Builder builder = SagaConfiguration.newBuilder();
+    SagaOption.Builder builder = SagaOption.newBuilder();
 
     assertThrows(IllegalArgumentException.class, () -> {
       builder.setMaxParallelThread(0);

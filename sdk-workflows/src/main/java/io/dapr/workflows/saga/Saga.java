@@ -26,19 +26,19 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public final class Saga {
-  private final SagaConfiguration config;
+  private final SagaOption option;
   private final List<CompensatationInformation> compensationActivities = new ArrayList<>();
 
   /**
-   * Build up a Saga with its config.
+   * Build up a Saga with its options.
    * 
-   * @param config Saga configuration.
+   * @param option Saga option.
    */
-  public Saga(SagaConfiguration config) {
-    if (config == null) {
-      throw new IllegalArgumentException("config is required and should not be null.");
+  public Saga(SagaOption option) {
+    if (option == null) {
+      throw new IllegalArgumentException("option is required and should not be null.");
     }
-    this.config = config;
+    this.option = option;
   }
 
   /**
@@ -64,7 +64,7 @@ public final class Saga {
     // Specical case: when parallel compensation is enabled and there is only one
     // compensation, we still
     // compensate sequentially.
-    if (config.isParallelCompensation() && compensationActivities.size() > 1) {
+    if (option.isParallelCompensation() && compensationActivities.size() > 1) {
       compensateInParallel(ctx);
     } else {
       compensateSequentially(ctx);
@@ -74,8 +74,8 @@ public final class Saga {
   private void compensateInParallel(WorkflowContext ctx) {
     // thread number should be limited by maxParallelThread
     int threadNumber = compensationActivities.size();
-    if (threadNumber > config.getMaxParallelThread()) {
-      threadNumber = config.getMaxParallelThread();
+    if (threadNumber > option.getMaxParallelThread()) {
+      threadNumber = option.getMaxParallelThread();
     }
 
     ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
@@ -127,7 +127,7 @@ public final class Saga {
           sagaException.addSuppressed(e);
         }
 
-        if (!config.isContinueWithError()) {
+        if (!option.isContinueWithError()) {
           throw sagaException;
         }
       }
@@ -138,11 +138,11 @@ public final class Saga {
     }
   }
 
-  private String executeCompensateActivity(WorkflowContext ctx, CompensatationInformation context)
+  private String executeCompensateActivity(WorkflowContext ctx, CompensatationInformation info)
       throws SagaCompensationException {
-    String activityClassName = context.getCompensatationActivityClassName();
+    String activityClassName = info.getCompensatationActivityClassName();
     try {
-      Task<Void> task = ctx.callActivity(activityClassName, context.getCompensatationActivityInput());
+      Task<Void> task = ctx.callActivity(activityClassName, info.getCompensatationActivityInput());
       if (task != null) {
         task.await();
       }
@@ -151,7 +151,6 @@ public final class Saga {
     } catch (OrchestratorBlockedException e) {
       throw e;
     } catch (Exception e) {
-      e.printStackTrace();
       throw new SagaCompensationException("Exception in saga compensatation: activity=" + activityClassName, e);
     }
   }

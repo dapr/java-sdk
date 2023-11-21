@@ -57,7 +57,7 @@ public class SagaTest {
 
   @Test
   public void testregisterCompensation() {
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true).build();
     Saga saga = new Saga(config);
@@ -67,7 +67,7 @@ public class SagaTest {
 
   @Test
   public void testregisterCompensation_IllegalArgument() {
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true).build();
     Saga saga = new Saga(config);
@@ -84,7 +84,7 @@ public class SagaTest {
   public void testCompensateInParallel() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -106,7 +106,7 @@ public class SagaTest {
   public void testCompensateInParallel_exception() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -133,7 +133,7 @@ public class SagaTest {
   public void testCompensateInParallel_exception_suppressed() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -161,7 +161,7 @@ public class SagaTest {
   public void testCompensateSequentially() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(false).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -188,7 +188,7 @@ public class SagaTest {
   public void testCompensateSequentially_continueWithError() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true)
         .build();
@@ -221,7 +221,7 @@ public class SagaTest {
   public void testCompensateSequentially_continueWithError_suppressed() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true)
         .build();
@@ -254,7 +254,7 @@ public class SagaTest {
   public void testCompensateSequentially_notContinueWithError() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(false)
         .build();
@@ -439,8 +439,13 @@ public class SagaTest {
     }
 
     @Override
-    public Saga getSaga() {
-      throw new UnsupportedOperationException("Unimplemented method 'getSaga'");
+    public void registerCompensation(String activityClassName, Object activityInput) {
+      throw new UnsupportedOperationException("Unimplemented method 'registerCompensation'");
+    }
+
+    @Override
+    public void compensate() {
+      throw new UnsupportedOperationException("Unimplemented method 'compensate'");
     }
 
   }

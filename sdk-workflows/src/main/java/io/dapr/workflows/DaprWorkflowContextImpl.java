@@ -240,11 +240,21 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
     return this.innerContext.newUUID();
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
-  public Saga getSaga() {
-    return this.saga;
+  public void registerCompensation(String activityClassName, Object activityInput) {
+    if (this.saga == null) {
+      throw new UnsupportedOperationException("Saga is not enabled");
+    }
+
+    this.saga.registerCompensation(activityClassName, activityInput);
+  }
+
+  @Override
+  public void compensate() {
+    if (this.saga == null) {
+      throw new UnsupportedOperationException("Saga is not enabled");
+    }
+
+    this.saga.compensate(this);
   }
 }

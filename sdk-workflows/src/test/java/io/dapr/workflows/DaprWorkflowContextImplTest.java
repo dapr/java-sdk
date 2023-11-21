@@ -130,6 +130,14 @@ public class DaprWorkflowContextImplTest {
       public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
 
       }
+
+      @Override
+      public void registerCompensation(String activityClassName, Object activityInput) {
+      }
+
+      @Override
+      public void compensate() {
+      }
     };
   }
 
@@ -308,5 +316,19 @@ public class DaprWorkflowContextImplTest {
     RuntimeException runtimeException = assertThrows(RuntimeException.class, testWorkflowContext::newUuid);
     String expectedMessage = "No implementation found.";
     assertEquals(expectedMessage, runtimeException.getMessage());
+  }
+
+  @Test
+  public void registerCompensationTest_unsupported() {
+    assertThrows(UnsupportedOperationException.class, () -> {
+      context.registerCompensation(null, "TestInput");
+    });
+  }
+
+  @Test
+  public void compensateTest_unsupported() {
+    assertThrows(UnsupportedOperationException.class, () -> {
+      context.compensate();
+    });
   }
 }
