@@ -58,7 +58,9 @@ public class HelloWorldClient {
       Metadata headers = new Metadata();
       headers.put(Metadata.Key.of("dapr-app-id", Metadata.ASCII_STRING_MARSHALLER),
           "hellogrpc");
-      blockingStub = MetadataUtils.attachHeaders(blockingStub, headers);
+
+      // MetadataUtils.attachHeaders is deprecated.
+      blockingStub = blockingStub.withInterceptors(MetadataUtils.newAttachHeadersInterceptor(headers));
 
       logger.info("Will try to greet " + user + " ...");
       try {
