@@ -41,13 +41,15 @@ public class MethodInvokeIT extends BaseIT {
           DaprApiProtocol.GRPC,  // appProtocol
           60000);
         daprRun.switchToGRPC();
-        daprRun.waitForAppHealth(20000);
+        daprRun.waitForAppHealth(40000);
     }
 
     @Test
     public void testInvoke() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
+            daprRun.waitForAppHealth(10000);
+            
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
 
@@ -95,6 +97,8 @@ public class MethodInvokeIT extends BaseIT {
     public void testInvokeTimeout() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
+            daprRun.waitForAppHealth(10000);
+
             long started = System.currentTimeMillis();
             SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
             String message = assertThrows(IllegalStateException.class, () ->
@@ -110,6 +114,8 @@ public class MethodInvokeIT extends BaseIT {
     public void testInvokeException() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
+            daprRun.waitForAppHealth(10000);
+            
             SleepRequest req = SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", req.toByteArray(), HttpExtension.POST).block());
