@@ -50,7 +50,7 @@ public class SagaIntegrationTest {
   }
 
   private boolean doExecuteWorkflowWithSaga(boolean parallelCompensation) {
-    SagaConfiguration config = SagaConfiguration.newBuilder()
+    SagaOption config = SagaOption.newBuilder()
         .setParallelCompensation(parallelCompensation)
         .setContinueWithError(true).build();
     Saga saga = new Saga(config);

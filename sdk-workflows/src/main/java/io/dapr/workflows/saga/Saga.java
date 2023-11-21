@@ -23,7 +23,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public final class Saga {
-  private final SagaConfiguration config;
+  private final SagaOption config;
   private final List<CompensatationContext> compensationActivities = new ArrayList<>();
 
   /**
@@ -31,7 +31,7 @@ public final class Saga {
    * 
    * @param config Saga configuration.
    */
-  public Saga(SagaConfiguration config) {
+  public Saga(SagaOption config) {
     if (config == null) {
       throw new IllegalArgumentException("config is required and should not be null.");
     }

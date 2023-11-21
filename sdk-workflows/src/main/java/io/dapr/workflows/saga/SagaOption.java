@@ -14,14 +14,14 @@ limitations under the License.
 package io.dapr.workflows.saga;
 
 /**
- * Saga configuration.
+ * Saga option.
  */
-public final class SagaConfiguration {
+public final class SagaOption {
   private final boolean parallelCompensation;
   private final int maxParallelThread;
   private final boolean continueWithError;
 
-  private SagaConfiguration(boolean parallelCompensation, int maxParallelThread, boolean continueWithError) {
+  private SagaOption(boolean parallelCompensation, int maxParallelThread, boolean continueWithError) {
     this.parallelCompensation = parallelCompensation;
     this.maxParallelThread = maxParallelThread;
     this.continueWithError = continueWithError;
@@ -92,11 +92,11 @@ public final class SagaConfiguration {
     }
 
     /**
-     * Build Saga configuration.
-     * @return Saga configuration
+     * Build Saga option.
+     * @return Saga option
      */
-    public SagaConfiguration build() {
-      return new SagaConfiguration(this.parallelCompensation, this.maxParallelThread, this.continueWithError);
+    public SagaOption build() {
+      return new SagaOption(this.parallelCompensation, this.maxParallelThread, this.continueWithError);
     }
   }
 }

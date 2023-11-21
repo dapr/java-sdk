@@ -9,11 +9,11 @@ public class SagaConfigurationTest {
 
   @Test
   public void testBuild() {
-    SagaConfiguration.Builder builder = SagaConfiguration.newBuilder();
+    SagaOption.Builder builder = SagaOption.newBuilder();
     builder.setParallelCompensation(true);
     builder.setMaxParallelThread(32);
     builder.setContinueWithError(false);
-    SagaConfiguration config = builder.build();
+    SagaOption config = builder.build();
 
     assertEquals(true, config.isParallelCompensation());
     assertEquals(32, config.getMaxParallelThread());
@@ -22,8 +22,8 @@ public class SagaConfigurationTest {
 
   @Test
   public void testBuild_default() {
-    SagaConfiguration.Builder builder = SagaConfiguration.newBuilder();
-    SagaConfiguration config = builder.build();
+    SagaOption.Builder builder = SagaOption.newBuilder();
+    SagaOption config = builder.build();
 
     assertEquals(false, config.isParallelCompensation());
     assertEquals(16, config.getMaxParallelThread());
@@ -32,7 +32,7 @@ public class SagaConfigurationTest {
 
   @Test
   public void testsetMaxParallelThread() {
-    SagaConfiguration.Builder builder = SagaConfiguration.newBuilder();
+    SagaOption.Builder builder = SagaOption.newBuilder();
 
     assertThrows(IllegalArgumentException.class, () -> {
       builder.setMaxParallelThread(0);
