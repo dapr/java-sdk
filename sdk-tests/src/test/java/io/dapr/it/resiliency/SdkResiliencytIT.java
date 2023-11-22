@@ -149,13 +149,10 @@ public class SdkResiliencytIT extends BaseIT {
         assertTrue(retryOneClientErrorCount.get() > 0);
         // A client without retries should have more errors than a client with one retry.
         assertTrue(toxiClientErrorCount.get() > retryOneClientErrorCount.get());
-        shouldRetry = false; 
+        break;
       }
-      else{
-        toxiClientErrorCount.set(0);
-        retryOneClientErrorCount.set(0);
-        continue;
-      }
+      toxiClientErrorCount.set(0);
+      retryOneClientErrorCount.set(0);
     }
 
   }
