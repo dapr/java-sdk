@@ -117,7 +117,6 @@ public class SdkResiliencytIT extends BaseIT {
     AtomicInteger toxiClientErrorCount = new AtomicInteger();
     AtomicInteger retryOneClientErrorCount = new AtomicInteger();
 
-    boolean shouldRetry = true;
     while (true){
       for (int i = 0; i < NUM_ITERATIONS; i++) {
         String key = randomStateKeyPrefix + "_" + i;
