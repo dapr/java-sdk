@@ -118,7 +118,7 @@ public class SdkResiliencytIT extends BaseIT {
     AtomicInteger retryOneClientErrorCount = new AtomicInteger();
 
     boolean shouldRetry = true;
-    while (shouldRetry){
+    while (true){
       for (int i = 0; i < NUM_ITERATIONS; i++) {
         String key = randomStateKeyPrefix + "_" + i;
         String value = Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8));
