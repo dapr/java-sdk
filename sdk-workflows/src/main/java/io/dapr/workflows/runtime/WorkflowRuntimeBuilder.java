@@ -16,13 +16,15 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.client.DaprWorkflowClient;
 
 public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
 
   public WorkflowRuntimeBuilder() {
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(NetworkUtils.buildGrpcManagedChannel());
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
+                          NetworkUtils.buildGrpcManagedChannel(DaprWorkflowClient.WORKFLOW_INTERCEPTOR));
   }
 
   /**

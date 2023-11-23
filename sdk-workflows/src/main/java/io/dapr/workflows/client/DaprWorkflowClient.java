@@ -262,7 +262,7 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
   }
 
-  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ClientInterceptor() {
+  public static ClientInterceptor WORKFLOW_INTERCEPTOR = new ClientInterceptor() {
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
         MethodDescriptor<ReqT, RespT> methodDescriptor,
