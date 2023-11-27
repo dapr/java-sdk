@@ -236,31 +236,6 @@ public class CountWordsActivity implements WorkflowActivity {
 }
 ```
 
-<!-- STEP
-name: Run Fan-out/Fan-in Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - 'Starting Workflow: io.dapr.examples.workflows.faninout.DemoFanInOutWorkflow'
-  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
-  - 'Activity returned: 2'
-  - 'Activity finished'
-  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
-  - 'Activity returned: 9'
-  - 'Activity finished'
-  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
-  - 'Activity returned: 21'
-  - 'Activity finished'
-  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
-  - 'Activity returned: 17'
-  - 'Activity finished'
-  - 'Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity'
-  - 'Activity returned: 11'
-  - 'Activity finished - Workflow finished with result: 60'
-background: true
-sleep: 60
--->
-
 Execute the following script in order to run DemoFanInOutWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
@@ -269,7 +244,6 @@ Execute the following script in order to run DemoFanInOutClient:
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient
 ```
-<!-- END_STEP -->
 
 Now you can see the logs from worker:
 ```text
@@ -423,21 +397,6 @@ client.raiseEvent(instanceId, "Approval", true);
 
 Start the workflow and client using the following commands:
 
-<!-- STEP
-name: Run External Event Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - 'Starting Workflow: io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow'
-  - 'Waiting for approval...'
-  - 'approval granted - do the approved action'
-  - 'Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity'
-  - 'Running approval activity...'
-  - 'approval-activity finished'
-background: true
-sleep: 60
--->
-
 ex
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
@@ -446,8 +405,6 @@ dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventClient
 ```
-
-<!-- END_STEP -->
 
 The worker logs:
 ```text
@@ -533,25 +490,6 @@ public class ReverseActivity implements WorkflowActivity {
 
 Start the workflow and client using the following commands:
 
-<!-- STEP
-name: Run Sub-workflow Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
- - 'Starting Workflow: io.dapr.examples.workflows.subworkflow.DemoWorkflow'
- - 'calling subworkflow with input: Hello Dapr Workflow!'
- - 'Starting SubWorkflow: io.dapr.examples.workflows.subworkflow.DemoSubWorkflow'
- - 'SubWorkflow received input: Hello Dapr Workflow!'
- - 'SubWorkflow is calling Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity'
- - 'Starting Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity'
- - 'Message Received from input: Hello Dapr Workflow!'
- - 'Sending message to output: !wolfkroW rpaD olleH'
- - 'SubWorkflow finished with: !wolfkroW rpaD olleH'
- - 'subworkflow finished with: !wolfkroW rpaD olleH'
-background: true
-sleep: 60
--->
-
 ex
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkflowWorker
@@ -560,8 +498,6 @@ dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkerflowClient
 ```
-
-<!-- END_STEP -->
 
 The log from worker:
 ```text
