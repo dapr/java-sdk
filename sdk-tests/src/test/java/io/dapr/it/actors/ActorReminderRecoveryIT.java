@@ -128,6 +128,9 @@ public class ActorReminderRecoveryIT extends BaseIT {
   ) throws Exception {
     setup(actorType);
 
+    logger.debug("Pausing 3 seconds to let gRPC connection get ready");
+    Thread.sleep(3000);
+    
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
     proxy.invokeMethod("setReminderData", reminderDataParam).block();
 
