@@ -50,6 +50,8 @@ public class GrpcChannelFacadeTest {
 
   private OkHttpClient okHttpClient;
 
+  private static DaprHttp daprHttp;
+
   /**
    * Enable the waitForSidecar to allow the gRPC to check the http endpoint for the health check
    */
@@ -73,6 +75,9 @@ public class GrpcChannelFacadeTest {
   public static void teardown() throws InterruptedException {
     server.shutdown();
     server.awaitTermination();
+    if (daprHttp != null) {
+      daprHttp.close();
+    }
   }
   private void addMockRulesForBadHealthCheck() {
     for (int i = 0; i < 6; i++) {
