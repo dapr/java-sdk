@@ -26,8 +26,8 @@ public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRuntimeBuilder.class);
-  private volatile Set<String> activity_Set = new HashSet<String>(); 
-  private volatile Set<String> workflow_Set = new HashSet<String>(); 
+  private volatile Set<String> activitySet = new HashSet<String>(); 
+  private volatile Set<String> workflowSet = new HashSet<String>(); 
 
 
   public WorkflowRuntimeBuilder() {
@@ -47,8 +47,8 @@ public class WorkflowRuntimeBuilder {
         }
       }
     }
-    LOGGER.info("List of registered workflows: " + workflow_Set);
-    LOGGER.info("List of registered activites: " + activity_Set);
+    LOGGER.info("List of registered workflows: " + this.workflowSet);
+    LOGGER.info("List of registered activites: " + this.activitySet);
     return instance;
   }
 
@@ -63,7 +63,7 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addOrchestration(
         new OrchestratorWrapper<>(clazz)
     );
-    WorkflowRuntimeBuilder.workflow_Set.add(clazz.getCanonicalName());
+    this.workflowSet.add(clazz.getCanonicalName());
     return this;
   }
 
@@ -77,6 +77,6 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addActivity(
         new ActivityWrapper<>(clazz)
     );
-    WorkflowRuntimeBuilder.activity_Set.add(clazz.getCanonicalName());
+    this.activitySet.add(clazz.getCanonicalName());
   }
 }
