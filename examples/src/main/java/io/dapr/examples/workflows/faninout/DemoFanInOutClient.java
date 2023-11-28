@@ -29,7 +29,6 @@ public class DemoFanInOutClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) throws InterruptedException {
-
     try (DaprWorkflowClient client = new DaprWorkflowClient()) {
       // The input is an arbitrary list of strings.
       List<String> listOfStrings = Arrays.asList(
