@@ -350,6 +350,8 @@ expected_stdout_lines:
   - 'call CleanUpActivity to do the clean up'
   - 'CleanUpActivity finished'
   - 'wait 10 seconds for next clean up'
+expected_stderr_lines:
+  - 'java.lang.reflect.InvocationTargetException'
 background: true
 sleep: 60
 timeout_seconds: 60
