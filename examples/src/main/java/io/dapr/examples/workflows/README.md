@@ -46,7 +46,7 @@ Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initi
 
 ## Patterns
 
-This examples contains the following workflow patterns:
+Those examples contain the following workflow patterns:
 1. [Chaining Pattern](#chaining-pattern)
 2. [Fan-out/Fan-in Pattern](#fan-outfan-in-pattern)
 3. [Continue As New Pattern](#continue-as-new-pattern)
@@ -142,7 +142,7 @@ expected_stdout_lines:
   - 'Sending message to output: SEATTLE'
   - 'Workflow finished with result: TOKYO, LONDON, SEATTLE'
 background: true
-sleep: 60
+timeout_seconds: 60
 -->
 Execute the following script in order to run DemoChainWorker:
 ```sh
@@ -235,7 +235,19 @@ public class CountWordsActivity implements WorkflowActivity {
   }
 }
 ```
-
+<!-- STEP
+name: Run Chaining Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Activity returned: 2'
+  - 'Activity returned: 9'
+  - 'Activity returned: 21'
+  - 'Activity returned: 17'
+  - 'Workflow finished with result: 60'
+background: true
+timeout_seconds: 60
+-->
 Execute the following script in order to run DemoFanInOutWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
