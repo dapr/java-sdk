@@ -58,7 +58,7 @@ In the chaining pattern, a sequence of activities executes in a specific order.
 In this pattern, the output of one activity is applied to the input of another activity. 
 The chaining pattern is useful when you need to execute a sequence of activities in a specific order.
 
-The first Java class is `DemoChainWorker`. It's job is to register an implementation of `DemoChainWorkflow` in Dapr's workflow runtime engine. In the `DemoChainWorker.java` file, you will find the `DemoChainWorker` class and the `main` method. See the code snippet below:
+The first Java class is `DemoChainWorker`. Its job is to register an implementation of `DemoChainWorkflow` in Dapr's workflow runtime engine. In the `DemoChainWorker.java` file, you will find the `DemoChainWorker` class and the `main` method. See the code snippet below:
 ```java
 public class DemoChainWorker {
   /**
@@ -142,6 +142,7 @@ expected_stdout_lines:
   - 'Sending message to output: SEATTLE'
   - 'Workflow finished with result: TOKYO, LONDON, SEATTLE'
 background: true
+sleep: 20
 timeout_seconds: 60
 -->
 Execute the following script in order to run DemoChainWorker:
@@ -246,6 +247,7 @@ expected_stdout_lines:
   - 'Activity returned: 17'
   - 'Workflow finished with result: 60'
 background: true
+sleep: 20
 timeout_seconds: 60
 -->
 
