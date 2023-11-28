@@ -248,6 +248,7 @@ expected_stdout_lines:
 background: true
 timeout_seconds: 60
 -->
+
 Execute the following script in order to run DemoFanInOutWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
@@ -256,6 +257,7 @@ Execute the following script in order to run DemoFanInOutClient:
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient
 ```
+<!-- END_STEP -->
 
 Now you can see the logs from worker:
 ```text
