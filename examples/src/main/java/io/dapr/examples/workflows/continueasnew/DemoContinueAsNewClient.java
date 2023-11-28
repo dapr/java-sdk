@@ -24,8 +24,6 @@ public class DemoContinueAsNewClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) {
-    // you can customize your grpc port, default value is 50001
-    System.setProperty("dapr.grpc.port", "50002");
     try (DaprWorkflowClient client = new DaprWorkflowClient()) {
       String instanceId = client.scheduleNewWorkflow(DemoContinueAsNewWorkflow.class);
       System.out.printf("Started a new continue-as-new model workflow with instance ID: %s%n", instanceId);
