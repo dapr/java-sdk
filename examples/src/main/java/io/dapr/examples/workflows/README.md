@@ -342,27 +342,12 @@ public class CleanUpActivity implements WorkflowActivity {
 ```
 
 Once you start the workflow and client using the following commands:
-<!-- STEP
-name: Run continueAsNew Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - 'call CleanUpActivity to do the clean up'
-  - 'CleanUpActivity finished'
-  - 'wait 10 seconds for next clean up'
-expected_stderr_lines:
-  - 'java.lang.reflect.InvocationTargetException'
-background: true
-sleep: 60
-timeout_seconds: 60
--->
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorker
 ```
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewClient
 ````
-<!-- END_STEP -->
 
 You will see the logs from worker showing the `CleanUpActivity` is invoked every 10 seconds after previous one is finished:
 ```text
