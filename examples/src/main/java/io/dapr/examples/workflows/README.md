@@ -251,7 +251,7 @@ timeout_seconds: 60
 
 Execute the following script in order to run DemoFanInOutWorker:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
 ```
 Execute the following script in order to run DemoFanInOutClient:
 ```sh
