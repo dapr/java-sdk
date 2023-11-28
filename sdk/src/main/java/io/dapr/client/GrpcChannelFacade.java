@@ -56,18 +56,6 @@ class GrpcChannelFacade implements Closeable {
     this.daprHttp = daprHttp;
   }
 
-  /**
-   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
-   *
-   * @param channel A Managed GRPC channel
-   * @see DaprClientBuilder
-   */
-  GrpcChannelFacade(ManagedChannel channel) {
-    this.channel = channel;
-    OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
-    this.daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
-  }
-
   @Override
   public void close() throws IOException {
     if (channel != null && !channel.isShutdown()) {
