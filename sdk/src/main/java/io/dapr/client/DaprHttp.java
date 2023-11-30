@@ -308,6 +308,8 @@ public class DaprHttp implements AutoCloseable {
       requestBuilder.get();
     } else if (HttpMethods.DELETE.name().equals(method)) {
       requestBuilder.delete();
+    } else if (HttpMethods.HEAD.name().equals(method)) {
+      requestBuilder.head();  
     } else {
       requestBuilder.method(method, body);
     }
