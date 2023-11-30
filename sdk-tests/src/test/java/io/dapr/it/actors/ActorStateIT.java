@@ -78,6 +78,9 @@ public class ActorStateIT extends BaseIT {
         new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     ActorProxy proxy = proxyBuilder.build(actorId);
 
+    // wating for actor to be activated
+    Thread.sleep(2000);  
+    
     // Validate conditional read works.
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not present yet ... ");
