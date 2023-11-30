@@ -30,6 +30,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +38,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(SystemStubsExtension.class)
@@ -138,6 +138,16 @@ public class DaprHttpTest {
     assertEquals(EXPECTED_RESULT, body);
   }
 
+  @Test
+  public void invokeHEADMethod() throws IOException {
+    mockInterceptor.addRule().head("http://127.0.0.1:3500/v1.0/state").respond(HttpURLConnection.HTTP_OK);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
+    Mono<DaprHttp.Response> mono =
+        daprHttp.invokeApi("HEAD", "v1.0/state".split("/"), null, (String) null, null, Context.empty());
+    DaprHttp.Response response = mono.block();
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+  }
+  
   @Test
   public void invokeGetMethod() throws IOException {
     mockInterceptor.addRule()
