@@ -10,28 +10,34 @@
  * See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package io.dapr.workflows.saga;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.slf4j.Logger;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
-import com.microsoft.durabletask.CompositeTaskFailedException;
 import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 
 import io.dapr.workflows.WorkflowContext;
@@ -40,12 +46,12 @@ import io.dapr.workflows.runtime.WorkflowActivityContext;
 
 public class SagaTest {
 
-  private WorkflowContext createMockContext(String name, String id) {
-    WorkflowContext mockContext = mock(WorkflowContext.class);
+  public static WorkflowContext createMockContext() {
+    WorkflowContext workflowContext = mock(WorkflowContext.class);
+    when(workflowContext.callActivity(anyString(), any(), eq((TaskOptions) null))).thenAnswer(new ActivityAnswer());
+    when(workflowContext.allOf(anyList())).thenAnswer(new AllActivityAnswer());
 
-    Mockito.doReturn(name).when(mockContext).getName();
-    Mockito.doReturn(id).when(mockContext).getInstanceId();
-    return mockContext;
+    return workflowContext;
   }
 
   @Test
@@ -97,13 +103,13 @@ public class SagaTest {
     input3.setOrder(3);
     saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
-    saga.compensate(new MockWorkflowContext());
+    saga.compensate(createMockContext());
 
     assertEquals(3, MockCompentationActivity.compensateOrder.size());
   }
 
   @Test
-  public void testCompensateInParallel_exception() {
+  public void testCompensateInParallel_exception_1failed() {
     MockCompentationActivity.compensateOrder.clear();
 
     SagaOption config = SagaOption.newBuilder()
@@ -121,7 +127,7 @@ public class SagaTest {
     saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
-      saga.compensate(new MockWorkflowContext());
+      saga.compensate(createMockContext());
     });
     assertNotNull(exception.getCause());
     // 3 compentation activities, 2 succeed, 1 failed
@@ -130,7 +136,7 @@ public class SagaTest {
   }
 
   @Test
-  public void testCompensateInParallel_exception_suppressed() {
+  public void testCompensateInParallel_exception_2failed() {
     MockCompentationActivity.compensateOrder.clear();
 
     SagaOption config = SagaOption.newBuilder()
@@ -149,12 +155,39 @@ public class SagaTest {
     saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
-      saga.compensate(new MockWorkflowContext());
+      saga.compensate(createMockContext());
     });
     assertNotNull(exception.getCause());
     // 3 compentation activities, 1 succeed, 2 failed
-    assertEquals(1, exception.getSuppressed().length);
     assertEquals(1, MockCompentationActivity.compensateOrder.size());
+  }
+
+  @Test
+  public void testCompensateInParallel_exception_3failed() {
+    MockCompentationActivity.compensateOrder.clear();
+
+    SagaOption config = SagaOption.newBuilder()
+        .setParallelCompensation(true).build();
+    Saga saga = new Saga(config);
+    MockActivityInput input1 = new MockActivityInput();
+    input1.setOrder(1);
+    input1.setThrowException(true);
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    MockActivityInput input2 = new MockActivityInput();
+    input2.setOrder(2);
+    input2.setThrowException(true);
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    MockActivityInput input3 = new MockActivityInput();
+    input3.setOrder(3);
+    input3.setThrowException(true);
+    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+
+    SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
+      saga.compensate(createMockContext());
+    });
+    assertNotNull(exception.getCause());
+    // 3 compentation activities, 0 succeed, 3 failed
+    assertEquals(0, MockCompentationActivity.compensateOrder.size());
   }
 
   @Test
@@ -174,7 +207,7 @@ public class SagaTest {
     input3.setOrder(3);
     saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
-    saga.compensate(new MockWorkflowContext());
+    saga.compensate(createMockContext());
 
     assertEquals(3, MockCompentationActivity.compensateOrder.size());
 
@@ -205,7 +238,7 @@ public class SagaTest {
     saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
-      saga.compensate(new MockWorkflowContext());
+      saga.compensate(createMockContext());
     });
     assertNotNull(exception.getCause());
     assertEquals(0, exception.getSuppressed().length);
@@ -239,7 +272,7 @@ public class SagaTest {
     saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
-      saga.compensate(new MockWorkflowContext());
+      saga.compensate(createMockContext());
     });
     assertNotNull(exception.getCause());
     assertEquals(1, exception.getSuppressed().length);
@@ -271,7 +304,7 @@ public class SagaTest {
     saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
-      saga.compensate(new MockWorkflowContext());
+      saga.compensate(createMockContext());
     });
     assertNotNull(exception.getCause());
     assertEquals(0, exception.getSuppressed().length);
@@ -292,7 +325,7 @@ public class SagaTest {
     }
   }
 
-  public static class MockCompentationActivity implements CompensatableWorkflowActivity {
+  public static class MockCompentationActivity implements WorkflowActivity {
 
     private static List<Integer> compensateOrder = Collections.synchronizedList(new ArrayList<>());
 
@@ -342,111 +375,80 @@ public class SagaTest {
     }
   }
 
-  public static class MockWorkflowContext implements WorkflowContext {
+  public static class ActivityAnswer implements Answer<Task<Void>> {
 
     @Override
-    public Logger getLogger() {
-      throw new UnsupportedOperationException("Unimplemented method 'getLogger'");
-    }
+    public Task<Void> answer(InvocationOnMock invocation) throws Throwable {
+      Object[] args = invocation.getArguments();
+      String name = (String) args[0];
+      Object input = args[1];
 
-    @Override
-    public String getName() {
-      throw new UnsupportedOperationException("Unimplemented method 'getName'");
-    }
-
-    @Override
-    public String getInstanceId() {
-      throw new UnsupportedOperationException("Unimplemented method 'getInstanceId'");
-    }
-
-    @Override
-    public Instant getCurrentInstant() {
-      throw new UnsupportedOperationException("Unimplemented method 'getCurrentInstant'");
-    }
-
-    @Override
-    public void complete(Object output) {
-      throw new UnsupportedOperationException("Unimplemented method 'complete'");
-    }
-
-    @Override
-    public <V> Task<V> waitForExternalEvent(String name, Duration timeout, Class<V> dataType)
-        throws TaskCanceledException {
-      throw new UnsupportedOperationException("Unimplemented method 'waitForExternalEvent'");
-    }
-
-    @Override
-    public <V> Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
-      throw new UnsupportedOperationException("Unimplemented method 'waitForExternalEvent'");
-    }
-
-    @Override
-    public <V> Task<Void> waitForExternalEvent(String name) throws TaskCanceledException {
-      throw new UnsupportedOperationException("Unimplemented method 'waitForExternalEvent'");
-    }
-
-    @Override
-    public <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType) {
       WorkflowActivity activity;
-      WorkflowActivityContext activityContext;
+      WorkflowActivityContext activityContext = Mockito.mock(WorkflowActivityContext.class);
       try {
         activity = (WorkflowActivity) Class.forName(name).getDeclaredConstructor().newInstance();
-        activityContext = Mockito.mock(WorkflowActivityContext.class);
-        Mockito.doReturn(input).when(activityContext).getInput(Mockito.any());
       } catch (Exception e) {
         fail(e);
         return null;
       }
 
-      activity.run(activityContext);
-      return null;
-    }
-
-    @Override
-    public boolean isReplaying() {
-      throw new UnsupportedOperationException("Unimplemented method 'isReplaying'");
-    }
-
-    @Override
-    public <V> Task<List<V>> allOf(List<Task<V>> tasks) throws CompositeTaskFailedException {
-      throw new UnsupportedOperationException("Unimplemented method 'allOf'");
-    }
-
-    @Override
-    public Task<Task<?>> anyOf(List<Task<?>> tasks) {
-      throw new UnsupportedOperationException("Unimplemented method 'anyOf'");
-    }
-
-    @Override
-    public Task<Void> createTimer(Duration duration) {
-      throw new UnsupportedOperationException("Unimplemented method 'createTimer'");
-    }
-
-    @Override
-    public <V> V getInput(Class<V> targetType) {
-      throw new UnsupportedOperationException("Unimplemented method 'getInput'");
-    }
-
-    @Override
-    public <V> Task<V> callSubWorkflow(String name, Object input, String instanceID, TaskOptions options,
-        Class<V> returnType) {
-      throw new UnsupportedOperationException("Unimplemented method 'callSubWorkflow'");
-    }
-
-    @Override
-    public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
-      throw new UnsupportedOperationException("Unimplemented method 'continueAsNew'");
-    }
-
-    @Override
-    public void registerCompensation(String activityClassName, Object activityInput) {
-      throw new UnsupportedOperationException("Unimplemented method 'registerCompensation'");
-    }
-
-    @Override
-    public void compensate() {
-      throw new UnsupportedOperationException("Unimplemented method 'compensate'");
+      Task<Void> task = mock(Task.class);
+      when(task.await()).thenAnswer(invocation1 -> {
+        Mockito.doReturn(input).when(activityContext).getInput(Mockito.any());
+        activity.run(activityContext);
+        return null;
+      });
+      return task;
     }
 
   }
+
+  public static class AllActivityAnswer implements Answer<Task<Void>> {
+    @Override
+    public Task<Void> answer(InvocationOnMock invocation) throws Throwable {
+      Object[] args = invocation.getArguments();
+      List<Task<Void>> tasks = (List<Task<Void>>) args[0];
+
+      ExecutorService executor = Executors.newFixedThreadPool(5);
+      List<Callable<Void>> compensationTasks = new ArrayList<>();
+      for (Task<Void> task : tasks) {
+        Callable<Void> compensationTask = new Callable<Void>() {
+          @Override
+          public Void call() {
+            return task.await();
+          }
+        };
+        compensationTasks.add(compensationTask);
+      }
+
+      List<Future<Void>> resultFutures;
+      try {
+        resultFutures = executor.invokeAll(compensationTasks, 2, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        fail(e);
+        return null;
+      }
+
+      Task<Void> task = mock(Task.class);
+      when(task.await()).thenAnswer(new Answer<Void>() {
+        @Override
+        public Void answer(InvocationOnMock invocation) throws Throwable {
+          Exception exception = null;
+          for (Future<Void> resultFuture : resultFutures) {
+            try {
+              resultFuture.get();
+            } catch (Exception e) {
+              exception = e;
+            }
+          }
+          if (exception != null) {
+            throw exception;
+          }
+          return null;
+        }
+      });
+      return task;
+    }
+  }
+
 }

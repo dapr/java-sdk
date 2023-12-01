@@ -102,7 +102,7 @@ public class SagaIntegrationTest {
 
       workflowSuccess = true;
     } catch (Exception e) {
-      saga.compensate(new SagaTest.MockWorkflowContext());
+      saga.compensate(SagaTest.createMockContext());
     }
 
     if (workflowSuccess) {
@@ -175,7 +175,7 @@ public class SagaIntegrationTest {
     }
   }
 
-  public static class AddCompentationActivity implements CompensatableWorkflowActivity {
+  public static class AddCompentationActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
@@ -217,7 +217,7 @@ public class SagaIntegrationTest {
     }
   }
 
-  public static class SubtractCompentationActivity implements CompensatableWorkflowActivity {
+  public static class SubtractCompentationActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
@@ -259,7 +259,7 @@ public class SagaIntegrationTest {
     }
   }
 
-  public static class MultiplyCompentationActivity implements CompensatableWorkflowActivity {
+  public static class MultiplyCompentationActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
@@ -301,7 +301,7 @@ public class SagaIntegrationTest {
     }
   }
 
-  public static class DivideCompentationActivity implements CompensatableWorkflowActivity {
+  public static class DivideCompentationActivity implements WorkflowActivity {
 
     @Override
     public String run(WorkflowActivityContext ctx) {
