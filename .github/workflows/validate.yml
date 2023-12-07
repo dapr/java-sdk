@@ -162,3 +162,7 @@ jobs:
         working-directory: ./examples
         run: |
             mm.py ./src/main/java/io/dapr/examples/querystate/README.md
+      - name: Validate workflows example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/workflows/README.md
