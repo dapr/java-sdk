@@ -115,13 +115,13 @@ jobs:
     - name: Clean up files
       run: ./mvnw clean -B
     - name: Build sdk
-      run: ./mvnw clean compile -B -q
+      run: ./mvnw compile -B -q
     - name: Unit tests
-      run: ./mvnw -B clean test -q
+      run: ./mvnw -B test -q
     - name: Codecov
       uses: codecov/codecov-action@v3.1.4
     - name: Install jars
-      run: ./mvnw clean install -q -B -DskipTests
+      run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -f sdk-tests/pom.xml verify
@@ -178,11 +178,11 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: ./mvnw clean install -B -q
+        run: ./mvnw install -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
-          ./mvnw -V -B -Dgpg.skip=false -s settings.xml clean deploy -pl \!examples
+          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
