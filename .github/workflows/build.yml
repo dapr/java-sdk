@@ -121,7 +121,7 @@ jobs:
     - name: Codecov
       uses: codecov/codecov-action@v3.1.4
     - name: Install jars
-      run: ./mvnw install -q -B -DskipTests
+      run: ./mvnw clean install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -f sdk-tests/pom.xml verify
