@@ -16,22 +16,24 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.internal.ApiTokenClientInterceptor;
+import io.grpc.ClientInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.HashSet;
 import java.util.Set;
 
 public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
+  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRuntimeBuilder.class);
   private volatile Set<String> activitySet = new HashSet<String>(); 
   private volatile Set<String> workflowSet = new HashSet<String>(); 
 
-
   public WorkflowRuntimeBuilder() {
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(NetworkUtils.buildGrpcManagedChannel());
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
+                          NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
   }
 
   /**
