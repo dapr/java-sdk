@@ -21,7 +21,7 @@ import io.dapr.client.Headers;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
-import io.dapr.workflows.internal.APITokenClientInterceptor;
+import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -263,6 +263,6 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
   }
 
-  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new APITokenClientInterceptor();
+  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
 }
 
