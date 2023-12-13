@@ -25,16 +25,16 @@ jobs:
         spring-boot-version: [ 2.7.8 ]
         experimental: [ false ]
         include:
-          - java: 11
+          - java: 17
             spring-boot-version: 2.6.14
             experimental: false
-          - java: 11
+          - java: 17
             spring-boot-version: 2.5.7
             experimental: false
-          - java: 11
+          - java: 17
             spring-boot-version: 2.4.0
             experimental: false
-          - java: 11
+          - java: 17
             spring-boot-version: 2.3.6.RELEASE
             experimental: false
     env:
