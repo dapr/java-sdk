@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 11, 13, 15, 16, 17 ]
+        java: [ 17 ]
         spring-boot-version: [ 2.7.8 ]
         experimental: [ false ]
         include:
