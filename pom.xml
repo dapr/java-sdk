@@ -194,6 +194,9 @@
           <failOnViolation>true</failOnViolation>
           <failsOnError>true</failsOnError>
           <linkXRef>false</linkXRef>
+          <sourceDirectories>
+            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+          </sourceDirectories>
         </configuration>
         <executions>
           <execution>

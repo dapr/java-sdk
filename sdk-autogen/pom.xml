@@ -170,14 +170,6 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <configuration>
-          <!-- Skip checkstyle for auto-generated code -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 </project>
