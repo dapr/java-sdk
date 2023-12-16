@@ -192,6 +192,18 @@
       <artifactId>toxiproxy-java</artifactId>
       <version>2.1.7</version>
     </dependency>
+    <dependency>
+      <!-- jakarta.servlet is needed for dapr compatibility for spring boot versions before 3.0 -->
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>6.0.0</version>
+    </dependency>
+    <dependency>
+      <!-- javax.servlet is needed for dapr compatibility for spring boot versions before 3.0 -->
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -279,13 +291,6 @@
           <artifactId>okhttp</artifactId>
           <version>4.9.0</version>
           <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- jakarta.servlet is needed for dapr compatibility for spring boot versions before 3.0 -->
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
-            <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>
