@@ -16,7 +16,6 @@ package io.dapr.it.tracing.http;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -40,9 +39,8 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
           return Collections.list(carrier.getHeaderNames());
         }
 
-        @Nullable
         @Override
-        public String get(@Nullable HttpServletRequest carrier, String key) {
+        public String get(HttpServletRequest carrier, String key) {
           return carrier.getHeader(key);
       }
   };
