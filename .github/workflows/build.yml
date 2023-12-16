@@ -22,9 +22,12 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17 ]
-        spring-boot-version: [ 2.7.8 ]
+        spring-boot-version: [ 3.0.13 ]
         experimental: [ false ]
         include:
+          - java: 17
+            spring-boot-version: 2.7.8
+            experimental: false
           - java: 17
             spring-boot-version: 2.6.14
             experimental: false
