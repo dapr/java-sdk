@@ -34,7 +34,6 @@
     <gpg.skip>true</gpg.skip>
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>../spotbugs-exclude.xml</spotbugs.exclude.filter.file>
-    <springboot.version>2.7.8</springboot.version>
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
     <failsafe.version>3.2.2</failsafe.version>
     <surefire.version>3.2.2</surefire.version>
@@ -307,6 +306,7 @@
     <module>sdk-actors</module>
     <module>sdk-workflows</module>
     <module>sdk-springboot</module>
+    <module>sdk-springboot30</module>
     <module>examples</module>
   </modules>
 
