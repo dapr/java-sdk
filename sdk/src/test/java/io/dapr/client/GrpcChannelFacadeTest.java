@@ -73,11 +73,11 @@ public class GrpcChannelFacadeTest {
 
   @AfterAll
   public static void teardown() throws InterruptedException {
-    server.shutdown();
-    server.awaitTermination();
     if (daprHttp != null) {
       daprHttp.close();
     }
+    server.shutdown();
+    server.awaitTermination();
   }
   private void addMockRulesForBadHealthCheck() {
     for (int i = 0; i < 6; i++) {

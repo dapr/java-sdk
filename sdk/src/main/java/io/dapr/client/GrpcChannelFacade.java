@@ -58,6 +58,9 @@ class GrpcChannelFacade implements Closeable {
 
   @Override
   public void close() throws IOException {
+    if (daprHttp != null) {
+      daprHttp.close();
+    }
     if (channel != null && !channel.isShutdown()) {
       channel.shutdown();
     }
