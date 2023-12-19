@@ -308,6 +308,7 @@
     <module>sdk-springboot</module>
     <module>sdk-springboot30</module>
     <module>examples</module>
+    <module>sdk-tests</module>
   </modules>
 
 </project>
