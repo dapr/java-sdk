@@ -13,16 +13,29 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.config.Properties;
+import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
+import okhttp3.mock.Behavior;
+import okhttp3.mock.MockInterceptor;
+import org.junit.Before;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,6 +45,21 @@ public class GrpcChannelFacadeTest {
   private static int port;
 
   public static Server server;
+
+  private MockInterceptor mockInterceptor;
+
+  private OkHttpClient okHttpClient;
+
+  private static DaprHttp daprHttp;
+
+  /**
+   * Enable the waitForSidecar to allow the gRPC to check the http endpoint for the health check
+   */
+  @BeforeEach
+  public void setUp() {
+    mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
+    okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+  }
 
   @BeforeAll
   public static void setup() throws IOException {
@@ -45,26 +73,65 @@ public class GrpcChannelFacadeTest {
 
   @AfterAll
   public static void teardown() throws InterruptedException {
+    if (daprHttp != null) {
+      daprHttp.close();
+    }
     server.shutdown();
     server.awaitTermination();
   }
-
+  private void addMockRulesForBadHealthCheck() {
+    for (int i = 0; i < 6; i++) {
+      mockInterceptor.addRule()
+              .get()
+              .path("/v1.0/healthz/outbound")
+              .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
+    }
+  }
   @Test
-  public void waitForSidecarTimeout() throws Exception {
-    int unusedPort = findFreePort();
-    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", unusedPort)
-        .usePlaintext().build();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
+  public void waitForSidecarTimeoutHealthCheck() throws Exception {
+    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
+    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
+    int timeoutInMilliseconds = 1000;
 
-    assertThrows(RuntimeException.class, () -> channelFacade.waitForChannelReady(1).block());
+    int unusedPort = findFreePort();
+
+    OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
+
+    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", unusedPort)
+        .usePlaintext()
+            .build();
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
+
+    addMockRulesForBadHealthCheck();
+
+    StepVerifier.create(channelFacade.waitForChannelReady(timeoutInMilliseconds))
+            .expectSubscription()
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(timeoutInMilliseconds + timeoutInMilliseconds))) // Advance time to trigger the timeout
+            .expectError(TimeoutException.class)
+            .verify();
   }
 
   @Test
   public void waitForSidecarOK() {
-      ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
-          .usePlaintext().build();
-      final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
-      channelFacade.waitForChannelReady(10000).block();
-  }
+    OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
 
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
+
+    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
+        .usePlaintext().build();
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
+
+    // added since this is doing a check against the http health check endpoint
+    // for parity with dotnet
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(204);
+    
+    StepVerifier.create(channelFacade.waitForChannelReady(10000))
+            .expectSubscription()
+            .expectComplete()
+            .verify();
+  }
 }
