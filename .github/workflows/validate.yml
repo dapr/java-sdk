@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false # Keep running if one leg fails.
       matrix:
-        java: [ 17 ]
+        java: [ 11 ]
     env:
       GOVER: "1.20"
       GOOS: linux
