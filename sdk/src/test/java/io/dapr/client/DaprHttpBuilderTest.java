@@ -14,12 +14,12 @@ limitations under the License.
 package io.dapr.client;
 
 import okhttp3.OkHttpClient;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class DaprHttpBuilderTest {
 

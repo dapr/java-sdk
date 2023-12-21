@@ -4,12 +4,14 @@ set -uex
 
 DAPR_JAVA_SDK_VERSION=$1
 
-mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION
-mvn versions:commit
+# The workflows sdk tracks the regular SDK minor and patch versions, just not the major.
+# Replaces the workflows SDK major version to 0 until it is stable.
+DAPR_JAVA_WORKFLOWS_SDK_VERSION=`echo $DAPR_JAVA_SDK_VERSION | sed 's/^[0-9]*\./0./'`
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  sed -i bak "s/<dapr.sdk.version>.*<\/dapr.sdk.version>/<dapr.sdk.version>${DAPR_JAVA_SDK_VERSION}<\/dapr.sdk.version>/g" sdk-tests/pom.xml
-  rm sdk-tests/pom.xmlbak
-else
-  sed -i "s/<dapr.sdk.version>.*<\/dapr.sdk.version>/<dapr.sdk.version>${DAPR_JAVA_SDK_VERSION}<\/dapr.sdk.version>/g" sdk-tests/pom.xml
-fi
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_VERSION
+mvn versions:set-property -Dproperty=dapr.sdk.version -DnewVersion=$DAPR_JAVA_SDK_VERSION -f sdk-tests/pom.xml
+
+mvn versions:set -DnewVersion=$DAPR_JAVA_WORKFLOWS_SDK_VERSION -f sdk-workflows/pom.xml
+mvn versions:set-property -Dproperty=dapr.sdk-workflows.version -DnewVersion=$DAPR_JAVA_WORKFLOWS_SDK_VERSION
+
+git clean -f

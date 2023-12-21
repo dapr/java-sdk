@@ -15,6 +15,7 @@ package io.dapr.it.methodinvoke.grpc;
 
 import com.google.protobuf.Any;
 import io.dapr.grpc.GrpcHealthCheckService;
+import io.dapr.it.DaprRunConfig;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.CommonProtos;
 import io.grpc.Server;
@@ -35,7 +36,12 @@ import static io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
+@DaprRunConfig(
+        enableAppHealthCheck = true
+)
 public class MethodInvokeService {
+
+  private static final long STARTUP_DELAY_SECONDS = 10;
 
   public static final String SUCCESS_MESSAGE = "application discovered on port ";
 
@@ -94,6 +100,7 @@ public class MethodInvokeService {
     @Override
     public void onInvoke(CommonProtos.InvokeRequest request,
                          StreamObserver<CommonProtos.InvokeResponse> responseObserver) {
+      System.out.println("Server: received " + request.getMethod() + " ...");
       try {
         if ("postMessage".equals(request.getMethod())) {
           PostMessageRequest req = PostMessageRequest.parseFrom(request.getData().getValue().toByteArray());
@@ -163,8 +170,12 @@ public class MethodInvokeService {
   public static void main(String[] args) throws Exception {
     int port = Integer.parseInt(args[0]);
 
-    System.out.printf("Service starting on port %d ...\n", port);
+    System.out.printf("Service to start on port %d ...\n", port);
 
+    // The artificial delay is useful to detect bugs in app health, where the app is invoked too soon.
+    System.out.printf("Artificial delay of %d seconds ...\n", STARTUP_DELAY_SECONDS);
+    Thread.sleep(STARTUP_DELAY_SECONDS * 1000);
+    System.out.printf("Now starting ...\n", STARTUP_DELAY_SECONDS);
     final MyDaprService service = new MyDaprService();
     service.start(port);
     service.awaitTermination();

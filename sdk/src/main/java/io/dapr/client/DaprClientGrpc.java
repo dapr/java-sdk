@@ -32,6 +32,7 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
@@ -42,11 +43,16 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnlockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
+import io.dapr.internal.resiliency.RetryPolicy;
+import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.DefaultContentTypeConverter;
@@ -93,17 +99,27 @@ public class DaprClientGrpc extends AbstractDaprClient {
   private final GrpcChannelFacade channel;
 
   /**
+   * The timeout policy.
+   */
+  private final TimeoutPolicy timeoutPolicy;
+
+  /**
+   * The retry policy.
+   */
+  private final RetryPolicy retryPolicy;
+
+  /**
    * The async gRPC stub.
    */
-  private DaprGrpc.DaprStub asyncStub;
+  private final DaprGrpc.DaprStub asyncStub;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
-   * @param channel          Facade for the managed GRPC channel
-   * @param asyncStub        async gRPC stub
-   * @param objectSerializer Serializer for transient request/response objects.
-   * @param stateSerializer  Serializer for state objects.
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
    * @see DaprClientBuilder
    */
   DaprClientGrpc(
@@ -111,9 +127,32 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprGrpc.DaprStub asyncStub,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
+    this(channel, asyncStub, objectSerializer, stateSerializer, null);
+  }
+
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
+   * @param resiliencyOptions Client-level override for resiliency options.
+   * @see DaprClientBuilder
+   */
+  DaprClientGrpc(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer,
+      ResiliencyOptions resiliencyOptions) {
     super(objectSerializer, stateSerializer);
     this.channel = channel;
     this.asyncStub = intercept(asyncStub);
+    this.timeoutPolicy = new TimeoutPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
+    this.retryPolicy = new RetryPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -753,6 +792,97 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
+  public Mono<Boolean> tryLock(LockRequest request) {
+    try {
+      final String stateStoreName = request.getStoreName();
+      final String resourceId = request.getResourceId();
+      final String lockOwner = request.getLockOwner();
+      final Integer expiryInSeconds = request.getExpiryInSeconds();
+
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (resourceId == null || resourceId.isEmpty()) {
+        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
+      }
+      if (lockOwner == null || lockOwner.isEmpty()) {
+        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
+      }
+      if (expiryInSeconds < 0) {
+        throw new IllegalArgumentException("ExpiryInSeconds cannot be negative.");
+      }
+
+      DaprProtos.TryLockRequest.Builder builder = DaprProtos.TryLockRequest.newBuilder()
+              .setStoreName(stateStoreName)
+              .setResourceId(resourceId)
+              .setLockOwner(lockOwner)
+              .setExpiryInSeconds(expiryInSeconds);
+
+      DaprProtos.TryLockRequest tryLockRequest = builder.build();
+
+      return Mono.deferContextual(
+              context -> this.<DaprProtos.TryLockResponse>createMono(
+                      it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)
+              )
+      ).flatMap(response -> {
+        try {
+          return Mono.just(response.getSuccess());
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnlockResponseStatus> unlock(UnlockRequest request) {
+    try {
+      final String stateStoreName = request.getStoreName();
+      final String resourceId = request.getResourceId();
+      final String lockOwner = request.getLockOwner();
+
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (resourceId == null || resourceId.isEmpty()) {
+        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
+      }
+      if (lockOwner == null || lockOwner.isEmpty()) {
+        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
+      }
+
+      DaprProtos.UnlockRequest.Builder builder = DaprProtos.UnlockRequest.newBuilder()
+              .setStoreName(stateStoreName)
+              .setResourceId(resourceId)
+              .setLockOwner(lockOwner);
+
+      DaprProtos.UnlockRequest unlockRequest = builder.build();
+
+      return Mono.deferContextual(
+              context -> this.<DaprProtos.UnlockResponse>createMono(
+                      it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)
+              )
+      ).flatMap(response -> {
+        try {
+          return Mono.just(UnlockResponseStatus.valueOf(response.getStatus().getNumber()));
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type) {
     try {
       if (request == null) {
@@ -994,14 +1124,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
+  private DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
     ClientInterceptor interceptor = new ClientInterceptor() {
       @Override
       public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
           MethodDescriptor<ReqT, RespT> methodDescriptor,
-          CallOptions callOptions,
+          CallOptions options,
           Channel channel) {
-        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
+        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, timeoutPolicy.apply(options));
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
           @Override
           public void start(final Listener<RespT> responseListener, final Metadata metadata) {
@@ -1009,7 +1139,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
             if (daprApiToken != null) {
               metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
             }
-
             super.start(responseListener, metadata);
           }
         };
@@ -1030,11 +1159,13 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
-    return Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+    return retryPolicy.apply(
+        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
   }
 
   private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
-    return Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+    return retryPolicy.apply(
+        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {

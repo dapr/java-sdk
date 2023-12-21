@@ -27,7 +27,7 @@ public class GetBulkStateRequest {
 
   private final List<String> keys;
 
-  private Map<String, String> metadata;
+  private Map<String, String> metadata = Collections.emptyMap();
 
   private int parallelism = 1;
 

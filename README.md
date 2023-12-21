@@ -37,6 +37,7 @@ This is the Dapr SDK for Java, including the following features:
 * An existing Java Maven or Gradle project. You may also start a new project via one of the options below:
     * [New Maven project in IntelliJ](https://www.jetbrains.com/help/idea/maven-support.html#create_new_maven_project)
     * [Maven in 5 minutes](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
+    * [Install toxiproxy-server binary](https://github.com/Shopify/toxiproxy/releases)
 
 ### Install JDK
 
@@ -53,19 +54,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.9.0</version>
+      <version>1.10.0</version>
     </dependency>
     ...
   </dependencies>
@@ -79,11 +80,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.9.0')
+    compile('io.dapr:dapr-sdk:1.10.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.9.0')
+    compile('io.dapr:dapr-sdk-actors:1.10.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.9.0')
+    compile('io.dapr:dapr-sdk-springboot:1.10.0')
 }
 ```
 
@@ -98,7 +99,7 @@ Then head over to build the [Maven](https://maven.apache.org/install.html) (Apac
 
 ```sh
 # make sure you are in the `java-sdk` directory.
-mvn clean install
+./mvnw clean install
 ```
 
 Try the following examples to learn more about Dapr's Java SDK:
@@ -119,7 +120,7 @@ Please, refer to our [Javadoc](https://dapr.github.io/java-sdk/) website.
 
 ### Reactor API
 
-The Java SDK for Dapr is built using [Project Reactor](https://projectreactor.io/). It provides an asynchronous API for Java. When consuming a result is consumed synchronously, as in the examples referenced above, the `block()` method is used.
+The Java SDK for Dapr is built using [Project Reactor](https://projectreactor.io/). It provides an asynchronous API for Java. A result is consumed synchronously by using the `block()` method, as shown in the examples referenced above.
 
 The code below does not make any API call, it simply returns the [Mono](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html) publisher object. Nothing happens until the application subscribes or blocks on the result:
 
@@ -127,7 +128,7 @@ The code below does not make any API call, it simply returns the [Mono](https://
 Mono<Void> result = daprClient.publishEvent("mytopic", "my message");
 ```
 
-To start execution and receive the result object synchronously(`void` or `Void` becomes an empty result), use `block()`. The code below shows how to execute the call and consume an empty response:
+To start execution and receive the result object synchronously (`void` or `Void` becomes an empty result), use `block()`. The code below shows how to execute the call and consume an empty response:
 ```java
 Mono<Void> result = daprClient.publishEvent("mytopic", "my message");
 result.block();
@@ -135,9 +136,9 @@ result.block();
 
 ### How to use a custom serializer
 
-This SDK provides a basic serialization for request/response objects but also for state objects. Applications should provide their own serialization for production scenarios.
+This SDK provides a basic serialization for request/response objects, and state objects. Applications should provide their own serialization for production scenarios.
 
-1. Implement the [DaprObjectSerializer](https://dapr.github.io/java-sdk/io/dapr/serializer/DaprObjectSerializer.html) interface. See [this class](sdk-actors/src/test/java/io/dapr/actors/runtime/JavaSerializer.java) as example.
+1. Implement the [DaprObjectSerializer](https://dapr.github.io/java-sdk/io/dapr/serializer/DaprObjectSerializer.html) interface. See [this class](sdk-actors/src/test/java/io/dapr/actors/runtime/JavaSerializer.java) as an example.
 2. Use your serializer class in the following scenarios:
     * When building a new instance of [DaprClient](https://dapr.github.io/java-sdk/io/dapr/client/DaprClient.html):
     ```java
@@ -163,13 +164,13 @@ This SDK provides a basic serialization for request/response objects but also fo
     ```
 
 
-### Debug Java application or Dapr's Java SDK
+### Debug a Java application or Dapr's Java SDK
 
-**In IntelliJ Community Edition, consider [debugging in IntelliJ](https://docs.dapr.io/developing-applications/ides/intellij/).**
+**In IntelliJ Community Edition, consider [debugging in IntelliJ](https://docs.dapr.io/developing-applications/local-development/ides/intellij/).**
 
-**In Visual Studio Code, consider [debugging in Visual Studio Code](https://docs.dapr.io/developing-applications/ides/vscode-debugging/).**
+**In Visual Studio Code, consider [debugging in Visual Studio Code](https://docs.dapr.io/developing-applications/local-development/ides/vscode/).**
 
-If you need to debug your Application, run Dapr sidecar separately and then start the application from your IDE (IntelliJ, for example).
+If you need to debug your Application, run the Dapr sidecar separately, and then start the application from your IDE (IntelliJ or Eclipse, for example).
 For Linux and MacOS:
 
 ```sh
@@ -178,24 +179,25 @@ dapr run --app-id testapp --app-port 3000 --dapr-http-port 3500 --dapr-grpc-port
 
 > Note: confirm the correct port that the app will listen to and that the Dapr ports above are free, changing the ports if necessary.
 
-When running your Java application from IDE, make sure the following environment variables are set, so the Java SDK knows how to connect to Dapr's sidecar:
+When running your Java application from your IDE, make sure the following environment variables are set, so the Java SDK knows how to connect to Dapr's sidecar:
 ```
 DAPR_HTTP_PORT=3500
 DAPR_GRPC_PORT=5001
 ```
 
-Now you can go to your IDE (like Eclipse, for example) and debug your Java application, using port `3500` to call Dapr while also listening to port `3000` to expose Dapr's callback endpoint.
+Now you can go to your IDE and debug your Java application, using port `3500` to call Dapr while also listening to port `3000` to expose Dapr's callback endpoint.
 
 ### Exception handling
 
-Most exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extends from `RuntimeException`, making it compatible with Project Reactor. See [example](./examples/src/main/java/io/dapr/examples/exception) for more details.
+Most exceptions thrown from the SDK are instances of `DaprException`. `DaprException` extends from `RuntimeException`, making it compatible with Project Reactor. See the [exception example](./examples/src/main/java/io/dapr/examples/exception) for more details.
 
 ## Development
 
 ### Update URL to fetch proto files
 
 Change the `dapr.proto.baseurl` property below in [pom.xml](./pom.xml) to point to the URL for the desired commit hash in Git if you need to target a proto file that is not been merged into master yet. 
-Note: You may need to run `mvn clean` after changing this setting to remove any auto-generated files so that the new proto files get downloaded and compiled.
+
+Note: You may need to run `./mvnw clean` after changing this setting to remove any auto-generated files so that the new proto files get downloaded and compiled.
 
 ```xml
 <project>
@@ -212,11 +214,10 @@ Note: You may need to run `mvn clean` after changing this setting to remove any 
 </project>
 ```
 
-### Running Integration Tests
+### Running Integration Tests (ITs)
 
-#### Pre-Requisites for ITs
-Along with the pre-requisites for [SDK](#pre-requisites) the following are needed. 
-
+#### Pre-Requisites
+* [Pre-Requisites for the SDK](#pre-requisites)
 * Docker installed 
   * [Docker Compose](https://docs.docker.com/compose/install/) 
   * [Docker Desktop](https://www.docker.com/products/docker-desktop)
@@ -229,8 +230,7 @@ Along with the pre-requisites for [SDK](#pre-requisites) the following are neede
 The code for the tests are present inside the project [sdk-tests](./sdk-tests). This module alone can be imported as a separate project in IDEs. 
 This project depends on the rest of the JARs built by the other modules in the repo like [sdk](./sdk), [sdk-springboot](./sdk-springboot) etc.
 
-As a starting point for running Integration Tests, first run `mvn clean install` from the root of the repo to build the JARs for the different modules
-except the `sdk-tests` module.
+As a starting point for running the Integration Tests, first run `./mvnw clean install` from the root of the repo to build the JARs for the different modules, except the `sdk-tests` module.
 
 #### Run all the dependent services spun up during build
 
@@ -241,17 +241,13 @@ Similarly, all of these need to be run for running the ITs either individually o
 Run the following commands from the root of the repo to start all the docker containers that the tests depend on.
 
 ```bash
-docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml up -d
-docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml up -d
-docker-compose -f ./sdk-tests/deploy/local-test-vault.yml up -d
+docker-compose -f ./sdk-tests/deploy/local-test.yml up -d
 ```
 
 To stop the containers and services, run the following commands.
 
 ```bash
-docker-compose -f ./sdk-tests/deploy/local-test-kafka.yml down
-docker-compose -f ./sdk-tests/deploy/local-test-mongo.yml down
-docker-compose -f ./sdk-tests/deploy/local-test-vault.yml down
+docker-compose -f ./sdk-tests/deploy/local-test.yml down
 ```
 
 
@@ -261,7 +257,7 @@ From the `java-sdk` repo root, change to the `sdk-tests` directory and run the f
 ```bash
 ## with current directory as /java-sdk/sdk-tests/
 
-mvn clean install
+../mvnw clean install
 ```
 
 The above command runs all the integration tests present in the `sdk-tests` project. 

@@ -10,14 +10,14 @@ Visit [this](https://docs.dapr.io/developing-applications/building-blocks/secret
 
 ## Secret store sample using the Java-SDK
 
-In this example, the component used is local file(not recommended for production use), but others are also available.
+In this example, the component used is a local file (not recommended for production use), but others are also available.
 
 Visit [this](https://github.com/dapr/components-contrib/tree/master/secretstores) link for more information about secret store implementations.
 
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
   * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
   * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -45,6 +45,10 @@ Then get into the examples directory:
 ```sh
 cd examples
 ```
+
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
 
 ### Creating a JSON secret file locally
 
@@ -103,7 +107,7 @@ public class SecretClient {
 }
 ```
 The program receives two arguments at least: one's the secret store name and the others are secret's keys to be fetched.
-After identifying the secret store name that created and the keys to be fetched, it will retrieve them from the pre-defined secret store: `< repo dir >/examples/components/secrets/secret.json`.
+After identifying the secret store name that's created and the keys to be fetched, it will retrieve them from the pre-defined secret store: `< repo dir >/examples/components/secrets/secret.json`.
 The secret store's name **must** match the component's name defined in `< repo dir >/examples/components/secrets/local_file.yaml`.
 The Dapr client is also within a try-with-resource block to properly close the client at the end.
 

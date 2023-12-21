@@ -4,14 +4,14 @@ This example provides the different capabilities provided by Dapr Java SDK for C
 
 ### Using the ConfigurationAPI
 
-The java SDK exposes several methods for this -
-* `client.getConfiguration(...)` for getting a configuration for a single/multiple keys.
+The Java SDK exposes several methods for this -
+* `client.getConfiguration(...)` for getting configuration for a single/multiple key(s).
 * `client.subscribeConfiguration(...)` for subscribing to a list of keys for any change.
 * `client.unsubscribeConfiguration(...)` for unsubscribing to changes from subscribed items.
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -33,7 +33,18 @@ Then build the Maven project:
 # make sure you are in the `java-sdk` directory.
 mvn install
 ```
-## Store few dummy configurations in configurationstore
+
+Then get into the examples directory:
+
+```sh
+cd examples
+```
+
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
+## Store dummy configurations in configuration store
 <!-- STEP
 name: Set configuration value
 expected_stdout_lines:
@@ -48,9 +59,9 @@ docker exec dapr_redis redis-cli MSET myconfig1 "val1||1" myconfig2 "val2||1" my
 
 ### Running the example
 
-This example uses the Java SDK Dapr client in order to **Get, Subscribe and Unsubscribe** from configuration items and utilizes `Redis` as configuration store.
+This example uses the Java SDK Dapr client in order to **Get, Subscribe and Unsubscribe** from configuration items, and utilizes `Redis` as configuration store.
 `ConfigurationClient.java` is the example class demonstrating all 3 features.
-Kindly check [DaprPreviewClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprPreviewClient.java) for detailed description of the supported APIs.
+Kindly check [DaprPreviewClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprPreviewClient.java) for a detailed description of the supported APIs.
 
 ```java
 public class ConfigurationClient {

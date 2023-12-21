@@ -4,7 +4,7 @@ This sample illustrates the capabilities provided by Dapr Java SDK for state man
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -31,6 +31,10 @@ Then change into the `examples` directory:
 ```sh
 cd examples
 ```
+
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
 
 ### Running the StateClient
 This example uses the Java SDK Dapr client in order to save, retrieve and delete a state, in this case, an instance of a class. Multiple state stores are supported since Dapr 0.4. See the code snippet bellow: 
@@ -128,7 +132,7 @@ This example performs multiple operations:
 * `client.getState(...)` operation in order to retrieve back the persisted state using the same key. 
 * `client.executeStateTransaction(...)` operation in order to update existing state and add new state. 
 * `client.getBulkState(...)` operation in order to retrieve back the persisted states using the same keys.
-* `client.deleteState(...)` operation to remove  one of the persisted states. An example of etag mismatch error if a different than current etag is added to request.
+* `client.deleteState(...)` operation to remove one of the persisted states. An example of etag mismatch error is if something other than the current etag is added to request.
 * `client.executeStateTransaction(...)` operation in order to remove the other persisted state.
 
 Finally, the code tries to retrieve the deleted states, which should not be found. 

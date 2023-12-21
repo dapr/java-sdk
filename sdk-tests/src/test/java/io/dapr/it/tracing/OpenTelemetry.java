@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.it.tracing;
 
+import io.dapr.utils.NetworkUtils;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
@@ -23,15 +23,7 @@ import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
-import java.io.IOException;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,30 +38,23 @@ public class OpenTelemetry {
    * @param serviceName Name of the service in Zipkin
    * @return OpenTelemetry.
    */
-  public static io.opentelemetry.api.OpenTelemetry createOpenTelemetry(String serviceName) {
-    // Only exports to Zipkin if it is up. Otherwise, ignore it.
-    // This is helpful to avoid exceptions for examples that do not require Zipkin.
-    if (isZipkinUp()) {
-      String httpUrl = String.format("http://localhost:%d", ZIPKIN_PORT);
-      ZipkinSpanExporter zipkinExporter =
-          ZipkinSpanExporter.builder()
-              .setEndpoint(httpUrl + ENDPOINT_V2_SPANS)
-              .setServiceName(serviceName)
-              .build();
+  public static io.opentelemetry.api.OpenTelemetry createOpenTelemetry(String serviceName) throws InterruptedException {
+    waitForZipkin();
+    String httpUrl = String.format("http://localhost:%d", ZIPKIN_PORT);
+    ZipkinSpanExporter zipkinExporter =
+        ZipkinSpanExporter.builder()
+            .setEndpoint(httpUrl + ENDPOINT_V2_SPANS)
+            .setServiceName(serviceName)
+            .build();
 
-      SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
-          .addSpanProcessor(SimpleSpanProcessor.create(zipkinExporter))
-          .build();
+    SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
+        .addSpanProcessor(SimpleSpanProcessor.create(zipkinExporter))
+        .build();
 
-      return OpenTelemetrySdk.builder()
-          .setTracerProvider(sdkTracerProvider)
-          .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-          .buildAndRegisterGlobal();
-    } else {
-      System.out.println("WARNING: Zipkin is not available.");
-    }
-
-    return null;
+    return OpenTelemetrySdk.builder()
+        .setTracerProvider(sdkTracerProvider)
+        .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+        .buildAndRegisterGlobal();
   }
 
   /**
@@ -98,11 +83,7 @@ public class OpenTelemetry {
     return reactorContext;
   }
 
-  private static boolean isZipkinUp() {
-    try (Socket ignored = new Socket("localhost", ZIPKIN_PORT)) {
-      return true;
-    } catch (IOException ignored) {
-      return false;
-    }
+  private static void waitForZipkin() throws InterruptedException {
+    NetworkUtils.waitForSocket("127.0.0.1", ZIPKIN_PORT, 10000);
   }
 }

@@ -4,7 +4,7 @@ In this example, you will run a Grpc service and client using Dapr's invoke feat
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -50,7 +50,7 @@ The first component is the service. It has a simple API with the `Say` method. T
  }
 ```
 
-In the `HelloWorldService.java` file, you will find the `HelloWorldService` class, containing the main method. The service implementation happens in the `GrpcHelloWorldDaprService` class. You can see that it extends `DaprClientImplBase` instead of `HelloWorldImplBase`. This is because this service will be called by Dapr, so it implements the service API expected by Dapr. The `DaprClientImplBase` class is part of this SDK. In a real-world application, the service would still implement its main API as well. The Dapr's API would be exposed as an additional service. In this example, we are implementing Dapr's API only. Modifying this example to expose `HelloWorldService` is offered as an exercise to the reader.
+In the `HelloWorldService.java` file, you will find the `HelloWorldService` class, containing the main method. The service implementation happens in the `GrpcHelloWorldDaprService` class. You can see that it extends `DaprClientImplBase` instead of `HelloWorldImplBase`. This is because this service will be called by Dapr, so it implements the service API expected by Dapr. The `DaprClientImplBase` class is part of this SDK. In a real-world application, the service would still implement it's main API as well. The Dapr's API would be exposed as an additional service. In this example, we are implementing Dapr's API only. Modifying this example to expose `HelloWorldService` is offered as an exercise to the reader.
 ```java
 private static class GrpcHelloWorldDaprService extends DaprClientGrpc.DaprClientImplBase {
 ///...

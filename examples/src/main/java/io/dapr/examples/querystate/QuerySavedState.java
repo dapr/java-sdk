@@ -43,7 +43,7 @@ public class QuerySavedState {
   private static final String STATE_STORE_NAME = "mongo-statestore";
 
   /**
-   * Executes the sate actions.
+   * Executes the state actions.
    * @param args messages to be sent as state value.
    */
   public static void main(String[] args) throws Exception {

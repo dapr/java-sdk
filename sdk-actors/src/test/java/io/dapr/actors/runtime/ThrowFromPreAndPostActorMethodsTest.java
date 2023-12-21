@@ -19,12 +19,13 @@ import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -122,25 +123,23 @@ public class ThrowFromPreAndPostActorMethodsTest {
 
   // IllegalMonitorStateException should be intentionally thrown.  This type was chosen for this test just because
   // it is unlikely to collide.
-  @Test(expected = IllegalMonitorStateException.class)
+  @Test
   public void stringInBooleanOut1() {
     ActorProxy proxy = createActorProxyForActorChild();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
-      false,
+    assertThrows(IllegalMonitorStateException.class, () ->
       proxy.invokeMethod("stringInBooleanOut", "hello world", Boolean.class).block());
   }
 
   // IllegalMonitorStateException should be intentionally thrown.  This type was chosen for this test just because
   // it is unlikely to collide.
-  @Test(expected = IllegalMonitorStateException.class)
+  @Test
   public void stringInBooleanOut2() {
     ActorProxy proxy = createActorProxyForActorChild();
 
     // these should only call the actor methods for ActorChild.  The implementations in ActorParent will throw.
-    Assert.assertEquals(
-      true,
+    assertThrows(IllegalMonitorStateException.class, () ->
       proxy.invokeMethod("stringInBooleanOut", "true", Boolean.class).block());
   }
 

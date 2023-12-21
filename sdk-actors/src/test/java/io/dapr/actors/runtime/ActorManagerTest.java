@@ -17,8 +17,8 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 import reactor.core.publisher.Mono;
 
@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -120,11 +121,13 @@ public class ActorManagerTest {
 
   private ActorManager<MyActorImpl> manager = new ActorManager<>(context);
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void invokeBeforeActivate() throws Exception {
     ActorId actorId = newActorId();
     String message = "something";
-    this.manager.invokeMethod(actorId, "say", message.getBytes()).block();
+
+    assertThrows(IllegalArgumentException.class, () ->
+    this.manager.invokeMethod(actorId, "say", message.getBytes()).block());
   }
 
   @Test
@@ -133,7 +136,7 @@ public class ActorManagerTest {
     byte[] message = this.context.getObjectSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
     byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
-    Assert.assertEquals(executeSayMethod(
+    Assertions.assertEquals(executeSayMethod(
       this.context.getObjectSerializer().deserialize(message, TypeRef.STRING)),
       this.context.getObjectSerializer().deserialize(response, TypeRef.STRING));
   }
@@ -143,7 +146,7 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
 
-    Assertions.assertThrows(RuntimeException.class, () -> {
+    assertThrows(RuntimeException.class, () -> {
       this.manager.invokeMethod(actorId, "throwsException", null).block();
     });
   }
@@ -162,7 +165,7 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
 
-    Assertions.assertThrows(RuntimeException.class, () -> {
+    assertThrows(RuntimeException.class, () -> {
       this.manager.invokeMethod(actorId, "throwsExceptionHotMono", null).block();
     });
   }
@@ -181,7 +184,7 @@ public class ActorManagerTest {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
 
-    Assertions.assertThrows(RuntimeException.class, () -> {
+    assertThrows(RuntimeException.class, () -> {
       this.manager.invokeMethod(actorId, "throwsExceptionMono", null).block();
     });
   }
@@ -195,18 +198,19 @@ public class ActorManagerTest {
     this.manager.invokeMethod(actorId, "throwsExceptionMono", null);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void activateInvokeDeactivateThenInvoke() throws Exception {
     ActorId actorId = newActorId();
     byte[] message = this.context.getObjectSerializer().serialize("something");
     this.manager.activateActor(actorId).block();
     byte[] response = this.manager.invokeMethod(actorId, "say", message).block();
-    Assert.assertEquals(executeSayMethod(
+    Assertions.assertEquals(executeSayMethod(
       this.context.getObjectSerializer().deserialize(message, TypeRef.STRING)),
       this.context.getObjectSerializer().deserialize(response, TypeRef.STRING));
 
     this.manager.deactivateActor(actorId).block();
-    this.manager.invokeMethod(actorId, "say", message).block();
+    assertThrows(IllegalArgumentException.class, () ->
+      this.manager.invokeMethod(actorId, "say", message).block());
   }
 
   @Test
@@ -217,10 +221,11 @@ public class ActorManagerTest {
     manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void invokeReminderBeforeActivate() throws Exception {
     ActorId actorId = newActorId();
-    this.manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
+    assertThrows(IllegalArgumentException.class, () ->
+      this.manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block());
   }
 
   @Test
@@ -230,18 +235,21 @@ public class ActorManagerTest {
     this.manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void activateDeactivateThenInvokeReminder() throws Exception {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
     this.manager.deactivateActor(actorId).block();;
-    this.manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block();
+
+    assertThrows(IllegalArgumentException.class, () -> this.manager.invokeReminder(actorId, "myremind", createReminderParams("hello")).block());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void invokeTimerBeforeActivate() throws IOException {
     ActorId actorId = newActorId();
-    this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
+
+    assertThrows(IllegalArgumentException.class, () ->
+    this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block());
   }
 
   @Test
@@ -257,19 +265,19 @@ public class ActorManagerTest {
     this.manager.activateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
     byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
-    Assert.assertEquals("2", new String(response));
+    Assertions.assertEquals("2", new String(response));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void activateInvokeTimerDeactivateThenInvokeTimer() throws IOException {
     ActorId actorId = newActorId();
     this.manager.activateActor(actorId).block();
     this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
     byte[] response = this.manager.invokeMethod(actorId, "getCount", null).block();
-    Assert.assertEquals("2", new String(response));
+    Assertions.assertEquals("2", new String(response));
 
     this.manager.deactivateActor(actorId).block();
-    this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block();
+    assertThrows(IllegalArgumentException.class, () -> this.manager.invokeTimer(actorId, "count", createTimerParams("incrementCount", 2)).block());
   }
 
   private byte[] createReminderParams(String data) throws IOException {
