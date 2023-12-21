@@ -20,6 +20,7 @@ import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,8 +29,8 @@ public class WorkflowRuntimeBuilder {
   private DurableTaskGrpcWorkerBuilder builder;
   private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRuntimeBuilder.class);
-  private volatile Set<String> activitySet = new HashSet<String>(); 
-  private volatile Set<String> workflowSet = new HashSet<String>(); 
+  private final Set<String> activitySet = Collections.synchronizedSet(new HashSet<>());
+  private final Set<String> workflowSet = Collections.synchronizedSet(new HashSet<>());
 
   public WorkflowRuntimeBuilder() {
     this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
