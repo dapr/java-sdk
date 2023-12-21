@@ -11,51 +11,30 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.UUID;
 
 import static io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry;
 import static io.dapr.it.tracing.OpenTelemetry.getReactorContext;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class TracingIT extends BaseIT {
-
-    /**
-     * Parameters for this test.
-     * Param #1: useGrpc.
-     * @return Collection of parameter tuples.
-     */
-    @Parameters
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] { { false }, { true } });
-    }
 
     /**
      * Run of a Dapr application.
      */
     private DaprRun daprRun = null;
 
-    @Parameter
-    public boolean useGrpc;
-
-    @Before
-    public void init() throws Exception {
+    public void setup(boolean useGrpc) throws Exception {
         daprRun = startDaprApp(
-          TracingIT.class.getSimpleName(),
+          TracingIT.class.getSimpleName() + "http",
           Service.SUCCESS_MESSAGE,
           Service.class,
           true,
           30000);
 
-        if (this.useGrpc) {
+        if (useGrpc) {
             daprRun.switchToGRPC();
         } else {
             daprRun.switchToHTTP();
@@ -65,8 +44,11 @@ public class TracingIT extends BaseIT {
         Thread.sleep(2000);
     }
 
-    @Test
-    public void testInvoke() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testInvoke(boolean useGrpc) throws Exception {
+        setup(useGrpc);
+
         final OpenTelemetry openTelemetry = createOpenTelemetry(OpenTelemetryConfig.SERVICE_NAME);
         final Tracer tracer = openTelemetry.getTracer(OpenTelemetryConfig.TRACER_NAME);
 
@@ -74,16 +56,17 @@ public class TracingIT extends BaseIT {
         Span span = tracer.spanBuilder(spanName).setSpanKind(Span.Kind.CLIENT).startSpan();
 
         try (DaprClient client = new DaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
             try (Scope scope = span.makeCurrent()) {
                 client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
-                    .subscriberContext(getReactorContext())
+                    .contextWrite(getReactorContext())
                     .block();
             }
         }
         span.end();
         OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
 
-        Validation.validate(spanName, "calllocal/tracingit_service/sleep");
+        Validation.validate(spanName, "calllocal/tracingithttp-service/sleep");
     }
 
 }

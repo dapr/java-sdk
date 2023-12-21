@@ -16,21 +16,19 @@ package io.dapr.client;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.ExecuteStateTransactionRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequest;
-import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.config.Properties;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -40,24 +38,23 @@ import io.dapr.v1.DaprProtos;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -66,75 +63,57 @@ import java.util.stream.Collectors;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class DaprClientGrpcTest {
 
   private static final String STATE_STORE_NAME = "MyStateStore";
 
+  private static final String CONFIG_STORE_NAME = "MyConfigStore";
+
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
-  private Closeable closeable;
+  private GrpcChannelFacade channel;
   private DaprGrpc.DaprStub daprStub;
   private DaprClient client;
   private ObjectSerializer serializer;
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
-    closeable = mock(Closeable.class);
+    channel = mock(GrpcChannelFacade.class);
     daprStub = mock(DaprGrpc.DaprStub.class);
     when(daprStub.withInterceptors(any())).thenReturn(daprStub);
     DaprClient grpcClient = new DaprClientGrpc(
-        closeable, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+        channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     client = new DaprClientProxy(grpcClient);
     serializer = new ObjectSerializer();
-    doNothing().when(closeable).close();
+    doNothing().when(channel).close();
   }
 
-  @After
+  @AfterEach
   public void tearDown() throws Exception {
     client.close();
-    verify(closeable).close();
-    verifyNoMoreInteractions(closeable);
+    verify(channel).close();
   }
 
   @Test
-  public void waitForSidecarTimeout() throws Exception {
-    int port = findFreePort();
-    System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
+  public void waitForSidecarTimeout() {
+    Mockito.doReturn(Mono.error(new RuntimeException())).when(channel).waitForChannelReady(1);
     assertThrows(RuntimeException.class, () -> client.waitForSidecar(1).block());
   }
 
   @Test
-  public void waitForSidecarTimeoutOK() throws Exception {
-    try (ServerSocket serverSocket = new ServerSocket(0)) {
-      final int port = serverSocket.getLocalPort();
-      System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(port));
-      Thread t = new Thread(() -> {
-        try {
-          try (Socket socket = serverSocket.accept()) {
-          }
-        } catch (IOException e) {
-        }
-      });
-      t.start();
-      client.waitForSidecar(10000).block();
-    }
+  public void waitForSidecarOK() {
+    Mockito.doReturn(Mono.empty()).when(channel).waitForChannelReady(10000);
+    client.waitForSidecar(10000).block();
   }
 
   @Test
@@ -170,7 +149,7 @@ public class DaprClientGrpcTest {
   @Test
   public void publishEventSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -288,7 +267,7 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -610,7 +589,7 @@ public class DaprClientGrpcTest {
         .build();
     String expected = "Value";
 
-    doAnswer((Answer<Void>) invocation -> {
+    doAnswer(invocation -> {
       StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
       observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
       observer.onCompleted();
@@ -936,7 +915,7 @@ public class DaprClientGrpcTest {
     String expectedValue = "Expected state";
     State<String> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), null);
     DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
-    doAnswer((Answer<Void>) invocation -> {
+    doAnswer(invocation -> {
       StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
@@ -1449,7 +1428,7 @@ public class DaprClientGrpcTest {
   @Test
   public void executeTransactionSerializerExceptionTest() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(closeable, daprStub, mockSerializer, mockSerializer);
+    client = new DaprClientGrpc(channel, daprStub, mockSerializer, mockSerializer);
     String etag = "ETag1";
     String key = "key1";
     String data = "my data";
@@ -2103,6 +2082,248 @@ public class DaprClientGrpcTest {
     assertEquals("2", secrets.get("two").get("b"));
   }
 
+  @Test
+  public void getConfigurationTestErrorScenario() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.getConfiguration("", "key").block();
+    });
+  }
+
+  @Test
+  public void getSingleConfigurationTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getSingleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    ConfigurationItem ci = client.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void getSingleConfigurationWithMetadataTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getSingleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    Map<String, String> reqMetadata = new HashMap<>();
+    reqMetadata.put("meta1", "value1");
+    ConfigurationItem ci = client.getConfiguration(CONFIG_STORE_NAME, "configkey1", reqMetadata).block();
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void getMultipleConfigurationTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getMultipleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
+    assertEquals(2, cis.size());
+    assertTrue(cis.containsKey("configkey1"), "configkey1");
+    assertEquals("configvalue1", cis.get("configkey1").getValue());
+    assertEquals("1", cis.get("configkey1").getVersion());
+    assertTrue(cis.containsKey("configkey2"), "configkey2");
+    assertEquals("configvalue2", cis.get("configkey2").getValue());
+    assertEquals("1", cis.get("configkey2").getVersion());
+  }
+
+  @Test
+  public void getMultipleConfigurationWithMetadataTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(getMultipleMockResponse());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
+
+    Map<String, String> reqMetadata = new HashMap<>();
+    reqMetadata.put("meta1", "value1");
+    List<String> keys = Arrays.asList("configkey1","configkey2");
+    Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
+    assertEquals(2, cis.size());
+    assertTrue(cis.containsKey("configkey1"), "configkey1");
+    assertEquals("configvalue1", cis.get("configkey1").getValue());
+  }
+
+  @Test
+  public void subscribeConfigurationTest() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .setId("subscription_id")
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+
+    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertTrue(res.getItems().containsKey("configkey1"));
+    assertEquals("subscription_id", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void subscribeConfigurationTestWithMetadata() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.SubscribeConfigurationResponse responseEnvelope = DaprProtos.SubscribeConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .setId("subscription_id")
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+
+    Map<String, String> reqMetadata = new HashMap<>();
+    List<String> keys = Arrays.asList("configkey1");
+
+    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertTrue(res.getItems().containsKey("configkey1"));
+    assertEquals("subscription_id", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void subscribeConfigurationWithErrorTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onError(new RuntimeException());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
+
+    assertThrowsDaprException(ExecutionException.class, () -> {
+      client.subscribeConfiguration(CONFIG_STORE_NAME, "key").blockFirst();
+    });
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.subscribeConfiguration("", "key").blockFirst();
+    });
+  }
+
+  @Test
+  public void unsubscribeConfigurationTest() {
+    DaprProtos.UnsubscribeConfigurationResponse responseEnvelope = DaprProtos.UnsubscribeConfigurationResponse.newBuilder()
+        .setOk(true)
+        .setMessage("unsubscribed_message")
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).unsubscribeConfiguration(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+
+    UnsubscribeConfigurationResponse
+        response = client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME).block();
+    assertTrue(response.getIsUnsubscribed());
+    assertEquals("unsubscribed_message", response.getMessage());
+  }
+
+  @Test
+  public void unsubscribeConfigurationTestWithError() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
+      observer.onError(new RuntimeException());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).unsubscribeConfiguration(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
+
+    assertThrowsDaprException(ExecutionException.class, () -> {
+      client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME).block();
+    });
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.unsubscribeConfiguration("", CONFIG_STORE_NAME).block();
+    });
+
+    UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
+    assertThrows(IllegalArgumentException.class, () -> {
+      client.unsubscribeConfiguration(req).block();
+    });
+  }
+
+  private DaprProtos.GetConfigurationResponse getSingleMockResponse() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .build();
+    return responseEnvelope;
+  }
+
+  private DaprProtos.GetConfigurationResponse getMultipleMockResponse() {
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("meta1", "value1");
+    Map<String, CommonProtos.ConfigurationItem> configs = new HashMap<>();
+    configs.put("configkey1", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue1")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    configs.put("configkey2", CommonProtos.ConfigurationItem.newBuilder()
+        .setValue("configvalue2")
+        .setVersion("1")
+        .putAllMetadata(metadata)
+        .build());
+    DaprProtos.GetConfigurationResponse responseEnvelope = DaprProtos.GetConfigurationResponse.newBuilder()
+        .putAllItems(configs)
+        .build();
+    return responseEnvelope;
+  }
+
   /* If this test is failing, it means that a new value was added to StateOptions.Consistency
    * enum, without creating a mapping to one of the proto defined gRPC enums
    */
@@ -2159,6 +2380,7 @@ public class DaprClientGrpcTest {
     Mono<Void> result = client.shutdown();
     result.block();
   }
+
 
   private <T> DaprProtos.GetStateResponse buildFutureGetStateEnvelop(T value, String etag) throws IOException {
     return buildGetStateResponse(value, etag);

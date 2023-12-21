@@ -19,23 +19,25 @@ import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import io.dapr.it.actors.app.ActorReminderDataParam;
 import io.dapr.it.actors.app.MyActorService;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static io.dapr.it.actors.MyActorTestUtils.countMethodCalls;
-import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
-import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
+import static io.dapr.it.actors.MyActorTestUtils.*;
 
 public class ActorReminderRecoveryIT extends BaseIT {
 
@@ -43,14 +45,45 @@ public class ActorReminderRecoveryIT extends BaseIT {
 
   private static final String METHOD_NAME = "receiveReminder";
 
+  /**
+   * Parameters for this test.
+   * Param #1: useGrpc.
+   *
+   * @return Collection of parameter tuples.
+   */
+  public static Stream<Arguments> data() {
+    return Stream.of(Arguments.of(
+                    "MyActorTest",
+                    new ActorReminderDataParam("36", "String"),
+                    "36"
+            ),
+            Arguments.of(
+                    "MyActorTest",
+                    new ActorReminderDataParam("\"my_text\"", "String"),
+                    "\"my_text\""
+            ),
+            Arguments.of(
+                    "MyActorBinaryTest",
+                    new ActorReminderDataParam(new byte[]{0, 1}, "Binary"),
+                    "AAE="
+            ),
+            Arguments.of(
+                    "MyActorObjectTest",
+                    new ActorReminderDataParam("{\"name\":\"abc\",\"age\":30}", "Object"),
+                    "abc,30"
+            )
+    );
+  }
+
+  public String reminderName = UUID.randomUUID().toString();
+
   private ActorProxy proxy;
 
   private ImmutablePair<AppRun, DaprRun> runs;
 
   private DaprRun clientRun;
 
-  @Before
-  public void init() throws Exception {
+  public void setup(String actorType) throws Exception {
     runs = startSplitDaprAndApp(
         ActorReminderRecoveryIT.class.getSimpleName(),
         "Started MyActorService",
@@ -66,7 +99,6 @@ public class ActorReminderRecoveryIT extends BaseIT {
     Thread.sleep(3000);
 
     ActorId actorId = new ActorId(UUID.randomUUID().toString());
-    String actorType="MyActorTest";
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
@@ -76,21 +108,33 @@ public class ActorReminderRecoveryIT extends BaseIT {
     proxy = proxyBuilder.build(actorId);
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     // call unregister
     logger.debug("Calling actor method 'stopReminder' to unregister reminder");
-    proxy.invokeMethod("stopReminder", "myReminder").block();
+    proxy.invokeMethod("stopReminder", this.reminderName).block();
   }
 
   /**
    * Create an actor, register a reminder, validates its content, restarts the runtime and confirms reminder continues.
    * @throws Exception This test is not expected to throw.  Thrown exceptions are bugs.
    */
-  @Test
-  public void reminderRecoveryTest() throws Exception {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void reminderRecoveryTest(
+          String actorType,
+          ActorReminderDataParam reminderDataParam,
+          String expectedReminderStateText
+  ) throws Exception {
+    setup(actorType);
+
+    logger.debug("Pausing 3 seconds to let gRPC connection get ready");
+    Thread.sleep(3000);
+    
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
-    proxy.invokeMethod("startReminder", "myReminder").block();
+    proxy.invokeMethod("setReminderData", reminderDataParam).block();
+
+    proxy.invokeMethod("startReminder",  reminderName).block();
 
     logger.debug("Pausing 7 seconds to allow reminder to fire");
     Thread.sleep(7000);
@@ -100,6 +144,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
       logs.clear();
       logs.addAll(fetchMethodCallLogs(proxy));
       validateMethodCalls(logs, METHOD_NAME, 3);
+      validateMessageContent(logs, METHOD_NAME, expectedReminderStateText);
     }, 5000);
 
     // Restarts runtime only.
@@ -121,6 +166,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
       logger.info("Fetching logs for " + METHOD_NAME);
       List<MethodEntryTracker> newLogs = fetchMethodCallLogs(proxy);
       validateMethodCalls(newLogs, METHOD_NAME, 1);
+      validateMessageContent(newLogs, METHOD_NAME, expectedReminderStateText);
 
       logger.info("Pausing 10 seconds to allow reminder to fire a few times");
       try {

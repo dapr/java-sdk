@@ -14,21 +14,24 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprException;
 import io.dapr.utils.DurationUtils;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
+import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A DaprClient over HTTP for Actor's runtime.
@@ -48,9 +51,9 @@ class DaprGrpcClient implements DaprClient {
   /**
    * The GRPC client to be used.
    *
-   * @see io.dapr.v1.DaprGrpc.DaprFutureStub
+   * @see io.dapr.v1.DaprGrpc.DaprStub
    */
-  private DaprGrpc.DaprFutureStub client;
+  private DaprGrpc.DaprStub client;
 
   /**
    * Internal constructor.
@@ -58,16 +61,16 @@ class DaprGrpcClient implements DaprClient {
    * @param channel channel (client needs to close channel after use).
    */
   DaprGrpcClient(ManagedChannel channel) {
-    this(DaprGrpc.newFutureStub(channel));
+    this(DaprGrpc.newStub(channel));
   }
 
   /**
    * Internal constructor.
    *
-   * @param grpcClient Dapr's GRPC client.
+   * @param daprStubClient Dapr's GRPC client.
    */
-  DaprGrpcClient(DaprGrpc.DaprFutureStub grpcClient) {
-    this.client = grpcClient;
+  DaprGrpcClient(DaprGrpc.DaprStub daprStubClient) {
+    this.client = daprStubClient;
   }
 
   /**
@@ -75,17 +78,15 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<byte[]> getState(String actorType, String actorId, String keyName) {
-    return Mono.fromCallable(() -> {
-      DaprProtos.GetActorStateRequest req =
-          DaprProtos.GetActorStateRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setKey(keyName)
-              .build();
+    DaprProtos.GetActorStateRequest req =
+            DaprProtos.GetActorStateRequest.newBuilder()
+                    .setActorType(actorType)
+                    .setActorId(actorId)
+                    .setKey(keyName)
+                    .build();
 
-      ListenableFuture<DaprProtos.GetActorStateResponse> futureResponse = client.getActorState(req);
-      return futureResponse.get();
-    }).map(r -> r.getData().toByteArray());
+    return Mono.<DaprProtos.GetActorStateResponse>create(it ->
+            client.getActorState(req, createStreamObserver(it))).map(r -> r.getData().toByteArray());
   }
 
   /**
@@ -132,10 +133,7 @@ class DaprGrpcClient implements DaprClient {
             .addAllOperations(grpcOps)
             .build();
 
-    return Mono.fromCallable(() -> {
-      ListenableFuture<Empty> futureResponse = client.executeActorStateTransaction(req);
-      return futureResponse.get();
-    }).then();
+    return Mono.<Empty>create(it -> client.executeActorStateTransaction(req, createStreamObserver(it))).then();
   }
 
   /**
@@ -147,21 +145,16 @@ class DaprGrpcClient implements DaprClient {
       String actorId,
       String reminderName,
       ActorReminderParams reminderParams) {
-    return Mono.fromCallable(() -> {
-      DaprProtos.RegisterActorReminderRequest req =
-          DaprProtos.RegisterActorReminderRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(reminderName)
-              .setData(ByteString.copyFrom(reminderParams.getData()))
-              .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
-              .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()))
-              .build();
-
-      ListenableFuture<Empty> futureResponse = client.registerActorReminder(req);
-      futureResponse.get();
-      return null;
-    });
+    DaprProtos.RegisterActorReminderRequest req =
+            DaprProtos.RegisterActorReminderRequest.newBuilder()
+                    .setActorType(actorType)
+                    .setActorId(actorId)
+                    .setName(reminderName)
+                    .setData(ByteString.copyFrom(reminderParams.getData()))
+                    .setDueTime(DurationUtils.convertDurationToDaprFormat(reminderParams.getDueTime()))
+                    .setPeriod(DurationUtils.convertDurationToDaprFormat(reminderParams.getPeriod()))
+                    .build();
+    return Mono.<Empty>create(it -> client.registerActorReminder(req, createStreamObserver(it))).then().then();
   }
 
   /**
@@ -169,18 +162,14 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterReminder(String actorType, String actorId, String reminderName) {
-    return Mono.fromCallable(() -> {
-      DaprProtos.UnregisterActorReminderRequest req =
-          DaprProtos.UnregisterActorReminderRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(reminderName)
-              .build();
+    DaprProtos.UnregisterActorReminderRequest req =
+        DaprProtos.UnregisterActorReminderRequest.newBuilder()
+            .setActorType(actorType)
+            .setActorId(actorId)
+            .setName(reminderName)
+            .build();
 
-      ListenableFuture<Empty> futureResponse = client.unregisterActorReminder(req);
-      futureResponse.get();
-      return null;
-    });
+    return Mono.<Empty>create(it -> client.unregisterActorReminder(req, createStreamObserver(it))).then().then();
   }
 
   /**
@@ -192,22 +181,18 @@ class DaprGrpcClient implements DaprClient {
       String actorId,
       String timerName,
       ActorTimerParams timerParams) {
-    return Mono.fromCallable(() -> {
-      DaprProtos.RegisterActorTimerRequest req =
-          DaprProtos.RegisterActorTimerRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(timerName)
-              .setCallback(timerParams.getCallback())
-              .setData(ByteString.copyFrom(timerParams.getData()))
-              .setDueTime(DurationUtils.convertDurationToDaprFormat(timerParams.getDueTime()))
-              .setPeriod(DurationUtils.convertDurationToDaprFormat(timerParams.getPeriod()))
-              .build();
+    DaprProtos.RegisterActorTimerRequest req =
+         DaprProtos.RegisterActorTimerRequest.newBuilder()
+             .setActorType(actorType)
+             .setActorId(actorId)
+             .setName(timerName)
+             .setCallback(timerParams.getCallback())
+             .setData(ByteString.copyFrom(timerParams.getData()))
+             .setDueTime(DurationUtils.convertDurationToDaprFormat(timerParams.getDueTime()))
+             .setPeriod(DurationUtils.convertDurationToDaprFormat(timerParams.getPeriod()))
+             .build();
 
-      ListenableFuture<Empty> futureResponse = client.registerActorTimer(req);
-      futureResponse.get();
-      return null;
-    });
+    return Mono.<Empty>create(it -> client.registerActorTimer(req, createStreamObserver(it))).then().then();
   }
 
   /**
@@ -215,18 +200,33 @@ class DaprGrpcClient implements DaprClient {
    */
   @Override
   public Mono<Void> unregisterTimer(String actorType, String actorId, String timerName) {
-    return Mono.fromCallable(() -> {
-      DaprProtos.UnregisterActorTimerRequest req =
-          DaprProtos.UnregisterActorTimerRequest.newBuilder()
-              .setActorType(actorType)
-              .setActorId(actorId)
-              .setName(timerName)
-              .build();
+    DaprProtos.UnregisterActorTimerRequest req =
+        DaprProtos.UnregisterActorTimerRequest.newBuilder()
+            .setActorType(actorType)
+            .setActorId(actorId)
+            .setName(timerName)
+            .build();
 
-      ListenableFuture<Empty> futureResponse = client.unregisterActorTimer(req);
-      futureResponse.get();
-      return null;
-    });
+    return Mono.<Empty>create(it -> client.unregisterActorTimer(req, createStreamObserver(it))).then().then();
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
+    return new StreamObserver<T>() {
+      @Override
+      public void onNext(T value) {
+        sink.success(value);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        sink.error(DaprException.propagate(new ExecutionException(t)));
+      }
+
+      @Override
+      public void onCompleted() {
+        sink.success();
+      }
+    };
   }
 
 }

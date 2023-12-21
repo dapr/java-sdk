@@ -7,18 +7,18 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk-springboot</artifactId>
   <packaging>jar</packaging>
-  <version>1.5.0-SNAPSHOT</version>
+  <version>1.11.0-SNAPSHOT</version>
   <name>dapr-sdk-springboot</name>
   <description>SDK extension for Springboot</description>
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <springboot.version>2.3.5.RELEASE</springboot.version>
+    <springboot.version>2.7.8</springboot.version>
   </properties>
 
   <dependencyManagement>
@@ -68,13 +68,11 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>5.2.10.RELEASE</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <version>5.2.10.RELEASE</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -87,6 +85,16 @@
       <artifactId>spring-boot-configuration-processor</artifactId>
       <scope>compile</scope>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -149,6 +157,9 @@
               <rules>
                 <rule>
                   <element>BUNDLE</element>
+                  <includes>
+                    <include>io.dapr.springboot.DaprBeanPostProcessor</include>
+                  </includes>
                   <limits>
                     <limit>
                       <counter>LINE</counter>

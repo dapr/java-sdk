@@ -11,17 +11,38 @@
   <description>Tests for Dapr's Java SDK - not to be published as a jar.</description>
 
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <dapr.sdk.version>1.5.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.version>1.11.0-SNAPSHOT</dapr.sdk.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
-    <grpc.version>1.39.0</grpc.version>
-    <protobuf.version>3.13.0</protobuf.version>
+    <grpc.version>1.59.0</grpc.version>
+    <protobuf.version>3.17.3</protobuf.version>
     <opentelemetry.version>0.14.0</opentelemetry.version>
-    <spring-boot.version>2.3.5.RELEASE</spring-boot.version>
+    <spring-boot.version>2.7.8</spring-boot.version>
   </properties>
+
+  <dependencyManagement>
+    <!-- Reproduce a product fixing its own spring boot version -->
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>5.7.2</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -52,7 +73,7 @@
     <dependency>
       <groupId>com.github.os72</groupId>
       <artifactId>protoc-jar-maven-plugin</artifactId>
-      <version>3.10.1</version>
+      <version>3.11.4</version>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
@@ -88,27 +109,23 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.1</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>5.5.2</version>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-      <version>${spring-boot.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <version>${spring-boot.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -117,17 +134,10 @@
       <version>2.4.0</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <!-- This is need for us to programmatically add secrets in integration tests. -->
-      <groupId>com.bettercloud</groupId>
-      <artifactId>vault-java-driver</artifactId>
-      <version>5.1.0</version>
-      <scope>test</scope>
-    </dependency>
       <dependency>
           <groupId>io.projectreactor</groupId>
           <artifactId>reactor-core</artifactId>
-          <version>3.3.11.RELEASE</version>
+          <version>3.5.0</version>
           <scope>test</scope>
       </dependency>
     <dependency>
@@ -142,6 +152,11 @@
       <version>1.3.5</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>eu.rekawek.toxiproxy</groupId>
+      <artifactId>toxiproxy-java</artifactId>
+      <version>2.1.7</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -149,7 +164,7 @@
       <plugin>
         <groupId>com.github.os72</groupId>
         <artifactId>protoc-jar-maven-plugin</artifactId>
-        <version>3.10.1</version>
+        <version>3.11.4</version>
         <executions>
           <execution>
             <phase>generate-sources</phase>
@@ -192,9 +207,9 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>failsafe-maven-plugin</artifactId>
-        <version>2.4.3-alpha-1</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.1.2</version>
         <executions>
           <execution>
             <goals>
@@ -210,4 +225,27 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>custom-spring-boot-version</id>
+      <activation>
+        <property>
+          <name>env.PRODUCT_SPRING_BOOT_VERSION</name>
+        </property>
+      </activation>
+      <properties>
+        <spring-boot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</spring-boot.version>
+      </properties>
+      <dependencies>
+        <dependency>
+          <!-- Needed for dapr compatibility for spring boot versions before 2.7 -->
+          <groupId>com.squareup.okhttp3</groupId>
+          <artifactId>okhttp</artifactId>
+          <version>4.9.0</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

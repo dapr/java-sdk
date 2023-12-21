@@ -11,11 +11,16 @@ spec:
     value: localhost:9092
   # consumer configuration: topic and consumer group
   - name: topics
-    value: sample
+    value: "topic-{appID}"
   - name: consumerGroup
-    value: group1
+    value: "{appID}"
   # publisher configuration: topic
   - name: publishTopic
-    value: sample
+    value: "topic-{appID}"
   - name: authRequired
     value: "false"
+  - name: initialOffset
+    value: oldest
+scopes:
+  - bindingit-http-inputbindingservice
+  - bindingit-grpc-inputbindingservice

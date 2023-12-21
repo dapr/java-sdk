@@ -13,22 +13,26 @@ limitations under the License.
 
 package io.dapr.it.configuration.grpc;
 
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfigurationClientIT extends BaseIT {
 
@@ -36,7 +40,7 @@ public class ConfigurationClientIT extends BaseIT {
 
     private static DaprRun daprRun;
 
-    private static DaprPreviewClient daprPreviewClient;
+    private static DaprClient daprClient;
 
     private static String key = "myconfig1";
 
@@ -58,64 +62,52 @@ public class ConfigurationClientIT extends BaseIT {
             "myconfigkey3", "update_myconfigvalue3||2"
     };
 
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
         daprRun.switchToGRPC();
-        daprPreviewClient = new DaprClientBuilder().buildPreviewClient();
+        daprClient = new DaprClientBuilder().build();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
-        daprPreviewClient.close();
+        daprClient.close();
     }
 
-    @Before
+    @BeforeEach
     public void setupConfigStore() {
         executeDockerCommand(insertCmd);
     }
 
     @Test
     public void getConfiguration() {
-        ConfigurationItem ci = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1").block();
-        assertEquals(ci.getKey(), "myconfigkey1");
+        ConfigurationItem ci = daprClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1").block();
         assertEquals(ci.getValue(), "myconfigvalue1");
     }
 
     @Test
-    public void getConfigurationWithEmptyKey() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "").block();
-        });
-    }
-
-    @Test
     public void getConfigurations() {
-        List<ConfigurationItem> cis = daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
+        Map<String, ConfigurationItem> cis = daprClient.getConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2").block();
         assertTrue(cis.size() == 2);
-        assertEquals(cis.get(0).getKey(), "myconfigkey1");
-        assertEquals(cis.get(1).getValue(), "myconfigvalue2");
+        assertTrue(cis.containsKey("myconfigkey1"));
+        assertTrue(cis.containsKey("myconfigkey2"));
+        assertEquals(cis.get("myconfigkey2").getValue(), "myconfigvalue2");
     }
 
     @Test
-    public void getConfigurationsWithEmptyList() {
-        List<String> listOfKeys = new ArrayList<>();
-        Map<String, String> metadata = new HashMap<>();
-        assertThrows(IllegalArgumentException.class, () -> {
-            daprPreviewClient.getConfiguration(CONFIG_STORE_NAME, listOfKeys, metadata).block();
-        });
-    }
-
-    @Test
-    public void subscribeToConfiguration() {
-        List<String> updatedValues = new ArrayList<>();
-        AtomicReference<Disposable> disposable = new AtomicReference<>();
+    public void subscribeConfiguration() {
         Runnable subscribeTask = () -> {
-            Flux<List<ConfigurationItem>> outFlux = daprPreviewClient
-                    .subscribeToConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
-            disposable.set(outFlux.subscribe(update -> {
-                updatedValues.add(update.get(0).getValue());
-            }));
+            Flux<SubscribeConfigurationResponse> outFlux = daprClient
+                    .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1", "myconfigkey2");
+            outFlux.subscribe(update -> {
+                if (update.getItems().size() == 0 ) {
+                    assertTrue(update.getSubscriptionId().length() > 0);
+                } else {
+                    String value = update.getItems().entrySet().stream().findFirst().get().getValue().getValue();
+                    assertEquals(update.getItems().size(), 1);
+                    assertTrue(value.contains("update_"));
+                }
+            });
         };
         Thread subscribeThread = new Thread(subscribeTask);
         subscribeThread.start();
@@ -131,15 +123,73 @@ public class ConfigurationClientIT extends BaseIT {
         new Thread(updateKeys).start();
         try {
             // To ensure main thread does not die before outFlux subscribe gets called
-            Thread.sleep(3000);
-            disposable.get().dispose();
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        assertEquals(updatedValues.size(), 2);
-        assertTrue(updatedValues.contains("update_myconfigvalue1"));
-        assertTrue(updatedValues.contains("update_myconfigvalue2"));
-        assertFalse(updatedValues.contains("update_myconfigvalue3"));
+    }
+
+    @Test
+    public void unsubscribeConfigurationItems() {
+        List<String> updatedValues = new ArrayList<>();
+        AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
+        AtomicReference<String> subscriptionId = new AtomicReference<>();
+        Runnable subscribeTask = () -> {
+            Flux<SubscribeConfigurationResponse> outFlux = daprClient
+                    .subscribeConfiguration(CONFIG_STORE_NAME, "myconfigkey1");
+            disposableAtomicReference.set(outFlux
+                .subscribe(update -> {
+                        subscriptionId.set(update.getSubscriptionId());
+                        updatedValues.add(update.getItems().entrySet().stream().findFirst().get().getValue().getValue());
+                    }
+                ));
+        };
+        new Thread(subscribeTask).start();
+
+        // To ensure that subscribeThread gets scheduled
+        inducingSleepTime(0);
+
+        Runnable updateKeys = () -> {
+            int i = 1;
+            while (i <= 5) {
+                String[] command = new String[] {
+                        "docker", "exec", "dapr_redis", "redis-cli",
+                        "SET",
+                        "myconfigkey1", "update_myconfigvalue" + i + "||2"
+                };
+                executeDockerCommand(command);
+                i++;
+            }
+        };
+        new Thread(updateKeys).start();
+
+        // To ensure key starts getting updated
+        inducingSleepTime(1000);
+
+        UnsubscribeConfigurationResponse res = daprClient.unsubscribeConfiguration(
+            subscriptionId.get(),
+            CONFIG_STORE_NAME
+        ).block();
+
+        assertTrue(res != null);
+        assertTrue(res.getIsUnsubscribed());
+        int listSize = updatedValues.size();
+        // To ensure main thread does not die
+        inducingSleepTime(1000);
+
+        new Thread(updateKeys).start();
+
+        // To ensure main thread does not die
+        inducingSleepTime(2000);
+        assertTrue(updatedValues.size() == listSize);
+    }
+
+    private static void inducingSleepTime(int timeInMillis) {
+        try {
+            Thread.sleep(timeInMillis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void executeDockerCommand(String[] command) {

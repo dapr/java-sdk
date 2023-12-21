@@ -23,9 +23,9 @@ import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -63,7 +64,7 @@ public class DaprRuntimeTest {
 
   private final DaprRuntime daprRuntime = Dapr.getInstance();
 
-  @Before
+  @BeforeEach
   public void setup() throws Exception {
     // Only for unit tests to simulate a new start of the app.
     Field field = this.daprRuntime.getClass().getDeclaredField("instance");
@@ -73,8 +74,8 @@ public class DaprRuntimeTest {
 
   @Test
   public void pubSubHappyCase() throws Exception {
-    Assert.assertNotNull(this.daprRuntime.getSubscribedTopics());
-    Assert.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
+    Assertions.assertNotNull(this.daprRuntime.getSubscribedTopics());
+    Assertions.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
 
     TopicListener listener = mock(TopicListener.class);
     when(listener.process(any(), any())).thenReturn(Mono.empty());
@@ -234,7 +235,7 @@ public class DaprRuntimeTest {
           .map(r -> new DaprHttpStub.ResponseStub(r, null, 200)));
       Mono<byte[]> response = client.invokeMethod(APP_ID, METHOD_NAME, message.data, HttpExtension.POST,
           message.metadata, byte[].class);
-      Assert.assertArrayEquals(expectedResponse, response.block());
+      Assertions.assertArrayEquals(expectedResponse, response.block());
 
       verify(listener, times(1))
           .process(eq(serializer.serialize(message.data)), eq(message.metadata));
@@ -243,10 +244,10 @@ public class DaprRuntimeTest {
     verify(listener, times(messages.length)).process(any(), any());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void subscribeCallbackException() throws Exception {
-    Assert.assertNotNull(this.daprRuntime.getSubscribedTopics());
-    Assert.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
+    Assertions.assertNotNull(this.daprRuntime.getSubscribedTopics());
+    Assertions.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
 
     TopicListener listener = mock(TopicListener.class);
     when(listener.process(any(), any()))
@@ -272,13 +273,14 @@ public class DaprRuntimeTest {
       message.data
     );
     verify(listener, times(1)).process(eq(envelope), eq(message.metadata));
-    result.block();
+
+    assertThrows(RuntimeException.class, () -> result.block());
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void subscribeUnknownTopic() throws Exception {
-    Assert.assertNotNull(this.daprRuntime.getSubscribedTopics());
-    Assert.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
+    Assertions.assertNotNull(this.daprRuntime.getSubscribedTopics());
+    Assertions.assertTrue(this.daprRuntime.getSubscribedTopics().isEmpty());
 
     TopicListener listener = mock(TopicListener.class);
 
@@ -295,7 +297,7 @@ public class DaprRuntimeTest {
 
     verify(listener, never()).process(any(), any());
 
-    result.block();
+    assertThrows(IllegalArgumentException.class, () -> result.block());
   }
 
   private static String generateMessageId() {

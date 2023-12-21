@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk-autogen</artifactId>
   <packaging>jar</packaging>
-  <version>1.5.0-SNAPSHOT</version>
+  <version>1.11.0-SNAPSHOT</version>
   <name>dapr-sdk-autogen</name>
   <description>Auto-generated SDK for Dapr</description>
 
@@ -20,7 +20,7 @@
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <grpc.version>1.39.0</grpc.version>
+    <grpc.version>1.59.0</grpc.version>
   </properties>
 
   <dependencies>
@@ -63,43 +63,40 @@
         <executions>
           <execution>
             <id>getCommonProto</id>
-            <!-- the wget goal actually binds itself to this phase by default -->
             <phase>initialize</phase>
             <goals>
               <goal>wget</goal>
             </goals>
             <configuration>
+              <skipCache>true</skipCache>
               <url>${dapr.proto.baseurl}/common/v1/common.proto</url>
               <outputFileName>common.proto</outputFileName>
-              <!-- default target location, just to demonstrate the parameter -->
               <outputDirectory>${protobuf.input.directory}/dapr/proto/common/v1</outputDirectory>
             </configuration>
           </execution>
           <execution>
             <id>getDaprProto</id>
-            <!-- the wget goal actually binds itself to this phase by default -->
             <phase>initialize</phase>
             <goals>
               <goal>wget</goal>
             </goals>
             <configuration>
+              <skipCache>true</skipCache>
               <url>${dapr.proto.baseurl}/runtime/v1/dapr.proto</url>
               <outputFileName>dapr.proto</outputFileName>
-              <!-- default target location, just to demonstrate the parameter -->
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>
           <execution>
             <id>getDaprClientProto</id>
-            <!-- the wget goal actually binds itself to this phase by default -->
             <phase>initialize</phase>
             <goals>
               <goal>wget</goal>
             </goals>
             <configuration>
+              <skipCache>true</skipCache>
               <url>${dapr.proto.baseurl}/runtime/v1/appcallback.proto</url>
               <outputFileName>appcallback.proto</outputFileName>
-              <!-- default target location, just to demonstrate the parameter -->
               <outputDirectory>${protobuf.input.directory}</outputDirectory>
             </configuration>
           </execution>

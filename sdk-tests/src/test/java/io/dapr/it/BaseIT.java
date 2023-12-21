@@ -15,8 +15,9 @@ package io.dapr.it;
 
 import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprApiProtocol;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -29,6 +30,8 @@ import static io.dapr.client.DaprApiProtocol.HTTP;
 public abstract class BaseIT {
 
   protected static final String STATE_STORE_NAME = "statestore";
+
+  protected static final String QUERY_STATE_STORE = "mongo-statestore";
 
   private static final Map<String, DaprRun.Builder> DAPR_RUN_BUILDERS = new HashMap<>();
 
@@ -181,7 +184,7 @@ public abstract class BaseIT {
     return runs;
   }
 
-  @AfterClass
+  @AfterAll
   public static void cleanUp() throws Exception {
     while (!TO_BE_CLOSED.isEmpty()) {
       TO_BE_CLOSED.remove().close();
@@ -192,8 +195,12 @@ public abstract class BaseIT {
     }
   }
 
-  protected ActorClient newActorClient() {
-    ActorClient client = new ActorClient();
+  protected static ActorClient newActorClient() {
+    return newActorClient(null);
+  }
+
+  protected static ActorClient newActorClient(ResiliencyOptions resiliencyOptions) {
+    ActorClient client = new ActorClient(resiliencyOptions);
     TO_BE_CLOSED.add(client);
     return client;
   }

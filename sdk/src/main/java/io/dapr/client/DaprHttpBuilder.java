@@ -14,13 +14,18 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.config.Properties;
+import okhttp3.ConnectionPool;
+import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A builder for the DaprHttp.
+ * @deprecated Use {@link DaprClientBuilder} instead, this will be removed in a future release.
  */
+@Deprecated
 public class DaprHttpBuilder {
 
   /**
@@ -32,6 +37,13 @@ public class DaprHttpBuilder {
    * Static lock object.
    */
   private static final Object LOCK = new Object();
+
+  /**
+   * HTTP keep alive duration in seconds.
+   *
+   * <p>Just hard code to a reasonable value.
+   */
+  private static final int KEEP_ALIVE_DURATION = 30;
 
   /**
    * Build an instance of the Http client based on the provided setup.
@@ -55,9 +67,27 @@ public class DaprHttpBuilder {
           OkHttpClient.Builder builder = new OkHttpClient.Builder();
           Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READ_TIMEOUT_SECONDS.get());
           builder.readTimeout(readTimeout);
+
+          Dispatcher dispatcher = new Dispatcher();
+          dispatcher.setMaxRequests(Properties.HTTP_CLIENT_MAX_REQUESTS.get());
+          // The maximum number of requests for each host to execute concurrently.
+          // Default value is 5 in okhttp which is totally UNACCEPTABLE!
+          // For sidecar case, set it the same as maxRequests.
+          dispatcher.setMaxRequestsPerHost(Properties.HTTP_CLIENT_MAX_REQUESTS.get());
+          builder.dispatcher(dispatcher);
+
+          ConnectionPool pool = new ConnectionPool(Properties.HTTP_CLIENT_MAX_IDLE_CONNECTIONS.get(),
+                  KEEP_ALIVE_DURATION, TimeUnit.SECONDS);
+          builder.connectionPool(pool);
+
           OK_HTTP_CLIENT = builder.build();
         }
       }
+    }
+
+    String endpoint = Properties.HTTP_ENDPOINT.get();
+    if ((endpoint != null) && !endpoint.isEmpty()) {
+      return new DaprHttp(endpoint, OK_HTTP_CLIENT);
     }
 
     return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), OK_HTTP_CLIENT);

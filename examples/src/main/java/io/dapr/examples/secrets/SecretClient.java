@@ -21,20 +21,15 @@ import java.util.Map;
 
 /**
  * 1. Build and install jars:
- *   mvn clean install
+ * mvn clean install
  * 2. cd to [repo-root]/examples
- * 3. Add secret to vault:
- *   vault kv put secret/dapr/movie title="[my favorite movie]"
+ * 3. Creating a JSON secret file that contains two keys: redisPassword and randomKey locally:
  * 4. Read secret from example:
- *   dapr run --components-path ./components/secrets -- \
- *     java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient movie
+ * dapr run --components-path ./components/secrets -- \
+ * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient \
+ * localSecretStore redisPassword randomKey
  */
 public class SecretClient {
-
-  /**
-   * Identifier in Dapr for the secret store.
-   */
-  private static final String SECRET_STORE_NAME = "vault";
 
   /**
    * JSON Serializer to print output.
@@ -47,21 +42,26 @@ public class SecretClient {
    * @param args Unused arguments.
    */
   public static void main(String[] args) throws Exception {
-    if (args.length != 1) {
-      throw new IllegalArgumentException("Use one argument: secret's key to be retrieved.");
+    if (args.length < 2) {
+      throw new IllegalArgumentException("Required two argument at least: "
+              + "one's the secret store name, and the others are secret keys.");
     }
 
-    String secretKey = args[0];
+    final String secretStoreName = args[0];
     try (DaprClient client = (new DaprClientBuilder()).build()) {
-      Map<String, String> secret = client.getSecret(SECRET_STORE_NAME, secretKey).block();
-      System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
 
-      try {
-        secret = client.getSecret(SECRET_STORE_NAME, "randomKey").block();
-        System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
-      } catch (Exception ex) {
-        System.out.println(ex.getMessage());
+      for (int i = 1; i < args.length; i++) {
+        String secretKey = args[i];
+
+        try {
+          Map<String, String> secret = client.getSecret(secretStoreName, secretKey).block();
+          System.out.println(JSON_SERIALIZER.writeValueAsString(secret));
+        } catch (Exception ex) {
+          System.out.println(ex.getMessage());
+        }
       }
+    } catch (Exception ex) {
+      System.out.println(ex.getMessage());
     }
   }
 }

@@ -17,6 +17,10 @@ import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
@@ -28,17 +32,30 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnlockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.opencensus.GrpcWrapper;
+import io.dapr.internal.resiliency.RetryPolicy;
+import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.utils.NetworkUtils;
+import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -55,11 +72,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
-import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -77,30 +96,63 @@ public class DaprClientGrpc extends AbstractDaprClient {
   /**
    * The GRPC managed channel to be used.
    */
-  private Closeable channel;
+  private final GrpcChannelFacade channel;
+
+  /**
+   * The timeout policy.
+   */
+  private final TimeoutPolicy timeoutPolicy;
+
+  /**
+   * The retry policy.
+   */
+  private final RetryPolicy retryPolicy;
 
   /**
    * The async gRPC stub.
    */
-  private DaprGrpc.DaprStub asyncStub;
+  private final DaprGrpc.DaprStub asyncStub;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
-   * @param closeableChannel A closeable for a Managed GRPC channel
-   * @param asyncStub     async gRPC stub
-   * @param objectSerializer Serializer for transient request/response objects.
-   * @param stateSerializer  Serializer for state objects.
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
    * @see DaprClientBuilder
    */
   DaprClientGrpc(
-      Closeable closeableChannel,
+      GrpcChannelFacade channel,
       DaprGrpc.DaprStub asyncStub,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
+    this(channel, asyncStub, objectSerializer, stateSerializer, null);
+  }
+
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
+   * @param resiliencyOptions Client-level override for resiliency options.
+   * @see DaprClientBuilder
+   */
+  DaprClientGrpc(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer,
+      ResiliencyOptions resiliencyOptions) {
     super(objectSerializer, stateSerializer);
-    this.channel = closeableChannel;
+    this.channel = channel;
     this.asyncStub = intercept(asyncStub);
+    this.timeoutPolicy = new TimeoutPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
+    this.retryPolicy = new RetryPolicy(
+        resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -130,13 +182,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
-    return Mono.fromRunnable(() -> {
-      try {
-        NetworkUtils.waitForSocket(Properties.SIDECAR_IP.get(), Properties.GRPC_PORT.get(), timeoutInMilliseconds);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return this.channel.waitForChannelReady(timeoutInMilliseconds);
   }
 
   /**
@@ -166,13 +212,99 @@ public class DaprClientGrpc extends AbstractDaprClient {
         envelopeBuilder.putAllMetadata(metadata);
       }
 
-      return Mono.subscriberContext().flatMap(
-              context ->
-                  this.<Empty>createMono(
-                      it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
-                  )
+      return Mono.deferContextual(
+          context ->
+              this.<Empty>createMono(
+                  it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
+              )
       ).then();
     } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request) {
+    try {
+      String pubsubName = request.getPubsubName();
+      String topic = request.getTopic();
+      DaprProtos.BulkPublishRequest.Builder envelopeBuilder = DaprProtos.BulkPublishRequest.newBuilder();
+      envelopeBuilder.setTopic(topic);
+      envelopeBuilder.setPubsubName(pubsubName);
+
+      if (Strings.isNullOrEmpty(pubsubName) || Strings.isNullOrEmpty(topic)) {
+        throw new IllegalArgumentException("pubsubName and topic name cannot be null or empty");
+      }
+
+      for (BulkPublishEntry<?> entry : request.getEntries()) {
+        Object event = entry.getEvent();
+        byte[] data;
+        String contentType = entry.getContentType();
+        try {
+          // Serialize event into bytes
+          if (!Strings.isNullOrEmpty(contentType) && objectSerializer instanceof DefaultObjectSerializer) {
+            // If content type is given by user and default object serializer is used
+            data = DefaultContentTypeConverter.convertEventToBytesForGrpc(event, contentType);
+          } else {
+            // perform the serialization as per user given input of serializer
+            // this is also the case when content type is empty
+
+            data = objectSerializer.serialize(event);
+
+            if (Strings.isNullOrEmpty(contentType)) {
+              // Only override content type if not given in input by user
+              contentType = objectSerializer.getContentType();
+            }
+          }
+        } catch (IOException ex) {
+          throw DaprException.propagate(ex);
+        }
+
+        DaprProtos.BulkPublishRequestEntry.Builder reqEntryBuilder = DaprProtos.BulkPublishRequestEntry.newBuilder()
+            .setEntryId(entry.getEntryId())
+            .setEvent(ByteString.copyFrom(data))
+            .setContentType(contentType);
+        Map<String, String> metadata = entry.getMetadata();
+        if (metadata != null) {
+          reqEntryBuilder.putAllMetadata(metadata);
+        }
+        envelopeBuilder.addEntries(reqEntryBuilder.build());
+      }
+
+      // Set metadata if available
+      Map<String, String> metadata = request.getMetadata();
+      if (metadata != null) {
+        envelopeBuilder.putAllMetadata(metadata);
+      }
+
+      Map<String, BulkPublishEntry<T>> entryMap = new HashMap<>();
+      for (BulkPublishEntry<T> entry : request.getEntries()) {
+        entryMap.put(entry.getEntryId(), entry);
+      }
+      return Mono.deferContextual(
+          context ->
+              this.<DaprProtos.BulkPublishResponse>createMono(
+                  it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
+              )
+      ).map(
+          it -> {
+            List<BulkPublishResponseFailedEntry<T>> entries = new ArrayList<>();
+            for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
+              BulkPublishResponseFailedEntry<T> domainEntry = new BulkPublishResponseFailedEntry<T>(
+                  entryMap.get(entry.getEntryId()),
+                  entry.getError());
+              entries.add(domainEntry);
+            }
+            if (entries.size() > 0) {
+              return new BulkPublishResponse<>(entries);
+            }
+            return new BulkPublishResponse<>();
+          }
+      );
+    } catch (RuntimeException ex) {
       return DaprException.wrapMono(ex);
     }
   }
@@ -196,18 +328,18 @@ public class DaprClientGrpc extends AbstractDaprClient {
       // gRPC to gRPC does not handle metadata in Dapr runtime proto.
       // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
 
-      return Mono.subscriberContext().flatMap(
-              context -> this.<CommonProtos.InvokeResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeService(envelope, it)
-              )
-          ).flatMap(
-              it -> {
-                try {
-                  return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
-                } catch (IOException e) {
-                  throw DaprException.propagate(e);
-                }
-              }
+      return Mono.deferContextual(
+          context -> this.<CommonProtos.InvokeResponse>createMono(
+              it -> intercept(context, asyncStub).invokeService(envelope, it)
+          )
+      ).flatMap(
+          it -> {
+            try {
+              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
+            } catch (IOException e) {
+              throw DaprException.propagate(e);
+            }
+          }
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -243,18 +375,18 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
-              context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-                  it -> intercept(context, asyncStub).invokeBinding(envelope, it)
-              )
+      return Mono.deferContextual(
+          context -> this.<DaprProtos.InvokeBindingResponse>createMono(
+              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+          )
       ).flatMap(
-              it -> {
-                try {
-                  return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
-                } catch (IOException e) {
-                  throw DaprException.propagate(e);
-                }
-              }
+          it -> {
+            try {
+              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
+            } catch (IOException e) {
+              throw DaprException.propagate(e);
+            }
+          }
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -290,7 +422,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetStateRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context ->
               this.<DaprProtos.GetStateResponse>createMono(
                   it -> intercept(context, asyncStub).getState(envelope, it)
@@ -339,13 +471,13 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkStateRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
-              context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
-                  .getBulkState(envelope, it)
-              )
+      return Mono.deferContextual(
+          context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
+              .getBulkState(envelope, it)
+          )
       ).map(
-              it ->
-                it
+          it ->
+              it
                   .getItemsList()
                   .stream()
                   .map(b -> {
@@ -414,7 +546,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
-      for (TransactionalStateOperation<?> operation: operations) {
+      for (TransactionalStateOperation<?> operation : operations) {
         DaprProtos.TransactionalStateOperation.Builder operationBuilder = DaprProtos.TransactionalStateOperation
             .newBuilder();
         operationBuilder.setOperationType(operation.getOperation().toString().toLowerCase());
@@ -423,7 +555,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.ExecuteStateTransactionRequest req = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context -> this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it))
       ).then();
     } catch (Exception e) {
@@ -449,7 +581,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
       DaprProtos.SaveStateRequest req = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context -> this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
       ).then();
     } catch (Exception ex) {
@@ -533,7 +665,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.DeleteStateRequest req = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context -> this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
       ).then();
     } catch (Exception ex) {
@@ -603,15 +735,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
 
     DaprProtos.GetSecretRequest.Builder requestBuilder = DaprProtos.GetSecretRequest.newBuilder()
-          .setStoreName(secretStoreName)
-          .setKey(key);
+        .setStoreName(secretStoreName)
+        .setKey(key);
 
     if (metadata != null) {
       requestBuilder.putAllMetadata(metadata);
     }
     DaprProtos.GetSecretRequest req = requestBuilder.build();
 
-    return Mono.subscriberContext().flatMap(
+    return Mono.deferContextual(
         context -> this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(context, asyncStub).getSecret(req, it))
     ).map(DaprProtos.GetSecretResponse::getDataMap);
   }
@@ -636,20 +768,20 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.GetBulkSecretRequest envelope = builder.build();
 
-      return Mono.subscriberContext().flatMap(
+      return Mono.deferContextual(
           context ->
-            this.<DaprProtos.GetBulkSecretResponse>createMono(
-              it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
-            )
+              this.<DaprProtos.GetBulkSecretResponse>createMono(
+                  it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
+              )
       ).map(it -> {
         Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
         if (secretsMap == null) {
           return Collections.emptyMap();
         }
         return secretsMap
-          .entrySet()
-          .stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
       });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
@@ -657,9 +789,177 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<Boolean> tryLock(LockRequest request) {
+    try {
+      final String stateStoreName = request.getStoreName();
+      final String resourceId = request.getResourceId();
+      final String lockOwner = request.getLockOwner();
+      final Integer expiryInSeconds = request.getExpiryInSeconds();
+
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (resourceId == null || resourceId.isEmpty()) {
+        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
+      }
+      if (lockOwner == null || lockOwner.isEmpty()) {
+        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
+      }
+      if (expiryInSeconds < 0) {
+        throw new IllegalArgumentException("ExpiryInSeconds cannot be negative.");
+      }
+
+      DaprProtos.TryLockRequest.Builder builder = DaprProtos.TryLockRequest.newBuilder()
+              .setStoreName(stateStoreName)
+              .setResourceId(resourceId)
+              .setLockOwner(lockOwner)
+              .setExpiryInSeconds(expiryInSeconds);
+
+      DaprProtos.TryLockRequest tryLockRequest = builder.build();
+
+      return Mono.deferContextual(
+              context -> this.<DaprProtos.TryLockResponse>createMono(
+                      it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)
+              )
+      ).flatMap(response -> {
+        try {
+          return Mono.just(response.getSuccess());
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnlockResponseStatus> unlock(UnlockRequest request) {
+    try {
+      final String stateStoreName = request.getStoreName();
+      final String resourceId = request.getResourceId();
+      final String lockOwner = request.getLockOwner();
+
+      if ((stateStoreName == null) || (stateStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+      if (resourceId == null || resourceId.isEmpty()) {
+        throw new IllegalArgumentException("ResourceId cannot be null or empty.");
+      }
+      if (lockOwner == null || lockOwner.isEmpty()) {
+        throw new IllegalArgumentException("LockOwner cannot be null or empty.");
+      }
+
+      DaprProtos.UnlockRequest.Builder builder = DaprProtos.UnlockRequest.newBuilder()
+              .setStoreName(stateStoreName)
+              .setResourceId(resourceId)
+              .setLockOwner(lockOwner);
+
+      DaprProtos.UnlockRequest unlockRequest = builder.build();
+
+      return Mono.deferContextual(
+              context -> this.<DaprProtos.UnlockResponse>createMono(
+                      it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)
+              )
+      ).flatMap(response -> {
+        try {
+          return Mono.just(UnlockResponseStatus.valueOf(response.getStatus().getNumber()));
+        } catch (Exception ex) {
+          return DaprException.wrapMono(ex);
+        }
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type) {
+    try {
+      if (request == null) {
+        throw new IllegalArgumentException("Query state request cannot be null.");
+      }
+      final String storeName = request.getStoreName();
+      final Map<String, String> metadata = request.getMetadata();
+      if ((storeName == null) || (storeName.trim().isEmpty())) {
+        throw new IllegalArgumentException("State store name cannot be null or empty.");
+      }
+
+      String queryString;
+      if (request.getQuery() != null) {
+        queryString = JSON_REQUEST_MAPPER.writeValueAsString(request.getQuery());
+      } else if (request.getQueryString() != null) {
+        queryString = request.getQueryString();
+      } else {
+        throw new IllegalArgumentException("Both query and queryString fields are not set.");
+      }
+
+      DaprProtos.QueryStateRequest.Builder builder = DaprProtos.QueryStateRequest.newBuilder()
+          .setStoreName(storeName)
+          .setQuery(queryString);
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+
+      DaprProtos.QueryStateRequest envelope = builder.build();
+
+      return Mono.deferContextual(
+          context -> this.<DaprProtos.QueryStateResponse>createMono(
+              it -> intercept(context, asyncStub).queryStateAlpha1(envelope, it)
+          )
+      ).map(
+          it -> {
+            Map<String, String> resultMeta = it.getMetadataMap();
+            String token = it.getToken();
+            List<QueryStateItem<T>> res = it.getResultsList()
+                .stream()
+                .map(v -> {
+                  try {
+                    return buildQueryStateKeyValue(v, type);
+                  } catch (Exception e) {
+                    throw DaprException.propagate(e);
+                  }
+                })
+                .collect(Collectors.toList());
+            return new QueryStateResponse<>(res, token).setMetadata(metadata);
+          });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private <T> QueryStateItem<T> buildQueryStateKeyValue(
+      DaprProtos.QueryStateItem item,
+      TypeRef<T> type) throws IOException {
+    String key = item.getKey();
+    String error = item.getError();
+    if (!Strings.isNullOrEmpty(error)) {
+      return new QueryStateItem<>(key, null, error);
+    }
+    ByteString payload = item.getData();
+    byte[] data = payload == null ? null : payload.toByteArray();
+    T value = stateSerializer.deserialize(data, type);
+    String etag = item.getEtag();
+    if (etag.equals("")) {
+      etag = null;
+    }
+    return new QueryStateItem<>(key, value, etag);
+  }
+
+  /**
    * Closes the ManagedChannel for GRPC.
-   * @see io.grpc.ManagedChannel#shutdown()
+   *
    * @throws IOException on exception.
+   * @see io.grpc.ManagedChannel#shutdown()
    */
   @Override
   public void close() throws Exception {
@@ -676,9 +976,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public Mono<Void> shutdown() {
-    return Mono.subscriberContext().flatMap(
-            context -> this.<Empty>createMono(
-                    it -> intercept(context, asyncStub).shutdown(Empty.getDefaultInstance(), it))
+    return Mono.deferContextual(
+        context -> this.<Empty>createMono(
+            it -> intercept(context, asyncStub).shutdown(Empty.getDefaultInstance(), it))
     ).then();
   }
 
@@ -686,7 +986,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
+  public Mono<Map<String, ConfigurationItem>> getConfiguration(GetConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final Map<String, String> metadata = request.getMetadata();
@@ -694,9 +994,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if ((configurationStoreName == null) || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name cannot be null or empty.");
       }
-      if (keys.isEmpty()) {
-        throw new IllegalArgumentException("Keys can not be empty or null");
-      }
+
       DaprProtos.GetConfigurationRequest.Builder builder = DaprProtos.GetConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName).addAllKeys(keys);
       if (metadata != null) {
@@ -704,23 +1002,29 @@ public class DaprClientGrpc extends AbstractDaprClient {
       }
 
       DaprProtos.GetConfigurationRequest envelope = builder.build();
-      return this.getConfigurationAlpha1(envelope);
+      return this.getConfiguration(envelope);
 
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
   }
 
-  private Mono<List<ConfigurationItem>> getConfigurationAlpha1(DaprProtos.GetConfigurationRequest envelope) {
-    return Mono.subscriberContext().flatMap(
+  private Mono<Map<String, ConfigurationItem>> getConfiguration(DaprProtos.GetConfigurationRequest envelope) {
+    return Mono.deferContextual(
         context ->
             this.<DaprProtos.GetConfigurationResponse>createMono(
-                it -> intercept(context, asyncStub).getConfigurationAlpha1(envelope, it)
+                it -> intercept(context, asyncStub).getConfiguration(envelope, it)
             )
     ).map(
-        it ->
-            it.getItemsList().stream()
-                .map(this::buildConfigurationItem).collect(Collectors.toList())
+        it -> {
+          Map<String, ConfigurationItem> configMap = new HashMap<>();
+          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
+          while (itr.hasNext()) {
+            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
+          }
+          return Collections.unmodifiableMap(configMap);
+        }
     );
   }
 
@@ -728,7 +1032,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * {@inheritDoc}
    */
   @Override
-  public Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request) {
+  public Flux<SubscribeConfigurationResponse> subscribeConfiguration(SubscribeConfigurationRequest request) {
     try {
       final String configurationStoreName = request.getStoreName();
       final List<String> keys = request.getKeys();
@@ -737,26 +1041,64 @@ public class DaprClientGrpc extends AbstractDaprClient {
       if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
         throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
       }
-      if (keys.isEmpty()) {
-        throw new IllegalArgumentException("Keys can not be null or empty.");
-      }
+
+      // keys can and empty list for subscribe all scenario, so we do not need check for empty keys.
       DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName)
           .addAllKeys(keys);
+
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
 
       DaprProtos.SubscribeConfigurationRequest envelope = builder.build();
       return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
-          it -> intercept(asyncStub).subscribeConfigurationAlpha1(envelope, it)
+          it -> intercept(asyncStub).subscribeConfiguration(envelope, it)
       ).map(
-          it ->
-              it.getItemsList().stream()
-                  .map(this::buildConfigurationItem).collect(Collectors.toList())
+          it -> {
+            Map<String, ConfigurationItem> configMap = new HashMap<>();
+            Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItemsMap().entrySet().iterator();
+            while (itr.hasNext()) {
+              Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+              configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
+            }
+            return new SubscribeConfigurationResponse(it.getId(), Collections.unmodifiableMap(configMap));
+          }
       );
     } catch (Exception ex) {
       return DaprException.wrapFlux(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request) {
+    try {
+      final String configurationStoreName = request.getStoreName();
+      final String id = request.getSubscriptionId();
+
+      if (configurationStoreName == null || (configurationStoreName.trim().isEmpty())) {
+        throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
+      }
+      if (id.isEmpty()) {
+        throw new IllegalArgumentException("Subscription id can not be null or empty.");
+      }
+      DaprProtos.UnsubscribeConfigurationRequest.Builder builder =
+          DaprProtos.UnsubscribeConfigurationRequest.newBuilder()
+              .setId(id)
+              .setStoreName(configurationStoreName);
+
+      DaprProtos.UnsubscribeConfigurationRequest envelope = builder.build();
+
+      return this.<DaprProtos.UnsubscribeConfigurationResponse>createMono(
+          it -> intercept(asyncStub).unsubscribeConfiguration(envelope, it)
+      ).map(
+          it -> new UnsubscribeConfigurationResponse(it.getOk(), it.getMessage())
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
     }
   }
 
@@ -767,9 +1109,9 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @return io.dapr.client.domain.ConfigurationItem
    */
   private ConfigurationItem buildConfigurationItem(
-      CommonProtos.ConfigurationItem configurationItem) {
+      CommonProtos.ConfigurationItem configurationItem, String key) {
     return new ConfigurationItem(
-        configurationItem.getKey(),
+        key,
         configurationItem.getValue(),
         configurationItem.getVersion(),
         configurationItem.getMetadataMap()
@@ -782,14 +1124,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
+  private DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
     ClientInterceptor interceptor = new ClientInterceptor() {
       @Override
       public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
           MethodDescriptor<ReqT, RespT> methodDescriptor,
-          CallOptions callOptions,
+          CallOptions options,
           Channel channel) {
-        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
+        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, timeoutPolicy.apply(options));
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
           @Override
           public void start(final Listener<RespT> responseListener, final Metadata metadata) {
@@ -797,7 +1139,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
             if (daprApiToken != null) {
               metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
             }
-
             super.start(responseListener, metadata);
           }
         };
@@ -810,19 +1151,21 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * Populates GRPC client with interceptors for telemetry.
    *
    * @param context Reactor's context.
-   * @param client GRPC client for Dapr.
+   * @param client  GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(Context context, DaprGrpc.DaprStub client) {
+  private static DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
     return GrpcWrapper.intercept(context, client);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
-    return Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+    return retryPolicy.apply(
+        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
   }
 
   private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
-    return Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run());
+    return retryPolicy.apply(
+        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
   }
 
   private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {

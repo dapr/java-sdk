@@ -14,6 +14,8 @@ limitations under the License.
 package io.dapr.it.tracing.grpc;
 
 import com.google.protobuf.Any;
+import io.dapr.grpc.GrpcHealthCheckService;
+import io.dapr.it.DaprRunConfig;
 import io.dapr.v1.AppCallbackGrpc;
 import io.dapr.v1.CommonProtos;
 import io.grpc.Server;
@@ -21,19 +23,13 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest;
-import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse;
-import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest;
-import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse;
-import static io.dapr.it.MethodInvokeServiceProtos.PostMessageRequest;
-import static io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
+@DaprRunConfig(
+        enableAppHealthCheck = true
+)
 public class Service {
 
   public static final String SUCCESS_MESSAGE = "application discovered on port ";
@@ -58,6 +54,7 @@ public class Service {
       this.server = ServerBuilder
           .forPort(port)
           .addService(this)
+          .addService(new GrpcHealthCheckService())
           .build()
           .start();
       System.out.printf("Server: started listening on port %d\n", port);

@@ -16,7 +16,6 @@ package io.dapr.examples.tracing;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.examples.OpenTelemetryInterceptor;
 import io.dapr.utils.TypeRef;
 import io.opentelemetry.context.Context;
@@ -59,7 +58,7 @@ public class TracingDemoMiddleServiceController {
     InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "echo")
         .setBody(body)
         .setHttpExtension(HttpExtension.POST);
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context));
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).contextWrite(getReactorContext(context));
   }
 
   /**
@@ -72,7 +71,7 @@ public class TracingDemoMiddleServiceController {
   public Mono<Void> sleep(@RequestAttribute(name = "opentelemetry-context") Context context) {
     InvokeMethodRequest request = new InvokeMethodRequest(INVOKE_APP_ID, "sleep")
         .setHttpExtension(HttpExtension.POST);
-    return client.invokeMethod(request, TypeRef.get(byte[].class)).subscriberContext(getReactorContext(context)).then();
+    return client.invokeMethod(request, TypeRef.get(byte[].class)).contextWrite(getReactorContext(context)).then();
   }
 
 }

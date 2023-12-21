@@ -15,23 +15,25 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.DeleteStateRequestBuilder;
 import io.dapr.client.domain.GetBulkStateRequest;
-import io.dapr.client.domain.GetBulkStateRequestBuilder;
 import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.GetStateRequestBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.PublishEventRequestBuilder;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
@@ -41,35 +43,43 @@ import okhttp3.mock.MockInterceptor;
 import okhttp3.mock.matchers.Matcher;
 import okio.Buffer;
 import okio.BufferedSink;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import reactor.util.context.ContextView;
+import uk.org.webcompere.systemstubs.stream.SystemOut;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class DaprClientHttpTest {
 
   private static final String STATE_STORE_NAME = "MyStateStore";
+
+  private static final String CONFIG_STORE_NAME = "MyConfigStore";
 
   private static final String SECRET_STORE_NAME = "MySecretStore";
 
@@ -86,7 +96,7 @@ public class DaprClientHttpTest {
 
   private MockInterceptor mockInterceptor;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
@@ -96,16 +106,132 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void waitForSidecarTimeout() throws Exception {
+  public void waitForSidecarTimeOutHealthCheck() throws Exception {
+    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
+    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
+
     int port = findFreePort();
     System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
-    assertThrows(RuntimeException.class, () -> daprClientHttp.waitForSidecar(1).block());
+
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(500, ResponseBody.create("Internal Server Error", MediaType.get("application/json")));
+
+    StepVerifier.create(daprClientHttp.waitForSidecar(100))
+            .expectSubscription()
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(200))) // Advance time to trigger the timeout
+            .expectErrorMatches(throwable -> {
+              if (throwable instanceof TimeoutException) {
+                System.out.println("TimeoutException occurred on sidecar health check.");
+                return true;
+              }
+              return false;
+            })
+            .verify();
+  }
+
+  @Test
+  public void waitForSidecarBadHealthCheck() throws Exception {
+    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
+    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
+
+    int port = findFreePort();
+    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+
+    addMockRulesForBadHealthCheck();
+
+    // retry the max allowed retries (5 times)
+    StepVerifier.create(daprClientHttp.waitForSidecar(5000))
+            .expectSubscription()
+            .expectNoEvent(Duration.ofMillis(500)) // Delay for retry
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+            .expectNoEvent(Duration.ofMillis(500)) // Delay for the final retry
+            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+            .expectErrorMatches(throwable -> {
+              if (throwable instanceof RuntimeException) {
+                return "Retries exhausted: 5/5".equals(throwable.getMessage());
+              }
+              return false;
+            })
+            .verify();
+  }
+
+  private void addMockRulesForBadHealthCheck() {
+    for (int i = 0; i < 6; i++) {
+      mockInterceptor.addRule()
+              .get()
+              .path("/v1.0/healthz/outbound")
+              .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
+    }
+  }
+  @Test
+  public void waitForSidecarSlowSuccessfulHealthCheck() throws Exception {
+    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
+    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
+
+    int port = findFreePort();
+    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+
+    // Simulate a slow response
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(500, ResponseBody.create("Internal Server Error", MediaType.get("application/json")));
+
+    StepVerifier.create(daprClientHttp.waitForSidecar(5000))
+            .expectSubscription()
+            .expectNoEvent(Duration.ofSeconds(1)) // Delay for retry
+            .then(() -> {
+              // Simulate a successful response
+              mockInterceptor.reset();
+              mockInterceptor.addRule()
+                      .get()
+                      .path("/v1.0/healthz/outbound")
+                      .respond(204, ResponseBody.create("No Content", MediaType.get("application/json")));
+              virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+            })
+            .expectNext()
+            .expectComplete()
+            .verify();
+  }
+
+  @Test
+  public void waitForSidecarOK() throws Exception {
+    int port = findFreePort();
+    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(204);
+
+    StepVerifier.create(daprClientHttp.waitForSidecar(10000))
+            .expectSubscription()
+            .expectComplete()
+            .verify();
   }
 
   @Test
   public void waitForSidecarTimeoutOK() throws Exception {
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .respond(204);
     try (ServerSocket serverSocket = new ServerSocket(0)) {
       final int port = serverSocket.getLocalPort();
       System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
@@ -124,7 +250,7 @@ public class DaprClientHttpTest {
   }
 
   @Test
-  public void publishEventInvokation() {
+  public void publishEventInvocation() {
     mockInterceptor.addRule()
         .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
         .respond(EXPECTED_RESULT);
@@ -169,6 +295,16 @@ public class DaprClientHttpTest {
         daprClientHttp.publishEvent("mypubsubname", null, event).block());
     assertThrows(IllegalArgumentException.class, () ->
         daprClientHttp.publishEvent("mypubsubname", "", event).block());
+  }
+
+  @Test
+  public void publishEventIfPubsubIsNullOrEmpty() {
+    String event = "{ \"message\": \"This is a test\" }";
+
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.publishEvent(null, "A", event).block());
+    assertThrows(IllegalArgumentException.class, () ->
+        daprClientHttp.publishEvent("", "A", event).block());
   }
 
   @Test
@@ -416,7 +552,7 @@ public class DaprClientHttpTest {
         .setBody("request")
         .setHttpExtension(HttpExtension.POST);
     Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
-        .subscriberContext(it -> it.putAll(context));
+        .contextWrite(it -> it.putAll((ContextView) context));
     result.block();
   }
 
@@ -1295,6 +1431,120 @@ public class DaprClientHttpTest {
     assertEquals(2, secrets.get("two").size());
     assertEquals("1", secrets.get("two").get("a"));
     assertEquals("2", secrets.get("two").get("b"));
+  }
+
+  @Test
+  public void getConfigurationTestErrorScenario() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getConfiguration("", "key").block();
+    });
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.getConfiguration("  ", "key").block();
+    });
+  }
+
+  @Test
+  public void getConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore")
+        .param("key","configkey1")
+        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
+
+    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertNotNull(ci);
+    assertEquals("configkey1", ci.getKey());
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void getAllConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore")
+        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
+
+    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+    assertNotNull(ci);
+    assertEquals("configkey1", ci.getKey());
+    assertEquals("configvalue1", ci.getValue());
+    assertEquals("1", ci.getVersion());
+  }
+
+  @Test
+  public void subscribeConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/subscribe")
+        .param("key", "configkey1")
+        .respond("{\"id\":\"1234\"}");
+
+    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertEquals("1234", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void subscribeAllConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/subscribe")
+        .respond("{\"id\":\"1234\"}");
+
+    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+    assertTrue(itr.hasNext());
+    SubscribeConfigurationResponse res = itr.next();
+    assertEquals("1234", res.getSubscriptionId());
+    assertFalse(itr.hasNext());
+  }
+
+  @Test
+  public void unsubscribeConfigurationTest() {
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
+        .respond("{\"ok\": true}");
+
+    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
+    assertTrue(res.getIsUnsubscribed());
+  }
+
+  @Test
+  public void unsubscribeConfigurationTestWithError() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.unsubscribeConfiguration("", CONFIG_STORE_NAME).block();
+    });
+
+    UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.unsubscribeConfiguration(req).block();
+    });
+
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
+        .respond("{\"ok\": false, \"message\": \"some error while unsubscribing\"}");
+    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
+    assertFalse(res.getIsUnsubscribed());
+  }
+
+  @Test
+  public void subscribeConfigurationTestWithError() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      daprClientHttp.subscribeConfiguration("", "key1").blockFirst();
+    });
+
+    mockInterceptor.addRule()
+        .get()
+        .path("/v1.0/configuration/MyConfigStore/subscribe")
+        .param("key", "configkey1")
+        .respond(500);
+    assertThrows(DaprException.class, () -> {
+      daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").blockFirst();
+    });
   }
 
   @Test

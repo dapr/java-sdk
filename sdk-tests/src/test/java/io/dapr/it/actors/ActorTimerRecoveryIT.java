@@ -21,7 +21,7 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.MyActorService;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,8 @@ import java.util.UUID;
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
-import static org.junit.Assert.assertNotEquals;
+import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ActorTimerRecoveryIT extends BaseIT {
 
@@ -76,6 +77,7 @@ public class ActorTimerRecoveryIT extends BaseIT {
       logs.clear();
       logs.addAll(fetchMethodCallLogs(proxy));
       validateMethodCalls(logs, METHOD_NAME, 3);
+      validateMessageContent(logs, METHOD_NAME, "ping!");
     }, 5000);
 
     // Restarts app only.

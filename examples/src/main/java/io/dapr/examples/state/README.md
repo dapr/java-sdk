@@ -4,8 +4,11 @@ This sample illustrates the capabilities provided by Dapr Java SDK for state man
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
-* Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
+* Java JDK 11 (or greater):
+    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
+    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
+    * [OpenJDK 11](https://jdk.java.net/11/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -28,6 +31,10 @@ Then change into the `examples` directory:
 ```sh
 cd examples
 ```
+
+### Initialize Dapr
+
+Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
 
 ### Running the StateClient
 This example uses the Java SDK Dapr client in order to save, retrieve and delete a state, in this case, an instance of a class. Multiple state stores are supported since Dapr 0.4. See the code snippet bellow: 
@@ -125,7 +132,7 @@ This example performs multiple operations:
 * `client.getState(...)` operation in order to retrieve back the persisted state using the same key. 
 * `client.executeStateTransaction(...)` operation in order to update existing state and add new state. 
 * `client.getBulkState(...)` operation in order to retrieve back the persisted states using the same keys.
-* `client.deleteState(...)` operation to remove  one of the persisted states. An example of etag mismatch error if a different than current etag is added to request.
+* `client.deleteState(...)` operation to remove one of the persisted states. An example of etag mismatch error is if something other than the current etag is added to request.
 * `client.executeStateTransaction(...)` operation in order to remove the other persisted state.
 
 Finally, the code tries to retrieve the deleted states, which should not be found. 
@@ -159,48 +166,31 @@ sleep: 5
 
 Run this example with the following command:
 ```bash
-dapr run --components-path ./components/state --app-id state_example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
+dapr run --components-path ./components/state --app-id state-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
 
 <!-- END_STEP -->
 
-Once running, the OutputBindingExample should print the output as follows:
+Once running, the StateClient should print the output as follows:
 
 ```txt
 == APP == Waiting for Dapr sidecar ...
-
 == APP == Dapr sidecar is ready.
-
 == APP == Saving class with message: my message
-
 == APP == Retrieved class message from state: my message
-
 == APP == Updating previous state and adding another state 'test state'... 
-
 == APP == Saving updated class with message: my message updated
-
 == APP == Retrieved messages using bulk get:
-
 == APP == StateKeyValue{key='myKey', value=my message updated, etag='2', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == StateKeyValue{key='myKey2', value=test message, etag='1', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == Deleting states...
-
 == APP == Verify delete key request is aborted if an etag different from stored is passed.
-
 == APP == Expected failure. ABORTED: failed deleting state with key myKey: possible etag mismatch. error from state store: ERR Error running script (call to f_9b5da7354cb61e2ca9faff50f6c43b81c73c0b94): @user_script:1: user_script:1: failed to delete Tailmad-Fang||myKey 
-
 == APP == Trying to delete again with correct etag.
-
 == APP == Trying to retrieve deleted states: 
-
 == APP == StateKeyValue{key='myKey', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == StateKeyValue{key='myKey2', value=null, etag='null', metadata={'{}'}, error='null', options={'null'}}
-
 == APP == Done
-
 ```
 
 ### Cleanup
@@ -212,7 +202,7 @@ name: Cleanup
 -->
 
 ```bash
-dapr stop --app-id state_example
+dapr stop --app-id state-example
 ```
 
 <!-- END_STEP -->

@@ -21,8 +21,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class used to verify that traces are present as expected.
@@ -46,12 +46,13 @@ public final class Validation {
 
   public static void validate(String spanName, String sleepSpanName) throws Exception {
     // Must wait for some time to make sure Zipkin receives all spans.
-    Thread.sleep(5000);
+    Thread.sleep(10000);
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
     urlBuilder.scheme("http")
         .host("localhost")
         .port(9411)
-        .addPathSegments("api/v2/traces");
+        .addPathSegments("api/v2/traces")
+        .addQueryParameter("limit", "100");
     Request.Builder requestBuilder = new Request.Builder()
         .url(urlBuilder.build());
     requestBuilder.method("GET", null);

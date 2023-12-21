@@ -13,10 +13,17 @@ limitations under the License.
 
 package io.dapr.client;
 
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.GetConfigurationRequest;
-import io.dapr.client.domain.SubscribeConfigurationRequest;
-import reactor.core.publisher.Flux;
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.LockRequest;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.UnlockRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
+import io.dapr.client.domain.query.Query;
+import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -30,77 +37,223 @@ import java.util.Map;
 public interface DaprPreviewClient extends AutoCloseable {
 
   /**
-   * Retrieve a configuration based on a provided key.
+   * Query for states using a query string.
    *
-   * @param storeName Name of the configuration store
-   * @param key       key of the configuration item which is to be retrieved
-   * @return Mono of the Configuration Item
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param metadata Optional metadata passed to the state store.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
    */
-  Mono<ConfigurationItem> getConfiguration(String storeName, String key);
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query,
+                                             Map<String, String> metadata, Class<T> clazz);
 
   /**
-   * Retrieve a configuration based on a provided key.
+   * Query for states using a query string.
    *
-   * @param storeName Name of the configuration store
-   * @param key       key of the configuration item which is to be retrieved
-   * @param metadata  optional metadata
-   * @return Mono of the Configuration Item
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param metadata Optional metadata passed to the state store.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
    */
-  Mono<ConfigurationItem> getConfiguration(String storeName, String key, Map<String, String> metadata);
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query,
+                                             Map<String, String> metadata, TypeRef<T> type);
 
   /**
-   * Retrieve List of configurations based on a provided variable number of keys.
+   * Query for states using a query string.
    *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be retrieved
-   * @return Mono of List of ConfigurationItems
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
    */
-  Mono<List<ConfigurationItem>> getConfiguration(String storeName, String... keys);
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, Class<T> clazz);
 
   /**
-   * Retrieve List of configurations based on a provided variable number of keys.
+   * Query for states using a query string.
    *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be retrieved
-   * @param metadata  optional metadata
-   * @return Mono of List of ConfigurationItems
+   * @param storeName Name of the state store to query.
+   * @param query String value of the query.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
    */
-  Mono<List<ConfigurationItem>> getConfiguration(String storeName, List<String> keys, Map<String, String> metadata);
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, String query, TypeRef<T> type);
 
   /**
-   * Retrieve List of configurations based on a provided configuration request object.
+   * Query for states using a query domain object.
    *
-   * @param request request for retrieving Configurations for a list keys
-   * @return Mono of List of ConfigurationItems
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param metadata Optional metadata passed to the state store.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
    */
-
-  Mono<List<ConfigurationItem>> getConfiguration(GetConfigurationRequest request);
-
-  /**
-   * Subscribe to the keys for any change.
-   *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be subscribed
-   * @return Flux of List of configuration items
-   */
-  Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, String... keys);
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query,
+                                             Map<String, String> metadata, Class<T> clazz);
 
   /**
-   * Subscribe to the keys for any change.
+   * Query for states using a query domain object.
    *
-   * @param storeName Name of the configuration store
-   * @param keys      keys of the configurations which are to be subscribed
-   * @param metadata  optional metadata
-   * @return Flux of List of configuration items
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param metadata Optional metadata passed to the state store.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
    */
-  Flux<List<ConfigurationItem>> subscribeToConfiguration(String storeName, List<String> keys,
-                                                         Map<String, String> metadata);
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query,
+                                             Map<String, String> metadata, TypeRef<T> type);
 
   /**
-   * Subscribe to the keys for any change.
+   * Query for states using a query domain object.
    *
-   * @param request request for subscribing to any change for the given keys in request
-   * @return Flux of List of configuration items
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
    */
-  Flux<List<ConfigurationItem>> subscribeToConfiguration(SubscribeConfigurationRequest request);
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, Class<T> clazz);
+
+  /**
+   * Query for states using a query domain object.
+   *
+   * @param storeName Name of the state store to query.
+   * @param query Query value domain object.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(String storeName, Query query, TypeRef<T> type);
+
+  /**
+   * Query for states using a query request.
+   *
+   * @param request Query request object.
+   * @param clazz The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, Class<T> clazz);
+
+  /**
+   * Query for states using a query request.
+   *
+   * @param request Query request object.
+   * @param type The type needed as return for the call.
+   * @param <T> The Type of the return, use byte[] to skip serialization.
+   * @return A Mono of QueryStateResponse of type T.
+   */
+  <T> Mono<QueryStateResponse<T>> queryState(QueryStateRequest request, TypeRef<T> type);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param request {@link BulkPublishRequest} object.
+   * @return A Mono of {@link BulkPublishResponse} object.
+   * @param <T> The type of events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(BulkPublishRequest<T> request);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 T... events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the {@link List} of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, List<T> events);
+
+  /**
+   * Publish multiple events to Dapr in a single request.
+   *
+   * @param pubsubName the pubsub name we will publish the event to.
+   * @param topicName the topicName where the event will be published.
+   * @param events the varargs of events to be published.
+   * @param contentType the content type of the event. Use Mime based types.
+   * @param requestMetadata the metadata to be set at the request level for the {@link BulkPublishRequest}.
+   * @return the {@link BulkPublishResponse} containing publish status of each event.
+   *     The "entryID" field in {@link BulkPublishEntry} in {@link BulkPublishResponseFailedEntry} will be
+   *     generated based on the order of events in the {@link List}.
+   * @param <T> The type of the events to publish in the call.
+   */
+  <T> Mono<BulkPublishResponse<T>> publishEvents(String pubsubName, String topicName, String contentType,
+                                                 Map<String,String> requestMetadata, T... events);
+
+
+  /**
+   * Tries to get a lock with an expiry.
+   * @param storeName Name of the store
+   * @param resourceId Lock key
+   * @param lockOwner The identifier of lock owner
+   * @param expiryInSeconds The time before expiry
+   * @return Whether the lock is successful
+   */
+  Mono<Boolean> tryLock(String storeName, String resourceId, String lockOwner, Integer expiryInSeconds);
+
+  /**
+   * Tries to get a lock with an expiry.
+   * @param request The request to lock
+   * @return Whether the lock is successful
+   */
+  Mono<Boolean> tryLock(LockRequest request);
+
+  /**
+   * Unlocks a lock.
+   * @param storeName Name of the store
+   * @param resourceId Lock key
+   * @param lockOwner The identifier of lock owner
+   * @return Unlock result
+   */
+  Mono<UnlockResponseStatus> unlock(String storeName, String resourceId, String lockOwner);
+
+  /**
+   * Unlocks a lock.
+   * @param request The request to unlock
+   * @return Unlock result
+   */
+  Mono<UnlockResponseStatus> unlock(UnlockRequest request);
 }

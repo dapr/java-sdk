@@ -17,7 +17,6 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.InvokeMethodRequestBuilder;
 import io.dapr.examples.OpenTelemetryConfig;
 import io.dapr.utils.TypeRef;
 import io.opentelemetry.api.OpenTelemetry;
@@ -68,7 +67,7 @@ public class InvokeClient {
                 InvokeMethodRequest sleepRequest = new InvokeMethodRequest(SERVICE_APP_ID, "proxy_sleep")
                     .setHttpExtension(HttpExtension.POST);
                 return client.invokeMethod(sleepRequest, TypeRef.get(Void.class));
-              }).subscriberContext(getReactorContext()).block();
+              }).contextWrite(getReactorContext()).block();
         }
       }
     }
