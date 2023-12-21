@@ -36,6 +36,8 @@ public class ActorRuntimeConfig {
 
   private volatile Integer remindersStoragePartitions;
 
+  private volatile List<ActorTypeConfig> actorTypeConfigs = new CopyOnWriteArrayList<>();
+
   /**
    * Instantiates a new config for the Actor Runtime.
    */
@@ -166,4 +168,27 @@ public class ActorRuntimeConfig {
     return this;
   }
 
+  /**
+   * Adds a actor type config to the list of actors type configs.
+   * 
+   * @param actorTypeName Actor type that was registered.
+   * @return This instance.
+   */
+  ActorRuntimeConfig addActorTypeConfig(ActorTypeConfig config) {
+    if (config == null) {
+      throw new IllegalArgumentException("Add actor type config failed.");
+    }
+
+    this.actorTypeConfigs.add(config);
+    return this;
+  }
+
+  /**
+   * Gets the list of registered actor types.
+   *
+   * @return List of registered actor types.
+   */
+  Collection<ActorTypeConfig> getActorTypeConfigs() {
+    return Collections.unmodifiableCollection(actorTypeConfigs);
+  }
 }

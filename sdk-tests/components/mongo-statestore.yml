@@ -12,3 +12,6 @@ spec:
       value: local
     - name: collectionName
       value: testCollection
+scopes:
+  - grpcstateclientit
+  - httpstateclientit

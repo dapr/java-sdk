@@ -12,41 +12,44 @@ limitations under the License.
 */
 package io.dapr.actors;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for ActorId.
  */
 public class ActorIdTest {
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void initializeNewActorIdObjectWithNullId() {
-    ActorId actorId = new ActorId(null);
+    assertThrows(IllegalArgumentException.class, () ->{ActorId actorId = new ActorId(null);});
   }
 
   @Test
   public void getId() {
     String id = "123";
     ActorId actorId = new ActorId(id);
-    Assert.assertEquals(id, actorId.toString());
+    assertEquals(id, actorId.toString());
   }
 
   @Test
   public void verifyToString() {
     String id = "123";
     ActorId actorId = new ActorId(id);
-    Assert.assertEquals(id, actorId.toString());
+    assertEquals(id, actorId.toString());
   }
 
   @Test
   public void verifyEqualsByObject() {
     List<Wrapper> values = createEqualsTestValues();
     for (Wrapper w : values) {
-      Assert.assertEquals(w.expectedResult, w.item1.equals(w.item2));
+      assertEquals(w.expectedResult, w.item1.equals(w.item2));
     }
   }
 
@@ -56,7 +59,7 @@ public class ActorIdTest {
     for (Wrapper w : values) {
       ActorId a1 = (ActorId) w.item1;
       Object a2 =  w.item2;
-      Assert.assertEquals(w.expectedResult, a1.equals(a2));
+      assertEquals(w.expectedResult, a1.equals(a2));
     }
   }
 
@@ -66,7 +69,7 @@ public class ActorIdTest {
     for (Wrapper w : values) {
       ActorId a1 = (ActorId) w.item1;
       ActorId a2 = (ActorId) w.item2;
-      Assert.assertEquals(w.expectedResult, a1.compareTo(a2));
+      assertEquals(w.expectedResult, a1.compareTo(a2));
     }
   }
 

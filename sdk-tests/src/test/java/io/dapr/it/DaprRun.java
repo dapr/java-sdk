@@ -13,11 +13,19 @@ limitations under the License.
 
 package io.dapr.it;
 
+import com.google.protobuf.Empty;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.config.Properties;
+import io.dapr.v1.AppCallbackHealthCheckGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -30,7 +38,7 @@ public class DaprRun implements Stoppable {
 
   private static final String DAPR_RUN = "dapr run --app-id %s --app-protocol %s " +
       "--config ./configurations/configuration.yaml " +
-      "--components-path ./components";
+      "--resources-path ./components";
 
   // the arg in -Dexec.args is the app's port
   private static final String DAPR_COMMAND =
@@ -39,6 +47,8 @@ public class DaprRun implements Stoppable {
   private final DaprPorts ports;
 
   private final String appName;
+
+  private final DaprApiProtocol appProtocol;
 
   private final int maxWaitMilliseconds;
 
@@ -49,6 +59,8 @@ public class DaprRun implements Stoppable {
   private final Command listCommand;
 
   private final Command stopCommand;
+
+  private final boolean hasAppHealthCheck;
 
   private DaprRun(String testName,
                   DaprPorts ports,
@@ -61,6 +73,7 @@ public class DaprRun implements Stoppable {
     this.appName = serviceClass == null ?
         testName.toLowerCase() :
         String.format("%s-%s", testName, serviceClass.getSimpleName()).toLowerCase();
+    this.appProtocol = appProtocol;
     this.startCommand =
         new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, protocol, appProtocol));
     this.listCommand = new Command(
@@ -72,6 +85,7 @@ public class DaprRun implements Stoppable {
     this.ports = ports;
     this.maxWaitMilliseconds = maxWaitMilliseconds;
     this.started = new AtomicBoolean(false);
+    this.hasAppHealthCheck = isAppHealthCheckEnabled(serviceClass);
   }
 
   public void start() throws InterruptedException, IOException {
@@ -130,20 +144,11 @@ public class DaprRun implements Stoppable {
   }
 
   public void use() {
-    if (this.ports.getHttpPort() != null) {
-      System.getProperties().setProperty(Properties.HTTP_PORT.getName(), String.valueOf(this.ports.getHttpPort()));
-    }
-    if (this.ports.getGrpcPort() != null) {
-      System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.ports.getGrpcPort()));
-    }
+    this.ports.use();
     System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
     System.getProperties().setProperty(
         Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
         DaprApiProtocol.GRPC.name());
-    System.getProperties().setProperty(
-            Properties.GRPC_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getGrpcPort());
-    System.getProperties().setProperty(
-            Properties.HTTP_ENDPOINT.getName(), "http://127.0.0.1:" + this.ports.getHttpPort());
   }
 
   public void switchToGRPC() {
@@ -165,15 +170,72 @@ public class DaprRun implements Stoppable {
     System.getProperties().setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol.name());
   }
 
-  public int getGrpcPort() {
+  public void waitForAppHealth(int maxWaitMilliseconds) throws InterruptedException {
+    if (!this.hasAppHealthCheck) {
+      return;
+    }
+
+    if (DaprApiProtocol.GRPC.equals(this.appProtocol)) {
+      ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", this.getAppPort())
+              .usePlaintext()
+              .build();
+      try {
+        AppCallbackHealthCheckGrpc.AppCallbackHealthCheckBlockingStub stub =
+                AppCallbackHealthCheckGrpc.newBlockingStub(channel);
+        long maxWait = System.currentTimeMillis() + maxWaitMilliseconds;
+        while (System.currentTimeMillis() <= maxWait) {
+          try {
+            stub.healthCheck(Empty.getDefaultInstance());
+            // artursouza: workaround due to race condition with runtime's probe on app's health.
+            Thread.sleep(5000);
+            return;
+          } catch (Exception e) {
+            Thread.sleep(1000);
+          }
+        }
+
+        throw new RuntimeException("timeout: gRPC service is not healthy.");
+      } finally {
+        channel.shutdown();
+      }
+    } else {
+      // Create an OkHttpClient instance with a custom timeout
+      OkHttpClient client = new OkHttpClient.Builder()
+              .connectTimeout(maxWaitMilliseconds, TimeUnit.MILLISECONDS)
+              .readTimeout(maxWaitMilliseconds, TimeUnit.MILLISECONDS)
+              .build();
+
+      // Define the URL to probe
+      String url = "http://127.0.0.1:" + this.getAppPort() + "/health"; // Change to your specific URL
+
+      // Create a request to the URL
+      Request request = new Request.Builder()
+              .url(url)
+              .build();
+
+      // Execute the request
+      try (Response response = client.newCall(request).execute()) {
+        if (!response.isSuccessful()) {
+          throw new RuntimeException("error: HTTP service is not healthy.");
+        }
+      } catch (IOException e) {
+          throw new RuntimeException("exception: HTTP service is not healthy.");
+      }
+
+      // artursouza: workaround due to race condition with runtime's probe on app's health.
+      Thread.sleep(5000);
+    }
+  }
+
+  public Integer getGrpcPort() {
     return ports.getGrpcPort();
   }
 
-  public int getHttpPort() {
+  public Integer getHttpPort() {
     return ports.getHttpPort();
   }
 
-  public int getAppPort() {
+  public Integer getAppPort() {
     return ports.getAppPort();
   }
 
@@ -207,12 +269,25 @@ public class DaprRun implements Stoppable {
             .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
             .append(ports.getHttpPort() != null ? " --dapr-http-port " + ports.getHttpPort() : "")
             .append(ports.getGrpcPort() != null ? " --dapr-grpc-port " + ports.getGrpcPort() : "")
+            .append(isAppHealthCheckEnabled(serviceClass) ?
+                    " --enable-app-health-check --app-health-probe-interval=1" : "")
             .append(serviceClass == null ? "" :
                 String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
                     ports.getAppPort() != null ? ports.getAppPort().toString() : "",
                     Properties.API_PROTOCOL.getName(), protocol,
                     Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol));
     return stringBuilder.toString();
+  }
+
+  private static boolean isAppHealthCheckEnabled(Class serviceClass) {
+    if (serviceClass != null) {
+      DaprRunConfig daprRunConfig = (DaprRunConfig) serviceClass.getAnnotation(DaprRunConfig.class);
+      if (daprRunConfig != null) {
+        return daprRunConfig.enableAppHealthCheck();
+      }
+    }
+
+    return false;
   }
 
   private static void assertListeningOnPort(int port) {

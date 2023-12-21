@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -56,9 +57,14 @@ public class DaprClientBuilder {
   private DaprObjectSerializer stateSerializer;
 
   /**
+   * Resiliency configuration for DaprClient.
+   */
+  private ResiliencyOptions resiliencyOptions;
+
+  /**
    * Creates a constructor for DaprClient.
    *
-   * {@link DefaultObjectSerializer} is used for object and state serializers by defaul but is not recommended
+   * {@link DefaultObjectSerializer} is used for object and state serializers by default but is not recommended
    * for production scenarios.
    */
   public DaprClientBuilder() {
@@ -102,6 +108,17 @@ public class DaprClientBuilder {
     }
 
     this.stateSerializer = stateSerializer;
+    return this;
+  }
+
+  /**
+   * Sets the resiliency options for DaprClient.
+   *
+   * @param options Serializer for objects to be persisted.
+   * @return This instance.
+   */
+  public DaprClientBuilder withResiliencyOptions(ResiliencyOptions options) {
+    this.resiliencyOptions = options;
     return this;
   }
 
@@ -160,9 +177,14 @@ public class DaprClientBuilder {
    */
   private DaprClient buildDaprClientGrpc() {
     final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, this.daprHttpBuilder.build());
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    return new DaprClientGrpc(channelFacade, asyncStub, this.objectSerializer, this.stateSerializer);
+    return new DaprClientGrpc(
+        channelFacade,
+        asyncStub,
+        this.objectSerializer,
+        this.stateSerializer,
+        this.resiliencyOptions);
   }
 
   /**

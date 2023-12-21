@@ -30,7 +30,7 @@ import com.google.protobuf.Parser;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,13 +44,13 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class DefaultObjectSerializerTest {
 
@@ -264,7 +264,7 @@ public class DefaultObjectSerializerTest {
     String serializedValue;
     try {
       serializedValue = new String(SERIALIZER.serialize(obj));
-      assertEquals("FOUND:[[" + serializedValue + "]] \n but was EXPECTING: [[" + expectedResult + "]]", expectedResult, serializedValue);
+      assertEquals(expectedResult, serializedValue, "FOUND:[[" + serializedValue + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -495,7 +495,7 @@ public class DefaultObjectSerializerTest {
 
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), TypeRef.get(MyObjectTestToSerialize.class));
-      assertEquals("The expected value is different than the actual result", expectedResult, result);
+      assertEquals(expectedResult, result, "The expected value is different than the actual result");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -519,7 +519,7 @@ public class DefaultObjectSerializerTest {
 
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), new TypeRef<List<MyObjectTestToSerialize>>(){});
-      assertEquals("The expected value is different than the actual result", expectedResult, result.get(0));
+      assertEquals(expectedResult, result.get(0), "The expected value is different than the actual result");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -529,7 +529,7 @@ public class DefaultObjectSerializerTest {
       Type t = tr1.getType();
       TypeRef<?> tr = TypeRef.get(t);
       result = (List<MyObjectTestToSerialize>) SERIALIZER.deserialize(jsonToDeserialize.getBytes(), tr);
-      assertEquals("The expected value is different than the actual result", expectedResult, result.get(0));
+      assertEquals(expectedResult, result.get(0), "The expected value is different than the actual result");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -595,7 +595,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -618,7 +618,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -641,7 +641,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -664,7 +664,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -687,7 +687,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -710,7 +710,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -733,7 +733,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -756,7 +756,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -779,7 +779,7 @@ public class DefaultObjectSerializerTest {
     
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
@@ -801,51 +801,45 @@ public class DefaultObjectSerializerTest {
 
     try {
       result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-      assertEquals("FOUND:[[" + result + "]] \n but was EXPECING: [[" + expectedResult + "]]", expectedResult, result);
+      assertEquals(expectedResult, result, "FOUND:[[" + result + "]] \n but was EXPECTING: [[" + expectedResult + "]]");
     } catch (IOException exception) {
       fail(exception.getMessage());
     }
   }
 
-  @Test(expected = IOException.class)
-  public void deserializeObjectIntExceedMaximumValueTest() throws Exception {
+  @Test
+  public void deserializeObjectIntExceedMaximumValueTest() {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483648,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
-    
-    SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+
+    assertThrows(IOException.class, () -> SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class));
   }
 
-  @Test(expected = IOException.class)
-  public void deserializeObjectNotACharTest() throws Exception {
+  @Test
+  public void deserializeObjectNotACharTest() {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"Not A Char\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
-    
-    try {
-      SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
-    } catch (IOException ioEx) {
-      throw ioEx;
-    } catch (Exception ex) {
-      fail("Wrong exception thrown: [" + ex.getClass() + "] Message:[" + ex.getMessage() + "]");
-    }
+
+    assertThrows(IOException.class, () -> SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class));
   }
 
-  @Test(expected = IOException.class)
-  public void deserializeObjectShortExceededMaximumValueTest() throws Exception {
+  @Test
+  public void deserializeObjectShortExceededMaximumValueTest() {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32768,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
-    
-    SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+
+    assertThrows(IOException.class, () -> SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class));
   }
 
-  @Test(expected = IOException.class)
-  public void deserializeObjectLongExceededMaximumValueTest() throws Exception {
+  @Test
+  public void deserializeObjectLongExceededMaximumValueTest() {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775808,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+999999999-12-31T23:59:59.999999999-18:00\"}";
-    
-    MyObjectTestToSerialize result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+
+    assertThrows(IOException.class, () -> SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class));
   }
 
-  @Test(expected = IOException.class)
-  public void deserializeObjectTimeExceededMaximumValueTest() throws Exception {
+  @Test
+  public void deserializeObjectTimeExceededMaximumValueTest() {
     String jsonToDeserialize = "{\"stringValue\":\"A String\",\"intValue\":2147483647,\"boolValue\":true,\"charValue\":\"a\",\"byteValue\":65,\"shortValue\":32767,\"longValue\":9223372036854775807,\"floatValue\":1.0,\"doubleValue\":1000.0,\"timeValue\":\"+1000000000-12-31T23:59:59.999999999-18:00\"}";
 
-    MyObjectTestToSerialize result = SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class);
+    assertThrows(IOException.class, () -> SERIALIZER.deserialize(jsonToDeserialize.getBytes(), MyObjectTestToSerialize.class));
   }
 
   @Test

@@ -18,8 +18,8 @@ import io.dapr.actors.ActorId;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -180,28 +180,28 @@ public class DaprStateAsyncProviderTest {
 
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 
-    Assert.assertEquals("Jon Doe",
+    Assertions.assertEquals("Jon Doe",
         provider.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
-    Assert.assertEquals(98021,
+    Assertions.assertEquals(98021,
         (int) provider.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
-    Assert.assertEquals(98,
+    Assertions.assertEquals(98,
         (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
-    Assert.assertEquals(98,
+    Assertions.assertEquals(98,
         (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
-    Assert.assertEquals(46.55,
+    Assertions.assertEquals(46.55,
         (double) provider.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block(),
         EPSILON);
-    Assert.assertEquals(true,
+    Assertions.assertEquals(true,
         (boolean) provider.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block());
-    Assert.assertEquals(new Customer().setId(1000).setName("Roxane"),
+    Assertions.assertEquals(new Customer().setId(1000).setName("Roxane"),
         provider.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
-    Assert.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
+    Assertions.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
         provider.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
-    Assert.assertNull(
+    Assertions.assertNull(
         provider.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
-    Assert.assertArrayEquals("A".getBytes(),
+    Assertions.assertArrayEquals("A".getBytes(),
         provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
-    Assert.assertNull(
+    Assertions.assertNull(
         provider.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
   }
 
@@ -242,15 +242,15 @@ public class DaprStateAsyncProviderTest {
 
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 
-    Assert.assertTrue(provider.contains("MyActor", new ActorId("123"), "name").block());
-    Assert.assertFalse(provider.contains("MyActor", new ActorId("123"), "NAME").block());
-    Assert.assertTrue(provider.contains("MyActor", new ActorId("123"), "zipcode").block());
-    Assert.assertTrue(provider.contains("MyActor", new ActorId("123"), "goals").block());
-    Assert.assertTrue(provider.contains("MyActor", new ActorId("123"), "balance").block());
-    Assert.assertTrue(provider.contains("MyActor", new ActorId("123"), "active").block());
-    Assert.assertTrue(provider.contains("MyActor", new ActorId("123"), "customer").block());
-    Assert.assertFalse(provider.contains("MyActor", new ActorId("123"), "Does not exist").block());
-    Assert.assertFalse(provider.contains("MyActor", new ActorId("123"), null).block());
+    Assertions.assertTrue(provider.contains("MyActor", new ActorId("123"), "name").block());
+    Assertions.assertFalse(provider.contains("MyActor", new ActorId("123"), "NAME").block());
+    Assertions.assertTrue(provider.contains("MyActor", new ActorId("123"), "zipcode").block());
+    Assertions.assertTrue(provider.contains("MyActor", new ActorId("123"), "goals").block());
+    Assertions.assertTrue(provider.contains("MyActor", new ActorId("123"), "balance").block());
+    Assertions.assertTrue(provider.contains("MyActor", new ActorId("123"), "active").block());
+    Assertions.assertTrue(provider.contains("MyActor", new ActorId("123"), "customer").block());
+    Assertions.assertFalse(provider.contains("MyActor", new ActorId("123"), "Does not exist").block());
+    Assertions.assertFalse(provider.contains("MyActor", new ActorId("123"), null).block());
   }
 
   private final <T> ActorStateChange createInsertChange(String name, T value) {
