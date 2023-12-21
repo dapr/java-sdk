@@ -149,6 +149,7 @@ Execute the following script in order to run DemoChainWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker
 ```
+
 Once running, the logs will start displaying the different steps: First, you can see workflow is starting:
 ```text
 == APP == Start workflow runtime
@@ -161,6 +162,8 @@ Then, execute the following script in order to run DemoChainClient:
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient
 ```
 <!-- END_STEP -->
+
+
 
 Now you can see the worker logs showing the acitvity is invoked in sequnce and the status of each activity:
 ```text
@@ -237,7 +240,7 @@ public class CountWordsActivity implements WorkflowActivity {
 }
 ```
 <!-- STEP
-name: Run Fan-in/Fan-out Pattern workflow
+name: Run Chaining Pattern workflow
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
@@ -255,7 +258,9 @@ Execute the following script in order to run DemoFanInOutWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
 ```
+
 Execute the following script in order to run DemoFanInOutClient:
+
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient
 ```
@@ -343,7 +348,7 @@ public class CleanUpActivity implements WorkflowActivity {
 
 Once you start the workflow and client using the following commands:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorker
 ```
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewClient
@@ -413,29 +418,14 @@ client.raiseEvent(instanceId, "Approval", true);
 
 Start the workflow and client using the following commands:
 
-<!-- STEP
-name: Run Wait External Event Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - 'Starting Workflow: io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow'
-  - 'Waiting for approval...'
-  - 'approval granted - do the approved action'
-  - 'Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity'
-  - 'Running approval activity...'
-  - 'approval-activity finished'
-background: true
-sleep: 60
-timeout_seconds: 60
--->
+ex
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
 ```
 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventClient
 ```
-<!-- END_STEP -->
 
 The worker logs:
 ```text
@@ -521,25 +511,14 @@ public class ReverseActivity implements WorkflowActivity {
 
 Start the workflow and client using the following commands:
 
-<!-- STEP
-name: Run Sub-workflow Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - 'calling subworkflow with input: Hello Dapr Workflow!'
-  - 'SubWorkflow finished with: !wolfkroW rpaD olleH'
-background: true
-sleep: 60
-timeout_seconds: 60
--->
+ex
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkflowWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkflowWorker
 ```
 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkerflowClient
 ```
-<!-- END_STEP -->
 
 The log from worker:
 ```text
