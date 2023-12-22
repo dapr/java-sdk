@@ -16,7 +16,6 @@ package io.dapr.examples.configuration.http;
 import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -53,7 +52,7 @@ public class ConfigurationClient {
   /**
    * Gets configurations for a list of keys.
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
   public static void getConfigurations(DaprClient client) {
     System.out.println("*******trying to retrieve configurations for a list of keys********");
@@ -78,7 +77,7 @@ public class ConfigurationClient {
   /**
    * Subscribe to a list of keys.
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
   public static void subscribeConfigurationRequest(DaprClient client) throws InterruptedException {
     System.out.println("Subscribing to key: myconfig2");
