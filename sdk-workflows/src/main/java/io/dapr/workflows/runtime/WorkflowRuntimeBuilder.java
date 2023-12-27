@@ -16,6 +16,8 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.internal.ApiTokenClientInterceptor;
+import io.grpc.ClientInterceptor;
 
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -28,9 +30,11 @@ public class WorkflowRuntimeBuilder {
   private String logLevel;
   private ArrayList<String> workflows = new ArrayList<String>();
   private ArrayList<String> activities = new ArrayList<String>();
+  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
 
   public WorkflowRuntimeBuilder() {
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(NetworkUtils.buildGrpcManagedChannel());
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
+                          NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
     this.logger = Logger.getLogger(WorkflowRuntimeBuilder.class.getName());
     this.logLevel = System.getenv("DAPR_LOG_LEVEL");
     if (this.logLevel == null || this.logLevel.isEmpty()) {

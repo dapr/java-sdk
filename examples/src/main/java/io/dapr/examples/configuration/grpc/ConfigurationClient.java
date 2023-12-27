@@ -15,23 +15,18 @@ package io.dapr.examples.configuration.grpc;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ConfigurationClient {
 
@@ -55,7 +50,7 @@ public class ConfigurationClient {
   /**
    * Gets configurations for a list of keys.
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
   public static void getConfigurations(DaprClient client) {
     System.out.println("*******trying to retrieve configurations for a list of keys********");
@@ -75,7 +70,7 @@ public class ConfigurationClient {
   /**
    * Subscribe to a list of keys.Optional to above iterator way of retrieving the changes
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
   public static void subscribeConfigurationRequest(DaprClient client) {
     System.out.println("Subscribing to key: myconfig1");
