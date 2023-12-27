@@ -105,7 +105,7 @@ public class WorkflowRuntimeBuilder {
         }
       }
     }
-    this.logger.log(Level.INFO, "Successfully created dapr workflow runtime");
+    this.logger.log(Level.INFO, "Successfully built dapr workflow runtime");
     this.logger.log(Level.INFO, "List of registered workflows: " + workflows);
     this.logger.log(Level.INFO, "List of registered activities: " + activities);
     return instance;
@@ -122,7 +122,7 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addOrchestration(
         new OrchestratorWrapper<>(clazz)
     );
-    this.logger.log(Level.CONFIG, "Registered Workflow: " +  clazz.getCanonicalName());
+    this.logger.log(Level.INFO, "Registered Workflow: " +  clazz.getCanonicalName());
     this.workflows.add(clazz.getCanonicalName());
     // If possible, attempt to grab the workflow names from the underlying durableTask framework and use those
     // since they are already registered in a hashmap
@@ -142,7 +142,7 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addActivity(
         new ActivityWrapper<>(clazz)
     );
-    this.logger.log(Level.CONFIG, "Registered Activity: " +  clazz.getCanonicalName());
+    this.logger.log(Level.INFO, "Registered Activity: " +  clazz.getCanonicalName());
     this.activities.add(clazz.getCanonicalName());
   }
 }
