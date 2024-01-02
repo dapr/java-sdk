@@ -18,6 +18,7 @@ import io.dapr.utils.NetworkUtils;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 /**
  * Global properties for Dapr's SDK, using Supplier so they are dynamically resolved.
@@ -38,6 +39,16 @@ public class Properties {
    * Dapr's default gRPC port.
    */
   private static final Integer DEFAULT_GRPC_PORT = 50001;
+
+  /**
+   * Dapr's default max retries.
+   */
+  private static final Integer DEFAULT_API_MAX_RETRIES = 0;
+
+  /**
+   * Dapr's default timeout in seconds.
+   */
+  private static final Duration DEFAULT_API_TIMEOUT = Duration.ofMillis(0L);
 
   /**
    * Dapr's default use of gRPC or HTTP.
@@ -115,6 +126,22 @@ public class Properties {
       "dapr.http.endpoint",
       "DAPR_HTTP_ENDPOINT",
       null);
+
+  /**
+   * Maximum number of retries for retriable exceptions.
+   */
+  public static final Property<Integer> MAX_RETRIES = new IntegerProperty(
+      "dapr.api.maxRetries",
+      "DAPR_API_MAX_RETRIES",
+      DEFAULT_API_MAX_RETRIES);
+
+  /**
+   * Timeout for API calls.
+   */
+  public static final Property<Duration> TIMEOUT = new MillisecondsDurationProperty(
+      "dapr.api.timeoutMilliseconds",
+      "DAPR_API_TIMEOUT_MILLISECONDS",
+      DEFAULT_API_TIMEOUT);
 
   /**
    * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.

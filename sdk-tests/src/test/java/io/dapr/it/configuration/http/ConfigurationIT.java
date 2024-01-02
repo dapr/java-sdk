@@ -5,16 +5,17 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationIT extends BaseIT {
     private static final String CONFIG_STORE_NAME = "redisconfigstore";
@@ -35,19 +36,19 @@ public class ConfigurationIT extends BaseIT {
             "myconfigkey3", "myconfigvalue3||1"
     };
 
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         daprRun = startDaprApp(ConfigurationIT.class.getSimpleName(), 5000);
         daprRun.switchToHTTP();
         daprClient = new DaprClientBuilder().build();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         daprClient.close();
     }
 
-    @Before
+    @BeforeEach
     public void setupConfigStore() {
         executeDockerCommand(insertCmd);
     }

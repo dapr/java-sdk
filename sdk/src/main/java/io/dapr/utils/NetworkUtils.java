@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.utils;
 
 import io.dapr.config.Properties;
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -29,6 +30,8 @@ import java.net.UnknownHostException;
  */
 public final class NetworkUtils {
 
+  private static final long RETRY_WAIT_MILLISECONDS = 1000;
+
   private NetworkUtils() {
   }
 
@@ -41,7 +44,7 @@ public final class NetworkUtils {
    */
   public static void waitForSocket(String host, int port, int timeoutInMilliseconds) throws InterruptedException {
     long started = System.currentTimeMillis();
-    Retry.callWithRetry(() -> {
+    callWithRetry(() -> {
       try {
         try (Socket socket = new Socket()) {
           // timeout cannot be negative.
@@ -57,9 +60,10 @@ public final class NetworkUtils {
 
   /**
    * Creates a GRPC managed channel.
+   * @param interceptors Optional interceptors to add to the channel.
    * @return GRPC managed channel to communicate with the sidecar.
    */
-  public static ManagedChannel buildGrpcManagedChannel() {
+  public static ManagedChannel buildGrpcManagedChannel(ClientInterceptor... interceptors) {
     String address = Properties.SIDECAR_IP.get();
     int port = Properties.GRPC_PORT.get();
     boolean insecure = true;
@@ -78,7 +82,37 @@ public final class NetworkUtils {
     if (insecure) {
       builder = builder.usePlaintext();
     }
+    if (interceptors != null && interceptors.length > 0) {
+      builder = builder.intercept(interceptors);
+    }
     return builder.build();
+  }
+
+  private static void callWithRetry(Runnable function, long retryTimeoutMilliseconds) throws InterruptedException {
+    long started = System.currentTimeMillis();
+    while (true) {
+      Throwable exception;
+      try {
+        function.run();
+        return;
+      } catch (Exception e) {
+        exception = e;
+      } catch (AssertionError e) {
+        exception = e;
+      }
+
+      long elapsed = System.currentTimeMillis() - started;
+      if (elapsed >= retryTimeoutMilliseconds) {
+        if (exception instanceof RuntimeException) {
+          throw (RuntimeException)exception;
+        }
+
+        throw new RuntimeException(exception);
+      }
+
+      long remaining = retryTimeoutMilliseconds - elapsed;
+      Thread.sleep(Math.min(remaining, RETRY_WAIT_MILLISECONDS));
+    }
   }
 }
 

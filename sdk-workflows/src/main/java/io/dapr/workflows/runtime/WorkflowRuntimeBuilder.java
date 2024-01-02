@@ -16,13 +16,17 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.internal.ApiTokenClientInterceptor;
+import io.grpc.ClientInterceptor;
 
 public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
+  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
 
   public WorkflowRuntimeBuilder() {
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(NetworkUtils.buildGrpcManagedChannel());
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
+                          NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
   }
 
   /**
@@ -44,7 +48,7 @@ public class WorkflowRuntimeBuilder {
   /**
    * Registers a Workflow object.
    *
-   * @param <T> any Workflow type
+   * @param <T>   any Workflow type
    * @param clazz the class being registered
    * @return the WorkflowRuntimeBuilder
    */
@@ -54,5 +58,17 @@ public class WorkflowRuntimeBuilder {
     );
 
     return this;
+  }
+
+  /**
+   * Registers an Activity object.
+   *
+   * @param clazz the class being registered
+   * @param <T>   any WorkflowActivity type
+   */
+  public <T extends WorkflowActivity> void registerActivity(Class<T> clazz) {
+    this.builder = this.builder.addActivity(
+        new ActivityWrapper<>(clazz)
+    );
   }
 }

@@ -1,15 +1,15 @@
 package io.dapr.client.domain;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class GetSecretRequestTest {
 
@@ -27,6 +27,6 @@ public class GetSecretRequestTest {
     request.setMetadata(metadata);
     Map<String, String> initial = request.getMetadata();
     request.setMetadata(metadata);
-    assertNotSame("Should not be same map", request.getMetadata(), initial);
+    assertNotSame(request.getMetadata(), initial, "Should not be same map");
   }
 }

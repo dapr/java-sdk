@@ -21,12 +21,13 @@ import okhttp3.mock.Behavior;
 import okhttp3.mock.MediaTypes;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
-import static io.dapr.actors.TestUtils.assertThrowsDaprException;
 import static io.dapr.actors.TestUtils.getSidecarIpForHttpUrl;
-import static org.junit.Assert.assertEquals;
+import static io.dapr.actors.TestUtils.assertThrowsDaprException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DaprHttpClientTest {
 
@@ -40,7 +41,7 @@ public class DaprHttpClientTest {
 
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
-  @Before
+  @BeforeEach
   public void setUp() {
     sidecarIp = Properties.SIDECAR_IP.get();
     sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);

@@ -1,14 +1,14 @@
 package io.dapr.client.domain;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ExecuteStateTransactionRequestTest {
 
@@ -26,7 +26,7 @@ public class ExecuteStateTransactionRequestTest {
     request.setMetadata(metadata);
     Map<String, String> initial = request.getMetadata();
     request.setMetadata(metadata);
-    assertNotSame("Should not be same map", request.getMetadata(), initial);
+    assertNotSame(request.getMetadata(), initial, "Should not be same map");
   }
 
   @Test
@@ -41,6 +41,6 @@ public class ExecuteStateTransactionRequestTest {
     request.setOperations(operations);
     List<TransactionalStateOperation<?>> initial = request.getOperations();
     request.setOperations(operations);
-    assertNotSame("Should not be same list", request.getOperations(), initial);
+    assertNotSame(request.getOperations(), initial, "Should not be same list");
   }
 }

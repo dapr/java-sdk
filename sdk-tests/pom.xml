@@ -11,13 +11,14 @@
   <description>Tests for Dapr's Java SDK - not to be published as a jar.</description>
 
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <dapr.sdk.version>1.10.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.version>1.11.0-SNAPSHOT</dapr.sdk.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
-    <grpc.version>1.42.1</grpc.version>
+    <grpc.version>1.59.0</grpc.version>
     <protobuf.version>3.17.3</protobuf.version>
     <opentelemetry.version>0.14.0</opentelemetry.version>
     <spring-boot.version>2.7.8</spring-boot.version>
@@ -30,6 +31,13 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>5.7.2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -101,15 +109,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.2</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>5.5.2</version>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -145,6 +151,11 @@
       <artifactId>jakarta.annotation-api</artifactId>
       <version>1.3.5</version>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>eu.rekawek.toxiproxy</groupId>
+      <artifactId>toxiproxy-java</artifactId>
+      <version>2.1.7</version>
     </dependency>
   </dependencies>
 
@@ -196,9 +207,9 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>failsafe-maven-plugin</artifactId>
-        <version>2.4.3-alpha-1</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.1.2</version>
         <executions>
           <execution>
             <goals>

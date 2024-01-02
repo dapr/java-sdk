@@ -20,8 +20,8 @@ import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class HelloWorldClientIT extends BaseIT {
 
@@ -48,7 +48,7 @@ public class HelloWorldClientIT extends BaseIT {
       DaprProtos.GetStateResponse response = client.getState(req);
       String value = response.getData().toStringUtf8();
       System.out.println("Got: " + value);
-      Assert.assertEquals("Hello World", value);
+      Assertions.assertEquals("Hello World", value);
     }
 
     // Then, delete it.
@@ -71,7 +71,7 @@ public class HelloWorldClientIT extends BaseIT {
       DaprProtos.GetStateResponse response = client.getState(req);
       String value = response.getData().toStringUtf8();
       System.out.println("Got: " + value);
-      Assert.assertEquals("", value);
+      Assertions.assertEquals("", value);
     }
     channel.shutdown();
   }

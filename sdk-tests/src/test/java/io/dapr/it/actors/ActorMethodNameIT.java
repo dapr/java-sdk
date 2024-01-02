@@ -19,12 +19,12 @@ import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.app.MyActor;
 import io.dapr.it.actors.app.MyActorService;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ActorMethodNameIT extends BaseIT {
 
