@@ -126,24 +126,24 @@ jobs:
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -f sdk-tests/pom.xml verify
     - name: Upload test report for sdk
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v3
       with:
         name: report-dapr-java-sdk
         path: sdk/target/jacoco-report/
     - name: Upload test report for sdk-actors
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v3
       with:
         name: report-dapr-java-sdk-actors
         path: sdk-actors/target/jacoco-report/
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v3
       with:
         name: failsafe-report-sdk-tests
         path: sdk-tests/target/failsafe-reports
     - name: Upload surefire test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v3
       with:
         name: surefire-report-sdk-tests
         path: sdk-tests/target/surefire-reports
