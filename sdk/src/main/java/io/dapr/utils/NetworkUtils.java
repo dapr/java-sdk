@@ -114,12 +114,12 @@ public final class NetworkUtils {
       Thread.sleep(Math.min(remaining, RETRY_WAIT_MILLISECONDS));
     }
   }
-}
 
-/**
- * Retrieve loopback address for the host.
- * @return The loopback address String
- */
-public static String getHostLoopbackAddress() {
-  return InetAddress.getLoopbackAddress().getHostAddress();
+    /**
+   * Retrieve loopback address for the host.
+   * @return The loopback address String
+   */
+  public static String getHostLoopbackAddress() {
+    return InetAddress.getLoopbackAddress().getHostAddress();
+  }
 }
