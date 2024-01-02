@@ -163,7 +163,7 @@ public class WorkflowRuntimeBuilder {
    */
   private String getLogTime() {
     LocalDateTime currentDateTime = LocalDateTime.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM dd, yyyy HH:mm:ss");
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy HH:mm:ss");
     String logTime = currentDateTime.format(formatter);
     return logTime;
   }
