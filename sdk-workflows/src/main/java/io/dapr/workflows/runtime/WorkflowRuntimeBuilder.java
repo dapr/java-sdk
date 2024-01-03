@@ -74,13 +74,9 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addOrchestration(
         new OrchestratorWrapper<>(clazz)
     );
-    this.logger.log(Level.INFO, "Registered Workflow: " +  clazz.getSimpleName());
+    String logTime = getLogTime();
+    this.logger.log(Level.INFO, logTime + " Registered Workflow: " +  clazz.getSimpleName());
     this.workflows.add(clazz.getSimpleName());
-    // If possible, attempt to grab the workflow names from the underlying durableTask framework and use those
-    // since they are already registered in a hashmap
-    // Potentially need to create getter methods inside the underlying java code. This would also apply for activities
-    // Class<?>[] classarry = this.builder.getClass().getClasses();
-
     return this;
   }
 
