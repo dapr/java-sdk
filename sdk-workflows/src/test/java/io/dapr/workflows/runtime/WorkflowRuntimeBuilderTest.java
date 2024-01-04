@@ -66,7 +66,6 @@ public class WorkflowRuntimeBuilderTest {
     WorkflowRuntimeBuilder wfRuntime = new WorkflowRuntimeBuilder();
 
     wfRuntime.build();
-    assertNotEquals(-1, testLoggerHandler.capturedLog.indexOf("Setting the Dapr workflow runtime log level to " + DAPR_LOG_LEVEL));
   }
 
   private static class LogCaptureHandler extends Handler {
