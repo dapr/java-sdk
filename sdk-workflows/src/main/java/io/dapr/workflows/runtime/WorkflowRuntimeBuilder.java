@@ -19,8 +19,6 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
@@ -56,8 +54,7 @@ public class WorkflowRuntimeBuilder {
         }
       }
     }
-    String logTime = getLogTime();
-    this.logger.log(Level.INFO, logTime + " Successfully built dapr workflow runtime");
+    this.logger.log(Level.INFO, "Successfully built dapr workflow runtime");
     return instance;
   }
 
@@ -72,8 +69,7 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addOrchestration(
         new OrchestratorWrapper<>(clazz)
     );
-    String logTime = getLogTime();
-    this.logger.log(Level.INFO, logTime + " Registered Workflow: " +  clazz.getSimpleName());
+    this.logger.log(Level.INFO, "Registered Workflow: " +  clazz.getSimpleName());
     this.workflows.add(clazz.getSimpleName());
     return this;
   }
@@ -88,19 +84,8 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addActivity(
         new ActivityWrapper<>(clazz)
     );
-    String logTime = getLogTime();
-    this.logger.log(Level.INFO, logTime + " Registered Activity: " +  clazz.getSimpleName());
+    this.logger.log(Level.INFO, "Registered Activity: " +  clazz.getSimpleName());
     this.activities.add(clazz.getSimpleName());
   }
 
-  /**
-   * Gets the local time and formats it for the logger.
-   * @return returns the local time.
-   */
-  private String getLogTime() {
-    LocalDateTime currentDateTime = LocalDateTime.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy HH:mm:ss");
-    String logTime = currentDateTime.format(formatter);
-    return logTime;
-  }
 }
