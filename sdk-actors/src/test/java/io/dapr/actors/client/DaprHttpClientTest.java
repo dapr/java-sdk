@@ -37,14 +37,14 @@ public class DaprHttpClientTest {
 
   private MockInterceptor mockInterceptor;
 
-  private String sidecarIp, sidecarIpFormatted;
+  private String sidecarIp;
 
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
   @BeforeEach
   public void setUp() {
     sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIpFormatted = formatIpAddress(sidecarIp);
+    sidecarIp =  formatIpAddress(sidecarIp);
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -52,7 +52,7 @@ public class DaprHttpClientTest {
   @Test
   public void invokeActorMethod() {
     mockInterceptor.addRule()
-        .post("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/method/Payment")
+        .post("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/method/Payment")
         .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -66,11 +66,11 @@ public class DaprHttpClientTest {
     String prevSidecarIp = sidecarIp;
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
     sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIpFormatted = formatIpAddress(sidecarIp);
+    sidecarIp =  formatIpAddress(sidecarIp);
     mockInterceptor.addRule()
-        .post("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/method/Payment")
+        .post("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/method/Payment")
         .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(sidecarIpFormatted, 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     System.setProperty(Properties.SIDECAR_IP.getName(), prevSidecarIp);
     Mono<byte[]> mono =
@@ -81,7 +81,7 @@ public class DaprHttpClientTest {
   @Test
   public void invokeActorMethodError() {
     mockInterceptor.addRule()
-        .post("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/method/Payment")
+        .post("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/method/Payment")
         .respond(404,
             ResponseBody.create("" +
                 "{\"errorCode\":\"ERR_SOMETHING\"," +

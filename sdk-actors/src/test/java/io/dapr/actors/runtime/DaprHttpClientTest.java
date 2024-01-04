@@ -48,14 +48,14 @@ public class DaprHttpClientTest {
 
   private MockInterceptor mockInterceptor;
   
-  private String sidecarIp, sidecarIpFormatted;
+  private String sidecarIp;
 
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
   @BeforeEach
   public void setUp() throws Exception {
     sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIpFormatted = formatIpAddress(sidecarIp);
+    sidecarIp =  formatIpAddress(sidecarIp);
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -63,7 +63,7 @@ public class DaprHttpClientTest {
   @Test
   public void getActorState() {
     mockInterceptor.addRule()
-      .get("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/state/order")
+      .get("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/state/order")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -76,11 +76,11 @@ public class DaprHttpClientTest {
     String prevSidecarIp = sidecarIp;
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
     sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIpFormatted = formatIpAddress(sidecarIp);
+    sidecarIp =  formatIpAddress(sidecarIp);
     mockInterceptor.addRule()
-      .get("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/state/order")
+      .get("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/state/order")
       .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(sidecarIpFormatted, 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     System.setProperty(Properties.SIDECAR_IP.getName(), prevSidecarIp);
     Mono<byte[]> mono = DaprHttpClient.getState("DemoActor", "1", "order");
@@ -90,7 +90,7 @@ public class DaprHttpClientTest {
   @Test
   public void saveActorStateTransactionally() {
     mockInterceptor.addRule()
-      .put("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/state")
+      .put("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/state")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -102,7 +102,7 @@ public class DaprHttpClientTest {
   @Test
   public void registerActorReminder() {
     mockInterceptor.addRule()
-      .put("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/reminders/reminder")
+      .put("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/reminders/reminder")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -118,7 +118,7 @@ public class DaprHttpClientTest {
   @Test
   public void unregisterActorReminder() {
     mockInterceptor.addRule()
-      .delete("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/reminders/reminder")
+      .delete("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/reminders/reminder")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
@@ -130,7 +130,7 @@ public class DaprHttpClientTest {
   public void registerActorTimer() {
     String data = "hello world";
     mockInterceptor.addRule()
-      .put("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/timers/timer")
+      .put("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/timers/timer")
       .answer(new RuleAnswer() {
         @Override
         public Response.Builder respond(Request request) {
@@ -170,7 +170,7 @@ public class DaprHttpClientTest {
   @Test
   public void unregisterActorTimer() {
     mockInterceptor.addRule()
-      .delete("http://" + sidecarIpFormatted + ":3000/v1.0/actors/DemoActor/1/timers/timer")
+      .delete("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/timers/timer")
       .respond(EXPECTED_RESULT);
     DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
