@@ -54,8 +54,7 @@ public class DaprHttpClientTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIp =  formatIpAddress(sidecarIp);
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -75,8 +74,7 @@ public class DaprHttpClientTest {
   public void getActorStateIPv6() {
     String prevSidecarIp = sidecarIp;
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
-    sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIp =  formatIpAddress(sidecarIp);
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
     mockInterceptor.addRule()
       .get("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/state/order")
       .respond(EXPECTED_RESULT);

@@ -62,8 +62,7 @@ public class DaprHttpTest {
 
   @BeforeEach
   public void setUp() {
-    sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIp =  formatIpAddress(sidecarIp);
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -120,8 +119,7 @@ public class DaprHttpTest {
   public void invokeMethodIPv6() throws IOException {
     String prevSidecarIp = sidecarIp;
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
-    sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIp =  formatIpAddress(sidecarIp);
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
     Map<String, String> headers = new HashMap<>();
     headers.put("content-type", "text/html");
     headers.put("header1", "value1");
