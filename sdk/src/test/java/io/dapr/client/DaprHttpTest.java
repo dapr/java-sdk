@@ -36,7 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.dapr.utils.TestUtils.getSidecarIpForHttpUrl;
+import static io.dapr.utils.TestUtils.formatIpAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -52,7 +52,7 @@ public class DaprHttpTest {
   private static final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
   
-  private String sidecarIp, sidecarIpForHttpUrl;
+  private String sidecarIp, sidecarIpFormatted;
 
   private OkHttpClient okHttpClient;
 
@@ -63,7 +63,7 @@ public class DaprHttpTest {
   @BeforeEach
   public void setUp() {
     sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);
+    sidecarIpFormatted = formatIpAddress(sidecarIp);
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -71,7 +71,7 @@ public class DaprHttpTest {
   @Test
   public void invokeApi_daprApiToken_present() throws IOException {
     mockInterceptor.addRule()
-        .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+        .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
         .hasHeader(Headers.DAPR_API_TOKEN)
         .respond(serializer.serialize(EXPECTED_RESULT));
     environmentVariables.set(Properties.API_TOKEN.getEnvName(), "xyz");
@@ -87,7 +87,7 @@ public class DaprHttpTest {
   @Test
   public void invokeApi_daprApiToken_absent() throws IOException {
     mockInterceptor.addRule()
-        .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+        .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
         .not()
         .hasHeader(Headers.DAPR_API_TOKEN)
         .respond(serializer.serialize(EXPECTED_RESULT));
@@ -106,7 +106,7 @@ public class DaprHttpTest {
     headers.put("content-type", "text/html");
     headers.put("header1", "value1");
     mockInterceptor.addRule()
-        .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+        .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
         .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
@@ -121,14 +121,14 @@ public class DaprHttpTest {
     String prevSidecarIp = sidecarIp;
     System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
     sidecarIp = Properties.SIDECAR_IP.get();
-    sidecarIpForHttpUrl = getSidecarIpForHttpUrl(sidecarIp);
+    sidecarIpFormatted = formatIpAddress(sidecarIp);
     Map<String, String> headers = new HashMap<>();
     headers.put("content-type", "text/html");
     headers.put("header1", "value1");
     mockInterceptor.addRule()
-        .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+        .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
         .respond(serializer.serialize(EXPECTED_RESULT));
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIpFormatted, 3500, okHttpClient);
     System.setProperty(Properties.SIDECAR_IP.getName(), prevSidecarIp);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, (byte[]) null, headers, Context.empty());
@@ -140,7 +140,7 @@ public class DaprHttpTest {
   @Test
   public void invokePostMethod() throws IOException {
     mockInterceptor.addRule()
-      .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+      .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
       .respond(serializer.serialize(EXPECTED_RESULT))
       .addHeader("Header", "Value");
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
@@ -154,7 +154,7 @@ public class DaprHttpTest {
   @Test
   public void invokeDeleteMethod() throws IOException {
     mockInterceptor.addRule()
-      .delete("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+      .delete("http://" + sidecarIpFormatted + ":3500/v1.0/state")
       .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
@@ -177,7 +177,7 @@ public class DaprHttpTest {
   @Test
   public void invokeGetMethod() throws IOException {
     mockInterceptor.addRule()
-      .get("http://" + sidecarIpForHttpUrl + ":3500/v1.0/get")
+      .get("http://" + sidecarIpFormatted + ":3500/v1.0/get")
       .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("GET", "v1.0/get".split("/"), null, null, Context.empty());
@@ -194,7 +194,7 @@ public class DaprHttpTest {
     Map<String, List<String>> urlParameters = new HashMap<>();
     urlParameters.put("orderId", Collections.singletonList("41"));
     mockInterceptor.addRule()
-      .get("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state/order?orderId=41")
+      .get("http://" + sidecarIpFormatted + ":3500/v1.0/state/order?orderId=41")
       .respond(serializer.serialize(EXPECTED_RESULT));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
@@ -207,7 +207,7 @@ public class DaprHttpTest {
   @Test
   public void invokePostMethodRuntime() throws IOException {
     mockInterceptor.addRule()
-      .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+      .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
       .respond(500);
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
@@ -218,7 +218,7 @@ public class DaprHttpTest {
   @Test
   public void invokePostDaprError() throws IOException {
     mockInterceptor.addRule()
-      .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+      .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("text"),
         "{\"errorCode\":null,\"message\":null}"));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
@@ -229,7 +229,7 @@ public class DaprHttpTest {
   @Test
   public void invokePostMethodUnknownError() throws IOException {
     mockInterceptor.addRule()
-      .post("http://" + sidecarIpForHttpUrl + ":3500/v1.0/state")
+      .post("http://" + sidecarIpFormatted + ":3500/v1.0/state")
       .respond(500, ResponseBody.create(MediaType.parse("application/json"),
         "{\"errorCode\":\"null\",\"message\":\"null\"}"));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
@@ -263,14 +263,14 @@ public class DaprHttpTest {
     String urlDeleteState = STATE_PATH + "/" + deletedStateKey;
     String urlExistingState = STATE_PATH + "/" + existingState;
     mockInterceptor.addRule()
-      .get("http://" + sidecarIpForHttpUrl + ":3500/" + urlDeleteState)
+      .get("http://" + sidecarIpFormatted + ":3500/" + urlDeleteState)
       .respond(200, ResponseBody.create(MediaType.parse("application/json"),
         deletedStateKey));
     mockInterceptor.addRule()
-      .delete("http://" + sidecarIpForHttpUrl + ":3500/" + urlDeleteState)
+      .delete("http://" + sidecarIpFormatted + ":3500/" + urlDeleteState)
       .respond(204);
     mockInterceptor.addRule()
-      .get("http://" + sidecarIpForHttpUrl + ":3500/" + urlExistingState)
+      .get("http://" + sidecarIpFormatted + ":3500/" + urlExistingState)
       .respond(200, ResponseBody.create(MediaType.parse("application/json"),
         serializer.serialize(existingState)));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
@@ -282,7 +282,7 @@ public class DaprHttpTest {
     assertNull(serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
     mockInterceptor.reset();
     mockInterceptor.addRule()
-      .get("http://" + sidecarIpForHttpUrl + ":3500/" + urlDeleteState)
+      .get("http://" + sidecarIpFormatted + ":3500/" + urlDeleteState)
       .respond(404, ResponseBody.create(MediaType.parse("application/json"),
         "{\"errorCode\":\"404\",\"message\":\"State Not Found\"}"));
     try {

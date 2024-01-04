@@ -56,7 +56,7 @@ public final class TestUtils {
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
   }
 
-  public static String getSidecarIpForHttpUrl(final String sidecarIp) {
+  public static String formatIpAddress(final String sidecarIp) {
     String retSidecarIp = sidecarIp;
     if(InetAddressValidator.getInstance().isValidInet6Address(sidecarIp)) {
       retSidecarIp = "[" + sidecarIp + "]"; // per URL spec https://url.spec.whatwg.org/#host-writing
