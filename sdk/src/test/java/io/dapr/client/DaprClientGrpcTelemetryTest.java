@@ -36,6 +36,7 @@ import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
@@ -138,8 +139,9 @@ null,
     // Create a client channel and register for automatic graceful shutdown.
     ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
+    DaprHttp daprHTTP = Mockito.mock(DaprHttp.class);
     client = new DaprClientGrpc(
-        new GrpcChannelFacade(channel), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+        new GrpcChannelFacade(channel, daprHTTP), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
   }
 
   public void setup() throws IOException {
@@ -177,8 +179,10 @@ null,
     // Create a client channel and register for automatic graceful shutdown.
     ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
+
+    DaprHttp daprHTTP = Mockito.mock(DaprHttp.class);
     client = new DaprClientGrpc(
-      new GrpcChannelFacade(channel), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+      new GrpcChannelFacade(channel, daprHTTP), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
   }
 
   @ParameterizedTest
