@@ -13,14 +13,17 @@ limitations under the License.
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.CloudEvent;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class CloudEventTest {
@@ -30,6 +33,24 @@ public class CloudEventTest {
   public static class MyClass {
     public int id;
     public String name;
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      MyClass myClass = (MyClass) o;
+
+      if (id != myClass.id) return false;
+      return Objects.equals(name, myClass.name);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = id;
+      result = 31 * result + (name != null ? name.hashCode() : 0);
+      return result;
+    }
   }
 
   @Test
@@ -195,5 +216,41 @@ public class CloudEventTest {
     assertEquals("application/octet-stream", cloudEvent.getDatacontenttype());
     assertNull(cloudEvent.getData());
     assertArrayEquals(expected, cloudEvent.getBinaryData());
+  }
+
+  @Test
+  public void serializeObjectClass() throws Exception {
+    CloudEvent<MyClass> cloudEvent = new CloudEvent<>();
+    MyClass myClass = new MyClass();
+    myClass.id = 1;
+    myClass.name = "Hello World";
+    cloudEvent.setData(myClass);
+    OffsetDateTime now = OffsetDateTime.now();
+    cloudEvent.setTime(now);
+
+    String cloudEventAsString = OBJECT_MAPPER.writeValueAsString(cloudEvent);
+    CloudEvent<MyClass> cloudEventDeserialized = OBJECT_MAPPER.readValue(cloudEventAsString,
+        new TypeReference<CloudEvent<MyClass>>() {});
+    assertEquals(cloudEvent, cloudEventDeserialized);
+    assertEquals(now, cloudEventDeserialized.getTime());
+    MyClass myClassDeserialized = cloudEventDeserialized.getData();
+    assertEquals(myClass.id, myClassDeserialized.id);
+    assertEquals(myClass.name, myClassDeserialized.name);
+  }
+
+  @Test
+  public void equalsCodecovTest() {
+    CloudEvent<?> cloudEvent = new CloudEvent<>();
+    CloudEvent<?> cloudEventCopy = cloudEvent;
+    assertEquals(cloudEvent, cloudEventCopy);
+    assertFalse(cloudEventCopy.equals(null));
+    assertFalse(cloudEventCopy.equals(""));
+  }
+
+  @Test
+  public void hashCodeCodecovTest() {
+    CloudEvent<?> cloudEvent = new CloudEvent<>();
+    final int EXPECTED_EMPTY_HASH_CODE = -505558625;
+    assertEquals(EXPECTED_EMPTY_HASH_CODE, cloudEvent.hashCode());
   }
 }
