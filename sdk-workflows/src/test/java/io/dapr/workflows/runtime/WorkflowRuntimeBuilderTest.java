@@ -47,7 +47,6 @@ public class WorkflowRuntimeBuilderTest {
 
   @Test
   public void loggingOutputTest() {
-    String DAPR_LOG_LEVEL = "INFO";
     // Set the output stream for log capturing
     ByteArrayOutputStream outStreamCapture = new ByteArrayOutputStream();
     System.setOut(new PrintStream(outStreamCapture));
