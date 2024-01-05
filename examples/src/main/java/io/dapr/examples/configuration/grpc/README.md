@@ -61,7 +61,7 @@ docker exec dapr_redis redis-cli MSET myconfig1 "val1||1" myconfig2 "val2||1" my
 
 This example uses the Java SDK Dapr client in order to **Get, Subscribe and Unsubscribe** from configuration items, and utilizes `Redis` as configuration store.
 `ConfigurationClient.java` is the example class demonstrating all 3 features.
-Kindly check [DaprPreviewClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprPreviewClient.java) for a detailed description of the supported APIs.
+Kindly check [DaprClient.java](https://github.com/dapr/java-sdk/blob/master/sdk/src/main/java/io/dapr/client/DaprClient.java) for a detailed description of the supported APIs.
 
 ```java
 public class ConfigurationClient {
@@ -72,7 +72,7 @@ public class ConfigurationClient {
    * @throws Exception throws Exception
    */
   public static void main(String[] args) throws Exception {
-    try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) {
+    try (DaprClient client = (new DaprClientBuilder()).build()) {
       System.out.println("Using Dapr client...");
       getConfigurations(client);
       subscribeConfigurationRequestWithSubscribe(client);
@@ -83,9 +83,9 @@ public class ConfigurationClient {
   /**
    * Gets configurations for a list of keys.
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
-  public static void getConfigurations(DaprPreviewClient client) {
+  public static void getConfigurations(DaprClient client) {
     System.out.println("*******trying to retrieve configurations for a list of keys********");
     List<String> keys = new ArrayList<>();
     // ...
@@ -99,9 +99,9 @@ public class ConfigurationClient {
   /**
    * Subscribe to a list of keys.Optional to above iterator way of retrieving the changes
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
-  public static void subscribeConfigurationRequestWithSubscribe(DaprPreviewClient client) {
+  public static void subscribeConfigurationRequestWithSubscribe(DaprClient client) {
     System.out.println("Subscribing to key: myconfig1");
     // ...
     Runnable subscribeTask = () -> {
@@ -114,9 +114,9 @@ public class ConfigurationClient {
   /**
    * Unsubscribe using subscription id.
    *
-   * @param client DaprPreviewClient object
+   * @param client DaprClient object
    */
-  public static void unsubscribeConfigurationItems(DaprPreviewClient client) {
+  public static void unsubscribeConfigurationItems(DaprClient client) {
     System.out.println("Subscribing to key: myconfig2");
     // ..
     Runnable subscribeTask = () -> {
