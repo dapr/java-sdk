@@ -84,8 +84,8 @@ public class ActorTimerRecoveryIT extends BaseIT {
     runs.left.stop();
 
     // Pause a bit to let placements settle.
-    logger.info("Pausing 10 seconds to let placements settle.");
-    Thread.sleep(Duration.ofSeconds(10).toMillis());
+    logger.info("Pausing 13 seconds to let placements settle.");
+    Thread.sleep(Duration.ofSeconds(13).toMillis());
 
     runs.left.start();
 
