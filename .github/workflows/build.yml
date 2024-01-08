@@ -50,7 +50,7 @@ jobs:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v3
       with:
@@ -64,14 +64,14 @@ jobs:
       with:
         go-version: ${{ env.GOVER }}
     - name: Checkout Dapr CLI repo to override dapr command.
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       if: env.DAPR_CLI_REF != ''
       with:
         repository: dapr/cli
         ref: ${{ env.DAPR_CLI_REF }}
         path: cli
     - name: Checkout Dapr repo to override daprd.
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       if: env.DAPR_REF != ''
       with:
         repository: dapr/dapr
@@ -158,7 +158,7 @@ jobs:
       GPG_KEY: ${{ secrets.GPG_KEY }}
       GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up OpenJDK ${{ env.JDK_VER }}
         uses: actions/setup-java@v3
         with:
