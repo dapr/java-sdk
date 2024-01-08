@@ -24,17 +24,29 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
+  private Logger logger;
+  private Set<String> workflows = new HashSet<String>();
+  private Set<String> activities = new HashSet<String>();
   private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRuntimeBuilder.class);
   private final Set<String> activitySet = Collections.synchronizedSet(new HashSet<>());
   private final Set<String> workflowSet = Collections.synchronizedSet(new HashSet<>());
 
+  /**
+   * Constructs the WorkflowRuntimeBuilder.
+   */
   public WorkflowRuntimeBuilder() {
     this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
                           NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
+    this.logger = Logger.getLogger(WorkflowRuntimeBuilder.class.getName());
   }
 
   /**
@@ -50,8 +62,9 @@ public class WorkflowRuntimeBuilder {
         }
       }
     }
-    LOGGER.info("List of registered workflows: " + this.workflowSet);
-    LOGGER.info("List of registered activites: " + this.activitySet);
+    this.logger.info("List of registered workflows: " + this.workflowSet);
+    this.logger.info("List of registered activites: " + this.activitySet);
+    this.logger.log(Level.INFO, "Successfully built dapr workflow runtime");
     return instance;
   }
 
@@ -67,6 +80,8 @@ public class WorkflowRuntimeBuilder {
         new OrchestratorWrapper<>(clazz)
     );
     this.workflowSet.add(clazz.getCanonicalName());
+    this.logger.log(Level.INFO, "Registered Workflow: " +  clazz.getSimpleName());
+    this.workflows.add(clazz.getSimpleName());
     return this;
   }
 
@@ -81,5 +96,8 @@ public class WorkflowRuntimeBuilder {
         new ActivityWrapper<>(clazz)
     );
     this.activitySet.add(clazz.getCanonicalName());
+    this.logger.log(Level.INFO, "Registered Activity: " +  clazz.getSimpleName());
+    this.activities.add(clazz.getSimpleName());
   }
+
 }
