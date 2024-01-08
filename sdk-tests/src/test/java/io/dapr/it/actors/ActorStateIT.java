@@ -167,6 +167,9 @@ public class ActorStateIT extends BaseIT {
     proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
+    // wating for actor to be activated
+    Thread.sleep(2000);  
+
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached ... ");
       String result = newProxy.invokeMethod("readMessage", String.class).block();
