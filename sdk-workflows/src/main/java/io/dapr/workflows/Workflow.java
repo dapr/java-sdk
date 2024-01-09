@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import com.microsoft.durabletask.interruption.ContinueAsNewInterruption;
 import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.saga.SagaCompensationException;
 import io.dapr.workflows.saga.SagaOption;
@@ -48,7 +49,7 @@ public abstract class Workflow {
       // saga enabled
       try {
         stub.run(ctx);
-      } catch (OrchestratorBlockedException e) {
+      } catch (OrchestratorBlockedException | ContinueAsNewInterruption e) {
         throw e;
       } catch (SagaCompensationException e) {
         // Saga compensation is triggered gracefully but failed in exception

@@ -15,6 +15,7 @@ package io.dapr.workflows.saga;
 
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOptions;
+import com.microsoft.durabletask.interruption.ContinueAsNewInterruption;
 import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.WorkflowContext;
 
@@ -98,7 +99,7 @@ public final class Saga {
       String activityClassName = compensationActivities.get(i).getCompensatationActivityClassName();
       try {
         executeCompensateActivity(ctx, compensationActivities.get(i)).await();
-      } catch (OrchestratorBlockedException e) {
+      } catch (OrchestratorBlockedException | ContinueAsNewInterruption e) {
         throw e;
       } catch (Exception e) {
         if (sagaException == null) {
