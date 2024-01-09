@@ -19,14 +19,26 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class WorkflowRuntimeBuilder {
   private static volatile WorkflowRuntime instance;
   private DurableTaskGrpcWorkerBuilder builder;
+  private Logger logger;
+  private Set<String> workflows = new HashSet<String>();
+  private Set<String> activities = new HashSet<String>();
   private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
 
+  /**
+   * Constructs the WorkflowRuntimeBuilder.
+   */
   public WorkflowRuntimeBuilder() {
     this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
                           NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
+    this.logger = Logger.getLogger(WorkflowRuntimeBuilder.class.getName());
   }
 
   /**
@@ -42,6 +54,7 @@ public class WorkflowRuntimeBuilder {
         }
       }
     }
+    this.logger.log(Level.INFO, "Successfully built dapr workflow runtime");
     return instance;
   }
 
@@ -56,7 +69,8 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addOrchestration(
         new OrchestratorWrapper<>(clazz)
     );
-
+    this.logger.log(Level.INFO, "Registered Workflow: " +  clazz.getSimpleName());
+    this.workflows.add(clazz.getSimpleName());
     return this;
   }
 
@@ -70,5 +84,8 @@ public class WorkflowRuntimeBuilder {
     this.builder = this.builder.addActivity(
         new ActivityWrapper<>(clazz)
     );
+    this.logger.log(Level.INFO, "Registered Activity: " +  clazz.getSimpleName());
+    this.activities.add(clazz.getSimpleName());
   }
+
 }
