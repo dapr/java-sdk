@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 11, 13, 15, 16 ]
-        spring-boot-version: [ 2.7.8 ]
+        spring-boot-version: [ 2.7.18 ]
         experimental: [ false ]
         include:
           - java: 11
