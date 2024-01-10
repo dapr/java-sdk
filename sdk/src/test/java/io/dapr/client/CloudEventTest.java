@@ -24,6 +24,7 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class CloudEventTest {
@@ -241,10 +242,69 @@ public class CloudEventTest {
   @Test
   public void equalsCodecovTest() {
     CloudEvent<?> cloudEvent = new CloudEvent<>();
+    assertFalse(cloudEvent.equals(null));
+    assertFalse(cloudEvent.equals(""));
+
     CloudEvent<?> cloudEventCopy = cloudEvent;
     assertEquals(cloudEvent, cloudEventCopy);
-    assertFalse(cloudEventCopy.equals(null));
-    assertFalse(cloudEventCopy.equals(""));
+
+    CloudEvent<String> cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setId("id");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setSource("source");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setType("type");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setSpecversion("specversion");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setDatacontenttype("datacontenttype");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setData("data");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setBinaryData("binaryData".getBytes());
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setPubsubName("pubsubName");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setTopic("topic");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    OffsetDateTime now = OffsetDateTime.now();
+    cloudEvent.setTime(now);
+    cloudEventDifferent = new CloudEvent<>();
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+    cloudEventDifferent.setTime(now.plusNanos(1L));
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+    cloudEventDifferent.setTime(now);
+    assertEquals(cloudEventCopy, cloudEventDifferent);
+    cloudEvent.setTime(null);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setTraceId("traceId");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setTraceParent("traceParent");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
+
+    cloudEventDifferent = new CloudEvent<>();
+    cloudEventDifferent.setTraceState("traceState");
+    assertNotEquals(cloudEventCopy, cloudEventDifferent);
   }
 
   @Test
