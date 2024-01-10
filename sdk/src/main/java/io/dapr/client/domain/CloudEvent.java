@@ -172,7 +172,7 @@ public class CloudEvent<T> {
     this.type = type;
     this.specversion = specversion;
     this.datacontenttype = "application/octet-stream";
-    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);;
+    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);
   }
 
   /**
