@@ -926,6 +926,13 @@ public class DefaultObjectSerializerTest {
         "anothertype",
         "v3",
         "blah".getBytes())));
+    assertTrue(check.apply(
+      new CloudEvent(
+        "0987-0987",
+        "anothersource",
+        "anothertype",
+        "v3",
+        null)));
   }
 
   @Test
