@@ -15,10 +15,20 @@ package io.dapr.client.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -77,6 +87,43 @@ public class CloudEvent<T> {
   private byte[] binaryData;
 
   /**
+   * The pubsub component this CloudEvent came from.
+   */
+  @JsonProperty("pubsubname")
+  private String pubsubName;
+
+  /**
+   * The topic this CloudEvent came from.
+   */
+  private String topic;
+
+  /**
+   * The time this CloudEvent was created.
+   */
+  @JsonSerialize(using = OffsetDateTimeSerializer.class)
+  @JsonDeserialize(using = OffsetDateTimeDeserializer.class)
+  private OffsetDateTime time;
+
+  /**
+   * The trace id is the legacy name for trace parent.
+   */
+  @Deprecated
+  @JsonProperty("traceid")
+  private String traceId;
+
+  /**
+   * The trace parent.
+   */
+  @JsonProperty("traceparent")
+  private String traceParent;
+
+  /**
+   * The trace state.
+   */
+  @JsonProperty("tracestate")
+  private String traceState;
+
+  /**
    * Instantiates a CloudEvent.
    */
   public CloudEvent() {
@@ -125,9 +172,9 @@ public class CloudEvent<T> {
     this.type = type;
     this.specversion = specversion;
     this.datacontenttype = "application/octet-stream";
-    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);;
+    this.binaryData = binaryData == null ? null : Arrays.copyOf(binaryData, binaryData.length);
   }
-    
+
   /**
    * Deserialize a message topic from Dapr.
    *
@@ -256,6 +303,104 @@ public class CloudEvent<T> {
   }
 
   /**
+   * Gets the pubsub component name.
+   * @return the pubsub component name.
+   */
+  public String getPubsubName() {
+    return pubsubName;
+  }
+
+  /**
+   * Sets the pubsub component name.
+   * @param pubsubName the pubsub component name.
+   */
+  public void setPubsubName(String pubsubName) {
+    this.pubsubName = pubsubName;
+  }
+
+  /**
+   * Gets the topic name.
+   * @return the topic name.
+   */
+  public String getTopic() {
+    return topic;
+  }
+
+  /**
+   * Sets the topic name.
+   * @param topic the topic name.
+   */
+  public void setTopic(String topic) {
+    this.topic = topic;
+  }
+
+  /**
+   * Gets the time.
+   * @return the time.
+   */
+  public OffsetDateTime getTime() {
+    return time;
+  }
+
+  /**
+   * Sets the time.
+   * @param time the time.
+   */
+  public void setTime(OffsetDateTime time) {
+    this.time = time;
+  }
+
+  /**
+   * Gets the trace id which is the legacy name for trace parent.
+   * @return the trace id.
+   */
+  @Deprecated
+  public String getTraceId() {
+    return traceId;
+  }
+
+  /**
+   * Sets the trace id which is the legacy name for trace parent.
+   * @param traceId the trace id.
+   */
+  @Deprecated
+  public void setTraceId(String traceId) {
+    this.traceId = traceId;
+  }
+
+  /**
+   * Gets the trace parent.
+   * @return the trace parent.
+   */
+  public String getTraceParent() {
+    return traceParent;
+  }
+
+  /**
+   * Sets the trace parent.
+   * @param traceParent the trace parent.
+   */
+  public void setTraceParent(String traceParent) {
+    this.traceParent = traceParent;
+  }
+
+  /**
+   * Gets the trace state.
+   * @return the trace state.
+   */
+  public String getTraceState() {
+    return traceState;
+  }
+
+  /**
+   * Sets the trace state.
+   * @param traceState the trace state.
+   */
+  public void setTraceState(String traceState) {
+    this.traceState = traceState;
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
@@ -273,7 +418,13 @@ public class CloudEvent<T> {
         && Objects.equals(specversion, that.specversion)
         && Objects.equals(datacontenttype, that.datacontenttype)
         && Objects.equals(data, that.data)
-        && Arrays.equals(binaryData, that.binaryData);
+        && Arrays.equals(binaryData, that.binaryData)
+        && Objects.equals(pubsubName, that.pubsubName)
+        && Objects.equals(topic, that.topic)
+        && ((time == null && that.time == null) || (time != null && that.time != null && time.isEqual(that.time)))
+        && Objects.equals(traceId, that.traceId)
+        && Objects.equals(traceParent, that.traceParent)
+        && Objects.equals(traceState, that.traceState);
   }
 
   /**
@@ -281,6 +432,23 @@ public class CloudEvent<T> {
    */
   @Override
   public int hashCode() {
-    return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData);
+    return Objects.hash(id, source, type, specversion, datacontenttype, data, binaryData, pubsubName, topic, time,
+            traceId, traceParent, traceState);
+  }
+
+  private static class OffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
+    @Override
+    public void serialize(OffsetDateTime offsetDateTime, JsonGenerator jsonGenerator,
+                          SerializerProvider serializerProvider) throws IOException {
+      jsonGenerator.writeString(offsetDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+    }
+  }
+
+  private static class OffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
+    @Override
+    public OffsetDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+        throws IOException {
+      return OffsetDateTime.parse(jsonParser.getText());
+    }
   }
 }
