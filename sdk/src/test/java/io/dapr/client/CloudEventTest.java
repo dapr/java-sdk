@@ -285,13 +285,17 @@ public class CloudEventTest {
     assertNotEquals(cloudEventCopy, cloudEventDifferent);
 
     OffsetDateTime now = OffsetDateTime.now();
-    cloudEvent.setTime(now);
     cloudEventDifferent = new CloudEvent<>();
+    // cloudEvent null time, cloudEventDifferent now time
+    cloudEventDifferent.setTime(now);
     assertNotEquals(cloudEventCopy, cloudEventDifferent);
+    // cloudEvent now time, cloudEventDifferent now time
+    cloudEvent.setTime(now);
+    assertEquals(cloudEventCopy, cloudEventDifferent);
+    // cloudEvent now time, cloudEventDifferent now time + 1 nano
     cloudEventDifferent.setTime(now.plusNanos(1L));
     assertNotEquals(cloudEventCopy, cloudEventDifferent);
-    cloudEventDifferent.setTime(now);
-    assertEquals(cloudEventCopy, cloudEventDifferent);
+    // reset cloudEvent time
     cloudEvent.setTime(null);
 
     cloudEventDifferent = new CloudEvent<>();
