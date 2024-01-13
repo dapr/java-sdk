@@ -20,6 +20,9 @@ import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 
+import io.dapr.workflows.saga.Saga;
+import io.dapr.workflows.saga.SagaContext;
+
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -132,11 +136,8 @@ public class DaprWorkflowContextImplTest {
       }
 
       @Override
-      public void registerCompensation(String activityClassName, Object activityInput) {
-      }
-
-      @Override
-      public void compensate() {
+      public SagaContext getSagaContext() {
+        return null;
       }
     };
   }
@@ -319,16 +320,19 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
-  public void registerCompensationTest_unsupported() {
-    assertThrows(UnsupportedOperationException.class, () -> {
-      context.registerCompensation(null, "TestInput");
-    });
+  public void getSagaContextTest_sagaEnabled() {
+    Saga saga = mock(Saga.class);
+    WorkflowContext context = new DaprWorkflowContextImpl(mockInnerContext, saga);
+
+    SagaContext sagaContext = context.getSagaContext();
+    assertNotNull("SagaContext should not be null", sagaContext);
   }
 
   @Test
-  public void compensateTest_unsupported() {
+  public void getSagaContextTest_sagaDisabled() {
+    WorkflowContext context = new DaprWorkflowContextImpl(mockInnerContext);
     assertThrows(UnsupportedOperationException.class, () -> {
-      context.compensate();
+      context.getSagaContext();
     });
   }
 }

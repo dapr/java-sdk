@@ -18,7 +18,8 @@ import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskFailedException;
 import com.microsoft.durabletask.TaskOptions;
-import io.dapr.workflows.saga.Saga;
+import io.dapr.workflows.saga.SagaContext;
+
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -533,16 +534,10 @@ public interface WorkflowContext {
   }
 
   /**
-   * Register a compensation activity.
+   * get saga context.
    * 
-   * @param activityClassName name of the activity class
-   * @param activityInput     input of the activity to be compensated
+   * @return saga context
+   * @throws UnsupportedOperationException if saga is not enabled.
    */
-  void registerCompensation(String activityClassName, Object activityInput);
-
-  /**
-   * Compensate all registered activities.
-   * 
-   */
-  void compensate();
+  SagaContext getSagaContext();
 }

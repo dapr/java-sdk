@@ -57,7 +57,7 @@ public abstract class Workflow {
         throw e;
       } catch (Exception e) {
         try {
-          ctx.compensate();
+          ctx.getSagaContext().compensate();
         } catch (Exception se) {
           se.addSuppressed(e);
           throw se;
@@ -78,6 +78,7 @@ public abstract class Workflow {
    * @return saga configuration
    */
   public SagaOption getSagaOption() {
+    // by default, saga is disabled
     return null;
   }
 }
