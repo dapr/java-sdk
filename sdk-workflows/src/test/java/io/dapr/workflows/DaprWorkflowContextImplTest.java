@@ -20,6 +20,9 @@ import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 
+import io.dapr.workflows.saga.Saga;
+import io.dapr.workflows.saga.SagaContext;
+
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -130,6 +134,11 @@ public class DaprWorkflowContextImplTest {
       public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
 
       }
+
+      @Override
+      public SagaContext getSagaContext() {
+        return null;
+      }
     };
   }
 
@@ -181,13 +190,13 @@ public class DaprWorkflowContextImplTest {
   @Test
   public void DaprWorkflowContextWithEmptyInnerContext() {
     assertThrows(IllegalArgumentException.class, () -> {
-      context = new DaprWorkflowContextImpl(mockInnerContext, null);
+      context = new DaprWorkflowContextImpl(mockInnerContext, (Logger)null);
     });  }
 
   @Test
   public void DaprWorkflowContextWithEmptyLogger() {
     assertThrows(IllegalArgumentException.class, () -> {
-      context = new DaprWorkflowContextImpl(null, null);
+      context = new DaprWorkflowContextImpl(null, (Logger)null);
     });
   }
 
@@ -308,5 +317,22 @@ public class DaprWorkflowContextImplTest {
     RuntimeException runtimeException = assertThrows(RuntimeException.class, testWorkflowContext::newUuid);
     String expectedMessage = "No implementation found.";
     assertEquals(expectedMessage, runtimeException.getMessage());
+  }
+
+  @Test
+  public void getSagaContextTest_sagaEnabled() {
+    Saga saga = mock(Saga.class);
+    WorkflowContext context = new DaprWorkflowContextImpl(mockInnerContext, saga);
+
+    SagaContext sagaContext = context.getSagaContext();
+    assertNotNull("SagaContext should not be null", sagaContext);
+  }
+
+  @Test
+  public void getSagaContextTest_sagaDisabled() {
+    WorkflowContext context = new DaprWorkflowContextImpl(mockInnerContext);
+    assertThrows(UnsupportedOperationException.class, () -> {
+      context.getSagaContext();
+    });
   }
 }
