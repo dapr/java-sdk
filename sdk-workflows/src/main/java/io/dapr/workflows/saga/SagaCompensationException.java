@@ -11,9 +11,18 @@
 limitations under the License.
 */
 
-package io.dapr.workflows;
+package io.dapr.workflows.saga;
 
-@FunctionalInterface
-public interface WorkflowStub {
-  void run(WorkflowContext ctx);
+/**
+ * saga compensation exception.
+ */
+public class SagaCompensationException extends RuntimeException {
+  /**
+   * build up a SagaCompensationException.
+   * @param message exception message
+   * @param cause exception cause
+   */
+  public SagaCompensationException(String message, Exception cause) {
+    super(message, cause);
+  }
 }
