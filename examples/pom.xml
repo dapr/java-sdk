@@ -112,7 +112,7 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-springboot30</artifactId>
+      <artifactId>dapr-sdk-springboot3</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

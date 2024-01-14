@@ -10,10 +10,10 @@
     <version>1.11.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>dapr-sdk-springboot30</artifactId>
+  <artifactId>dapr-sdk-springboot3</artifactId>
   <packaging>jar</packaging>
   <version>1.11.0-SNAPSHOT</version>
-  <name>dapr-sdk-springboot30</name>
+  <name>dapr-sdk-springboot3</name>
   <description>SDK extension for Springboot 3.0</description>
 
   <properties>
