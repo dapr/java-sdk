@@ -22,7 +22,7 @@ public class DemoSubWorkflow extends Workflow {
     return ctx -> {
       System.out.println("[sysout]subflow.ctx.isReplaying()=" + ctx.isReplaying()
           + ", instanceId=" + ctx.getInstanceId());
-      System.out.println("[sysout]subflow.ctx.getLogger().getName(): " + ctx.getLogger().getName()
+      System.out.println("[sysout]subflow.ctx.getLogger()=" + ctx.getLogger().getClass().getCanonicalName()
           + ", instanceId=" + ctx.getInstanceId());
 
       ctx.getLogger().info("Starting SubWorkflow: " + ctx.getName());
@@ -35,7 +35,7 @@ public class DemoSubWorkflow extends Workflow {
 
       System.out.println("[sysout]subflow.ctx.isReplaying()=" + ctx.isReplaying()
           + ", instanceId=" + ctx.getInstanceId());
-      System.out.println("[sysout]subflow.ctx.getLogger().getName(): " + ctx.getLogger().getName()
+      System.out.println("[sysout]subflow.ctx.getLogger()=" + ctx.getLogger().getClass().getCanonicalName()
           + ", instanceId=" + ctx.getInstanceId());
 
       ctx.getLogger().info("SubWorkflow finished with: " + result);

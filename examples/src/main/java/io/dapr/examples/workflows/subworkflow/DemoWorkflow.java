@@ -20,9 +20,10 @@ public class DemoWorkflow extends Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
+      System.out.println("[sysout]revision=00000001");
       System.out.println("[sysout]ctx.isReplaying()=" + ctx.isReplaying()
           + ", instanceId=" + ctx.getInstanceId());
-      System.out.println("[sysout]ctx.getLogger().getName(): " + ctx.getLogger().getName()
+      System.out.println("[sysout]ctx.getLogger()=" + ctx.getLogger().getClass().getCanonicalName()
           + ", instanceId=" + ctx.getInstanceId());
 
       ctx.getLogger().info("Starting Workflow: " + ctx.getName());
@@ -35,7 +36,7 @@ public class DemoWorkflow extends Workflow {
 
       System.out.println("[sysout]ctx.isReplaying()=" + ctx.isReplaying()
           + ", instanceId=" + ctx.getInstanceId());
-      System.out.println("[sysout]ctx.getLogger().getName(): " + ctx.getLogger().getName()
+      System.out.println("[sysout]ctx.getLogger()=" + ctx.getLogger().getClass().getCanonicalName()
           + ", instanceId=" + ctx.getInstanceId());
       ctx.getLogger().info("subworkflow finished with: " + subWorkflowOutput);
       ctx.complete(subWorkflowOutput);
