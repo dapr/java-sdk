@@ -177,7 +177,7 @@ public class DaprClientBuilder {
    */
   private DaprClient buildDaprClientGrpc() {
     final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, this.daprHttpBuilder.build());
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
     return new DaprClientGrpc(
         channelFacade,
