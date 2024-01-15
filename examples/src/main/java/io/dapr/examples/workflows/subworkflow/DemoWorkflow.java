@@ -20,8 +20,10 @@ public class DemoWorkflow extends Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
-      System.out.println("[sysout]ctx.isReplaying()=" + ctx.isReplaying() + ", instanceId=" + ctx.getInstanceId());
-      System.out.println("[sysout]ctx.getLogger().getName(): " + ctx.getLogger().getName()+ ", instanceId=" + ctx.getInstanceId());
+      System.out.println("[sysout]ctx.isReplaying()=" + ctx.isReplaying()
+          + ", instanceId=" + ctx.getInstanceId());
+      System.out.println("[sysout]ctx.getLogger().getName(): " + ctx.getLogger().getName()
+          + ", instanceId=" + ctx.getInstanceId());
 
       ctx.getLogger().info("Starting Workflow: " + ctx.getName());
 
@@ -31,6 +33,11 @@ public class DemoWorkflow extends Workflow {
       var subWorkflowOutput =
           ctx.callSubWorkflow(DemoSubWorkflow.class.getName(), subWorkflowInput, String.class).await();
 
+      System.out.println("[sysout]ctx.isReplaying()=" + ctx.isReplaying()
+          + ", instanceId=" + ctx.getInstanceId());
+      System.out.println("[sysout]ctx.getLogger().getName(): " + ctx.getLogger().getName()
+          + ", instanceId=" + ctx.getInstanceId());
+      
       ctx.getLogger().info("subworkflow finished with: " + subWorkflowOutput);
       ctx.complete(subWorkflowOutput);
     };
