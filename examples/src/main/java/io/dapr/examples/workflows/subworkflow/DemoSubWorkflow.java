@@ -20,6 +20,9 @@ public class DemoSubWorkflow extends Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
+      
+      System.out.println("[sysout]ctx.isReplaying()" + ctx.isReplaying());
+      System.out.println("[sysout]ctx.getLogger().getName(): " + ctx.getLogger().getName());
       ctx.getLogger().info("Starting SubWorkflow: " + ctx.getName());
 
       var subWorkflowInput = ctx.getInput(String.class);
