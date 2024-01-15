@@ -21,21 +21,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 11, 13, 15, 16 ]
-        spring-boot-version: [ 2.7.18 ]
+        java: [ 17 ]
+        spring-boot-version: [ 3.0.13 ]
         experimental: [ false ]
         include:
-          - java: 11
+          - java: 17
+            spring-boot-version: 2.7.18
+            experimental: false
+          - java: 17
             spring-boot-version: 2.6.14
             experimental: false
-          - java: 11
+          - java: 17
             spring-boot-version: 2.5.7
-            experimental: false
-          - java: 11
-            spring-boot-version: 2.4.0
-            experimental: false
-          - java: 11
-            spring-boot-version: 2.3.6.RELEASE
             experimental: false
     env:
       GOVER: "1.20"
@@ -152,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     env:
-      JDK_VER: 11
+      JDK_VER: 17
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
@@ -178,7 +175,7 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: ./mvnw clean install -B -q
+        run: ./mvnw install -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |

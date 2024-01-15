@@ -18,6 +18,7 @@ import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskFailedException;
 import com.microsoft.durabletask.TaskOptions;
+import io.dapr.workflows.saga.SagaContext;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -530,4 +531,12 @@ public interface WorkflowContext {
   default UUID newUuid() {
     throw new RuntimeException("No implementation found.");
   }
+
+  /**
+   * get saga context.
+   * 
+   * @return saga context
+   * @throws UnsupportedOperationException if saga is not enabled.
+   */
+  SagaContext getSagaContext();
 }
