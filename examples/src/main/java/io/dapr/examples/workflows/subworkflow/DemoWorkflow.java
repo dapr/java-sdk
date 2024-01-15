@@ -20,15 +20,15 @@ public class DemoWorkflow extends Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
-      ctx.getLogger().info("Starting Workflow: " + ctx.getName());
+      System.out.println("Starting Workflow: " + ctx.getName());
 
       var subWorkflowInput = "Hello Dapr Workflow!";
-      ctx.getLogger().info("calling subworkflow with input: " + subWorkflowInput);
+      System.out.println("calling subworkflow with input: " + subWorkflowInput);
 
       var subWorkflowOutput =
           ctx.callSubWorkflow(DemoSubWorkflow.class.getName(), subWorkflowInput, String.class).await();
 
-      ctx.getLogger().info("subworkflow finished with: " + subWorkflowOutput);
+      System.out.println("subworkflow finished with: " + subWorkflowOutput);
       ctx.complete(subWorkflowOutput);
     };
   }

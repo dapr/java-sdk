@@ -526,7 +526,7 @@ name: Run Sub-workflow Pattern workflow
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
-  - 'SubWorkflow received input: Hello Dapr Workflow!'
+  - 'calling subworkflow with input: Hello Dapr Workflow!'
   - 'SubWorkflow finished with: !wolfkroW rpaD olleH'
 background: true
 sleep: 60
