@@ -30,10 +30,10 @@ This will connect to the default Dapr gRPC endpoint `localhost:50001`.
 #### Environment variables:  
 
 ##### Dapr Sidecar Endpoints
-You can use the standardized `DAPR_GRPC_ENDPOINT` environment variable to
-specify a different gRPC endpoint. When this variable is set, the client will automatically use it to connect to the Dapr sidecar.
+You can use the standardized `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` environment variables to
+specify a different gRPC endpoint. When these variables are set, the client will automatically use them to connect to the Dapr sidecar.
 
-The legacy environment variables `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT` are still supported, but `DAPR_GRPC_ENDPOINT` takes precedence.
+The legacy environment variables `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT` are still supported, but `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` take precedence.
 
 ##### Dapr API Token
 If your Dapr instance is configured to require the `DAPR_API_TOKEN` environment variable, you can
