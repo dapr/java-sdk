@@ -31,7 +31,7 @@ This will connect to the default Dapr gRPC endpoint `localhost:50001`.
 
 ##### Dapr Sidecar Endpoints
 You can use the standardized `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` environment variables to
-specify a different gRPC endpoint. When these variables are set, the client will automatically use them to connect to the Dapr sidecar.
+specify a different gRPC or HTTP endpoint. When these variables are set, the client will automatically use them to connect to the Dapr sidecar.
 
 The legacy environment variables `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT` are still supported, but `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` take precedence.
 
