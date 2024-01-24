@@ -17,6 +17,31 @@ If you haven't already, [try out one of the quickstarts]({{< ref quickstarts >}}
 
 [Complete initial setup and import the Java SDK into your project]({{< ref java >}})
 
+## Initializing the client
+You can initialize a Dapr client as so:
+
+```java
+DaprClient client = new DaprClientBuilder().build()
+```
+
+This will connect to the default Dapr gRPC endpoint `localhost:50001`.
+
+
+#### Environment variables:  
+
+##### Dapr Sidecar Endpoints
+You can use the standardized `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` environment variables to
+specify a different gRPC or HTTP endpoint. When these variables are set, the client will automatically use them to connect to the Dapr sidecar.
+
+The legacy environment variables `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT` are still supported, but `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` take precedence.
+
+##### Dapr API Token
+If your Dapr instance is configured to require the `DAPR_API_TOKEN` environment variable, you can
+set it in the environment and the client will use it automatically.  
+You can read more about Dapr API token authentication [here](https://docs.dapr.io/operations/security/api-token/).
+
+
+
 ## Building blocks
 
 The Java SDK allows you to interface with all of the [Dapr building blocks]({{< ref building-blocks >}}).
