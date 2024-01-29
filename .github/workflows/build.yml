@@ -116,7 +116,7 @@ jobs:
     - name: Unit tests
       run: ./mvnw -B test -q
     - name: Codecov
-      uses: codecov/codecov-action@v3.1.4
+      uses: codecov/codecov-action@v3.1.5
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
