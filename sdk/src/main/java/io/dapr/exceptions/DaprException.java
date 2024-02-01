@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2024 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,12 +13,18 @@ limitations under the License.
 
 package io.dapr.exceptions;
 
+import io.dapr.config.Property;
 import io.grpc.StatusRuntimeException;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A Dapr's specific exception.
@@ -29,6 +35,11 @@ public class DaprException extends RuntimeException {
    * Dapr's error code for this exception.
    */
   private String errorCode;
+
+  /**
+   * The status details for the error.
+   */
+  private Map<String, Object> statusDetails;
 
   /**
    * New exception from a server-side generated error code and message.
@@ -84,6 +95,25 @@ public class DaprException extends RuntimeException {
     this.errorCode = errorCode;
   }
 
+
+  /**
+   * New exception from a server-side generated error code and message.
+   * @param errorCode Client-side error code.
+   * @param message   Client-side error message.
+   * @param cause     the cause (which is saved for later retrieval by the
+   *                  {@link #getCause()} method).  (A {@code null} value is
+   *                  permitted, and indicates that the cause is nonexistent or
+   *                  unknown.)
+   * @param statusDetails the status details for the error.
+   */
+  public DaprException(String errorCode, String message, Throwable cause, Map<String, Object> statusDetails) {
+    super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
+    this.errorCode = errorCode;
+    if (statusDetails != null) {
+      this.statusDetails = statusDetails;
+    }
+  }
+
   /**
    * Returns the exception's error code.
    *
@@ -91,6 +121,10 @@ public class DaprException extends RuntimeException {
    */
   public String getErrorCode() {
     return this.errorCode;
+  }
+
+  public Map<String, Object> getStatusDetails() {
+    return this.statusDetails;
   }
 
   /**
@@ -189,10 +223,17 @@ public class DaprException extends RuntimeException {
     while (e != null) {
       if (e instanceof StatusRuntimeException) {
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) e;
+        com.google.rpc.Status status = io.grpc.protobuf.StatusProto.fromThrowable(statusRuntimeException);
+
+        List<Map<String, Object>> detailsList  = DaprError.parseStatusDetails(status);
+        Map<String, Object> statusDetails = new HashMap<>();
+        statusDetails.put("details", detailsList);
+
         return new DaprException(
                 statusRuntimeException.getStatus().getCode().toString(),
                 statusRuntimeException.getStatus().getDescription(),
-                exception);
+                exception,
+                statusDetails);
       }
 
       e = e.getCause();
