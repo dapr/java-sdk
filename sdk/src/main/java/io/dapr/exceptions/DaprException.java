@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.exceptions;
 
-import io.dapr.config.Property;
 import io.grpc.StatusRuntimeException;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -23,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * A Dapr's specific exception.
