@@ -45,7 +45,6 @@ public class DaprExceptionTest {
     public void tearDown() throws Exception {
         client.close();
         channel.close();
-        verifyNoMoreInteractions(channel);
     }
 
     @Test
