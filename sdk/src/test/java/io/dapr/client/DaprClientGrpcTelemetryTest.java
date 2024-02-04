@@ -30,6 +30,7 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
@@ -183,6 +184,14 @@ null,
     DaprHttp daprHTTP = Mockito.mock(DaprHttp.class);
     client = new DaprClientGrpc(
       new GrpcChannelFacade(channel, daprHTTP), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+  }
+
+
+  @AfterEach
+  public void tearDown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
   }
 
   @ParameterizedTest
