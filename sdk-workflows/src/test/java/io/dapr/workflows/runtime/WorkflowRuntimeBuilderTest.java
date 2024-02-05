@@ -3,13 +3,10 @@ package io.dapr.workflows.runtime;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
-import io.grpc.ManagedChannel;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -45,14 +42,7 @@ public class WorkflowRuntimeBuilderTest {
 
   @Test
   public void buildTest() {
-    ManagedChannel mockChannel = mock(ManagedChannel.class);
-    when(mockChannel.shutdown()).thenReturn(mockChannel);
-
-    assertDoesNotThrow(() -> {
-      WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder();
-      builder.withCustomGrpcChannel(mockChannel);
-      builder.build();
-    });
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().build());
   }
 
   @Test
@@ -72,8 +62,7 @@ public class WorkflowRuntimeBuilderTest {
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(TestActivity.class));
     assertNotEquals(-1, testLoggerHandler.capturedLog.indexOf("Registered Activity: TestActivity"));
 
-
-    WorkflowRuntimeBuilder wfRuntime = mock(WorkflowRuntimeBuilder.class);
+    WorkflowRuntimeBuilder wfRuntime = new WorkflowRuntimeBuilder();
 
     wfRuntime.build();
   }
