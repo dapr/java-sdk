@@ -20,12 +20,14 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.testing.GrpcCleanupRule;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.dapr.utils.TestUtils.findFreePort;
@@ -52,6 +55,9 @@ public class GrpcChannelFacadeTest {
 
   private static DaprHttp daprHttp;
 
+  @Rule
+  public static final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+
   /**
    * Enable the waitForSidecar to allow the gRPC to check the http endpoint for the health check
    */
@@ -64,11 +70,12 @@ public class GrpcChannelFacadeTest {
   @BeforeAll
   public static void setup() throws IOException {
     port = findFreePort();
-    server = ServerBuilder.forPort(port)
+
+    // Create a server, add service, start, and register for automatic graceful shutdown.
+    grpcCleanup.register(ServerBuilder.forPort(port)
         .addService(new DaprGrpc.DaprImplBase() {
         })
-        .build();
-    server.start();
+        .build().start());
   }
 
   @AfterAll
@@ -76,9 +83,8 @@ public class GrpcChannelFacadeTest {
     if (daprHttp != null) {
       daprHttp.close();
     }
-    server.shutdown();
-    server.awaitTermination();
   }
+
   private void addMockRulesForBadHealthCheck() {
     for (int i = 0; i < 6; i++) {
       mockInterceptor.addRule()
@@ -101,6 +107,9 @@ public class GrpcChannelFacadeTest {
     ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", unusedPort)
         .usePlaintext()
             .build();
+
+    grpcCleanup.register(channel);
+
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
 
     addMockRulesForBadHealthCheck();
@@ -120,6 +129,9 @@ public class GrpcChannelFacadeTest {
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
         .usePlaintext().build();
+
+    grpcCleanup.register(channel);
+
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
 
     // added since this is doing a check against the http health check endpoint
