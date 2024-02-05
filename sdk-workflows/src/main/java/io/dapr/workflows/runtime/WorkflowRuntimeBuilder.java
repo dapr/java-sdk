@@ -18,6 +18,7 @@ import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
+import io.grpc.ManagedChannel;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -86,6 +87,17 @@ public class WorkflowRuntimeBuilder {
     );
     this.logger.log(Level.INFO, "Registered Activity: " +  clazz.getSimpleName());
     this.activities.add(clazz.getSimpleName());
+  }
+
+  /**
+   * Sets a custom gRPC channel for testing purposes.
+   *
+   * @param channel The custom gRPC channel.
+   * @return The modified WorkflowRuntimeBuilder.
+   */
+  public WorkflowRuntimeBuilder withCustomGrpcChannel(ManagedChannel channel) {
+    this.builder.grpcChannel(channel);
+    return this;
   }
 
 }
