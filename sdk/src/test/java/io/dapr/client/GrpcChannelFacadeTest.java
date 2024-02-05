@@ -13,11 +13,10 @@ limitations under the License.
 
 package io.dapr.client;
 
-import io.dapr.config.Properties;
-import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import static org.mockito.ArgumentMatchers.any;
+
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import okhttp3.MediaType;
@@ -25,20 +24,24 @@ import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import okhttp3.mock.Behavior;
 import okhttp3.mock.MockInterceptor;
-import org.junit.Before;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static io.dapr.utils.TestUtils.findFreePort;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GrpcChannelFacadeTest {
 
@@ -51,14 +54,15 @@ public class GrpcChannelFacadeTest {
   private OkHttpClient okHttpClient;
 
   private static DaprHttp daprHttp;
-
+  private ManagedChannel mockGrpcChannel;
   /**
    * Enable the waitForSidecar to allow the gRPC to check the http endpoint for the health check
    */
   @BeforeEach
   public void setUp() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
-    okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+    okHttpClient = mock(OkHttpClient.class);
+    daprHttp = mock(DaprHttp.class);
   }
 
   @BeforeAll
@@ -93,17 +97,17 @@ public class GrpcChannelFacadeTest {
     StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
     int timeoutInMilliseconds = 1000;
 
-    int unusedPort = findFreePort();
+    OkHttpClient.Builder okHttpClientBuilder = mock(OkHttpClient.Builder.class);
+    when(okHttpClient.newBuilder()).thenReturn(okHttpClientBuilder);
+    when(okHttpClientBuilder.addInterceptor(mockInterceptor)).thenReturn(okHttpClientBuilder);
 
-    OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
-
-    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", unusedPort)
-        .usePlaintext()
-            .build();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
+    mockGrpcChannel = mock(ManagedChannel.class);
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(mockGrpcChannel, daprHttp);
 
     addMockRulesForBadHealthCheck();
+
+    when(daprHttp.invokeApi(anyString(), any(String[].class), any(), anyString(), any(), any()))
+            .thenReturn(Mono.error(new TimeoutException("Simulated Timeout")));
 
     StepVerifier.create(channelFacade.waitForChannelReady(timeoutInMilliseconds))
             .expectSubscription()
@@ -114,13 +118,18 @@ public class GrpcChannelFacadeTest {
 
   @Test
   public void waitForSidecarOK() {
-    OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
+    OkHttpClient.Builder okHttpClientBuilder = mock(OkHttpClient.Builder.class);
+    when(okHttpClient.newBuilder()).thenReturn(okHttpClientBuilder);
+    when(okHttpClientBuilder.addInterceptor(mockInterceptor)).thenReturn(okHttpClientBuilder);
 
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
+    mockGrpcChannel = mock(ManagedChannel.class);
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(mockGrpcChannel, daprHttp);
 
-    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", port)
-        .usePlaintext().build();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
+    byte[] responseBody = "OK".getBytes();
+    Map<String, String> responseHeaders = Collections.singletonMap("Content-Type", "application/json");
+    DaprHttp.Response successResponse = new DaprHttp.Response(responseBody, responseHeaders, 204);
+    when(daprHttp.invokeApi(anyString(), any(String[].class), any(), anyString(), any(), any()))
+            .thenReturn(Mono.just(successResponse));
 
     // added since this is doing a check against the http health check endpoint
     // for parity with dotnet
