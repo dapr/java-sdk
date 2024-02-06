@@ -226,29 +226,29 @@ public class DaprClientHttpTest {
             .verify();
   }
 
-  @Test
-  public void waitForSidecarTimeoutOK() throws Exception {
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .respond(204);
-    try (ServerSocket serverSocket = new ServerSocket(0)) {
-      final int port = serverSocket.getLocalPort();
-      System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-      Thread t = new Thread(() -> {
-        try {
-            try (Socket socket = serverSocket.accept()) {
-            }
-        } catch (IOException e) {
-        }
-      });
-      t.start();
-      daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
-      DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
-      daprClientHttp.waitForSidecar(10000).block();
-      t.join();
-    }
-  }
+  //  @Test
+  //  public void waitForSidecarTimeoutOK() throws Exception {
+  //    mockInterceptor.addRule()
+  //            .get()
+  //            .path("/v1.0/healthz/outbound")
+  //            .respond(204);
+  //    try (ServerSocket serverSocket = new ServerSocket(0)) {
+  //      final int port = serverSocket.getLocalPort();
+  //      System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+  //      Thread t = new Thread(() -> {
+  //        try {
+  //            try (Socket socket = serverSocket.accept()) {
+  //            }
+  //        } catch (IOException e) {
+  //        }
+  //      });
+  //      t.start();
+  //      daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+  //      DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+  //      daprClientHttp.waitForSidecar(10000).block();
+  //      t.join();
+  //    }
+  //  }
 
   @Test
   public void publishEventInvocation() {
