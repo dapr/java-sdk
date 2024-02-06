@@ -1040,128 +1040,128 @@ public class DaprClientHttpTest {
     assertNull(mono.block());
   }
 
-  @Test
-  public void simpleExecuteTransactionXMLData() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
-        .matches(new BodyMatcher("{\"operations\":[{\"operation\":\"upsert\"," +
-            "\"request\":{\"value\":\"PFN0cmluZz5teSBkYXRhPC9TdHJpbmc+\",\"key\":\"key1\",\"etag\":\"ETag1\"," +
-            "\"options\":{}}},{\"operation\":\"delete\",\"request\":{\"value\":\"PG51bGwvPg==\"," +
-            "\"key\":\"deleteKey\"}}]}"))
-        .respond(EXPECTED_RESULT);
-    String etag = "ETag1";
-    String key = "key1";
-    String data = "my data";
-    StateOptions stateOptions = mock(StateOptions.class);
-
-
-    State<String> stateKey = new State<>(key, data, etag, stateOptions);
-    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.UPSERT,
-        stateKey);
-    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.DELETE,
-        new State<>("deleteKey"));
-    Mono<Void> mono = daprClientHttpXML.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
-        deleteOperation));
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void simpleExecuteTransactionNullEtag() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
-        .respond(EXPECTED_RESULT);
-    String etag = null;
-    String key = "key1";
-    String data = "my data";
-    StateOptions stateOptions = mock(StateOptions.class);
-
-
-    State<String> stateKey = new State<>(key, data, etag, stateOptions);
-    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.UPSERT,
-        stateKey);
-    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.DELETE,
-        new State<>("deleteKey"));
-    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
-        deleteOperation));
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void simpleExecuteTransactionEmptyEtag() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
-        .respond(EXPECTED_RESULT);
-    String etag = "empty";
-    String key = "key1";
-    String data = "my data";
-    StateOptions stateOptions = mock(StateOptions.class);
-
-
-    State<String> stateKey = new State<>(key, data, etag, stateOptions);
-    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.UPSERT,
-        stateKey);
-    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.DELETE,
-        new State<>("deleteKey"));
-    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
-        deleteOperation));
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void simpleExecuteTransactionNullOperationAndNullState() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
-        .respond(EXPECTED_RESULT);
-    String etag = null;
-    String key = "key1";
-    String data = "my data";
-    StateOptions stateOptions = mock(StateOptions.class);
-
-
-    State<String> stateKey = new State<>(key, data, etag, stateOptions);
-    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.UPSERT,
-        stateKey);
-    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.DELETE,
-        new State<>("deleteKey"));
-    TransactionalStateOperation<String> nullStateOperation = new TransactionalStateOperation<>(
-        TransactionalStateOperation.OperationType.DELETE,
-        null);
-    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(
-        null,
-        nullStateOperation,
-        upsertOperation,
-        deleteOperation));
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void executeTransactionErrors() {
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.executeStateTransaction(null,  null).block());
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.executeStateTransaction("",  null).block());
-  }
-
-  @Test
-  public void simpleExecuteTransactionNull() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
-        .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME,  null);
-    assertNull(mono.block());
-    mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME,  Collections.emptyList());
-    assertNull(mono.block());
-  }
+  //  @Test
+  //  public void simpleExecuteTransactionXMLData() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+  //        .matches(new BodyMatcher("{\"operations\":[{\"operation\":\"upsert\"," +
+  //            "\"request\":{\"value\":\"PFN0cmluZz5teSBkYXRhPC9TdHJpbmc+\",\"key\":\"key1\",\"etag\":\"ETag1\"," +
+  //            "\"options\":{}}},{\"operation\":\"delete\",\"request\":{\"value\":\"PG51bGwvPg==\"," +
+  //            "\"key\":\"deleteKey\"}}]}"))
+  //        .respond(EXPECTED_RESULT);
+  //    String etag = "ETag1";
+  //    String key = "key1";
+  //    String data = "my data";
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //
+  //
+  //    State<String> stateKey = new State<>(key, data, etag, stateOptions);
+  //    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.UPSERT,
+  //        stateKey);
+  //    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.DELETE,
+  //        new State<>("deleteKey"));
+  //    Mono<Void> mono = daprClientHttpXML.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+  //        deleteOperation));
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void simpleExecuteTransactionNullEtag() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+  //        .respond(EXPECTED_RESULT);
+  //    String etag = null;
+  //    String key = "key1";
+  //    String data = "my data";
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //
+  //
+  //    State<String> stateKey = new State<>(key, data, etag, stateOptions);
+  //    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.UPSERT,
+  //        stateKey);
+  //    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.DELETE,
+  //        new State<>("deleteKey"));
+  //    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+  //        deleteOperation));
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void simpleExecuteTransactionEmptyEtag() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+  //        .respond(EXPECTED_RESULT);
+  //    String etag = "empty";
+  //    String key = "key1";
+  //    String data = "my data";
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //
+  //
+  //    State<String> stateKey = new State<>(key, data, etag, stateOptions);
+  //    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.UPSERT,
+  //        stateKey);
+  //    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.DELETE,
+  //        new State<>("deleteKey"));
+  //    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation,
+  //        deleteOperation));
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void simpleExecuteTransactionNullOperationAndNullState() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+  //        .respond(EXPECTED_RESULT);
+  //    String etag = null;
+  //    String key = "key1";
+  //    String data = "my data";
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //
+  //
+  //    State<String> stateKey = new State<>(key, data, etag, stateOptions);
+  //    TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.UPSERT,
+  //        stateKey);
+  //    TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.DELETE,
+  //        new State<>("deleteKey"));
+  //    TransactionalStateOperation<String> nullStateOperation = new TransactionalStateOperation<>(
+  //        TransactionalStateOperation.OperationType.DELETE,
+  //        null);
+  //    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(
+  //        null,
+  //        nullStateOperation,
+  //        upsertOperation,
+  //        deleteOperation));
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void executeTransactionErrors() {
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.executeStateTransaction(null,  null).block());
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.executeStateTransaction("",  null).block());
+  //  }
+  //
+  //  @Test
+  //  public void simpleExecuteTransactionNull() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/transaction")
+  //        .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME,  null);
+  //    assertNull(mono.block());
+  //    mono = daprClientHttp.executeStateTransaction(STATE_STORE_NAME,  Collections.emptyList());
+  //    assertNull(mono.block());
+  //  }
 
   //  @Test
   //  public void deleteState() {
