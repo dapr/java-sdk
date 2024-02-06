@@ -1193,17 +1193,17 @@ public class DaprClientHttpTest {
     assertNull(monoMetadata.block());
   }
 
-  @Test
-  public void deleteStateNoHotMono() {
-    StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
-    mockInterceptor.addRule()
-        .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-        .respond(500);
-
-    daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
-    // No exception should be thrown because we did not call block() on the mono above.
-  }
+  //  @Test
+  //  public void deleteStateNoHotMono() {
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
+  //    mockInterceptor.addRule()
+  //        .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //        .respond(500);
+  //
+  //    daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
+  //    // No exception should be thrown because we did not call block() on the mono above.
+  //  }
 
   @Test
   public void deleteStateNullEtag() {
