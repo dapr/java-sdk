@@ -21,18 +21,14 @@ import org.mockito.Mockito;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RetryPolicyTest {
-
   private static final String SUCCESS_MESSAGE = "It worked!";
 
   private static final RuntimeException RETRYABLE_EXCEPTION =
@@ -40,64 +36,100 @@ public class RetryPolicyTest {
 
   @Test
   public void zeroRetriesThenError() {
-    AtomicInteger callCounter = new AtomicInteger();
-    RetryPolicy policy = new RetryPolicy(0);
-    Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
+    assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+      try {
+        AtomicInteger callCounter = new AtomicInteger();
+        RetryPolicy policy = new RetryPolicy(0);
+        Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
 
-    try {
-      policy.apply(action).block();
-      fail("Exception expected");
-    } catch (Exception e) {
-      assertSame(RETRYABLE_EXCEPTION, e);
-    }
-    assertEquals(1, callCounter.get());
+        try {
+          policy.apply(action).block();
+          fail("Exception expected");
+        } catch (Exception e) {
+          assertSame(RETRYABLE_EXCEPTION, e);
+        }
+        assertEquals(1, callCounter.get());
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw e;
+      }
+    });
   }
 
   @Test
   public void zeroRetriesThenSuccess() {
-    AtomicInteger callCounter = new AtomicInteger();
-    RetryPolicy policy = new RetryPolicy(0);
-    Mono<String> action = createActionErrorAndReturn(callCounter, 0, RETRYABLE_EXCEPTION);
+    assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+      try {
+        AtomicInteger callCounter = new AtomicInteger();
+        RetryPolicy policy = new RetryPolicy(0);
+        Mono<String> action = createActionErrorAndReturn(callCounter, 0, RETRYABLE_EXCEPTION);
 
-    String response = policy.apply(action).block();
-    assertEquals(SUCCESS_MESSAGE, response);
-    assertEquals(1, callCounter.get());
+        String response = policy.apply(action).block();
+        assertEquals(SUCCESS_MESSAGE, response);
+        assertEquals(1, callCounter.get());
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw e;
+      }
+    });
   }
 
   @Test
   public void twoRetriesThenSuccess() {
-    AtomicInteger callCounter = new AtomicInteger();
-    RetryPolicy policy = new RetryPolicy(3);
-    Mono<String> action = createActionErrorAndReturn(callCounter, 2, RETRYABLE_EXCEPTION);
+    assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+      try {
+        AtomicInteger callCounter = new AtomicInteger();
+        RetryPolicy policy = new RetryPolicy(3);
+        Mono<String> action = createActionErrorAndReturn(callCounter, 2, RETRYABLE_EXCEPTION);
 
-    String response = policy.apply(action).block();
-    assertEquals(SUCCESS_MESSAGE, response);
-    assertEquals(3, callCounter.get());
+        String response = policy.apply(action).block();
+        assertEquals(SUCCESS_MESSAGE, response);
+        assertEquals(3, callCounter.get());
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw e;
+      }
+    });
   }
 
   @Test
   public void threeRetriesThenError() {
-    AtomicInteger callCounter = new AtomicInteger();
-    RetryPolicy policy = new RetryPolicy(3);
-    Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
+    assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+      try {
+        AtomicInteger callCounter = new AtomicInteger();
+        RetryPolicy policy = new RetryPolicy(3);
+        Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
 
-    try {
-      policy.apply(action).block();
-      fail("Exception expected");
-    } catch (Exception e) {
-      assertTrue(Exceptions.isRetryExhausted(e));
-    }
-    assertEquals(4, callCounter.get());
+        try {
+          policy.apply(action).block();
+          fail("Exception expected");
+        } catch (Exception e) {
+          assertTrue(Exceptions.isRetryExhausted(e));
+        }
+        assertEquals(4, callCounter.get());
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw e;
+      }
+    });
   }
 
   @Test
   public void notRetryableException() {
-    RuntimeException nonRetryableError = new RuntimeException("Non-retryable error");
+    assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+      try {
 
-    Mono<String> nonRetryableMono = Mono.error(nonRetryableError);
+        RuntimeException nonRetryableError = new RuntimeException("Non-retryable error");
 
-    RetryPolicy retryPolicy = new RetryPolicy();
-    assertThrows(RuntimeException.class, () -> retryPolicy.apply(nonRetryableMono).block());
+        Mono<String> nonRetryableMono = Mono.error(nonRetryableError);
+
+        RetryPolicy retryPolicy = new RetryPolicy();
+        assertThrows(RuntimeException.class, () -> retryPolicy.apply(nonRetryableMono).block());
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw e;
+      }
+    });
   }
 
   private static Mono<String> createActionErrorAndReturn(
