@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-/*
+
 public class RetryPolicyTest {
 
   private static final String SUCCESS_MESSAGE = "It worked!";
@@ -104,13 +104,12 @@ public class RetryPolicyTest {
     AtomicInteger callCounter,
     int firstErrors,
     RuntimeException error) {
-      return Mono.defer(() -> {
-        if (callCounter.incrementAndGet() <= firstErrors) {
-          return Mono.error(error);
-        }
-        return Mono.just(SUCCESS_MESSAGE);
-      });
+    return Mono.fromCallable(() -> {
+      if (callCounter.incrementAndGet() <= firstErrors) {
+        throw error;
+      }
+        return SUCCESS_MESSAGE;
+    });
   }
 }
 
- */
