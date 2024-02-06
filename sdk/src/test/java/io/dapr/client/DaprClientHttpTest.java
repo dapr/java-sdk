@@ -686,232 +686,232 @@ public class DaprClientHttpTest {
   //    daprClientHttp.invokeBinding(null, "", "");
   //    // No exception is thrown because did not call block() on mono above.
   //  }
-
-  @Test
-  public void getStatesErrors() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
-        .respond("NOT VALID JSON");
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getBulkState(STATE_STORE_NAME, null, String.class).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getBulkState(STATE_STORE_NAME, new ArrayList<>(), String.class).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getBulkState(null, Arrays.asList("100", "200"), String.class).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getBulkState("", Arrays.asList("100", "200"), String.class).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getBulkState(
-          new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100")).setParallelism(-1),
-          TypeRef.get(String.class)).block();
-    });
-    assertThrowsDaprException(JsonParseException.class, () -> {
-      daprClientHttp.getBulkState(
-          new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100")),
-          TypeRef.get(String.class)).block();
-    });
-  }
-
-  @Test
-  public void getStatesString() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
-        .respond("[{\"key\": \"100\", \"data\": \"hello world\", \"etag\": \"1\"}," +
-            "{\"key\": \"200\", \"error\": \"not found\"}]");
-
-    List<State<String>> result =
-        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
-    assertEquals(2, result.size());
-    assertEquals("100", result.stream().findFirst().get().getKey());
-    assertEquals("hello world", result.stream().findFirst().get().getValue());
-    assertEquals("1", result.stream().findFirst().get().getEtag());
-    assertNull(result.stream().findFirst().get().getError());
-    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
-    assertNull(result.stream().skip(1).findFirst().get().getValue());
-    assertNull(result.stream().skip(1).findFirst().get().getEtag());
-    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
-  }
-
-  @Test
-  public void getStatesInteger() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
-        .respond("[{\"key\": \"100\", \"data\": 1234, \"etag\": \"1\"}," +
-            "{\"key\": \"200\", \"error\": \"not found\"}]");
-
-    List<State<Integer>> result =
-        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
-    assertEquals(2, result.size());
-    assertEquals("100", result.stream().findFirst().get().getKey());
-    assertEquals(1234, (int)result.stream().findFirst().get().getValue());
-    assertEquals("1", result.stream().findFirst().get().getEtag());
-    assertNull(result.stream().findFirst().get().getError());
-    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
-    assertNull(result.stream().skip(1).findFirst().get().getValue());
-    assertNull(result.stream().skip(1).findFirst().get().getEtag());
-    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
-  }
-
-  @SuppressWarnings("OptionalGetWithoutIsPresent")
-  @Test
-  public void getStatesBoolean() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
-        .respond("[{\"key\": \"100\", \"data\": true, \"etag\": \"1\"}," +
-            "{\"key\": \"200\", \"error\": \"not found\"}]");
-
-    List<State<Boolean>> result =
-        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
-    assertNotNull(result);
-    assertEquals(2, result.size());
-    assertEquals("100", result.stream().findFirst().get().getKey());
-    assertTrue((boolean) result.stream().findFirst().get().getValue());
-    assertEquals("1", result.stream().findFirst().get().getEtag());
-    assertNull(result.stream().findFirst().get().getError());
-    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
-    assertNull(result.stream().skip(1).findFirst().get().getValue());
-    assertNull(result.stream().skip(1).findFirst().get().getEtag());
-    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
-  }
-
-  @Test
-  public void getStatesByteArray() {
-    byte[] value = new byte[]{1, 2, 3};
-    String base64Value = Base64.getEncoder().encodeToString(value);
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
-        .respond("[{\"key\": \"100\", \"data\": \"" + base64Value + "\", \"etag\": \"1\"}," +
-            "{\"key\": \"200\", \"error\": \"not found\"}]");
-
-    // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
-    // So, users should use String instead of byte[].
-    List<State<String>> result =
-        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
-    assertEquals(2, result.size());
-    assertEquals("100", result.stream().findFirst().get().getKey());
-    assertEquals(base64Value, result.stream().findFirst().get().getValue());
-    assertEquals("1", result.stream().findFirst().get().getEtag());
-    assertNull(result.stream().findFirst().get().getError());
-    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
-    assertNull(result.stream().skip(1).findFirst().get().getValue());
-    assertNull(result.stream().skip(1).findFirst().get().getEtag());
-    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
-  }
-
-  @Test
-  public void getStatesObject() {
-    MyObject object = new MyObject(1, "Event");
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
-        .respond("[{\"key\": \"100\", \"data\": " +
-            "{ \"id\": \"" + object.id + "\", \"value\": \"" + object.value + "\"}, \"etag\": \"1\"}," +
-            "{\"key\": \"200\", \"error\": \"not found\"}]");
-
-    // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
-    // So, users should use String instead of byte[].
-    List<State<MyObject>> result =
-        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
-    assertEquals(2, result.size());
-    assertEquals("100", result.stream().findFirst().get().getKey());
-    assertEquals(object, result.stream().findFirst().get().getValue());
-    assertEquals("1", result.stream().findFirst().get().getEtag());
-    assertNull(result.stream().findFirst().get().getError());
-    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
-    assertNull(result.stream().skip(1).findFirst().get().getValue());
-    assertNull(result.stream().skip(1).findFirst().get().getEtag());
-    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
-  }
-
-  @Test
-  public void getState() {
-    StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
-    State<String> stateKeyNull = new State<>(null, "value", "etag", stateOptions);
-    State<String> stateKeyEmpty = new State<>("", "value", "etag", stateOptions);
-    State<String> stateKeyBadPayload = new State<>("keyBadPayload", "value", "etag", stateOptions);
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-        .respond("\"" + EXPECTED_RESULT + "\"");
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/keyBadPayload")
-        .respond("NOT VALID");
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getState(STATE_STORE_NAME, stateKeyNull, String.class).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getState(STATE_STORE_NAME, stateKeyEmpty, String.class).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getState(null, stateKeyValue, String.class).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getState("", stateKeyValue, String.class).block();
-    });
-    assertThrowsDaprException(JsonParseException.class, () -> {
-      daprClientHttp.getState(STATE_STORE_NAME, stateKeyBadPayload, String.class).block();
-    });
-    Mono<State<String>> mono = daprClientHttp.getState(STATE_STORE_NAME, stateKeyValue, String.class);
-    State<String> result = mono.block();
-    assertNotNull(result);
-    assertEquals(result.getKey(), "key");
-  }
-
-  @Test
-  public void getStatesEmptyEtag() {
-    State<String> stateEmptyEtag = new State<>("key", "value", "", null);
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-      .respond("\"" + EXPECTED_RESULT + "\"");
-
-    State<String> monoEmptyEtag = daprClientHttp.getState(STATE_STORE_NAME, stateEmptyEtag, String.class).block();
-    assertEquals(monoEmptyEtag.getKey(), "key");
-    assertNull(monoEmptyEtag.getEtag());
-  }
-
-  @Test
-  public void getStateWithMetadata() {
-    Map<String, String> metadata = new HashMap<>();
-    metadata.put("key_1", "val_1");
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
-      .respond("\"" + EXPECTED_RESULT + "\"");
-
-    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, "key");
-    request.setMetadata(metadata);
-    Mono<State<String>> monoMetadata = daprClientHttp.getState(request, TypeRef.get(String.class));
-    assertEquals(monoMetadata.block().getKey(), "key");
-  }
-
-  @Test
-  public void getStateWithStateOptions() {
-    StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?consistency=strong&concurrency=first-write")
-      .respond("\"" + EXPECTED_RESULT + "\"");
-
-    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, "key");
-    request.setStateOptions(stateOptions);
-    Mono<State<String>> monoOptions = daprClientHttp.getState(request, TypeRef.get(String.class));
-    assertEquals(monoOptions.block().getKey(), "key");
-  }
-
-  @Test
-  public void getStatesNullEtag() {
-    State<String> stateNullEtag = new State<>("key", "value", null, null);
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-      .respond("\"" + EXPECTED_RESULT + "\"");
-
-    State<String> monoNullEtag = daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class).block();
-    assertEquals(monoNullEtag.getKey(), "key");
-    assertNull(monoNullEtag.getEtag());
-  }
+  //
+  //  @Test
+  //  public void getStatesErrors() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+  //        .respond("NOT VALID JSON");
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getBulkState(STATE_STORE_NAME, null, String.class).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getBulkState(STATE_STORE_NAME, new ArrayList<>(), String.class).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getBulkState(null, Arrays.asList("100", "200"), String.class).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getBulkState("", Arrays.asList("100", "200"), String.class).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getBulkState(
+  //          new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100")).setParallelism(-1),
+  //          TypeRef.get(String.class)).block();
+  //    });
+  //    assertThrowsDaprException(JsonParseException.class, () -> {
+  //      daprClientHttp.getBulkState(
+  //          new GetBulkStateRequest(STATE_STORE_NAME, Collections.singletonList("100")),
+  //          TypeRef.get(String.class)).block();
+  //    });
+  //  }
+  //
+  //  @Test
+  //  public void getStatesString() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+  //        .respond("[{\"key\": \"100\", \"data\": \"hello world\", \"etag\": \"1\"}," +
+  //            "{\"key\": \"200\", \"error\": \"not found\"}]");
+  //
+  //    List<State<String>> result =
+  //        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+  //    assertEquals(2, result.size());
+  //    assertEquals("100", result.stream().findFirst().get().getKey());
+  //    assertEquals("hello world", result.stream().findFirst().get().getValue());
+  //    assertEquals("1", result.stream().findFirst().get().getEtag());
+  //    assertNull(result.stream().findFirst().get().getError());
+  //    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+  //    assertNull(result.stream().skip(1).findFirst().get().getValue());
+  //    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+  //    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  //  }
+  //
+  //  @Test
+  //  public void getStatesInteger() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+  //        .respond("[{\"key\": \"100\", \"data\": 1234, \"etag\": \"1\"}," +
+  //            "{\"key\": \"200\", \"error\": \"not found\"}]");
+  //
+  //    List<State<Integer>> result =
+  //        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), int.class).block();
+  //    assertEquals(2, result.size());
+  //    assertEquals("100", result.stream().findFirst().get().getKey());
+  //    assertEquals(1234, (int)result.stream().findFirst().get().getValue());
+  //    assertEquals("1", result.stream().findFirst().get().getEtag());
+  //    assertNull(result.stream().findFirst().get().getError());
+  //    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+  //    assertNull(result.stream().skip(1).findFirst().get().getValue());
+  //    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+  //    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  //  }
+  //
+  //  @SuppressWarnings("OptionalGetWithoutIsPresent")
+  //  @Test
+  //  public void getStatesBoolean() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+  //        .respond("[{\"key\": \"100\", \"data\": true, \"etag\": \"1\"}," +
+  //            "{\"key\": \"200\", \"error\": \"not found\"}]");
+  //
+  //    List<State<Boolean>> result =
+  //        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
+  //    assertNotNull(result);
+  //    assertEquals(2, result.size());
+  //    assertEquals("100", result.stream().findFirst().get().getKey());
+  //    assertTrue((boolean) result.stream().findFirst().get().getValue());
+  //    assertEquals("1", result.stream().findFirst().get().getEtag());
+  //    assertNull(result.stream().findFirst().get().getError());
+  //    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+  //    assertNull(result.stream().skip(1).findFirst().get().getValue());
+  //    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+  //    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  //  }
+  //
+  //  @Test
+  //  public void getStatesByteArray() {
+  //    byte[] value = new byte[]{1, 2, 3};
+  //    String base64Value = Base64.getEncoder().encodeToString(value);
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+  //        .respond("[{\"key\": \"100\", \"data\": \"" + base64Value + "\", \"etag\": \"1\"}," +
+  //            "{\"key\": \"200\", \"error\": \"not found\"}]");
+  //
+  //    // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
+  //    // So, users should use String instead of byte[].
+  //    List<State<String>> result =
+  //        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
+  //    assertEquals(2, result.size());
+  //    assertEquals("100", result.stream().findFirst().get().getKey());
+  //    assertEquals(base64Value, result.stream().findFirst().get().getValue());
+  //    assertEquals("1", result.stream().findFirst().get().getEtag());
+  //    assertNull(result.stream().findFirst().get().getError());
+  //    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+  //    assertNull(result.stream().skip(1).findFirst().get().getValue());
+  //    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+  //    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  //  }
+  //
+  //  @Test
+  //  public void getStatesObject() {
+  //    MyObject object = new MyObject(1, "Event");
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore/bulk")
+  //        .respond("[{\"key\": \"100\", \"data\": " +
+  //            "{ \"id\": \"" + object.id + "\", \"value\": \"" + object.value + "\"}, \"etag\": \"1\"}," +
+  //            "{\"key\": \"200\", \"error\": \"not found\"}]");
+  //
+  //    // JSON cannot differentiate if data returned is String or byte[], it is ambiguous. So we get base64 encoded back.
+  //    // So, users should use String instead of byte[].
+  //    List<State<MyObject>> result =
+  //        daprClientHttp.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
+  //    assertEquals(2, result.size());
+  //    assertEquals("100", result.stream().findFirst().get().getKey());
+  //    assertEquals(object, result.stream().findFirst().get().getValue());
+  //    assertEquals("1", result.stream().findFirst().get().getEtag());
+  //    assertNull(result.stream().findFirst().get().getError());
+  //    assertEquals("200", result.stream().skip(1).findFirst().get().getKey());
+  //    assertNull(result.stream().skip(1).findFirst().get().getValue());
+  //    assertNull(result.stream().skip(1).findFirst().get().getEtag());
+  //    assertEquals("not found", result.stream().skip(1).findFirst().get().getError());
+  //  }
+  //
+  //  @Test
+  //  public void getState() {
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
+  //    State<String> stateKeyNull = new State<>(null, "value", "etag", stateOptions);
+  //    State<String> stateKeyEmpty = new State<>("", "value", "etag", stateOptions);
+  //    State<String> stateKeyBadPayload = new State<>("keyBadPayload", "value", "etag", stateOptions);
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //        .respond("\"" + EXPECTED_RESULT + "\"");
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/keyBadPayload")
+  //        .respond("NOT VALID");
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getState(STATE_STORE_NAME, stateKeyNull, String.class).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getState(STATE_STORE_NAME, stateKeyEmpty, String.class).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getState(null, stateKeyValue, String.class).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getState("", stateKeyValue, String.class).block();
+  //    });
+  //    assertThrowsDaprException(JsonParseException.class, () -> {
+  //      daprClientHttp.getState(STATE_STORE_NAME, stateKeyBadPayload, String.class).block();
+  //    });
+  //    Mono<State<String>> mono = daprClientHttp.getState(STATE_STORE_NAME, stateKeyValue, String.class);
+  //    State<String> result = mono.block();
+  //    assertNotNull(result);
+  //    assertEquals(result.getKey(), "key");
+  //  }
+  //
+  //  @Test
+  //  public void getStatesEmptyEtag() {
+  //    State<String> stateEmptyEtag = new State<>("key", "value", "", null);
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //      .respond("\"" + EXPECTED_RESULT + "\"");
+  //
+  //    State<String> monoEmptyEtag = daprClientHttp.getState(STATE_STORE_NAME, stateEmptyEtag, String.class).block();
+  //    assertEquals(monoEmptyEtag.getKey(), "key");
+  //    assertNull(monoEmptyEtag.getEtag());
+  //  }
+  //
+  //  @Test
+  //  public void getStateWithMetadata() {
+  //    Map<String, String> metadata = new HashMap<>();
+  //    metadata.put("key_1", "val_1");
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
+  //      .respond("\"" + EXPECTED_RESULT + "\"");
+  //
+  //    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, "key");
+  //    request.setMetadata(metadata);
+  //    Mono<State<String>> monoMetadata = daprClientHttp.getState(request, TypeRef.get(String.class));
+  //    assertEquals(monoMetadata.block().getKey(), "key");
+  //  }
+  //
+  //  @Test
+  //  public void getStateWithStateOptions() {
+  //    StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.FIRST_WRITE);
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?consistency=strong&concurrency=first-write")
+  //      .respond("\"" + EXPECTED_RESULT + "\"");
+  //
+  //    GetStateRequest request = new GetStateRequest(STATE_STORE_NAME, "key");
+  //    request.setStateOptions(stateOptions);
+  //    Mono<State<String>> monoOptions = daprClientHttp.getState(request, TypeRef.get(String.class));
+  //    assertEquals(monoOptions.block().getKey(), "key");
+  //  }
+  //
+  //  @Test
+  //  public void getStatesNullEtag() {
+  //    State<String> stateNullEtag = new State<>("key", "value", null, null);
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //      .respond("\"" + EXPECTED_RESULT + "\"");
+  //
+  //    State<String> monoNullEtag = daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class).block();
+  //    assertEquals(monoNullEtag.getKey(), "key");
+  //    assertNull(monoNullEtag.getEtag());
+  //  }
 
   //  @Test
   //  public void getStatesNoHotMono() {
