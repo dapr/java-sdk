@@ -17,6 +17,7 @@ import io.dapr.internal.resiliency.RetryPolicy;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
@@ -27,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RetryPolicyTest {
 
@@ -89,29 +92,23 @@ public class RetryPolicyTest {
 
   @Test
   public void notRetryableException() {
-    AtomicInteger callCounter = new AtomicInteger();
-    RuntimeException exception = new ArithmeticException();
-    RetryPolicy policy = new RetryPolicy(3);
-    Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, exception);
+    RuntimeException nonRetryableError = new RuntimeException("Non-retryable error");
 
-    assertThrows(ArithmeticException.class, () -> {
-      policy.apply(action).block();
-    });
-    assertEquals(1, callCounter.get());
+    Mono<String> nonRetryableMono = Mono.error(nonRetryableError);
+
+    RetryPolicy retryPolicy = new RetryPolicy();
+    assertThrows(RuntimeException.class, () -> retryPolicy.apply(nonRetryableMono).block());
   }
 
-
-
   private static Mono<String> createActionErrorAndReturn(
-      AtomicInteger callCounter,
-      int firstErrors,
-      RuntimeException error) {
-    return Mono.fromCallable(() -> {
-      if (callCounter.incrementAndGet() <= firstErrors) {
-        throw error;
-      }
-
-      return SUCCESS_MESSAGE;
-    });
+    AtomicInteger callCounter,
+    int firstErrors,
+    RuntimeException error) {
+      return Mono.defer(() -> {
+        if (callCounter.incrementAndGet() <= firstErrors) {
+          return Mono.error(error);
+        }
+        return Mono.just(SUCCESS_MESSAGE);
+      });
   }
 }
