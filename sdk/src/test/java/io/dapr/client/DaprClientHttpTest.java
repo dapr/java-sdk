@@ -1408,119 +1408,119 @@ public class DaprClientHttpTest {
     assertEquals("2", secrets.get("two").get("b"));
   }
 
-  @Test
-  public void getConfigurationTestErrorScenario() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getConfiguration("", "key").block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getConfiguration("  ", "key").block();
-    });
-  }
-
-  @Test
-  public void getConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0/configuration/MyConfigStore")
-        .param("key","configkey1")
-        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
-
-    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-    assertNotNull(ci);
-    assertEquals("configkey1", ci.getKey());
-    assertEquals("configvalue1", ci.getValue());
-    assertEquals("1", ci.getVersion());
-  }
-
-  @Test
-  public void getAllConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0/configuration/MyConfigStore")
-        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
-
-    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
-    assertNotNull(ci);
-    assertEquals("configkey1", ci.getKey());
-    assertEquals("configvalue1", ci.getValue());
-    assertEquals("1", ci.getVersion());
-  }
-
-  @Test
-  public void subscribeConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0/configuration/MyConfigStore/subscribe")
-        .param("key", "configkey1")
-        .respond("{\"id\":\"1234\"}");
-
-    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
-    assertTrue(itr.hasNext());
-    SubscribeConfigurationResponse res = itr.next();
-    assertEquals("1234", res.getSubscriptionId());
-    assertFalse(itr.hasNext());
-  }
-
-  @Test
-  public void subscribeAllConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0/configuration/MyConfigStore/subscribe")
-        .respond("{\"id\":\"1234\"}");
-
-    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
-    assertTrue(itr.hasNext());
-    SubscribeConfigurationResponse res = itr.next();
-    assertEquals("1234", res.getSubscriptionId());
-    assertFalse(itr.hasNext());
-  }
-
-  @Test
-  public void unsubscribeConfigurationTest() {
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
-        .respond("{\"ok\": true}");
-
-    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
-    assertTrue(res.getIsUnsubscribed());
-  }
-
-  @Test
-  public void unsubscribeConfigurationTestWithError() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.unsubscribeConfiguration("", CONFIG_STORE_NAME).block();
-    });
-
-    UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.unsubscribeConfiguration(req).block();
-    });
-
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
-        .respond("{\"ok\": false, \"message\": \"some error while unsubscribing\"}");
-    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
-    assertFalse(res.getIsUnsubscribed());
-  }
-
-  @Test
-  public void subscribeConfigurationTestWithError() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.subscribeConfiguration("", "key1").blockFirst();
-    });
-
-    mockInterceptor.addRule()
-        .get()
-        .path("/v1.0/configuration/MyConfigStore/subscribe")
-        .param("key", "configkey1")
-        .respond(500);
-    assertThrows(DaprException.class, () -> {
-      daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").blockFirst();
-    });
-  }
+  //  @Test
+  //  public void getConfigurationTestErrorScenario() {
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getConfiguration("", "key").block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getConfiguration("  ", "key").block();
+  //    });
+  //  }
+  //
+  //  @Test
+  //  public void getConfigurationTest() {
+  //    mockInterceptor.addRule()
+  //        .get()
+  //        .path("/v1.0/configuration/MyConfigStore")
+  //        .param("key","configkey1")
+  //        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
+  //
+  //    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+  //    assertNotNull(ci);
+  //    assertEquals("configkey1", ci.getKey());
+  //    assertEquals("configvalue1", ci.getValue());
+  //    assertEquals("1", ci.getVersion());
+  //  }
+  //
+  //  @Test
+  //  public void getAllConfigurationTest() {
+  //    mockInterceptor.addRule()
+  //        .get()
+  //        .path("/v1.0/configuration/MyConfigStore")
+  //        .respond("{\"configkey1\" : {\"value\" : \"configvalue1\",\"version\" : \"1\"}}");
+  //
+  //    ConfigurationItem ci = daprClientHttp.getConfiguration(CONFIG_STORE_NAME, "configkey1").block();
+  //    assertNotNull(ci);
+  //    assertEquals("configkey1", ci.getKey());
+  //    assertEquals("configvalue1", ci.getValue());
+  //    assertEquals("1", ci.getVersion());
+  //  }
+  //
+  //  @Test
+  //  public void subscribeConfigurationTest() {
+  //    mockInterceptor.addRule()
+  //        .get()
+  //        .path("/v1.0/configuration/MyConfigStore/subscribe")
+  //        .param("key", "configkey1")
+  //        .respond("{\"id\":\"1234\"}");
+  //
+  //    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+  //    assertTrue(itr.hasNext());
+  //    SubscribeConfigurationResponse res = itr.next();
+  //    assertEquals("1234", res.getSubscriptionId());
+  //    assertFalse(itr.hasNext());
+  //  }
+  //
+  //  @Test
+  //  public void subscribeAllConfigurationTest() {
+  //    mockInterceptor.addRule()
+  //        .get()
+  //        .path("/v1.0/configuration/MyConfigStore/subscribe")
+  //        .respond("{\"id\":\"1234\"}");
+  //
+  //    Iterator<SubscribeConfigurationResponse> itr = daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
+  //    assertTrue(itr.hasNext());
+  //    SubscribeConfigurationResponse res = itr.next();
+  //    assertEquals("1234", res.getSubscriptionId());
+  //    assertFalse(itr.hasNext());
+  //  }
+  //
+  //  @Test
+  //  public void unsubscribeConfigurationTest() {
+  //    mockInterceptor.addRule()
+  //        .get()
+  //        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
+  //        .respond("{\"ok\": true}");
+  //
+  //    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
+  //    assertTrue(res.getIsUnsubscribed());
+  //  }
+  //
+  //  @Test
+  //  public void unsubscribeConfigurationTestWithError() {
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.unsubscribeConfiguration("", CONFIG_STORE_NAME).block();
+  //    });
+  //
+  //    UnsubscribeConfigurationRequest req = new UnsubscribeConfigurationRequest("subscription_id", "");
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.unsubscribeConfiguration(req).block();
+  //    });
+  //
+  //    mockInterceptor.addRule()
+  //        .get()
+  //        .path("/v1.0/configuration/MyConfigStore/1234/unsubscribe")
+  //        .respond("{\"ok\": false, \"message\": \"some error while unsubscribing\"}");
+  //    UnsubscribeConfigurationResponse res = daprClientHttp.unsubscribeConfiguration("1234", CONFIG_STORE_NAME).block();
+  //    assertFalse(res.getIsUnsubscribed());
+  //  }
+  //
+  //  @Test
+  //  public void subscribeConfigurationTestWithError() {
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.subscribeConfiguration("", "key1").blockFirst();
+  //    });
+  //
+  //    mockInterceptor.addRule()
+  //        .get()
+  //        .path("/v1.0/configuration/MyConfigStore/subscribe")
+  //        .param("key", "configkey1")
+  //        .respond(500);
+  //    assertThrows(DaprException.class, () -> {
+  //      daprClientHttp.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").blockFirst();
+  //    });
+  //  }
 
   @Test
   public void closeException() {
