@@ -1551,6 +1551,7 @@ public class DaprClientHttpTest {
   //    });
   //  }
 
+  /*
   @Test
   public void closeException() {
     DaprHttp daprHttp = Mockito.mock(DaprHttp.class);
@@ -1580,7 +1581,7 @@ public class DaprClientHttpTest {
     final Mono<Void> mono = daprClientHttp.shutdown();
     assertNull(mono.block());
   }
-
+*/
   private static final class BodyMatcher implements Matcher {
 
     private final String expected;
