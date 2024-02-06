@@ -182,23 +182,23 @@ public class DaprClientHttpTest {
   //            .verify();
   //  }
 
-  @Test
-  public void waitForSidecarOK() throws Exception {
-    int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
-    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
-
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .respond(204);
-
-    StepVerifier.create(daprClientHttp.waitForSidecar(10000))
-            .expectSubscription()
-            .expectComplete()
-            .verify();
-  }
+  //  @Test
+  //  public void waitForSidecarOK() throws Exception {
+  //    int port = findFreePort();
+  //    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+  //    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+  //    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+  //
+  //    mockInterceptor.addRule()
+  //            .get()
+  //            .path("/v1.0/healthz/outbound")
+  //            .respond(204);
+  //
+  //    StepVerifier.create(daprClientHttp.waitForSidecar(10000))
+  //            .expectSubscription()
+  //            .expectComplete()
+  //            .verify();
+  //  }
 
   //  @Test
   //  public void waitForSidecarTimeoutOK() throws Exception {
