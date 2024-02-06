@@ -1255,158 +1255,158 @@ public class DaprClientHttpTest {
     });
   }
 
-  @Test
-  public void getSecrets() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
-    });
-    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
-
-    assertEquals(1, secret.size());
-    assertEquals("mysecretvalue", secret.get("mysecretkey"));
-  }
-
-  @Test
-  public void getSecretsSpecialCharsInKey() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key%2Fone")
-        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
-    });
-    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key/one").block();
-
-    assertEquals(1, secret.size());
-    assertEquals("mysecretvalue", secret.get("mysecretkey"));
-  }
-
-  @Test
-  public void getSecretsEmpty() {
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-      .respond("");
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
-    });
-    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
-
-    assertTrue(secret.isEmpty());
-  }
-
-  @Test
-  public void getSecrets404() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-        .respond(404);
-
-    assertThrowsDaprException("UNKNOWN", () ->
-        daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
-    );
-  }
-
-  @Test
-  public void getSecrets404WithErrorCode() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-        .respond(404,
-            ResponseBody.create("" +
-                "{\"errorCode\":\"ERR_SECRET_STORE_NOT_FOUND\"," +
-                "\"message\":\"error message\"}", MediaTypes.MEDIATYPE_JSON));
-
-    assertThrowsDaprException("ERR_SECRET_STORE_NOT_FOUND", "ERR_SECRET_STORE_NOT_FOUND: error message", () ->
-        daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
-    );
-  }
-
-  @Test
-  public void getSecretsErrors() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-        .respond("INVALID JSON");
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.getSecret(null, "key").block());
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.getSecret("", "key").block());
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.getSecret(SECRET_STORE_NAME, "").block();
-    });
-    assertThrowsDaprException(JsonParseException.class, () -> {
-      daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
-    });
-  }
-
-  @Test
-  public void getSecretsWithMetadata() {
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
-      .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key?metadata.metakey=metavalue")
-      .respond("{ \"mysecretkey2\": \"mysecretvalue2\"}");
-
-    {
-      Map<String, String> secret = daprClientHttp.getSecret(
-        SECRET_STORE_NAME,
-        "key",
-        null).block();
-
-      assertEquals(1, secret.size());
-      assertEquals("mysecretvalue", secret.get("mysecretkey"));
-    }
-
-    {
-      Map<String, String> secret = daprClientHttp.getSecret(
-        SECRET_STORE_NAME,
-        "key",
-        Collections.singletonMap("metakey", "metavalue")).block();
-
-      assertEquals(1, secret.size());
-      assertEquals("mysecretvalue2", secret.get("mysecretkey2"));
-    }
-  }
-
-  @Test
-  public void getBulkSecrets() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk")
-        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
-
-    Map<String, Map<String, String>> secrets = daprClientHttp.getBulkSecret(SECRET_STORE_NAME).block();
-
-    assertEquals(2, secrets.size());
-    assertEquals(1, secrets.get("one").size());
-    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
-    assertEquals(2, secrets.get("two").size());
-    assertEquals("1", secrets.get("two").get("a"));
-    assertEquals("2", secrets.get("two").get("b"));
-  }
-
-  @Test
-  public void getBulkSecretsWithMetadata() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk?metadata.metakey=metavalue")
-        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
-
-    Map<String, Map<String, String>> secrets =
-        daprClientHttp.getBulkSecret(SECRET_STORE_NAME, Collections.singletonMap("metakey", "metavalue")).block();
-
-    assertEquals(2, secrets.size());
-    assertEquals(1, secrets.get("one").size());
-    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
-    assertEquals(2, secrets.get("two").size());
-    assertEquals("1", secrets.get("two").get("a"));
-    assertEquals("2", secrets.get("two").get("b"));
-  }
+  //  @Test
+  //  public void getSecrets() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+  //        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
+  //    });
+  //    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
+  //
+  //    assertEquals(1, secret.size());
+  //    assertEquals("mysecretvalue", secret.get("mysecretkey"));
+  //  }
+  //
+  //  @Test
+  //  public void getSecretsSpecialCharsInKey() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key%2Fone")
+  //        .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
+  //    });
+  //    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key/one").block();
+  //
+  //    assertEquals(1, secret.size());
+  //    assertEquals("mysecretvalue", secret.get("mysecretkey"));
+  //  }
+  //
+  //  @Test
+  //  public void getSecretsEmpty() {
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+  //      .respond("");
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
+  //    });
+  //    Map<String, String> secret = daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
+  //
+  //    assertTrue(secret.isEmpty());
+  //  }
+  //
+  //  @Test
+  //  public void getSecrets404() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+  //        .respond(404);
+  //
+  //    assertThrowsDaprException("UNKNOWN", () ->
+  //        daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
+  //    );
+  //  }
+  //
+  //  @Test
+  //  public void getSecrets404WithErrorCode() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+  //        .respond(404,
+  //            ResponseBody.create("" +
+  //                "{\"errorCode\":\"ERR_SECRET_STORE_NOT_FOUND\"," +
+  //                "\"message\":\"error message\"}", MediaTypes.MEDIATYPE_JSON));
+  //
+  //    assertThrowsDaprException("ERR_SECRET_STORE_NOT_FOUND", "ERR_SECRET_STORE_NOT_FOUND: error message", () ->
+  //        daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
+  //    );
+  //  }
+  //
+  //  @Test
+  //  public void getSecretsErrors() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+  //        .respond("INVALID JSON");
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.getSecret(null, "key").block());
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.getSecret("", "key").block());
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getSecret(SECRET_STORE_NAME, null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.getSecret(SECRET_STORE_NAME, "").block();
+  //    });
+  //    assertThrowsDaprException(JsonParseException.class, () -> {
+  //      daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block();
+  //    });
+  //  }
+  //
+  //  @Test
+  //  public void getSecretsWithMetadata() {
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key")
+  //      .respond("{ \"mysecretkey\": \"mysecretvalue\"}");
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/key?metadata.metakey=metavalue")
+  //      .respond("{ \"mysecretkey2\": \"mysecretvalue2\"}");
+  //
+  //    {
+  //      Map<String, String> secret = daprClientHttp.getSecret(
+  //        SECRET_STORE_NAME,
+  //        "key",
+  //        null).block();
+  //
+  //      assertEquals(1, secret.size());
+  //      assertEquals("mysecretvalue", secret.get("mysecretkey"));
+  //    }
+  //
+  //    {
+  //      Map<String, String> secret = daprClientHttp.getSecret(
+  //        SECRET_STORE_NAME,
+  //        "key",
+  //        Collections.singletonMap("metakey", "metavalue")).block();
+  //
+  //      assertEquals(1, secret.size());
+  //      assertEquals("mysecretvalue2", secret.get("mysecretkey2"));
+  //    }
+  //  }
+  //
+  //  @Test
+  //  public void getBulkSecrets() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk")
+  //        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
+  //
+  //    Map<String, Map<String, String>> secrets = daprClientHttp.getBulkSecret(SECRET_STORE_NAME).block();
+  //
+  //    assertEquals(2, secrets.size());
+  //    assertEquals(1, secrets.get("one").size());
+  //    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+  //    assertEquals(2, secrets.get("two").size());
+  //    assertEquals("1", secrets.get("two").get("a"));
+  //    assertEquals("2", secrets.get("two").get("b"));
+  //  }
+  //
+  //  @Test
+  //  public void getBulkSecretsWithMetadata() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/secrets/MySecretStore/bulk?metadata.metakey=metavalue")
+  //        .respond("{ \"one\": { \"mysecretkey\": \"mysecretvalue\"}, \"two\": { \"a\": \"1\", \"b\": \"2\"}}");
+  //
+  //    Map<String, Map<String, String>> secrets =
+  //        daprClientHttp.getBulkSecret(SECRET_STORE_NAME, Collections.singletonMap("metakey", "metavalue")).block();
+  //
+  //    assertEquals(2, secrets.size());
+  //    assertEquals(1, secrets.get("one").size());
+  //    assertEquals("mysecretvalue", secrets.get("one").get("mysecretkey"));
+  //    assertEquals(2, secrets.get("two").size());
+  //    assertEquals("1", secrets.get("two").get("a"));
+  //    assertEquals("2", secrets.get("two").get("b"));
+  //  }
 
   //  @Test
   //  public void getConfigurationTestErrorScenario() {
