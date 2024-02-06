@@ -107,19 +107,19 @@ public class DaprClientHttpTest {
 
   private OkHttpClient okHttpClient;
 
-  @BeforeAll
+
   public static void beforeAll() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     builder = new OkHttpClient.Builder().addInterceptor(mockInterceptor);
     builder.setDispatcher$okhttp(new Dispatcher(Executors.newSingleThreadExecutor()));
   }
 
-  @AfterAll
+
   public static void afterAll() {
     mockInterceptor.reset();
   }
 
-  @BeforeEach
+
   public void setUp() {
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
@@ -128,7 +128,7 @@ public class DaprClientHttpTest {
   }
 
 
-  @AfterEach
+
   public void tearDown() throws Exception {
     if (daprHttp != null) {
       daprHttp.close();
