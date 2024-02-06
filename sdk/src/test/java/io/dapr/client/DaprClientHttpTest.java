@@ -29,6 +29,7 @@ import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
+import io.dapr.config.Property;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -67,6 +68,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import reactor.util.context.ContextView;
 import uk.org.webcompere.systemstubs.stream.SystemOut;
@@ -106,22 +109,9 @@ public class DaprClientHttpTest {
     daprClientHttpXML = new DaprClientProxy(new DaprClientHttp(daprHttp, new XmlSerializer(), new XmlSerializer()));
   }
 
+
   @AfterEach
   public void tearDown() throws Exception {
-    if (okHttpClient != null) {
-      okHttpClient.dispatcher().executorService().shutdown();
-      okHttpClient.connectionPool().evictAll();
-      okHttpClient = null;
-    }
-
-    if (daprHttp != null) {
-      daprHttp.close();
-    }
-
-    if (daprClientHttp != null) {
-      daprClientHttp.close();
-    }
-
     if (daprClientHttpXML != null) {
       daprClientHttpXML.close();
     }
