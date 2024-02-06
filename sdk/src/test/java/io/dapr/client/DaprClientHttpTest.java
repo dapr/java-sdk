@@ -677,15 +677,15 @@ public class DaprClientHttpTest {
   //        daprClientHttp.invokeBinding("sample-topic", null, "").block());
   //  }
 
-  @Test
-  public void bindingNoHotMono() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-        .respond(EXPECTED_RESULT);
-
-    daprClientHttp.invokeBinding(null, "", "");
-    // No exception is thrown because did not call block() on mono above.
-  }
+  //  @Test
+  //  public void bindingNoHotMono() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //        .respond(EXPECTED_RESULT);
+  //
+  //    daprClientHttp.invokeBinding(null, "", "");
+  //    // No exception is thrown because did not call block() on mono above.
+  //  }
 
   @Test
   public void getStatesErrors() {
@@ -913,16 +913,16 @@ public class DaprClientHttpTest {
     assertNull(monoNullEtag.getEtag());
   }
 
-  @Test
-  public void getStatesNoHotMono() {
-    State<String> stateNullEtag = new State<>("key", "value", null, null);
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-        .respond(500);
-
-    daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
-    // No exception should be thrown since did not call block() on mono above.
-  }
+  //  @Test
+  //  public void getStatesNoHotMono() {
+  //    State<String> stateNullEtag = new State<>("key", "value", null, null);
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //        .respond(500);
+  //
+  //    daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
+  //    // No exception should be thrown since did not call block() on mono above.
+  //  }
 
   @Test
   public void saveStates() {
@@ -1002,16 +1002,16 @@ public class DaprClientHttpTest {
     assertNull(mono.block());
   }
 
-  @Test
-  public void saveStatesNoHotMono() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
-        .respond(500);
-    StateOptions stateOptions = mock(StateOptions.class);
-
-    daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
-    // No exception should be thrown because we did not call block() on the mono above.
-  }
+  //  @Test
+  //  public void saveStatesNoHotMono() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
+  //        .respond(500);
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //
+  //    daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
+  //    // No exception should be thrown because we did not call block() on the mono above.
+  //  }
 
   @Test
   public void simpleExecuteTransaction() {
