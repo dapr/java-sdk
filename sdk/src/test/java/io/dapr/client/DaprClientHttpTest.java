@@ -34,6 +34,7 @@ import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
+import okhttp3.Dispatcher;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -68,6 +69,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -108,6 +111,7 @@ public class DaprClientHttpTest {
   public static void beforeAll() {
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     builder = new OkHttpClient.Builder().addInterceptor(mockInterceptor);
+    builder.setDispatcher$okhttp(new Dispatcher(Executors.newSingleThreadExecutor()));
   }
 
   @AfterAll
