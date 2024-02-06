@@ -146,7 +146,7 @@ jobs:
         path: sdk-tests/target/surefire-reports
 
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: build
     env:
       JDK_VER: 17
