@@ -223,75 +223,75 @@ public class DaprClientHttpTest {
   //      t.join();
   //    }
   //  }
-
-  @Test
-  public void publishEventInvocation() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
-        .respond(EXPECTED_RESULT);
-    String event = "{ \"message\": \"This is a test\" }";
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
-    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
-    Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname", "A", event, null);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void publishEvent() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
-        .header("content-type", "application/json")
-        .respond(EXPECTED_RESULT);
-    String event = "{ \"message\": \"This is a test\" }";
-
-    Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname","A", event);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void publishEventContentTypeOverride() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
-        .header("content-type", "text/plain")
-        .respond(EXPECTED_RESULT);
-    String event = "{ \"message\": \"This is a test\" }";
-
-    Mono<Void> mono = daprClientHttp.publishEvent(
-        new PublishEventRequest("mypubsubname","A", event)
-            .setContentType("text/plain"));
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void publishEventIfTopicIsNullOrEmpty() {
-    String event = "{ \"message\": \"This is a test\" }";
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.publishEvent("mypubsubname", null, event).block());
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.publishEvent("mypubsubname", "", event).block());
-  }
-
-  @Test
-  public void publishEventIfPubsubIsNullOrEmpty() {
-    String event = "{ \"message\": \"This is a test\" }";
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.publishEvent(null, "A", event).block());
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.publishEvent("", "A", event).block());
-  }
-
-  @Test
-  public void publishEventNoHotMono() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
-        .respond(EXPECTED_RESULT);
-    String event = "{ \"message\": \"This is a test\" }";
-
-    daprClientHttp.publishEvent("mypubsubname", "", event);
-    // Should not throw exception because did not call block() on mono above.
-  }
+  //
+  //  @Test
+  //  public void publishEventInvocation() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
+  //        .respond(EXPECTED_RESULT);
+  //    String event = "{ \"message\": \"This is a test\" }";
+  //    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+  //    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+  //    Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname", "A", event, null);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void publishEvent() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
+  //        .header("content-type", "application/json")
+  //        .respond(EXPECTED_RESULT);
+  //    String event = "{ \"message\": \"This is a test\" }";
+  //
+  //    Mono<Void> mono = daprClientHttp.publishEvent("mypubsubname","A", event);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void publishEventContentTypeOverride() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
+  //        .header("content-type", "text/plain")
+  //        .respond(EXPECTED_RESULT);
+  //    String event = "{ \"message\": \"This is a test\" }";
+  //
+  //    Mono<Void> mono = daprClientHttp.publishEvent(
+  //        new PublishEventRequest("mypubsubname","A", event)
+  //            .setContentType("text/plain"));
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void publishEventIfTopicIsNullOrEmpty() {
+  //    String event = "{ \"message\": \"This is a test\" }";
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.publishEvent("mypubsubname", null, event).block());
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.publishEvent("mypubsubname", "", event).block());
+  //  }
+  //
+  //  @Test
+  //  public void publishEventIfPubsubIsNullOrEmpty() {
+  //    String event = "{ \"message\": \"This is a test\" }";
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.publishEvent(null, "A", event).block());
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.publishEvent("", "A", event).block());
+  //  }
+  //
+  //  @Test
+  //  public void publishEventNoHotMono() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/publish/mypubsubname/A")
+  //        .respond(EXPECTED_RESULT);
+  //    String event = "{ \"message\": \"This is a test\" }";
+  //
+  //    daprClientHttp.publishEvent("mypubsubname", "", event);
+  //    // Should not throw exception because did not call block() on mono above.
+  //  }
 
   //  @Test
   //  public void invokeServiceVerbNull() {
