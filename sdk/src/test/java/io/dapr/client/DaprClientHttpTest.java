@@ -43,6 +43,7 @@ import okhttp3.mock.MockInterceptor;
 import okhttp3.mock.matchers.Matcher;
 import okio.Buffer;
 import okio.BufferedSink;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -86,13 +87,13 @@ public class DaprClientHttpTest {
   private final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
-  private DaprClient daprClientHttp;
+  private static DaprClient daprClientHttp;
 
-  private DaprClient daprClientHttpXML;
+  private static DaprClient daprClientHttpXML;
 
-  private DaprHttp daprHttp;
+  private static DaprHttp daprHttp;
 
-  private OkHttpClient okHttpClient;
+  private static OkHttpClient okHttpClient;
 
   private MockInterceptor mockInterceptor;
 
@@ -105,6 +106,26 @@ public class DaprClientHttpTest {
     daprClientHttpXML = new DaprClientProxy(new DaprClientHttp(daprHttp, new XmlSerializer(), new XmlSerializer()));
   }
 
+  @AfterEach
+  public void tearDown() throws Exception {
+    if (okHttpClient != null) {
+      okHttpClient.dispatcher().executorService().shutdown();
+      okHttpClient.connectionPool().evictAll();
+      okHttpClient = null;
+    }
+
+    if (daprHttp != null) {
+      daprHttp.close();
+    }
+
+    if (daprClientHttp != null) {
+      daprClientHttp.close();
+    }
+
+    if (daprClientHttpXML != null) {
+      daprClientHttpXML.close();
+    }
+  }
 
 
   //  @Test
@@ -181,7 +202,7 @@ public class DaprClientHttpTest {
   //            .expectComplete()
   //            .verify();
   //  }
-
+  //
   //  @Test
   //  public void waitForSidecarOK() throws Exception {
   //    int port = findFreePort();
