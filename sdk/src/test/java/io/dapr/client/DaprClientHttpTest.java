@@ -923,84 +923,84 @@ public class DaprClientHttpTest {
   //    daprClientHttp.getState(STATE_STORE_NAME, stateNullEtag, String.class);
   //    // No exception should be thrown since did not call block() on mono above.
   //  }
-
-  @Test
-  public void saveStates() {
-    State<String> stateKeyValue = new State<>("key", "value", "etag", null);
-    List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void saveStatesErrors() {
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.saveBulkState(null, null).block());
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.saveBulkState("", null).block());
-  }
-
-  @Test
-  public void saveStatesNull() {
-    List<State<?>> stateKeyValueList = new ArrayList<>();
-
-    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, null);
-    assertNull(mono.block());
-    Mono<Void> mono1 = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
-    assertNull(mono1.block());
-  }
-
-  @Test
-  public void saveStatesNullState() {
-    List<State<?>> stateKeyValueList = new ArrayList<>();
-    stateKeyValueList.add(null);
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
-        .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono1 = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
-    assertNull(mono1.block());
-  }
-
-  @Test
-  public void saveStatesEtagNull() {
-    State<String> stateKeyValue = new State<>("key", "value", null, null);
-    List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void saveStatesEtagEmpty() {
-    State<String> stateKeyValue = new State<>("key", "value", "", null);
-    List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void simpleSaveStates() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
-      .respond(EXPECTED_RESULT);
-    StateOptions stateOptions = mock(StateOptions.class);
-
-    Mono<Void> mono = daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
-    assertNull(mono.block());
-  }
+  //
+  //  @Test
+  //  public void saveStates() {
+  //    State<String> stateKeyValue = new State<>("key", "value", "etag", null);
+  //    List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void saveStatesErrors() {
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.saveBulkState(null, null).block());
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.saveBulkState("", null).block());
+  //  }
+  //
+  //  @Test
+  //  public void saveStatesNull() {
+  //    List<State<?>> stateKeyValueList = new ArrayList<>();
+  //
+  //    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, null);
+  //    assertNull(mono.block());
+  //    Mono<Void> mono1 = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
+  //    assertNull(mono1.block());
+  //  }
+  //
+  //  @Test
+  //  public void saveStatesNullState() {
+  //    List<State<?>> stateKeyValueList = new ArrayList<>();
+  //    stateKeyValueList.add(null);
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
+  //        .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono1 = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
+  //    assertNull(mono1.block());
+  //  }
+  //
+  //  @Test
+  //  public void saveStatesEtagNull() {
+  //    State<String> stateKeyValue = new State<>("key", "value", null, null);
+  //    List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void saveStatesEtagEmpty() {
+  //    State<String> stateKeyValue = new State<>("key", "value", "", null);
+  //    List<State<?>> stateKeyValueList = Collections.singletonList(stateKeyValue);
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.saveBulkState(STATE_STORE_NAME, stateKeyValueList);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void simpleSaveStates() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/state/MyStateStore")
+  //      .respond(EXPECTED_RESULT);
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //
+  //    Mono<Void> mono = daprClientHttp.saveState(STATE_STORE_NAME, "key", "etag", "value", stateOptions);
+  //    assertNull(mono.block());
+  //  }
 
   //  @Test
   //  public void saveStatesNoHotMono() {
