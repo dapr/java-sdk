@@ -246,6 +246,7 @@ public class DaprClientHttpTest {
       daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
       DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
       daprClientHttp.waitForSidecar(10000).block();
+      t.join();
     }
   }
 
