@@ -51,7 +51,7 @@ public class GrpcChannelFacadeTest {
 
   private MockInterceptor mockInterceptor;
 
-  private OkHttpClient okHttpClient;
+  private static OkHttpClient okHttpClient;
 
   private static DaprHttp daprHttp;
   private ManagedChannel mockGrpcChannel;
@@ -77,6 +77,12 @@ public class GrpcChannelFacadeTest {
 
   @AfterAll
   public static void teardown() throws InterruptedException {
+    if (okHttpClient != null) {
+      okHttpClient.dispatcher().executorService().shutdown();
+      okHttpClient.connectionPool().evictAll();
+      okHttpClient = null;
+    }
+
     if (daprHttp != null) {
       daprHttp.close();
     }
