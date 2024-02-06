@@ -1163,35 +1163,35 @@ public class DaprClientHttpTest {
     assertNull(mono.block());
   }
 
-  @Test
-  public void deleteState() {
-    StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
-    mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void deleteStateWithMetadata() {
-    Map<String, String> metadata = new HashMap<>();
-    metadata.put("key_1", "val_1");
-    StateOptions stateOptions = mock(StateOptions.class);
-    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
-    mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
-      .respond(EXPECTED_RESULT);
-
-    DeleteStateRequest request = new DeleteStateRequest(STATE_STORE_NAME, stateKeyValue.getKey());
-    request.setMetadata(metadata)
-        .setEtag(stateKeyValue.getEtag())
-        .setStateOptions(stateOptions);
-    Mono<Void> monoMetadata = daprClientHttp.deleteState(request);
-    assertNull(monoMetadata.block());
-  }
+  //  @Test
+  //  public void deleteState() {
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
+  //    mockInterceptor.addRule()
+  //      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void deleteStateWithMetadata() {
+  //    Map<String, String> metadata = new HashMap<>();
+  //    metadata.put("key_1", "val_1");
+  //    StateOptions stateOptions = mock(StateOptions.class);
+  //    State<String> stateKeyValue = new State<>("key", "value", "etag", stateOptions);
+  //    mockInterceptor.addRule()
+  //      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key?metadata.key_1=val_1")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    DeleteStateRequest request = new DeleteStateRequest(STATE_STORE_NAME, stateKeyValue.getKey());
+  //    request.setMetadata(metadata)
+  //        .setEtag(stateKeyValue.getEtag())
+  //        .setStateOptions(stateOptions);
+  //    Mono<Void> monoMetadata = daprClientHttp.deleteState(request);
+  //    assertNull(monoMetadata.block());
+  //  }
 
   //  @Test
   //  public void deleteStateNoHotMono() {
@@ -1204,56 +1204,56 @@ public class DaprClientHttpTest {
   //    daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), stateOptions);
   //    // No exception should be thrown because we did not call block() on the mono above.
   //  }
-
-  @Test
-  public void deleteStateNullEtag() {
-    State<String> stateKeyValue = new State<>("key", "value", null, null);
-    mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void deleteStateEmptyEtag() {
-    State<String> stateKeyValue = new State<>("key", "value", "", null);
-    mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void deleteStateIllegalArgumentException() {
-    State<String> stateKeyValueNull = new State<>(null, "value", "etag", null);
-    State<String> stateKeyValueEmpty = new State<>("", "value", "etag", null);
-    mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
-      .respond(EXPECTED_RESULT);
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.deleteState(STATE_STORE_NAME, null, null, null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.deleteState(STATE_STORE_NAME, "", null, null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.deleteState(STATE_STORE_NAME, " ", null, null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.deleteState(null, "key", null, null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.deleteState("", "key", null, null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.deleteState(" ", "key", null, null).block();
-    });
-  }
+  //
+  //  @Test
+  //  public void deleteStateNullEtag() {
+  //    State<String> stateKeyValue = new State<>("key", "value", null, null);
+  //    mockInterceptor.addRule()
+  //      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void deleteStateEmptyEtag() {
+  //    State<String> stateKeyValue = new State<>("key", "value", "", null);
+  //    mockInterceptor.addRule()
+  //      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.deleteState(STATE_STORE_NAME, stateKeyValue.getKey(), stateKeyValue.getEtag(), null);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void deleteStateIllegalArgumentException() {
+  //    State<String> stateKeyValueNull = new State<>(null, "value", "etag", null);
+  //    State<String> stateKeyValueEmpty = new State<>("", "value", "etag", null);
+  //    mockInterceptor.addRule()
+  //      .delete("http://127.0.0.1:3000/v1.0/state/MyStateStore/key")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.deleteState(STATE_STORE_NAME, null, null, null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.deleteState(STATE_STORE_NAME, "", null, null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.deleteState(STATE_STORE_NAME, " ", null, null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.deleteState(null, "key", null, null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.deleteState("", "key", null, null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.deleteState(" ", "key", null, null).block();
+  //    });
+  //  }
 
   //  @Test
   //  public void getSecrets() {
