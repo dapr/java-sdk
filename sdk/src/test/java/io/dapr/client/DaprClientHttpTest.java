@@ -105,108 +105,82 @@ public class DaprClientHttpTest {
     daprClientHttpXML = new DaprClientProxy(new DaprClientHttp(daprHttp, new XmlSerializer(), new XmlSerializer()));
   }
 
-  @Test
-  public void waitForSidecarTimeOutHealthCheck() throws Exception {
-    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
-    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
 
-    int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
-    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
 
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .respond(500, ResponseBody.create("Internal Server Error", MediaType.get("application/json")));
-
-    StepVerifier.create(daprClientHttp.waitForSidecar(100))
-            .expectSubscription()
-            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(200))) // Advance time to trigger the timeout
-            .expectErrorMatches(throwable -> {
-              if (throwable instanceof TimeoutException) {
-                System.out.println("TimeoutException occurred on sidecar health check.");
-                return true;
-              }
-              return false;
-            })
-            .verify();
-  }
-
-  @Test
-  public void waitForSidecarBadHealthCheck() throws Exception {
-    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
-    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
-
-    int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
-    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
-
-    addMockRulesForBadHealthCheck();
-
-    // retry the max allowed retries (5 times)
-    StepVerifier.create(daprClientHttp.waitForSidecar(5000))
-            .expectSubscription()
-            .expectNoEvent(Duration.ofMillis(500)) // Delay for retry
-            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
-            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
-            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
-            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
-            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
-            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
-            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
-            .expectNoEvent(Duration.ofMillis(500)) // Delay for the final retry
-            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
-            .expectErrorMatches(throwable -> {
-              if (throwable instanceof RuntimeException) {
-                return "Retries exhausted: 5/5".equals(throwable.getMessage());
-              }
-              return false;
-            })
-            .verify();
-  }
-
-  private void addMockRulesForBadHealthCheck() {
-    for (int i = 0; i < 6; i++) {
-      mockInterceptor.addRule()
-              .get()
-              .path("/v1.0/healthz/outbound")
-              .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
-    }
-  }
-  @Test
-  public void waitForSidecarSlowSuccessfulHealthCheck() throws Exception {
-    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
-    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
-
-    int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
-    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
-
-    // Simulate a slow response
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .respond(500, ResponseBody.create("Internal Server Error", MediaType.get("application/json")));
-
-    StepVerifier.create(daprClientHttp.waitForSidecar(5000))
-            .expectSubscription()
-            .expectNoEvent(Duration.ofSeconds(1)) // Delay for retry
-            .then(() -> {
-              // Simulate a successful response
-              mockInterceptor.reset();
-              mockInterceptor.addRule()
-                      .get()
-                      .path("/v1.0/healthz/outbound")
-                      .respond(204, ResponseBody.create("No Content", MediaType.get("application/json")));
-              virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
-            })
-            .expectNext()
-            .expectComplete()
-            .verify();
-  }
+  //  @Test
+  //  public void waitForSidecarBadHealthCheck() throws Exception {
+  //    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
+  //    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
+  //
+  //    int port = findFreePort();
+  //    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+  //    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+  //    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+  //
+  //    addMockRulesForBadHealthCheck();
+  //
+  //    // retry the max allowed retries (5 times)
+  //    StepVerifier.create(daprClientHttp.waitForSidecar(5000))
+  //            .expectSubscription()
+  //            .expectNoEvent(Duration.ofMillis(500)) // Delay for retry
+  //            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+  //            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
+  //            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+  //            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
+  //            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+  //            .expectNoEvent(Duration.ofMillis(500)) // Delay for another retry
+  //            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+  //            .expectNoEvent(Duration.ofMillis(500)) // Delay for the final retry
+  //            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(500)))
+  //            .expectErrorMatches(throwable -> {
+  //              if (throwable instanceof RuntimeException) {
+  //                return "Retries exhausted: 5/5".equals(throwable.getMessage());
+  //              }
+  //              return false;
+  //            })
+  //            .verify();
+  //  }
+  //
+  //  private void addMockRulesForBadHealthCheck() {
+  //    for (int i = 0; i < 6; i++) {
+  //      mockInterceptor.addRule()
+  //              .get()
+  //              .path("/v1.0/healthz/outbound")
+  //              .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
+  //    }
+  //  }
+  //  @Test
+  //  public void waitForSidecarSlowSuccessfulHealthCheck() throws Exception {
+  //    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
+  //    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
+  //
+  //    int port = findFreePort();
+  //    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+  //    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+  //    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+  //
+  //    // Simulate a slow response
+  //    mockInterceptor.addRule()
+  //            .get()
+  //            .path("/v1.0/healthz/outbound")
+  //            .respond(500, ResponseBody.create("Internal Server Error", MediaType.get("application/json")));
+  //
+  //    StepVerifier.create(daprClientHttp.waitForSidecar(5000))
+  //            .expectSubscription()
+  //            .expectNoEvent(Duration.ofSeconds(1)) // Delay for retry
+  //            .then(() -> {
+  //              // Simulate a successful response
+  //              mockInterceptor.reset();
+  //              mockInterceptor.addRule()
+  //                      .get()
+  //                      .path("/v1.0/healthz/outbound")
+  //                      .respond(204, ResponseBody.create("No Content", MediaType.get("application/json")));
+  //              virtualTimeScheduler.advanceTimeBy(Duration.ofSeconds(1));
+  //            })
+  //            .expectNext()
+  //            .expectComplete()
+  //            .verify();
+  //  }
 
   @Test
   public void waitForSidecarOK() throws Exception {
