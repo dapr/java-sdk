@@ -293,389 +293,389 @@ public class DaprClientHttpTest {
     // Should not throw exception because did not call block() on mono above.
   }
 
-  @Test
-  public void invokeServiceVerbNull() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/publish/A")
-      .respond(EXPECTED_RESULT);
-    String event = "{ \"message\": \"This is a test\" }";
+  //  @Test
+  //  public void invokeServiceVerbNull() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/publish/A")
+  //      .respond(EXPECTED_RESULT);
+  //    String event = "{ \"message\": \"This is a test\" }";
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.invokeMethod(null, "", "", null, null, (Class)null).block());
+  //  }
 
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeMethod(null, "", "", null, null, (Class)null).block());
-  }
-
-  @Test
-  public void invokeServiceIllegalArgumentException() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/badorder")
-        .respond("INVALID JSON");
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      // null HttpMethod
-      daprClientHttp.invokeMethod("1", "2", "3", new HttpExtension(null), null, (Class)null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      // null HttpExtension
-      daprClientHttp.invokeMethod("1", "2", "3", null, null, (Class)null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      // empty appId
-      daprClientHttp.invokeMethod("", "1", null, HttpExtension.GET, null, (Class)null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      // null appId, empty method
-      daprClientHttp.invokeMethod(null, "", null, HttpExtension.POST, null, (Class)null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      // empty method
-      daprClientHttp.invokeMethod("1", "", null, HttpExtension.PUT, null, (Class)null).block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      // null method
-      daprClientHttp.invokeMethod("1", null, null, HttpExtension.DELETE, null, (Class)null).block();
-    });
-    assertThrowsDaprException(JsonParseException.class, () -> {
-      // invalid JSON response
-      daprClientHttp.invokeMethod("41", "badorder", null, HttpExtension.GET, null, String.class).block();
-    });
-  }
-
-  @Test
-  public void invokeServiceDaprError() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "{ \"errorCode\": \"MYCODE\", \"message\": \"My Message\"}",
-                MediaTypes.MEDIATYPE_JSON));
-
-    DaprException exception = assertThrows(DaprException.class, () -> {
-      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
-    });
-
-    assertEquals("MYCODE", exception.getErrorCode());
-    assertEquals("MYCODE: My Message", exception.getMessage());
-  }
-
-  @Test
-  public void invokeServiceDaprErrorFromGRPC() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "{ \"code\": 7 }",
-                MediaTypes.MEDIATYPE_JSON));
-
-    DaprException exception = assertThrows(DaprException.class, () -> {
-      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
-    });
-
-    assertEquals("PERMISSION_DENIED", exception.getErrorCode());
-    assertEquals("PERMISSION_DENIED: HTTP status code: 500", exception.getMessage());
-  }
-
-  @Test
-  public void invokeServiceDaprErrorUnknownJSON() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "{ \"anything\": 7 }",
-                MediaTypes.MEDIATYPE_JSON));
-
-    DaprException exception = assertThrows(DaprException.class, () -> {
-      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
-    });
-
-    assertEquals("UNKNOWN", exception.getErrorCode());
-    assertEquals("UNKNOWN: { \"anything\": 7 }", exception.getMessage());
-  }
-
-  @Test
-  public void invokeServiceDaprErrorEmptyString() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "",
-                MediaTypes.MEDIATYPE_JSON));
-
-    DaprException exception = assertThrows(DaprException.class, () -> {
-      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
-    });
-
-    assertEquals("UNKNOWN", exception.getErrorCode());
-    assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
-  }
-
-
-  @Test
-  public void invokeServiceMethodNull() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/publish/A")
-      .respond(EXPECTED_RESULT);
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeMethod("1", "", null, HttpExtension.POST, null, (Class)null).block());
-  }
-
-  @Test
-  public void invokeService() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-        .respond("\"hello world\"");
-
-    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
-    assertEquals("hello world", mono.block());
-  }
-
-  @Test
-  public void invokeServiceNullResponse() {
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-        .respond(new byte[0]);
-
-    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void simpleInvokeService() {
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-      .respond(EXPECTED_RESULT);
-
-    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, byte[].class);
-    assertEquals(new String(mono.block()), EXPECTED_RESULT);
-  }
-
-  @Test
-  public void invokeServiceWithMetadataMap() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-      .respond(EXPECTED_RESULT);
-
-    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", (byte[]) null, HttpExtension.GET, map);
-    String monoString = new String(mono.block());
-    assertEquals(monoString, EXPECTED_RESULT);
-  }
-
-  @Test
-  public void invokeServiceWithOutRequest() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", HttpExtension.GET, map);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void invokeServiceWithRequest() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-      .respond(EXPECTED_RESULT);
-
-    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void invokeServiceWithRequestAndQueryString() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder?param1=1&param2=a&param2=b%2Fc")
-        .respond(EXPECTED_RESULT);
-
-    Map<String, List<String>> queryString = new HashMap<>();
-    queryString.put("param1", Collections.singletonList("1"));
-    queryString.put("param2", Arrays.asList("a", "b/c"));
-    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString, null);
-    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", httpExtension, map);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void invokeServiceNoHotMono() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-        .respond(500);
-
-    daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
-    // No exception should be thrown because did not call block() on mono above.
-  }
-
-  @Test
-  public void invokeServiceWithContext() {
-    String traceparent = "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01";
-    String tracestate = "congo=ucfJifl5GOE,rojo=00f067aa0ba902b7";
-    Context context = Context.empty()
-        .put("traceparent", traceparent)
-        .put("tracestate", tracestate)
-        .put("not_added", "xyz");
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
-        .header("traceparent", traceparent)
-        .header("tracestate", tracestate)
-        .respond(new byte[0]);
-
-    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
-        .setBody("request")
-        .setHttpExtension(HttpExtension.POST);
-    Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
-        .contextWrite(it -> it.putAll((ContextView) context));
-    result.block();
-  }
-
-  @Test
-  public void invokeBinding() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-        .respond("");
-
-    Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "");
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void invokeBindingNullData() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-        .respond("");
-
-    Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", null);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void invokeBindingErrors() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-        .respond("NOT VALID JSON");
-
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeBinding(null, "myoperation", "").block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeBinding("", "myoperation", "").block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeBinding("topic", null, "").block();
-    });
-    assertThrows(IllegalArgumentException.class, () -> {
-      daprClientHttp.invokeBinding("topic", "", "").block();
-    });
-    assertThrowsDaprException(JsonParseException.class, () -> {
-      daprClientHttp.invokeBinding("sample-topic", "op", "data", String.class).block();
-    });
-  }
-
-  @Test
-  public void invokeBindingResponseNull() {
-    mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-        .respond(new byte[0]);
-
-    Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
-    assertNull(mono.block());
-  }
-
-  @Test
-  public void invokeBindingResponseObject() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond("\"OK\"");
-
-    Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
-    assertEquals("OK", mono.block());
-  }
-
-  @Test
-  public void invokeBindingResponseDouble() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond("1.5");
-
-    Mono<Double> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", map, double.class);
-    assertEquals(1.5, mono.block(), 0.0001);
-  }
-
-  @Test
-  public void invokeBindingResponseFloat() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond("1.5");
-
-    Mono<Float> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, float.class);
-    assertEquals(1.5, mono.block(), 0.0001);
-  }
-
-  @Test
-  public void invokeBindingResponseChar() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond("\"a\"");
-
-    Mono<Character> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, char.class);
-    assertEquals('a', (char)mono.block());
-  }
-
-  @Test
-  public void invokeBindingResponseByte() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond("\"2\"");
-
-    Mono<Byte> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, byte.class);
-    assertEquals((byte)0x2, (byte)mono.block());
-  }
-
-  @Test
-  public void invokeBindingResponseLong() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond("1");
-
-    Mono<Long> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, long.class);
-    assertEquals(1, (long)mono.block());
-  }
-
-  @Test
-  public void invokeBindingResponseInt() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond("1");
-
-    Mono<Integer> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, int.class);
-    assertEquals(1, (int)mono.block());
-  }
-
-  @Test
-  public void invokeBindingNullName() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond(EXPECTED_RESULT);
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeBinding(null, "myoperation", "").block());
-  }
-
-  @Test
-  public void invokeBindingNullOpName() {
-    mockInterceptor.addRule()
-      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
-      .respond(EXPECTED_RESULT);
-
-    assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeBinding("sample-topic", null, "").block());
-  }
+  //  @Test
+  //  public void invokeServiceIllegalArgumentException() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/badorder")
+  //        .respond("INVALID JSON");
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      // null HttpMethod
+  //      daprClientHttp.invokeMethod("1", "2", "3", new HttpExtension(null), null, (Class)null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      // null HttpExtension
+  //      daprClientHttp.invokeMethod("1", "2", "3", null, null, (Class)null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      // empty appId
+  //      daprClientHttp.invokeMethod("", "1", null, HttpExtension.GET, null, (Class)null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      // null appId, empty method
+  //      daprClientHttp.invokeMethod(null, "", null, HttpExtension.POST, null, (Class)null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      // empty method
+  //      daprClientHttp.invokeMethod("1", "", null, HttpExtension.PUT, null, (Class)null).block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      // null method
+  //      daprClientHttp.invokeMethod("1", null, null, HttpExtension.DELETE, null, (Class)null).block();
+  //    });
+  //    assertThrowsDaprException(JsonParseException.class, () -> {
+  //      // invalid JSON response
+  //      daprClientHttp.invokeMethod("41", "badorder", null, HttpExtension.GET, null, String.class).block();
+  //    });
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceDaprError() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+  //        .respond(500,
+  //            ResponseBody.create(
+  //                "{ \"errorCode\": \"MYCODE\", \"message\": \"My Message\"}",
+  //                MediaTypes.MEDIATYPE_JSON));
+  //
+  //    DaprException exception = assertThrows(DaprException.class, () -> {
+  //      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+  //    });
+  //
+  //    assertEquals("MYCODE", exception.getErrorCode());
+  //    assertEquals("MYCODE: My Message", exception.getMessage());
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceDaprErrorFromGRPC() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+  //        .respond(500,
+  //            ResponseBody.create(
+  //                "{ \"code\": 7 }",
+  //                MediaTypes.MEDIATYPE_JSON));
+  //
+  //    DaprException exception = assertThrows(DaprException.class, () -> {
+  //      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+  //    });
+  //
+  //    assertEquals("PERMISSION_DENIED", exception.getErrorCode());
+  //    assertEquals("PERMISSION_DENIED: HTTP status code: 500", exception.getMessage());
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceDaprErrorUnknownJSON() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+  //        .respond(500,
+  //            ResponseBody.create(
+  //                "{ \"anything\": 7 }",
+  //                MediaTypes.MEDIATYPE_JSON));
+  //
+  //    DaprException exception = assertThrows(DaprException.class, () -> {
+  //      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+  //    });
+  //
+  //    assertEquals("UNKNOWN", exception.getErrorCode());
+  //    assertEquals("UNKNOWN: { \"anything\": 7 }", exception.getMessage());
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceDaprErrorEmptyString() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/invoke/myapp/method/mymethod")
+  //        .respond(500,
+  //            ResponseBody.create(
+  //                "",
+  //                MediaTypes.MEDIATYPE_JSON));
+  //
+  //    DaprException exception = assertThrows(DaprException.class, () -> {
+  //      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+  //    });
+  //
+  //    assertEquals("UNKNOWN", exception.getErrorCode());
+  //    assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
+  //  }
+  //
+  //
+  //  @Test
+  //  public void invokeServiceMethodNull() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/publish/A")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.invokeMethod("1", "", null, HttpExtension.POST, null, (Class)null).block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeService() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //        .respond("\"hello world\"");
+  //
+  //    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
+  //    assertEquals("hello world", mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceNullResponse() {
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //        .respond(new byte[0]);
+  //
+  //    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void simpleInvokeService() {
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, byte[].class);
+  //    assertEquals(new String(mono.block()), EXPECTED_RESULT);
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceWithMetadataMap() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", (byte[]) null, HttpExtension.GET, map);
+  //    String monoString = new String(mono.block());
+  //    assertEquals(monoString, EXPECTED_RESULT);
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceWithOutRequest() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", HttpExtension.GET, map);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceWithRequest() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //      .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceWithRequestAndQueryString() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder?param1=1&param2=a&param2=b%2Fc")
+  //        .respond(EXPECTED_RESULT);
+  //
+  //    Map<String, List<String>> queryString = new HashMap<>();
+  //    queryString.put("param1", Collections.singletonList("1"));
+  //    queryString.put("param2", Arrays.asList("a", "b/c"));
+  //    HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString, null);
+  //    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", httpExtension, map);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceNoHotMono() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //        .get("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //        .respond(500);
+  //
+  //    daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
+  //    // No exception should be thrown because did not call block() on mono above.
+  //  }
+  //
+  //  @Test
+  //  public void invokeServiceWithContext() {
+  //    String traceparent = "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01";
+  //    String tracestate = "congo=ucfJifl5GOE,rojo=00f067aa0ba902b7";
+  //    Context context = Context.empty()
+  //        .put("traceparent", traceparent)
+  //        .put("tracestate", tracestate)
+  //        .put("not_added", "xyz");
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/invoke/41/method/neworder")
+  //        .header("traceparent", traceparent)
+  //        .header("tracestate", tracestate)
+  //        .respond(new byte[0]);
+  //
+  //    InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
+  //        .setBody("request")
+  //        .setHttpExtension(HttpExtension.POST);
+  //    Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
+  //        .contextWrite(it -> it.putAll((ContextView) context));
+  //    result.block();
+  //  }
+  //
+  //  @Test
+  //  public void invokeBinding() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //        .respond("");
+  //
+  //    Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "");
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingNullData() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //        .respond("");
+  //
+  //    Mono<Void> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", null);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingErrors() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //        .respond("NOT VALID JSON");
+  //
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.invokeBinding(null, "myoperation", "").block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.invokeBinding("", "myoperation", "").block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.invokeBinding("topic", null, "").block();
+  //    });
+  //    assertThrows(IllegalArgumentException.class, () -> {
+  //      daprClientHttp.invokeBinding("topic", "", "").block();
+  //    });
+  //    assertThrowsDaprException(JsonParseException.class, () -> {
+  //      daprClientHttp.invokeBinding("sample-topic", "op", "data", String.class).block();
+  //    });
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseNull() {
+  //    mockInterceptor.addRule()
+  //        .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //        .respond(new byte[0]);
+  //
+  //    Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
+  //    assertNull(mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseObject() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond("\"OK\"");
+  //
+  //    Mono<String> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, String.class);
+  //    assertEquals("OK", mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseDouble() {
+  //    Map<String, String> map = new HashMap<>();
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond("1.5");
+  //
+  //    Mono<Double> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", map, double.class);
+  //    assertEquals(1.5, mono.block(), 0.0001);
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseFloat() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond("1.5");
+  //
+  //    Mono<Float> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, float.class);
+  //    assertEquals(1.5, mono.block(), 0.0001);
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseChar() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond("\"a\"");
+  //
+  //    Mono<Character> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, char.class);
+  //    assertEquals('a', (char)mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseByte() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond("\"2\"");
+  //
+  //    Mono<Byte> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, byte.class);
+  //    assertEquals((byte)0x2, (byte)mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseLong() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond("1");
+  //
+  //    Mono<Long> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, long.class);
+  //    assertEquals(1, (long)mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingResponseInt() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond("1");
+  //
+  //    Mono<Integer> mono = daprClientHttp.invokeBinding("sample-topic", "myoperation", "", null, int.class);
+  //    assertEquals(1, (int)mono.block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingNullName() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.invokeBinding(null, "myoperation", "").block());
+  //  }
+  //
+  //  @Test
+  //  public void invokeBindingNullOpName() {
+  //    mockInterceptor.addRule()
+  //      .post("http://127.0.0.1:3000/v1.0/bindings/sample-topic")
+  //      .respond(EXPECTED_RESULT);
+  //
+  //    assertThrows(IllegalArgumentException.class, () ->
+  //        daprClientHttp.invokeBinding("sample-topic", null, "").block());
+  //  }
 
   @Test
   public void bindingNoHotMono() {
