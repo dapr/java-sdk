@@ -44,7 +44,9 @@ import okhttp3.mock.MockInterceptor;
 import okhttp3.mock.matchers.Matcher;
 import okio.Buffer;
 import okio.BufferedSink;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -90,19 +92,31 @@ public class DaprClientHttpTest {
   private final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
-  private static DaprClient daprClientHttp;
+  private static OkHttpClient.Builder builder;
 
-  private static DaprClient daprClientHttpXML;
+  private static MockInterceptor mockInterceptor;
 
-  private static DaprHttp daprHttp;
+  private DaprClient daprClientHttp;
 
-  private static OkHttpClient okHttpClient;
+  private DaprClient daprClientHttpXML;
 
-  private MockInterceptor mockInterceptor;
+  private DaprHttp daprHttp;
+
+  private OkHttpClient okHttpClient;
+
+  @BeforeAll
+  public static void beforeAll() {
+    mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
+    builder = new OkHttpClient.Builder().addInterceptor(mockInterceptor);
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    mockInterceptor.reset();
+  }
 
   @BeforeEach
   public void setUp() {
-    mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     daprClientHttp = new DaprClientProxy(new DaprClientHttp(daprHttp));
@@ -112,8 +126,8 @@ public class DaprClientHttpTest {
 
   @AfterEach
   public void tearDown() throws Exception {
-    if (daprClientHttpXML != null) {
-      daprClientHttpXML.close();
+    if (daprHttp != null) {
+      daprHttp.close();
     }
   }
 
