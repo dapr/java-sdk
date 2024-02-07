@@ -50,7 +50,7 @@ public class GrpcChannelFacadeTest {
 
   private OkHttpClient okHttpClient;
 
-  private static DaprHttp daprHttp;
+  private static DaprHttp daprHttp; 
 
   /**
    * Enable the waitForSidecar to allow the gRPC to check the http endpoint for the health check
