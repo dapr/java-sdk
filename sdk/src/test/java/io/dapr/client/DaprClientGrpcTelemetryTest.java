@@ -32,7 +32,6 @@ import io.grpc.testing.GrpcCleanupRule;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -48,7 +47,6 @@ import reactor.util.context.ContextView;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnableRuleMigrationSupport
 public class DaprClientGrpcTelemetryTest {
@@ -70,6 +68,13 @@ public class DaprClientGrpcTelemetryTest {
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
   private DaprClient client;
+
+  @AfterEach
+  public void teardown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
+  }
 
   public static Stream<Arguments> data() {
     return Stream.of(
