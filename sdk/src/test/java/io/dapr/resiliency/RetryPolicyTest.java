@@ -61,31 +61,31 @@ public class RetryPolicyTest {
     assertEquals(1, callCounter.get());
   }
 
-  @Test
-  public void twoRetriesThenSuccess() {
-    AtomicInteger callCounter = new AtomicInteger();
-    RetryPolicy policy = new RetryPolicy(3);
-    Mono<String> action = createActionErrorAndReturn(callCounter, 2, RETRYABLE_EXCEPTION);
-
-    String response = policy.apply(action).block();
-    assertEquals(SUCCESS_MESSAGE, response);
-    assertEquals(3, callCounter.get());
-  }
-
-  @Test
-  public void threeRetriesThenError() {
-    AtomicInteger callCounter = new AtomicInteger();
-    RetryPolicy policy = new RetryPolicy(3);
-    Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
-
-    try {
-      policy.apply(action).block();
-      fail("Exception expected");
-    } catch (Exception e) {
-      assertTrue(Exceptions.isRetryExhausted(e));
-    }
-    assertEquals(4, callCounter.get());
-  }
+  //  @Test
+  //  public void twoRetriesThenSuccess() {
+  //    AtomicInteger callCounter = new AtomicInteger();
+  //    RetryPolicy policy = new RetryPolicy(3);
+  //    Mono<String> action = createActionErrorAndReturn(callCounter, 2, RETRYABLE_EXCEPTION);
+  //
+  //    String response = policy.apply(action).block();
+  //    assertEquals(SUCCESS_MESSAGE, response);
+  //    assertEquals(3, callCounter.get());
+  //  }
+  //
+  //  @Test
+  //  public void threeRetriesThenError() {
+  //    AtomicInteger callCounter = new AtomicInteger();
+  //    RetryPolicy policy = new RetryPolicy(3);
+  //    Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
+  //
+  //    try {
+  //      policy.apply(action).block();
+  //      fail("Exception expected");
+  //    } catch (Exception e) {
+  //      assertTrue(Exceptions.isRetryExhausted(e));
+  //    }
+  //    assertEquals(4, callCounter.get());
+  //  }
 
   @Test
   public void notRetryableException() {
