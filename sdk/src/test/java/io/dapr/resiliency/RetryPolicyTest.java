@@ -19,14 +19,11 @@ import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class RetryPolicyTest {
 
@@ -41,12 +38,10 @@ public class RetryPolicyTest {
     RetryPolicy policy = new RetryPolicy(0);
     Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
 
-    try {
-      policy.apply(action).block();
-      fail("Exception expected");
-    } catch (Exception e) {
-      assertSame(RETRYABLE_EXCEPTION, e);
-    }
+    StepVerifier
+            .create(policy.apply(action))
+            .expectError(StatusRuntimeException.class)
+            .verify();
     assertEquals(1, callCounter.get());
   }
 
@@ -56,8 +51,25 @@ public class RetryPolicyTest {
     RetryPolicy policy = new RetryPolicy(0);
     Mono<String> action = createActionErrorAndReturn(callCounter, 0, RETRYABLE_EXCEPTION);
 
-    String response = policy.apply(action).block();
-    assertEquals(SUCCESS_MESSAGE, response);
+    StepVerifier
+            .create(policy.apply(action))
+            .expectNext(SUCCESS_MESSAGE)
+            .expectComplete()
+            .verify();
+    assertEquals(1, callCounter.get());
+  }
+
+  @Test
+  public void singleRetryPolicyWithSuccess() {
+    AtomicInteger callCounter = new AtomicInteger();
+    RetryPolicy policy = new RetryPolicy(1);
+    Mono<String> action = createActionErrorAndReturn(callCounter, 0, RETRYABLE_EXCEPTION);
+
+    StepVerifier
+            .create(policy.apply(action))
+            .expectNext(SUCCESS_MESSAGE)
+            .expectComplete()
+            .verify();
     assertEquals(1, callCounter.get());
   }
 
@@ -67,8 +79,11 @@ public class RetryPolicyTest {
     RetryPolicy policy = new RetryPolicy(3);
     Mono<String> action = createActionErrorAndReturn(callCounter, 2, RETRYABLE_EXCEPTION);
 
-    String response = policy.apply(action).block();
-    assertEquals(SUCCESS_MESSAGE, response);
+    StepVerifier
+            .create(policy.apply(action))
+            .expectNext(SUCCESS_MESSAGE)
+            .expectComplete()
+            .verify();
     assertEquals(3, callCounter.get());
   }
 
@@ -78,12 +93,11 @@ public class RetryPolicyTest {
     RetryPolicy policy = new RetryPolicy(3);
     Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, RETRYABLE_EXCEPTION);
 
-    try {
-      policy.apply(action).block();
-      fail("Exception expected");
-    } catch (Exception e) {
-      assertTrue(Exceptions.isRetryExhausted(e));
-    }
+    StepVerifier
+            .create(policy.apply(action))
+            .expectErrorMatches(e -> Exceptions.isRetryExhausted(e))
+            .verify();
+
     assertEquals(4, callCounter.get());
   }
 
@@ -94,24 +108,22 @@ public class RetryPolicyTest {
     RetryPolicy policy = new RetryPolicy(3);
     Mono<String> action = createActionErrorAndReturn(callCounter, Integer.MAX_VALUE, exception);
 
-    assertThrows(ArithmeticException.class, () -> {
-      policy.apply(action).block();
-    });
+    StepVerifier
+            .create(policy.apply(action))
+            .expectError(ArithmeticException.class)
+            .verify();
+
     assertEquals(1, callCounter.get());
   }
-
-
 
   private static Mono<String> createActionErrorAndReturn(
       AtomicInteger callCounter,
       int firstErrors,
       RuntimeException error) {
-    return Mono.fromCallable(() -> {
+    return Mono.fromRunnable(() -> {
       if (callCounter.incrementAndGet() <= firstErrors) {
         throw error;
       }
-
-      return SUCCESS_MESSAGE;
-    });
+    }).thenReturn(SUCCESS_MESSAGE);
   }
 }
