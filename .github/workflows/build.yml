@@ -114,7 +114,7 @@ jobs:
     - name: Build sdk
       run: ./mvnw compile -B -q
     - name: Unit tests
-      run: ./mvnw -B test -q
+      run: ./mvnw test
     - name: Codecov
       uses: codecov/codecov-action@v3.1.4
     - name: Install jars
