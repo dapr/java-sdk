@@ -20,6 +20,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -85,40 +87,25 @@ public class GrpcChannelFacadeTest {
     }
   }
 
-  private void addMockRulesForBadHealthCheck() {
-    for (int i = 0; i < 6; i++) {
-      mockInterceptor.addRule()
-              .get()
-              .path("/v1.0/healthz/outbound")
-              .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
-    }
-  }
   @Test
   public void waitForSidecarTimeoutHealthCheck() throws Exception {
-    VirtualTimeScheduler virtualTimeScheduler = VirtualTimeScheduler.getOrSet();
-    StepVerifier.setDefaultTimeout(Duration.ofSeconds(20));
-    int timeoutInMilliseconds = 1000;
-
-    int unusedPort = findFreePort();
-
     OkHttpClient okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
     DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
 
-    ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", unusedPort)
-        .usePlaintext()
-            .build();
-
+    ManagedChannel channel = InProcessChannelBuilder.forName("waitForSidecarTimeoutHealthCheck").build();
     grpcCleanup.register(channel);
-
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, daprHttp);
 
-    addMockRulesForBadHealthCheck();
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/healthz/outbound")
+            .times(6)
+            .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
 
-    StepVerifier.create(channelFacade.waitForChannelReady(timeoutInMilliseconds))
+    StepVerifier.create(channelFacade.waitForChannelReady(1000))
             .expectSubscription()
-            .then(() -> virtualTimeScheduler.advanceTimeBy(Duration.ofMillis(timeoutInMilliseconds + timeoutInMilliseconds))) // Advance time to trigger the timeout
             .expectError(TimeoutException.class)
-            .verify();
+            .verify(Duration.ofSeconds(20));
   }
 
   @Test
