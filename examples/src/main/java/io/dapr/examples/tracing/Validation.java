@@ -19,16 +19,13 @@ import com.evanlennick.retry4j.config.RetryConfig;
 import com.evanlennick.retry4j.config.RetryConfigBuilder;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import net.minidev.json.JSONArray;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.TimeZone;
+import java.util.List;
+import java.util.Map;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -112,7 +109,7 @@ final class Validation {
   }
 
   private static Object readOne(DocumentContext documentContext, String path) {
-    JSONArray arr = documentContext.read(path);
+    List<Map<String, Object>> arr = documentContext.read(path);
     if (arr.size() == 0) {
       throw new RuntimeException("No record found for " + path);
     }
@@ -121,7 +118,7 @@ final class Validation {
   }
 
   private static void assertCount(DocumentContext documentContext, String path, int expectedCount) {
-    JSONArray arr = documentContext.read(path);
+    List<Map<String, Object>> arr = documentContext.read(path);
     if (arr.size() != expectedCount) {
       throw new RuntimeException(
           String.format("Unexpected count %d vs expected %d for %s", arr.size(), expectedCount, path));
