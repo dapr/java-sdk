@@ -63,8 +63,8 @@ public class Client {
 <!-- STEP
 name: Run exception example 
 expected_stdout_lines:
-  - '== APP == Error code: ERR_PUBSUB_NOT_FOUND'
-  - '== APP == Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found'
+  - '== APP == Error code: INVALID_ARGUMENT'
+  - '== APP == Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
   - '== APP == Reason: DAPR_PUBSUB_NOT_FOUND'
 background: true
 sleep: 5
