@@ -43,9 +43,9 @@ public class Client {
       try {
         client.publishEvent("unknown_pubsub", "mytopic", "mydata").block();
       } catch (DaprException exception) {
-        System.out.println("Dapr exception's error code: " + exception.getErrorCode());
-        System.out.println("Dapr exception's message: " + exception.getMessage());
-        System.out.println("Dapr exception's reason: " + exception.getStatusDetails().get(
+        System.out.println("Error code: " + exception.getErrorCode());
+        System.out.println("Error message: " + exception.getMessage());
+        System.out.println("Reason: " + exception.getStatusDetails().get(
             DaprErrorDetails.ErrorDetailType.ERROR_INFO,
             "reason",
             TypeRef.STRING));

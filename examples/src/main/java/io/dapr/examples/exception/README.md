@@ -63,9 +63,9 @@ public class Client {
 <!-- STEP
 name: Run exception example 
 expected_stdout_lines:
-  - '== APP == Dapr exception\'s error code: INVALID_ARGUMENT'
-  - '== APP == Dapr exception\'s error message: INVALID_ARGUMENT: state store Unknown state store is not found'
-  - '== APP == Dapr exception\'s error reason: DAPR_PUBSUB_NOT_FOUND'
+  - '== APP == Error code: ERR_PUBSUB_NOT_FOUND'
+  - '== APP == Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found'
+  - '== APP == Reason: DAPR_PUBSUB_NOT_FOUND'
 background: true
 sleep: 5
 -->
@@ -79,11 +79,11 @@ dapr run --app-id exception-example -- java -jar target/dapr-java-sdk-examples-e
 Once running, the State Client Example should print the output as follows:
 
 ```txt
-== APP == Dapr exception's error code: INVALID_ARGUMENT
+== APP == Error code: ERR_PUBSUB_NOT_FOUND
 
-== APP == Dapr exception's error message: INVALID_ARGUMENT: state store Unknown state store is not found
+== APP == Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found
 
-== APP == Dapr exception's error reason: DAPR_PUBSUB_NOT_FOUND
+== APP == Reason: DAPR_PUBSUB_NOT_FOUND
 ...
 
 ```
