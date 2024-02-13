@@ -37,6 +37,7 @@ import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -2507,7 +2508,17 @@ public class DaprClientGrpcTest {
     }
   }
 
-  private static StatusRuntimeException newStatusRuntimeException(String status, String message) {
-    return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(status)).withDescription(message));
+  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message) {
+    return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(statusCode)).withDescription(message));
+  }
+
+  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message, com.google.rpc.Status statusDetails) {
+    com.google.rpc.Status status = com.google.rpc.Status.newBuilder()
+            .setCode(Status.Code.valueOf(statusCode).value())
+            .setMessage(message)
+            .addAllDetails(statusDetails.getDetailsList())
+            .build();
+
+    return StatusProto.toStatusRuntimeException(status);
   }
 }
