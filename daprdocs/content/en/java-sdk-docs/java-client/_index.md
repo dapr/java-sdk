@@ -40,7 +40,29 @@ If your Dapr instance is configured to require the `DAPR_API_TOKEN` environment 
 set it in the environment and the client will use it automatically.  
 You can read more about Dapr API token authentication [here](https://docs.dapr.io/operations/security/api-token/).
 
+#### Error Handling
 
+Initially, errors in Dapr followed the Standard gRPC error model. However, to provide more detailed and informative error 
+messages, in version 1.13 an enhanced error model has been introduced which aligns with the gRPC Richer error model. In 
+response, the Java SDK extended the DaprException to include the error details that were added in Dapr. 
+
+Example of handling the DaprException and consuming the error details when using the Dapr Java SDK:
+
+```java
+...
+      try {
+        client.publishEvent("unknown_pubsub", "mytopic", "mydata").block();
+      } catch (DaprException exception) {
+        System.out.println("Dapr exception's error code: " + exception.getErrorCode());
+        System.out.println("Dapr exception's message: " + exception.getMessage());
+        // DaprException now contains `getStatusDetails()` to include more details about the error from Dapr runtime.
+        System.out.println("Dapr exception's reason: " + exception.getStatusDetails().get(
+        DaprErrorDetails.ErrorDetailType.ERROR_INFO,
+            "reason",
+        TypeRef.STRING));
+      }
+...
+```
 
 ## Building blocks
 
