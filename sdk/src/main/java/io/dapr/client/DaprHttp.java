@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Version;
 import okhttp3.Call;
@@ -72,6 +73,11 @@ public class DaprHttp implements AutoCloseable {
    */
   private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList("grpc-trace-bin", "traceparent", "tracestate")));
+
+  /**
+   * Object mapper to parse DaprError with or without details.
+   */
+  private static final ObjectMapper DAPR_ERROR_DETAILS_OBJECT_MAPPER = new ObjectMapper();
 
   /**
    * HTTP Methods supported.
@@ -135,11 +141,6 @@ public class DaprHttp implements AutoCloseable {
    * Empty input or output.
    */
   private static final byte[] EMPTY_BYTES = new byte[0];
-
-  /**
-   * JSON Object Mapper.
-   */
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
    * Endpoint used to communicate to Dapr's HTTP endpoint.
@@ -347,11 +348,12 @@ public class DaprHttp implements AutoCloseable {
     }
 
     try {
-      return OBJECT_MAPPER.readValue(json, DaprError.class);
+      return DAPR_ERROR_DETAILS_OBJECT_MAPPER.readValue(json, DaprError.class);
     } catch (IOException e) {
       throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
     }
   }
+
 
   private static byte[] getBodyBytesOrEmptyArray(okhttp3.Response response) throws IOException {
     ResponseBody body = response.body();

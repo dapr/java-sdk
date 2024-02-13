@@ -17,6 +17,7 @@ jobs:
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -40,9 +41,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.12.0-rc.1
-      DAPR_RUNTIME_VER: 1.12.0-rc.5
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0-rc.1/install/install.sh
+      DAPR_CLI_VER: 1.12.0
+      DAPR_RUNTIME_VER: 1.13.0-rc.2
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
@@ -114,7 +115,7 @@ jobs:
     - name: Build sdk
       run: ./mvnw compile -B -q
     - name: Unit tests
-      run: ./mvnw -B test -q
+      run: ./mvnw test # making it temporarily verbose.
     - name: Codecov
       uses: codecov/codecov-action@v3.1.4
     - name: Install jars
@@ -148,6 +149,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 10
     env:
       JDK_VER: 17
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}

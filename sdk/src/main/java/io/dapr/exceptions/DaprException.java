@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2024 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,8 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -31,12 +33,17 @@ public class DaprException extends RuntimeException {
   private String errorCode;
 
   /**
+   * The status details for the error.
+   */
+  private DaprErrorDetails errorDetails;
+
+  /**
    * New exception from a server-side generated error code and message.
    *
    * @param daprError Server-side error.
    */
   public DaprException(DaprError daprError) {
-    this(daprError.getErrorCode(), daprError.getMessage());
+    this(daprError.getErrorCode(), daprError.getMessage(), daprError.getDetails());
   }
 
   /**
@@ -66,8 +73,31 @@ public class DaprException extends RuntimeException {
    * @param message   Client-side error message.
    */
   public DaprException(String errorCode, String message) {
+    this(errorCode, message, DaprErrorDetails.EMPTY_INSTANCE);
+  }
+
+  /**
+   * New Exception from a client-side generated error code and message.
+   *
+   * @param errorCode Client-side error code.
+   * @param message   Client-side error message.
+   * @param errorDetails Details of the error from runtime.
+   */
+  public DaprException(String errorCode, String message, List<Map<String, Object>> errorDetails) {
+    this(errorCode, message, new DaprErrorDetails(errorDetails));
+  }
+
+  /**
+   * New Exception from a client-side generated error code and message.
+   *
+   * @param errorCode Client-side error code.
+   * @param message   Client-side error message.
+   * @param errorDetails Details of the error from runtime.
+   */
+  public DaprException(String errorCode, String message, DaprErrorDetails errorDetails) {
     super(String.format("%s: %s", errorCode, message));
     this.errorCode = errorCode;
+    this.errorDetails = errorDetails;
   }
 
   /**
@@ -85,12 +115,32 @@ public class DaprException extends RuntimeException {
   }
 
   /**
+   * New exception from a server-side generated error code and message.
+   * @param errorCode Client-side error code.
+   * @param message   Client-side error message.
+   * @param cause     the cause (which is saved for later retrieval by the
+   *                  {@link #getCause()} method).  (A {@code null} value is
+   *                  permitted, and indicates that the cause is nonexistent or
+   *                  unknown.)
+   * @param errorDetails the status details for the error.
+   */
+  public DaprException(String errorCode, String message, Throwable cause, DaprErrorDetails errorDetails) {
+    super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
+    this.errorCode = errorCode;
+    this.errorDetails = errorDetails == null ? DaprErrorDetails.EMPTY_INSTANCE : errorDetails;
+  }
+
+  /**
    * Returns the exception's error code.
    *
    * @return Error code.
    */
   public String getErrorCode() {
     return this.errorCode;
+  }
+
+  public DaprErrorDetails getStatusDetails() {
+    return this.errorDetails;
   }
 
   /**
@@ -189,10 +239,15 @@ public class DaprException extends RuntimeException {
     while (e != null) {
       if (e instanceof StatusRuntimeException) {
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) e;
+        com.google.rpc.Status status = io.grpc.protobuf.StatusProto.fromThrowable(statusRuntimeException);
+
+        DaprErrorDetails errorDetails  = new DaprErrorDetails(status);
+
         return new DaprException(
                 statusRuntimeException.getStatus().getCode().toString(),
                 statusRuntimeException.getStatus().getDescription(),
-                exception);
+                exception,
+                errorDetails);
       }
 
       e = e.getCause();

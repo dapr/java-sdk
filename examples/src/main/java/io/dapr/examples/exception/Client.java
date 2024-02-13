@@ -15,7 +15,14 @@ package io.dapr.examples.exception;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
+import io.dapr.utils.TypeRef;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 1. Build and install jars:
@@ -33,17 +40,17 @@ public class Client {
    */
   public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
-
       try {
-        client.getState("Unknown state store", "myKey", String.class).block();
+        client.publishEvent("unknown_pubsub", "mytopic", "mydata").block();
       } catch (DaprException exception) {
         System.out.println("Error code: " + exception.getErrorCode());
         System.out.println("Error message: " + exception.getMessage());
-
-        exception.printStackTrace();
+        System.out.println("Reason: " + exception.getStatusDetails().get(
+            DaprErrorDetails.ErrorDetailType.ERROR_INFO,
+            "reason",
+            TypeRef.STRING));
       }
-
-      System.out.println("Done");
     }
+    System.out.println("Done");
   }
 }
