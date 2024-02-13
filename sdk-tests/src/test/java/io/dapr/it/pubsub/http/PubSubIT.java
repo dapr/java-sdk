@@ -116,13 +116,13 @@ public class PubSubIT extends BaseIT {
       if (useGrpc) {
         assertThrowsDaprExceptionWithReason(
             "INVALID_ARGUMENT",
-            "INVALID_ARGUMENT: pubsub unknown pubsub not found",
+            "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
             "DAPR_PUBSUB_NOT_FOUND",
             () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
       } else {
         assertThrowsDaprExceptionWithReason(
             "ERR_PUBSUB_NOT_FOUND",
-            "ERR_PUBSUB_NOT_FOUND: pubsub unknown pubsub not found",
+            "ERR_PUBSUB_NOT_FOUND: pubsub unknown pubsub is not found",
             "DAPR_PUBSUB_NOT_FOUND",
             () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
       }
@@ -146,7 +146,7 @@ public class PubSubIT extends BaseIT {
     try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
       assertThrowsDaprException(
             "INVALID_ARGUMENT",
-            "INVALID_ARGUMENT: pubsub unknown pubsub not found",
+            "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
             () -> client.publishEvents("unknown pubsub", "mytopic","text/plain", "message").block());
     }
   }
