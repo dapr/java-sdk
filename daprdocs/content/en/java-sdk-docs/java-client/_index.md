@@ -51,38 +51,15 @@ Example of handling the DaprException and consuming the error details when using
 ```java
 ...
       try {
-        client.publishEvent("", "", "").block();
+        client.publishEvent("unknown_pubsub", "mytopic", "mydata").block();
       } catch (DaprException exception) {
-        System.out.println("Error code: " + exception.getErrorCode());
-        System.out.println("Error message: " + exception.getMessage());
-
-        try {
-          Map<String, Object> detailsMap = exception.getStatusDetails();
-          if (detailsMap != null && detailsMap.containsKey("details")) {
-            Object detailsObject = detailsMap.get("details");
-            if (detailsObject instanceof List) {
-              List<Map<String, Object>> innerDetailsList = (List<Map<String, Object>>) detailsObject;
-              System.out.println("Error Details: ");
-
-              for (Map<String, Object> innerDetails : innerDetailsList) {
-
-                if (innerDetails.containsKey("@type") && innerDetails.get("@type").equals("type.googleapis.com/google.rpc.ErrorInfo")) {
-                  System.out.println("\tError Detail is of type: Error_Info");
-                  // Implement specific logic based on specific error type
-                }
-
-                for (Map.Entry<String, Object> entry : innerDetails.entrySet()) {
-                  System.out.println("\t" + entry.getKey() + ": " + entry.getValue());
-                }
-                System.out.println(); // separate error details with newline
-              }
-            }
-          }
-          System.out.println("Error Details: " + exception.getStatusDetails());
-        } catch (RuntimeException e) {
-          System.out.println("Error Details: NULL");
-        }
-        exception.printStackTrace();
+        System.out.println("Dapr exception's error code: " + exception.getErrorCode());
+        System.out.println("Dapr exception's message: " + exception.getMessage());
+        // DaprException now contains `getStatusDetails()` to include more details about the error from Dapr runtime.
+        System.out.println("Dapr exception's reason: " + exception.getStatusDetails().get(
+        DaprErrorDetails.ErrorDetailType.ERROR_INFO,
+            "reason",
+        TypeRef.STRING));
       }
 ...
 ```
