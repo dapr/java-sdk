@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.utils;
 
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
@@ -63,7 +64,7 @@ public final class TestUtils {
           Class<T> expectedType,
           String expectedErrorCode,
           String expectedErrorMessage,
-          Map<String, Object> expectedStatusDetails,
+          DaprErrorDetails expectedStatusDetails,
           Executable executable) {
     DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
     Assertions.assertNotNull(daprException.getCause());

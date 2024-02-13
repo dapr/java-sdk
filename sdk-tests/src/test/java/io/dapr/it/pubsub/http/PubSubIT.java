@@ -32,19 +32,13 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
-import org.junit.After;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -56,6 +50,7 @@ import java.util.Set;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
+import static io.dapr.it.TestUtils.assertThrowsDaprExceptionWithReason;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -119,14 +114,16 @@ public class PubSubIT extends BaseIT {
     try (DaprClient client = new DaprClientBuilder().build()) {
 
       if (useGrpc) {
-        assertThrowsDaprException(
+        assertThrowsDaprExceptionWithReason(
             "INVALID_ARGUMENT",
             "INVALID_ARGUMENT: pubsub unknown pubsub not found",
+            "DAPR_PUBSUB_NOT_FOUND",
             () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
       } else {
-        assertThrowsDaprException(
+        assertThrowsDaprExceptionWithReason(
             "ERR_PUBSUB_NOT_FOUND",
             "ERR_PUBSUB_NOT_FOUND: pubsub unknown pubsub not found",
+            "DAPR_PUBSUB_NOT_FOUND",
             () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
       }
     }

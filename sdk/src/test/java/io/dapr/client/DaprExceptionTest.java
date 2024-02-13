@@ -1,11 +1,25 @@
+/*
+ * Copyright 2024 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.client;
 
 import com.google.protobuf.Any;
 import com.google.rpc.ErrorInfo;
 import com.google.rpc.ResourceInfo;
-import io.dapr.exceptions.DaprError;
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprProtos;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,21 +27,20 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static io.dapr.client.DaprClientGrpcTest.newStatusRuntimeException;
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import io.dapr.v1.DaprProtos;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprExceptionTest {
     private GrpcChannelFacade channel;
     private DaprGrpc.DaprStub daprStub;
     private DaprClient client;
-    private ObjectSerializer serializer;
 
     @BeforeEach
     public void setup() throws IOException {
@@ -37,7 +50,6 @@ public class DaprExceptionTest {
         DaprClient grpcClient = new DaprClientGrpc(
                 channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
         client = new DaprClientProxy(grpcClient);
-        serializer = new ObjectSerializer();
         doNothing().when(channel).close();
     }
 
@@ -71,11 +83,7 @@ public class DaprExceptionTest {
             throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument", status);
         }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
-        List<Map<String, Object>> detailsList = DaprError.parseStatusDetails(status);
-
-        Map<String, Object> expectedStatusDetails = new HashMap<>();
-        expectedStatusDetails.put("details", detailsList);
-
+        DaprErrorDetails expectedStatusDetails = new DaprErrorDetails(status);
 
         assertThrowsDaprException(
                 StatusRuntimeException.class,
@@ -102,10 +110,7 @@ public class DaprExceptionTest {
             throw newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument", status);
         }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
 
-        List<Map<String, Object>> detailsList = DaprError.parseStatusDetails(status);
-
-        Map<String, Object> expectedStatusDetails = new HashMap<>();
-        expectedStatusDetails.put("details", detailsList);
+        DaprErrorDetails expectedStatusDetails = new DaprErrorDetails(status);
 
         assertThrowsDaprException(
                 StatusRuntimeException.class,

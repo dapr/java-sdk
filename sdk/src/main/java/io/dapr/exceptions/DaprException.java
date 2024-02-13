@@ -18,7 +18,6 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -36,7 +35,7 @@ public class DaprException extends RuntimeException {
   /**
    * The status details for the error.
    */
-  private Map<String, Object> statusDetails;
+  private DaprErrorDetails errorDetails;
 
   /**
    * New exception from a server-side generated error code and message.
@@ -44,7 +43,7 @@ public class DaprException extends RuntimeException {
    * @param daprError Server-side error.
    */
   public DaprException(DaprError daprError) {
-    this(daprError.getErrorCode(), daprError.getMessage());
+    this(daprError.getErrorCode(), daprError.getMessage(), daprError.getDetails());
   }
 
   /**
@@ -74,8 +73,31 @@ public class DaprException extends RuntimeException {
    * @param message   Client-side error message.
    */
   public DaprException(String errorCode, String message) {
+    this(errorCode, message, DaprErrorDetails.EMPTY_INSTANCE);
+  }
+
+  /**
+   * New Exception from a client-side generated error code and message.
+   *
+   * @param errorCode Client-side error code.
+   * @param message   Client-side error message.
+   * @param errorDetails Details of the error from runtime.
+   */
+  public DaprException(String errorCode, String message, List<Map<String, Object>> errorDetails) {
+    this(errorCode, message, new DaprErrorDetails(errorDetails));
+  }
+
+  /**
+   * New Exception from a client-side generated error code and message.
+   *
+   * @param errorCode Client-side error code.
+   * @param message   Client-side error message.
+   * @param errorDetails Details of the error from runtime.
+   */
+  public DaprException(String errorCode, String message, DaprErrorDetails errorDetails) {
     super(String.format("%s: %s", errorCode, message));
     this.errorCode = errorCode;
+    this.errorDetails = errorDetails;
   }
 
   /**
@@ -92,7 +114,6 @@ public class DaprException extends RuntimeException {
     this.errorCode = errorCode;
   }
 
-
   /**
    * New exception from a server-side generated error code and message.
    * @param errorCode Client-side error code.
@@ -101,14 +122,12 @@ public class DaprException extends RuntimeException {
    *                  {@link #getCause()} method).  (A {@code null} value is
    *                  permitted, and indicates that the cause is nonexistent or
    *                  unknown.)
-   * @param statusDetails the status details for the error.
+   * @param errorDetails the status details for the error.
    */
-  public DaprException(String errorCode, String message, Throwable cause, Map<String, Object> statusDetails) {
+  public DaprException(String errorCode, String message, Throwable cause, DaprErrorDetails errorDetails) {
     super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
     this.errorCode = errorCode;
-    if (statusDetails != null) {
-      this.statusDetails = statusDetails;
-    }
+    this.errorDetails = errorDetails == null ? DaprErrorDetails.EMPTY_INSTANCE : errorDetails;
   }
 
   /**
@@ -120,8 +139,8 @@ public class DaprException extends RuntimeException {
     return this.errorCode;
   }
 
-  public Map<String, Object> getStatusDetails() {
-    return this.statusDetails;
+  public DaprErrorDetails getStatusDetails() {
+    return this.errorDetails;
   }
 
   /**
@@ -222,15 +241,13 @@ public class DaprException extends RuntimeException {
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) e;
         com.google.rpc.Status status = io.grpc.protobuf.StatusProto.fromThrowable(statusRuntimeException);
 
-        List<Map<String, Object>> detailsList  = DaprError.parseStatusDetails(status);
-        Map<String, Object> statusDetails = new HashMap<>();
-        statusDetails.put("details", detailsList);
+        DaprErrorDetails errorDetails  = new DaprErrorDetails(status);
 
         return new DaprException(
                 statusRuntimeException.getStatus().getCode().toString(),
                 statusRuntimeException.getStatus().getDescription(),
                 exception,
-                statusDetails);
+                errorDetails);
       }
 
       e = e.getCause();
