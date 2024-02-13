@@ -23,8 +23,8 @@ cd java-sdk
 Then build the Maven project:
 
 ```sh
-# make sure you are in the `java-sdk` directory.
-mvn install
+# make sure you are in the `java-sdk` (root) directory.
+./mvnw clean install
 ```
 
 Then get into the examples directory:
@@ -32,43 +32,40 @@ Then get into the examples directory:
 cd examples
 ```
 
-### Running the StateClient
-This example uses the Java SDK Dapr client in order to perform an invalid operation, causing Dapr runtime to return an error. See the code snippet below: 
+### Understanding the code
+
+This example uses the Java SDK Dapr client in order to perform an invalid operation, causing Dapr runtime to return an error. See the code snippet below, from `Client.java`: 
 
 ```java
 public class Client {
 
   public static void main(String[] args) throws Exception {
     try (DaprClient client = new DaprClientBuilder().build()) {
-
       try {
-        client.getState("Unknown state store", "myKey", String.class).block();
+        client.publishEvent("unknown_pubsub", "mytopic", "mydata").block();
       } catch (DaprException exception) {
-        System.out.println("Error code: " + exception.getErrorCode());
-        System.out.println("Error message: " + exception.getMessage());
-
-        exception.printStackTrace();
+        System.out.println("Dapr exception's error code: " + exception.getErrorCode());
+        System.out.println("Dapr exception's message: " + exception.getMessage());
+        System.out.println("Dapr exception's reason: " + exception.getStatusDetails().get(
+                DaprErrorDetails.ErrorDetailType.ERROR_INFO,
+                "reason",
+                TypeRef.STRING));
       }
-
-      System.out.println("Done");
     }
+    System.out.println("Done");
   }
 
 }
 ```
-The code uses the `DaprClient` created by the `DaprClientBuilder`. It tries to get a state from state store, but provides an unknown state store. It causes the Dapr sidecar to return an error, which is converted to a `DaprException` to the application. To be compatible with Project Reactor, `DaprException` extends from `RuntimeException` - making it an unchecked exception. Applications might also get an `IllegalArgumentException` when invoking methods with invalid input parameters that are validated at the client side.
-
-The Dapr client is also within a try-with-resource block to properly close the client at the end.
 
 ### Running the example
-
-Run this example with the following command:
 
 <!-- STEP
 name: Run exception example 
 expected_stdout_lines:
   - '== APP == Error code: INVALID_ARGUMENT'
-  - '== APP == Error message: INVALID_ARGUMENT: state store Unknown state store is not found'
+  - '== APP == Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
+  - '== APP == Reason: DAPR_PUBSUB_NOT_FOUND'
 background: true
 sleep: 5
 -->
@@ -79,41 +76,30 @@ dapr run --app-id exception-example -- java -jar target/dapr-java-sdk-examples-e
 
 <!-- END_STEP -->
 
-Once running, the OutputBindingExample should print the output as follows:
+Once running, the State Client Example should print the output as follows:
 
 ```txt
-== APP == Error code: INVALID_ARGUMENT
+== APP == Error code: ERR_PUBSUB_NOT_FOUND
 
-== APP == Error message: INVALID_ARGUMENT: state store Unknown state store is not found
+== APP == Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found
 
-== APP == io.dapr.exceptions.DaprException: INVALID_ARGUMENT: state store Unknown state store is not found
-
-== APP == 	at io.dapr.exceptions.DaprException.propagate(DaprException.java:168)
-
-== APP == 	at io.dapr.client.DaprClientGrpc$2.onError(DaprClientGrpc.java:716)
-
-== APP == 	at io.grpc.stub.ClientCalls$StreamObserverToCallListenerAdapter.onClose(ClientCalls.java:478)
-
-== APP == 	at io.grpc.internal.DelayedClientCall$DelayedListener$3.run(DelayedClientCall.java:464)
-
-== APP == 	at io.grpc.internal.DelayedClientCall$DelayedListener.delayOrExecute(DelayedClientCall.java:428)
-
-== APP == 	at io.grpc.internal.DelayedClientCall$DelayedListener.onClose(DelayedClientCall.java:461)
-
-== APP == 	at io.grpc.internal.ClientCallImpl.closeObserver(ClientCallImpl.java:617)
-
-== APP == 	at io.grpc.internal.ClientCallImpl.access$300(ClientCallImpl.java:70)
-
-== APP == 	at io.grpc.internal.ClientCallImpl$ClientStreamListenerImpl$1StreamClosed.runInternal(ClientCallImpl.java:803)
-
-== APP == 	at io.grpc.internal.ClientCallImpl$ClientStreamListenerImpl$1StreamClosed.runInContext(ClientCallImpl.java:782)
-
-== APP == 	at io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)
-
-== APP == 	at io.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:123)
+== APP == Reason: DAPR_PUBSUB_NOT_FOUND
 ...
 
 ```
+
+### Debug
+
+You can further explore all the error details returned in the `DaprException` class.
+Before running it in your favorite IDE (like IntelliJ), compile and run the Dapr sidecar first.
+
+1. Pre-req:
+```sh
+# make sure you are in the `java-sdk` (root) directory.
+./mvnw clean install
+```
+2. From the examples directory, run: `dapr run --app-id exception-example --dapr-grpc-port=50001 --dapr-http-port=3500`
+3. From your IDE click the play button on the client code and put break points where desired.
 
 ### Cleanup
 

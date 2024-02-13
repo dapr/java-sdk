@@ -13,12 +13,14 @@ limitations under the License.
 
 package io.dapr.utils;
 
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Map;
 
 public final class TestUtils {
 
@@ -56,6 +58,20 @@ public final class TestUtils {
     Assertions.assertEquals(expectedType, daprException.getCause().getClass());
     Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
+  }
+
+  public static <T extends Throwable> void assertThrowsDaprException(
+          Class<T> expectedType,
+          String expectedErrorCode,
+          String expectedErrorMessage,
+          DaprErrorDetails expectedStatusDetails,
+          Executable executable) {
+    DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
+    Assertions.assertNotNull(daprException.getCause());
+    Assertions.assertEquals(expectedType, daprException.getCause().getClass());
+    Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
+    Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
+    Assertions.assertEquals(expectedStatusDetails, daprException.getStatusDetails());
   }
 
   public static int findFreePort() throws IOException {
