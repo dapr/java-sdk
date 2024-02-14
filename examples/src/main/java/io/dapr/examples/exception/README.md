@@ -50,6 +50,7 @@ public class Client {
                 DaprErrorDetails.ErrorDetailType.ERROR_INFO,
                 "reason",
                 TypeRef.STRING));
+        System.out.println("Error's payload size: " + exception.getPayload().length);
       }
     }
     System.out.println("Done");
@@ -66,6 +67,7 @@ expected_stdout_lines:
   - '== APP == Error code: INVALID_ARGUMENT'
   - '== APP == Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
   - '== APP == Reason: DAPR_PUBSUB_NOT_FOUND'
+  - '== APP == Error's payload size: 116'
 background: true
 sleep: 5
 -->
@@ -84,6 +86,8 @@ Once running, the State Client Example should print the output as follows:
 == APP == Error message: ERR_PUBSUB_NOT_FOUND: pubsub unknown_pubsub is not found
 
 == APP == Reason: DAPR_PUBSUB_NOT_FOUND
+
+== APP == Error's payload size: 116
 ...
 
 ```

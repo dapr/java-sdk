@@ -387,7 +387,8 @@ public class DaprClientHttpTest {
     });
 
     assertEquals("UNKNOWN", exception.getErrorCode());
-    assertEquals("UNKNOWN: { \"anything\": 7 }", exception.getMessage());
+    assertEquals("UNKNOWN: Could not parse error's payload.", exception.getMessage());
+    assertEquals("{ \"anything\": 7 }", new String(exception.getPayload()));
   }
 
   @Test
