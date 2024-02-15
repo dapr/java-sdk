@@ -191,6 +191,14 @@ null,
       new GrpcChannelFacade(channel, daprHTTP), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
   }
 
+
+  @AfterEach
+  public void tearDown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
+  }
+
   @ParameterizedTest
   @MethodSource("data")
   public void invokeServiceVoidWithTracingTest(String traceparent, String tracestate, boolean expectGrpcTraceBin) throws IOException {
