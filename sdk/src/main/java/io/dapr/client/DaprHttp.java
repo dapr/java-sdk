@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
-import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Version;
 import okhttp3.Call;
@@ -350,7 +349,7 @@ public class DaprHttp implements AutoCloseable {
     try {
       return DAPR_ERROR_DETAILS_OBJECT_MAPPER.readValue(json, DaprError.class);
     } catch (IOException e) {
-      throw new DaprException("UNKNOWN", new String(json), json);
+      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8), json);
     }
   }
 
