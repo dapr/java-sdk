@@ -38,12 +38,18 @@ public class DaprException extends RuntimeException {
   private DaprErrorDetails errorDetails;
 
   /**
+   * Optional payload, if the exception came from a response body.
+   */
+  private byte[] payload;
+
+  /**
    * New exception from a server-side generated error code and message.
    *
    * @param daprError Server-side error.
+   * @param payload Payload containing the error.
    */
-  public DaprException(DaprError daprError) {
-    this(daprError.getErrorCode(), daprError.getMessage(), daprError.getDetails());
+  public DaprException(DaprError daprError, byte[] payload) {
+    this(daprError.getErrorCode(), daprError.getMessage(), daprError.getDetails(), payload);
   }
 
   /**
@@ -71,9 +77,10 @@ public class DaprException extends RuntimeException {
    *
    * @param errorCode Client-side error code.
    * @param message   Client-side error message.
+   * @param payload   Error's raw payload.
    */
-  public DaprException(String errorCode, String message) {
-    this(errorCode, message, DaprErrorDetails.EMPTY_INSTANCE);
+  public DaprException(String errorCode, String message, byte[] payload) {
+    this(errorCode, message, DaprErrorDetails.EMPTY_INSTANCE, payload);
   }
 
   /**
@@ -82,9 +89,10 @@ public class DaprException extends RuntimeException {
    * @param errorCode Client-side error code.
    * @param message   Client-side error message.
    * @param errorDetails Details of the error from runtime.
+   * @param payload Payload containing the error.
    */
-  public DaprException(String errorCode, String message, List<Map<String, Object>> errorDetails) {
-    this(errorCode, message, new DaprErrorDetails(errorDetails));
+  public DaprException(String errorCode, String message, List<Map<String, Object>> errorDetails, byte[] payload) {
+    this(errorCode, message, new DaprErrorDetails(errorDetails), payload);
   }
 
   /**
@@ -93,11 +101,13 @@ public class DaprException extends RuntimeException {
    * @param errorCode Client-side error code.
    * @param message   Client-side error message.
    * @param errorDetails Details of the error from runtime.
+   * @param payload Payload containing the error.
    */
-  public DaprException(String errorCode, String message, DaprErrorDetails errorDetails) {
+  public DaprException(String errorCode, String message, DaprErrorDetails errorDetails, byte[] payload) {
     super(String.format("%s: %s", errorCode, message));
     this.errorCode = errorCode;
     this.errorDetails = errorDetails;
+    this.payload = payload;
   }
 
   /**
@@ -123,11 +133,14 @@ public class DaprException extends RuntimeException {
    *                  permitted, and indicates that the cause is nonexistent or
    *                  unknown.)
    * @param errorDetails the status details for the error.
+   * @param payload Raw error payload.
    */
-  public DaprException(String errorCode, String message, Throwable cause, DaprErrorDetails errorDetails) {
+  public DaprException(
+      String errorCode, String message, Throwable cause, DaprErrorDetails errorDetails, byte[] payload) {
     super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
     this.errorCode = errorCode;
     this.errorDetails = errorDetails == null ? DaprErrorDetails.EMPTY_INSTANCE : errorDetails;
+    this.payload = payload;
   }
 
   /**
@@ -139,8 +152,22 @@ public class DaprException extends RuntimeException {
     return this.errorCode;
   }
 
-  public DaprErrorDetails getStatusDetails() {
+  /**
+   * Returns the exception's error details.
+   *
+   * @return Error details.
+   */
+  public DaprErrorDetails getErrorDetails() {
     return this.errorDetails;
+  }
+
+  /**
+   * Returns the exception's error payload (optional).
+   *
+   * @return Error's payload.
+   */
+  public byte[] getPayload() {
+    return this.payload == null ? null : this.payload.clone();
   }
 
   /**
@@ -247,7 +274,9 @@ public class DaprException extends RuntimeException {
                 statusRuntimeException.getStatus().getCode().toString(),
                 statusRuntimeException.getStatus().getDescription(),
                 exception,
-                errorDetails);
+                errorDetails,
+                status.toByteArray());
+
       }
 
       e = e.getCause();
