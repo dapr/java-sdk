@@ -350,7 +350,7 @@ public class DaprHttp implements AutoCloseable {
     try {
       return DAPR_ERROR_DETAILS_OBJECT_MAPPER.readValue(json, DaprError.class);
     } catch (IOException e) {
-      throw new DaprException("UNKNOWN", "Could not parse error's payload.", json);
+      throw new DaprException("UNKNOWN", new String(json), json);
     }
   }
 
