@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
-import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.Version;
 import okhttp3.Call;
@@ -350,7 +349,7 @@ public class DaprHttp implements AutoCloseable {
     try {
       return DAPR_ERROR_DETAILS_OBJECT_MAPPER.readValue(json, DaprError.class);
     } catch (IOException e) {
-      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
+      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8), json);
     }
   }
 
@@ -383,18 +382,19 @@ public class DaprHttp implements AutoCloseable {
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
       if (!response.isSuccessful()) {
         try {
-          DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
+          byte[] payload = getBodyBytesOrEmptyArray(response);
+          DaprError error = parseDaprError(payload);
           if ((error != null) && (error.getErrorCode() != null)) {
             if (error.getMessage() != null) {
-              future.completeExceptionally(new DaprException(error));
+              future.completeExceptionally(new DaprException(error, payload));
             } else {
               future.completeExceptionally(
-                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code()));
+                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code(), payload));
             }
             return;
           }
 
-          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
+          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code(), payload));
           return;
         } catch (DaprException e) {
           future.completeExceptionally(e);

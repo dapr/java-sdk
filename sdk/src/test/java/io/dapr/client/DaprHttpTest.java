@@ -236,7 +236,7 @@ public class DaprHttpTest {
       DaprException daprException = (DaprException)e;
       assertEquals("ERR_PUBSUB_NOT_FOUND", daprException.getErrorCode());
       assertEquals("DAPR_PUBSUB_NOT_FOUND",
-          daprException.getStatusDetails()
+          daprException.getErrorDetails()
               .get(DaprErrorDetails.ErrorDetailType.ERROR_INFO, "reason", TypeRef.STRING));
       return true;
     }).verify();

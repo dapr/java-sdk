@@ -19,11 +19,6 @@ import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import io.dapr.utils.TypeRef;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * 1. Build and install jars:
  * mvn clean install
@@ -45,10 +40,11 @@ public class Client {
       } catch (DaprException exception) {
         System.out.println("Error code: " + exception.getErrorCode());
         System.out.println("Error message: " + exception.getMessage());
-        System.out.println("Reason: " + exception.getStatusDetails().get(
+        System.out.println("Reason: " + exception.getErrorDetails().get(
             DaprErrorDetails.ErrorDetailType.ERROR_INFO,
             "reason",
             TypeRef.STRING));
+        System.out.println("Error payload size: " + exception.getPayload().length);
       }
     }
     System.out.println("Done");
