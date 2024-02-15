@@ -2372,11 +2372,11 @@ public class DaprClientGrpcTest {
   @Test
   public void shutdownTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
-      observer.onNext(Empty.getDefaultInstance());
+      StreamObserver<DaprProtos.ShutdownRequest> observer = (StreamObserver<DaprProtos.ShutdownRequest>) invocation.getArguments()[1];
+      observer.onNext(DaprProtos.ShutdownRequest.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).shutdown(any(Empty.class), any());
+    }).when(daprStub).shutdown(any(DaprProtos.ShutdownRequest.class), any());
 
     Mono<Void> result = client.shutdown();
     result.block();
