@@ -67,7 +67,7 @@ expected_stdout_lines:
   - '== APP == Error code: INVALID_ARGUMENT'
   - '== APP == Error message: INVALID_ARGUMENT: pubsub unknown_pubsub is not found'
   - '== APP == Reason: DAPR_PUBSUB_NOT_FOUND'
-  - '== APP == Error's payload size: 116'
+  - '== APP == Error payload size: 116'
 background: true
 sleep: 5
 -->
@@ -87,7 +87,7 @@ Once running, the State Client Example should print the output as follows:
 
 == APP == Reason: DAPR_PUBSUB_NOT_FOUND
 
-== APP == Error's payload size: 116
+== APP == Error payload size: 116
 ...
 
 ```

@@ -44,7 +44,7 @@ public class Client {
             DaprErrorDetails.ErrorDetailType.ERROR_INFO,
             "reason",
             TypeRef.STRING));
-        System.out.println("Error's payload size: " + exception.getPayload().length);
+        System.out.println("Error payload size: " + exception.getPayload().length);
       }
     }
     System.out.println("Done");
