@@ -52,10 +52,10 @@ public final class TestUtils {
     DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
     Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
-    Assertions.assertNotNull(daprException.getStatusDetails());
+    Assertions.assertNotNull(daprException.getErrorDetails());
     Assertions.assertEquals(
         expectedReason,
-        daprException.getStatusDetails().get(
+        daprException.getErrorDetails().get(
             DaprErrorDetails.ErrorDetailType.ERROR_INFO,
             "reason",
             TypeRef.STRING
