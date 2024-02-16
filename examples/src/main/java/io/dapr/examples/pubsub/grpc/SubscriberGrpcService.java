@@ -30,7 +30,9 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
   @Override
   public void listTopicSubscriptions(Empty request,
       StreamObserver<DaprAppCallbackProtos.ListTopicSubscriptionsResponse> responseObserver) {
-    registerConsumer("messagebus","testingtopic");
+    registerConsumer("messagebus", "testingtopic", false);
+    registerConsumer("messagebus", "bulkpublishtesting", false);
+    registerConsumer("messagebus", "testingtopicbulk", true);
     try {
       DaprAppCallbackProtos.ListTopicSubscriptionsResponse.Builder builder = DaprAppCallbackProtos
           .ListTopicSubscriptionsResponse.newBuilder();
@@ -65,12 +67,14 @@ public class SubscriberGrpcService extends AppCallbackGrpc.AppCallbackImplBase {
    * 
    * @param topic the topic
    * @param pubsubName the pubsub name
+   * @param isBulkMessage flag to enable/disable bulk subscribe
    */
-  public void registerConsumer(String pubsubName, String topic) {
+  public void registerConsumer(String pubsubName, String topic, boolean isBulkMessage) {
     topicSubscriptionList.add(DaprAppCallbackProtos.TopicSubscription
         .newBuilder()
         .setPubsubName(pubsubName)
         .setTopic(topic)
+        .setBulkSubscribe(DaprAppCallbackProtos.BulkSubscribeConfig.newBuilder().setEnabled(isBulkMessage))
         .build());
   }
 }

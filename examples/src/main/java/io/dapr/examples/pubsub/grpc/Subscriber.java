@@ -50,6 +50,7 @@ public class Subscriber {
     //start a grpc server
     Server server = ServerBuilder.forPort(port)  
         .addService(new SubscriberGrpcService())  
+        .addService(new BulkSubscriberGrpcService())  
         .build();  
     server.start();  
     server.awaitTermination();  
