@@ -976,9 +976,10 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public Mono<Void> shutdown() {
+    DaprProtos.ShutdownRequest shutdownRequest = DaprProtos.ShutdownRequest.newBuilder().build();
     return Mono.deferContextual(
         context -> this.<Empty>createMono(
-            it -> intercept(context, asyncStub).shutdown(Empty.getDefaultInstance(), it))
+            it -> intercept(context, asyncStub).shutdown(shutdownRequest, it))
     ).then();
   }
 
