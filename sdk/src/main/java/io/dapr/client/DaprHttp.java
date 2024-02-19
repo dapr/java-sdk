@@ -74,6 +74,11 @@ public class DaprHttp implements AutoCloseable {
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList("grpc-trace-bin", "traceparent", "tracestate")));
 
   /**
+   * Object mapper to parse DaprError with or without details.
+   */
+  private static final ObjectMapper DAPR_ERROR_DETAILS_OBJECT_MAPPER = new ObjectMapper();
+
+  /**
    * HTTP Methods supported.
    */
   public enum HttpMethods {
@@ -135,11 +140,6 @@ public class DaprHttp implements AutoCloseable {
    * Empty input or output.
    */
   private static final byte[] EMPTY_BYTES = new byte[0];
-
-  /**
-   * JSON Object Mapper.
-   */
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
    * Endpoint used to communicate to Dapr's HTTP endpoint.
@@ -347,11 +347,12 @@ public class DaprHttp implements AutoCloseable {
     }
 
     try {
-      return OBJECT_MAPPER.readValue(json, DaprError.class);
+      return DAPR_ERROR_DETAILS_OBJECT_MAPPER.readValue(json, DaprError.class);
     } catch (IOException e) {
-      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8));
+      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8), json);
     }
   }
+
 
   private static byte[] getBodyBytesOrEmptyArray(okhttp3.Response response) throws IOException {
     ResponseBody body = response.body();
@@ -381,18 +382,19 @@ public class DaprHttp implements AutoCloseable {
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
       if (!response.isSuccessful()) {
         try {
-          DaprError error = parseDaprError(getBodyBytesOrEmptyArray(response));
+          byte[] payload = getBodyBytesOrEmptyArray(response);
+          DaprError error = parseDaprError(payload);
           if ((error != null) && (error.getErrorCode() != null)) {
             if (error.getMessage() != null) {
-              future.completeExceptionally(new DaprException(error));
+              future.completeExceptionally(new DaprException(error, payload));
             } else {
               future.completeExceptionally(
-                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code()));
+                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code(), payload));
             }
             return;
           }
 
-          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code()));
+          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code(), payload));
           return;
         } catch (DaprException e) {
           future.completeExceptionally(e);
