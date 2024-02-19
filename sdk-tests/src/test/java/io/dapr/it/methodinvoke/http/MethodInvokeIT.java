@@ -136,6 +136,7 @@ public class MethodInvokeIT extends BaseIT {
             assertEquals("UNKNOWN", exception.getErrorCode());
             assertNotNull(exception.getMessage());
             assertTrue(exception.getMessage().contains("Internal Server Error"));
+            assertTrue(new String(exception.getPayload()).contains("Internal Server Error"));
         }
     }
 }

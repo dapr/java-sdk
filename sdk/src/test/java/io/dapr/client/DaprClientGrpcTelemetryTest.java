@@ -30,8 +30,8 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -47,7 +47,6 @@ import reactor.util.context.ContextView;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnableRuleMigrationSupport
 public class DaprClientGrpcTelemetryTest {
@@ -69,6 +68,13 @@ public class DaprClientGrpcTelemetryTest {
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
   private DaprClient client;
+
+  @AfterEach
+  public void teardown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
+  }
 
   public static Stream<Arguments> data() {
     return Stream.of(
@@ -183,6 +189,14 @@ null,
     DaprHttp daprHTTP = Mockito.mock(DaprHttp.class);
     client = new DaprClientGrpc(
       new GrpcChannelFacade(channel, daprHTTP), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+  }
+
+
+  @AfterEach
+  public void tearDown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
   }
 
   @ParameterizedTest

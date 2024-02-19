@@ -13,7 +13,9 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
+import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.test.StepVerifier;
@@ -210,7 +212,7 @@ public class DaprHttpTest {
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono =
         daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
-    StepVerifier.create(mono).expectError(RuntimeException.class);
+    StepVerifier.create(mono).expectError(RuntimeException.class).verify();
   }
 
   @Test
@@ -221,7 +223,7 @@ public class DaprHttpTest {
         "{\"errorCode\":null,\"message\":null}"));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
-    StepVerifier.create(mono).expectError(RuntimeException.class);
+    StepVerifier.create(mono).expectError(RuntimeException.class).verify();
   }
 
   @Test
@@ -232,7 +234,36 @@ public class DaprHttpTest {
         "{\"errorCode\":\"null\",\"message\":\"null\"}"));
     DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, okHttpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/state".split("/"), null, null, Context.empty());
-    StepVerifier.create(mono).expectError(RuntimeException.class);
+    StepVerifier.create(mono).expectError(RuntimeException.class).verify();
+  }
+
+  @Test
+  public void validateExceptionParsing() {
+    final String payload = "{" +
+        "\"errorCode\":\"ERR_PUBSUB_NOT_FOUND\"," +
+        "\"message\":\"pubsub abc is not found\"," +
+        "\"details\":[" +
+        "{" +
+        "\"@type\":\"type.googleapis.com/google.rpc.ErrorInfo\"," +
+        "\"domain\":\"dapr.io\"," +
+        "\"metadata\":{}," +
+        "\"reason\":\"DAPR_PUBSUB_NOT_FOUND\"" +
+        "}]}";
+    mockInterceptor.addRule()
+        .post("http://127.0.0.1:3500/v1.0/pubsub/publish")
+        .respond(500, ResponseBody.create(MediaType.parse("application/json"),
+            payload));
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, okHttpClient);
+    Mono<DaprHttp.Response> mono = daprHttp.invokeApi("POST", "v1.0/pubsub/publish".split("/"), null, null, Context.empty());
+    StepVerifier.create(mono).expectErrorMatches(e -> {
+      assertEquals(DaprException.class, e.getClass());
+      DaprException daprException = (DaprException)e;
+      assertEquals("ERR_PUBSUB_NOT_FOUND", daprException.getErrorCode());
+      assertEquals("DAPR_PUBSUB_NOT_FOUND",
+          daprException.getErrorDetails()
+              .get(DaprErrorDetails.ErrorDetailType.ERROR_INFO, "reason", TypeRef.STRING));
+      return true;
+    }).verify();
   }
 
   /**

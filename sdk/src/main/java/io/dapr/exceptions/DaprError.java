@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2024 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,10 @@ limitations under the License.
 package io.dapr.exceptions;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import io.grpc.Status;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Represents an error message from Dapr.
@@ -38,13 +41,18 @@ public class DaprError {
   private Integer code;
 
   /**
+   * Details about the error.
+   */
+  private List<Map<String, Object>> details;
+
+  /**
    * Gets the error code.
    *
    * @return Error code.
    */
   public String getErrorCode() {
     if ((errorCode == null) && (code != null)) {
-      return Status.fromCodeValue(code).getCode().name();
+      return io.grpc.Status.fromCodeValue(code).getCode().name();
     }
     return errorCode;
   }
@@ -77,6 +85,26 @@ public class DaprError {
    */
   public DaprError setMessage(String message) {
     this.message = message;
+    return this;
+  }
+
+  /**
+   * Gets the error details.
+   *
+   * @return Error details.
+   */
+  public List<Map<String, Object>> getDetails() {
+    return details;
+  }
+
+  /**
+   * Sets the error details.
+   *
+   * @param details Error details.
+   * @return This instance.
+   */
+  public DaprError setDetails(List<Map<String, Object>> details) {
+    this.details = Collections.unmodifiableList(details);
     return this;
   }
 
