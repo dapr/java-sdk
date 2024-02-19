@@ -7,7 +7,7 @@
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.11.0-SNAPSHOT</version>
+  <version>1.12.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
@@ -16,30 +16,28 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <grpc.version>1.59.0</grpc.version>
     <protobuf.version>3.17.3</protobuf.version>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.12.0-rc.2/dapr/proto</dapr.proto.baseurl>
-    <dapr.sdk-workflows.version>0.11.0-SNAPSHOT</dapr.sdk-workflows.version>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.13.0-rc.5/dapr/proto</dapr.proto.baseurl>
+    <dapr.sdk-workflows.version>0.12.0-SNAPSHOT</dapr.sdk-workflows.version>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
     <maven-deploy-plugin.version>2.7</maven-deploy-plugin.version>
-    <maven.compiler.source>8</maven.compiler.source>
-    <maven.compiler.target>8</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
     <!--
         manually declare durabletask-client's jackson dependencies for workflows sdk
         which conflict with dapr-sdk's jackson dependencies
         https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
         -->
-    <jackson.version>2.12.3</jackson.version>
+    <jackson.version>2.16.1</jackson.version>
     <gpg.skip>true</gpg.skip>
-    <spotbugs.version>4.0.0-RC1</spotbugs.version>
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>../spotbugs-exclude.xml</spotbugs.exclude.filter.file>
-    <springboot.version>2.7.8</springboot.version>
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
-    <failsafe.version>3.1.2</failsafe.version>
-    <surefire.version>3.1.2</surefire.version>
-    <junit-bom.version>5.7.2</junit-bom.version>
+    <failsafe.version>3.2.2</failsafe.version>
+    <surefire.version>3.2.2</surefire.version>
+    <junit-bom.version>5.8.2</junit-bom.version>
   </properties>
 
   <distributionManagement>
@@ -60,6 +58,11 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>2.0.9</version>
+      </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-bom</artifactId>
@@ -83,6 +86,24 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>3.11.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-test</artifactId>
+        <version>3.5.12</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-testing</artifactId>
+        <version>1.56.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-inprocess</artifactId>
+        <version>1.59.0</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
@@ -120,7 +141,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.6</version>
+        <version>0.8.11</version>
         <executions>
           <execution>
             <goals>
@@ -132,7 +153,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.20</version>
+        <version>1.23</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
@@ -154,7 +175,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
-        <version>1.6</version>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>sign-artifacts</id>
@@ -175,7 +196,7 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.8</version>
+        <version>1.6.13</version>
         <extensions>true</extensions>
         <configuration>
           <serverId>ossrh</serverId>
@@ -186,7 +207,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.3.1</version>
         <configuration>
           <configLocation>checkstyle.xml</configLocation>
           <encoding>UTF-8</encoding>
@@ -195,6 +216,9 @@
           <failOnViolation>true</failOnViolation>
           <failsOnError>true</failsOnError>
           <linkXRef>false</linkXRef>
+          <sourceDirectories>
+            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+          </sourceDirectories>
         </configuration>
         <executions>
           <execution>
@@ -216,15 +240,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.1.4</version>
-        <dependencies>
-          <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
-          <dependency>
-            <groupId>com.github.spotbugs</groupId>
-            <artifactId>spotbugs</artifactId>
-            <version>${spotbugs.version}</version>
-          </dependency>
-        </dependencies>
+        <version>4.8.2.0</version>
         <configuration>
           <excludeFilterFile>${spotbugs.exclude.filter.file}</excludeFilterFile>
           <failOnError>${spotbugs.fail}</failOnError>
@@ -313,7 +329,12 @@
     <module>sdk-actors</module>
     <module>sdk-workflows</module>
     <module>sdk-springboot</module>
+    <module>sdk-springboot3</module>
     <module>examples</module>
+    <!-- don't add sdk-tests to the build, 
+      it's only used for CI testing by github action
+    <module>sdk-tests</module>
+    -->
   </modules>
 
 </project>

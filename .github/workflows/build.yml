@@ -15,27 +15,28 @@ on:
 
 jobs:
   build:
-    name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-version }} exp:${{ matrix.experimental }}"
+    name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        java: [ 11, 13, 15, 16 ]
-        spring-boot-version: [ 2.7.8 ]
+        java: [ 17 ]
+        spring-boot-version: [ 3.0.13 ]
         experimental: [ false ]
         include:
-          - java: 11
+          - java: 17
+            spring-boot-version: 2.7.18
+            spring-boot-display-version: 2.7.x
+            experimental: false
+          - java: 17
             spring-boot-version: 2.6.14
+            spring-boot-display-version: 2.6.x
             experimental: false
-          - java: 11
+          - java: 17
             spring-boot-version: 2.5.7
-            experimental: false
-          - java: 11
-            spring-boot-version: 2.4.0
-            experimental: false
-          - java: 11
-            spring-boot-version: 2.3.6.RELEASE
+            spring-boot-display-version: 2.5.x
             experimental: false
     env:
       GOVER: "1.20"
@@ -43,16 +44,16 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.12.0-rc.1
-      DAPR_RUNTIME_VER: 1.12.0-rc.5
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0-rc.1/install/install.sh
+      DAPR_CLI_VER: 1.12.0
+      DAPR_RUNTIME_VER: 1.13.0-rc.2
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up OpenJDK ${{ env.JDK_VER }}
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'adopt'
         java-version: ${{ env.JDK_VER }}
@@ -60,18 +61,18 @@ jobs:
       run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash -s ${{ env.DAPR_CLI_VER }}
     - name: Set up Go ${{ env.GOVER }}
       if: env.DAPR_REF != '' || env.DAPR_CLI_REF != ''
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GOVER }}
     - name: Checkout Dapr CLI repo to override dapr command.
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       if: env.DAPR_CLI_REF != ''
       with:
         repository: dapr/cli
         ref: ${{ env.DAPR_CLI_REF }}
         path: cli
     - name: Checkout Dapr repo to override daprd.
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       if: env.DAPR_REF != ''
       with:
         repository: dapr/dapr
@@ -117,50 +118,51 @@ jobs:
     - name: Build sdk
       run: ./mvnw compile -B -q
     - name: Unit tests
-      run: ./mvnw -B test -q
+      run: ./mvnw test # making it temporarily verbose.
     - name: Codecov
-      uses: codecov/codecov-action@v3.1.4
+      uses: codecov/codecov-action@v4.0.1
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -f sdk-tests/pom.xml verify
     - name: Upload test report for sdk
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v4
       with:
-        name: report-dapr-java-sdk
+        name: report-dapr-java-sdk-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk/target/jacoco-report/
     - name: Upload test report for sdk-actors
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v4
       with:
-        name: report-dapr-java-sdk-actors
+        name: report-dapr-java-sdk-actors-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-actors/target/jacoco-report/
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v4
       with:
-        name: failsafe-report-sdk-tests
+        name: failsafe-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/failsafe-reports
     - name: Upload surefire test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v4
       with:
-        name: surefire-report-sdk-tests
+        name: surefire-report-sdk-tests-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
         path: sdk-tests/target/surefire-reports
 
   publish:
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 10
     env:
-      JDK_VER: 11
+      JDK_VER: 17
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
       OSSRH_PWD_TOKEN: ${{ secrets.OSSRH_PWD_TOKEN }}
       GPG_KEY: ${{ secrets.GPG_KEY }}
       GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up OpenJDK ${{ env.JDK_VER }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: ${{ env.JDK_VER }}
@@ -178,7 +180,7 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: ./mvnw clean install -B -q
+        run: ./mvnw install -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |

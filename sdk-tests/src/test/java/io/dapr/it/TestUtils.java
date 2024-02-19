@@ -13,7 +13,9 @@ limitations under the License.
 
 package io.dapr.it;
 
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
+import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
 
@@ -40,6 +42,24 @@ public final class TestUtils {
     DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
     Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
+  }
+
+  public static <T extends Throwable> void assertThrowsDaprExceptionWithReason(
+      String expectedErrorCode,
+      String expectedErrorMessage,
+      String expectedReason,
+      Executable executable) {
+    DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
+    Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
+    Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
+    Assertions.assertNotNull(daprException.getErrorDetails());
+    Assertions.assertEquals(
+        expectedReason,
+        daprException.getErrorDetails().get(
+            DaprErrorDetails.ErrorDetailType.ERROR_INFO,
+            "reason",
+            TypeRef.STRING
+        ));
   }
 
   public static <T extends Throwable> void assertThrowsDaprExceptionSubstring(

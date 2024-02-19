@@ -1,14 +1,68 @@
 ---
 type: docs
-title: "Dapr Java SDK"
-linkTitle: "Java"
-weight: 2000
-description: Java SDK packages for developing Dapr applications
+title: "Getting started with the Dapr client Java SDK"
+linkTitle: "Client"
+weight: 3000
+description: How to get up and running with the Dapr Java SDK
 ---
+
+The Dapr client package allows you to interact with other Dapr applications from a Java application.
+
+{{% alert title="Note" color="primary" %}}
+If you haven't already, [try out one of the quickstarts]({{< ref quickstarts >}}) for a quick walk-through on how to use the Dapr Java SDK with an API building block.
+
+{{% /alert %}}
 
 ## Prerequisites
 
 [Complete initial setup and import the Java SDK into your project]({{< ref java >}})
+
+## Initializing the client
+You can initialize a Dapr client as so:
+
+```java
+DaprClient client = new DaprClientBuilder().build()
+```
+
+This will connect to the default Dapr gRPC endpoint `localhost:50001`.
+
+
+#### Environment variables:  
+
+##### Dapr Sidecar Endpoints
+You can use the standardized `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` environment variables to
+specify a different gRPC or HTTP endpoint. When these variables are set, the client will automatically use them to connect to the Dapr sidecar.
+
+The legacy environment variables `DAPR_HTTP_PORT` and `DAPR_GRPC_PORT` are still supported, but `DAPR_GRPC_ENDPOINT` and `DAPR_HTTP_ENDPOINT` take precedence.
+
+##### Dapr API Token
+If your Dapr instance is configured to require the `DAPR_API_TOKEN` environment variable, you can
+set it in the environment and the client will use it automatically.  
+You can read more about Dapr API token authentication [here](https://docs.dapr.io/operations/security/api-token/).
+
+#### Error Handling
+
+Initially, errors in Dapr followed the Standard gRPC error model. However, to provide more detailed and informative error 
+messages, in version 1.13 an enhanced error model has been introduced which aligns with the gRPC Richer error model. In 
+response, the Java SDK extended the DaprException to include the error details that were added in Dapr. 
+
+Example of handling the DaprException and consuming the error details when using the Dapr Java SDK:
+
+```java
+...
+      try {
+        client.publishEvent("unknown_pubsub", "mytopic", "mydata").block();
+      } catch (DaprException exception) {
+        System.out.println("Dapr exception's error code: " + exception.getErrorCode());
+        System.out.println("Dapr exception's message: " + exception.getMessage());
+        // DaprException now contains `getStatusDetails()` to include more details about the error from Dapr runtime.
+        System.out.println("Dapr exception's reason: " + exception.getStatusDetails().get(
+        DaprErrorDetails.ErrorDetailType.ERROR_INFO,
+            "reason",
+        TypeRef.STRING));
+      }
+...
+```
 
 ## Building blocks
 
@@ -563,6 +617,36 @@ public class DemoWorkflowClient {
    - [How-To: Author workflows]({{< ref howto-author-workflow.md >}}).
    - [How-To: Manage workflows]({{< ref howto-manage-workflow.md >}}).
 - [Learn more about how to use workflows with the Java SDK]({{< ref java-workflow.md >}}).
+
+## Sidecar APIs
+
+#### Wait for sidecar
+The `DaprClient` also provides a helper method to wait for the sidecar to become healthy (components only). When using
+this method, be sure to specify a timeout in milliseconds and block() to wait for the result of a reactive operation.
+
+```java
+// Wait for the Dapr sidecar to report healthy before attempting to use Dapr components.
+try (DaprClient client = new DaprClientBuilder().build()) {
+  System.out.println("Waiting for Dapr sidecar ...");
+  client.waitForSidecar(10000).block(); // Specify the timeout in milliseconds
+  System.out.println("Dapr sidecar is ready.");
+  ...
+}
+
+// Perform Dapr component operations here i.e. fetching secrets or saving state.
+```
+
+### Shutdown the sidecar
+```java
+try (DaprClient client = new DaprClientBuilder().build()) {
+  logger.info("Sending shutdown request.");
+  client.shutdown().block();
+  logger.info("Ensuring dapr has stopped.");
+  ...
+}
+```
+
+Learn more about the [Dapr Java SDK packages available to add to your Java applications](https://dapr.github.io/java-sdk/).
 
 ## Related links
 - [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)
