@@ -1,18 +1,28 @@
+/*
+ * Copyright 2024 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package io.dapr.workflows.runtime;
 
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
 
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.logging.Logger;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 
 public class WorkflowRuntimeBuilderTest {
   public static class TestWorkflow extends Workflow {
@@ -51,36 +61,19 @@ public class WorkflowRuntimeBuilderTest {
     ByteArrayOutputStream outStreamCapture = new ByteArrayOutputStream();
     System.setOut(new PrintStream(outStreamCapture));
 
-    LogCaptureHandler testLoggerHandler = new LogCaptureHandler();
-    Logger testLogger = Logger.getLogger(WorkflowRuntimeBuilder.class.getName());
+    Logger testLogger = Mockito.mock(Logger.class);
 
-    testLogger.addHandler(testLoggerHandler);
-
-    // indexOf will return -1 if the string is not found.
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(TestWorkflow.class));
-    assertNotEquals(-1, testLoggerHandler.capturedLog.indexOf("Registered Workflow: TestWorkflow"));
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(TestActivity.class));
-    assertNotEquals(-1, testLoggerHandler.capturedLog.indexOf("Registered Activity: TestActivity"));
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder(testLogger).registerWorkflow(TestWorkflow.class));
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder(testLogger).registerActivity(TestActivity.class));
 
     WorkflowRuntimeBuilder wfRuntime = new WorkflowRuntimeBuilder();
 
     wfRuntime.build();
+
+    Mockito.verify(testLogger, Mockito.times(1))
+        .info(Mockito.eq("Registered Workflow: TestWorkflow"));
+    Mockito.verify(testLogger, Mockito.times(1))
+        .info(Mockito.eq("Registered Activity: TestActivity"));
   }
 
-  private static class LogCaptureHandler extends Handler {
-    private StringBuilder capturedLog = new StringBuilder();
-
-    @Override
-    public void publish(LogRecord record) {
-      capturedLog.append(record.getMessage()).append(System.lineSeparator());
-    }
-
-    @Override
-    public void flush(){
-    }
-
-    @Override
-    public void close() throws SecurityException {
-    }
-  }
 }
