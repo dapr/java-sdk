@@ -17,6 +17,7 @@ import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
+import org.apache.commons.validator.routines.InetAddressValidator;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -78,5 +79,13 @@ public final class TestUtils {
       socket.setReuseAddress(true);
       return socket.getLocalPort();
     }
+  }
+
+  public static String formatIpAddress(final String ipAddress) {
+    String formattedIpAddress = ipAddress;
+    if(InetAddressValidator.getInstance().isValidInet6Address(ipAddress)) {
+      formattedIpAddress = "[" + ipAddress + "]"; // per URL spec https://url.spec.whatwg.org/#host-writing
+    }
+    return formattedIpAddress;
   }
 }
