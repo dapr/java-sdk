@@ -4,6 +4,7 @@
 .run/
 .vs/
 .vscode/
+.devcontainer/
 
 # Output folders
 **/target/

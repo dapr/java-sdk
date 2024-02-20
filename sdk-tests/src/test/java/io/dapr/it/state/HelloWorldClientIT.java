@@ -15,6 +15,7 @@ package io.dapr.it.state;
 
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
+import io.dapr.config.Properties;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
@@ -34,7 +35,7 @@ public class HelloWorldClientIT extends BaseIT {
         2000
     );
     ManagedChannel channel =
-      ManagedChannelBuilder.forAddress("127.0.0.1", daprRun.getGrpcPort()).usePlaintext().build();
+      ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), daprRun.getGrpcPort()).usePlaintext().build();
     DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
 
     String key = "mykey";
