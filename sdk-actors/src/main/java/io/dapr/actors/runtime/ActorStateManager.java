@@ -18,10 +18,10 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages state changes of a given Actor instance.
@@ -60,7 +60,7 @@ public class ActorStateManager {
     this.stateProvider = stateProvider;
     this.actorTypeName = actorTypeName;
     this.actorId = actorId;
-    this.stateChangeTracker = new HashMap<>();
+    this.stateChangeTracker = new ConcurrentHashMap<>();
   }
 
   /**
