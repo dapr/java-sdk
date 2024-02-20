@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.config;
 
 import io.dapr.client.DaprApiProtocol;
+import io.dapr.utils.NetworkUtils;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +28,7 @@ public class Properties {
   /**
    * Dapr's default IP for HTTP and gRPC communication.
    */
-  private static final String DEFAULT_SIDECAR_IP = "127.0.0.1";
+  private static final String DEFAULT_SIDECAR_IP = NetworkUtils.getHostLoopbackAddress();
 
   /**
    * Dapr's default HTTP port.

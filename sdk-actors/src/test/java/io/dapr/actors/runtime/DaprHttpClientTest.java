@@ -38,6 +38,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
+import static io.dapr.actors.TestUtils.formatIpAddress;
 
 public class DaprHttpClientTest {
 
@@ -46,11 +47,14 @@ public class DaprHttpClientTest {
   private OkHttpClient okHttpClient;
 
   private MockInterceptor mockInterceptor;
+  
+  private String sidecarIp;
 
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
   @BeforeEach
   public void setUp() throws Exception {
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -58,21 +62,35 @@ public class DaprHttpClientTest {
   @Test
   public void getActorState() {
     mockInterceptor.addRule()
-      .get("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/state/order")
+      .get("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/state/order")
       .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono = DaprHttpClient.getState("DemoActor", "1", "order");
     assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
+  @Test
+  public void getActorStateIPv6() {
+    String prevSidecarIp = sidecarIp;
+    System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
+    mockInterceptor.addRule()
+      .get("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/state/order")
+      .respond(EXPECTED_RESULT);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
+    DaprHttpClient = new DaprHttpClient(daprHttp);
+    System.setProperty(Properties.SIDECAR_IP.getName(), prevSidecarIp);
+    Mono<byte[]> mono = DaprHttpClient.getState("DemoActor", "1", "order");
+    assertEquals(new String(mono.block()), EXPECTED_RESULT);
+  }
 
   @Test
   public void saveActorStateTransactionally() {
     mockInterceptor.addRule()
-      .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/state")
+      .put("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/state")
       .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     List<ActorStateOperation> ops = Collections.singletonList(new ActorStateOperation("UPSERT", "key", "value"));
     Mono<Void> mono = DaprHttpClient.saveStateTransactionally("DemoActor", "1", ops);
@@ -82,9 +100,9 @@ public class DaprHttpClientTest {
   @Test
   public void registerActorReminder() {
     mockInterceptor.addRule()
-      .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/reminders/reminder")
+      .put("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/reminders/reminder")
       .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono =
       DaprHttpClient.registerReminder(
@@ -98,9 +116,9 @@ public class DaprHttpClientTest {
   @Test
   public void unregisterActorReminder() {
     mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/reminders/reminder")
+      .delete("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/reminders/reminder")
       .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono = DaprHttpClient.unregisterReminder("DemoActor", "1", "reminder");
     assertNull(mono.block());
@@ -110,7 +128,7 @@ public class DaprHttpClientTest {
   public void registerActorTimer() {
     String data = "hello world";
     mockInterceptor.addRule()
-      .put("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/timers/timer")
+      .put("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/timers/timer")
       .answer(new RuleAnswer() {
         @Override
         public Response.Builder respond(Request request) {
@@ -132,7 +150,7 @@ public class DaprHttpClientTest {
               .body(ResponseBody.create("{}", MediaType.get("application/json")));
         }
       });
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono =
       DaprHttpClient.registerTimer(
@@ -150,9 +168,9 @@ public class DaprHttpClientTest {
   @Test
   public void unregisterActorTimer() {
     mockInterceptor.addRule()
-      .delete("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/timers/timer")
+      .delete("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/timers/timer")
       .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<Void> mono = DaprHttpClient.unregisterTimer("DemoActor", "1", "timer");
     assertNull(mono.block());

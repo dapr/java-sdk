@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import static io.dapr.actors.TestUtils.formatIpAddress;
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,10 +37,13 @@ public class DaprHttpClientTest {
 
   private MockInterceptor mockInterceptor;
 
+  private String sidecarIp;
+
   private final String EXPECTED_RESULT = "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
 
   @BeforeEach
   public void setUp() {
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
   }
@@ -47,10 +51,26 @@ public class DaprHttpClientTest {
   @Test
   public void invokeActorMethod() {
     mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/method/Payment")
+        .post("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/method/Payment")
         .respond(EXPECTED_RESULT);
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
+    Mono<byte[]> mono =
+        DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());
+    assertEquals(new String(mono.block()), EXPECTED_RESULT);
+  }
+
+  @Test
+  public void invokeActorMethodIPv6() {
+    String prevSidecarIp = sidecarIp;
+    System.setProperty(Properties.SIDECAR_IP.getName(), "2001:db8:3333:4444:5555:6666:7777:8888");
+    sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
+    mockInterceptor.addRule()
+        .post("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/method/Payment")
+        .respond(EXPECTED_RESULT);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
+    DaprHttpClient = new DaprHttpClient(daprHttp);
+    System.setProperty(Properties.SIDECAR_IP.getName(), prevSidecarIp);
     Mono<byte[]> mono =
         DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());
     assertEquals(new String(mono.block()), EXPECTED_RESULT);
@@ -59,12 +79,12 @@ public class DaprHttpClientTest {
   @Test
   public void invokeActorMethodError() {
     mockInterceptor.addRule()
-        .post("http://127.0.0.1:3000/v1.0/actors/DemoActor/1/method/Payment")
+        .post("http://" + sidecarIp + ":3000/v1.0/actors/DemoActor/1/method/Payment")
         .respond(404,
             ResponseBody.create("" +
                 "{\"errorCode\":\"ERR_SOMETHING\"," +
                 "\"message\":\"error message\"}", MediaTypes.MEDIATYPE_JSON));
-    DaprHttp daprHttp = new DaprHttpProxy(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprHttp daprHttp = new DaprHttpProxy(sidecarIp, 3000, okHttpClient);
     DaprHttpClient = new DaprHttpClient(daprHttp);
     Mono<byte[]> mono =
         DaprHttpClient.invoke("DemoActor", "1", "Payment", "".getBytes());

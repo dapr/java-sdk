@@ -19,9 +19,11 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
+import java.net.UnknownHostException;
 
 /**
  * Utility methods for network, internal to Dapr SDK.
@@ -111,5 +113,13 @@ public final class NetworkUtils {
       long remaining = retryTimeoutMilliseconds - elapsed;
       Thread.sleep(Math.min(remaining, RETRY_WAIT_MILLISECONDS));
     }
+  }
+
+  /**
+   * Retrieve loopback address for the host.
+   * @return The loopback address String
+   */
+  public static String getHostLoopbackAddress() {
+    return InetAddress.getLoopbackAddress().getHostAddress();
   }
 }
