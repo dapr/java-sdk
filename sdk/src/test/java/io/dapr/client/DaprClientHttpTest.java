@@ -353,7 +353,8 @@ public class DaprClientHttpTest {
     });
 
     assertEquals("MYCODE", exception.getErrorCode());
-    assertEquals("MYCODE: My Message", exception.getMessage());
+    assertEquals("MYCODE: My Message (HTTP status code: 500)", exception.getMessage());
+    assertEquals(500, exception.getHttpStatusCode());
   }
 
   @Test
@@ -387,7 +388,7 @@ public class DaprClientHttpTest {
     });
 
     assertEquals("UNKNOWN", exception.getErrorCode());
-    assertEquals("UNKNOWN: { \"anything\": 7 }", exception.getMessage());
+    assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
     assertEquals("{ \"anything\": 7 }", new String(exception.getPayload()));
   }
 
@@ -1319,8 +1320,10 @@ public class DaprClientHttpTest {
                 "{\"errorCode\":\"ERR_SECRET_STORE_NOT_FOUND\"," +
                 "\"message\":\"error message\"}", MediaTypes.MEDIATYPE_JSON));
 
-    assertThrowsDaprException("ERR_SECRET_STORE_NOT_FOUND", "ERR_SECRET_STORE_NOT_FOUND: error message", () ->
-        daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
+    assertThrowsDaprException(
+        "ERR_SECRET_STORE_NOT_FOUND",
+        "ERR_SECRET_STORE_NOT_FOUND: error message (HTTP status code: 404)",
+        () -> daprClientHttp.getSecret(SECRET_STORE_NAME, "key").block()
     );
   }
 
