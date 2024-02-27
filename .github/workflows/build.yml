@@ -25,6 +25,7 @@ jobs:
       matrix:
         java: [ 17 ]
         spring-boot-version: [ 3.0.13 ]
+        spring-boot-display-version: [ 3.0.x ]
         experimental: [ false ]
         include:
           - java: 17
