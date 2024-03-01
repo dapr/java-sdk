@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
+import io.dapr.client.DaprClientGrpc;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
@@ -128,7 +129,7 @@ class DaprGrpcClient implements DaprClient {
    * @return Client after adding interceptors.
    */
   private static DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
-    return GrpcWrapper.intercept(context, client);
+    return DaprClientGrpc.intercept(context, client, null);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {

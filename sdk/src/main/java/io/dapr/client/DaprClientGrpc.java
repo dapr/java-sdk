@@ -50,7 +50,7 @@ import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
-import io.dapr.internal.opencensus.GrpcWrapper;
+import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -65,6 +65,7 @@ import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
 import io.grpc.ForwardingClientCall;
+import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
@@ -81,9 +82,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static io.dapr.internal.exceptions.DaprHttpException.isSuccessfulHttpStatusCode;
+import static io.dapr.internal.exceptions.DaprHttpException.isValidHttpStatusCode;
+import static io.dapr.internal.exceptions.DaprHttpException.parseHttpStatusCode;
+import static io.dapr.internal.opencensus.GrpcWrapper.appendTracingToMetadata;
 
 /**
  * An adapter for the GRPC Client.
@@ -351,6 +356,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type) {
+    Metadata responseMetadata = new Metadata();
     try {
       final String name = request.getName();
       final String operation = request.getOperation();
@@ -377,10 +383,19 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+              responseMetadata,
+              it -> intercept(context, asyncStub, m -> responseMetadata.merge(m)).invokeBinding(envelope, it)
           )
       ).flatMap(
           it -> {
+            int httpStatusCode =
+                parseHttpStatusCode(it.getMetadataMap().getOrDefault("statusCode", ""));
+            if (isValidHttpStatusCode(httpStatusCode) && !isSuccessfulHttpStatusCode(httpStatusCode)) {
+              // Exception condition in a successful request.
+              // This is useful to send an exception due to an error from the HTTP binding component.
+              throw DaprException.propagate(new DaprHttpException(httpStatusCode, it.getData().toByteArray()));
+            }
+
             try {
               return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
             } catch (IOException e) {
@@ -1155,21 +1170,74 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @param client  GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
-    return GrpcWrapper.intercept(context, client);
+  private static DaprGrpc.DaprStub intercept(
+      ContextView context,
+      DaprGrpc.DaprStub client) {
+    return intercept(context, client, null);
+  }
+
+  /**
+   * Populates GRPC client with interceptors for telemetry - internal use only.
+   *
+   * @param context Reactor's context.
+   * @param client  GRPC client for Dapr.
+   * @param metadataConsumer Handles metadata result.
+   * @return Client after adding interceptors.
+   */
+  public static DaprGrpc.DaprStub intercept(
+      ContextView context,
+      DaprGrpc.DaprStub client,
+      Consumer<Metadata> metadataConsumer) {
+    ClientInterceptor interceptor = new ClientInterceptor() {
+      @Override
+      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+          MethodDescriptor<ReqT, RespT> methodDescriptor,
+          CallOptions options,
+          Channel channel) {
+        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, options);
+        return new ForwardingClientCall.SimpleForwardingClientCall<>(clientCall) {
+          @Override
+          public void start(final Listener<RespT> responseListener, final Metadata metadata) {
+            appendTracingToMetadata(context, metadata);
+
+            final ClientCall.Listener<RespT>  headerListener =
+                new ForwardingClientCallListener.SimpleForwardingClientCallListener<>(responseListener) {
+                  @Override
+                  public void onHeaders(Metadata headers) {
+                    responseListener.onHeaders(headers);
+                    if (metadataConsumer != null) {
+                      metadataConsumer.accept(headers);
+                    }
+                  }
+                };
+            super.start(headerListener, metadata);
+          }
+        };
+      }
+    };
+    return client.withInterceptors(interceptor);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
+    return this.createMono(null, consumer);
+  }
+
+  private <T> Mono<T> createMono(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
     return retryPolicy.apply(
-        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
+        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(
+            createStreamObserver(sink, metadata))).run()));
   }
 
   private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
-    return retryPolicy.apply(
-        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
+    return this.createFlux(null, consumer);
   }
 
-  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
+  private <T> Flux<T> createFlux(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
+    return retryPolicy.apply(
+        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink, metadata))).run()));
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink, Metadata grpcMetadata) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T value) {
@@ -1178,7 +1246,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       @Override
       public void onError(Throwable t) {
-        sink.error(DaprException.propagate(new ExecutionException(t)));
+        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
       }
 
       @Override
@@ -1188,7 +1256,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
     };
   }
 
-  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink) {
+  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink, final Metadata grpcMetadata) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T value) {
@@ -1197,7 +1265,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       @Override
       public void onError(Throwable t) {
-        sink.error(DaprException.propagate(new ExecutionException(t)));
+        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
       }
 
       @Override

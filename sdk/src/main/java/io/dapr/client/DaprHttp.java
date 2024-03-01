@@ -18,6 +18,7 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
+import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.utils.Version;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -381,17 +382,19 @@ public class DaprHttp implements AutoCloseable {
 
     @Override
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
-      if (!response.isSuccessful()) {
+      int httpStatusCode = parseHttpStatusCode(response.header("Metadata.statuscode"), response.code());
+      if (!DaprHttpException.isSuccessfulHttpStatusCode(httpStatusCode)) {
         try {
           byte[] payload = getBodyBytesOrEmptyArray(response);
           DaprError error = parseDaprError(payload);
+
           if (error != null) {
-            future.completeExceptionally(new DaprException(error, payload, response.code()));
+            future.completeExceptionally(new DaprException(error, payload, httpStatusCode));
             return;
           }
 
           future.completeExceptionally(
-              new DaprException("UNKNOWN", "", payload, response.code()));
+              new DaprException("UNKNOWN", "", payload, httpStatusCode));
           return;
         } catch (DaprException e) {
           future.completeExceptionally(e);
@@ -404,8 +407,24 @@ public class DaprHttp implements AutoCloseable {
       response.headers().forEach(pair -> {
         mapHeaders.put(pair.getFirst(), pair.getSecond());
       });
-      future.complete(new Response(result, mapHeaders, response.code()));
+      future.complete(new Response(result, mapHeaders, httpStatusCode));
     }
   }
 
+  private static int parseHttpStatusCode(String headerValue, int defaultStatusCode) {
+    if ((headerValue == null) || headerValue.isEmpty()) {
+      return defaultStatusCode;
+    }
+
+    // Metadata used to override status code with code received from HTTP binding.
+    try {
+      int httpStatusCode = Integer.parseInt(headerValue);
+      if (DaprHttpException.isValidHttpStatusCode(httpStatusCode)) {
+        return httpStatusCode;
+      }
+      return defaultStatusCode;
+    } catch (NumberFormatException nfe) {
+      return defaultStatusCode;
+    }
+  }
 }

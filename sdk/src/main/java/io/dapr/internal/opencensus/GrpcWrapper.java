@@ -14,14 +14,7 @@ limitations under the License.
 package io.dapr.internal.opencensus;
 
 import io.dapr.config.Property;
-import io.dapr.v1.DaprGrpc;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -55,55 +48,37 @@ public final class GrpcWrapper {
   }
 
   /**
-   * Populates GRPC client with interceptors.
+   * Populates metadata with tracing headers.
    *
-   * @param context Reactor's context.
-   * @param client GRPC client for Dapr.
-   * @return Client after adding interceptors.
+   * @param context Context containing tracing information.
+   * @param metadata Metadata where tracing values will be added to.
    */
-  public static DaprGrpc.DaprStub intercept(final ContextView context, DaprGrpc.DaprStub client) {
-    ClientInterceptor interceptor = new ClientInterceptor() {
-      @Override
-      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-          MethodDescriptor<ReqT, RespT> methodDescriptor,
-          CallOptions callOptions,
-          Channel channel) {
-        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
-        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
-          @Override
-          public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-            Map<String, Object> map = (context == null ? Context.empty() : context)
-                .stream()
-                .filter(e -> (e.getKey() != null) && (e.getValue() != null))
-                .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue()));
-            if (map.containsKey(GRPC_TRACE_BIN_KEY.name())) {
-              byte[] value = (byte[]) map.get(GRPC_TRACE_BIN_KEY.name());
-              metadata.put(GRPC_TRACE_BIN_KEY, value);
-            }
-            if (map.containsKey(TRACEPARENT_KEY.name())) {
-              String value = map.get(TRACEPARENT_KEY.name()).toString();
-              metadata.put(TRACEPARENT_KEY, value);
-            }
-            if (map.containsKey(TRACESTATE_KEY.name())) {
-              String value = map.get(TRACESTATE_KEY.name()).toString();
-              metadata.put(TRACESTATE_KEY, value);
-            }
+  public static void appendTracingToMetadata(ContextView context, Metadata metadata) {
+    Map<String, Object> map = (context == null ? Context.empty() : context)
+        .stream()
+        .filter(e -> (e.getKey() != null) && (e.getValue() != null))
+        .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue()));
+    if (map.containsKey(GRPC_TRACE_BIN_KEY.name())) {
+      byte[] value = (byte[]) map.get(GRPC_TRACE_BIN_KEY.name());
+      metadata.put(GRPC_TRACE_BIN_KEY, value);
+    }
+    if (map.containsKey(TRACEPARENT_KEY.name())) {
+      String value = map.get(TRACEPARENT_KEY.name()).toString();
+      metadata.put(TRACEPARENT_KEY, value);
+    }
+    if (map.containsKey(TRACESTATE_KEY.name())) {
+      String value = map.get(TRACESTATE_KEY.name()).toString();
+      metadata.put(TRACESTATE_KEY, value);
+    }
 
-            // Dapr only supports "grpc-trace-bin" for GRPC and OpenTelemetry SDK does not support that yet:
-            // https://github.com/open-telemetry/opentelemetry-specification/issues/639
-            // This should be the only use of OpenCensus SDK: populate "grpc-trace-bin".
-            SpanContext opencensusSpanContext = extractOpenCensusSpanContext(metadata);
-            if (opencensusSpanContext != null) {
-              byte[] grpcTraceBin = OPENCENSUS_BINARY_FORMAT.toByteArray(opencensusSpanContext);
-              metadata.put(GRPC_TRACE_BIN_KEY, grpcTraceBin);
-            }
-
-            super.start(responseListener, metadata);
-          }
-        };
-      }
-    };
-    return client.withInterceptors(interceptor);
+    // Dapr only supports "grpc-trace-bin" for GRPC and OpenTelemetry SDK does not support that yet:
+    // https://github.com/open-telemetry/opentelemetry-specification/issues/639
+    // This should be the only use of OpenCensus SDK: populate "grpc-trace-bin".
+    SpanContext opencensusSpanContext = extractOpenCensusSpanContext(metadata);
+    if (opencensusSpanContext != null) {
+      byte[] grpcTraceBin = OPENCENSUS_BINARY_FORMAT.toByteArray(opencensusSpanContext);
+      metadata.put(GRPC_TRACE_BIN_KEY, grpcTraceBin);
+    }
   }
 
   private static SpanContext extractOpenCensusSpanContext(Metadata metadata) {
