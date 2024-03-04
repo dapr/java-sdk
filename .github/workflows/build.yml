@@ -1,6 +1,7 @@
 name: Build
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -24,6 +25,7 @@ jobs:
       matrix:
         java: [ 17 ]
         spring-boot-version: [ 3.0.13 ]
+        spring-boot-display-version: [ 3.0.x ]
         experimental: [ false ]
         include:
           - java: 17
@@ -120,7 +122,7 @@ jobs:
     - name: Unit tests
       run: ./mvnw test # making it temporarily verbose.
     - name: Codecov
-      uses: codecov/codecov-action@v4.0.1
+      uses: codecov/codecov-action@v4.1.0
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
