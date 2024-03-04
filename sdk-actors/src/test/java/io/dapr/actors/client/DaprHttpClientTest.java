@@ -91,7 +91,7 @@ public class DaprHttpClientTest {
 
     assertThrowsDaprException(
         "ERR_SOMETHING",
-        "ERR_SOMETHING: error message",
+        "ERR_SOMETHING: error message (HTTP status code: 404)",
         () -> mono.block());
   }
 

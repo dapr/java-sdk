@@ -122,7 +122,7 @@ public class PubSubIT extends BaseIT {
       } else {
         assertThrowsDaprExceptionWithReason(
             "ERR_PUBSUB_NOT_FOUND",
-            "ERR_PUBSUB_NOT_FOUND: pubsub unknown pubsub is not found",
+            "ERR_PUBSUB_NOT_FOUND: pubsub unknown pubsub is not found (HTTP status code: 404)",
             "DAPR_PUBSUB_NOT_FOUND",
             () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
       }

@@ -65,7 +65,7 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
     assertThrowsDaprException(
         "ERR_STATE_STORE_NOT_FOUND",
-        "ERR_STATE_STORE_NOT_FOUND: state store unknown state store is not found",
+        "ERR_STATE_STORE_NOT_FOUND: state store unknown state store is not found (HTTP status code: 400)",
         () -> daprClient.getState("unknown state store", new State(stateKey), byte[].class).block());
   }
 
@@ -78,7 +78,7 @@ public class HttpStateClientIT extends AbstractStateClientIT {
     // DaprException is guaranteed in the Dapr SDK but getCause() is null in HTTP while present in GRPC implementation.
     assertThrowsDaprException(
         "ERR_STATE_STORE_NOT_FOUND",
-        "ERR_STATE_STORE_NOT_FOUND: state store unknown state store is not found",
+        "ERR_STATE_STORE_NOT_FOUND: state store unknown state store is not found (HTTP status code: 400)",
         () -> daprClient.getBulkState(
             "unknown state store",
             Collections.singletonList(stateKey),
