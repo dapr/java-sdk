@@ -1,0 +1,27 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: github-http-binding-404
+spec:
+  type: bindings.http
+  version: v1
+  metadata:
+  - name: url
+    value: https://api.github.com/unknown_path
+scopes:
+  - bindingit-httpoutputbinding-exception
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: github-http-binding-404-success
+spec:
+  type: bindings.http
+  version: v1
+  metadata:
+    - name: url
+      value: https://api.github.com/unknown_path
+    - name: errorIfNot2XX
+      value: "false"
+scopes:
+  - bindingit-httpoutputbinding-ignore-error
