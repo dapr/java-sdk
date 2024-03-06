@@ -9,6 +9,7 @@ io.dapr.client.domain.query.filters
 io.dapr.client.resiliency
 io.dapr.config
 io.dapr.exceptions
+io.dapr.internal.exceptions
 io.dapr.internal.opencensus
 io.dapr.internal.resiliency
 io.dapr.serializer
@@ -16,4 +17,6 @@ io.dapr.utils
 io.dapr.v1
 io.dapr.workflows
 io.dapr.workflows.client
+io.dapr.workflows.internal
 io.dapr.workflows.runtime
+io.dapr.workflows.saga
