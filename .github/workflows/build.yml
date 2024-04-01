@@ -122,7 +122,7 @@ jobs:
     - name: Unit tests
       run: ./mvnw test # making it temporarily verbose.
     - name: Codecov
-      uses: codecov/codecov-action@v4.1.0
+      uses: codecov/codecov-action@v4.1.1
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
