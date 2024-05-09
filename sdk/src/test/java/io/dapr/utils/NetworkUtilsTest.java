@@ -94,6 +94,7 @@ public class NetworkUtilsTest {
     testGrpcEndpointParsingScenario("https://myhost", "dns:///myhost:443", true);
     testGrpcEndpointParsingScenario("https://myhost:443", "dns:///myhost:443", true);
     testGrpcEndpointParsingScenario("https://myhost:5000", "dns:///myhost:5000", true);
+    testGrpcEndpointParsingScenario("dns:///myhost", "dns:///myhost:443", false);
     testGrpcEndpointParsingScenario("dns://myauthority:53/myhost", "dns://myauthority:53/myhost:443", false);
     testGrpcEndpointParsingScenario("dns://myauthority:53/myhost?tls=false", "dns://myauthority:53/myhost:443", false);
     testGrpcEndpointParsingScenario("dns://myauthority:53/myhost?tls=true", "dns://myauthority:53/myhost:443", true);

@@ -51,7 +51,7 @@ public final class NetworkUtils {
   private static final String GRPC_ENDPOINT_HOSTNAME_REGEX_PART = "(([A-Za-z0-9_\\-\\.]+)|(\\[" + IPV6_REGEX + "\\]))";
 
   private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART =
-      "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>" + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)/";
+      "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>" + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)?/";
 
   private static final String GRPC_ENDPOINT_PARAM_REGEX_PART = "(\\?(?<param>tls\\=((true)|(false))))?";
 
