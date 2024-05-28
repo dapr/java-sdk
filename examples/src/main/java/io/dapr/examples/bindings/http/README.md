@@ -72,10 +72,8 @@ docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-
 2. Run `docker ps` to see the container running locally: 
 
 ```bash
-342d3522ca14        kafka-docker_kafka                      "start-kafka.sh"         14 hours ago        Up About
-a minute   0.0.0.0:9092->9092/tcp                               kafka-docker_kafka_1
-0cd69dbe5e65        wurstmeister/zookeeper                  "/bin/sh -c '/usr/sb…"   8 days ago          Up About
-a minute   22/tcp, 2888/tcp, 3888/tcp, 0.0.0.0:2181->2181/tcp   kafka-docker_zookeeper_1
+26966aaabd82   confluentinc/cp-kafka:7.4.4       "/etc/confluent/dock…"   About a minute ago   Up About a minute      9092/tcp, 0.0.0.0:29092->29092/tcp                                           deploy-kafka-1
+b95e7ad31707   confluentinc/cp-zookeeper:7.4.4   "/etc/confluent/dock…"   5 days ago           Up 14 minutes          2888/tcp, 3888/tcp, 0.0.0.0:22181->2181/tcp                                  deploy-zookeeper-1
 ```
 Click [here](https://github.com/wurstmeister/kafka-docker) for more information about the kafka broker server.
 
