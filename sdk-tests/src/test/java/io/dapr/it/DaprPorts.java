@@ -58,7 +58,7 @@ public class DaprPorts {
     if (this.grpcPort != null) {
       System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.grpcPort));
       System.getProperties().setProperty(
-              Properties.GRPC_ENDPOINT.getName(), "http://127.0.0.1:" + this.grpcPort);
+              Properties.GRPC_ENDPOINT.getName(), "127.0.0.1:" + this.grpcPort);
     }
   }
 
