@@ -13,10 +13,28 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+import io.dapr.client.domain.ComponentMetadata;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
+import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.RuleMetadata;
+import io.dapr.client.domain.State;
+import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.SubscriptionMetadata;
+import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -116,6 +134,39 @@ public class DaprClientHttpTest {
               return false;
             })
             .verify(Duration.ofSeconds(20));
+  }
+
+
+  @Test
+  public void metadataEndpoint() throws JsonProcessingException{
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
+
+    DaprMetadata metadata = new DaprMetadata();
+    metadata.setId("my-app");
+    metadata.setRuntimeVersion("1.1x.x");
+    metadata.setComponents(Collections.singletonList(new ComponentMetadata("statestore", "state.redis", "v1")));
+    metadata.setSubscriptions(Collections.singletonList(new SubscriptionMetadata("topic", "pubsub", "", Collections.singletonList(new RuleMetadata("/path")))));
+
+    ObjectMapper mapper = new ObjectMapper();
+    
+
+    mockInterceptor.addRule()
+            .get()
+            .path("/v1.0/metadata")
+            .delay(200)
+            .respond(204, ResponseBody.create(mapper.writeValueAsString(metadata), MediaType.get("application/json")));
+
+    Mono<DaprMetadata> metadataMono = daprClientHttp.getMetadata();
+    DaprMetadata metadataFromEndpoint = metadataMono.block();
+    assertNotNull(metadataFromEndpoint);
+    assertEquals(metadata.getId(), metadataFromEndpoint.getId());
+    assertEquals(metadata.getRuntimeVersion(), metadataFromEndpoint.getRuntimeVersion());
+    assertEquals(metadata.getComponents(), metadataFromEndpoint.getComponents());
+    assertEquals(metadata.getSubscriptions(), metadataFromEndpoint.getSubscriptions());
+    assertEquals(metadata, metadataFromEndpoint);
+    
+
   }
 
   @Test

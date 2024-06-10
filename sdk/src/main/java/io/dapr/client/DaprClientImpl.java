@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
@@ -20,7 +21,9 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
@@ -36,11 +39,13 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.SubscriptionMetadata;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
@@ -118,12 +123,13 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   /**
-   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   * Default access level constructor, in order to create an instance of this
+   * class use io.dapr.client.DaprClientBuilder
    *
-   * @param channel           Facade for the managed GRPC channel
-   * @param asyncStub         async gRPC stub
-   * @param objectSerializer  Serializer for transient request/response objects.
-   * @param stateSerializer   Serializer for state objects.
+   * @param channel          Facade for the managed GRPC channel
+   * @param asyncStub        async gRPC stub
+   * @param objectSerializer Serializer for transient request/response objects.
+   * @param stateSerializer  Serializer for state objects.
    * @see DaprClientBuilder
    */
   DaprClientImpl(
@@ -136,7 +142,8 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   /**
-   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   * Default access level constructor, in order to create an instance of this
+   * class use io.dapr.client.DaprClientBuilder
    *
    * @param channel           Facade for the managed GRPC channel
    * @param asyncStub         async gRPC stub
@@ -281,11 +288,9 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       return Mono.deferContextual(
-          context ->
-              this.<Empty>createMono(
-                  it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)
-              )
-      ).then();
+          context -> this.<Empty>createMono(
+              it -> intercept(context, asyncStub).publishEvent(envelopeBuilder.build(), it)))
+          .then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -353,25 +358,22 @@ public class DaprClientImpl extends AbstractDaprClient {
         entryMap.put(entry.getEntryId(), entry);
       }
       return Mono.deferContextual(
-          context ->
-              this.<DaprProtos.BulkPublishResponse>createMono(
-                  it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)
-              )
-      ).map(
-          it -> {
-            List<BulkPublishResponseFailedEntry<T>> entries = new ArrayList<>();
-            for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
-              BulkPublishResponseFailedEntry<T> domainEntry = new BulkPublishResponseFailedEntry<T>(
-                  entryMap.get(entry.getEntryId()),
-                  entry.getError());
-              entries.add(domainEntry);
-            }
-            if (entries.size() > 0) {
-              return new BulkPublishResponse<>(entries);
-            }
-            return new BulkPublishResponse<>();
-          }
-      );
+          context -> this.<DaprProtos.BulkPublishResponse>createMono(
+              it -> intercept(context, asyncStub).bulkPublishEventAlpha1(envelopeBuilder.build(), it)))
+          .map(
+              it -> {
+                List<BulkPublishResponseFailedEntry<T>> entries = new ArrayList<>();
+                for (DaprProtos.BulkPublishResponseFailedEntry entry : it.getFailedEntriesList()) {
+                  BulkPublishResponseFailedEntry<T> domainEntry = new BulkPublishResponseFailedEntry<T>(
+                      entryMap.get(entry.getEntryId()),
+                      entry.getError());
+                  entries.add(domainEntry);
+                }
+                if (entries.size() > 0) {
+                  return new BulkPublishResponse<>(entries);
+                }
+                return new BulkPublishResponse<>();
+              });
     } catch (RuntimeException ex) {
       return DaprException.wrapMono(ex);
     }
@@ -470,17 +472,15 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
-          )
-      ).flatMap(
-          it -> {
-            try {
-              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
-            } catch (IOException e) {
-              throw DaprException.propagate(e);
-            }
-          }
-      );
+              it -> intercept(context, asyncStub).invokeBinding(envelope, it)))
+          .flatMap(
+              it -> {
+                try {
+                  return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
+                } catch (IOException e) {
+                  throw DaprException.propagate(e);
+                }
+              });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -516,19 +516,16 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprProtos.GetStateRequest envelope = builder.build();
 
       return Mono.deferContextual(
-          context ->
-              this.<DaprProtos.GetStateResponse>createMono(
-                  it -> intercept(context, asyncStub).getState(envelope, it)
-              )
-      ).map(
-          it -> {
-            try {
-              return buildStateKeyValue(it, key, options, type);
-            } catch (IOException ex) {
-              throw DaprException.propagate(ex);
-            }
-          }
-      );
+          context -> this.<DaprProtos.GetStateResponse>createMono(
+              it -> intercept(context, asyncStub).getState(envelope, it)))
+          .map(
+              it -> {
+                try {
+                  return buildStateKeyValue(it, key, options, type);
+                } catch (IOException ex) {
+                  throw DaprException.propagate(ex);
+                }
+              });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -566,11 +563,9 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context -> this.<DaprProtos.GetBulkStateResponse>createMono(it -> intercept(context, asyncStub)
-              .getBulkState(envelope, it)
-          )
-      ).map(
-          it ->
-              it
+              .getBulkState(envelope, it)))
+          .map(
+              it -> it
                   .getItemsList()
                   .stream()
                   .map(b -> {
@@ -580,8 +575,7 @@ public class DaprClientImpl extends AbstractDaprClient {
                       throw DaprException.propagate(e);
                     }
                   })
-                  .collect(Collectors.toList())
-      );
+                  .collect(Collectors.toList()));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -649,8 +643,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprProtos.ExecuteStateTransactionRequest req = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it))
-      ).then();
+          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).executeStateTransaction(req, it)))
+          .then();
     } catch (Exception e) {
       return DaprException.wrapMono(e);
     }
@@ -675,8 +669,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprProtos.SaveStateRequest req = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))
-      ).then();
+          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).saveState(req, it))).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -759,8 +752,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprProtos.DeleteStateRequest req = builder.build();
 
       return Mono.deferContextual(
-          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))
-      ).then();
+          context -> this.<Empty>createMono(it -> intercept(context, asyncStub).deleteState(req, it))).then();
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -795,8 +787,9 @@ public class DaprClientImpl extends AbstractDaprClient {
     DaprProtos.GetSecretRequest req = requestBuilder.build();
 
     return Mono.deferContextual(
-        context -> this.<DaprProtos.GetSecretResponse>createMono(it -> intercept(context, asyncStub).getSecret(req, it))
-    ).map(DaprProtos.GetSecretResponse::getDataMap);
+        context -> this.<DaprProtos.GetSecretResponse>createMono(
+            it -> intercept(context, asyncStub).getSecret(req, it)))
+        .map(DaprProtos.GetSecretResponse::getDataMap);
   }
 
   /**
@@ -820,20 +813,18 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprProtos.GetBulkSecretRequest envelope = builder.build();
 
       return Mono.deferContextual(
-          context ->
-              this.<DaprProtos.GetBulkSecretResponse>createMono(
-                  it -> intercept(context, asyncStub).getBulkSecret(envelope, it)
-              )
-      ).map(it -> {
-        Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
-        if (secretsMap == null) {
-          return Collections.emptyMap();
-        }
-        return secretsMap
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
-      });
+          context -> this.<DaprProtos.GetBulkSecretResponse>createMono(
+              it -> intercept(context, asyncStub).getBulkSecret(envelope, it)))
+          .map(it -> {
+            Map<String, DaprProtos.SecretResponse> secretsMap = it.getDataMap();
+            if (secretsMap == null) {
+              return Collections.emptyMap();
+            }
+            return secretsMap
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getSecretsMap()));
+          });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -864,24 +855,23 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       DaprProtos.TryLockRequest.Builder builder = DaprProtos.TryLockRequest.newBuilder()
-              .setStoreName(stateStoreName)
-              .setResourceId(resourceId)
-              .setLockOwner(lockOwner)
-              .setExpiryInSeconds(expiryInSeconds);
+          .setStoreName(stateStoreName)
+          .setResourceId(resourceId)
+          .setLockOwner(lockOwner)
+          .setExpiryInSeconds(expiryInSeconds);
 
       DaprProtos.TryLockRequest tryLockRequest = builder.build();
 
       return Mono.deferContextual(
-              context -> this.<DaprProtos.TryLockResponse>createMono(
-                      it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)
-              )
-      ).flatMap(response -> {
-        try {
-          return Mono.just(response.getSuccess());
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
-      });
+          context -> this.<DaprProtos.TryLockResponse>createMono(
+              it -> intercept(context, asyncStub).tryLockAlpha1(tryLockRequest, it)))
+          .flatMap(response -> {
+            try {
+              return Mono.just(response.getSuccess());
+            } catch (Exception ex) {
+              return DaprException.wrapMono(ex);
+            }
+          });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -908,23 +898,22 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       DaprProtos.UnlockRequest.Builder builder = DaprProtos.UnlockRequest.newBuilder()
-              .setStoreName(stateStoreName)
-              .setResourceId(resourceId)
-              .setLockOwner(lockOwner);
+          .setStoreName(stateStoreName)
+          .setResourceId(resourceId)
+          .setLockOwner(lockOwner);
 
       DaprProtos.UnlockRequest unlockRequest = builder.build();
 
       return Mono.deferContextual(
-              context -> this.<DaprProtos.UnlockResponse>createMono(
-                      it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)
-              )
-      ).flatMap(response -> {
-        try {
-          return Mono.just(UnlockResponseStatus.valueOf(response.getStatus().getNumber()));
-        } catch (Exception ex) {
-          return DaprException.wrapMono(ex);
-        }
-      });
+          context -> this.<DaprProtos.UnlockResponse>createMono(
+              it -> intercept(context, asyncStub).unlockAlpha1(unlockRequest, it)))
+          .flatMap(response -> {
+            try {
+              return Mono.just(UnlockResponseStatus.valueOf(response.getStatus().getNumber()));
+            } catch (Exception ex) {
+              return DaprException.wrapMono(ex);
+            }
+          });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -965,24 +954,23 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       return Mono.deferContextual(
           context -> this.<DaprProtos.QueryStateResponse>createMono(
-              it -> intercept(context, asyncStub).queryStateAlpha1(envelope, it)
-          )
-      ).map(
-          it -> {
-            Map<String, String> resultMeta = it.getMetadataMap();
-            String token = it.getToken();
-            List<QueryStateItem<T>> res = it.getResultsList()
-                .stream()
-                .map(v -> {
-                  try {
-                    return buildQueryStateKeyValue(v, type);
-                  } catch (Exception e) {
-                    throw DaprException.propagate(e);
-                  }
-                })
-                .collect(Collectors.toList());
-            return new QueryStateResponse<>(res, token).setMetadata(metadata);
-          });
+              it -> intercept(context, asyncStub).queryStateAlpha1(envelope, it)))
+          .map(
+              it -> {
+                Map<String, String> resultMeta = it.getMetadataMap();
+                String token = it.getToken();
+                List<QueryStateItem<T>> res = it.getResultsList()
+                    .stream()
+                    .map(v -> {
+                      try {
+                        return buildQueryStateKeyValue(v, type);
+                      } catch (Exception e) {
+                        throw DaprException.propagate(e);
+                      }
+                    })
+                    .collect(Collectors.toList());
+                return new QueryStateResponse<>(res, token).setMetadata(metadata);
+              });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -1033,8 +1021,8 @@ public class DaprClientImpl extends AbstractDaprClient {
     DaprProtos.ShutdownRequest shutdownRequest = DaprProtos.ShutdownRequest.newBuilder().build();
     return Mono.deferContextual(
         context -> this.<Empty>createMono(
-            it -> intercept(context, asyncStub).shutdown(shutdownRequest, it))
-    ).then();
+            it -> intercept(context, asyncStub).shutdown(shutdownRequest, it)))
+        .then();
   }
 
   /**
@@ -1066,21 +1054,18 @@ public class DaprClientImpl extends AbstractDaprClient {
 
   private Mono<Map<String, ConfigurationItem>> getConfiguration(DaprProtos.GetConfigurationRequest envelope) {
     return Mono.deferContextual(
-        context ->
-            this.<DaprProtos.GetConfigurationResponse>createMono(
-                it -> intercept(context, asyncStub).getConfiguration(envelope, it)
-            )
-    ).map(
-        it -> {
-          Map<String, ConfigurationItem> configMap = new HashMap<>();
-          Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
-          while (itr.hasNext()) {
-            Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
-            configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
-          }
-          return Collections.unmodifiableMap(configMap);
-        }
-    );
+        context -> this.<DaprProtos.GetConfigurationResponse>createMono(
+            it -> intercept(context, asyncStub).getConfiguration(envelope, it)))
+        .map(
+            it -> {
+              Map<String, ConfigurationItem> configMap = new HashMap<>();
+              Iterator<Map.Entry<String, CommonProtos.ConfigurationItem>> itr = it.getItems().entrySet().iterator();
+              while (itr.hasNext()) {
+                Map.Entry<String, CommonProtos.ConfigurationItem> entry = itr.next();
+                configMap.put(entry.getKey(), buildConfigurationItem(entry.getValue(), entry.getKey()));
+              }
+              return Collections.unmodifiableMap(configMap);
+            });
   }
 
   /**
@@ -1097,7 +1082,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("Configuration Store Name can not be null or empty.");
       }
 
-      // keys can and empty list for subscribe all scenario, so we do not need check for empty keys.
+      // keys can and empty list for subscribe all scenario, so we do not need check
+      // for empty keys.
       DaprProtos.SubscribeConfigurationRequest.Builder builder = DaprProtos.SubscribeConfigurationRequest.newBuilder()
           .setStoreName(configurationStoreName)
           .addAllKeys(keys);
@@ -1140,10 +1126,10 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (id.isEmpty()) {
         throw new IllegalArgumentException("Subscription id can not be null or empty.");
       }
-      DaprProtos.UnsubscribeConfigurationRequest.Builder builder =
-          DaprProtos.UnsubscribeConfigurationRequest.newBuilder()
-              .setId(id)
-              .setStoreName(configurationStoreName);
+      DaprProtos.UnsubscribeConfigurationRequest.Builder builder = DaprProtos.UnsubscribeConfigurationRequest
+          .newBuilder()
+          .setId(id)
+          .setStoreName(configurationStoreName);
 
       DaprProtos.UnsubscribeConfigurationRequest envelope = builder.build();
 
@@ -1169,8 +1155,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         key,
         configurationItem.getValue(),
         configurationItem.getVersion(),
-        configurationItem.getMetadataMap()
-    );
+        configurationItem.getMetadataMap());
   }
 
   /**
@@ -1230,5 +1215,47 @@ public class DaprClientImpl extends AbstractDaprClient {
         sink.complete();
       }
     };
+  }
+
+  @Override
+  public Mono<DaprMetadata> getMetadata() {
+    DaprProtos.GetMetadataRequest metadataRequest = DaprProtos.GetMetadataRequest.newBuilder().build();
+    return Mono.deferContextual(
+        context -> this.<DaprProtos.GetMetadataResponse>createMono(
+            it -> intercept(context, asyncStub).getMetadata(metadataRequest, it)))
+        .map(
+            it -> {
+              try {
+                return buildDaprMetadata(it);
+              } catch (IOException ex) {
+                throw DaprException.propagate(ex);
+              }
+            });
+  }
+
+  private DaprMetadata buildDaprMetadata(
+      DaprProtos.GetMetadataResponse response) throws IOException {
+    List<RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
+    List<PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
+    DaprMetadata daprMetadata = new DaprMetadata();
+    daprMetadata.setId(response.getId());
+    daprMetadata.setRuntimeVersion(response.getRuntimeVersion());
+    List<ComponentMetadata> components = new ArrayList<>();
+    for (RegisteredComponents rc : registeredComponentsList) {
+      components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion()));
+    }
+    daprMetadata.setComponents(components);
+    List<SubscriptionMetadata> subscriptions = new ArrayList<>();
+    for (PubsubSubscription s : subscriptionsList) {
+      List<PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
+      List<RuleMetadata> rules = new ArrayList<>();
+      for (PubsubSubscriptionRule r : rulesList) {
+        rules.add(new RuleMetadata(r.getPath()));
+      }
+      subscriptions.add(new SubscriptionMetadata(s.getTopic(), s.getPubsubName(), s.getDeadLetterTopic(), rules));
+    }
+    daprMetadata.setSubscriptions(subscriptions);
+
+    return daprMetadata;
   }
 }

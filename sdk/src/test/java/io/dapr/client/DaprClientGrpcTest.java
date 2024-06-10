@@ -17,6 +17,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
@@ -34,6 +35,9 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.PubsubSubscription;
+import io.dapr.v1.DaprProtos.RegisteredComponents;
+import io.dapr.v1.DaprProtos.RegisteredComponentsOrBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
@@ -234,6 +238,45 @@ public class DaprClientGrpcTest {
         new PublishEventRequest("pubsubname", "topic", "hello")
             .setContentType("text/plain"));
     result.block();
+  }
+
+  @Test
+  public void getMetadataTest() {
+
+    RegisteredComponents registeredComponents = DaprProtos.RegisteredComponents.newBuilder()
+        .setName("statestore")
+        .setType("state.redis")
+        .setVersion("v1")
+        .build();
+    PubsubSubscription pubsubSubscription = DaprProtos.PubsubSubscription.newBuilder()
+          .setDeadLetterTopic("")
+          .setPubsubName("pubsub")
+          .setTopic("topic")
+          .setRules(DaprProtos.PubsubSubscriptionRules.newBuilder().addRules(DaprProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build()).build())
+          .build();
+    DaprProtos.GetMetadataResponse responseEnvelope = DaprProtos.GetMetadataResponse.newBuilder()
+                                                                                      .setId("app")
+                                                                                      .setRuntimeVersion("1.1x.x")
+                                                                                      .addAllRegisteredComponents(Collections.singletonList(registeredComponents))
+                                                                                      .addAllSubscriptions(Collections.singletonList(pubsubSubscription))
+                                                                                      .build();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetMetadataResponse> observer = (StreamObserver<DaprProtos.GetMetadataResponse >) invocation.getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
+
+    Mono<DaprMetadata> result = client.getMetadata();
+    DaprMetadata metadata = result.block();
+    assertNotNull(metadata);
+    assertEquals("app", metadata.getId());
+    assertEquals("1.1x.x", metadata.getRuntimeVersion());
+    assertEquals(1, metadata.getComponents().size());
+    assertEquals(1, metadata.getSubscriptions().size());
+  
+
+
   }
 
   @Test
