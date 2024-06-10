@@ -1,97 +1,79 @@
+/*
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.client.domain;
 
 import java.util.List;
 
+/**
+ * DaprMetadata describes the Dapr Metadata.
+ */
 public final class DaprMetadata {
-    private String id;
-    private String runtimeVersion;
-    private List<ComponentMetadata> components;
-    private List<SubscriptionMetadata> subscriptions;
 
-    public DaprMetadata() {
-    }
+  private String id;
+  private String runtimeVersion;
+  private List<ComponentMetadata> components;
+  private List<SubscriptionMetadata> subscriptions;
 
-    public DaprMetadata(String id, String runtimeVersion, List<ComponentMetadata> components,
-            List<SubscriptionMetadata> subscriptions) {
-        this.id = id;
-        this.runtimeVersion = runtimeVersion;
-        this.components = components;
-        this.subscriptions = subscriptions;
-    }
+  public DaprMetadata() {
+  }
 
-    public String getId() {
-        return id;
-    }
+  /**
+   * Constructor for a DaprMetadata.
+   *
+   * @param id of the application
+   * @param runtimeVersion Dapr version
+   * @param components list of registered componnets
+   * @param subscriptions list of registered subscription
+   */
+  public DaprMetadata(String id, String runtimeVersion, List<ComponentMetadata> components,
+      List<SubscriptionMetadata> subscriptions) {
+    this.id = id;
+    this.runtimeVersion = runtimeVersion;
+    this.components = components;
+    this.subscriptions = subscriptions;
+  }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+  public String getId() {
+    return id;
+  }
 
-    public String getRuntimeVersion() {
-        return runtimeVersion;
-    }
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    public void setRuntimeVersion(String runtimeVersion) {
-        this.runtimeVersion = runtimeVersion;
-    }
+  public String getRuntimeVersion() {
+    return runtimeVersion;
+  }
 
-    public List<ComponentMetadata> getComponents() {
-        return components;
-    }
+  public void setRuntimeVersion(String runtimeVersion) {
+    this.runtimeVersion = runtimeVersion;
+  }
 
-    public void setComponents(List<ComponentMetadata> components) {
-        this.components = components;
-    }
+  public List<ComponentMetadata> getComponents() {
+    return components;
+  }
 
-    public List<SubscriptionMetadata> getSubscriptions() {
-        return subscriptions;
-    }
+  public void setComponents(List<ComponentMetadata> components) {
+    this.components = components;
+  }
 
-    public void setSubscriptions(List<SubscriptionMetadata> subscriptions) {
-        this.subscriptions = subscriptions;
-    }
+  public List<SubscriptionMetadata> getSubscriptions() {
+    return subscriptions;
+  }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        result = prime * result + ((runtimeVersion == null) ? 0 : runtimeVersion.hashCode());
-        result = prime * result + ((components == null) ? 0 : components.hashCode());
-        result = prime * result + ((subscriptions == null) ? 0 : subscriptions.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        DaprMetadata other = (DaprMetadata) obj;
-        if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
-            return false;
-        if (runtimeVersion == null) {
-            if (other.runtimeVersion != null)
-                return false;
-        } else if (!runtimeVersion.equals(other.runtimeVersion))
-            return false;
-        if (components == null) {
-            if (other.components != null)
-                return false;
-        } else if (!components.equals(other.components))
-            return false;
-        if (subscriptions == null) {
-            if (other.subscriptions != null)
-                return false;
-        } else if (!subscriptions.equals(other.subscriptions))
-            return false;
-        return true;
-    }
+  public void setSubscriptions(List<SubscriptionMetadata> subscriptions) {
+    this.subscriptions = subscriptions;
+  }
 
 }

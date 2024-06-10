@@ -389,17 +389,17 @@ public class DaprClientHttp extends AbstractDaprClient {
   @Override
   public Mono<DaprMetadata> getMetadata() {
     
-      String[] pathSegments = new String[] { DaprHttp.API_VERSION, "metadata"};
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "metadata"};
 
-      return Mono.deferContextual(context ->  this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
-              null, "", null, null))
-              .flatMap(r -> {
-                try {
-                  return Mono.just(buildMetadata(r));
-                } catch (Exception ex) {
-                  return DaprException.wrapMono(ex);
-                }
-              });
+    return Mono.deferContextual(context ->  this.client.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+            null, "", null, null))
+            .flatMap(r -> {
+              try {
+                return Mono.just(buildMetadata(r));
+              } catch (Exception ex) {
+                return DaprException.wrapMono(ex);
+              }
+            });
   }
 
   private DaprMetadata buildMetadata(

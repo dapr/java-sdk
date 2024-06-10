@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
@@ -63,6 +62,10 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.PubsubSubscription;
+import io.dapr.v1.DaprProtos.PubsubSubscriptionRule;
+import io.dapr.v1.DaprProtos.RegisteredComponents;
+import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
@@ -1236,7 +1239,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   private DaprMetadata buildDaprMetadata(
       DaprProtos.GetMetadataResponse response) throws IOException {
     List<RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
-    List<PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
+    
     DaprMetadata daprMetadata = new DaprMetadata();
     daprMetadata.setId(response.getId());
     daprMetadata.setRuntimeVersion(response.getRuntimeVersion());
@@ -1245,6 +1248,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion()));
     }
     daprMetadata.setComponents(components);
+    
+    List<PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
     List<SubscriptionMetadata> subscriptions = new ArrayList<>();
     for (PubsubSubscription s : subscriptionsList) {
       List<PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
