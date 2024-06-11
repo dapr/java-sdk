@@ -142,14 +142,11 @@ public class DaprClientHttpTest {
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
     DaprClientHttp daprClientHttp = new DaprClientHttp(daprHttp);
 
-    DaprMetadata metadata = new DaprMetadata();
-    metadata.setId("my-app");
-    metadata.setRuntimeVersion("1.1x.x");
-    metadata.setComponents(Collections.singletonList(new ComponentMetadata("statestore", "state.redis", "v1")));
-    metadata.setSubscriptions(Collections.singletonList(new SubscriptionMetadata("topic", "pubsub", "", Collections.singletonList(new RuleMetadata("/path")))));
-
-    ObjectMapper mapper = new ObjectMapper();
+    DaprMetadata metadata = new DaprMetadata("my-app", "1.1x.x", 
+              Collections.singletonList(new ComponentMetadata("statestore", "state.redis", "v1")), 
+              Collections.singletonList(new SubscriptionMetadata("topic", "pubsub", "", Collections.singletonList(new RuleMetadata("/path")))));
     
+    ObjectMapper mapper = new ObjectMapper();
 
     mockInterceptor.addRule()
             .get()

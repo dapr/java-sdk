@@ -1267,14 +1267,10 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprProtos.GetMetadataResponse response) throws IOException {
     List<RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
 
-    DaprMetadata daprMetadata = new DaprMetadata();
-    daprMetadata.setId(response.getId());
-    daprMetadata.setRuntimeVersion(response.getRuntimeVersion());
     List<ComponentMetadata> components = new ArrayList<>();
     for (RegisteredComponents rc : registeredComponentsList) {
       components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion()));
     }
-    daprMetadata.setComponents(components);
 
     List<PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
     List<SubscriptionMetadata> subscriptions = new ArrayList<>();
@@ -1286,8 +1282,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
       subscriptions.add(new SubscriptionMetadata(s.getTopic(), s.getPubsubName(), s.getDeadLetterTopic(), rules));
     }
-    daprMetadata.setSubscriptions(subscriptions);
 
-    return daprMetadata;
+    return new DaprMetadata(response.getId(), response.getRuntimeVersion(), components, subscriptions);
   }
 }

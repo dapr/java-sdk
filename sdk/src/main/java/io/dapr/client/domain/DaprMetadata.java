@@ -69,12 +69,15 @@ public final class DaprMetadata {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     DaprMetadata other = (DaprMetadata) obj;
     return Objects.equals(id, other.id) && Objects.equals(runtimeVersion, other.runtimeVersion)
         && Objects.equals(components, other.components) && Objects.equals(subscriptions, other.subscriptions);
