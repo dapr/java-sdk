@@ -37,7 +37,6 @@ import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.dapr.v1.DaprProtos.PubsubSubscription;
 import io.dapr.v1.DaprProtos.RegisteredComponents;
-import io.dapr.v1.DaprProtos.RegisteredComponentsOrBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
@@ -119,10 +118,10 @@ public class DaprClientGrpcTest {
     }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
     assertThrowsDaprException(
-        StatusRuntimeException.class,
-        "INVALID_ARGUMENT",
-        "INVALID_ARGUMENT: bad bad argument",
-        () -> client.publishEvent("pubsubname", "topic", "object").block());
+            StatusRuntimeException.class,
+            "INVALID_ARGUMENT",
+            "INVALID_ARGUMENT: bad bad argument",
+            () -> client.publishEvent("pubsubname","topic", "object").block());
   }
 
   @Test
@@ -133,7 +132,7 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
-    Mono<Void> result = client.publishEvent("pubsubname", "topic", "object");
+    Mono<Void> result = client.publishEvent("pubsubname","topic", "object");
 
     assertThrowsDaprException(
         ExecutionException.class,
@@ -154,7 +153,7 @@ public class DaprClientGrpcTest {
     }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
-    Mono<Void> result = client.publishEvent("pubsubname", "topic", "{invalid-json");
+    Mono<Void> result = client.publishEvent("pubsubname","topic", "{invalid-json");
 
     assertThrowsDaprException(
         IOException.class,
@@ -172,7 +171,7 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
-    Mono<Void> result = client.publishEvent("pubsubname", "topic", "object");
+    Mono<Void> result = client.publishEvent("pubsubname","topic", "object");
     result.block();
   }
 
@@ -233,49 +232,11 @@ public class DaprClientGrpcTest {
       return true;
     }), any());
 
+
     Mono<Void> result = client.publishEvent(
         new PublishEventRequest("pubsubname", "topic", "hello")
             .setContentType("text/plain"));
     result.block();
-  }
-
-  @Test
-  public void getMetadataTest() {
-
-    RegisteredComponents registeredComponents = DaprProtos.RegisteredComponents.newBuilder()
-        .setName("statestore")
-        .setType("state.redis")
-        .setVersion("v1")
-        .build();
-    PubsubSubscription pubsubSubscription = DaprProtos.PubsubSubscription.newBuilder()
-        .setDeadLetterTopic("")
-        .setPubsubName("pubsub")
-        .setTopic("topic")
-        .setRules(DaprProtos.PubsubSubscriptionRules.newBuilder()
-            .addRules(DaprProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build()).build())
-        .build();
-    DaprProtos.GetMetadataResponse responseEnvelope = DaprProtos.GetMetadataResponse.newBuilder()
-        .setId("app")
-        .setRuntimeVersion("1.1x.x")
-        .addAllRegisteredComponents(Collections.singletonList(registeredComponents))
-        .addAllSubscriptions(Collections.singletonList(pubsubSubscription))
-        .build();
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetMetadataResponse> observer = (StreamObserver<DaprProtos.GetMetadataResponse>) invocation
-          .getArguments()[1];
-      observer.onNext(responseEnvelope);
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
-
-    Mono<DaprMetadata> result = client.getMetadata();
-    DaprMetadata metadata = result.block();
-    assertNotNull(metadata);
-    assertEquals("app", metadata.getId());
-    assertEquals("1.1x.x", metadata.getRuntimeVersion());
-    assertEquals(1, metadata.getComponents().size());
-    assertEquals(1, metadata.getSubscriptions().size());
-
   }
 
   @Test
@@ -338,8 +299,7 @@ public class DaprClientGrpcTest {
   public void invokeBindingCallbackExceptionThrownTest() {
     RuntimeException ex = new RuntimeException("An Exception");
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
     }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
@@ -355,11 +315,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder = DaprProtos.InvokeBindingResponse.newBuilder()
-        .setData(serialize("OK"));
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+      DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
@@ -371,29 +330,26 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingByteArrayTest() {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder = DaprProtos.InvokeBindingResponse.newBuilder()
-        .setData(ByteString.copyFrom("OK".getBytes()));
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprProtos.InvokeBindingResponse.newBuilder().setData(ByteString.copyFrom("OK".getBytes()));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
     }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
-    Mono<byte[]> result = client.invokeBinding("BindingName", "MyOperation", "request".getBytes(),
-        Collections.EMPTY_MAP);
+    Mono<byte[]> result = client.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
 
     assertEquals("OK", new String(result.block(), StandardCharsets.UTF_8));
   }
 
   @Test
   public void invokeBindingObjectTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder = DaprProtos.InvokeBindingResponse.newBuilder()
-        .setData(serialize("OK"));
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+      DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
@@ -407,11 +363,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingResponseObjectTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder = DaprProtos.InvokeBindingResponse.newBuilder()
-        .setData(serialize("OK"));
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
@@ -425,11 +380,10 @@ public class DaprClientGrpcTest {
 
   @Test
   public void invokeBindingResponseObjectTypeRefTest() throws IOException {
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder = DaprProtos.InvokeBindingResponse.newBuilder()
-        .setData(serialize("OK"));
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
@@ -444,12 +398,11 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeBindingObjectNoHotMono() throws IOException {
     AtomicBoolean called = new AtomicBoolean(false);
-    DaprProtos.InvokeBindingResponse.Builder responseBuilder = DaprProtos.InvokeBindingResponse.newBuilder()
-        .setData(serialize("OK"));
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
       called.set(true);
-      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
       observer.onCompleted();
       return null;
@@ -473,7 +426,7 @@ public class DaprClientGrpcTest {
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null key
-      client.getState(STATE_STORE_NAME, (String) null, String.class).block();
+      client.getState(STATE_STORE_NAME, (String)null, String.class).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty key
@@ -501,8 +454,7 @@ public class DaprClientGrpcTest {
   public void getStateCallbackExceptionThrownTest() {
     RuntimeException ex = new RuntimeException("An Exception");
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onError(ex);
       return null;
     }).when(daprStub).getState(any(DaprProtos.GetStateRequest.class), any());
@@ -525,8 +477,7 @@ public class DaprClientGrpcTest {
     State<String> expectedState = buildStateKey(expectedValue, key, etag, new HashMap<>(), null);
     DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
     doAnswer(invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -549,8 +500,7 @@ public class DaprClientGrpcTest {
     DaprProtos.GetStateResponse responseEnvelope = buildGetStateResponse(expectedValue, etag);
     doAnswer((Answer<Void>) invocation -> {
       called.set(true);
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -575,8 +525,7 @@ public class DaprClientGrpcTest {
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -606,8 +555,7 @@ public class DaprClientGrpcTest {
         .setMetadata(metadata)
         .setStateOptions(options);
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -632,8 +580,7 @@ public class DaprClientGrpcTest {
         .build();
     State<MyObject> keyRequest = buildStateKey(null, key, etag, new HashMap<>(), options);
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -689,15 +636,13 @@ public class DaprClientGrpcTest {
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class)
-        .block();
+    List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -728,8 +673,7 @@ public class DaprClientGrpcTest {
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -738,7 +682,7 @@ public class DaprClientGrpcTest {
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
-    assertEquals(1234, (int) result.stream().findFirst().get().getValue());
+    assertEquals(1234, (int)result.stream().findFirst().get().getValue());
     assertEquals(metadata, result.stream().findFirst().get().getMetadata());
     assertEquals("1", result.stream().findFirst().get().getEtag());
     assertNull(result.stream().findFirst().get().getError());
@@ -765,15 +709,13 @@ public class DaprClientGrpcTest {
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<Boolean>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class)
-        .block();
+    List<State<Boolean>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), boolean.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -792,7 +734,7 @@ public class DaprClientGrpcTest {
     Map<String, String> metadata = new HashMap<>();
     DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
         .addItems(DaprProtos.BulkStateItem.newBuilder()
-            .setData(serialize(new byte[] { 1, 2, 3 }))
+            .setData(serialize(new byte[]{1, 2, 3}))
             .setKey("100")
             .putAllMetadata(metadata)
             .setEtag("1")
@@ -803,19 +745,17 @@ public class DaprClientGrpcTest {
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<byte[]>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), byte[].class)
-        .block();
+    List<State<byte[]>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), byte[].class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
-    assertArrayEquals(new byte[] { 1, 2, 3 }, result.stream().findFirst().get().getValue());
+    assertArrayEquals(new byte[]{1, 2, 3}, result.stream().findFirst().get().getValue());
     assertEquals(0, result.stream().findFirst().get().getMetadata().size());
     assertEquals("1", result.stream().findFirst().get().getEtag());
     assertNull(result.stream().findFirst().get().getError());
@@ -840,15 +780,13 @@ public class DaprClientGrpcTest {
             .build())
         .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<MyObject>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class)
-        .block();
+    List<State<MyObject>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), MyObject.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -949,7 +887,7 @@ public class DaprClientGrpcTest {
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
     Mono<Void> result = client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
-        stateKey.getOptions());
+      stateKey.getOptions());
     result.block();
   }
 
@@ -991,7 +929,7 @@ public class DaprClientGrpcTest {
 
     State<String> stateKey = buildStateKey(null, key, etag, options);
     client.deleteState(STATE_STORE_NAME, stateKey.getKey(), stateKey.getEtag(),
-        stateKey.getOptions());
+            stateKey.getOptions());
     // Do not call result.block(), so nothing should happen.
     assertFalse(called.get());
   }
@@ -1063,6 +1001,7 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
 
+
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
@@ -1127,9 +1066,9 @@ public class DaprClientGrpcTest {
         stateKey);
     TransactionalStateOperation<String> deleteOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.DELETE,
-        new State<>("testKey"));
-    Mono<Void> result = client.executeStateTransaction(STATE_STORE_NAME,
-        Arrays.asList(upsertOperation, deleteOperation));
+        new State<>("testKey")
+    );
+    Mono<Void> result = client.executeStateTransaction(STATE_STORE_NAME, Arrays.asList(upsertOperation, deleteOperation));
     result.block();
   }
 
@@ -1197,8 +1136,8 @@ public class DaprClientGrpcTest {
   @Test
   public void saveBulkStateTestNullEtag() {
     List<State<?>> states = new ArrayList<State<?>>();
-    states.add(new State<String>("null_etag_key", "null_etag_value", null, (StateOptions) null));
-    states.add(new State<String>("empty_etag_key", "empty_etag_value", "", (StateOptions) null));
+    states.add(new State<String>("null_etag_key", "null_etag_value", null, (StateOptions)null));
+    states.add(new State<String>("empty_etag_key", "empty_etag_value", "", (StateOptions)null));
 
     ArgumentCaptor<DaprProtos.SaveStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.SaveStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
@@ -1267,6 +1206,7 @@ public class DaprClientGrpcTest {
       observer.onCompleted();
       return null;
     }).when(daprStub).saveState(any(DaprProtos.SaveStateRequest.class), any());
+
 
     Mono<Void> result = client.saveState(STATE_STORE_NAME, key, etag, value, null);
     result.block();
@@ -1384,35 +1324,28 @@ public class DaprClientGrpcTest {
     return new State<>(key, value, etag, options);
   }
 
-  private <T> State<T> buildStateKey(T value, String key, String etag, Map<String, String> metadata,
-      StateOptions options) {
+  private <T> State<T> buildStateKey(T value, String key, String etag, Map<String, String> metadata, StateOptions options) {
     return new State<>(key, value, etag, metadata, options);
   }
 
   /**
-   * The purpose of this test is to show that it doesn't matter when the client is
-   * called, the actual coll to DAPR
+   * The purpose of this test is to show that it doesn't matter when the client is called, the actual coll to DAPR
    * will be done when the output Mono response call the Mono.block method.
-   * Like for instance if you call getState, without blocking for the response,
-   * and then call delete for the same
-   * state you just retrieved but block for the delete response, when later you
-   * block for the response of the getState,
+   * Like for instance if you call getState, without blocking for the response, and then call delete for the same
+   * state you just retrieved but block for the delete response, when later you block for the response of the getState,
    * you will not find the state.
-   * <p>
-   * This test will execute the following flow:
-   * </p>
+   * <p>This test will execute the following flow:</p>
    * <ol>
-   * <li>Exeucte client getState for Key=key1</li>
-   * <li>Block for result to the the state</li>
-   * <li>Assert the Returned State is the expected to key1</li>
-   * <li>Execute client getState for Key=key2</li>
-   * <li>Execute client deleteState for Key=key2</li>
-   * <li>Block for deleteState call.</li>
-   * <li>Block for getState for Key=key2 and Assert they 2 was not found.</li>
+   *   <li>Exeucte client getState for Key=key1</li>
+   *   <li>Block for result to the the state</li>
+   *   <li>Assert the Returned State is the expected to key1</li>
+   *   <li>Execute client getState for Key=key2</li>
+   *   <li>Execute client deleteState for Key=key2</li>
+   *   <li>Block for deleteState call.</li>
+   *   <li>Block for getState for Key=key2 and Assert they 2 was not found.</li>
    * </ol>
    *
-   * @throws Exception - Test will fail if any unexpected exception is being
-   *                   thrown.
+   * @throws Exception - Test will fail if any unexpected exception is being thrown.
    */
 
   @Test
@@ -1429,15 +1362,13 @@ public class DaprClientGrpcTest {
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key1));
       observer.onCompleted();
       return null;
     }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key2));
       observer.onCompleted();
       return null;
@@ -1466,8 +1397,7 @@ public class DaprClientGrpcTest {
   public void deleteStateNullEtag() {
     String key = "key1";
     String etag = null;
-    ArgumentCaptor<DaprProtos.DeleteStateRequest> argument = ArgumentCaptor
-        .forClass(DaprProtos.DeleteStateRequest.class);
+    ArgumentCaptor<DaprProtos.DeleteStateRequest> argument = ArgumentCaptor.forClass(DaprProtos.DeleteStateRequest.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -1490,12 +1420,11 @@ public class DaprClientGrpcTest {
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
     Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
     DaprProtos.GetStateResponse envelope = DaprProtos.GetStateResponse.newBuilder()
-        .setData(serialize(expectedValue1))
-        .build();
+            .setData(serialize(expectedValue1))
+            .build();
     futuresMap.put(key1, envelope);
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key1));
       observer.onCompleted();
       return null;
@@ -1509,26 +1438,24 @@ public class DaprClientGrpcTest {
   @Test
   public void getBulkStateNullEtag() throws Exception {
     DaprProtos.GetBulkStateResponse responseEnvelope = DaprProtos.GetBulkStateResponse.newBuilder()
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
-            .setData(serialize("hello world"))
-            .setKey("100")
-            .build())
-        .addItems(DaprProtos.BulkStateItem.newBuilder()
-            .setKey("200")
-            .setEtag("")
-            .setError("not found")
-            .build())
-        .build();
+            .addItems(DaprProtos.BulkStateItem.newBuilder()
+                    .setData(serialize("hello world"))
+                    .setKey("100")
+                    .build())
+            .addItems(DaprProtos.BulkStateItem.newBuilder()
+                    .setKey("200")
+                    .setEtag("")
+                    .setError("not found")
+                    .build())
+            .build();
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkStateResponse> observer = (StreamObserver<DaprProtos.GetBulkStateResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).getBulkState(any(DaprProtos.GetBulkStateRequest.class), any());
 
-    List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class)
-        .block();
+    List<State<String>> result = client.getBulkState(STATE_STORE_NAME, Arrays.asList("100", "200"), String.class).block();
 
     assertEquals(2, result.size());
     assertEquals("100", result.stream().findFirst().get().getKey());
@@ -1553,8 +1480,7 @@ public class DaprClientGrpcTest {
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals(0, req.getMetadataCount());
 
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -1576,8 +1502,7 @@ public class DaprClientGrpcTest {
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals(0, req.getMetadataCount());
 
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -1596,8 +1521,7 @@ public class DaprClientGrpcTest {
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals(0, req.getMetadataCount());
 
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
       observer.onError(new RuntimeException());
       return null;
     }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
@@ -1636,17 +1560,16 @@ public class DaprClientGrpcTest {
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals("metavalue", req.getMetadataMap().get("metakey"));
 
-      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetSecretResponse> observer = (StreamObserver<DaprProtos.GetSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).getSecret(any(DaprProtos.GetSecretRequest.class), any());
 
     Map<String, String> result = client.getSecret(
-        SECRET_STORE_NAME,
-        "key",
-        Collections.singletonMap("metakey", "metavalue")).block();
+      SECRET_STORE_NAME,
+      "key",
+      Collections.singletonMap("metakey", "metavalue")).block();
 
     assertEquals(1, result.size());
     assertEquals(expectedValue, result.get(expectedKey));
@@ -1655,25 +1578,21 @@ public class DaprClientGrpcTest {
   @Test
   public void getBulkSecrets() {
     DaprProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
-        new HashMap<String, Map<String, String>>() {
-          {
-            put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
-            put("two", new HashMap<String, String>() {
-              {
-                put("a", "1");
-                put("b", "2");
-              }
-            });
-          }
-        });
+        new HashMap<String, Map<String, String>>() {{
+          put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
+          put("two", new HashMap<String, String>() {{
+            put("a", "1");
+            put("b", "2");
+          }});
+        }});
 
     doAnswer((Answer<Void>) invocation -> {
       DaprProtos.GetBulkSecretRequest req = invocation.getArgument(0);
       assertEquals(SECRET_STORE_NAME, req.getStoreName());
       assertEquals(0, req.getMetadataCount());
 
-      StreamObserver<DaprProtos.GetBulkSecretResponse> observer = (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkSecretResponse> observer =
+          (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -1692,17 +1611,13 @@ public class DaprClientGrpcTest {
   @Test
   public void getBulkSecretsWithMetadata() {
     DaprProtos.GetBulkSecretResponse responseEnvelope = buildGetBulkSecretResponse(
-        new HashMap<String, Map<String, String>>() {
-          {
-            put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
-            put("two", new HashMap<String, String>() {
-              {
-                put("a", "1");
-                put("b", "2");
-              }
-            });
-          }
-        });
+        new HashMap<String, Map<String, String>>() {{
+          put("one", Collections.singletonMap("mysecretkey", "mysecretvalue"));
+          put("two", new HashMap<String, String>() {{
+            put("a", "1");
+            put("b", "2");
+          }});
+        }});
 
     doAnswer((Answer<Void>) invocation -> {
       DaprProtos.GetBulkSecretRequest req = invocation.getArgument(0);
@@ -1710,8 +1625,8 @@ public class DaprClientGrpcTest {
       assertEquals(1, req.getMetadataCount());
       assertEquals("metavalue", req.getMetadataOrThrow("metakey"));
 
-      StreamObserver<DaprProtos.GetBulkSecretResponse> observer = (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetBulkSecretResponse> observer =
+          (StreamObserver<DaprProtos.GetBulkSecretResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -1738,8 +1653,8 @@ public class DaprClientGrpcTest {
   @Test
   public void getSingleConfigurationTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer = (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getSingleMockResponse());
       observer.onCompleted();
       return null;
@@ -1753,8 +1668,8 @@ public class DaprClientGrpcTest {
   @Test
   public void getSingleConfigurationWithMetadataTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer = (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getSingleMockResponse());
       observer.onCompleted();
       return null;
@@ -1770,14 +1685,14 @@ public class DaprClientGrpcTest {
   @Test
   public void getMultipleConfigurationTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer = (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getMultipleMockResponse());
       observer.onCompleted();
       return null;
     }).when(daprStub).getConfiguration(any(DaprProtos.GetConfigurationRequest.class), any());
 
-    Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, "configkey1", "configkey2").block();
+    Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, "configkey1","configkey2").block();
     assertEquals(2, cis.size());
     assertTrue(cis.containsKey("configkey1"), "configkey1");
     assertEquals("configvalue1", cis.get("configkey1").getValue());
@@ -1790,8 +1705,8 @@ public class DaprClientGrpcTest {
   @Test
   public void getMultipleConfigurationWithMetadataTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetConfigurationResponse> observer = (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.GetConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.GetConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(getMultipleMockResponse());
       observer.onCompleted();
       return null;
@@ -1799,7 +1714,7 @@ public class DaprClientGrpcTest {
 
     Map<String, String> reqMetadata = new HashMap<>();
     reqMetadata.put("meta1", "value1");
-    List<String> keys = Arrays.asList("configkey1", "configkey2");
+    List<String> keys = Arrays.asList("configkey1","configkey2");
     Map<String, ConfigurationItem> cis = client.getConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).block();
     assertEquals(2, cis.size());
     assertTrue(cis.containsKey("configkey1"), "configkey1");
@@ -1822,15 +1737,14 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer = (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).subscribeConfiguration(any(DaprProtos.SubscribeConfigurationRequest.class), any());
 
-    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1")
-        .toIterable().iterator();
+    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, "configkey1").toIterable().iterator();
     assertTrue(itr.hasNext());
     SubscribeConfigurationResponse res = itr.next();
     assertTrue(res.getItems().containsKey("configkey1"));
@@ -1854,8 +1768,8 @@ public class DaprClientGrpcTest {
         .build();
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer = (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -1864,8 +1778,7 @@ public class DaprClientGrpcTest {
     Map<String, String> reqMetadata = new HashMap<>();
     List<String> keys = Arrays.asList("configkey1");
 
-    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, keys, reqMetadata)
-        .toIterable().iterator();
+    Iterator<SubscribeConfigurationResponse> itr = client.subscribeConfiguration(CONFIG_STORE_NAME, keys, reqMetadata).toIterable().iterator();
     assertTrue(itr.hasNext());
     SubscribeConfigurationResponse res = itr.next();
     assertTrue(res.getItems().containsKey("configkey1"));
@@ -1876,8 +1789,8 @@ public class DaprClientGrpcTest {
   @Test
   public void subscribeConfigurationWithErrorTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer = (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.SubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.SubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onError(new RuntimeException());
       observer.onCompleted();
       return null;
@@ -1894,22 +1807,21 @@ public class DaprClientGrpcTest {
 
   @Test
   public void unsubscribeConfigurationTest() {
-    DaprProtos.UnsubscribeConfigurationResponse responseEnvelope = DaprProtos.UnsubscribeConfigurationResponse
-        .newBuilder()
+    DaprProtos.UnsubscribeConfigurationResponse responseEnvelope = DaprProtos.UnsubscribeConfigurationResponse.newBuilder()
         .setOk(true)
         .setMessage("unsubscribed_message")
         .build();
 
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer = (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).unsubscribeConfiguration(any(DaprProtos.UnsubscribeConfigurationRequest.class), any());
 
-    UnsubscribeConfigurationResponse response = client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME)
-        .block();
+    UnsubscribeConfigurationResponse
+        response = client.unsubscribeConfiguration("subscription_id", CONFIG_STORE_NAME).block();
     assertTrue(response.getIsUnsubscribed());
     assertEquals("unsubscribed_message", response.getMessage());
   }
@@ -1917,8 +1829,8 @@ public class DaprClientGrpcTest {
   @Test
   public void unsubscribeConfigurationTestWithError() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer = (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.UnsubscribeConfigurationResponse> observer =
+          (StreamObserver<DaprProtos.UnsubscribeConfigurationResponse>) invocation.getArguments()[1];
       observer.onError(new RuntimeException());
       observer.onCompleted();
       return null;
@@ -1973,9 +1885,7 @@ public class DaprClientGrpcTest {
     return responseEnvelope;
   }
 
-  /*
-   * If this test is failing, it means that a new value was added to
-   * StateOptions.Consistency
+  /* If this test is failing, it means that a new value was added to StateOptions.Consistency
    * enum, without creating a mapping to one of the proto defined gRPC enums
    */
   @Test
@@ -1997,9 +1907,7 @@ public class DaprClientGrpcTest {
     }
   }
 
-  /*
-   * If this test is failing, it means that a new value was added to
-   * StateOptions.Concurrency
+  /* If this test is failing, it means that a new value was added to StateOptions.Concurrency
    * enum, without creating a mapping to one of the proto defined gRPC enums
    */
   @Test
@@ -2024,8 +1932,7 @@ public class DaprClientGrpcTest {
   @Test
   public void shutdownTest() {
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.ShutdownRequest> observer = (StreamObserver<DaprProtos.ShutdownRequest>) invocation
-          .getArguments()[1];
+      StreamObserver<DaprProtos.ShutdownRequest> observer = (StreamObserver<DaprProtos.ShutdownRequest>) invocation.getArguments()[1];
       observer.onNext(DaprProtos.ShutdownRequest.getDefaultInstance());
       observer.onCompleted();
       return null;
@@ -2034,6 +1941,7 @@ public class DaprClientGrpcTest {
     Mono<Void> result = client.shutdown();
     result.block();
   }
+
 
   private <T> DaprProtos.GetStateResponse buildFutureGetStateEnvelop(T value, String etag) throws IOException {
     return buildGetStateResponse(value, etag);
@@ -2113,17 +2021,13 @@ public class DaprClientGrpcTest {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o)
-        return true;
-      if (!(o instanceof MyObject))
-        return false;
+      if (this == o) return true;
+      if (!(o instanceof MyObject)) return false;
 
       MyObject myObject = (MyObject) o;
 
-      if (!getId().equals(myObject.getId()))
-        return false;
-      if (getValue() != null ? !getValue().equals(myObject.getValue()) : myObject.getValue() != null)
-        return false;
+      if (!getId().equals(myObject.getId())) return false;
+      if (getValue() != null ? !getValue().equals(myObject.getValue()) : myObject.getValue() != null) return false;
 
       return true;
     }
@@ -2168,14 +2072,52 @@ public class DaprClientGrpcTest {
     return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(statusCode)).withDescription(message));
   }
 
-  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message,
-      com.google.rpc.Status statusDetails) {
+  public static StatusRuntimeException newStatusRuntimeException(String statusCode, String message, com.google.rpc.Status statusDetails) {
     com.google.rpc.Status status = com.google.rpc.Status.newBuilder()
-        .setCode(Status.Code.valueOf(statusCode).value())
-        .setMessage(message)
-        .addAllDetails(statusDetails.getDetailsList())
-        .build();
+            .setCode(Status.Code.valueOf(statusCode).value())
+            .setMessage(message)
+            .addAllDetails(statusDetails.getDetailsList())
+            .build();
 
     return StatusProto.toStatusRuntimeException(status);
+  }
+
+  @Test
+  public void getMetadataTest() {
+
+    RegisteredComponents registeredComponents = DaprProtos.RegisteredComponents.newBuilder()
+        .setName("statestore")
+        .setType("state.redis")
+        .setVersion("v1")
+        .build();
+    PubsubSubscription pubsubSubscription = DaprProtos.PubsubSubscription.newBuilder()
+        .setDeadLetterTopic("")
+        .setPubsubName("pubsub")
+        .setTopic("topic")
+        .setRules(DaprProtos.PubsubSubscriptionRules.newBuilder()
+            .addRules(DaprProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build()).build())
+        .build();
+    DaprProtos.GetMetadataResponse responseEnvelope = DaprProtos.GetMetadataResponse.newBuilder()
+        .setId("app")
+        .setRuntimeVersion("1.1x.x")
+        .addAllRegisteredComponents(Collections.singletonList(registeredComponents))
+        .addAllSubscriptions(Collections.singletonList(pubsubSubscription))
+        .build();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetMetadataResponse> observer = (StreamObserver<DaprProtos.GetMetadataResponse>) invocation
+          .getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
+
+    Mono<DaprMetadata> result = client.getMetadata();
+    DaprMetadata metadata = result.block();
+    assertNotNull(metadata);
+    assertEquals("app", metadata.getId());
+    assertEquals("1.1x.x", metadata.getRuntimeVersion());
+    assertEquals(1, metadata.getComponents().size());
+    assertEquals(1, metadata.getSubscriptions().size());
+
   }
 }
