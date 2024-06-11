@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * SubscriptionMetadata describes the Subscription Metadata.
  */
-public class SubscriptionMetadata {
+public final class SubscriptionMetadata {
   private String topic;
   private String pubsubname;
   private String deadLetterTopic;

@@ -16,7 +16,7 @@ package io.dapr.client.domain;
 /**
  * ComponentMetadata describes a Dapr Component.
  */
-public class ComponentMetadata {
+public final class ComponentMetadata {
 
   private String name;
   private String type;

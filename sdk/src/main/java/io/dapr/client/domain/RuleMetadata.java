@@ -16,7 +16,7 @@ package io.dapr.client.domain;
 /**
  * RuleMetadata describes the Subscription Rule's Metadata.
  */
-public class RuleMetadata {
+public final class RuleMetadata {
   private String path;
 
   public RuleMetadata() {
