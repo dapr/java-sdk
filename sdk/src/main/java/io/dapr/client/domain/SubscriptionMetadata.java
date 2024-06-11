@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -39,39 +40,26 @@ public final class SubscriptionMetadata {
     this.topic = topic;
     this.pubsubname = pubsubname;
     this.deadLetterTopic = deadLetterTopic;
-    this.rules = rules;
+    this.rules = rules == null ? Collections.emptyList() : Collections.unmodifiableList(rules);
   }
 
   public String getTopic() {
     return topic;
   }
 
-  public void setTopic(String topic) {
-    this.topic = topic;
-  }
-
   public String getPubsubname() {
     return pubsubname;
   }
 
-  public void setPubsubname(String pubsubname) {
-    this.pubsubname = pubsubname;
-  }
 
   public String getDeadLetterTopic() {
     return deadLetterTopic;
   }
 
-  public void setDeadLetterTopic(String deadLetterTopic) {
-    this.deadLetterTopic = deadLetterTopic;
-  }
 
   public List<RuleMetadata> getRules() {
     return rules;
   }
 
-  public void setRules(List<RuleMetadata> rules) {
-    this.rules = rules;
-  }
 
 }

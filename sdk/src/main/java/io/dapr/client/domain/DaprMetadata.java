@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,40 +41,24 @@ public final class DaprMetadata {
       List<SubscriptionMetadata> subscriptions) {
     this.id = id;
     this.runtimeVersion = runtimeVersion;
-    this.components = components;
-    this.subscriptions = subscriptions;
+    this.components = components == null ? Collections.emptyList() : Collections.unmodifiableList(components);
+    this.subscriptions = subscriptions == null ? Collections.emptyList() : Collections.unmodifiableList(subscriptions);
   }
 
   public String getId() {
     return id;
   }
 
-  public void setId(String id) {
-    this.id = id;
-  }
-
   public String getRuntimeVersion() {
     return runtimeVersion;
-  }
-
-  public void setRuntimeVersion(String runtimeVersion) {
-    this.runtimeVersion = runtimeVersion;
   }
 
   public List<ComponentMetadata> getComponents() {
     return components;
   }
 
-  public void setComponents(List<ComponentMetadata> components) {
-    this.components = components;
-  }
-
   public List<SubscriptionMetadata> getSubscriptions() {
     return subscriptions;
-  }
-
-  public void setSubscriptions(List<SubscriptionMetadata> subscriptions) {
-    this.subscriptions = subscriptions;
   }
 
 }

@@ -30,8 +30,4 @@ public final class RuleMetadata {
     return path;
   }
 
-  public void setPath(String path) {
-    this.path = path;
-  }
-
 }
