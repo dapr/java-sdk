@@ -15,6 +15,7 @@ package io.dapr.client.domain;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * DaprMetadata describes the Dapr Metadata.
@@ -61,4 +62,23 @@ public final class DaprMetadata {
     return subscriptions;
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, runtimeVersion, components, subscriptions);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    DaprMetadata other = (DaprMetadata) obj;
+    return Objects.equals(id, other.id) && Objects.equals(runtimeVersion, other.runtimeVersion)
+        && Objects.equals(components, other.components) && Objects.equals(subscriptions, other.subscriptions);
+  }
+
+  
 }
