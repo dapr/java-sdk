@@ -329,7 +329,6 @@
     <module>sdk-actors</module>
     <module>sdk-workflows</module>
     <module>sdk-springboot</module>
-    <module>sdk-springboot3</module>
     <module>examples</module>
     <!-- don't add sdk-tests to the build, 
       it's only used for CI testing by github action
