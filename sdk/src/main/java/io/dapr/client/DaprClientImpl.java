@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.client;
 
 import com.google.common.base.Strings;
-import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.BulkPublishEntry;
@@ -48,9 +47,7 @@ import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
-import io.dapr.internal.opencensus.GrpcWrapper;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -60,22 +57,19 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
-import io.grpc.CallOptions;
 import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.ForwardingClientCall;
-import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.ContextView;
+import reactor.util.retry.Retry;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -86,12 +80,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * An adapter for the GRPC Client.
+ * Implementation of the Dapr client combining gRPC and HTTP (when applicable).
  *
  * @see io.dapr.v1.DaprGrpc
  * @see io.dapr.client.DaprClient
  */
-public class DaprClientGrpc extends AbstractDaprClient {
+public class DaprClientImpl extends AbstractDaprClient {
 
   /**
    * The GRPC managed channel to be used.
@@ -114,21 +108,11 @@ public class DaprClientGrpc extends AbstractDaprClient {
   private final DaprGrpc.DaprStub asyncStub;
 
   /**
-   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   * The HTTP client to be used for healthz and HTTP service invocation only.
    *
-   * @param channel           Facade for the managed GRPC channel
-   * @param asyncStub         async gRPC stub
-   * @param objectSerializer  Serializer for transient request/response objects.
-   * @param stateSerializer   Serializer for state objects.
-   * @see DaprClientBuilder
+   * @see io.dapr.client.DaprHttp
    */
-  DaprClientGrpc(
-      GrpcChannelFacade channel,
-      DaprGrpc.DaprStub asyncStub,
-      DaprObjectSerializer objectSerializer,
-      DaprObjectSerializer stateSerializer) {
-    this(channel, asyncStub, objectSerializer, stateSerializer, null);
-  }
+  private final DaprHttp httpClient;
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -137,18 +121,39 @@ public class DaprClientGrpc extends AbstractDaprClient {
    * @param asyncStub         async gRPC stub
    * @param objectSerializer  Serializer for transient request/response objects.
    * @param stateSerializer   Serializer for state objects.
+   * @see DaprClientBuilder
+   */
+  DaprClientImpl(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprHttp httpClient,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer) {
+    this(channel, asyncStub, httpClient, objectSerializer, stateSerializer, null);
+  }
+
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param httpClient        client for http service invocation
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
    * @param resiliencyOptions Client-level override for resiliency options.
    * @see DaprClientBuilder
    */
-  DaprClientGrpc(
+  DaprClientImpl(
       GrpcChannelFacade channel,
       DaprGrpc.DaprStub asyncStub,
+      DaprHttp httpClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer,
       ResiliencyOptions resiliencyOptions) {
     super(objectSerializer, stateSerializer);
     this.channel = channel;
-    this.asyncStub = intercept(asyncStub);
+    this.asyncStub = asyncStub;
+    this.httpClient = httpClient;
     this.timeoutPolicy = new TimeoutPolicy(
         resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
     this.retryPolicy = new RetryPolicy(
@@ -180,9 +185,68 @@ public class DaprClientGrpc extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  public Channel getGrpcChannel() {
+    return this.channel.getGrpcChannel();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
-    return this.channel.waitForChannelReady(timeoutInMilliseconds);
+    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
+    int maxRetries = 5;
+
+    Retry retrySpec = Retry
+        .fixedDelay(maxRetries, Duration.ofMillis(500))
+        .doBeforeRetry(retrySignal -> {
+          System.out.println("Retrying component health check...");
+        });
+
+    /*
+    NOTE: (Cassie) Uncomment this once it actually gets implemented:
+    https://github.com/grpc/grpc-java/issues/4359
+
+    int maxChannelStateRetries = 5;
+
+    // Retry logic for checking the channel state
+    Retry channelStateRetrySpec = Retry
+            .fixedDelay(maxChannelStateRetries, Duration.ofMillis(500))
+            .doBeforeRetry(retrySignal -> {
+              System.out.println("Retrying channel state check...");
+            });
+    */
+
+    // Do the Dapr Http endpoint check to have parity with Dotnet
+    Mono<DaprHttp.Response> responseMono = this.httpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
+        null, "", null, null);
+
+    return responseMono
+        .retryWhen(retrySpec)
+        /*
+        NOTE: (Cassie) Uncomment this once it actually gets implemented:
+        https://github.com/grpc/grpc-java/issues/4359
+        .flatMap(response -> {
+          // Check the status code
+          int statusCode = response.getStatusCode();
+
+          // Check if the channel's state is READY
+          return Mono.defer(() -> {
+            if (this.channel.getState(true) == ConnectivityState.READY) {
+              // Return true if the status code is in the 2xx range
+              if (statusCode >= 200 && statusCode < 300) {
+                return Mono.empty(); // Continue with the flow
+              }
+            }
+            return Mono.error(new RuntimeException("Health check failed"));
+          }).retryWhen(channelStateRetrySpec);
+        })
+        */
+        .timeout(Duration.ofMillis(timeoutInMilliseconds))
+        .onErrorResume(DaprException.class, e ->
+            Mono.error(new RuntimeException(e)))
+        .switchIfEmpty(DaprException.wrapMono(new RuntimeException("Health check timed out")))
+        .then();
   }
 
   /**
@@ -309,38 +373,63 @@ public class DaprClientGrpc extends AbstractDaprClient {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
-      String appId = invokeMethodRequest.getAppId();
-      String method = invokeMethodRequest.getMethod();
-      Object body = invokeMethodRequest.getBody();
-      HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
-      DaprProtos.InvokeServiceRequest envelope = buildInvokeServiceRequest(
-          httpExtension,
-          appId,
-          method,
-          body);
-      // Regarding missing metadata in method invocation for gRPC:
-      // gRPC to gRPC does not handle metadata in Dapr runtime proto.
-      // gRPC to HTTP does not map correctly in Dapr runtime as per https://github.com/dapr/dapr/issues/2342
+      final String appId = invokeMethodRequest.getAppId();
+      final String method = invokeMethodRequest.getMethod();
+      final Object request = invokeMethodRequest.getBody();
+      final HttpExtension httpExtension = invokeMethodRequest.getHttpExtension();
+      final String contentType = invokeMethodRequest.getContentType();
+      final Map<String, String> metadata = invokeMethodRequest.getMetadata();
 
-      return Mono.deferContextual(
-          context -> this.<CommonProtos.InvokeResponse>createMono(
-              it -> intercept(context, asyncStub).invokeService(envelope, it)
-          )
-      ).flatMap(
-          it -> {
-            try {
-              return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().getValue().toByteArray(), type));
-            } catch (IOException e) {
-              throw DaprException.propagate(e);
-            }
-          }
+      if (httpExtension == null) {
+        throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
+      }
+      // If the httpExtension is not null, then the method will not be null based on checks in constructor
+      final String httpMethod = httpExtension.getMethod().toString();
+      if (appId == null || appId.trim().isEmpty()) {
+        throw new IllegalArgumentException("App Id cannot be null or empty.");
+      }
+      if (method == null || method.trim().isEmpty()) {
+        throw new IllegalArgumentException("Method name cannot be null or empty.");
+      }
+
+
+      String[] methodSegments = method.split("/");
+
+      List<String> pathSegments = new ArrayList<>(Arrays.asList(DaprHttp.API_VERSION, "invoke", appId, "method"));
+      pathSegments.addAll(Arrays.asList(methodSegments));
+
+      final Map<String, String> headers = new HashMap<>();
+      headers.putAll(httpExtension.getHeaders());
+      if (metadata != null) {
+        headers.putAll(metadata);
+      }
+      byte[] serializedRequestBody = objectSerializer.serialize(request);
+      if (contentType != null && !contentType.isEmpty()) {
+        headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, contentType);
+      } else {
+        headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
+      }
+      Mono<DaprHttp.Response> response = Mono.deferContextual(
+          context -> this.httpClient.invokeApi(httpMethod, pathSegments.toArray(new String[0]),
+              httpExtension.getQueryParams(), serializedRequestBody, headers, context)
       );
+      return response.flatMap(r -> getMonoForHttpResponse(type, r));
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private <T> Mono<T> getMonoForHttpResponse(TypeRef<T> type, DaprHttp.Response r) {
+    try {
+      T object = objectSerializer.deserialize(r.getBody(), type);
+      if (object == null) {
+        return Mono.empty();
+      }
+
+      return Mono.just(object);
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
@@ -674,48 +763,6 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
-   * Builds the object io.dapr.{@link DaprProtos.InvokeServiceRequest} to be send based on the parameters.
-   *
-   * @param httpExtension Object for HttpExtension
-   * @param appId         The application id to be invoked
-   * @param method        The application method to be invoked
-   * @param body          The body of the request to be send as part of the invocation
-   * @param <K>           The Type of the Body
-   * @return The object to be sent as part of the invocation.
-   * @throws IOException If there's an issue serializing the request.
-   */
-  private <K> DaprProtos.InvokeServiceRequest buildInvokeServiceRequest(
-      HttpExtension httpExtension,
-      String appId,
-      String method,
-      K body) throws IOException {
-    if (httpExtension == null) {
-      throw new IllegalArgumentException("HttpExtension cannot be null. Use HttpExtension.NONE instead.");
-    }
-    CommonProtos.InvokeRequest.Builder requestBuilder = CommonProtos.InvokeRequest.newBuilder();
-    requestBuilder.setMethod(method);
-    if (body != null) {
-      byte[] byteRequest = objectSerializer.serialize(body);
-      Any data = Any.newBuilder().setValue(ByteString.copyFrom(byteRequest)).build();
-      requestBuilder.setData(data);
-    } else {
-      requestBuilder.setData(Any.newBuilder().build());
-    }
-    CommonProtos.HTTPExtension.Builder httpExtensionBuilder = CommonProtos.HTTPExtension.newBuilder();
-
-    httpExtensionBuilder.setVerb(CommonProtos.HTTPExtension.Verb.valueOf(httpExtension.getMethod().toString()))
-        .setQuerystring(httpExtension.encodeQueryString());
-    requestBuilder.setHttpExtension(httpExtensionBuilder.build());
-
-    requestBuilder.setContentType(objectSerializer.getContentType());
-
-    DaprProtos.InvokeServiceRequest.Builder envelopeBuilder = DaprProtos.InvokeServiceRequest.newBuilder()
-        .setId(appId)
-        .setMessage(requestBuilder.build());
-    return envelopeBuilder.build();
-  }
-
-  /**
    * {@inheritDoc}
    */
   @Override
@@ -963,12 +1010,15 @@ public class DaprClientGrpc extends AbstractDaprClient {
    */
   @Override
   public void close() throws Exception {
-    if (channel != null) {
-      DaprException.wrap(() -> {
+    DaprException.wrap(() -> {
+      if (channel != null) {
         channel.close();
-        return true;
-      }).call();
-    }
+      }
+      if (httpClient != null) {
+        httpClient.close();
+      }
+      return true;
+    }).call();
   }
 
   /**
@@ -1054,7 +1104,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
 
       DaprProtos.SubscribeConfigurationRequest envelope = builder.build();
       return this.<DaprProtos.SubscribeConfigurationResponse>createFlux(
-          it -> intercept(asyncStub).subscribeConfiguration(envelope, it)
+          it -> intercept(null, asyncStub).subscribeConfiguration(envelope, it)
       ).map(
           it -> {
             Map<String, ConfigurationItem> configMap = new HashMap<>();
@@ -1094,7 +1144,7 @@ public class DaprClientGrpc extends AbstractDaprClient {
       DaprProtos.UnsubscribeConfigurationRequest envelope = builder.build();
 
       return this.<DaprProtos.UnsubscribeConfigurationResponse>createMono(
-          it -> intercept(asyncStub).unsubscribeConfiguration(envelope, it)
+          it -> intercept(null, asyncStub).unsubscribeConfiguration(envelope, it)
       ).map(
           it -> new UnsubscribeConfigurationResponse(it.getOk(), it.getMessage())
       );
@@ -1120,43 +1170,14 @@ public class DaprClientGrpc extends AbstractDaprClient {
   }
 
   /**
-   * Populates GRPC client with interceptors.
-   *
-   * @param client GRPC client for Dapr.
-   * @return Client after adding interceptors.
-   */
-  private DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
-    ClientInterceptor interceptor = new ClientInterceptor() {
-      @Override
-      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-          MethodDescriptor<ReqT, RespT> methodDescriptor,
-          CallOptions options,
-          Channel channel) {
-        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, timeoutPolicy.apply(options));
-        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
-          @Override
-          public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-            String daprApiToken = Properties.API_TOKEN.get();
-            if (daprApiToken != null) {
-              metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
-            }
-            super.start(responseListener, metadata);
-          }
-        };
-      }
-    };
-    return client.withInterceptors(interceptor);
-  }
-
-  /**
    * Populates GRPC client with interceptors for telemetry.
    *
    * @param context Reactor's context.
    * @param client  GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
-    return GrpcWrapper.intercept(context, client);
+  private DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
+    return DaprClientGrpcInterceptors.intercept(client, this.timeoutPolicy, context);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {

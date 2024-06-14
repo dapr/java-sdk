@@ -14,10 +14,10 @@ limitations under the License.
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
+import io.dapr.client.DaprClientGrpcInterceptors;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
-import io.dapr.internal.opencensus.GrpcWrapper;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.v1.DaprGrpc;
@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 /**
  * A DaprClient over GRPC for Actor.
  */
-class DaprGrpcClient implements DaprClient {
+class DaprClientImpl implements DaprClient {
 
   /**
    * Timeout policy for SDK calls to Dapr API.
@@ -63,7 +63,7 @@ class DaprGrpcClient implements DaprClient {
    * @param grpcClient Dapr's GRPC client.
    * @param resiliencyOptions Client resiliency options (optional)
    */
-  DaprGrpcClient(DaprGrpc.DaprStub grpcClient, ResiliencyOptions resiliencyOptions) {
+  DaprClientImpl(DaprGrpc.DaprStub grpcClient, ResiliencyOptions resiliencyOptions) {
     this.client = intercept(grpcClient);
     this.timeoutPolicy = new TimeoutPolicy(
         resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
@@ -85,7 +85,7 @@ class DaprGrpcClient implements DaprClient {
             .build();
     return Mono.deferContextual(
         context -> this.<DaprProtos.InvokeActorResponse>createMono(
-            it -> intercept(context, client).invokeActor(req, it)
+            it -> intercept(context, this.timeoutPolicy, client).invokeActor(req, it)
         )
     ).map(r -> r.getData().toByteArray());
   }
@@ -124,11 +124,13 @@ class DaprGrpcClient implements DaprClient {
    * Populates GRPC client with interceptors for telemetry.
    *
    * @param context Reactor's context.
+   * @param timeoutPolicy Timeout policy for gRPC call.
    * @param client GRPC client for Dapr.
    * @return Client after adding interceptors.
    */
-  private static DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
-    return GrpcWrapper.intercept(context, client);
+  private static DaprGrpc.DaprStub intercept(
+      ContextView context, TimeoutPolicy timeoutPolicy, DaprGrpc.DaprStub client) {
+    return DaprClientGrpcInterceptors.intercept(client, timeoutPolicy, context);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {

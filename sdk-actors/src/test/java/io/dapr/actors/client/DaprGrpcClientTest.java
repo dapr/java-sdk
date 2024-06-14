@@ -89,7 +89,7 @@ public class DaprGrpcClientTest {
             }
           }));
 
-  private DaprGrpcClient client;
+  private DaprClientImpl client;
 
   @BeforeEach
   public void setup() throws IOException {
@@ -105,7 +105,7 @@ public class DaprGrpcClientTest {
         InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
     // Create a HelloWorldClient using the in-process channel;
-    client = new DaprGrpcClient(DaprGrpc.newStub(channel), null);
+    client = new DaprClientImpl(DaprGrpc.newStub(channel), null);
   }
 
   @Test

@@ -34,6 +34,7 @@ import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.utils.TypeRef;
+import io.grpc.Channel;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -658,6 +659,12 @@ public interface DaprClient extends AutoCloseable {
    * @return Mono of {@link UnsubscribeConfigurationResponse} instance.
    */
   Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request);
+
+  /**
+   * Returns the gRPC channel to allow gRPC proxy service invocation.
+   * @return gRPC channel.
+   */
+  Channel getGrpcChannel();
 
   /**
    * Gracefully shutdown the dapr runtime.
