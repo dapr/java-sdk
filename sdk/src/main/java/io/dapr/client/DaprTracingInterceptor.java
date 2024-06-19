@@ -11,15 +11,12 @@
 limitations under the License.
 */
 
-package io.dapr.internal.grpc.interceptors;
+package io.dapr.client;
 
-import io.dapr.internal.opencensus.GrpcHelper;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
-import io.grpc.ForwardingClientCall;
-import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import reactor.util.context.ContextView;
 
@@ -28,31 +25,24 @@ import reactor.util.context.ContextView;
  */
 public class DaprTracingInterceptor implements ClientInterceptor {
 
-  private final ContextView context;
+  private final io.dapr.internal.grpc.interceptors.DaprTracingInterceptor delegate;
 
   /**
    * Creates an instance of the injector for gRPC context from Reactor's context.
    * @param context Reactor's context
    */
   public DaprTracingInterceptor(ContextView context) {
-    this.context = context;
+    this.delegate = new io.dapr.internal.grpc.interceptors.DaprTracingInterceptor(context);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
       MethodDescriptor<ReqT, RespT> methodDescriptor,
       CallOptions callOptions,
       Channel channel) {
-    ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, callOptions);
-    return new ForwardingClientCall.SimpleForwardingClientCall<>(clientCall) {
-      @Override
-      public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-        if (context != null) {
-          GrpcHelper.populateMetadata(context, metadata);
-        }
-        super.start(responseListener, metadata);
-      }
-    };
+    return this.delegate.interceptCall(methodDescriptor, callOptions, channel);
   }
-
 }

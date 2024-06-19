@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.client;
+package io.dapr.internal.grpc;
 
 import io.dapr.internal.grpc.interceptors.DaprApiTokenInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprAppIdInterceptor;

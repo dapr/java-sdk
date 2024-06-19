@@ -15,6 +15,7 @@ package io.dapr.client;
 
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
@@ -39,13 +40,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import reactor.util.context.ContextView;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

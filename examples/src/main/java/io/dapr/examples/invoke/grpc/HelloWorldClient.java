@@ -15,13 +15,10 @@ package io.dapr.examples.invoke.grpc;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprClientGrpcInterceptors;
 import io.dapr.examples.DaprExamplesProtos.HelloReply;
 import io.dapr.examples.DaprExamplesProtos.HelloRequest;
 import io.dapr.examples.HelloWorldGrpc;
-import io.grpc.Metadata;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.MetadataUtils;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,9 +43,9 @@ public class HelloWorldClient {
   public static void main(String[] args) throws Exception {
     String user = "World";
     try (DaprClient client = new DaprClientBuilder().build()) {
-      HelloWorldGrpc.HelloWorldBlockingStub blockingStub = HelloWorldGrpc.newBlockingStub(client.getGrpcChannel());
-      // Adds Dapr interceptors to populate gRPC metadata automatically.
-      blockingStub = DaprClientGrpcInterceptors.intercept("hellogrpc", blockingStub);
+      HelloWorldGrpc.HelloWorldBlockingStub blockingStub = client.newGrpcStub(
+          "hellogrpc",
+          channel -> HelloWorldGrpc.newBlockingStub(channel));
 
       logger.info("Will try to greet " + user + " ...");
       try {

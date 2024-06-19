@@ -2,8 +2,7 @@ package io.dapr.it.methodinvoke.grpc;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprClientGrpcInterceptors;
-import io.dapr.internal.resiliency.TimeoutPolicy;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
@@ -48,9 +47,9 @@ public class MethodInvokeIT extends BaseIT {
     @Test
     public void testInvoke() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
-            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub =
-                MethodInvokeServiceGrpc.newBlockingStub(client.getGrpcChannel());
-            stub = DaprClientGrpcInterceptors.intercept(daprRun.getAppName(), stub);
+            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = client.newGrpcStub(
+                daprRun.getAppName(),
+                channel -> MethodInvokeServiceGrpc.newBlockingStub(channel));
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
             
@@ -81,11 +80,11 @@ public class MethodInvokeIT extends BaseIT {
     @Test
     public void testInvokeTimeout() throws Exception {
         long timeoutMs = 100;
-        try (DaprClient client = new DaprClientBuilder().build()) {
-            final MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub =
-                DaprClientGrpcInterceptors.intercept(daprRun.getAppName(),
-                    MethodInvokeServiceGrpc.newBlockingStub(client.getGrpcChannel()),
-                    new TimeoutPolicy(Duration.ofMillis(timeoutMs)));
+        ResiliencyOptions resiliencyOptions = new ResiliencyOptions().setTimeout(Duration.ofMillis(timeoutMs));
+        try (DaprClient client = new DaprClientBuilder().withResiliencyOptions(resiliencyOptions).build()) {
+            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = client.newGrpcStub(
+                daprRun.getAppName(),
+                channel -> MethodInvokeServiceGrpc.newBlockingStub(channel));
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
@@ -104,9 +103,9 @@ public class MethodInvokeIT extends BaseIT {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
-            final MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub =
-                DaprClientGrpcInterceptors.intercept(daprRun.getAppName(),
-                    MethodInvokeServiceGrpc.newBlockingStub(client.getGrpcChannel()));
+            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = client.newGrpcStub(
+                daprRun.getAppName(),
+                channel -> MethodInvokeServiceGrpc.newBlockingStub(channel));
 
             SleepRequest req = SleepRequest.newBuilder().setSeconds(-9).build();
             StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));

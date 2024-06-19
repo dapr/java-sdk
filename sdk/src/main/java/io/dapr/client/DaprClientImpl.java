@@ -48,6 +48,7 @@ import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.exceptions.DaprException;
+import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
@@ -58,6 +59,7 @@ import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.Channel;
+import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -77,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -185,8 +188,9 @@ public class DaprClientImpl extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
-  public Channel getGrpcChannel() {
-    return this.channel.getGrpcChannel();
+  public <T extends AbstractStub<T>> T newGrpcStub(String appId, Function<Channel, T> stubBuilder) {
+    // Adds Dapr interceptors to populate gRPC metadata automatically.
+    return DaprClientGrpcInterceptors.intercept(appId, stubBuilder.apply(this.channel.getGrpcChannel()), timeoutPolicy);
   }
 
   /**

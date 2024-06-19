@@ -13,18 +13,11 @@ limitations under the License.
 
 package io.dapr.client;
 
-import io.dapr.config.Properties;
-import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprGrpc;
-import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
-import okhttp3.OkHttpClient;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Duration;
 
 /**
  * Facade for common operations on gRPC channel.

@@ -35,11 +35,13 @@ import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.utils.TypeRef;
 import io.grpc.Channel;
+import io.grpc.stub.AbstractStub;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
@@ -661,10 +663,13 @@ public interface DaprClient extends AutoCloseable {
   Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request);
 
   /**
-   * Returns the gRPC channel to allow gRPC proxy service invocation.
-   * @return gRPC channel.
+   * Returns a newly created gRPC stub with proper interceptors and channel for gRPC proxy invocation.
+   * @param appId appId to be included in all gRPC calls for service invocation.
+   * @param stubBuilder user-provided callback method to construct a new stub given the channel.
+   * @return the gRPC stub with proper interceptors and channel.
+   * @param <T> the generic type of the service to be invoked.
    */
-  Channel getGrpcChannel();
+  <T extends AbstractStub<T>> T newGrpcStub(String appId, Function<Channel, T> stubBuilder);
 
   /**
    * Gracefully shutdown the dapr runtime.

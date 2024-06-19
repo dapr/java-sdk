@@ -14,10 +14,10 @@ limitations under the License.
 package io.dapr.actors.client;
 
 import com.google.protobuf.ByteString;
-import io.dapr.client.DaprClientGrpcInterceptors;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
+import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.v1.DaprGrpc;

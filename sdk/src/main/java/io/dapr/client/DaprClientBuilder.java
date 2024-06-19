@@ -19,8 +19,6 @@ import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A builder for the DaprClient,
