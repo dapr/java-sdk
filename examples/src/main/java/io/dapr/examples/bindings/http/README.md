@@ -60,7 +60,7 @@ Before getting into the application code, follow these steps in order to set up 
 name: Setup kafka container
 expected_stderr_lines:
   - 'Creating network "http_default" with the default driver'
-sleep: 10
+sleep: 20
 -->
 
 ```bash
