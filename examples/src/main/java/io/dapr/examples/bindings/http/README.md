@@ -54,7 +54,7 @@ Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initi
 
 Before getting into the application code, follow these steps in order to set up a local instance of Kafka. This is needed for the local instances.
 
-1. Run the container locally:
+1. Run the Kafka locally:
 
 <!-- STEP
 name: Setup kafka container

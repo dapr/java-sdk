@@ -13,26 +13,18 @@ limitations under the License.
 
 package io.dapr.it.methodinvoke.grpc;
 
-import com.google.protobuf.Any;
 import io.dapr.grpc.GrpcHealthCheckService;
 import io.dapr.it.DaprRunConfig;
-import io.dapr.v1.AppCallbackGrpc;
-import io.dapr.v1.CommonProtos;
+import io.dapr.it.MethodInvokeServiceGrpc;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest;
-import static io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse;
-import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse;
-import static io.dapr.it.MethodInvokeServiceProtos.PostMessageRequest;
-import static io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepRequest;
 import static io.dapr.it.MethodInvokeServiceProtos.SleepResponse;
 
@@ -48,7 +40,7 @@ public class MethodInvokeService {
   /**
    * Server mode: class that encapsulates all server-side logic for Grpc.
    */
-  private static class MyDaprService extends AppCallbackGrpc.AppCallbackImplBase {
+  private static class MyDaprService extends MethodInvokeServiceGrpc.MethodInvokeServiceImplBase {
 
     private final Map<Integer, String> messages = Collections.synchronizedMap(new HashMap<>());
 
@@ -92,57 +84,55 @@ public class MethodInvokeService {
     }
 
     /**
-     * Server mode: this is the Dapr method to receive Invoke operations via Grpc.
-     *
-     * @param request          Dapr envelope request,
-     * @param responseObserver Dapr envelope response.
+     * {@inheritDoc}
      */
-    @Override
-    public void onInvoke(CommonProtos.InvokeRequest request,
-                         StreamObserver<CommonProtos.InvokeResponse> responseObserver) {
-      System.out.println("Server: received " + request.getMethod() + " ...");
-      try {
-        if ("postMessage".equals(request.getMethod())) {
-          PostMessageRequest req = PostMessageRequest.parseFrom(request.getData().getValue().toByteArray());
+    public void postMessage(io.dapr.it.MethodInvokeServiceProtos.PostMessageRequest request,
+                            io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse> responseObserver) {
+      this.messages.put(request.getId(), request.getMessage());
 
-          this.messages.put(req.getId(), req.getMessage());
+      io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse.Builder responseBuilder =
+          io.dapr.it.MethodInvokeServiceProtos.PostMessageResponse.newBuilder();
+      responseObserver.onNext(responseBuilder.build());
+      responseObserver.onCompleted();
+    }
 
-          CommonProtos.InvokeResponse.Builder responseBuilder = CommonProtos.InvokeResponse.newBuilder();
-          responseBuilder.setData(Any.pack(PostMessageResponse.newBuilder().build()));
-          responseObserver.onNext(responseBuilder.build());
-        }
-        if ("deleteMessage".equals(request.getMethod())) {
-          DeleteMessageRequest req = DeleteMessageRequest.parseFrom(request.getData().getValue().toByteArray());
+    /**
+     * {@inheritDoc}
+     */
+    public void deleteMessage(io.dapr.it.MethodInvokeServiceProtos.DeleteMessageRequest request,
+                              io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse> responseObserver) {
+      this.messages.remove(request.getId());
 
-          this.messages.remove(req.getId());
+      io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse.Builder responseBuilder =
+          io.dapr.it.MethodInvokeServiceProtos.DeleteMessageResponse.newBuilder();
+      responseObserver.onNext(responseBuilder.build());
+      responseObserver.onCompleted();
+    }
 
-          CommonProtos.InvokeResponse.Builder responseBuilder = CommonProtos.InvokeResponse.newBuilder();
-          responseBuilder.setData(Any.pack(DeleteMessageResponse.newBuilder().build()));
-          responseObserver.onNext(responseBuilder.build());
-        }
-        if ("getMessages".equals(request.getMethod())) {
-          GetMessagesRequest.parseFrom(request.getData().getValue().toByteArray());
+    /**
+     * {@inheritDoc}
+     */
+    public void getMessages(io.dapr.it.MethodInvokeServiceProtos.GetMessagesRequest request,
+                            io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse> responseObserver) {
+      GetMessagesResponse res = GetMessagesResponse.newBuilder().putAllMessages(this.messages).build();
 
-          GetMessagesResponse res = GetMessagesResponse.newBuilder().putAllMessages(this.messages).build();
+      io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse.Builder responseBuilder
+          = io.dapr.it.MethodInvokeServiceProtos.GetMessagesResponse.newBuilder();
+      responseObserver.onNext(res);
+      responseObserver.onCompleted();
+    }
 
-          CommonProtos.InvokeResponse.Builder responseBuilder = CommonProtos.InvokeResponse.newBuilder();
-          responseBuilder.setData(Any.pack(res));
-          responseObserver.onNext(responseBuilder.build());
-        }
-        if ("sleep".equals(request.getMethod())) {
-          SleepRequest req = SleepRequest.parseFrom(request.getData().getValue().toByteArray());
+    /**
+     * {@inheritDoc}
+     */
+    public void sleep(io.dapr.it.MethodInvokeServiceProtos.SleepRequest request,
+                      io.grpc.stub.StreamObserver<io.dapr.it.MethodInvokeServiceProtos.SleepResponse> responseObserver) {
+      SleepResponse res = this.sleep(request);
 
-          SleepResponse res = this.sleep(req);
-
-          CommonProtos.InvokeResponse.Builder responseBuilder = CommonProtos.InvokeResponse.newBuilder();
-          responseBuilder.setData(Any.pack(res));
-          responseObserver.onNext(responseBuilder.build());
-        }
-      } catch (Exception e) {
-        responseObserver.onError(e);
-      } finally {
-        responseObserver.onCompleted();
-      }
+      io.dapr.it.MethodInvokeServiceProtos.SleepResponse.Builder responseBuilder =
+          io.dapr.it.MethodInvokeServiceProtos.SleepResponse.newBuilder();
+      responseObserver.onNext(responseBuilder.build());
+      responseObserver.onCompleted();
     }
 
     public SleepResponse sleep(SleepRequest request) {

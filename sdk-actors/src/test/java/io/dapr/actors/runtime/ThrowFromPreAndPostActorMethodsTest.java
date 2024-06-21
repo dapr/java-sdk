@@ -19,7 +19,6 @@ import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyImplForTests;
 import io.dapr.actors.client.DaprClientStub;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 

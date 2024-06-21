@@ -40,16 +40,17 @@ import static org.mockito.Mockito.when;
 public class DaprExceptionTest {
     private GrpcChannelFacade channel;
     private DaprGrpc.DaprStub daprStub;
+    private DaprHttp daprHttp;
     private DaprClient client;
 
     @BeforeEach
     public void setup() throws IOException {
         channel = mock(GrpcChannelFacade.class);
         daprStub = mock(DaprGrpc.DaprStub.class);
+        daprHttp = mock(DaprHttp.class);
         when(daprStub.withInterceptors(any())).thenReturn(daprStub);
-        DaprClient grpcClient = new DaprClientGrpc(
-                channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
-        client = new DaprClientProxy(grpcClient);
+        client = new DaprClientImpl(
+                channel, daprStub, daprHttp, new DefaultObjectSerializer(), new DefaultObjectSerializer());
         doNothing().when(channel).close();
     }
 

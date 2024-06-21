@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.utils;
 
-import com.fasterxml.jackson.databind.JavaType;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 

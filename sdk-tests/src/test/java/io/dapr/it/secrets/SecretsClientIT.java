@@ -19,23 +19,14 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -82,13 +73,8 @@ public class SecretsClientIT extends BaseIT {
     daprRun = startDaprApp(SecretsClientIT.class.getSimpleName(), 5000);
   }
 
-  public void setup(boolean useGrpc) {
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
-
+  @BeforeEach
+  public void setup() {
     this.daprClient = new DaprClientBuilder().build();
   }
 
@@ -98,22 +84,16 @@ public class SecretsClientIT extends BaseIT {
     clearSecretFile();
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans =  {true, false})
-  public void getSecret(boolean useGrpc) throws Exception {
-    setup(useGrpc);
-
+  @Test
+  public void getSecret() throws Exception {
     Map<String, String> data = daprClient.getSecret(SECRETS_STORE_NAME, KEY1).block();
     assertEquals(2, data.size());
     assertEquals("The Metrics IV", data.get("title"));
     assertEquals("2020", data.get("year"));
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans =  {true, false})
-  public void getBulkSecret(boolean useGrpc) throws Exception {
-    setup(useGrpc);
-
+  @Test
+  public void getBulkSecret() throws Exception {
     Map<String, Map<String, String>> data = daprClient.getBulkSecret(SECRETS_STORE_NAME).block();
     // There can be other keys from other runs or test cases, so we are good with at least two.
     assertTrue(data.size() >= 2);
@@ -124,19 +104,13 @@ public class SecretsClientIT extends BaseIT {
     assertEquals("Jon Doe", data.get(KYE2).get("name"));
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans =  {true, false})
-  public void getSecretKeyNotFound(boolean useGrpc) {
-    setup(useGrpc);
-
+  @Test
+  public void getSecretKeyNotFound() {
     assertThrows(RuntimeException.class, () -> daprClient.getSecret(SECRETS_STORE_NAME, "unknownKey").block());
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans =  {true, false})
-  public void getSecretStoreNotFound(boolean useGrpc) throws Exception {
-    setup(useGrpc);
-
+  @Test
+  public void getSecretStoreNotFound() {
     assertThrows(RuntimeException.class, () -> daprClient.getSecret("unknownStore", "unknownKey").block());
   }
 
