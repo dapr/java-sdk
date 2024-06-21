@@ -126,13 +126,6 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   /**
-   * The HTTP client to be used for healthz and HTTP service invocation only.
-   *
-   * @see io.dapr.client.DaprHttp
-   */
-  private final DaprHttp httpClient;
-
-  /**
    * Default access level constructor, in order to create an instance of this 
    * class use io.dapr.client.DaprClientBuilder
    *
