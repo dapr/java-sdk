@@ -19,6 +19,7 @@ import io.dapr.utils.TypeRef;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ import java.util.Map;
  */
 public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
 
-  private static final Map<String, byte[]> stateStore = new HashMap<>();
+  private static final Map<String, ActorState<byte[]>> stateStore = new HashMap<>();
 
   private final DaprObjectSerializer serializer;
 
@@ -37,7 +38,7 @@ public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
   }
 
   @Override
-  <T> Mono<T> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
+  <T> Mono<ActorState<T>> load(String actorType, ActorId actorId, String stateName, TypeRef<T> type) {
     return Mono.fromSupplier(() -> {
       try {
         String stateId = this.buildId(actorType, actorId, stateName);
@@ -45,16 +46,38 @@ public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
           throw new IllegalStateException("State not found.");
         }
 
-        return this.serializer.deserialize(this.stateStore.get(stateId), type);
+        var state = this.stateStore.get(stateId);
+        if (state.getExpiration() != null) {
+          if (!state.getExpiration().isAfter(Instant.now())) {
+            throw new IllegalStateException("State expired.");
+          }
+        }
+        var v =  this.serializer.deserialize(state.getValue(), type);
+        return new ActorState<>(stateName, v, state.getExpiration());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     });
   }
 
+  private boolean contains(String stateId) {
+    if (!stateStore.containsKey(stateId)) {
+      return false;
+    }
+
+    var state = this.stateStore.get(stateId);
+    if (state.getExpiration() != null) {
+      if (!state.getExpiration().isAfter(Instant.now())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   @Override
   Mono<Boolean> contains(String actorType, ActorId actorId, String stateName) {
-    return Mono.fromSupplier(() -> stateStore.containsKey(this.buildId(actorType, actorId, stateName)));
+    return Mono.fromSupplier(() -> contains(this.buildId(actorType, actorId, stateName)));
   }
 
   @Override
@@ -62,15 +85,16 @@ public class DaprInMemoryStateProvider extends DaprStateAsyncProvider {
     return Mono.fromRunnable(() -> {
       try {
         for (ActorStateChange stateChange : stateChanges) {
-          String stateId = buildId(actorType, actorId, stateChange.getStateName());
+          String stateId = buildId(actorType, actorId, stateChange.getState().getName());
           switch (stateChange.getChangeKind()) {
             case REMOVE:
               stateStore.remove(stateId);
               break;
             case ADD:
             case UPDATE:
-              byte[] raw = this.serializer.serialize(stateChange.getValue());
-              stateStore.put(stateId, raw);
+              byte[] raw = this.serializer.serialize(stateChange.getState().getValue());
+              stateStore.put(stateId,
+                  new ActorState<>(stateChange.getState().getName(), raw, stateChange.getState().getExpiration()));
               break;
           }
         }

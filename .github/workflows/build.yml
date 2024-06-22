@@ -47,9 +47,9 @@ jobs:
     steps:
     - name: Install Stable Docker
       id: setup_docker
-      uses: docker/setup-docker-action@v4   
+      uses: docker/setup-docker-action@v4
     - name: Check Docker version
-      run: docker version     
+      run: docker version
     - uses: actions/checkout@v4
     - name: Set up OpenJDK ${{ env.JDK_VER }}
       uses: actions/setup-java@v4
@@ -104,7 +104,7 @@ jobs:
         ./dist/linux_amd64/release/placement &
     - name: Spin local environment
       run: |
-        docker compose -f ./sdk-tests/deploy/local-test.yml up -d mongo kafka
+        docker-compose -f ./sdk-tests/deploy/local-test.yml up -d mongo kafka mysql
         docker ps
     - name: Install local ToxiProxy to simulate connectivity issues to Dapr sidecar
       run: |
