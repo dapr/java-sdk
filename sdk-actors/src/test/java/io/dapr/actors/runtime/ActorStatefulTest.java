@@ -68,6 +68,10 @@ public class ActorStatefulTest {
 
     Mono<String> setMessage(String message);
 
+    Mono<Boolean> setMessageFor1s(String message);
+
+    Mono<Boolean> setMessageAndWait(String message);
+
     Mono<String> getMessage();
 
     Mono<Boolean> hasMessage();
@@ -197,12 +201,26 @@ public class ActorStatefulTest {
 
     @Override
     public Mono<Void> addMessage(String message) {
-      return super.getActorStateManager().add("message", message);
+      return super.getActorStateManager().add("message", message, null);
     }
 
     @Override
     public Mono<String> setMessage(String message) {
       return super.getActorStateManager().set("message", message).thenReturn(executeSayMethod(message));
+    }
+
+    @Override
+    public Mono<Boolean> setMessageFor1s(String message) {
+      return super
+          .getActorStateManager().set("message", message, Duration.ofSeconds(1))
+          .then(super.getActorStateManager().contains("message"));
+    }
+
+    @Override
+    public Mono<Boolean> setMessageAndWait(String message) {
+      return super.getActorStateManager().set("message", message, Duration.ofSeconds(1))
+          .then(Mono.delay(Duration.ofMillis(1100)))
+          .then(super.getActorStateManager().contains("message"));
     }
 
     @Override
@@ -223,20 +241,20 @@ public class ActorStatefulTest {
     @Override
     public Mono<Void> forceDuplicateException() {
       // Second add should throw exception.
-      return super.getActorStateManager().add("message", "anything")
-        .then(super.getActorStateManager().add("message", "something else"));
+      return super.getActorStateManager().add("message", "anything", null)
+        .then(super.getActorStateManager().add("message", "something else", null));
     }
 
     @Override
     public Mono<Void> forcePartialChange() {
-      return super.getActorStateManager().add("message", "first message")
+      return super.getActorStateManager().add("message", "first message", null)
         .then(super.saveState())
-        .then(super.getActorStateManager().add("message", "second message"));
+        .then(super.getActorStateManager().add("message", "second message", null));
     }
 
     @Override
     public Mono<Void> throwsWithoutSaving() {
-      return super.getActorStateManager().add("message", "first message")
+      return super.getActorStateManager().add("message", "first message", null)
         .then(Mono.error(new IllegalCharsetNameException("random")));
     }
 
@@ -298,20 +316,64 @@ public class ActorStatefulTest {
   public void happyGetSetDeleteContains() {
     ActorProxy proxy = newActorProxy();
     Assertions.assertEquals(
-      proxy.getActorId().toString(), proxy.invokeMethod("getIdString", String.class).block());
+        proxy.getActorId().toString(), proxy.invokeMethod("getIdString", String.class).block());
     Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     proxy.invokeMethod("setMessage", "hello world").block();
     Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
 
     Assertions.assertEquals(
-      "hello world", proxy.invokeMethod("getMessage", String.class).block());
+        "hello world", proxy.invokeMethod("getMessage", String.class).block());
 
     Assertions.assertEquals(
-      executeSayMethod("hello world"),
-      proxy.invokeMethod("setMessage", "hello world", String.class).block());
+        executeSayMethod("hello world"),
+        proxy.invokeMethod("setMessage", "hello world", String.class).block());
 
     proxy.invokeMethod("deleteMessage").block();
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+  }
+
+  @Test
+  public void actorStateTTL() throws Exception {
+    ActorProxy proxy = newActorProxy();
+    Assertions.assertEquals(
+        proxy.getActorId().toString(), proxy.invokeMethod("getIdString", String.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+
+    Assertions.assertTrue(
+        proxy.invokeMethod("setMessageFor1s", "hello world expires in 1s", Boolean.class).block());
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+
+    Assertions.assertEquals(
+        "hello world expires in 1s", proxy.invokeMethod("getMessage", String.class).block());
+
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+
+    Thread.sleep(1100);
+
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+  }
+
+  @Test
+  public void actorStateTTLExpiresInLocalCache() throws Exception {
+    ActorProxy proxy = newActorProxy();
+    Assertions.assertEquals(
+        proxy.getActorId().toString(), proxy.invokeMethod("getIdString", String.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+
+    //First, sets a message without TTL and checks it is saved.
+    proxy.invokeMethod("setMessage", "hello world").block();
+    Assertions.assertTrue(proxy.invokeMethod("hasMessage", Boolean.class).block());
+    Assertions.assertEquals(
+        "hello world", proxy.invokeMethod("getMessage", String.class).block());
+
+    // Now, sets a message that expires still in local cache, before it is sent to state store.
+    Assertions.assertFalse(
+        proxy.invokeMethod("setMessageAndWait", "expires while still in cache", Boolean.class).block());
+    Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
+
+    Thread.sleep(1100);
+
     Assertions.assertFalse(proxy.invokeMethod("hasMessage", Boolean.class).block());
   }
 
