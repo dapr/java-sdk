@@ -144,4 +144,4 @@ public class DaprClientBuilder {
         this.stateSerializer,
         this.resiliencyOptions);
   }
-} 
+}
