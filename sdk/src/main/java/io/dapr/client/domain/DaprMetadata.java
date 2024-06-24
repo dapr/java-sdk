@@ -27,9 +27,6 @@ public final class DaprMetadata {
   private List<ComponentMetadata> components;
   private List<SubscriptionMetadata> subscriptions;
 
-  public DaprMetadata() {
-  }
-
   /**
    * Constructor for a DaprMetadata.
    *
@@ -61,27 +58,5 @@ public final class DaprMetadata {
   public List<SubscriptionMetadata> getSubscriptions() {
     return subscriptions;
   }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, runtimeVersion, components, subscriptions);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    DaprMetadata other = (DaprMetadata) obj;
-    return Objects.equals(id, other.id) && Objects.equals(runtimeVersion, other.runtimeVersion)
-        && Objects.equals(components, other.components) && Objects.equals(subscriptions, other.subscriptions);
-  }
-
   
 }

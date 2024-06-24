@@ -24,9 +24,6 @@ public final class ComponentMetadata {
   private String type;
   private String version;
 
-  public ComponentMetadata() {
-  }
-
   /**
    * Constructor for a ComponentMetadata.
    *
@@ -51,26 +48,5 @@ public final class ComponentMetadata {
   public String getVersion() {
     return version;
   }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, type, version);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    ComponentMetadata other = (ComponentMetadata) obj;
-    return Objects.equals(name, other.name) && Objects.equals(type, other.type)
-        && Objects.equals(version, other.version);
-  }
-  
+ 
 }

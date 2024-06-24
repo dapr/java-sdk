@@ -13,16 +13,11 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-import java.util.Objects;
-
 /**
  * RuleMetadata describes the Subscription Rule's Metadata.
  */
 public final class RuleMetadata {
   private String path;
-
-  public RuleMetadata() {
-  }
 
   public RuleMetadata(String path) {
     this.path = path;
@@ -31,27 +26,5 @@ public final class RuleMetadata {
   public String getPath() {
     return path;
   }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(path);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    RuleMetadata other = (RuleMetadata) obj;
-    return Objects.equals(path, other.path);
-  }
-
-  
 
 }

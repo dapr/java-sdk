@@ -26,9 +26,6 @@ public final class SubscriptionMetadata {
   private String deadLetterTopic;
   private List<RuleMetadata> rules;
 
-  public SubscriptionMetadata() {
-  }
-
   /**
    * Constructor for a SubscriptionMetadata.
    *
@@ -61,28 +58,5 @@ public final class SubscriptionMetadata {
   public List<RuleMetadata> getRules() {
     return rules;
   }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(topic, pubsubname, deadLetterTopic, rules);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    SubscriptionMetadata other = (SubscriptionMetadata) obj;
-    return Objects.equals(topic, other.topic) && Objects.equals(pubsubname, other.pubsubname)
-        && Objects.equals(deadLetterTopic, other.deadLetterTopic) && Objects.equals(rules, other.rules);
-  }
-
-  
 
 }
