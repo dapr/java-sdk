@@ -15,10 +15,7 @@ package io.dapr.client;
 
 import io.dapr.client.domain.CloudEvent;
 
-import java.util.Arrays;
 import java.util.Objects;
-
-import java.io.IOException;
 
 
 public class CloudEventCustom<T> extends CloudEvent<T> {

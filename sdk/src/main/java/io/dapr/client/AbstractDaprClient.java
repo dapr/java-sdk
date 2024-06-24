@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
  * Abstract class with convenient methods common between client implementations.
  *
  * @see io.dapr.client.DaprClient
- * @see io.dapr.client.DaprClientGrpc
+ * @see DaprClientImpl
  * @see io.dapr.client.DaprClientHttp
  */
 abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {

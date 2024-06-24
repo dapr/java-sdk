@@ -15,7 +15,12 @@ package io.dapr.it.pubsub.http;
 
 import io.dapr.Rule;
 import io.dapr.Topic;
-import io.dapr.client.domain.*;
+import io.dapr.client.domain.BulkSubscribeAppResponse;
+import io.dapr.client.domain.BulkSubscribeAppResponseEntry;
+import io.dapr.client.domain.BulkSubscribeAppResponseStatus;
+import io.dapr.client.domain.BulkSubscribeMessage;
+import io.dapr.client.domain.BulkSubscribeMessageEntry;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.springboot.annotations.BulkSubscribe;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

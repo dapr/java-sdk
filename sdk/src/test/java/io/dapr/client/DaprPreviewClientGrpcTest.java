@@ -17,8 +17,8 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
@@ -74,15 +74,17 @@ public class DaprPreviewClientGrpcTest {
 
 	private GrpcChannelFacade channel;
 	private DaprGrpc.DaprStub daprStub;
+	private DaprHttp daprHttp;
 	private DaprPreviewClient previewClient;
 
 	@BeforeEach
 	public void setup() throws IOException {
 		channel = mock(GrpcChannelFacade.class);
 		daprStub = mock(DaprGrpc.DaprStub.class);
+		daprHttp = mock(DaprHttp.class);
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
-		previewClient = new DaprClientGrpc(
-				channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+		previewClient = new DaprClientImpl(
+				channel, daprStub, daprHttp, new DefaultObjectSerializer(), new DefaultObjectSerializer());
 		doNothing().when(channel).close();
 	}
 
@@ -147,7 +149,7 @@ public class DaprPreviewClientGrpcTest {
 	@Test
 	public void publishEventsSerializeException() throws IOException {
 		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-		previewClient = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
+		previewClient = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, new DefaultObjectSerializer());
 		doAnswer((Answer<Void>) invocation -> {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
