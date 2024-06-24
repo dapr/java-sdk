@@ -29,6 +29,8 @@ import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.exceptions.DaprError;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
@@ -2117,7 +2119,29 @@ public class DaprClientGrpcTest {
     assertEquals("app", metadata.getId());
     assertEquals("1.1x.x", metadata.getRuntimeVersion());
     assertEquals(1, metadata.getComponents().size());
+    assertEquals(registeredComponents.getName(), metadata.getComponents().get(0).getName());
+    assertEquals(registeredComponents.getVersion(), metadata.getComponents().get(0).getVersion());
+    assertEquals(registeredComponents.getType(), metadata.getComponents().get(0).getType());
     assertEquals(1, metadata.getSubscriptions().size());
+    assertEquals(pubsubSubscription.getPubsubName(), metadata.getSubscriptions().get(0).getPubsubname());
+    assertEquals(pubsubSubscription.getTopic(), metadata.getSubscriptions().get(0).getTopic());
+    assertEquals(1, metadata.getSubscriptions().get(0).getRules().size());
+    assertEquals(pubsubSubscription.getRules().getRules(0).getPath(), metadata.getSubscriptions().get(0).getRules().get(0).getPath());
 
+  }
+
+  @Test
+  public void getMetadataExceptionTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
+
+    Mono<DaprMetadata> result = client.getMetadata();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 }
