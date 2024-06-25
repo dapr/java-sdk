@@ -274,7 +274,8 @@ public class DaprClientHttpTest {
     });
 
     assertEquals("MYCODE", exception.getErrorCode());
-    assertEquals("MYCODE: My Message", exception.getMessage());
+    assertEquals("MYCODE: My Message (HTTP status code: 500)", exception.getMessage());
+    assertEquals(500, exception.getHttpStatusCode());
   }
 
   @Test
@@ -308,7 +309,7 @@ public class DaprClientHttpTest {
     });
 
     assertEquals("UNKNOWN", exception.getErrorCode());
-    assertEquals("UNKNOWN: { \"anything\": 7 }", exception.getMessage());
+    assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
     assertEquals("{ \"anything\": 7 }", new String(exception.getPayload()));
   }
 

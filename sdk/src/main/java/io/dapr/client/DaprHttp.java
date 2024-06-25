@@ -349,7 +349,8 @@ public class DaprHttp implements AutoCloseable {
     try {
       return DAPR_ERROR_DETAILS_OBJECT_MAPPER.readValue(json, DaprError.class);
     } catch (IOException e) {
-      throw new DaprException("UNKNOWN", new String(json, StandardCharsets.UTF_8), json);
+      // Could not parse DaprError. Return null.
+      return null;
     }
   }
 
@@ -384,17 +385,13 @@ public class DaprHttp implements AutoCloseable {
         try {
           byte[] payload = getBodyBytesOrEmptyArray(response);
           DaprError error = parseDaprError(payload);
-          if ((error != null) && (error.getErrorCode() != null)) {
-            if (error.getMessage() != null) {
-              future.completeExceptionally(new DaprException(error, payload));
-            } else {
-              future.completeExceptionally(
-                  new DaprException(error.getErrorCode(), "HTTP status code: " + response.code(), payload));
-            }
+          if (error != null) {
+            future.completeExceptionally(new DaprException(error, payload, response.code()));
             return;
           }
 
-          future.completeExceptionally(new DaprException("UNKNOWN", "HTTP status code: " + response.code(), payload));
+          future.completeExceptionally(
+              new DaprException("UNKNOWN", "", payload, response.code()));
           return;
         } catch (DaprException e) {
           future.completeExceptionally(e);

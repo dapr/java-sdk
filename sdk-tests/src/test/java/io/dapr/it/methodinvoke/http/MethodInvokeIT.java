@@ -134,7 +134,7 @@ public class MethodInvokeIT extends BaseIT {
             // TODO(artursouza): change this to INTERNAL once runtime is fixed.
             assertEquals("UNKNOWN", exception.getErrorCode());
             assertNotNull(exception.getMessage());
-            assertTrue(exception.getMessage().contains("Internal Server Error"));
+            assertTrue(exception.getMessage().contains("HTTP status code: 500"));
             assertTrue(new String(exception.getPayload()).contains("Internal Server Error"));
         }
     }
