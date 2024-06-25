@@ -16,28 +16,18 @@ package io.dapr.client;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.DaprMetadata;
-import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.GetBulkStateRequest;
-import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.State;
-import io.dapr.client.domain.StateOptions;
-import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.UnsubscribeConfigurationRequest;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
-import io.dapr.exceptions.DaprError;
-import io.dapr.exceptions.DaprException;
+import io.dapr.client.domain.*;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.AppConnectionHealthProperties;
+import io.dapr.v1.DaprProtos.AppConnectionProperties;
+import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
 import io.dapr.v1.DaprProtos.PubsubSubscription;
+import io.dapr.v1.DaprProtos.PubsubSubscriptionRules;
 import io.dapr.v1.DaprProtos.RegisteredComponents;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -2086,25 +2076,54 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getMetadataTest() {
-
     RegisteredComponents registeredComponents = DaprProtos.RegisteredComponents.newBuilder()
         .setName("statestore")
         .setType("state.redis")
         .setVersion("v1")
         .build();
+
+    DaprProtos.MetadataHTTPEndpoint httpEndpoint = DaprProtos.MetadataHTTPEndpoint.newBuilder()
+        .setName("httpEndpoint")
+        .build();
+
+    PubsubSubscriptionRules pubsubSubscriptionRules = DaprProtos.PubsubSubscriptionRules.newBuilder()
+        .addRules(DaprProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build())
+        .build();
+
     PubsubSubscription pubsubSubscription = DaprProtos.PubsubSubscription.newBuilder()
         .setDeadLetterTopic("")
         .setPubsubName("pubsub")
         .setTopic("topic")
-        .setRules(DaprProtos.PubsubSubscriptionRules.newBuilder()
-            .addRules(DaprProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build()).build())
+        .setRules(pubsubSubscriptionRules)
         .build();
+
+    AppConnectionHealthProperties healthProperties = DaprProtos.AppConnectionHealthProperties.newBuilder()
+        .setHealthCheckPath("/health")
+        .setHealthProbeInterval("10s")
+        .setHealthProbeTimeout("5s")
+        .setHealthThreshold(1)
+        .build();
+
+    AppConnectionProperties appConnectionProperties = DaprProtos.AppConnectionProperties.newBuilder()
+        .setPort(8080)
+        .setProtocol("http")
+        .setChannelAddress("localhost")
+        .setMaxConcurrency(1)
+        .setHealth(healthProperties)
+        .build();
+
+
     DaprProtos.GetMetadataResponse responseEnvelope = DaprProtos.GetMetadataResponse.newBuilder()
         .setId("app")
         .setRuntimeVersion("1.1x.x")
+        .addAllEnabledFeatures(Collections.emptyList())
+        .putAllExtendedMetadata(Collections.emptyMap())
         .addAllRegisteredComponents(Collections.singletonList(registeredComponents))
+        .addAllHttpEndpoints(Collections.singletonList(httpEndpoint))
         .addAllSubscriptions(Collections.singletonList(pubsubSubscription))
+        .setAppConnectionProperties(appConnectionProperties)
         .build();
+
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.GetMetadataResponse> observer = (StreamObserver<DaprProtos.GetMetadataResponse>) invocation
           .getArguments()[1];
@@ -2115,19 +2134,47 @@ public class DaprClientGrpcTest {
 
     Mono<DaprMetadata> result = client.getMetadata();
     DaprMetadata metadata = result.block();
+
     assertNotNull(metadata);
     assertEquals("app", metadata.getId());
     assertEquals("1.1x.x", metadata.getRuntimeVersion());
+    assertEquals(0, metadata.getEnabledFeatures().size());
+    assertEquals(0, metadata.getAttributes().size());
+
+    // Components
     assertEquals(1, metadata.getComponents().size());
     assertEquals(registeredComponents.getName(), metadata.getComponents().get(0).getName());
     assertEquals(registeredComponents.getVersion(), metadata.getComponents().get(0).getVersion());
     assertEquals(registeredComponents.getType(), metadata.getComponents().get(0).getType());
+
+    // Subscriptions
     assertEquals(1, metadata.getSubscriptions().size());
     assertEquals(pubsubSubscription.getPubsubName(), metadata.getSubscriptions().get(0).getPubsubname());
     assertEquals(pubsubSubscription.getTopic(), metadata.getSubscriptions().get(0).getTopic());
+
+    // Subscription Rules
     assertEquals(1, metadata.getSubscriptions().get(0).getRules().size());
     assertEquals(pubsubSubscription.getRules().getRules(0).getPath(), metadata.getSubscriptions().get(0).getRules().get(0).getPath());
 
+    // HTTP Endpoints
+    assertEquals(1, metadata.getHttpEndpoints().size());
+    assertEquals(httpEndpoint.getName(), metadata.getHttpEndpoints().get(0).getName());
+
+    // App Connection Properties
+    AppConnectionPropertiesMetadata appConnectionPropertiesMetadata = metadata.getAppConnectionProperties();
+
+    assertEquals(appConnectionProperties.getPort(), appConnectionPropertiesMetadata.getPort());
+    assertEquals(appConnectionProperties.getProtocol(), appConnectionPropertiesMetadata.getProtocol());
+    assertEquals(appConnectionProperties.getChannelAddress(), appConnectionPropertiesMetadata.getChannelAddress());
+    assertEquals(appConnectionProperties.getMaxConcurrency(), appConnectionPropertiesMetadata.getMaxConcurrency());
+
+    // App Connection Health Properties
+    AppConnectionPropertiesHealthMetadata healthMetadata = appConnectionPropertiesMetadata.getHealth();
+
+    assertEquals(healthProperties.getHealthCheckPath(), healthMetadata.getHealthCheckPath());
+    assertEquals(healthProperties.getHealthProbeInterval(), healthMetadata.getHealthProbeInterval());
+    assertEquals(healthProperties.getHealthProbeTimeout(), healthMetadata.getHealthProbeTimeout());
+    assertEquals(healthProperties.getHealthThreshold(), healthMetadata.getHealthThreshold());
   }
 
   @Test
