@@ -36,6 +36,20 @@ cd examples
 
 Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
 
+### Run MongoDB
+
+<!-- STEP
+name: Setup mongo container
+sleep: 5
+-->
+
+```bash
+docker-compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml up -d
+```
+
+<!-- END_STEP -->
+
+
 ### Running the State Client
 This example uses the Java SDK Dapr client in order to save bulk state and query state, in this case, an instance of a class. See the code snippets below:
 
@@ -281,6 +295,17 @@ name: Cleanup
 
 ```bash
 dapr stop --app-id query-state-example
+```
+<!-- END_STEP -->
+
+Then, stop MongoDB container.
+
+<!-- STEP
+name: Cleanup MongoDB containers
+-->
+
+```bash
+docker-compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml down
 ```
 
 <!-- END_STEP -->

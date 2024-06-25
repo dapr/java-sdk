@@ -40,7 +40,6 @@ public class MethodInvokeIT extends BaseIT {
           MethodInvokeService.class,
           true,
           30000);
-        daprRun.switchToHTTP();
         daprRun.waitForAppHealth(20000);
     }
 

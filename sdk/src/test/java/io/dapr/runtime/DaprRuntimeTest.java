@@ -127,24 +127,8 @@ public class DaprRuntimeTest {
             generateSingleMetadata())
     };
 
-    DaprHttpStub daprHttp = mock(DaprHttpStub.class);
-    DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
-    DaprObjectSerializer serializer = new DefaultObjectSerializer();
-
     for (Message message : messages) {
-      when(daprHttp.invokeApi(
-          eq("POST"),
-          eq((PUBLISH_PATH + "/" + PUBSUB_NAME + "/" + TOPIC_NAME).split("/")),
-          any(),
-          eq(serializer.serialize(message.data)),
-          any(),
-          any()))
-          .thenAnswer(invocationOnMock -> this.daprRuntime.handleInvocation(
-              TOPIC_NAME,
-              this.serialize(message),
-              message.metadata).then());
-
-      client.publishEvent(PUBSUB_NAME, TOPIC_NAME, message.data).block();
+      this.daprRuntime.handleInvocation(TOPIC_NAME, this.serialize(message), message.metadata);
 
       CloudEvent envelope = new CloudEvent(
         message.id,
@@ -212,7 +196,7 @@ public class DaprRuntimeTest {
     };
 
     DaprHttpStub daprHttp = mock(DaprHttpStub.class);
-    DaprClient client = DaprClientTestBuilder.buildHttpClient(daprHttp);
+    DaprClient client = DaprClientTestBuilder.buildClientForHttpOnly(daprHttp);
 
     DaprObjectSerializer serializer = new DefaultObjectSerializer();
     for (Message message : messages) {

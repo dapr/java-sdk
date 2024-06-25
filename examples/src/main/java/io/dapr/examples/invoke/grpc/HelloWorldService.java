@@ -55,7 +55,7 @@ public class HelloWorldService {
     /**
      * Handling of the 'sayHello' method.
      *
-     * @param request Request to say something.
+     * @param req Request to say something.
      * @return Response with when it was said.
      */
     @Override

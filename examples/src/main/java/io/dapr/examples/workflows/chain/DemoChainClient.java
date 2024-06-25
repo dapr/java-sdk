@@ -16,7 +16,6 @@ package io.dapr.examples.workflows.chain;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
-import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 public class DemoChainClient {

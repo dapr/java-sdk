@@ -20,8 +20,6 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collections;
 import java.util.List;
@@ -46,24 +44,14 @@ public class BindingIT extends BaseIT {
     public String message;
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void inputOutputBinding(boolean useGrpc) throws Exception {
-    System.out.println("Working Directory = " + System.getProperty("user.dir"));
-    String serviceNameVariant = useGrpc ? "-grpc" : "-http";
-
+  @Test
+  public void inputOutputBinding() throws Exception {
     DaprRun daprRun = startDaprApp(
-        this.getClass().getSimpleName() + serviceNameVariant,
+        this.getClass().getSimpleName() + "-grpc",
         InputBindingService.SUCCESS_MESSAGE,
         InputBindingService.class,
         true,
         60000);
-    // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
     try(DaprClient client = new DaprClientBuilder().build()) {
       callWithRetry(() -> {
