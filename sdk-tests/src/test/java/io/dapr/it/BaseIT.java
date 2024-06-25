@@ -14,18 +14,19 @@ limitations under the License.
 package io.dapr.it;
 
 import io.dapr.actors.client.ActorClient;
-import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.AfterAll;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import static io.dapr.client.DaprApiProtocol.GRPC;
-import static io.dapr.client.DaprApiProtocol.HTTP;
+import static io.dapr.it.AppRun.AppProtocol.GRPC;
+import static io.dapr.it.AppRun.AppProtocol.HTTP;
 
 public abstract class BaseIT {
 
@@ -52,7 +53,7 @@ public abstract class BaseIT {
       String testName,
       String successMessage,
       Class serviceClass,
-      DaprApiProtocol appProtocol,
+      AppRun.AppProtocol appProtocol,
       int maxWaitMilliseconds) throws Exception {
     return startDaprApp(testName, successMessage, serviceClass, true, maxWaitMilliseconds, GRPC, appProtocol);
   }
@@ -63,7 +64,7 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds,
-      DaprApiProtocol protocol) throws Exception {
+      AppRun.AppProtocol protocol) throws Exception {
     return startDaprApp(
         testName,
         successMessage,
@@ -81,8 +82,8 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds,
-      DaprApiProtocol protocol,
-      DaprApiProtocol appProtocol) throws Exception {
+      AppRun.AppProtocol protocol,
+      AppRun.AppProtocol appProtocol) throws Exception {
     return startDaprApp(
         testName,
         successMessage,
@@ -115,14 +116,13 @@ public abstract class BaseIT {
           Boolean useAppPort,
           Boolean useDaprPorts,
           int maxWaitMilliseconds,
-          DaprApiProtocol protocol,
-          DaprApiProtocol appProtocol) throws Exception {
+          AppRun.AppProtocol protocol,
+          AppRun.AppProtocol appProtocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
             () -> DaprPorts.build(useAppPort, useDaprPorts, useDaprPorts),
             successMessage,
             maxWaitMilliseconds,
-            protocol,
             appProtocol).withServiceClass(serviceClass);
     DaprRun run = builder.build();
     TO_BE_STOPPED.add(run);
@@ -139,7 +139,7 @@ public abstract class BaseIT {
       Boolean useAppPort,
       int maxWaitMilliseconds) throws Exception {
     return startSplitDaprAndApp(
-        testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, DaprApiProtocol.GRPC);
+        testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, AppRun.AppProtocol.GRPC);
   }
 
   protected static ImmutablePair<AppRun, DaprRun> startSplitDaprAndApp(
@@ -148,7 +148,7 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds,
-      DaprApiProtocol protocol) throws Exception {
+      AppRun.AppProtocol protocol) throws Exception {
     return startSplitDaprAndApp(
         testName,
         successMessage,
@@ -165,14 +165,13 @@ public abstract class BaseIT {
           Class serviceClass,
           Boolean useAppPort,
           int maxWaitMilliseconds,
-          DaprApiProtocol protocol,
-          DaprApiProtocol appProtocol) throws Exception {
+          AppRun.AppProtocol protocol,
+          AppRun.AppProtocol appProtocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
             () -> DaprPorts.build(useAppPort, true, true),
             successMessage,
             maxWaitMilliseconds,
-            protocol,
             appProtocol).withServiceClass(serviceClass);
     ImmutablePair<AppRun, DaprRun> runs = builder.splitBuild();
     TO_BE_STOPPED.add(runs.left);
@@ -199,9 +198,21 @@ public abstract class BaseIT {
     return newActorClient(null);
   }
 
-  protected static ActorClient newActorClient(ResiliencyOptions resiliencyOptions) {
-    ActorClient client = new ActorClient(resiliencyOptions);
-    TO_BE_CLOSED.add(client);
-    return client;
+  protected static ActorClient newActorClient(ResiliencyOptions resiliencyOptions) throws RuntimeException {
+    try {
+      Constructor<ActorClient> constructor = ActorClient.class.getDeclaredConstructor(ResiliencyOptions.class);
+      constructor.setAccessible(true);
+      ActorClient client = constructor.newInstance(resiliencyOptions);
+      TO_BE_CLOSED.add(client);
+      return client;
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    } catch (InvocationTargetException e) {
+      throw new RuntimeException(e);
+    } catch (InstantiationException e) {
+      throw new RuntimeException(e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

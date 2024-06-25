@@ -13,15 +13,14 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.utils.TypeRef;
 
 public class CloudEventCustomTest {
 

@@ -15,7 +15,7 @@ package io.dapr.it.resiliency;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprClientGrpc;
+import io.dapr.client.DaprClientImpl;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
@@ -65,8 +65,6 @@ public class SdkResiliencytIT extends BaseIT {
   @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(SdkResiliencytIT.class.getSimpleName(), 5000);
-    // HTTP client is deprecated, so SDK resiliency is for gRPC client only.
-    daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder().build();
     daprClient.waitForSidecar(8000).block();
 
@@ -87,10 +85,10 @@ public class SdkResiliencytIT extends BaseIT {
                     new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1))
             .build();
 
-    assertTrue(daprClient instanceof DaprClientGrpc);
-    assertTrue(daprToxiClient instanceof DaprClientGrpc);
-    assertTrue(daprResilientClient instanceof DaprClientGrpc);
-    assertTrue(daprRetriesOnceClient instanceof DaprClientGrpc);
+    assertTrue(daprClient instanceof DaprClientImpl);
+    assertTrue(daprToxiClient instanceof DaprClientImpl);
+    assertTrue(daprResilientClient instanceof DaprClientImpl);
+    assertTrue(daprRetriesOnceClient instanceof DaprClientImpl);
   }
 
   @AfterAll

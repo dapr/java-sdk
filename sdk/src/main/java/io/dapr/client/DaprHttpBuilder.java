@@ -23,9 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A builder for the DaprHttp.
- * @deprecated Use {@link DaprClientBuilder} instead, this will be removed in a future release.
  */
-@Deprecated
 public class DaprHttpBuilder {
 
   /**

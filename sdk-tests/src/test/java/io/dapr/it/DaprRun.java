@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.it;
 
 import com.google.protobuf.Empty;
-import io.dapr.client.DaprApiProtocol;
 import io.dapr.config.Properties;
 import io.dapr.v1.AppCallbackHealthCheckGrpc;
 import io.grpc.ManagedChannel;
@@ -42,13 +41,13 @@ public class DaprRun implements Stoppable {
 
   // the arg in -Dexec.args is the app's port
   private static final String DAPR_COMMAND =
-      " -- mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\" -D %s=%s -D %s=%s";
+      " -- mvn exec:java -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\"";
 
   private final DaprPorts ports;
 
   private final String appName;
 
-  private final DaprApiProtocol appProtocol;
+  private final AppRun.AppProtocol appProtocol;
 
   private final int maxWaitMilliseconds;
 
@@ -67,15 +66,14 @@ public class DaprRun implements Stoppable {
                   String successMessage,
                   Class serviceClass,
                   int maxWaitMilliseconds,
-                  DaprApiProtocol protocol,
-                  DaprApiProtocol appProtocol) {
+                  AppRun.AppProtocol appProtocol) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
     this.appName = serviceClass == null ?
         testName.toLowerCase() :
         String.format("%s-%s", testName, serviceClass.getSimpleName()).toLowerCase();
     this.appProtocol = appProtocol;
     this.startCommand =
-        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, protocol, appProtocol));
+        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, appProtocol));
     this.listCommand = new Command(
       this.appName,
       "dapr list");
@@ -145,29 +143,6 @@ public class DaprRun implements Stoppable {
 
   public void use() {
     this.ports.use();
-    System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
-    System.getProperties().setProperty(
-        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
-        DaprApiProtocol.GRPC.name());
-  }
-
-  public void switchToGRPC() {
-    System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.GRPC.name());
-    System.getProperties().setProperty(
-        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
-        DaprApiProtocol.GRPC.name());
-  }
-
-  public void switchToHTTP() {
-    System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), DaprApiProtocol.HTTP.name());
-    System.getProperties().setProperty(
-        Properties.API_METHOD_INVOCATION_PROTOCOL.getName(),
-        DaprApiProtocol.HTTP.name());
-  }
-
-  public void switchToProtocol(DaprApiProtocol protocol) {
-    System.getProperties().setProperty(Properties.API_PROTOCOL.getName(), protocol.name());
-    System.getProperties().setProperty(Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol.name());
   }
 
   public void waitForAppHealth(int maxWaitMilliseconds) throws InterruptedException {
@@ -175,7 +150,7 @@ public class DaprRun implements Stoppable {
       return;
     }
 
-    if (DaprApiProtocol.GRPC.equals(this.appProtocol)) {
+    if (AppRun.AppProtocol.GRPC.equals(this.appProtocol)) {
       ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", this.getAppPort())
               .usePlaintext()
               .build();
@@ -263,7 +238,7 @@ public class DaprRun implements Stoppable {
   }
 
   private static String buildDaprCommand(
-      String appName, Class serviceClass, DaprPorts ports, DaprApiProtocol protocol, DaprApiProtocol appProtocol) {
+      String appName, Class serviceClass, DaprPorts ports, AppRun.AppProtocol appProtocol) {
     StringBuilder stringBuilder =
         new StringBuilder(String.format(DAPR_RUN, appName, appProtocol.toString().toLowerCase()))
             .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
@@ -273,9 +248,7 @@ public class DaprRun implements Stoppable {
                     " --enable-app-health-check --app-health-probe-interval=1" : "")
             .append(serviceClass == null ? "" :
                 String.format(DAPR_COMMAND, serviceClass.getCanonicalName(),
-                    ports.getAppPort() != null ? ports.getAppPort().toString() : "",
-                    Properties.API_PROTOCOL.getName(), protocol,
-                    Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol));
+                    ports.getAppPort() != null ? ports.getAppPort().toString() : ""));
     return stringBuilder.toString();
   }
 
@@ -315,22 +288,18 @@ public class DaprRun implements Stoppable {
 
     private Class serviceClass;
 
-    private DaprApiProtocol protocol;
-
-    private DaprApiProtocol appProtocol;
+    private AppRun.AppProtocol appProtocol;
 
     Builder(
         String testName,
         Supplier<DaprPorts> portsSupplier,
         String successMessage,
         int maxWaitMilliseconds,
-        DaprApiProtocol protocol,
-        DaprApiProtocol appProtocol) {
+        AppRun.AppProtocol appProtocol) {
       this.testName = testName;
       this.portsSupplier = portsSupplier;
       this.successMessage = successMessage;
       this.maxWaitMilliseconds = maxWaitMilliseconds;
-      this.protocol = protocol;
       this.appProtocol = appProtocol;
     }
 
@@ -346,7 +315,6 @@ public class DaprRun implements Stoppable {
               this.successMessage,
               this.serviceClass,
               this.maxWaitMilliseconds,
-              this.protocol,
               this.appProtocol);
     }
 
@@ -360,8 +328,7 @@ public class DaprRun implements Stoppable {
               ports,
               this.successMessage,
               this.serviceClass,
-              this.maxWaitMilliseconds,
-              this.protocol);
+              this.maxWaitMilliseconds);
 
       DaprRun daprRun = new DaprRun(
               this.testName,
@@ -369,7 +336,6 @@ public class DaprRun implements Stoppable {
               DAPR_SUCCESS_MESSAGE,
               null,
               this.maxWaitMilliseconds,
-              this.protocol,
               this.appProtocol);
 
       return new ImmutablePair<>(appRun, daprRun);

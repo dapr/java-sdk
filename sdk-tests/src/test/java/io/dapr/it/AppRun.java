@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.it;
 
-import io.dapr.client.DaprApiProtocol;
 import io.dapr.config.Properties;
 
 import java.io.IOException;
@@ -28,7 +27,7 @@ import static io.dapr.it.Retry.callWithRetry;
 public class AppRun implements Stoppable {
 
   private static final String APP_COMMAND =
-      "mvn exec:java -B -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\" -D %s=%s -D %s=%s";
+      "mvn exec:java -B -D exec.mainClass=%s -D exec.classpathScope=test -D exec.args=\"%s\"";
 
   private final DaprPorts ports;
 
@@ -39,11 +38,10 @@ public class AppRun implements Stoppable {
   AppRun(DaprPorts ports,
                  String successMessage,
                  Class serviceClass,
-                 int maxWaitMilliseconds,
-                 DaprApiProtocol protocol) {
+                 int maxWaitMilliseconds) {
     this.command = new Command(
             successMessage,
-            buildCommand(serviceClass, ports, protocol),
+            buildCommand(serviceClass, ports),
             new HashMap<>() {{
               put("DAPR_HTTP_PORT", ports.getHttpPort().toString());
               put("DAPR_GRPC_PORT", ports.getGrpcPort().toString());
@@ -81,11 +79,9 @@ public class AppRun implements Stoppable {
     }
   }
 
-  private static String buildCommand(Class serviceClass, DaprPorts ports, DaprApiProtocol protocol) {
+  private static String buildCommand(Class serviceClass, DaprPorts ports) {
     return String.format(APP_COMMAND, serviceClass.getCanonicalName(),
-                ports.getAppPort() != null ? ports.getAppPort().toString() : "",
-                Properties.API_PROTOCOL.getName(), protocol,
-                Properties.API_METHOD_INVOCATION_PROTOCOL.getName(), protocol);
+                ports.getAppPort() != null ? ports.getAppPort().toString() : "");
   }
 
   private static void assertListeningOnPort(int port) {
@@ -101,4 +97,7 @@ public class AppRun implements Stoppable {
     System.out.printf("Confirmed listening on port %d.\n", port);
   }
 
+  public enum AppProtocol {
+    HTTP, GRPC;
+  }
 }

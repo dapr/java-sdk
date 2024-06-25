@@ -17,11 +17,11 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
@@ -29,12 +29,16 @@ import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.exceptions.DaprError;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.PubsubSubscription;
+import io.dapr.v1.DaprProtos.RegisteredComponents;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
@@ -45,7 +49,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
@@ -63,7 +66,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-import static io.dapr.utils.TestUtils.findFreePort;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -72,7 +74,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprClientGrpcTest {
 
@@ -84,6 +91,7 @@ public class DaprClientGrpcTest {
 
   private GrpcChannelFacade channel;
   private DaprGrpc.DaprStub daprStub;
+  private DaprHttp daprHttp;
   private DaprClient client;
   private ObjectSerializer serializer;
 
@@ -91,10 +99,10 @@ public class DaprClientGrpcTest {
   public void setup() throws IOException {
     channel = mock(GrpcChannelFacade.class);
     daprStub = mock(DaprGrpc.DaprStub.class);
+    daprHttp = mock(DaprHttp.class);
     when(daprStub.withInterceptors(any())).thenReturn(daprStub);
-    DaprClient grpcClient = new DaprClientGrpc(
-        channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
-    client = new DaprClientProxy(grpcClient);
+    client = new DaprClientImpl(
+        channel, daprStub, daprHttp, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     serializer = new ObjectSerializer();
     doNothing().when(channel).close();
   }
@@ -103,18 +111,6 @@ public class DaprClientGrpcTest {
   public void tearDown() throws Exception {
     client.close();
     verify(channel).close();
-  }
-
-  @Test
-  public void waitForSidecarTimeout() {
-    Mockito.doReturn(Mono.error(new RuntimeException())).when(channel).waitForChannelReady(1);
-    assertThrows(RuntimeException.class, () -> client.waitForSidecar(1).block());
-  }
-
-  @Test
-  public void waitForSidecarOK() {
-    Mockito.doReturn(Mono.empty()).when(channel).waitForChannelReady(10000);
-    client.waitForSidecar(10000).block();
   }
 
   @Test
@@ -150,7 +146,7 @@ public class DaprClientGrpcTest {
   @Test
   public void publishEventSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -268,7 +264,7 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeBindingSerializeException() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
+    client = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
@@ -417,440 +413,6 @@ public class DaprClientGrpcTest {
     client.invokeBinding("BindingName", "MyOperation", event);
     // Do not call block() on mono above, so nothing should happen.
     assertFalse(called.get());
-  }
-
-  @Test
-  public void invokeServiceVoidExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<Void> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceIllegalArgumentExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    // HttpExtension cannot be null
-    Mono<Void> result = client.invokeMethod("appId", "method", "request", null);
-
-    assertThrows(IllegalArgumentException.class, () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceEmptyRequestVoidExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<Void> result = client.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceVoidCallbackExceptionThrownTest() {
-    RuntimeException ex = new RuntimeException("An Exception");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onError(ex);
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<Void> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE);
-
-    assertThrowsDaprException(
-        ExecutionException.class,
-        "UNKNOWN",
-        "UNKNOWN: java.lang.RuntimeException: An Exception",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceVoidTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<Void> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE);
-    result.block();
-  }
-
-  @Test
-  public void invokeServiceVoidObjectTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny("Value")).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    MyObject request = new MyObject(1, "Event");
-    Mono<Void> result = client.invokeMethod("appId", "method", request, HttpExtension.NONE);
-    result.block();
-  }
-
-  @Test
-  public void invokeServiceExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceNoRequestClassExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, String.class);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceNoRequestTypeRefExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", HttpExtension.NONE, (Map<String, String>)null, TypeRef.STRING);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceCallbackExceptionThrownTest() {
-    RuntimeException ex = new RuntimeException("An Exception");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onError(ex);
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
-
-    assertThrowsDaprException(
-        ExecutionException.class,
-        "UNKNOWN",
-        "UNKNOWN: java.lang.RuntimeException: An Exception",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceWithHttpExtensionTest() throws IOException {
-    HttpExtension httpExtension = new HttpExtension(
-        DaprHttp.HttpMethods.GET, Collections.singletonMap("test", Arrays.asList("1", "ab/c")), null);
-    CommonProtos.InvokeRequest message = CommonProtos.InvokeRequest.newBuilder()
-        .setMethod("method")
-        .setData(getAny("request"))
-        .setContentType("application/json")
-        .setHttpExtension(CommonProtos.HTTPExtension.newBuilder()
-            .setVerb(CommonProtos.HTTPExtension.Verb.GET)
-            .setQuerystring("test=1&test=ab%2Fc").build())
-        .build();
-    DaprProtos.InvokeServiceRequest request = DaprProtos.InvokeServiceRequest.newBuilder()
-        .setId("appId")
-        .setMessage(message)
-        .build();
-    String expected = "Value";
-
-    doAnswer(invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(eq(request), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", "request", httpExtension, null, String.class);
-    String strOutput = result.block();
-    assertEquals(expected, strOutput);
-  }
-
-  @Test
-  public void invokeServiceTest() {
-    String expected = "Value";
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, String.class);
-    String strOutput = result.block();
-
-    assertEquals(expected, strOutput);
-  }
-
-  @Test
-  public void invokeServiceObjectTest() throws Exception {
-    MyObject object = new MyObject(1, "Value");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<MyObject> result = client.invokeMethod("appId", "method", "request", HttpExtension.NONE, null, MyObject.class);
-    MyObject resultObject = result.block();
-
-    assertEquals(object.id, resultObject.id);
-    assertEquals(object.value, resultObject.value);
-  }
-
-  @Test
-  public void invokeServiceNoRequestBodyExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceNoRequestCallbackExceptionThrownTest() {
-    RuntimeException ex = new RuntimeException("An Exception");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onError(ex);
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
-
-    assertThrowsDaprException(
-        ExecutionException.class,
-        "UNKNOWN",
-        "UNKNOWN: java.lang.RuntimeException: An Exception",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceNoRequestBodyTest() throws Exception {
-    String expected = "Value";
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<String> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, String.class);
-    String strOutput = result.block();
-
-    assertEquals(expected, strOutput);
-  }
-
-  @Test
-  public void invokeServiceNoRequestBodyObjectTest() throws Exception {
-    MyObject object = new MyObject(1, "Value");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(object)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<MyObject> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE, MyObject.class);
-    MyObject resultObject = result.block();
-
-    assertEquals(object.id, resultObject.id);
-    assertEquals(object.value, resultObject.value);
-  }
-
-  @Test
-  public void invokeServiceByteRequestExceptionThrownTest() throws IOException {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-    String request = "Request";
-    byte[] byteRequest = serializer.serialize(request);
-
-    Mono<byte[]> result = client.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceByteRequestCallbackExceptionThrownTest() throws IOException {
-    RuntimeException ex = new RuntimeException("An Exception");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onError(ex);
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-    String request = "Request";
-    byte[] byteRequest = serializer.serialize(request);
-
-    Mono<byte[]> result =
-        client.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE,(HashMap<String, String>) null);
-
-    assertThrowsDaprException(
-        ExecutionException.class,
-        "UNKNOWN",
-        "UNKNOWN: java.lang.RuntimeException: An Exception",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeByteRequestServiceTest() throws Exception {
-    String expected = "Value";
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-    String request = "Request";
-    byte[] byteRequest = serializer.serialize(request);
-
-    Mono<byte[]> result = client.invokeMethod(
-        "appId", "method", byteRequest, HttpExtension.NONE, (HashMap<String, String>) null);
-    byte[] byteOutput = result.block();
-
-    String strOutput = serializer.deserialize(byteOutput, String.class);
-    assertEquals(expected, strOutput);
-  }
-
-  @Test
-  public void invokeServiceByteRequestObjectTest() throws Exception {
-    MyObject resultObj = new MyObject(1, "Value");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    String request = "Request";
-    byte[] byteRequest = serializer.serialize(request);
-    Mono<byte[]> result = client.invokeMethod("appId", "method", byteRequest, HttpExtension.NONE, byte[].class);
-    byte[] byteOutput = result.block();
-
-    assertEquals(resultObj, serializer.deserialize(byteOutput, MyObject.class));
-  }
-
-  @Test
-  public void invokeServiceNoRequestNoClassBodyExceptionThrownTest() {
-    doAnswer((Answer<Void>) invocation -> {
-      throw new RuntimeException();
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-
-    assertThrowsDaprException(
-        RuntimeException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceNoRequestNoClassCallbackExceptionThrownTest() {
-    RuntimeException ex = new RuntimeException("An Exception");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onError(ex);
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-
-    assertThrowsDaprException(
-        ExecutionException.class,
-        "UNKNOWN",
-        "UNKNOWN: java.lang.RuntimeException: An Exception",
-        () -> result.block());
-  }
-
-  @Test
-  public void invokeServiceNoRequestNoClassBodyTest() {
-    String expected = "Value";
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-    result.block();
-  }
-
-  @Test
-  public void invokeServiceNoRequestNoHotMono() {
-    AtomicBoolean called = new AtomicBoolean(false);
-    String expected = "Value";
-    doAnswer((Answer<Void>) invocation -> {
-      called.set(true);
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(expected)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-    client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-    // Do not call block() on mono above, so nothing should happen.
-    assertFalse(called.get());
-  }
-
-  @Test
-  public void invokeServiceNoRequestNoClassBodyObjectTest() throws Exception {
-    MyObject resultObj = new MyObject(1, "Value");
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<CommonProtos.InvokeResponse> observer = (StreamObserver<CommonProtos.InvokeResponse>) invocation.getArguments()[1];
-      observer.onNext(CommonProtos.InvokeResponse.newBuilder().setData(getAny(resultObj)).build());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).invokeService(any(DaprProtos.InvokeServiceRequest.class), any());
-
-    Mono<Void> result = client.invokeMethod("appId", "method", (Object)null, HttpExtension.NONE);
-    result.block();
   }
 
   @Test
@@ -1429,7 +991,7 @@ public class DaprClientGrpcTest {
   @Test
   public void executeTransactionSerializerExceptionTest() throws IOException {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-    client = new DaprClientGrpc(channel, daprStub, mockSerializer, mockSerializer);
+    client = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, mockSerializer);
     String etag = "ETag1";
     String key = "key1";
     String data = "my data";
@@ -2520,5 +2082,66 @@ public class DaprClientGrpcTest {
             .build();
 
     return StatusProto.toStatusRuntimeException(status);
+  }
+
+  @Test
+  public void getMetadataTest() {
+
+    RegisteredComponents registeredComponents = DaprProtos.RegisteredComponents.newBuilder()
+        .setName("statestore")
+        .setType("state.redis")
+        .setVersion("v1")
+        .build();
+    PubsubSubscription pubsubSubscription = DaprProtos.PubsubSubscription.newBuilder()
+        .setDeadLetterTopic("")
+        .setPubsubName("pubsub")
+        .setTopic("topic")
+        .setRules(DaprProtos.PubsubSubscriptionRules.newBuilder()
+            .addRules(DaprProtos.PubsubSubscriptionRule.newBuilder().setPath("/events").build()).build())
+        .build();
+    DaprProtos.GetMetadataResponse responseEnvelope = DaprProtos.GetMetadataResponse.newBuilder()
+        .setId("app")
+        .setRuntimeVersion("1.1x.x")
+        .addAllRegisteredComponents(Collections.singletonList(registeredComponents))
+        .addAllSubscriptions(Collections.singletonList(pubsubSubscription))
+        .build();
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.GetMetadataResponse> observer = (StreamObserver<DaprProtos.GetMetadataResponse>) invocation
+          .getArguments()[1];
+      observer.onNext(responseEnvelope);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
+
+    Mono<DaprMetadata> result = client.getMetadata();
+    DaprMetadata metadata = result.block();
+    assertNotNull(metadata);
+    assertEquals("app", metadata.getId());
+    assertEquals("1.1x.x", metadata.getRuntimeVersion());
+    assertEquals(1, metadata.getComponents().size());
+    assertEquals(registeredComponents.getName(), metadata.getComponents().get(0).getName());
+    assertEquals(registeredComponents.getVersion(), metadata.getComponents().get(0).getVersion());
+    assertEquals(registeredComponents.getType(), metadata.getComponents().get(0).getType());
+    assertEquals(1, metadata.getSubscriptions().size());
+    assertEquals(pubsubSubscription.getPubsubName(), metadata.getSubscriptions().get(0).getPubsubname());
+    assertEquals(pubsubSubscription.getTopic(), metadata.getSubscriptions().get(0).getTopic());
+    assertEquals(1, metadata.getSubscriptions().get(0).getRules().size());
+    assertEquals(pubsubSubscription.getRules().getRules(0).getPath(), metadata.getSubscriptions().get(0).getRules().get(0).getPath());
+
+  }
+
+  @Test
+  public void getMetadataExceptionTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      throw new RuntimeException();
+    }).when(daprStub).getMetadata(any(DaprProtos.GetMetadataRequest.class), any());
+
+    Mono<DaprMetadata> result = client.getMetadata();
+
+    assertThrowsDaprException(
+        RuntimeException.class,
+        "UNKNOWN",
+        "UNKNOWN: ",
+        () -> result.block());
   }
 }

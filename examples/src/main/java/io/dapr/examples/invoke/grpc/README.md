@@ -61,7 +61,7 @@ In the `HelloWorldService.java` file, you will find the `HelloWorldService` clas
     /**
      * Handling of the 'sayHello' method.
      *
-     * @param request Request to say something.
+     * @param req Request to say something.
      * @return Response with when it was said.
      */
     @Override
@@ -93,27 +93,17 @@ The `app-id` argument is used to identify this service in Dapr's runtime. The `a
 
 ### Running the example's client
 
-The other component is the client. It will add user name to the grpc request and send it to the server. Open the `HelloWorldClient.java` file, it creates a new grpc channel and sends request directly to the dapr side car through this channel.
+The other component is the client. It will add user name to the grpc request and send it to the server. Open the `HelloWorldClient.java` file, it uses the DaprClient's grpc channel and sends request directly to the dapr side car through it, including necessary headers.
 
 ```java
 private static class HelloWorldClient {
 ///...
   public static void main(String[] args) throws Exception {
-
     String user = "World";
-    // Access a service running on the local machine on port 50051
-    String target = "localhost:50051";
-
-    ManagedChannel channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create())
-        .build();
-
-    try {
-      HelloWorldGrpc.HelloWorldBlockingStub blockingStub = HelloWorldGrpc.newBlockingStub(channel);
-
-      Metadata headers = new Metadata();
-      headers.put(Metadata.Key.of("dapr-app-id", Metadata.ASCII_STRING_MARSHALLER),
-          "hellogrpc");
-      blockingStub = MetadataUtils.attachHeaders(blockingStub, headers);
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      HelloWorldGrpc.HelloWorldBlockingStub blockingStub = HelloWorldGrpc.newBlockingStub(client.getGrpcChannel());
+      // Adds Dapr interceptors to populate gRPC metadata automatically.
+      blockingStub = DaprClientGrpcInterceptors.intercept("hellogrpc", blockingStub);
 
       logger.info("Will try to greet " + user + " ...");
       try {
@@ -123,10 +113,6 @@ private static class HelloWorldClient {
       } catch (StatusRuntimeException e) {
         logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
       }
-    } finally {
-      // To prevent leaking resources like threads and TCP connections
-      // the channel should be shut down when it will no longer be used.
-      channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
   }
 ///...

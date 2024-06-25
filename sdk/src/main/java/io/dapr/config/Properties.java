@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.config;
 
-import io.dapr.client.DaprApiProtocol;
 import io.dapr.utils.NetworkUtils;
 
 import java.nio.charset.Charset;
@@ -49,16 +48,6 @@ public class Properties {
    * Dapr's default timeout in seconds.
    */
   private static final Duration DEFAULT_API_TIMEOUT = Duration.ofMillis(0L);
-
-  /**
-   * Dapr's default use of gRPC or HTTP.
-   */
-  private static final DaprApiProtocol DEFAULT_API_PROTOCOL = DaprApiProtocol.GRPC;
-
-  /**
-   * Dapr's default use of gRPC or HTTP for Dapr's method invocation APIs.
-   */
-  private static final DaprApiProtocol DEFAULT_API_METHOD_INVOCATION_PROTOCOL = DaprApiProtocol.HTTP;
 
   /**
    * Dapr's default String encoding: UTF-8.
@@ -142,28 +131,6 @@ public class Properties {
       "dapr.api.timeoutMilliseconds",
       "DAPR_API_TIMEOUT_MILLISECONDS",
       DEFAULT_API_TIMEOUT);
-
-  /**
-   * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.
-   * @deprecated This attribute will be deleted at SDK version 1.10.
-   */
-  @Deprecated
-  public static final Property<DaprApiProtocol> API_PROTOCOL = new GenericProperty<>(
-      "dapr.api.protocol",
-      "DAPR_API_PROTOCOL",
-      DEFAULT_API_PROTOCOL,
-      (s) -> DaprApiProtocol.valueOf(s.toUpperCase()));
-
-  /**
-   * Determines if Dapr client should use gRPC or HTTP for Dapr's service method invocation APIs.
-   * @deprecated This attribute will be deleted at SDK version 1.10.
-   */
-  @Deprecated
-  public static final Property<DaprApiProtocol> API_METHOD_INVOCATION_PROTOCOL = new GenericProperty<>(
-      "dapr.api.methodInvocation.protocol",
-      "DAPR_API_METHOD_INVOCATION_PROTOCOL",
-      DEFAULT_API_METHOD_INVOCATION_PROTOCOL,
-      (s) -> DaprApiProtocol.valueOf(s.toUpperCase()));
 
   /**
    * API token for authentication between App and Dapr's side car.

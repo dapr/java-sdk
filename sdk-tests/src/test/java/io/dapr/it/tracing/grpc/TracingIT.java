@@ -1,9 +1,9 @@
 package io.dapr.it.tracing.grpc;
 
-import io.dapr.client.DaprApiProtocol;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.tracing.Validation;
@@ -12,8 +12,8 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -28,28 +28,20 @@ public class TracingIT extends BaseIT {
      */
     private DaprRun daprRun = null;
 
-    public void setup(boolean useGrpc) throws Exception {
+    @BeforeEach
+    public void setup() throws Exception {
         daprRun = startDaprApp(
           TracingIT.class.getSimpleName() + "grpc",
           Service.SUCCESS_MESSAGE,
           Service.class,
-          DaprApiProtocol.GRPC,  // appProtocol
+          AppRun.AppProtocol.GRPC,  // appProtocol
           60000);
-
-        if (useGrpc) {
-            daprRun.switchToGRPC();
-        } else {
-            daprRun.switchToHTTP();
-        }
 
         daprRun.waitForAppHealth(10000);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testInvoke(boolean useGrpc) throws Exception {
-        setup(useGrpc);
-
+    @Test
+    public void testInvoke() throws Exception {
         final OpenTelemetry openTelemetry = createOpenTelemetry("service over grpc");
         final Tracer tracer = openTelemetry.getTracer("grpc integration test tracer");
 

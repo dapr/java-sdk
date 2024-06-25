@@ -22,22 +22,24 @@ import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.ActorReminderDataParam;
 import io.dapr.it.actors.app.MyActorService;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static io.dapr.it.actors.MyActorTestUtils.*;
+import static io.dapr.it.actors.MyActorTestUtils.countMethodCalls;
+import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
+import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 
 public class ActorReminderRecoveryIT extends BaseIT {
 

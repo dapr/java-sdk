@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.configuration.grpc;
+package io.dapr.examples.configuration;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;

@@ -35,10 +35,10 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
+import static io.dapr.actors.TestUtils.formatIpAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import static io.dapr.actors.TestUtils.formatIpAddress;
 
 public class DaprHttpClientTest {
 

@@ -14,9 +14,9 @@ limitations under the License.
 package io.dapr.actors;
 
 import io.dapr.exceptions.DaprException;
+import org.apache.commons.validator.routines.InetAddressValidator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
-import org.apache.commons.validator.routines.InetAddressValidator;
 
 public final class TestUtils {
 

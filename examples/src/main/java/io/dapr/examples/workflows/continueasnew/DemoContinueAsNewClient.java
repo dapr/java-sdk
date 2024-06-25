@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.examples.workflows.continueasnew;
 
 import io.dapr.workflows.client.DaprWorkflowClient;
+
 import java.util.concurrent.TimeoutException;
 
 public class DemoContinueAsNewClient {

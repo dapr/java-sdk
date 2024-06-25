@@ -16,7 +16,7 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.client.DaprApiProtocol;
+import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
@@ -45,16 +45,14 @@ public class ActorStateIT extends BaseIT {
    */
   public static Stream<Arguments> data() {
     return Stream.of(
-                    Arguments.of(DaprApiProtocol.HTTP, DaprApiProtocol.HTTP ),
-                    Arguments.of(DaprApiProtocol.HTTP, DaprApiProtocol.GRPC ),
-                    Arguments.of(DaprApiProtocol.GRPC, DaprApiProtocol.HTTP ),
-                    Arguments.of(DaprApiProtocol.GRPC, DaprApiProtocol.GRPC )
+                    Arguments.of(AppRun.AppProtocol.HTTP ),
+                    Arguments.of(AppRun.AppProtocol.GRPC )
     );
   }
 
   @ParameterizedTest
   @MethodSource("data")
-  public void writeReadState(DaprApiProtocol daprClientProtocol, DaprApiProtocol serviceAppProtocol) throws Exception {
+  public void writeReadState(AppRun.AppProtocol serviceAppProtocol) throws Exception {
     logger.debug("Starting actor runtime ...");
     // The call below will fail if service cannot start successfully.
     DaprRun runtime = startDaprApp(
@@ -65,13 +63,11 @@ public class ActorStateIT extends BaseIT {
       60000,
       serviceAppProtocol);
 
-    runtime.switchToProtocol(daprClientProtocol);
-
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
     ActorId actorId = new ActorId(
-        String.format("%d-%b-%b", System.currentTimeMillis(), daprClientProtocol, serviceAppProtocol));
+        String.format("%d-%b", System.currentTimeMillis(), serviceAppProtocol));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder =
@@ -160,8 +156,6 @@ public class ActorStateIT extends BaseIT {
         true,
         60000,
         serviceAppProtocol);
-
-    runtime.switchToProtocol(daprClientProtocol);
 
     // Need new proxy builder because the proxy builder holds the channel.
     proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());

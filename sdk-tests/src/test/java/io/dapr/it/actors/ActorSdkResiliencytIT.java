@@ -75,10 +75,6 @@ public class ActorSdkResiliencytIT extends BaseIT {
             true,
             60000);
 
-    ActorId actorId = new ActorId(UUID.randomUUID().toString());
-
-    // HTTP client is deprecated, so SDK resiliency is for gRPC client only.
-    daprRun.switchToGRPC();
     demoActor = buildDemoActorProxy(null);
     daprClient = new DaprClientBuilder().build();
 

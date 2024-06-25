@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.configuration.grpc;
+package io.dapr.it.configuration;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
@@ -20,7 +20,6 @@ import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,10 +28,14 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigurationClientIT extends BaseIT {
 
@@ -65,7 +68,6 @@ public class ConfigurationClientIT extends BaseIT {
     @BeforeAll
     public static void init() throws Exception {
         daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
-        daprRun.switchToGRPC();
         daprClient = new DaprClientBuilder().build();
     }
 
@@ -198,6 +200,9 @@ public class ConfigurationClientIT extends BaseIT {
         try {
             process = processBuilder.start();
             process.waitFor();
+            if (process.exitValue() != 0) {
+                throw new RuntimeException("Not zero exit code for Redis command: " + process.exitValue());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {

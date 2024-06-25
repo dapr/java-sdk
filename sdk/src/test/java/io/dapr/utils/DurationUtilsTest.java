@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.utils;
 
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
