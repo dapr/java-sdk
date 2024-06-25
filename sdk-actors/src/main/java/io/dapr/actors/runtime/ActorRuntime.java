@@ -315,7 +315,7 @@ public class ActorRuntime implements Closeable {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   private static DaprClient buildDaprClient(ManagedChannel channel) {
-    return new DaprGrpcClient(channel);
+    return new DaprClientImpl(channel);
   }
 
   /**
