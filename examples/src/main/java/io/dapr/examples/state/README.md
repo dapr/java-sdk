@@ -179,7 +179,7 @@ sleep: 5
 
 Run this example with the following command:
 ```bash
-dapr run --components-path ./components/state --app-id state-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
+dapr run --resources-path ./components/state --app-id state-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
 
 <!-- END_STEP -->

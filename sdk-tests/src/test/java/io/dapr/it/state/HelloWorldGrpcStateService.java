@@ -27,7 +27,7 @@ import io.grpc.ManagedChannelBuilder;
  * Simple example.
  * To run manually, from repo root:
  * 1. mvn clean install
- * 2. dapr run --components-path ./components --dapr-grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.it.state.HelloWorldGrpcStateService -Dexec.classpathScope="test"  -pl=sdk
+ * 2. dapr run --resources-path ./components --dapr-grpc-port 50001 -- mvn exec:java -Dexec.mainClass=io.dapr.it.state.HelloWorldGrpcStateService -Dexec.classpathScope="test"  -pl=sdk
  */
 public class HelloWorldGrpcStateService {
 
