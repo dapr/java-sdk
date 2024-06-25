@@ -1266,12 +1266,13 @@ public class DaprClientImpl extends AbstractDaprClient {
     String id = response.getId();
     String runtimeVersion = response.getRuntimeVersion();
     List<String> enabledFeatures = response.getEnabledFeaturesList();
+    Map<String, String> attributes = response.getExtendedMetadataMap();
     List<ComponentMetadata> components = getComponents(response);
     List<HttpEndpointMetadata> httpEndpoints = getHttpEndpoints(response);
     List<SubscriptionMetadata> subscriptions = getSubscriptions(response);
     AppConnectionPropertiesMetadata appConnectionProperties = getAppConnectionProperties(response);
 
-    return new DaprMetadata(id, runtimeVersion, enabledFeatures, components, httpEndpoints, subscriptions,
+    return new DaprMetadata(id, runtimeVersion, enabledFeatures, attributes, components, httpEndpoints, subscriptions,
       appConnectionProperties);
   }
 
