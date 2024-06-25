@@ -39,8 +39,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static io.dapr.actors.TestUtils.assertThrowsDaprException;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DaprGrpcClientTest {
 
@@ -66,7 +68,7 @@ public class DaprGrpcClientTest {
 
     private final DaprGrpc.DaprImplBase serviceImpl = new CustomDaprClient();
 
-    private DaprGrpcClient client;
+    private DaprClientImpl client;
 
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
@@ -85,7 +87,7 @@ public class DaprGrpcClientTest {
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
         // Create a HelloWorldClient using the in-process channel;
-        client = new DaprGrpcClient(DaprGrpc.newStub(channel));
+        client = new DaprClientImpl(DaprGrpc.newStub(channel));
     }
 
     @Test

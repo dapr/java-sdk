@@ -37,7 +37,6 @@ public class GRPCStateClientIT extends AbstractStateClientIT {
   @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(GRPCStateClientIT.class.getSimpleName(), 5000);
-    daprRun.switchToGRPC();
     daprClient = new DaprClientBuilder().build();
   }
 

@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
@@ -34,11 +35,14 @@ import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.utils.TypeRef;
+import io.grpc.Channel;
+import io.grpc.stub.AbstractStub;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
@@ -658,6 +662,22 @@ public interface DaprClient extends AutoCloseable {
    * @return Mono of {@link UnsubscribeConfigurationResponse} instance.
    */
   Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request);
+
+  /**
+   * Returns a newly created gRPC stub with proper interceptors and channel for gRPC proxy invocation.
+   * @param appId appId to be included in all gRPC calls for service invocation.
+   * @param stubBuilder user-provided callback method to construct a new stub given the channel.
+   * @return the gRPC stub with proper interceptors and channel.
+   * @param <T> the generic type of the service to be invoked.
+   */
+  <T extends AbstractStub<T>> T newGrpcStub(String appId, Function<Channel, T> stubBuilder);
+
+  /**
+   * Fetches Dapr Metadata from the metadata endpoint.
+   *
+   * @return DaprMetadata containing Dapr Metadata from the metadata endpoint.
+   */
+  Mono<DaprMetadata> getMetadata();
 
   /**
    * Gracefully shutdown the dapr runtime.

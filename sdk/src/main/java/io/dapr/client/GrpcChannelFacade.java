@@ -13,18 +13,11 @@ limitations under the License.
 
 package io.dapr.client;
 
-import io.dapr.config.Properties;
-import io.dapr.exceptions.DaprException;
 import io.dapr.v1.DaprGrpc;
-import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
-import okhttp3.OkHttpClient;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Duration;
 
 /**
  * Facade for common operations on gRPC channel.
@@ -39,11 +32,6 @@ class GrpcChannelFacade implements Closeable {
    */
   private final ManagedChannel channel;
 
-  /**
-   * The reference to the DaprHttp client.
-   */
-  private final DaprHttp daprHttp;
-
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -51,75 +39,23 @@ class GrpcChannelFacade implements Closeable {
    * @param channel A Managed GRPC channel
    * @see DaprClientBuilder
    */
-  GrpcChannelFacade(ManagedChannel channel, DaprHttp daprHttp) {
+  GrpcChannelFacade(ManagedChannel channel) {
     this.channel = channel;
-    this.daprHttp = daprHttp;
+  }
+
+  /**
+   * Returns the gRPC channel to the sidecar.
+   * @return Sidecar's gRPC channel.
+   */
+  ManagedChannel getGrpcChannel() {
+    return this.channel;
   }
 
   @Override
   public void close() throws IOException {
-    if (daprHttp != null) {
-      daprHttp.close();
-    }
-    
     if (channel != null && !channel.isShutdown()) {
       channel.shutdown();
     }
   }
 
-  public Mono<Void> waitForChannelReady(int timeoutInMilliseconds) {
-    String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
-    int maxRetries = 5;
-
-    Retry retrySpec = Retry
-            .fixedDelay(maxRetries, Duration.ofMillis(500))
-            .doBeforeRetry(retrySignal -> {
-              System.out.println("Retrying component health check...");
-            });
-
-    /*
-    NOTE: (Cassie) Uncomment this once it actually gets implemented:
-    https://github.com/grpc/grpc-java/issues/4359
-
-    int maxChannelStateRetries = 5;
-
-    // Retry logic for checking the channel state
-    Retry channelStateRetrySpec = Retry
-            .fixedDelay(maxChannelStateRetries, Duration.ofMillis(500))
-            .doBeforeRetry(retrySignal -> {
-              System.out.println("Retrying channel state check...");
-            });
-    */
-
-    // Do the Dapr Http endpoint check to have parity with Dotnet
-    Mono<DaprHttp.Response> responseMono = this.daprHttp.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
-            null, "", null, null);
-
-    return responseMono
-            .retryWhen(retrySpec)
-            /*
-            NOTE: (Cassie) Uncomment this once it actually gets implemented:
-            https://github.com/grpc/grpc-java/issues/4359
-            .flatMap(response -> {
-              // Check the status code
-              int statusCode = response.getStatusCode();
-
-              // Check if the channel's state is READY
-              return Mono.defer(() -> {
-                if (this.channel.getState(true) == ConnectivityState.READY) {
-                  // Return true if the status code is in the 2xx range
-                  if (statusCode >= 200 && statusCode < 300) {
-                    return Mono.empty(); // Continue with the flow
-                  }
-                }
-                return Mono.error(new RuntimeException("Health check failed"));
-              }).retryWhen(channelStateRetrySpec);
-            })
-            */
-            .timeout(Duration.ofMillis(timeoutInMilliseconds))
-            .onErrorResume(DaprException.class, e ->
-                    Mono.error(new RuntimeException(e)))
-            .switchIfEmpty(DaprException.wrapMono(new RuntimeException("Health check timed out")))
-            .then();
-  }
 }

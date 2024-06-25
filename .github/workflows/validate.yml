@@ -37,9 +37,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.12.0
+      DAPR_CLI_VER: 1.13.0-rc.1
       DAPR_RUNTIME_VER: 1.13.0-rc.5
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.12.0/install/install.sh
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.13.0-rc.1/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
     steps:
@@ -100,10 +100,6 @@ jobs:
           echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
           pip3 install setuptools wheel
           pip3 install mechanical-markdown
-      - name: Install Local mongo database using docker-compose
-        run: |
-          docker-compose -f ./sdk-tests/deploy/local-test.yml up -d mongo
-          docker ps
       - name: Clean up files
         run: ./mvnw clean
       - name: Build sdk
@@ -146,14 +142,10 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/unittesting/README.md
-      - name: Validate Configuration gRPC API example
+      - name: Validate Configuration API example
         working-directory: ./examples
         run: |
-            mm.py ./src/main/java/io/dapr/examples/configuration/grpc/README.md
-      - name: Validate Configuration HTTP API example
-        working-directory: ./examples
-        run: |
-            mm.py ./src/main/java/io/dapr/examples/configuration/http/README.md
+            mm.py ./src/main/java/io/dapr/examples/configuration/README.md
       - name: Validate actors example
         working-directory: ./examples
         run: |

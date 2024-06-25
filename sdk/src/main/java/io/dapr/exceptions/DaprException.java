@@ -13,7 +13,9 @@ limitations under the License.
 
 package io.dapr.exceptions;
 
+import com.google.rpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.protobuf.StatusProto;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,26 +32,32 @@ public class DaprException extends RuntimeException {
   /**
    * Dapr's error code for this exception.
    */
-  private String errorCode;
+  private final String errorCode;
 
   /**
    * The status details for the error.
    */
-  private DaprErrorDetails errorDetails;
+  private final DaprErrorDetails errorDetails;
 
   /**
    * Optional payload, if the exception came from a response body.
    */
-  private byte[] payload;
+  private final byte[] payload;
+
+  /**
+   * Optional HTTP status code, if error happened for an HTTP call (0 if not set).
+   */
+  private final int httpStatusCode;
 
   /**
    * New exception from a server-side generated error code and message.
    *
    * @param daprError Server-side error.
-   * @param payload Payload containing the error.
+   * @param payload Optional payload containing the error.
+   * @param httpStatusCode Optional http Status Code (0 if not set).
    */
-  public DaprException(DaprError daprError, byte[] payload) {
-    this(daprError.getErrorCode(), daprError.getMessage(), daprError.getDetails(), payload);
+  public DaprException(DaprError daprError, byte[] payload, int httpStatusCode) {
+    this(daprError.getErrorCode(), daprError.getMessage(), daprError.getDetails(), payload, httpStatusCode);
   }
 
   /**
@@ -77,10 +85,11 @@ public class DaprException extends RuntimeException {
    *
    * @param errorCode Client-side error code.
    * @param message   Client-side error message.
-   * @param payload   Error's raw payload.
+   * @param payload Optional payload containing the error.
+   * @param httpStatusCode Optional http Status Code (0 if not set).
    */
-  public DaprException(String errorCode, String message, byte[] payload) {
-    this(errorCode, message, DaprErrorDetails.EMPTY_INSTANCE, payload);
+  public  DaprException(String errorCode, String message, byte[] payload, int httpStatusCode) {
+    this(errorCode, message, DaprErrorDetails.EMPTY_INSTANCE, payload, httpStatusCode);
   }
 
   /**
@@ -89,10 +98,12 @@ public class DaprException extends RuntimeException {
    * @param errorCode Client-side error code.
    * @param message   Client-side error message.
    * @param errorDetails Details of the error from runtime.
-   * @param payload Payload containing the error.
+   * @param payload Optional payload containing the error.
+   * @param httpStatusCode Optional http Status Code (0 if not set).
    */
-  public DaprException(String errorCode, String message, List<Map<String, Object>> errorDetails, byte[] payload) {
-    this(errorCode, message, new DaprErrorDetails(errorDetails), payload);
+  public DaprException(
+      String errorCode, String message, List<Map<String, Object>> errorDetails, byte[] payload, int httpStatusCode) {
+    this(errorCode, message, new DaprErrorDetails(errorDetails), payload, httpStatusCode);
   }
 
   /**
@@ -101,10 +112,29 @@ public class DaprException extends RuntimeException {
    * @param errorCode Client-side error code.
    * @param message   Client-side error message.
    * @param errorDetails Details of the error from runtime.
-   * @param payload Payload containing the error.
+   * @param payload Optional payload containing the error.
    */
   public DaprException(String errorCode, String message, DaprErrorDetails errorDetails, byte[] payload) {
-    super(String.format("%s: %s", errorCode, message));
+    this(errorCode, message, errorDetails, payload, 0);
+  }
+
+  /**
+   * New Exception from a client-side generated error code and message.
+   *
+   * @param errorCode Client-side error code.
+   * @param message   Client-side error message.
+   * @param errorDetails Details of the error from runtime.
+   * @param payload Optional payload containing the error.
+   * @param httpStatusCode Optional http Status Code (0 if not set).
+   */
+  public DaprException(
+      String errorCode,
+      String message,
+      DaprErrorDetails errorDetails,
+      byte[] payload,
+      int httpStatusCode) {
+    super(buildErrorMessage(errorCode, httpStatusCode, message));
+    this.httpStatusCode = httpStatusCode;
     this.errorCode = errorCode;
     this.errorDetails = errorDetails;
     this.payload = payload;
@@ -120,8 +150,11 @@ public class DaprException extends RuntimeException {
    *                  unknown.)
    */
   public DaprException(String errorCode, String message, Throwable cause) {
-    super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
+    super(buildErrorMessage(errorCode, 0, message), cause);
+    this.httpStatusCode = 0;
     this.errorCode = errorCode;
+    this.errorDetails = DaprErrorDetails.EMPTY_INSTANCE;
+    this.payload = null;
   }
 
   /**
@@ -137,7 +170,8 @@ public class DaprException extends RuntimeException {
    */
   public DaprException(
       String errorCode, String message, Throwable cause, DaprErrorDetails errorDetails, byte[] payload) {
-    super(String.format("%s: %s", errorCode, emptyIfNull(message)), cause);
+    super(buildErrorMessage(errorCode, 0, message), cause);
+    this.httpStatusCode = 0;
     this.errorCode = errorCode;
     this.errorDetails = errorDetails == null ? DaprErrorDetails.EMPTY_INSTANCE : errorDetails;
     this.payload = payload;
@@ -168,6 +202,15 @@ public class DaprException extends RuntimeException {
    */
   public byte[] getPayload() {
     return this.payload == null ? null : this.payload.clone();
+  }
+
+  /**
+   * Returns the exception's http status code, 0 if not applicable.
+   *
+   * @return Http status code (0 if not applicable).
+   */
+  public int getHttpStatusCode() {
+    return this.httpStatusCode;
   }
 
   /**
@@ -266,7 +309,7 @@ public class DaprException extends RuntimeException {
     while (e != null) {
       if (e instanceof StatusRuntimeException) {
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) e;
-        com.google.rpc.Status status = io.grpc.protobuf.StatusProto.fromThrowable(statusRuntimeException);
+        Status status = StatusProto.fromThrowable(statusRuntimeException);
 
         DaprErrorDetails errorDetails  = new DaprErrorDetails(status);
 
@@ -289,11 +332,18 @@ public class DaprException extends RuntimeException {
     return new DaprException(exception);
   }
 
-  private static String emptyIfNull(String str) {
-    if (str == null) {
-      return "";
+  private static String buildErrorMessage(String errorCode, int httpStatusCode, String message) {
+    String result = ((errorCode == null) || errorCode.isEmpty()) ? "UNKNOWN: " : errorCode + ": ";
+    if ((message == null) || message.isEmpty()) {
+      if (httpStatusCode > 0) {
+        return result + "HTTP status code: " + httpStatusCode;
+      }
+      return result;
     }
 
-    return str;
+    if (httpStatusCode > 0) {
+      return result + message + " (HTTP status code: " + httpStatusCode + ")";
+    }
+    return result + message;
   }
 }

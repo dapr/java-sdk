@@ -25,7 +25,7 @@ import java.util.Map;
  * 2. cd to [repo-root]/examples
  * 3. Creating a JSON secret file that contains two keys: redisPassword and randomKey locally:
  * 4. Read secret from example:
- * dapr run --components-path ./components/secrets -- \
+ * dapr run --resources-path ./components/secrets -- \
  * java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient \
  * localSecretStore redisPassword randomKey
  */

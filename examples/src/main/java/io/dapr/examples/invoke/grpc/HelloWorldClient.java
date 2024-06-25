@@ -13,17 +13,13 @@ limitations under the License.
 
 package io.dapr.examples.invoke.grpc;
 
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
 import io.dapr.examples.DaprExamplesProtos.HelloReply;
 import io.dapr.examples.DaprExamplesProtos.HelloRequest;
 import io.dapr.examples.HelloWorldGrpc;
-import io.grpc.Grpc;
-import io.grpc.InsecureChannelCredentials;
-import io.grpc.ManagedChannel;
-import io.grpc.Metadata;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.MetadataUtils;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,22 +41,11 @@ public class HelloWorldClient {
    * @param args Array of messages to be sent.
    */
   public static void main(String[] args) throws Exception {
-
     String user = "World";
-    String target = "localhost:" + System.getenv("DAPR_GRPC_PORT");
-
-    ManagedChannel channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create())
-        .build();
-
-    try {
-      HelloWorldGrpc.HelloWorldBlockingStub blockingStub = HelloWorldGrpc.newBlockingStub(channel);
-
-      Metadata headers = new Metadata();
-      headers.put(Metadata.Key.of("dapr-app-id", Metadata.ASCII_STRING_MARSHALLER),
-          "hellogrpc");
-
-      // MetadataUtils.attachHeaders is deprecated.
-      blockingStub = blockingStub.withInterceptors(MetadataUtils.newAttachHeadersInterceptor(headers));
+    try (DaprClient client = new DaprClientBuilder().build()) {
+      HelloWorldGrpc.HelloWorldBlockingStub blockingStub = client.newGrpcStub(
+          "hellogrpc",
+          channel -> HelloWorldGrpc.newBlockingStub(channel));
 
       logger.info("Will try to greet " + user + " ...");
       try {
@@ -70,10 +55,6 @@ public class HelloWorldClient {
       } catch (StatusRuntimeException e) {
         logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
       }
-    } finally {
-      // To prevent leaking resources like threads and TCP connections
-      // the channel should be shut down when it will no longer be used.
-      channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
   }
 }

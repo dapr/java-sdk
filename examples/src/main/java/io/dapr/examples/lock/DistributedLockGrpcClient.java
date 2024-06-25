@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.lock.http;
+package io.dapr.examples.lock;
 
 
 import io.dapr.client.DaprClientBuilder;
@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 /**
  * DistributedLockGrpcClient.
  */
-public class DistributedLockHttpClient {
+public class DistributedLockGrpcClient {
   private static final String LOCK_STORE_NAME = "lockstore";
 
   /**
