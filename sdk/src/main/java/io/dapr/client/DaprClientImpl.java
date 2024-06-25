@@ -20,7 +20,9 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
@@ -36,11 +38,13 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.SubscriptionMetadata;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
@@ -58,6 +62,10 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.PubsubSubscription;
+import io.dapr.v1.DaprProtos.PubsubSubscriptionRule;
+import io.dapr.v1.DaprProtos.RegisteredComponents;
+import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
@@ -118,7 +126,8 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   /**
-   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   * Default access level constructor, in order to create an instance of this 
+   * class use io.dapr.client.DaprClientBuilder
    *
    * @param channel           Facade for the managed GRPC channel
    * @param asyncStub         async gRPC stub
@@ -1169,8 +1178,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         key,
         configurationItem.getValue(),
         configurationItem.getVersion(),
-        configurationItem.getMetadataMap()
-    );
+        configurationItem.getMetadataMap());
   }
 
   /**
@@ -1230,5 +1238,44 @@ public class DaprClientImpl extends AbstractDaprClient {
         sink.complete();
       }
     };
+  }
+
+  @Override
+  public Mono<DaprMetadata> getMetadata() {
+    DaprProtos.GetMetadataRequest metadataRequest = DaprProtos.GetMetadataRequest.newBuilder().build();
+    return Mono.deferContextual(
+        context -> this.<DaprProtos.GetMetadataResponse>createMono(
+            it -> intercept(context, asyncStub).getMetadata(metadataRequest, it)))
+        .map(
+            it -> {
+              try {
+                return buildDaprMetadata(it);
+              } catch (IOException ex) {
+                throw DaprException.propagate(ex);
+              }
+            });
+  }
+
+  private DaprMetadata buildDaprMetadata(
+      DaprProtos.GetMetadataResponse response) throws IOException {
+    List<RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
+
+    List<ComponentMetadata> components = new ArrayList<>();
+    for (RegisteredComponents rc : registeredComponentsList) {
+      components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion()));
+    }
+
+    List<PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
+    List<SubscriptionMetadata> subscriptions = new ArrayList<>();
+    for (PubsubSubscription s : subscriptionsList) {
+      List<PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
+      List<RuleMetadata> rules = new ArrayList<>();
+      for (PubsubSubscriptionRule r : rulesList) {
+        rules.add(new RuleMetadata(r.getPath()));
+      }
+      subscriptions.add(new SubscriptionMetadata(s.getTopic(), s.getPubsubName(), s.getDeadLetterTopic(), rules));
+    }
+
+    return new DaprMetadata(response.getId(), response.getRuntimeVersion(), components, subscriptions);
   }
 }

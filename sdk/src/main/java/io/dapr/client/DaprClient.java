@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
@@ -670,6 +671,13 @@ public interface DaprClient extends AutoCloseable {
    * @param <T> the generic type of the service to be invoked.
    */
   <T extends AbstractStub<T>> T newGrpcStub(String appId, Function<Channel, T> stubBuilder);
+
+  /**
+   * Fetches Dapr Metadata from the metadata endpoint.
+   *
+   * @return DaprMetadata containing Dapr Metadata from the metadata endpoint.
+   */
+  Mono<DaprMetadata> getMetadata();
 
   /**
    * Gracefully shutdown the dapr runtime.
