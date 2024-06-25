@@ -16,6 +16,8 @@ package io.dapr.client;
 import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
+import io.dapr.client.domain.AppConnectionPropertiesMetadata;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -30,6 +32,7 @@ import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
@@ -62,6 +65,9 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.AppConnectionHealthProperties;
+import io.dapr.v1.DaprProtos.AppConnectionProperties;
+import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
 import io.dapr.v1.DaprProtos.PubsubSubscription;
 import io.dapr.v1.DaprProtos.PubsubSubscriptionRule;
 import io.dapr.v1.DaprProtos.RegisteredComponents;
@@ -1256,8 +1262,20 @@ public class DaprClientImpl extends AbstractDaprClient {
             });
   }
 
-  private DaprMetadata buildDaprMetadata(
-      DaprProtos.GetMetadataResponse response) throws IOException {
+  private DaprMetadata buildDaprMetadata(DaprProtos.GetMetadataResponse response) throws IOException {
+    String id = response.getId();
+    String runtimeVersion = response.getRuntimeVersion();
+    List<String> enabledFeatures = response.getEnabledFeaturesList();
+    List<ComponentMetadata> components = getComponents(response);
+    List<HttpEndpointMetadata> httpEndpoints = getHttpEndpoints(response);
+    List<SubscriptionMetadata> subscriptions = getSubscriptions(response);
+    AppConnectionPropertiesMetadata appConnectionProperties = getAppConnectionProperties(response);
+
+    return new DaprMetadata(id, runtimeVersion, enabledFeatures, components, httpEndpoints, subscriptions,
+      appConnectionProperties);
+  }
+
+  private List<ComponentMetadata> getComponents(DaprProtos.GetMetadataResponse response) {
     List<RegisteredComponents> registeredComponentsList = response.getRegisteredComponentsList();
 
     List<ComponentMetadata> components = new ArrayList<>();
@@ -1265,7 +1283,12 @@ public class DaprClientImpl extends AbstractDaprClient {
       components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion()));
     }
 
+    return components;
+  }
+
+  private List<SubscriptionMetadata> getSubscriptions(DaprProtos.GetMetadataResponse response) {
     List<PubsubSubscription> subscriptionsList = response.getSubscriptionsList();
+
     List<SubscriptionMetadata> subscriptions = new ArrayList<>();
     for (PubsubSubscription s : subscriptionsList) {
       List<PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
@@ -1276,6 +1299,45 @@ public class DaprClientImpl extends AbstractDaprClient {
       subscriptions.add(new SubscriptionMetadata(s.getTopic(), s.getPubsubName(), s.getDeadLetterTopic(), rules));
     }
 
-    return new DaprMetadata(response.getId(), response.getRuntimeVersion(), components, subscriptions);
+    return subscriptions;
   }
+
+  private List<HttpEndpointMetadata> getHttpEndpoints(DaprProtos.GetMetadataResponse response) {
+    List<MetadataHTTPEndpoint> httpEndpointsList = response.getHttpEndpointsList();
+
+    List<HttpEndpointMetadata> httpEndpoints = new ArrayList<>();
+    for (MetadataHTTPEndpoint m : httpEndpointsList) {
+      httpEndpoints.add(new HttpEndpointMetadata(m.getName()));
+    }
+
+    return httpEndpoints;
+  }
+
+  private AppConnectionPropertiesMetadata getAppConnectionProperties(DaprProtos.GetMetadataResponse response) {
+    AppConnectionProperties appConnectionProperties = response.getAppConnectionProperties();
+    int port = appConnectionProperties.getPort();
+    String protocol = appConnectionProperties.getProtocol();
+    String channelAddress = appConnectionProperties.getChannelAddress();
+    int maxConcurrency = appConnectionProperties.getMaxConcurrency();
+    AppConnectionPropertiesHealthMetadata health = getAppConnectionPropertiesHealth(appConnectionProperties);
+
+    return new AppConnectionPropertiesMetadata(port, protocol, channelAddress, maxConcurrency, health);
+  }
+
+  private AppConnectionPropertiesHealthMetadata getAppConnectionPropertiesHealth(
+      AppConnectionProperties appConnectionProperties) {
+    if (!appConnectionProperties.hasHealth()) {
+      return null;
+    }
+
+    AppConnectionHealthProperties health = appConnectionProperties.getHealth();
+    String healthCheckPath = health.getHealthCheckPath();
+    String healthProbeInterval = health.getHealthProbeInterval();
+    String healthProbeTimeout = health.getHealthProbeTimeout();
+    int healthThreshold = health.getHealthThreshold();
+
+    return new AppConnectionPropertiesHealthMetadata(healthCheckPath, healthProbeInterval, healthProbeTimeout,
+        healthThreshold);
+  }
+
 }

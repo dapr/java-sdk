@@ -22,25 +22,36 @@ import java.util.Objects;
  */
 public final class DaprMetadata {
 
-  private String id;
-  private String runtimeVersion;
-  private List<ComponentMetadata> components;
-  private List<SubscriptionMetadata> subscriptions;
+  private final String id;
+  private final String runtimeVersion;
+  private final List<String> enabledFeatures;
+  private final List<ComponentMetadata> components;
+  private final List<HttpEndpointMetadata> httpEndpoints;
+  private final List<SubscriptionMetadata> subscriptions;
+  private final AppConnectionPropertiesMetadata appConnectionProperties;
 
   /**
    * Constructor for a DaprMetadata.
    *
    * @param id of the application
    * @param runtimeVersion Dapr version
-   * @param components list of registered componnets
+   * @param enabledFeatures list of enabled features
+   * @param components list of registered components
+   * @param httpEndpoints list of registered http endpoints
    * @param subscriptions list of registered subscription
+   * @param appConnectionProperties connection properties of the application
    */
-  public DaprMetadata(String id, String runtimeVersion, List<ComponentMetadata> components,
-      List<SubscriptionMetadata> subscriptions) {
+  public DaprMetadata(String id, String runtimeVersion, List<String> enabledFeatures,
+      List<ComponentMetadata> components, List<HttpEndpointMetadata> httpEndpoints,
+      List<SubscriptionMetadata> subscriptions, AppConnectionPropertiesMetadata appConnectionProperties) {
     this.id = id;
     this.runtimeVersion = runtimeVersion;
+    this.enabledFeatures = enabledFeatures == null ? Collections.emptyList() :
+      Collections.unmodifiableList(enabledFeatures);
     this.components = components == null ? Collections.emptyList() : Collections.unmodifiableList(components);
+    this.httpEndpoints = httpEndpoints == null ? Collections.emptyList() : Collections.unmodifiableList(httpEndpoints);
     this.subscriptions = subscriptions == null ? Collections.emptyList() : Collections.unmodifiableList(subscriptions);
+    this.appConnectionProperties = appConnectionProperties;
   }
 
   public String getId() {
@@ -51,12 +62,24 @@ public final class DaprMetadata {
     return runtimeVersion;
   }
 
+  public List<String> getEnabledFeatures() {
+    return enabledFeatures;
+  }
+
   public List<ComponentMetadata> getComponents() {
     return components;
   }
 
+  public List<HttpEndpointMetadata> getHttpEndpoints() {
+    return httpEndpoints;
+  }
+
   public List<SubscriptionMetadata> getSubscriptions() {
     return subscriptions;
+  }
+
+  public AppConnectionPropertiesMetadata getAppConnectionProperties() {
+    return appConnectionProperties;
   }
   
 }
