@@ -171,7 +171,7 @@ timeout_seconds: 90
 
 Now, execute the following script in order to run DemoActorService:
 ```sh
-dapr run --components-path ./components/actors --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
+dapr run --resources-path ./components/actors --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
 ```
 <!-- END_STEP -->
 ### Running the Actor client
@@ -252,7 +252,7 @@ timeout_seconds: 45
 
 
 ```sh
-dapr run --components-path ./components/actors --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
+dapr run --resources-path ./components/actors --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
 ```
 
 <!-- END_STEP -->
