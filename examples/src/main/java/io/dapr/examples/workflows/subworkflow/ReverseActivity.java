@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.examples.workflows.subworkflow;
 
-import io.dapr.examples.workflows.chain.ToUpperCaseActivity;
 import io.dapr.workflows.runtime.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowActivityContext;
 import org.slf4j.Logger;

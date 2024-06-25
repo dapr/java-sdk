@@ -14,32 +14,17 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A builder for the DaprClient,
  * Currently only gRPC and HTTP Client will be supported.
  */
 public class DaprClientBuilder {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(DaprClientBuilder.class);
-
-  /**
-   * Determine if this builder will create GRPC clients instead of HTTP clients.
-   */
-  private final DaprApiProtocol apiProtocol;
-
-  /**
-   * Determine if this builder will use HTTP client for service method invocation APIs.
-   */
-  private final DaprApiProtocol methodInvocationApiProtocol;
 
   /**
    * Builder for Dapr's HTTP Client.
@@ -70,8 +55,6 @@ public class DaprClientBuilder {
   public DaprClientBuilder() {
     this.objectSerializer = new DefaultObjectSerializer();
     this.stateSerializer = new DefaultObjectSerializer();
-    this.apiProtocol = Properties.API_PROTOCOL.get();
-    this.methodInvocationApiProtocol = Properties.API_METHOD_INVOCATION_PROTOCOL.get();
     this.daprHttpBuilder = new DaprHttpBuilder();
   }
 
@@ -129,15 +112,7 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   public DaprClient build() {
-    if (this.apiProtocol == DaprApiProtocol.HTTP) {
-      LOGGER.warn("HTTP client protocol is deprecated and will be removed in Dapr's Java SDK version 1.10.");
-    }
-
-    if (this.apiProtocol != this.methodInvocationApiProtocol) {
-      return new DaprClientProxy(buildDaprClient(this.apiProtocol), buildDaprClient(this.methodInvocationApiProtocol));
-    }
-
-    return buildDaprClient(this.apiProtocol);
+    return buildDaprClient();
   }
 
   /**
@@ -147,26 +122,7 @@ public class DaprClientBuilder {
    * @throws IllegalStateException if any required field is missing
    */
   public DaprPreviewClient buildPreviewClient() {
-    return (DaprPreviewClient) buildDaprClient(this.apiProtocol);
-  }
-
-  /**
-   * Creates an instance of a Dapr Client based on the chosen protocol.
-   *
-   * @param protocol Dapr API's protocol.
-   * @return the GRPC Client.
-   * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
-   */
-  private DaprClient buildDaprClient(DaprApiProtocol protocol) {
-    if (protocol == null) {
-      throw new IllegalStateException("Protocol is required.");
-    }
-
-    switch (protocol) {
-      case GRPC: return buildDaprClientGrpc();
-      case HTTP: return buildDaprClientHttp();
-      default: throw new IllegalStateException("Unsupported protocol: " + protocol.name());
-    }
+    return buildDaprClient();
   }
 
   /**
@@ -175,25 +131,17 @@ public class DaprClientBuilder {
    * @return the GRPC Client.
    * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
    */
-  private DaprClient buildDaprClientGrpc() {
+  private DaprClientImpl buildDaprClient() {
     final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel, this.daprHttpBuilder.build());
+    final DaprHttp daprHttp = this.daprHttpBuilder.build();
+    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    return new DaprClientGrpc(
+    return new DaprClientImpl(
         channelFacade,
         asyncStub,
+        daprHttp,
         this.objectSerializer,
         this.stateSerializer,
         this.resiliencyOptions);
   }
-
-  /**
-   * Creates and instance of DaprClient over HTTP.
-   *
-   * @return DaprClient over HTTP.
-   */
-  private DaprClient buildDaprClientHttp() {
-    return new DaprClientHttp(this.daprHttpBuilder.build(), this.objectSerializer, this.stateSerializer);
-  }
-
 }

@@ -2,7 +2,11 @@ package io.dapr.client.domain.query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.client.domain.query.filters.*;
+import io.dapr.client.domain.query.filters.AndFilter;
+import io.dapr.client.domain.query.filters.EqFilter;
+import io.dapr.client.domain.query.filters.Filter;
+import io.dapr.client.domain.query.filters.InFilter;
+import io.dapr.client.domain.query.filters.OrFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
