@@ -158,7 +158,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --components-path ./components/configuration --app-id configgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.ConfigurationClient
+dapr run --resources-path ./components/configuration --app-id configgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.ConfigurationClient
 ```
 
 <!-- END_STEP -->

@@ -12,7 +12,7 @@ limitations under the License.
 */
 package io.dapr.actors.runtime;
 
-import io.dapr.client.DaprHttp;
+import io.grpc.ManagedChannel;
 
 /**
  * Exposes useful methods for IT in DaprClientHttp.
@@ -20,10 +20,10 @@ import io.dapr.client.DaprHttp;
 public class DaprClientHttpUtils {
 
   public static void unregisterActorReminder(
-      DaprHttp client,
+      ManagedChannel channel,
       String actorType,
       String actorId,
-      String reminderName) throws Exception {
-    new DaprHttpClient(client).unregisterReminder(actorType, actorId, reminderName).block();
+      String reminderName) {
+    new DaprClientImpl(channel).unregisterReminder(actorType, actorId, reminderName).block();
   }
 }

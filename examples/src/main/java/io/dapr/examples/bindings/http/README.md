@@ -125,7 +125,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --components-path ./components/bindings --app-id inputbinding --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
+dapr run --resources-path ./components/bindings --app-id inputbinding --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
 ```
 
 <!-- END_STEP -->
@@ -195,7 +195,7 @@ sleep: 30
 -->
 
 ```bash
-dapr run --components-path ./components/bindings --app-id outputbinding -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
+dapr run --resources-path ./components/bindings --app-id outputbinding -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
 ```
 
 <!-- END_STEP -->

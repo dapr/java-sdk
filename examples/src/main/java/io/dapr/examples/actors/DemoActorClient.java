@@ -26,7 +26,7 @@ import java.util.List;
  * mvn clean install
  * 2. cd to [repo-root]/examples
  * 3. Run the client:
- * dapr run --components-path ./components/actors --app-id demoactorclient -- java -jar \
+ * dapr run --resources-path ./components/actors --app-id demoactorclient -- java -jar \
  * target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
  */
 public class DemoActorClient {

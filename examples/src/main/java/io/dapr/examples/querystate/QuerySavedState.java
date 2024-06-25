@@ -34,7 +34,7 @@ import java.util.Map;
  * mvn clean install
  * 2. cd [repo root]/examples
  * 3. send a message to be saved as state:
- * dapr run --components-path ./components/state -- \
+ * dapr run --resources-path ./components/state -- \
  *   java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar \
  *   io.dapr.examples.querystate.QuerySavedState 'my message'
  */

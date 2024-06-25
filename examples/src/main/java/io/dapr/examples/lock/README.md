@@ -58,7 +58,7 @@ sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/lock --app-id lockgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.lock.DistributedLockGrpcClient
+dapr run --resources-path ./components/lock --app-id lockgrpc --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.lock.DistributedLockGrpcClient
 ```
 
 <!-- END_STEP -->

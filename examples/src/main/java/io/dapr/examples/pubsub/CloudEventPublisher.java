@@ -29,7 +29,7 @@ import static java.util.Collections.singletonMap;
  * mvn clean install
  * 2. cd [repo root]/examples
  * 3. Run the program:
- * dapr run --components-path ./components/pubsub --app-id publisher -- \
+ * dapr run --resources-path ./components/pubsub --app-id publisher -- \
  *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.CloudEventPublisher
  */
 public class CloudEventPublisher {

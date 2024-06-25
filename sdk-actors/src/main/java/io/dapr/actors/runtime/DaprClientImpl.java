@@ -36,7 +36,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * A DaprClient over HTTP for Actor's runtime.
  */
-class DaprGrpcClient implements DaprClient {
+class DaprClientImpl implements DaprClient {
 
   /**
    * Use to handle internal serialization.
@@ -60,7 +60,7 @@ class DaprGrpcClient implements DaprClient {
    *
    * @param channel channel (client needs to close channel after use).
    */
-  DaprGrpcClient(ManagedChannel channel) {
+  DaprClientImpl(ManagedChannel channel) {
     this(DaprGrpc.newStub(channel));
   }
 
@@ -69,7 +69,7 @@ class DaprGrpcClient implements DaprClient {
    *
    * @param daprStubClient Dapr's GRPC client.
    */
-  DaprGrpcClient(DaprGrpc.DaprStub daprStubClient) {
+  DaprClientImpl(DaprGrpc.DaprStub daprStubClient) {
     this.client = daprStubClient;
   }
 

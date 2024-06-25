@@ -68,7 +68,7 @@ public class DaprGrpcClientTest {
 
     private final DaprGrpc.DaprImplBase serviceImpl = new CustomDaprClient();
 
-    private DaprGrpcClient client;
+    private DaprClientImpl client;
 
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
@@ -87,7 +87,7 @@ public class DaprGrpcClientTest {
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
         // Create a HelloWorldClient using the in-process channel;
-        client = new DaprGrpcClient(DaprGrpc.newStub(channel));
+        client = new DaprClientImpl(DaprGrpc.newStub(channel));
     }
 
     @Test
