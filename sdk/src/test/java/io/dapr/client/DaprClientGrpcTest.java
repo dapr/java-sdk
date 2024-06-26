@@ -16,13 +16,32 @@ package io.dapr.client;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import io.dapr.client.domain.*;
+import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
+import io.dapr.client.domain.AppConnectionPropertiesMetadata;
+import io.dapr.client.domain.ComponentMetadata;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.DaprMetadata;
+import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.GetBulkStateRequest;
+import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.PublishEventRequest;
+import io.dapr.client.domain.RuleMetadata;
+import io.dapr.client.domain.State;
+import io.dapr.client.domain.StateOptions;
+import io.dapr.client.domain.SubscribeConfigurationResponse;
+import io.dapr.client.domain.SubscriptionMetadata;
+import io.dapr.client.domain.TransactionalStateOperation;
+import io.dapr.client.domain.UnsubscribeConfigurationRequest;
+import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.ActiveActorsCount;
+import io.dapr.v1.DaprProtos.ActorRuntime;
 import io.dapr.v1.DaprProtos.AppConnectionHealthProperties;
 import io.dapr.v1.DaprProtos.AppConnectionProperties;
 import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
@@ -2076,6 +2095,15 @@ public class DaprClientGrpcTest {
 
   @Test
   public void getMetadataTest() {
+    ActiveActorsCount activeActorsCount = DaprProtos.ActiveActorsCount.newBuilder()
+        .setType("actor")
+        .setCount(1)
+        .build();
+
+    ActorRuntime actorRuntime = DaprProtos.ActorRuntime.newBuilder()
+        .addActiveActors(activeActorsCount)
+        .build();
+
     RegisteredComponents registeredComponents = DaprProtos.RegisteredComponents.newBuilder()
         .setName("statestore")
         .setType("state.redis")
@@ -2112,11 +2140,11 @@ public class DaprClientGrpcTest {
         .setHealth(healthProperties)
         .build();
 
-
     DaprProtos.GetMetadataResponse responseEnvelope = DaprProtos.GetMetadataResponse.newBuilder()
         .setId("app")
         .setRuntimeVersion("1.1x.x")
         .addAllEnabledFeatures(Collections.emptyList())
+        .setActorRuntime(actorRuntime)
         .putAllExtendedMetadata(Collections.emptyMap())
         .addAllRegisteredComponents(Collections.singletonList(registeredComponents))
         .addAllHttpEndpoints(Collections.singletonList(httpEndpoint))
@@ -2141,20 +2169,37 @@ public class DaprClientGrpcTest {
     assertEquals(0, metadata.getEnabledFeatures().size());
     assertEquals(0, metadata.getAttributes().size());
 
+    // Actors
+    assertEquals(1, metadata.getActors().size());
+    assertEquals(activeActorsCount.getType(), metadata.getActors().get(0).getType());
+    assertEquals(activeActorsCount.getCount(), metadata.getActors().get(0).getCount());
+
     // Components
     assertEquals(1, metadata.getComponents().size());
-    assertEquals(registeredComponents.getName(), metadata.getComponents().get(0).getName());
-    assertEquals(registeredComponents.getVersion(), metadata.getComponents().get(0).getVersion());
-    assertEquals(registeredComponents.getType(), metadata.getComponents().get(0).getType());
+
+    ComponentMetadata componentMetadata = metadata.getComponents().get(0);
+
+    assertEquals(registeredComponents.getName(), componentMetadata.getName());
+    assertEquals(registeredComponents.getVersion(), componentMetadata.getVersion());
+    assertEquals(registeredComponents.getType(), componentMetadata.getType());
+    assertEquals(registeredComponents.getCapabilitiesList(), componentMetadata.getCapabilities());
 
     // Subscriptions
     assertEquals(1, metadata.getSubscriptions().size());
-    assertEquals(pubsubSubscription.getPubsubName(), metadata.getSubscriptions().get(0).getPubsubname());
-    assertEquals(pubsubSubscription.getTopic(), metadata.getSubscriptions().get(0).getTopic());
+
+    SubscriptionMetadata subscriptionMetadata = metadata.getSubscriptions().get(0);
+
+    assertEquals(pubsubSubscription.getPubsubName(), subscriptionMetadata.getPubsubname());
+    assertEquals(pubsubSubscription.getTopic(), subscriptionMetadata.getTopic());
+    assertEquals(pubsubSubscription.getDeadLetterTopic(), subscriptionMetadata.getDeadLetterTopic());
 
     // Subscription Rules
-    assertEquals(1, metadata.getSubscriptions().get(0).getRules().size());
-    assertEquals(pubsubSubscription.getRules().getRules(0).getPath(), metadata.getSubscriptions().get(0).getRules().get(0).getPath());
+    assertEquals(1, subscriptionMetadata.getRules().size());
+
+    RuleMetadata ruleMetadata = subscriptionMetadata.getRules().get(0);
+
+    assertEquals(pubsubSubscription.getRules().getRules(0).getMatch(), ruleMetadata.getMatch());
+    assertEquals(pubsubSubscription.getRules().getRules(0).getPath(), ruleMetadata.getPath());
 
     // HTTP Endpoints
     assertEquals(1, metadata.getHttpEndpoints().size());

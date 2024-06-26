@@ -25,6 +25,7 @@ public final class DaprMetadata {
   private final String id;
   private final String runtimeVersion;
   private final List<String> enabledFeatures;
+  private final List<ActorMetadata> actors;
   private final Map<String, String> attributes;
   private final List<ComponentMetadata> components;
   private final List<HttpEndpointMetadata> httpEndpoints;
@@ -37,19 +38,21 @@ public final class DaprMetadata {
    * @param id of the application
    * @param runtimeVersion Dapr version
    * @param enabledFeatures list of enabled features
+   * @param actors list of registered features
    * @param attributes map of extended attributes
    * @param components list of registered components
    * @param httpEndpoints list of registered http endpoints
    * @param subscriptions list of registered subscription
    * @param appConnectionProperties connection properties of the application
    */
-  public DaprMetadata(String id, String runtimeVersion, List<String> enabledFeatures, Map<String, String> attributes,
-      List<ComponentMetadata> components, List<HttpEndpointMetadata> httpEndpoints,
+  public DaprMetadata(String id, String runtimeVersion, List<String> enabledFeatures, List<ActorMetadata> actors,
+      Map<String, String> attributes, List<ComponentMetadata> components, List<HttpEndpointMetadata> httpEndpoints,
       List<SubscriptionMetadata> subscriptions, AppConnectionPropertiesMetadata appConnectionProperties) {
     this.id = id;
     this.runtimeVersion = runtimeVersion;
     this.enabledFeatures = enabledFeatures == null ? Collections.emptyList() :
       Collections.unmodifiableList(enabledFeatures);
+    this.actors = actors == null ? Collections.emptyList() : Collections.unmodifiableList(actors);
     this.attributes = attributes == null ? Collections.emptyMap() : Collections.unmodifiableMap(attributes);
     this.components = components == null ? Collections.emptyList() : Collections.unmodifiableList(components);
     this.httpEndpoints = httpEndpoints == null ? Collections.emptyList() : Collections.unmodifiableList(httpEndpoints);
@@ -67,6 +70,10 @@ public final class DaprMetadata {
 
   public List<String> getEnabledFeatures() {
     return enabledFeatures;
+  }
+
+  public List<ActorMetadata> getActors() {
+    return actors;
   }
 
   public Map<String, String> getAttributes() {
