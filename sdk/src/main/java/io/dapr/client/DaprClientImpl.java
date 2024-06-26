@@ -1313,7 +1313,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       for (PubsubSubscriptionRule r : rulesList) {
         rules.add(new RuleMetadata(r.getMatch(), r.getPath()));
       }
-      subscriptions.add(new SubscriptionMetadata(s.getPubsubName(), s.getTopic(), rules, s.getDeadLetterTopic()));
+      subscriptions.add(new SubscriptionMetadata(s.getPubsubName(), s.getTopic(), s.getMetadataMap(), rules,
+          s.getDeadLetterTopic()));
     }
 
     return subscriptions;

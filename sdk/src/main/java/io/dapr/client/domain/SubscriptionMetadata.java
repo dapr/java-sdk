@@ -15,6 +15,7 @@ package io.dapr.client.domain;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SubscriptionMetadata describes the Subscription Metadata.
@@ -23,6 +24,7 @@ public final class SubscriptionMetadata {
 
   private final String pubsubname;
   private final String topic;
+  private final Map<String, String> metadata;
   private final List<RuleMetadata> rules;
   private final String deadLetterTopic;
 
@@ -31,12 +33,15 @@ public final class SubscriptionMetadata {
    *
    * @param pubsubname component name
    * @param topic of the pubsub component
+   * @param metadata of the pubsub component
    * @param rules subscription path rules
    * @param deadLetterTopic dead letter topic
    */
-  public SubscriptionMetadata(String pubsubname, String topic, List<RuleMetadata> rules, String deadLetterTopic) {
+  public SubscriptionMetadata(String pubsubname, String topic, Map<String, String> metadata, List<RuleMetadata> rules,
+      String deadLetterTopic) {
     this.pubsubname = pubsubname;
     this.topic = topic;
+    this.metadata = metadata == null ? Collections.emptyMap() : Collections.unmodifiableMap(metadata);
     this.rules = rules == null ? Collections.emptyList() : Collections.unmodifiableList(rules);
     this.deadLetterTopic = deadLetterTopic;
   }
@@ -47,6 +52,10 @@ public final class SubscriptionMetadata {
 
   public String getTopic() {
     return topic;
+  }
+
+  public Map<String, String> getMetadata() {
+    return metadata;
   }
 
   public List<RuleMetadata> getRules() {
