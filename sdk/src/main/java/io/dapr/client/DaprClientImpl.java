@@ -16,6 +16,7 @@ package io.dapr.client;
 import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
 import io.dapr.client.domain.BulkPublishEntry;
@@ -65,6 +66,8 @@ import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.dapr.v1.DaprProtos.ActiveActorsCount;
+import io.dapr.v1.DaprProtos.ActorRuntime;
 import io.dapr.v1.DaprProtos.AppConnectionHealthProperties;
 import io.dapr.v1.DaprProtos.AppConnectionProperties;
 import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
@@ -1266,14 +1269,27 @@ public class DaprClientImpl extends AbstractDaprClient {
     String id = response.getId();
     String runtimeVersion = response.getRuntimeVersion();
     List<String> enabledFeatures = response.getEnabledFeaturesList();
+    List<ActorMetadata> actors = getActors(response);
     Map<String, String> attributes = response.getExtendedMetadataMap();
     List<ComponentMetadata> components = getComponents(response);
     List<HttpEndpointMetadata> httpEndpoints = getHttpEndpoints(response);
     List<SubscriptionMetadata> subscriptions = getSubscriptions(response);
     AppConnectionPropertiesMetadata appConnectionProperties = getAppConnectionProperties(response);
 
-    return new DaprMetadata(id, runtimeVersion, enabledFeatures, attributes, components, httpEndpoints, subscriptions,
-      appConnectionProperties);
+    return new DaprMetadata(id, runtimeVersion, enabledFeatures, actors, attributes, components, httpEndpoints,
+      subscriptions, appConnectionProperties);
+  }
+
+  private List<ActorMetadata> getActors(DaprProtos.GetMetadataResponse response) {
+    ActorRuntime actorRuntime = response.getActorRuntime();
+    List<ActiveActorsCount> activeActorsList = actorRuntime.getActiveActorsList();
+
+    List<ActorMetadata> actors = new ArrayList<>();
+    for (ActiveActorsCount aac : activeActorsList) {
+      actors.add(new ActorMetadata(aac.getType(), aac.getCount()));
+    }
+
+    return actors;
   }
 
   private List<ComponentMetadata> getComponents(DaprProtos.GetMetadataResponse response) {
@@ -1281,7 +1297,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
     List<ComponentMetadata> components = new ArrayList<>();
     for (RegisteredComponents rc : registeredComponentsList) {
-      components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion()));
+      components.add(new ComponentMetadata(rc.getName(), rc.getType(), rc.getVersion(), rc.getCapabilitiesList()));
     }
 
     return components;
@@ -1295,9 +1311,10 @@ public class DaprClientImpl extends AbstractDaprClient {
       List<PubsubSubscriptionRule> rulesList = s.getRules().getRulesList();
       List<RuleMetadata> rules = new ArrayList<>();
       for (PubsubSubscriptionRule r : rulesList) {
-        rules.add(new RuleMetadata(r.getPath()));
+        rules.add(new RuleMetadata(r.getMatch(), r.getPath()));
       }
-      subscriptions.add(new SubscriptionMetadata(s.getTopic(), s.getPubsubName(), s.getDeadLetterTopic(), rules));
+      subscriptions.add(new SubscriptionMetadata(s.getPubsubName(), s.getTopic(), s.getMetadataMap(), rules,
+          s.getDeadLetterTopic()));
     }
 
     return subscriptions;
