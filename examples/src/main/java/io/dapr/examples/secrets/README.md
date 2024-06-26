@@ -123,7 +123,7 @@ sleep: 5
 -->
 
 ```bash
-dapr run --components-path ./components/secrets --app-id secrets1 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient localSecretStore redisPassword randomKey
+dapr run --resources-path ./components/secrets --app-id secrets1 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient localSecretStore redisPassword randomKey
 ```
 
 <!-- END_STEP -->
@@ -176,7 +176,7 @@ sleep: 5
 -->
 
 ```sh
-dapr run --components-path ./components/secrets --config ./src/main/java/io/dapr/examples/secrets/config.yaml --app-id secrets2 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient localSecretStore redisPassword randomKey
+dapr run --resources-path ./components/secrets --config ./src/main/java/io/dapr/examples/secrets/config.yaml --app-id secrets2 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.secrets.SecretClient localSecretStore redisPassword randomKey
 ```
 
 <!-- END_STEP --> 

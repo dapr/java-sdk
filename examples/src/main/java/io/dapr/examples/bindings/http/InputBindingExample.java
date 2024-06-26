@@ -25,7 +25,7 @@ import org.apache.commons.cli.Options;
  * mvn clean install
  * 2. cd to [repo-root]/examples
  * 3. Run :
- * dapr run --components-path ./components/bindings --app-id inputbinding --app-port 3000 \
+ * dapr run --resources-path ./components/bindings --app-id inputbinding --app-port 3000 \
  *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.InputBindingExample -p 3000
  */
 public class InputBindingExample {

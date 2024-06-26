@@ -22,7 +22,7 @@ import io.dapr.client.DaprClientBuilder;
  * mvn clean install
  * 2. cd to [repo-root]/examples
  * 3. Run the program:
- * dapr run --components-path ./components/bindings --app-id outputbinding \
+ * dapr run --resources-path ./components/bindings --app-id outputbinding \
  *   -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.bindings.http.OutputBindingExample
  */
 public class OutputBindingExample {
