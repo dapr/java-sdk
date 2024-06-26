@@ -15,48 +15,46 @@ package io.dapr.client.domain;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * SubscriptionMetadata describes the Subscription Metadata.
  */
 public final class SubscriptionMetadata {
-  private String topic;
-  private String pubsubname;
-  private String deadLetterTopic;
-  private List<RuleMetadata> rules;
+
+  private final String pubsubname;
+  private final String topic;
+  private final List<RuleMetadata> rules;
+  private final String deadLetterTopic;
 
   /**
    * Constructor for a SubscriptionMetadata.
    *
-   * @param topic of the pubsub component
    * @param pubsubname component name
-   * @param deadLetterTopic dead letter topic  
+   * @param topic of the pubsub component
    * @param rules subscription path rules
+   * @param deadLetterTopic dead letter topic
    */
-  public SubscriptionMetadata(String topic, String pubsubname, String deadLetterTopic, List<RuleMetadata> rules) {
-    this.topic = topic;
+  public SubscriptionMetadata(String pubsubname, String topic, List<RuleMetadata> rules, String deadLetterTopic) {
     this.pubsubname = pubsubname;
-    this.deadLetterTopic = deadLetterTopic;
+    this.topic = topic;
     this.rules = rules == null ? Collections.emptyList() : Collections.unmodifiableList(rules);
-  }
-
-  public String getTopic() {
-    return topic;
+    this.deadLetterTopic = deadLetterTopic;
   }
 
   public String getPubsubname() {
     return pubsubname;
   }
 
-
-  public String getDeadLetterTopic() {
-    return deadLetterTopic;
+  public String getTopic() {
+    return topic;
   }
-
 
   public List<RuleMetadata> getRules() {
     return rules;
+  }
+
+  public String getDeadLetterTopic() {
+    return deadLetterTopic;
   }
 
 }
