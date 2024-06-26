@@ -14,3 +14,13 @@ spec:
       value: "true"
 scopes:
   - actorstateit-statefulactorservice
+  - activationdeactivationit-demoactorservice
+  - actorexceptionit-myactorservice
+  - actormethodnameit-myactorservice
+  - actorreminderfailoveritone-myactorservice
+  - actorreminderfailoverittwo-myactorservice
+  - actorreminderrecoveryit
+  - actorsdkresiliencytit-demoactorservice
+  - actorstateit-statefulactorservice
+  - actortimerrecoveryit
+  - actorturnbasedconcurrencyit-myactorservice
