@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+/**
+ * AppConnectionPropertiesHealthMetadata describes the application health properties.
+ */
 public final class AppConnectionPropertiesHealthMetadata {
 
   private final String healthCheckPath;

@@ -14,23 +14,28 @@ limitations under the License.
 package io.dapr.client.domain;
 
 /**
- * HttpEndpointMetadata describes a registered Dapr HTTP endpoint.
+ * ActorMetadata describes a registered Dapr Actor.
  */
-public final class HttpEndpointMetadata {
-
-  private final String name;
+public final class ActorMetadata {
+  private final String type;
+  private final int count;
 
   /**
-   * Constructor for a HttpEndpointMetadata.
+   * Constructor for a ActorMetadata.
    *
-   * @param name of the HTTP endpoint
+   * @param type of the actor
+   * @param count number of actors of a particular type
    */
-  public HttpEndpointMetadata(String name) {
-    this.name = name;
+  public ActorMetadata(String type, int count) {
+    this.type = type;
+    this.count = count;
   }
 
-  public String getName() {
-    return name;
+  public String getType() {
+    return type;
   }
 
+  public int getCount() {
+    return count;
+  }
 }

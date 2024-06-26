@@ -13,16 +13,18 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-import java.util.Objects;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * ComponentMetadata describes a Dapr Component.
  */
 public final class ComponentMetadata {
 
-  private String name;
-  private String type;
-  private String version;
+  private final String name;
+  private final String type;
+  private final String version;
+  private final List<String> capabilities;
 
   /**
    * Constructor for a ComponentMetadata.
@@ -30,11 +32,13 @@ public final class ComponentMetadata {
    * @param name of the component
    * @param type component type
    * @param version version of the component
+   * @param capabilities capabilities of the component
    */
-  public ComponentMetadata(String name, String type, String version) {
+  public ComponentMetadata(String name, String type, String version, List<String> capabilities) {
     this.name = name;
     this.type = type;
     this.version = version;
+    this.capabilities = capabilities == null ? Collections.emptyList() : Collections.unmodifiableList(capabilities);
   }
 
   public String getName() {
@@ -48,5 +52,9 @@ public final class ComponentMetadata {
   public String getVersion() {
     return version;
   }
- 
+
+  public List<String> getCapabilities() {
+    return capabilities;
+  }
+
 }

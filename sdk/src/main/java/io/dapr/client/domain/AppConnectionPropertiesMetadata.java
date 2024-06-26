@@ -13,6 +13,9 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+/**
+ * AppConnectionPropertiesMetadata describes the application connection properties.
+ */
 public final class AppConnectionPropertiesMetadata {
 
   private final int port;
