@@ -24,21 +24,13 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17 ]
-        spring-boot-version: [ 3.0.13 ]
-        spring-boot-display-version: [ 3.0.x ]
+        spring-boot-version: [ 3.2.6 ]
+        spring-boot-display-version: [ 3.2.x ]
         experimental: [ false ]
         include:
           - java: 17
-            spring-boot-version: 2.7.18
-            spring-boot-display-version: 2.7.x
-            experimental: false
-          - java: 17
-            spring-boot-version: 2.6.14
-            spring-boot-display-version: 2.6.x
-            experimental: false
-          - java: 17
-            spring-boot-version: 2.5.7
-            spring-boot-display-version: 2.5.x
+            spring-boot-version: 3.3.0
+            spring-boot-display-version: 3.3.x
             experimental: false
     env:
       GOVER: "1.20"
