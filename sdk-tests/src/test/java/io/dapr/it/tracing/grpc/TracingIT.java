@@ -37,7 +37,7 @@ public class TracingIT extends BaseIT {
           AppRun.AppProtocol.GRPC,  // appProtocol
           60000);
 
-        daprRun.waitForAppHealth(60000);
+        daprRun.waitForAppHealth(10000);
     }
 
     @Test
