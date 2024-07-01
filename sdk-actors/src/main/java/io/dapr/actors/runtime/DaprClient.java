@@ -28,9 +28,9 @@ interface DaprClient {
    * @param actorType Type of actor.
    * @param actorId   Actor Identifier.
    * @param keyName   State name.
-   * @return Asynchronous result with current state value.
+   * @return Asynchronous result with current state.
    */
-  Mono<byte[]> getState(String actorType, String actorId, String keyName);
+  Mono<ActorState<byte[]>> getState(String actorType, String actorId, String keyName);
 
   /**
    * Saves state batch to Dapr.
