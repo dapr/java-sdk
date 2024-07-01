@@ -28,4 +28,5 @@ public class OpenTelemetryInterceptorConfig extends WebMvcConfigurationSupport {
   public void addInterceptors(InterceptorRegistry registry) {
     registry.addInterceptor(interceptor);
   }
+
 }
