@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import java.time.ZonedDateTime;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -467,6 +469,8 @@ public class ActorProxyImplTest {
 
     private MyData myData;
 
+    private ZonedDateTime date;
+
 
     public String getPropertyB() {
       return propertyB;
@@ -498,6 +502,14 @@ public class ActorProxyImplTest {
 
     public void setMyData(MyData myData) {
       this.myData = myData;
+    }
+
+    public ZonedDateTime getDate() {
+      return date;
+    }
+
+    public void setDate(ZonedDateTime date) {
+      this.date = date;
     }
   }
 
