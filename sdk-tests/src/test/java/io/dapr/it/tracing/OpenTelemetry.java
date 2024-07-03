@@ -14,11 +14,10 @@ limitations under the License.
 package io.dapr.it.tracing;
 
 import io.dapr.utils.NetworkUtils;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
@@ -41,11 +40,7 @@ public class OpenTelemetry {
   public static io.opentelemetry.api.OpenTelemetry createOpenTelemetry(String serviceName) throws InterruptedException {
     waitForZipkin();
     String httpUrl = String.format("http://localhost:%d", ZIPKIN_PORT);
-    ZipkinSpanExporter zipkinExporter =
-        ZipkinSpanExporter.builder()
-            .setEndpoint(httpUrl + ENDPOINT_V2_SPANS)
-            .setServiceName(serviceName)
-            .build();
+    ZipkinSpanExporter zipkinExporter = ZipkinSpanExporter.builder().setEndpoint(httpUrl + ENDPOINT_V2_SPANS).build();
 
     SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
         .addSpanProcessor(SimpleSpanProcessor.create(zipkinExporter))
@@ -54,15 +49,15 @@ public class OpenTelemetry {
     return OpenTelemetrySdk.builder()
         .setTracerProvider(sdkTracerProvider)
         .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-        .buildAndRegisterGlobal();
+        .build();
   }
 
   /**
    * Converts current OpenTelemetry's context into Reactor's context.
    * @return Reactor's context.
    */
-  public static reactor.util.context.Context getReactorContext() {
-    return getReactorContext(Context.current());
+  public static reactor.util.context.Context getReactorContext(io.opentelemetry.api.OpenTelemetry openTelemetry) {
+    return getReactorContext(openTelemetry, Context.current());
   }
 
   /**
@@ -70,12 +65,12 @@ public class OpenTelemetry {
    * @param context OpenTelemetry's context.
    * @return Reactor's context.
    */
-  public static reactor.util.context.Context getReactorContext(Context context) {
+  public static reactor.util.context.Context getReactorContext(io.opentelemetry.api.OpenTelemetry openTelemetry,
+      Context context) {
     Map<String, String> map = new HashMap<>();
-    TextMapPropagator.Setter<Map<String, String>> setter =
-        (carrier, key, value) -> map.put(key, value);
+    TextMapSetter<Map<String, String>> setter = (carrier, key, value) -> map.put(key, value);
 
-    GlobalOpenTelemetry.getPropagators().getTextMapPropagator().inject(context, map, setter);
+    openTelemetry.getPropagators().getTextMapPropagator().inject(context, map, setter);
     reactor.util.context.Context reactorContext = reactor.util.context.Context.empty();
     for (Map.Entry<String, String> entry : map.entrySet()) {
       reactorContext = reactorContext.put(entry.getKey(), entry.getValue());

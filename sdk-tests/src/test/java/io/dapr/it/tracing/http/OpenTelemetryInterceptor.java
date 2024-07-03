@@ -15,6 +15,7 @@ package io.dapr.it.tracing.http;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,9 +33,9 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
   @Autowired
   private OpenTelemetry openTelemetry;
 
-  // implmentation for springboot 3.0, which uses jakarta.servlet instead of javax.servlet
-  private static final TextMapPropagator.Getter<HttpServletRequest> JAKARTA_HTTP_SERVLET_REQUEST_GETTER =
-      new TextMapPropagator.Getter<>() {
+  // Implementation for springboot 3.0, which uses jakarta.servlet instead of javax.servlet
+  private static final TextMapGetter<HttpServletRequest> JAKARTA_HTTP_SERVLET_REQUEST_GETTER =
+      new TextMapGetter<>() {
         @Override
         public Iterable<String> keys(HttpServletRequest carrier) {
           return Collections.list(carrier.getHeaderNames());
@@ -67,9 +68,9 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
   }
 
   
-  // implmentation for springboot 3.0, which uses jakarta.servlet instead of javax.servlet
-  private static final TextMapPropagator.Getter<javax.servlet.http.HttpServletRequest> JAVA_HTTP_SERVLET_REQUEST_GETTER =
-      new TextMapPropagator.Getter<>() {
+  // Implementation for springboot 3.0, which uses jakarta.servlet instead of javax.servlet
+  private static final TextMapGetter<javax.servlet.http.HttpServletRequest> JAVA_HTTP_SERVLET_REQUEST_GETTER =
+      new TextMapGetter<>() {
         @Override
         public Iterable<String> keys(javax.servlet.http.HttpServletRequest carrier) {
           return Collections.list(carrier.getHeaderNames());
