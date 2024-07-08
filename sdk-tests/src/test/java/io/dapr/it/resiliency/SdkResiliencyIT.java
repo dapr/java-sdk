@@ -31,24 +31,23 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test SDK resiliency.
  */
-public class SdkResiliencytIT extends BaseIT {
+public class SdkResiliencyIT extends BaseIT {
 
   private static final int NUM_ITERATIONS = 35;
 
   private static final Duration TIMEOUT = Duration.ofMillis(100);
 
-  private static final Duration LATENCY = TIMEOUT.dividedBy(2);
+  private static final Duration LATENCY = TIMEOUT.dividedBy(3);
 
-  private static final Duration JITTER = TIMEOUT.multipliedBy(2);
+  private static final Duration JITTER = TIMEOUT.multipliedBy(3);
 
   private static final int MAX_RETRIES = -1;  // Infinity
-
-  private static DaprRun daprRun;
 
   private static DaprClient daprClient;
 
@@ -64,7 +63,7 @@ public class SdkResiliencytIT extends BaseIT {
 
   @BeforeAll
   public static void init() throws Exception {
-    daprRun = startDaprApp(SdkResiliencytIT.class.getSimpleName(), 5000);
+    DaprRun daprRun = startDaprApp(SdkResiliencyIT.class.getSimpleName(), 5000);
     daprClient = new DaprClientBuilder().build();
     daprClient.waitForSidecar(8000).block();
 
@@ -85,10 +84,10 @@ public class SdkResiliencytIT extends BaseIT {
                     new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1))
             .build();
 
-    assertTrue(daprClient instanceof DaprClientImpl);
-    assertTrue(daprToxiClient instanceof DaprClientImpl);
-    assertTrue(daprResilientClient instanceof DaprClientImpl);
-    assertTrue(daprRetriesOnceClient instanceof DaprClientImpl);
+    assertInstanceOf(DaprClientImpl.class, daprClient);
+    assertInstanceOf(DaprClientImpl.class, daprToxiClient);
+    assertInstanceOf(DaprClientImpl.class, daprResilientClient);
+    assertInstanceOf(DaprClientImpl.class, daprRetriesOnceClient);
   }
 
   @AfterAll
@@ -113,7 +112,7 @@ public class SdkResiliencytIT extends BaseIT {
   @Test
   public void retryAndTimeout() {
     AtomicInteger toxiClientErrorCount = new AtomicInteger();
-    AtomicInteger retryOneClientErrorCount = new AtomicInteger();
+    AtomicInteger retryOnceClientErrorCount = new AtomicInteger();
 
     while (true){
       for (int i = 0; i < NUM_ITERATIONS; i++) {
@@ -129,7 +128,7 @@ public class SdkResiliencytIT extends BaseIT {
           daprRetriesOnceClient.saveState(STATE_STORE_NAME, key, value).block();
         } catch (Exception e) {
           // This call should fail sometimes. So, we count.
-          retryOneClientErrorCount.incrementAndGet();
+          retryOnceClientErrorCount.incrementAndGet();
         }
 
         // We retry forever so that the call below should always work.
@@ -140,17 +139,17 @@ public class SdkResiliencytIT extends BaseIT {
       }
 
       // We should have at least one success per client, otherwise retry.
-      if(toxiClientErrorCount.get() < NUM_ITERATIONS && retryOneClientErrorCount.get() < NUM_ITERATIONS){
+      if(toxiClientErrorCount.get() < NUM_ITERATIONS && retryOnceClientErrorCount.get() < NUM_ITERATIONS){
         // This assertion makes sure that toxicity is on
-        assertTrue(toxiClientErrorCount.get() > 0);
-        assertTrue(retryOneClientErrorCount.get() > 0);
+        assertTrue(toxiClientErrorCount.get() > 0, "Toxi client error count is 0");
+        assertTrue(retryOnceClientErrorCount.get() > 0, "Retry once client error count is 0");
         // A client without retries should have more errors than a client with one retry.
-        assertTrue(toxiClientErrorCount.get() > retryOneClientErrorCount.get());
+        assertTrue(toxiClientErrorCount.get() > retryOnceClientErrorCount.get(),
+            "Toxi client error count is not greater than retry once client error count");
         break;
       }
       toxiClientErrorCount.set(0);
-      retryOneClientErrorCount.set(0);
+      retryOnceClientErrorCount.set(0);
     }
-
   }
 }
