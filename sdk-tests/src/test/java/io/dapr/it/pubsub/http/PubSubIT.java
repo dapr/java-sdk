@@ -500,16 +500,6 @@ public class PubSubIT extends BaseIT {
       public <T> T deserialize(byte[] data, TypeRef<T> type) {
         return (T) data;
       }
-) {
-      @Override
-      public byte[] serialize(Object o) {
-        return (byte[])o;
-      }
-
-      @Override
-      public <T> T deserialize(byte[] data, TypeRef<T> type) {
-        return (T) data;
-      }
 
       @Override
       public String getContentType() {
