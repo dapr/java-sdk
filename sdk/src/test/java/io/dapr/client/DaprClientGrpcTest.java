@@ -407,6 +407,27 @@ public class DaprClientGrpcTest {
   }
 
   @Test
+  public void invokeBindingListResponseObjectTypeRefTest() throws IOException {
+    List<MyObject> list = new ArrayList<>();
+    MyObject obj1 = new MyObject(1, "Object1");
+    MyObject obj2 = new MyObject(2, "Objet2");
+    list.add(obj1);
+    list.add(obj2);
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize(list));
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
+    Mono<List<MyObject>> result = client.invokeBindingList("BindingName", "MyOperation", null, null, TypeRef.get(MyObject.class));
+
+    assertEquals(list, result.block());
+  }
+
+  @Test
   public void invokeBindingObjectNoHotMono() throws IOException {
     AtomicBoolean called = new AtomicBoolean(false);
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =

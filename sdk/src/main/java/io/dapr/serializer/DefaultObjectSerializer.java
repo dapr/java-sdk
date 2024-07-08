@@ -13,10 +13,12 @@ limitations under the License.
 
 package io.dapr.serializer;
 
+import java.io.IOException;
+import java.util.List;
+
 import io.dapr.client.ObjectSerializer;
 import io.dapr.utils.TypeRef;
 
-import java.io.IOException;
 
 /**
  * Default serializer/deserializer for request/response objects and for state objects too.
@@ -37,6 +39,14 @@ public class DefaultObjectSerializer extends ObjectSerializer implements DaprObj
   @Override
   public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
     return super.deserialize(data, type);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> List<T> deserializeList(byte[] data, TypeRef<T> type) throws IOException {
+    return super.deserializeList(data, type);
   }
 
   /**

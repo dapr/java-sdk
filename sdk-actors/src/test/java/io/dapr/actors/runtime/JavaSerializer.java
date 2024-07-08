@@ -13,14 +13,15 @@ limitations under the License.
 
 package io.dapr.actors.runtime;
 
-import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.utils.TypeRef;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.List;
+
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.utils.TypeRef;
 
 /**
  * Class used to test different serializer implementations.
@@ -50,6 +51,22 @@ public class JavaSerializer implements DaprObjectSerializer {
       try (ObjectInputStream ois = new ObjectInputStream(bis)) {
         try {
           return (T) ois.readObject();
+        } catch (Exception e) {
+          throw new IOException("Could not deserialize Java object.", e);
+        }
+      }
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> List<T> deserializeList(byte[] data, TypeRef<T> type) throws IOException {
+    try (ByteArrayInputStream bis = new ByteArrayInputStream(data)) {
+      try (ObjectInputStream ois = new ObjectInputStream(bis)) {
+        try {
+          return (List<T>) ois.readObject();
         } catch (Exception e) {
           throw new IOException("Could not deserialize Java object.", e);
         }

@@ -457,6 +457,54 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
   }
 
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Mono<List<T>> invokeBindingList(InvokeBindingRequest request, TypeRef<T> type) {
+    try {
+      final String name = request.getName();
+      final String operation = request.getOperation();
+      final Object data = request.getData();
+      final Map<String, String> metadata = request.getMetadata();
+      if (name == null || name.trim().isEmpty()) {
+        throw new IllegalArgumentException("Binding name cannot be null or empty.");
+      }
+
+      if (operation == null || operation.trim().isEmpty()) {
+        throw new IllegalArgumentException("Binding operation cannot be null or empty.");
+      }
+
+      byte[] byteData = objectSerializer.serialize(data);
+      DaprProtos.InvokeBindingRequest.Builder builder = DaprProtos.InvokeBindingRequest.newBuilder()
+          .setName(name).setOperation(operation);
+      if (byteData != null) {
+        builder.setData(ByteString.copyFrom(byteData));
+      }
+      if (metadata != null) {
+        builder.putAllMetadata(metadata);
+      }
+      DaprProtos.InvokeBindingRequest envelope = builder.build();
+
+      return Mono.deferContextual(
+          context -> this.<DaprProtos.InvokeBindingResponse>createMono(
+              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+          )
+      ).flatMap(
+          it -> {
+            try {
+              return Mono.justOrEmpty(objectSerializer.deserializeList(it.getData().toByteArray(), type));
+            } catch (IOException e) {
+              throw DaprException.propagate(e);
+            }
+          }
+      );
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
   /**
    * {@inheritDoc}
    */

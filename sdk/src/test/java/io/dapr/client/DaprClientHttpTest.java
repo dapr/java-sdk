@@ -488,6 +488,11 @@ public class DaprClientHttpTest {
     }
 
     @Override
+    public <T> List<T> deserializeList(byte[] data, TypeRef<T> type) throws IOException {
+      return XML_MAPPER.readValue(data, new TypeReference<List<T>>() {});
+    }
+
+    @Override
     public String getContentType() {
       return "application/xml";
     }

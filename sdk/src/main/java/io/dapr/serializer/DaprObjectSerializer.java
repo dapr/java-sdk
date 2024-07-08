@@ -13,9 +13,10 @@ limitations under the License.
 
 package io.dapr.serializer;
 
-import io.dapr.utils.TypeRef;
-
 import java.io.IOException;
+import java.util.List;
+
+import io.dapr.utils.TypeRef;
 
 /**
  * Serializes and deserializes application's objects.
@@ -41,6 +42,17 @@ public interface DaprObjectSerializer {
    * @throws IOException If cannot deserialize object.
    */
   <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException;
+
+  /**
+   * Deserializes the given byte[] into a list of object.
+   *
+   * @param data Data to be deserialized.
+   * @param type Type of object to be deserialized.
+   * @param <T> Type of object to be deserialized.
+   * @return Deserialized List of objects.
+   * @throws IOException If cannot deserialize object.
+   */
+  <T> List<T> deserializeList(byte[] data, TypeRef<T> type) throws IOException;
 
   /**
    * Returns the content type of the request.

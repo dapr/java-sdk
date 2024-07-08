@@ -13,6 +13,10 @@ limitations under the License.
 
 package io.dapr.client;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteStateRequest;
@@ -39,10 +43,6 @@ import io.grpc.Channel;
 import io.grpc.stub.AbstractStub;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
@@ -299,7 +299,7 @@ public interface DaprClient extends AutoCloseable {
    */
   <T> Mono<T> invokeBinding(String bindingName, String operation, Object data, Map<String, String> metadata,
                             TypeRef<T> type);
-
+                        
   /**
    * Invokes a Binding operation.
    *
@@ -323,6 +323,30 @@ public interface DaprClient extends AutoCloseable {
    * @return a Mono plan of type T.
    */
   <T> Mono<T> invokeBinding(InvokeBindingRequest request, TypeRef<T> type);
+
+  /**
+   * Invokes a Binding operation that returns a List.
+   *
+   * @param request The binding invocation request.
+   * @param type    The type being returned.
+   * @param <T>     The type of the return
+   * @return a Mono plan of type List.
+   */
+  <T> Mono<List<T>> invokeBindingList(InvokeBindingRequest request, TypeRef<T> type);
+
+  /**
+   * Invokes a Binding operation and expect a list of objects as return.
+   *
+   * @param bindingName      The name of the biding to call.
+   * @param operation The operation to be performed by the binding request processor.
+   * @param data      The data to be processed, use byte[] to skip serialization.
+   * @param metadata  The metadata map.
+   * @param type      The type being returned.
+   * @param <T>       The type of the return
+   * @return a Mono plan of type List.
+   */
+  <T> Mono<List<T>> invokeBindingList(String bindingName, String operation, Object data, Map<String, String> metadata,
+                            TypeRef<T> type);  
 
   /**
    * Retrieve a State based on their key.
