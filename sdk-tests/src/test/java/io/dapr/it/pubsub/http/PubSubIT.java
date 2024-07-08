@@ -150,6 +150,12 @@ public class PubSubIT extends BaseIT {
       public String getContentType() {
         return "application/json";
       }
+
+      @Override
+      public <T> List<T> deserializeList(byte[] data, TypeRef<T> type) throws IOException {
+        //Not needed here
+        throw new UnsupportedOperationException("Not supported yet.");
+      }
     };
     try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build();
          DaprPreviewClient previewClient = new DaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
@@ -278,6 +284,12 @@ public class PubSubIT extends BaseIT {
       @Override
       public String getContentType() {
         return "application/json";
+      }
+
+      @Override
+      public <T> List<T> deserializeList(byte[] data, TypeRef<T> type) throws IOException {
+        //Not needed here
+        throw new UnsupportedOperationException("Not supported yet.");
       }
     };
 
@@ -488,10 +500,26 @@ public class PubSubIT extends BaseIT {
       public <T> T deserialize(byte[] data, TypeRef<T> type) {
         return (T) data;
       }
+) {
+      @Override
+      public byte[] serialize(Object o) {
+        return (byte[])o;
+      }
+
+      @Override
+      public <T> T deserialize(byte[] data, TypeRef<T> type) {
+        return (T) data;
+      }
 
       @Override
       public String getContentType() {
         return "application/octet-stream";
+      }
+
+      @Override
+      public <T> List<T> deserializeList(byte[] data, TypeRef<T> type) throws IOException {
+        //Not needed here
+        throw new UnsupportedOperationException("Not supported yet.");
       }
     };
     try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
