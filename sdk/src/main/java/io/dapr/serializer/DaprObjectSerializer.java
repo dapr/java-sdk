@@ -13,10 +13,10 @@ limitations under the License.
 
 package io.dapr.serializer;
 
+import io.dapr.utils.TypeRef;
 import java.io.IOException;
 import java.util.List;
 
-import io.dapr.utils.TypeRef;
 
 /**
  * Serializes and deserializes application's objects.

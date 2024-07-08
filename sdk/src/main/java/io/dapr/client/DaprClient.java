@@ -13,9 +13,6 @@ limitations under the License.
 
 package io.dapr.client;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
@@ -43,6 +40,10 @@ import io.grpc.Channel;
 import io.grpc.stub.AbstractStub;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.

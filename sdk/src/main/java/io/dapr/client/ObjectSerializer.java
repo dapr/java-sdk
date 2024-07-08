@@ -13,20 +13,18 @@ limitations under the License.
 
 package io.dapr.client;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.MessageLite;
-
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Serializes and deserializes an internal object.
@@ -102,41 +100,6 @@ public class ObjectSerializer {
     return deserialize(content, OBJECT_MAPPER.constructType(clazz));
   }
 
-   /**
-   * Deserializes the byte array into the a list of the clazz paramter type object.
-   *
-   * @param content Content to be parsed.
-   * @param clazz   Type of the object being deserialized.
-   * @param <T>     Generic type of the object being deserialized.
-   * @return Object of type T.
-   * @throws IOException In case content cannot be deserialized.
-   */
-  @SuppressWarnings("unchecked")
-  public <T> List<T> deserializeList(byte[] content, Class<T> clazz) throws IOException {
-    Class<? extends Object[]> clazzArray = ((T[]) java.lang.reflect.Array.newInstance(clazz, 1)).getClass();
-    return Arrays.asList(deserialize(content, OBJECT_MAPPER.constructType(clazzArray)));
-  }
-
-  /**
-   * Deserializes the byte array into the original object.
-   *
-   * @param content Content to be parsed.
-   * @param type    Type of the object being deserialized.
-   * @param <T>     Generic type of the object being deserialized.
-   * @return Object of type T.
-   * @throws IOException In case content cannot be deserialized.
-   */
-  @SuppressWarnings("unchecked")
-  public <T> List<T> deserializeList(byte[] content, TypeRef<T> type) throws IOException {
-    try {
-      Class<T> clazz = (Class<T>) Class.forName(type.getType().getTypeName());
-      return deserializeList(content, clazz);
-    }catch (Exception e){
-      e.printStackTrace();
-    }
-    return null;
-  }
-
   private <T> T deserialize(byte[] content, JavaType javaType) throws IOException {
     if ((javaType == null) || javaType.isTypeOrSubTypeOf(Void.class)) {
       return null;
@@ -177,6 +140,40 @@ public class ObjectSerializer {
     }
     
     return OBJECT_MAPPER.readValue(content, javaType);
+  }
+
+  /**
+   * Deserializes the byte array into the a list of the clazz paramter type object.
+   *
+   * @param content Content to be parsed.
+   * @param clazz   Type of the object being deserialized.
+   * @param <T>     Generic type of the object being deserialized.
+   * @return Object of type T.
+   * @throws IOException In case content cannot be deserialized.
+   */
+  @SuppressWarnings("unchecked")
+  public <T> List<T> deserializeList(byte[] content, Class<T> clazz) throws IOException {
+    Class<? extends Object[]> clazzArray = ((T[]) java.lang.reflect.Array.newInstance(clazz, 1)).getClass();
+    return Arrays.asList(deserialize(content, OBJECT_MAPPER.constructType(clazzArray)));
+  }
+
+  /**
+   * Deserializes the byte array into a collection containing the specified object.
+   *
+   * @param content Content to be parsed.
+   * @param type    Type of the object being deserialized.
+   * @param <T>     Generic type of the object being deserialized.
+   * @return List of Objects of type T.
+   * @throws IOException In case content cannot be deserialized.
+   */
+  @SuppressWarnings("unchecked")
+  public <T> List<T> deserializeList(byte[] content, TypeRef<T> type) throws IOException {
+    try {
+      Class<T> clazz = (Class<T>) Class.forName(type.getType().getTypeName());
+      return deserializeList(content, clazz);
+    } catch (ClassNotFoundException e) {
+      throw new IOException(e);
+    }
   }
 
   /**
