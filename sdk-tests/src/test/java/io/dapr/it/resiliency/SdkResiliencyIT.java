@@ -84,10 +84,10 @@ public class SdkResiliencyIT extends BaseIT {
                     new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1))
             .build();
 
-    assertInstanceOf(DaprClientImpl.class, daprClient);
-    assertInstanceOf(DaprClientImpl.class, daprToxiClient);
-    assertInstanceOf(DaprClientImpl.class, daprResilientClient);
-    assertInstanceOf(DaprClientImpl.class, daprRetriesOnceClient);
+    assertTrue(daprClient instanceof DaprClientImpl);
+    assertTrue(daprToxiClient instanceof DaprClientImpl);
+    assertTrue(daprResilientClient instanceof DaprClientImpl);
+    assertTrue(daprRetriesOnceClient instanceof DaprClientImpl);
   }
 
   @AfterAll
@@ -144,12 +144,24 @@ public class SdkResiliencyIT extends BaseIT {
         assertTrue(toxiClientErrorCount.get() > 0, "Toxi client error count is 0");
         assertTrue(retryOnceClientErrorCount.get() > 0, "Retry once client error count is 0");
         // A client without retries should have more errors than a client with one retry.
-        assertTrue(toxiClientErrorCount.get() > retryOnceClientErrorCount.get(),
-            "Toxi client error count is not greater than retry once client error count");
+
+        String failureMessage = formatFailureMessage(toxiClientErrorCount, retryOnceClientErrorCount);
+        assertTrue(toxiClientErrorCount.get() > retryOnceClientErrorCount.get(), failureMessage);
         break;
       }
       toxiClientErrorCount.set(0);
       retryOnceClientErrorCount.set(0);
     }
+  }
+
+  private static String formatFailureMessage(
+      AtomicInteger toxiClientErrorCount,
+      AtomicInteger retryOnceClientErrorCount
+  ) {
+    return String.format(
+        "Toxi client error count: %d, Retry once client error count: %d",
+        toxiClientErrorCount.get(),
+        retryOnceClientErrorCount.get()
+    );
   }
 }
