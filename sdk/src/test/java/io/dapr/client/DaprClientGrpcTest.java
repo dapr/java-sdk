@@ -13,9 +13,11 @@ limitations under the License.
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
 import io.dapr.client.domain.ComponentMetadata;
@@ -52,6 +54,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +62,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
+
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -75,6 +79,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -89,6 +94,8 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 public class DaprClientGrpcTest {
 
@@ -406,15 +413,13 @@ public class DaprClientGrpcTest {
     assertEquals("OK", result.block());
   }
 
+
   @Test
-  public void invokeBindingListResponseObjectTypeRefTest() throws IOException {
-    List<MyObject> list = new ArrayList<>();
-    MyObject obj1 = new MyObject(1, "Object1");
-    MyObject obj2 = new MyObject(2, "Objet2");
-    list.add(obj1);
-    list.add(obj2);
+  public void invokeBindingResponseListObjectTypeRefTest() throws IOException {
+    //The output binding needs to be an array of arrays containing strings intead of JSON objects if we want to be able to parse it
+    ByteString listOfObjects = ByteString.copyFromUtf8("[[\"{ \\\"id\\\": 1,\\\"value\\\": \\\"Object1\\\"}\"],[\"{ \\\"id\\\": 2,\\\"value\\\": \\\"Object2\\\"}\"]]");
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-            DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize(list));
+            DaprProtos.InvokeBindingResponse.newBuilder().setData(listOfObjects);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
@@ -422,9 +427,45 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
-    Mono<List<MyObject>> result = client.invokeBindingList("BindingName", "MyOperation", null, null, TypeRef.get(MyObject.class));
+    MyObject event = new MyObject(1, "Event");
+    List<List<String>> result = client.invokeBinding("BindingName", "MyOperation", event, new TypeRef<List<List<String>>>(){}).block();
+    ObjectMapper mapper = new ObjectMapper();
+    List<MyObject> myObjects = new ArrayList<>(result.size());
+    for(List<String> l : result){
+      myObjects.add(mapper.readValue(l.get(0), MyObject.class));
+    }
+    
+    assertEquals(2, myObjects.size());
+    assertEquals(1, myObjects.get(0).getId());
+    assertEquals("Object1", myObjects.get(0).getValue());
+    assertEquals(2, myObjects.get(1).getId());
+    assertEquals("Object2", myObjects.get(1).getValue());
+    
+  }
 
-    assertEquals(list, result.block());
+  @Test
+  public void invokeBindingListResponseWeirdArrayTypeRefTest() throws IOException {
+    
+    // The binding must return the values list only, the keys are not needed, as the Keys for Java are the field inside the object
+    // The content of the objects should be provided as a string with internal quotes
+    ByteString listOfObjects = ByteString.copyFromUtf8("[[\"{ \\\"id\\\": 1,\\\"value\\\": \\\"Object1\\\"}\"],[\"{ \\\"id\\\": 2,\\\"value\\\": \\\"Object2\\\"}\"]]");
+    System.out.println(listOfObjects.toStringUtf8());
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+            DaprProtos.InvokeBindingResponse.newBuilder().setData(listOfObjects);
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
+    List<MyObject> myObjects = client.invokeBindingList("BindingName", "MyOperation", null, null, TypeRef.get(MyObject.class)).block();
+
+    assertEquals(2, myObjects.size());
+    assertEquals(1, myObjects.get(0).getId());
+    assertEquals("Object1", myObjects.get(0).getValue());
+    assertEquals(2, myObjects.get(1).getId());
+    assertEquals("Object2", myObjects.get(1).getValue());
   }
 
   @Test

@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,7 +24,7 @@ import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -151,10 +152,15 @@ public class ObjectSerializer {
    * @return Object of type T.
    * @throws IOException In case content cannot be deserialized.
    */
-  @SuppressWarnings("unchecked")
   public <T> List<T> deserializeList(byte[] content, Class<T> clazz) throws IOException {
-    Class<? extends Object[]> clazzArray = ((T[]) java.lang.reflect.Array.newInstance(clazz, 1)).getClass();
-    return Arrays.asList(deserialize(content, OBJECT_MAPPER.constructType(clazzArray)));
+    List<List<String>> deserialized = deserialize(content, 
+        OBJECT_MAPPER.constructType(new TypeReference<List<List<String>>>(){}));
+    List<T> results = new ArrayList<>(deserialized.size());
+    for (List<String> l : deserialized) {
+      results.add(OBJECT_MAPPER.readValue(l.get(0), clazz));
+    } 
+
+    return results;
   }
 
   /**
