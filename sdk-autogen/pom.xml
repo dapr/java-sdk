@@ -20,7 +20,9 @@
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <grpc.version>1.59.0</grpc.version>
+    <grpc.version>1.64.0</grpc.version>
+    <protocCommand>protoc</protocCommand>
+    <protobuf.version>3.25.0</protobuf.version>
   </properties>
 
   <dependencies>
@@ -62,6 +64,19 @@
         <version>1.6.0</version>
         <executions>
           <execution>
+            <id>getDaprProto</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <skipCache>true</skipCache>
+              <url>${dapr.proto.baseurl}/runtime/v1/dapr.proto</url>
+              <outputFileName>dapr.proto</outputFileName>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>getCommonProto</id>
             <phase>initialize</phase>
             <goals>
@@ -75,19 +90,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>getDaprProto</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>wget</goal>
-            </goals>
-            <configuration>
-              <skipCache>true</skipCache>
-              <url>${dapr.proto.baseurl}/runtime/v1/dapr.proto</url>
-              <outputFileName>dapr.proto</outputFileName>
-              <outputDirectory>${protobuf.input.directory}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>getDaprClientProto</id>
             <phase>initialize</phase>
             <goals>
@@ -97,8 +99,20 @@
               <skipCache>true</skipCache>
               <url>${dapr.proto.baseurl}/runtime/v1/appcallback.proto</url>
               <outputFileName>appcallback.proto</outputFileName>
-              <outputDirectory>${protobuf.input.directory}</outputDirectory>
+              <outputDirectory>${protobuf.input.directory}/dapr/proto/runtime/v1</outputDirectory>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>detect</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
@@ -113,11 +127,14 @@
               <goal>run</goal>
             </goals>
             <configuration>
+              <protocCommand>protoc</protocCommand>
               <protocVersion>${protobuf.version}</protocVersion>
+              <protocArtifact>com.google.protobuf:protoc:3.21.1</protocArtifact>
               <addProtoSources>inputs</addProtoSources>
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>
               <inputDirectories>
+                <include>${protobuf.input.directory}/dapr/proto/runtime/v1</include>
                 <include>${protobuf.input.directory}/dapr/proto/common/v1</include>
                 <include>${protobuf.input.directory}</include>
               </inputDirectories>
