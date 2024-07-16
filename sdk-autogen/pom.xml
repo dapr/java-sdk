@@ -134,10 +134,11 @@
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>
               <inputDirectories>
-                <include>${protobuf.input.directory}/dapr/proto/runtime/v1</include>
-                <include>${protobuf.input.directory}/dapr/proto/common/v1</include>
                 <include>${protobuf.input.directory}</include>
               </inputDirectories>
+              <includeDirectories>
+                <include>${protobuf.input.directory}</include>
+              </includeDirectories>
               <outputTargets>
                 <outputTarget>
                   <type>java</type>
