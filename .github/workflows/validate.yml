@@ -100,6 +100,10 @@ jobs:
           echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
           pip3 install setuptools wheel
           pip3 install mechanical-markdown
+      - name: Dapr debug
+        run: |
+          docker ps -a
+          docker logs dapr_scheduler
       - name: Clean up files
         run: ./mvnw clean
       - name: Build sdk
