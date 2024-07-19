@@ -17,10 +17,23 @@ package io.dapr.client.domain;
  * RuleMetadata describes the Subscription Rule's Metadata.
  */
 public final class RuleMetadata {
-  private String path;
 
-  public RuleMetadata(String path) {
+  private final String match;
+  private final String path;
+
+  /**
+   * Constructor for a RuleMetadata.
+   *
+   * @param match CEL expression to match the message
+   * @param path path to route the message
+   */
+  public RuleMetadata(String match, String path) {
+    this.match = match;
     this.path = path;
+  }
+
+  public String getMatch() {
+    return match;
   }
 
   public String getPath() {

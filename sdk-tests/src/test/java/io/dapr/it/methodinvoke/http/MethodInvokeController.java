@@ -33,12 +33,12 @@ public class MethodInvokeController {
     }
 
     @PutMapping(path = "/messages/{messageId}")
-    public void putMessages(@PathVariable Integer messageId, @RequestBody String message){
+    public void putMessages(@PathVariable("messageId") Integer messageId, @RequestBody String message){
         messagesReceived.put(messageId,message);
     }
 
     @DeleteMapping(path = "/messages/{messageId}")
-    public void deleteMessages(@PathVariable Integer messageId){
+    public void deleteMessages(@PathVariable("messageId") Integer messageId){
         messagesReceived.remove(messageId);
     }
 
@@ -58,7 +58,7 @@ public class MethodInvokeController {
     }
 
     @PutMapping(path = "/persons/{personId}")
-    public void putPerson(@PathVariable Integer personId, @RequestBody Person person){
+    public void putPerson(@PathVariable("personId") Integer personId, @RequestBody Person person){
         final Optional<Person> auxPerson = persons.stream().filter(person1 -> person1.getId() == personId).findFirst();
         if(auxPerson.isPresent()){
             auxPerson.get().setName(person.getName());
@@ -68,7 +68,7 @@ public class MethodInvokeController {
     }
 
     @DeleteMapping(path = "/persons/{personId}")
-    public void deletePerson(@PathVariable Integer personId){
+    public void deletePerson(@PathVariable("personId") Integer personId){
         final Optional<Person> auxPerson = persons.stream().filter(person1 -> person1.getId() == personId).findFirst();
         if(auxPerson.isPresent()) {
             persons.remove(auxPerson.get());

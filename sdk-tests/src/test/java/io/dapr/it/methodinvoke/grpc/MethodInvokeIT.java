@@ -27,6 +27,10 @@ public class MethodInvokeIT extends BaseIT {
 
     //Number of messages to be sent: 10
     private static final int NUM_MESSAGES = 10;
+    private static final int TIMEOUT_MS = 100;
+    private static final ResiliencyOptions RESILIENCY_OPTIONS = new ResiliencyOptions()
+        .setTimeout(Duration.ofMillis(TIMEOUT_MS));
+    private static final String EXCEPTION_MARKER = "DEADLINE_EXCEEDED: deadline exceeded after";
 
     /**
      * Run of a Dapr application.
@@ -47,28 +51,27 @@ public class MethodInvokeIT extends BaseIT {
     @Test
     public void testInvoke() throws Exception {
         try (DaprClient client = new DaprClientBuilder().build()) {
-            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = client.newGrpcStub(
-                daprRun.getAppName(),
-                channel -> MethodInvokeServiceGrpc.newBlockingStub(channel));
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
+
+            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
             
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
-
                 PostMessageRequest req = PostMessageRequest.newBuilder().setId(i).setMessage(message).build();
+
                 stub.postMessage(req);
 
                 System.out.println("Invoke method messages : " + message);
             }
 
             Map<Integer, String> messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
-            assertEquals(10, messages.size());
+            assertEquals(NUM_MESSAGES, messages.size());
 
             // Delete one message.
             stub.deleteMessage(DeleteMessageRequest.newBuilder().setId(1).build());
             messages = stub.getMessages(GetMessagesRequest.newBuilder().build()).getMessagesMap();
-            assertEquals(9, messages.size());
+            assertEquals(NUM_MESSAGES - 1, messages.size());
 
             // Now update one message.
             stub.postMessage(PostMessageRequest.newBuilder().setId(2).setMessage("updated message").build());
@@ -79,21 +82,17 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        long timeoutMs = 100;
-        ResiliencyOptions resiliencyOptions = new ResiliencyOptions().setTimeout(Duration.ofMillis(timeoutMs));
-        try (DaprClient client = new DaprClientBuilder().withResiliencyOptions(resiliencyOptions).build()) {
-            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = client.newGrpcStub(
-                daprRun.getAppName(),
-                channel -> MethodInvokeServiceGrpc.newBlockingStub(channel));
+        try (DaprClient client = new DaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
+            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
             long started = System.currentTimeMillis();
             SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
             String message = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req)).getMessage();
             long delay = System.currentTimeMillis() - started;
-            assertTrue(delay >= timeoutMs);
-            assertTrue(message.startsWith("DEADLINE_EXCEEDED: deadline exceeded after"));
+            assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
+            assertTrue(message.startsWith(EXCEPTION_MARKER), "Message: " + message + " does not start with: " + EXCEPTION_MARKER);
         }
     }
 
@@ -103,9 +102,7 @@ public class MethodInvokeIT extends BaseIT {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
-            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = client.newGrpcStub(
-                daprRun.getAppName(),
-                channel -> MethodInvokeServiceGrpc.newBlockingStub(channel));
+            MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
 
             SleepRequest req = SleepRequest.newBuilder().setSeconds(-9).build();
             StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
@@ -117,5 +114,9 @@ public class MethodInvokeIT extends BaseIT {
             assertEquals(Status.UNKNOWN.getCode(), exception.getStatus().getCode());
             assertEquals("", exception.getStatus().getDescription());
         }
+    }
+
+    private MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub createGrpcStub(DaprClient client) {
+        return client.newGrpcStub(daprRun.getAppName(), MethodInvokeServiceGrpc::newBlockingStub);
     }
 }

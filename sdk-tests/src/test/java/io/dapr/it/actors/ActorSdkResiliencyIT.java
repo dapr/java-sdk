@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test SDK resiliency.
  */
-public class ActorSdkResiliencytIT extends BaseIT {
+public class ActorSdkResiliencyIT extends BaseIT {
 
   private static final ActorId ACTOR_ID = new ActorId(UUID.randomUUID().toString());
 
@@ -69,7 +69,7 @@ public class ActorSdkResiliencytIT extends BaseIT {
   @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(
-            ActorSdkResiliencytIT.class.getSimpleName(),
+            ActorSdkResiliencyIT.class.getSimpleName(),
             DemoActorService.SUCCESS_MESSAGE,
             DemoActorService.class,
             true,
