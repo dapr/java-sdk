@@ -70,6 +70,7 @@ public class DaprContainerTest {
     configStub();
     Testcontainers.exposeHostPorts(8081);
     System.setProperty("dapr.grpc.port", Integer.toString(daprContainer.getGrpcPort()));
+    System.setProperty("dapr.http.port", Integer.toString(daprContainer.getHttpPort()));
   }
 
   private static void configStub() {
