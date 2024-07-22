@@ -15,7 +15,7 @@
 
 	<properties>
 		<snakeyaml.version>2.0</snakeyaml.version>
-		<testcontainers.version>1.19.1</testcontainers.version>
+		<testcontainers.version>1.20.0</testcontainers.version>
 		<logback-classic.version>1.4.12</logback-classic.version>
         <wiremock.version>3.0.1</wiremock.version>
 	</properties>
@@ -31,16 +31,16 @@
 			<artifactId>testcontainers</artifactId>
 			<version>${testcontainers.version}</version>
 		</dependency>
-		<dependency>
+        <dependency>
             <groupId>io.dapr</groupId>
-            <artifactId>dapr-sdk-springboot</artifactId>
+            <artifactId>dapr-sdk</artifactId>
             <version>${project.parent.version}</version>
-			<scope>test</scope>
+            <scope>test</scope>
         </dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>${logback-classic.version}</version>
+            <version>${logback-classic.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
