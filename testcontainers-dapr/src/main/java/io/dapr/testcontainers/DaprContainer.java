@@ -438,4 +438,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     this.placementContainer = placementContainer;
     return this;
   }
+
+  // Following GenericContainer from Testcontainers
+  @Override
+  public boolean equals(Object o) {
+    return this == o;
+  }
 }

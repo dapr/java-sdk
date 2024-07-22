@@ -61,4 +61,10 @@ public class DaprPlacementContainer extends GenericContainer<DaprPlacementContai
   public int getPort() {
     return placementPort;
   }
+
+  // Following GenericContainer from Testcontainers
+  @Override
+  public boolean equals(Object o) {
+    return this == o;
+  }
 }
