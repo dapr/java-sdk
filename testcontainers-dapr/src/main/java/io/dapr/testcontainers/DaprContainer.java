@@ -430,7 +430,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   }
 
   public DaprContainer withReusablePlacement(boolean reuse) {
-    this.shouldReusePlacement = shouldReusePlacement;
+    this.shouldReusePlacement = reuse;
     return this;
   }
 
