@@ -330,6 +330,7 @@
     <module>sdk-workflows</module>
     <module>sdk-springboot</module>
     <module>examples</module>
+    <module>testcontainers-dapr</module>
     <!-- don't add sdk-tests to the build, 
       it's only used for CI testing by github action
     <module>sdk-tests</module>
