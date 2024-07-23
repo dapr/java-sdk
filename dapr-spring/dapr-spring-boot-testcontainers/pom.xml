@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.dapr.spring</groupId>
+    <artifactId>dapr-spring-parent</artifactId>
+    <version>0.12.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>dapr-spring-boot-testcontainers</artifactId>
+  <name>dapr-spring-boot-testcontainers</name>
+  <description>Dapr Spring Boot Testcontainers</description>
+  <packaging>jar</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>testcontainers-dapr</artifactId>
+      <version>${testcontainers-dapr.version}</version>
+    </dependency>
+  </dependencies>
+</project>

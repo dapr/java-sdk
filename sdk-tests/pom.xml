@@ -25,6 +25,8 @@
     <spring-boot.version>3.3.1</spring-boot.version>
     <logback-classic.version>1.4.12</logback-classic.version>
     <wiremock.version>3.9.1</wiremock.version>
+    <testcontainers-dapr.version>0.12.0-SNAPSHOT</testcontainers-dapr.version>
+    <testcontainers-test.version>1.19.8</testcontainers-test.version>
   </properties>
 
   <dependencyManagement>
@@ -135,14 +137,14 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>testcontainers-dapr</artifactId>
-      <version>${dapr.sdk.alpha.version}</version>
+      <artifactId>dapr-sdk-actors</artifactId>
+      <version>${dapr.sdk.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-actors</artifactId>
-      <version>${dapr.sdk.version}</version>
+      <artifactId>dapr-sdk-workflows</artifactId>
+      <version>${dapr.alpha.sdk.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -152,8 +154,47 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-core</artifactId>
+      <version>${dapr.alpha.sdk.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-data</artifactId>
+      <version>${dapr.alpha.sdk.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-messaging</artifactId>
+      <version>${dapr.alpha.sdk.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-autoconfigure</artifactId>
+      <version>${dapr.alpha.sdk.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-testcontainers</artifactId>
+      <version>${dapr.alpha.sdk.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-keyvalue</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -183,6 +224,36 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.9</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>testcontainers-dapr</artifactId>
+      <version>${testcontainers-dapr.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${testcontainers-test.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${testcontainers-test.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mysql</artifactId>
+      <version>${testcontainers-test.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <version>8.2.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

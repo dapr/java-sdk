@@ -18,6 +18,7 @@ import io.dapr.utils.NetworkUtils;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Global properties for Dapr's SDK, using Supplier so they are dynamically resolved.
@@ -155,21 +156,56 @@ public class Properties {
   public static final Property<Integer> HTTP_CLIENT_READ_TIMEOUT_SECONDS = new IntegerProperty(
       "dapr.http.client.readTimeoutSeconds",
       "DAPR_HTTP_CLIENT_READ_TIMEOUT_SECONDS",
-          DEFAULT_HTTP_CLIENT_READ_TIMEOUT_SECONDS);
+      DEFAULT_HTTP_CLIENT_READ_TIMEOUT_SECONDS);
 
   /**
    * Dapr's default maximum number of requests for HTTP client to execute concurrently.
    */
   public static final Property<Integer> HTTP_CLIENT_MAX_REQUESTS = new IntegerProperty(
-          "dapr.http.client.maxRequests",
-          "DAPR_HTTP_CLIENT_MAX_REQUESTS",
-          DEFAULT_HTTP_CLIENT_MAX_REQUESTS);
+      "dapr.http.client.maxRequests",
+      "DAPR_HTTP_CLIENT_MAX_REQUESTS",
+      DEFAULT_HTTP_CLIENT_MAX_REQUESTS);
 
   /**
    * Dapr's default maximum number of idle connections for HTTP connection pool.
    */
   public static final Property<Integer> HTTP_CLIENT_MAX_IDLE_CONNECTIONS = new IntegerProperty(
-          "dapr.http.client.maxIdleConnections",
-          "DAPR_HTTP_CLIENT_MAX_IDLE_CONNECTIONS",
-          DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
+      "dapr.http.client.maxIdleConnections",
+      "DAPR_HTTP_CLIENT_MAX_IDLE_CONNECTIONS",
+      DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
+
+  /**
+   * Mechanism to override properties set in a static context.
+   */
+  private final Map<String, String> overrides;
+
+  /**
+   * Creates a new instance to handle Properties per instance.
+   */
+  public Properties() {
+    this.overrides = null;
+  }
+
+  /**
+   * Creates a new instance to handle Properties per instance.
+   * @param overrides to override static properties
+   */
+  public Properties(Map<String, String> overrides) {
+    this.overrides = overrides;
+  }
+
+  /**
+   * Gets a property value taking in consideration the override values.
+   * @param <T> type of the property that we want to get the value from
+   * @param property to override static property value from overrides
+   * @return the property's value
+   */
+  public <T> T getValue(Property<T> property) {
+    if (overrides != null) {
+      String override = overrides.get(property.getName());
+      return property.get(override);
+    } else {
+      return property.get();
+    }
+  }
 }

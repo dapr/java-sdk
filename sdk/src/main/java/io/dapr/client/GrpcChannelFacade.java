@@ -18,6 +18,7 @@ import io.grpc.ManagedChannel;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Facade for common operations on gRPC channel.
@@ -54,7 +55,11 @@ class GrpcChannelFacade implements Closeable {
   @Override
   public void close() throws IOException {
     if (channel != null && !channel.isShutdown()) {
-      channel.shutdown();
+      try {
+        channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        // Ignore for now
+      }
     }
   }
 

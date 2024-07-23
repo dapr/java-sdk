@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.it.testcontainers;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Metadata;
@@ -23,10 +23,11 @@ import io.dapr.testcontainers.DaprContainer;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.testcontainers.Testcontainers;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.Map;
@@ -45,9 +46,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Testcontainers
 public class DaprContainerTest {
 
   // Time-to-live for messages published.
@@ -57,11 +59,13 @@ public class DaprContainerTest {
   private static final String PUBSUB_NAME = "pubsub";
   private static final String PUBSUB_TOPIC_NAME = "topic";
 
-  @ClassRule
-  public static WireMockRule wireMockRule = new WireMockRule(wireMockConfig().port(8081));
+  @RegisterExtension
+  private static final WireMockExtension WIRE_MOCK_EXTENSION = WireMockExtension.newInstance()
+      .options(wireMockConfig().port(8081))
+      .build();
 
-  @ClassRule
-  public static DaprContainer daprContainer = new DaprContainer("daprio/daprd")
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
       .withAppName("dapr-app")
       .withAppPort(8081)
       .withAppChannelAddress("host.testcontainers.internal");
@@ -69,12 +73,10 @@ public class DaprContainerTest {
   /**
    * Sets the Dapr properties for the test.
    */
-  @BeforeClass
+  @BeforeAll
   public static void setDaprProperties() {
     configStub();
-    Testcontainers.exposeHostPorts(8081);
-    System.setProperty("dapr.grpc.port", Integer.toString(daprContainer.getGrpcPort()));
-    System.setProperty("dapr.http.port", Integer.toString(daprContainer.getHttpPort()));
+    org.testcontainers.Testcontainers.exposeHostPorts(8081);
   }
 
   private static void configStub() {
@@ -97,14 +99,15 @@ public class DaprContainerTest {
 
   @Test
   public void testDaprContainerDefaults() {
+    assertEquals(2,
+        DAPR_CONTAINER.getComponents().size(),
+        "The pubsub and kvstore component should be configured by default"
+        );
     assertEquals(
-        "The pubsub and kvstore component should be configured by default",
-        2,
-        daprContainer.getComponents().size());
-    assertEquals(
-        "A subscription should be configured by default if none is provided",
         1,
-        daprContainer.getSubscriptions().size());
+        DAPR_CONTAINER.getSubscriptions().size(),
+        "A subscription should be configured by default if none is provided"
+        );
   }
 
   @Test
@@ -132,11 +135,11 @@ public class DaprContainerTest {
 
     OkHttpClient client = new OkHttpClient.Builder().build();
 
-    String url = "http://" + daprContainer.getHost() + ":" + daprContainer.getMappedPort(3500);
+    String url = "http://" + DAPR_CONTAINER.getHost() + ":" + DAPR_CONTAINER.getMappedPort(3500);
     Request request = new Request.Builder().url(url + "/v1.0/metadata").build();
 
     try (Response response = client.newCall(request).execute()) {
-      if (response.isSuccessful()) {
+      if (response.isSuccessful() && response.body() != null) {
         assertTrue(response.body().string().contains("placement: connected"));
 
       } else {
