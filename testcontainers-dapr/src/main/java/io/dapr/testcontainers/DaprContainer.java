@@ -38,10 +38,10 @@ import java.util.Set;
 public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public enum DaprLogLevel {
-    error,
-    warn,
-    info,
-    debug
+    ERROR,
+    WARN,
+    INFO,
+    DEBUG
   }
 
   public static class Subscription {
@@ -159,7 +159,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private final Set<Subscription> subscriptions = new HashSet<>();
   private String appName;
   private Integer appPort = 8080;
-  private DaprLogLevel daprLogLevel = DaprLogLevel.info;
+  private DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
   private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("daprio/daprd");
