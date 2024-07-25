@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.testcontainers;
 
-import io.dapr.testcontainers.DaprContainer.Component;
-import io.dapr.testcontainers.DaprContainer.Subscription;
 import org.junit.Assert;
 import org.junit.Test;
 

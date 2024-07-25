@@ -32,126 +32,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
-
-  public enum DaprLogLevel {
-    ERROR,
-    WARN,
-    INFO,
-    DEBUG
-  }
-
-  public static class Subscription {
-    String name;
-    String pubsubName;
-    String topic;
-    String route;
-
-    /**
-     * Creates a new subscription.
-     * @param name Subscription name.
-     * @param pubsubName PubSub name.
-     * @param topic Topic name.
-     * @param route Route.
-     */
-    public Subscription(String name, String pubsubName, String topic, String route) {
-      this.name = name;
-      this.pubsubName = pubsubName;
-      this.topic = topic;
-      this.route = route;
-    }
-  }
-
-  public static class MetadataEntry {
-    String name;
-    Object value;
-
-    public MetadataEntry(String name, Object value) {
-      this.name = name;
-      this.value = value;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-
-    public Object getValue() {
-      return value;
-    }
-
-    public void setValue(String value) {
-      this.value = value;
-    }
-  }
-
-  /**
-   * Represents a Dapr component.
-   */
-  public static class Component {
-    String name;
-
-    String type;
-
-    String version;
-
-    List<MetadataEntry> metadata;
-
-    /**
-     * Creates a new component.
-     * @param name Component name.
-     * @param type Component type.
-     * @param version Component version.
-     * @param metadata Metadata.
-     */
-    public Component(String name, String type, String version, Map<String, Object> metadata) {
-      this.name = name;
-      this.type = type;
-      this.version = version;
-      this.metadata = new ArrayList<MetadataEntry>();
-      if (!metadata.isEmpty()) {
-        for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-          this.metadata.add(new MetadataEntry(entry.getKey(), entry.getValue()));
-        }
-      }
-    }
-
-    /**
-     * Creates a new component.
-     * @param name Component name.
-     * @param type Component type.
-     * @param version Component version.
-     * @param metadataEntries Component metadata entries.
-     */
-    public Component(String name, String type, String version, List<MetadataEntry> metadataEntries) {
-      this.name = name;
-      this.type = type;
-      this.version = version;
-      metadata = Objects.requireNonNull(metadataEntries);
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public List<MetadataEntry> getMetadata() {
-      return metadata;
-    }
-
-    public String getVersion() {
-      return version;
-    }
-  }
 
   private static final int DAPRD_HTTP_PORT = 3500;
   private static final int DAPRD_GRPC_PORT = 50001;
@@ -304,15 +187,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     componentProps.put("kind", "Component");
 
     Map<String, String> componentMetadata = new LinkedHashMap<>();
-    componentMetadata.put("name", component.name);
+    componentMetadata.put("name", component.getName());
     componentProps.put("metadata", componentMetadata);
 
     Map<String, Object> componentSpec = new HashMap<>();
-    componentSpec.put("type", component.type);
-    componentSpec.put("version", component.version);
+    componentSpec.put("type", component.getType());
+    componentSpec.put("version", component.getVersion());
 
-    if (!component.metadata.isEmpty()) {
-      componentSpec.put("metadata", component.metadata);
+    if (!component.getMetadata().isEmpty()) {
+      componentSpec.put("metadata", component.getMetadata());
     }
     componentProps.put("spec", componentSpec);
     return componentProps;
@@ -329,13 +212,13 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     subscriptionProps.put("kind", "Subscription");
 
     Map<String, String> subscriptionMetadata = new LinkedHashMap<>();
-    subscriptionMetadata.put("name", subscription.name);
+    subscriptionMetadata.put("name", subscription.getName());
     subscriptionProps.put("metadata", subscriptionMetadata);
 
     Map<String, Object> subscriptionSpec = new HashMap<>();
-    subscriptionSpec.put("pubsubname", subscription.pubsubName);
-    subscriptionSpec.put("topic", subscription.topic);
-    subscriptionSpec.put("route", subscription.route);
+    subscriptionSpec.put("pubsubname", subscription.getPubsubName());
+    subscriptionSpec.put("topic", subscription.getTopic());
+    subscriptionSpec.put("route", subscription.getRoute());
 
     subscriptionProps.put("spec", subscriptionSpec);
     return subscriptionProps;
@@ -385,12 +268,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     for (Component component : components) {
       String componentYaml = componentToYaml(component);
-      withCopyToContainer(Transferable.of(componentYaml), "/components/" + component.name + ".yaml");
+      withCopyToContainer(Transferable.of(componentYaml), "/components/" + component.getName() + ".yaml");
     }
 
     for (Subscription subscription : subscriptions) {
       String subscriptionYaml = subscriptionToYaml(subscription);
-      withCopyToContainer(Transferable.of(subscriptionYaml), "/components/" + subscription.name + ".yaml");
+      withCopyToContainer(Transferable.of(subscriptionYaml), "/components/" + subscription.getName() + ".yaml");
     }
   }
 
