@@ -331,4 +331,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public boolean equals(Object o) {
     return super.equals(o);
   }
+
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
 }
