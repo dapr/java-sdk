@@ -18,13 +18,16 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.State;
-import io.restassured.RestAssured;
-import io.restassured.path.json.JsonPath;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.testcontainers.Testcontainers;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -74,6 +77,7 @@ public class DaprContainerTest {
   }
 
   private static void configStub() {
+
     stubFor(any(urlMatching("/dapr/subscribe"))
         .willReturn(aResponse().withBody("[]").withStatus(200)));
 
@@ -125,12 +129,20 @@ public class DaprContainerTest {
       client.waitForSidecar(5000).block();
     }
 
-    RestAssured.baseURI = "http://" + daprContainer.getHost() + ":" + daprContainer.getMappedPort(3500);
-    JsonPath response = RestAssured.given().get("/v1.0/metadata").jsonPath();
-    String actorRuntimePlacement = response.getString("actorRuntime.placement");
-    boolean isPlacementConnected = actorRuntimePlacement.contentEquals("placement: connected");
+    OkHttpClient client = new OkHttpClient.Builder().build();
 
-    assertTrue(isPlacementConnected);
+    String url = "http://" + daprContainer.getHost() + ":" + daprContainer.getMappedPort(3500);
+    Request request = new Request.Builder().url(url + "/v1.0/metadata").build();
+
+    try (Response response = client.newCall(request).execute()) {
+      if (response.isSuccessful()) {
+        assertTrue(response.body().string().contains("placement: connected"));
+
+      } else {
+        throw new IOException("Unexpected response: " + response.code());
+      }
+    }
+
   }
 
   @Test
