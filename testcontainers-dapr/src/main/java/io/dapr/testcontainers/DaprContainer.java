@@ -36,12 +36,13 @@ import java.util.Set;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
 
-  private static final int DAPRD_HTTP_PORT = 3500;
-  private static final int DAPRD_GRPC_PORT = 50001;
+  private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
+  private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
   private final Set<Component> components = new HashSet<>();
   private final Set<Subscription> subscriptions = new HashSet<>();
+  private DaprProtocol protocol = DaprProtocol.HTTP;
   private String appName;
-  private Integer appPort = 8080;
+  private Integer appPort = null;
   private DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
@@ -64,13 +65,13 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     // needs to
     // connect with the application for susbcriptions
 
-    withExposedPorts(DAPRD_HTTP_PORT, DAPRD_GRPC_PORT);
+    withExposedPorts(DAPRD_DEFAULT_HTTP_PORT, DAPRD_DEFAULT_GRPC_PORT);
 
     DumperOptions options = new DumperOptions();
     options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
     options.setPrettyFlow(true);
 
-    Representer representer = new YamlRepresenter(options);
+    Representer representer = new Representer(options);
     representer.addClassTag(MetadataEntry.class, Tag.MAP);
     this.yaml = new Yaml(representer);
   }
@@ -111,8 +112,8 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withSubscription(String name, String pubSubName, String pubSubTopic, String route) {
-    subscriptions.add(new Subscription(name, pubSubName, pubSubTopic, route));
+  public DaprContainer withSubscription(Subscription subscription) {
+    subscriptions.add(subscription);
     return this;
   }
 
@@ -121,10 +122,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withComponent(String name, String type, String version, List<MetadataEntry> metadataEntries) {
-    components.add(new Component(name, type, version, metadataEntries));
-    return this;
-  }
+
 
   /**
    * Adds a Dapr component from a YAML file.
@@ -141,18 +139,18 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
       Map<String, Object> spec = (Map<String, Object>) component.get("spec");
       String version = (String) spec.get("version");
-      List<Map<String, Object>> specMetadata =
-          (List<Map<String, Object>>) spec.getOrDefault("metadata", Collections.emptyMap());
+      List<Map<String, String>> specMetadata =
+          (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyMap());
 
       ArrayList<MetadataEntry> metadataEntries = new ArrayList<>();
 
-      for (Map<String, Object> specMetadataItem : specMetadata) {
-        for (Map.Entry<String, Object> metadataItem : specMetadataItem.entrySet()) {
+      for (Map<String, String> specMetadataItem : specMetadata) {
+        for (Map.Entry<String, String> metadataItem : specMetadataItem.entrySet()) {
           metadataEntries.add(new MetadataEntry(metadataItem.getKey(), metadataItem.getValue()));
         }
       }
 
-      return withComponent(name, type, version, metadataEntries);
+      return withComponent(new Component(name, type, version, metadataEntries));
     } catch (IOException e) {
       logger().warn("Error while reading component from {}", path.toAbsolutePath());
     }
@@ -160,15 +158,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   }
 
   public int getHttpPort() {
-    return getMappedPort(DAPRD_HTTP_PORT);
+    return getMappedPort(DAPRD_DEFAULT_HTTP_PORT);
   }
 
   public String getHttpEndpoint() {
-    return "http://" + getHost() + ":" + getMappedPort(DAPRD_HTTP_PORT);
+    return "http://" + getHost() + ":" + getMappedPort(DAPRD_DEFAULT_HTTP_PORT);
   }
 
   public int getGrpcPort() {
-    return getMappedPort(DAPRD_GRPC_PORT);
+    return getMappedPort(DAPRD_DEFAULT_GRPC_PORT);
   }
 
   public DaprContainer withAppChannelAddress(String appChannelAddress) {
@@ -239,23 +237,29 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       this.placementContainer.start();
     }
 
-    withCommand(
-        "./daprd",
-        "-app-id",
-        appName,
-        "--dapr-listen-addresses=0.0.0.0",
-        "--app-protocol",
-        "http",
-        "-placement-host-address",
-        placementService + ":50006",
-        "--app-channel-address",
-        appChannelAddress,
-        "--app-port",
-        Integer.toString(appPort),
-        "--log-level",
-        daprLogLevel.toString(),
-        "-components-path",
-        "/components");
+    List<String> cmds = new ArrayList<>();
+    cmds.add("./daprd");
+    cmds.add("-app-id");
+    cmds.add(appName);
+    cmds.add("--dapr-listen-addresses=0.0.0.0");
+    cmds.add("--app-protocol");
+    cmds.add(protocol.getName());
+    cmds.add("-placement-host-address");
+    cmds.add(placementService + ":50005");
+
+    if (appChannelAddress != null && !appChannelAddress.isEmpty()) {
+      cmds.add("--app-channel-address");
+      cmds.add(appChannelAddress);
+    }
+    if (appPort != null) {
+      cmds.add("--app-port");
+      cmds.add(Integer.toString(appPort));
+    }
+    cmds.add("--log-level");
+    cmds.add(daprLogLevel.toString());
+    cmds.add("-components-path");
+    cmds.add("/components");
+    withCommand(cmds.toArray(new String[]{}));
 
     if (components.isEmpty()) {
       components.add(new Component("kvstore", "state.in-memory", "v1", Collections.emptyMap()));
@@ -322,9 +326,4 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  // Following GenericContainer from Testcontainers
-  @Override
-  public boolean equals(Object o) {
-    return this == o;
-  }
 }

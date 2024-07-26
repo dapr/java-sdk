@@ -35,13 +35,13 @@ public class Component {
    * @param version  Component version.
    * @param metadata Metadata.
    */
-  public Component(String name, String type, String version, Map<String, Object> metadata) {
+  public Component(String name, String type, String version, Map<String, String> metadata) {
     this.name = name;
     this.type = type;
     this.version = version;
     this.metadata = new ArrayList<MetadataEntry>();
     if (!metadata.isEmpty()) {
-      for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+      for (Map.Entry<String, String> entry : metadata.entrySet()) {
         this.metadata.add(new MetadataEntry(entry.getKey(), entry.getValue()));
       }
     }

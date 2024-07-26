@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.testcontainers;
+package io.dapr.it.testcontainers;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.dapr.client.DaprClient;
@@ -19,6 +19,7 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.State;
 
+import io.dapr.testcontainers.DaprContainer;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;

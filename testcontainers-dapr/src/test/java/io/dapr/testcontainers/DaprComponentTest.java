@@ -33,7 +33,7 @@ public class DaprComponentTest {
             "statestore",
             "state.in-memory",
             "v1",
-            Collections.singletonMap("actorStateStore", new QuotedBoolean("true"))))
+            Collections.singletonMap("actorStateStore", "true")))
         .withAppChannelAddress("host.testcontainers.internal");
 
     Set<Component> components = dapr.getComponents();
@@ -49,7 +49,7 @@ public class DaprComponentTest {
         + "spec:\n"
         + "  metadata:\n"
         + "  - name: actorStateStore\n"
-        + "    value: \"true\"\n"
+        + "    value: 'true'\n"
         + "  type: state.in-memory\n"
         + "  version: v1\n";
 
@@ -61,7 +61,7 @@ public class DaprComponentTest {
     DaprContainer dapr = new DaprContainer("daprio/daprd")
         .withAppName("dapr-app")
         .withAppPort(8081)
-        .withSubscription("my-subscription", "pubsub", "topic", "/events")
+        .withSubscription(new Subscription("my-subscription", "pubsub", "topic", "/events"))
         .withAppChannelAddress("host.testcontainers.internal");
 
     Set<Subscription> subscriptions = dapr.getSubscriptions();
@@ -80,7 +80,7 @@ public class DaprComponentTest {
 
   @Test
   public void withComponentFromPath() {
-    URL stateStoreYaml = this.getClass().getClassLoader().getResource("components/statestore.yaml");
+    URL stateStoreYaml = this.getClass().getClassLoader().getResource("dapr-resources/statestore.yaml");
     Path path = Paths.get(stateStoreYaml.getPath());
 
     DaprContainer dapr = new DaprContainer("daprio/daprd")

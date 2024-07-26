@@ -24,6 +24,6 @@ public class DaprPlacementContainerTest {
 
   @Test
   public void testDaprPlacementContainerDefaults() {
-    Assert.assertEquals("The default port is set", 50006, placement.getPort());
+    Assert.assertEquals("The default port is set", 50005, placement.getPort());
   }
 }

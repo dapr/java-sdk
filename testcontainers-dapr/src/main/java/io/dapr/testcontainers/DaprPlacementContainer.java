@@ -22,7 +22,7 @@ import org.testcontainers.utility.DockerImageName;
 public class DaprPlacementContainer extends GenericContainer<DaprPlacementContainer> {
 
   private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("daprio/placement");
-  private int placementPort = 50006;
+  private int placementPort = 50005;
 
   /**
    * Creates a new Dapr placement container.
@@ -62,9 +62,4 @@ public class DaprPlacementContainer extends GenericContainer<DaprPlacementContai
     return placementPort;
   }
 
-  // Following GenericContainer from Testcontainers
-  @Override
-  public boolean equals(Object o) {
-    return this == o;
-  }
 }

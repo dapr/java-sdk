@@ -15,9 +15,9 @@ package io.dapr.testcontainers;
 
 public class MetadataEntry {
   private String name;
-  private Object value;
+  private String value;
 
-  public MetadataEntry(String name, Object value) {
+  public MetadataEntry(String name, String value) {
     this.name = name;
     this.value = value;
   }
@@ -26,7 +26,7 @@ public class MetadataEntry {
     return name;
   }
 
-  public Object getValue() {
+  public String getValue() {
     return value;
   }
 
@@ -34,7 +34,7 @@ public class MetadataEntry {
     this.name = name;
   }
 
-  public void setValue(Object value) {
+  public void setValue(String value) {
     this.value = value;
   }
 }
