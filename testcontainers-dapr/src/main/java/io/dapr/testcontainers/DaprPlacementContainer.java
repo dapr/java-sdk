@@ -62,4 +62,9 @@ public class DaprPlacementContainer extends GenericContainer<DaprPlacementContai
     return placementPort;
   }
 
+  // Required by spotbugs plugin
+  @Override
+  public boolean equals(Object o) {
+    return super.equals(o);
+  }
 }

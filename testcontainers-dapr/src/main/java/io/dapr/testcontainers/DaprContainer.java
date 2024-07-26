@@ -326,4 +326,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  // Required by spotbugs plugin
+  @Override
+  public boolean equals(Object o) {
+    return super.equals(o);
+  }
 }
