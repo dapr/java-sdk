@@ -258,7 +258,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     cmds.add("--log-level");
     cmds.add(daprLogLevel.toString());
     cmds.add("-components-path");
-    cmds.add("/components");
+    cmds.add("/dapr-resources");
     withCommand(cmds.toArray(new String[]{}));
 
     if (components.isEmpty()) {
@@ -272,12 +272,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     for (Component component : components) {
       String componentYaml = componentToYaml(component);
-      withCopyToContainer(Transferable.of(componentYaml), "/components/" + component.getName() + ".yaml");
+      withCopyToContainer(Transferable.of(componentYaml), "/dapr-resources/" + component.getName() + ".yaml");
     }
 
     for (Subscription subscription : subscriptions) {
       String subscriptionYaml = subscriptionToYaml(subscription);
-      withCopyToContainer(Transferable.of(subscriptionYaml), "/components/" + subscription.getName() + ".yaml");
+      withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
     }
   }
 
