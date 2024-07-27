@@ -13,10 +13,7 @@ limitations under the License.
 
 package io.dapr.testcontainers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Represents a Dapr component.
@@ -39,12 +36,14 @@ public class Component {
     this.name = name;
     this.type = type;
     this.version = version;
-    this.metadata = new ArrayList<MetadataEntry>();
+
+    List<MetadataEntry> entries = new ArrayList<>();
     if (!metadata.isEmpty()) {
       for (Map.Entry<String, String> entry : metadata.entrySet()) {
-        this.metadata.add(new MetadataEntry(entry.getKey(), entry.getValue()));
+        entries.add(new MetadataEntry(entry.getKey(), entry.getValue()));
       }
     }
+    this.metadata = Collections.unmodifiableList(entries);
   }
 
   /**

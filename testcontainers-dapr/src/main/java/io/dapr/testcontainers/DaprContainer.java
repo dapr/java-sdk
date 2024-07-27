@@ -47,7 +47,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
   private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("daprio/daprd");
-  private Yaml yaml;
+  private static final Yaml yaml = getYamlMapper();
   private DaprPlacementContainer placementContainer;
   private String placementDockerImageName = "daprio/placement";
   private boolean shouldReusePlacement;
@@ -67,13 +67,17 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     withExposedPorts(DAPRD_DEFAULT_HTTP_PORT, DAPRD_DEFAULT_GRPC_PORT);
 
+
+
+  }
+
+  private static Yaml getYamlMapper(){
     DumperOptions options = new DumperOptions();
     options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
     options.setPrettyFlow(true);
-
     Representer representer = new Representer(options);
     representer.addClassTag(MetadataEntry.class, Tag.MAP);
-    this.yaml = new Yaml(representer);
+    return new Yaml(representer);
   }
 
   /**
@@ -196,7 +200,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       componentSpec.put("metadata", component.getMetadata());
     }
     componentProps.put("spec", componentSpec);
-    return componentProps;
+    return Collections.unmodifiableMap(componentProps);
   }
 
   /**
@@ -219,7 +223,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     subscriptionSpec.put("route", subscription.getRoute());
 
     subscriptionProps.put("spec", subscriptionSpec);
-    return subscriptionProps;
+    return Collections.unmodifiableMap(subscriptionProps);
   }
 
   @Override
