@@ -22,6 +22,8 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Set;
 
+import static org.junit.Assert.assertThrows;
+
 public class DaprComponentTest {
 
   @Test
@@ -54,6 +56,24 @@ public class DaprComponentTest {
         + "  version: v1\n";
 
     Assert.assertEquals(expectedComponentYaml, componentYaml);
+  }
+
+  @Test
+  public void containerConfigurationTest() {
+    DaprContainer dapr = new DaprContainer("daprio/daprd")
+            .withAppName("dapr-app")
+            .withAppPort(8081)
+            .withDaprLogLevel(DaprLogLevel.DEBUG)
+            .withAppChannelAddress("host.testcontainers.internal");
+
+    dapr.configure();
+
+    assertThrows(IllegalStateException.class, () -> { dapr.getHttpEndpoint(); });
+    assertThrows(IllegalStateException.class, () -> { dapr.getGrpcPort(); });
+
+
+
+
   }
 
   @Test
