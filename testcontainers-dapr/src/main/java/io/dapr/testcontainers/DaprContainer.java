@@ -67,11 +67,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     withExposedPorts(DAPRD_DEFAULT_HTTP_PORT, DAPRD_DEFAULT_GRPC_PORT);
 
-
-
   }
 
-  private static Yaml getYamlMapper(){
+  private static Yaml getYamlMapper() {
     DumperOptions options = new DumperOptions();
     options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
     options.setPrettyFlow(true);
