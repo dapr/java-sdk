@@ -16,7 +16,7 @@
     <maven.compiler.target>17</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
     <dapr.sdk.version>1.12.0-SNAPSHOT</dapr.sdk.version>
-    <dapr.alpha.sdk.version>0.12.0-SNAPSHOT</dapr.alpha.sdk.version>
+    <dapr.sdk.alpha.version>0.12.0-SNAPSHOT</dapr.sdk.alpha.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
     <grpc.version>1.59.0</grpc.version>
@@ -136,7 +136,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>testcontainers-dapr</artifactId>
-      <version>${dapr.alpha.sdk.version}</version>
+      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
