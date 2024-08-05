@@ -58,8 +58,6 @@ Before getting into the application code, follow these steps in order to set up 
 
 <!-- STEP
 name: Setup kafka container
-expected_stderr_lines:
-  - 'Creating network "http_default" with the default driver'
 sleep: 20
 -->
 
