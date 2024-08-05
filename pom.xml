@@ -17,7 +17,7 @@
     <grpc.version>1.59.0</grpc.version>
     <protobuf.version>3.17.3</protobuf.version>
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.13.0-rc.5/dapr/proto</dapr.proto.baseurl>
-    <dapr.sdk-workflows.version>0.12.0-SNAPSHOT</dapr.sdk-workflows.version>
+    <dapr.sdk.alpha.version>0.12.0-SNAPSHOT</dapr.sdk.alpha.version>
     <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
@@ -38,6 +38,8 @@
     <failsafe.version>3.2.2</failsafe.version>
     <surefire.version>3.2.2</surefire.version>
     <junit-bom.version>5.8.2</junit-bom.version>
+    <snakeyaml.version>2.0</snakeyaml.version>
+    <testcontainers.version>1.20.0</testcontainers.version>
   </properties>
 
   <distributionManagement>
@@ -330,6 +332,8 @@
     <module>sdk-workflows</module>
     <module>sdk-springboot</module>
     <module>examples</module>
+    <!-- We are following test containers artifact convention on purpose, don't rename -->
+    <module>testcontainers-dapr</module>
     <!-- don't add sdk-tests to the build, 
       it's only used for CI testing by github action
     <module>sdk-tests</module>
