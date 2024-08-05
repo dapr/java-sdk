@@ -44,7 +44,7 @@ sleep: 5
 -->
 
 ```bash
-docker-compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml up -d
+docker compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml up -d
 ```
 
 <!-- END_STEP -->
@@ -305,7 +305,7 @@ name: Cleanup MongoDB containers
 -->
 
 ```bash
-docker-compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml down
+docker compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml down
 ```
 
 <!-- END_STEP -->

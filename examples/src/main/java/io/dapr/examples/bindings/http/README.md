@@ -58,13 +58,11 @@ Before getting into the application code, follow these steps in order to set up 
 
 <!-- STEP
 name: Setup kafka container
-expected_stderr_lines:
-  - 'Creating network "http_default" with the default driver'
 sleep: 20
 -->
 
 ```bash
-docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d
+docker compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml up -d
 ```
 
 <!-- END_STEP -->
@@ -248,7 +246,7 @@ name: Cleanup Kafka containers
 -->
 
 ```bash
-docker-compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml down
+docker compose -f ./src/main/java/io/dapr/examples/bindings/http/docker-compose-single-kafka.yml down
 ```
 
 <!-- END_STEP -->
