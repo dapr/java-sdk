@@ -72,6 +72,24 @@ public abstract class Property<T> {
    * @return Value from system property (1st) or env variable (2nd) or default (last).
    */
   public T get() {
+    return this.get(null);
+  }
+
+  /**
+   * Gets the value defined by system property first, then env variable or sticks to default.
+   *
+   * @return Value from system property (1st) or env variable (2nd) or default (last).
+   */
+  public T get(String override) {
+    if ((override != null) && !override.isEmpty()) {
+      try {
+        return this.parse(override);
+      } catch (IllegalArgumentException e) {
+        LOGGER.warning(String.format("Invalid override value in property: %s", this.name));
+        // OK, we tried. Falling back to system environment variable.
+      }
+    }
+
     String propValue = System.getProperty(this.name);
     if (propValue != null && !propValue.trim().isEmpty()) {
       try {

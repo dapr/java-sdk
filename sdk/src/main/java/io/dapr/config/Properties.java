@@ -18,6 +18,7 @@ import io.dapr.utils.NetworkUtils;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Global properties for Dapr's SDK, using Supplier so they are dynamically resolved.
@@ -172,4 +173,15 @@ public class Properties {
           "dapr.http.client.maxIdleConnections",
           "DAPR_HTTP_CLIENT_MAX_IDLE_CONNECTIONS",
           DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
+
+  private final Map<String, String> overrides;
+
+  public Properties(Map<String, String> overrides) {
+    this.overrides = overrides;
+  }
+
+  public <T> T getValue(Property<T> property) {
+    String override = overrides.get(property.getName());
+    return property.get(override);
+  }
 }
