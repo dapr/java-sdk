@@ -30,7 +30,6 @@ public class MethodInvokeIT extends BaseIT {
     private static final int TIMEOUT_MS = 100;
     private static final ResiliencyOptions RESILIENCY_OPTIONS = new ResiliencyOptions()
         .setTimeout(Duration.ofMillis(TIMEOUT_MS));
-    private static final String EXCEPTION_MARKER = "DEADLINE_EXCEEDED: deadline exceeded after";
 
     /**
      * Run of a Dapr application.
@@ -92,7 +91,8 @@ public class MethodInvokeIT extends BaseIT {
             String message = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req)).getMessage();
             long delay = System.currentTimeMillis() - started;
             assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
-            assertTrue(message.startsWith(EXCEPTION_MARKER), "Message: " + message + " does not start with: " + EXCEPTION_MARKER);
+            assertTrue(message.contains("DEADLINE_EXCEEDED"));
+            assertTrue(message.contains("CallOptions deadline exceeded after"));
         }
     }
 
@@ -112,7 +112,8 @@ public class MethodInvokeIT extends BaseIT {
             // If this test fails, there might be a regression in runtime (like we had in 1.10.0).
             // The expectations below are as per 1.9 release and (later on) hotfixed in 1.10.
             assertEquals(Status.UNKNOWN.getCode(), exception.getStatus().getCode());
-            assertEquals("", exception.getStatus().getDescription());
+            // The error message below is added starting in Dapr 1.15.0
+            assertEquals("Application error processing RPC", exception.getStatus().getDescription());
         }
     }
 
