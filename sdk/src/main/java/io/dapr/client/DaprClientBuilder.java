@@ -14,17 +14,24 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.client.resiliency.ResiliencyOptions;
+import io.dapr.config.Properties;
+import io.dapr.config.Property;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A builder for the DaprClient,
  * Currently only gRPC and HTTP Client will be supported.
  */
 public class DaprClientBuilder {
+
+  private final Map<String, String> propertyOverrides = new HashMap<>();
 
   /**
    * Builder for Dapr's HTTP Client.
@@ -105,6 +112,11 @@ public class DaprClientBuilder {
     return this;
   }
 
+  public DaprClientBuilder withPropertyOverride(Property<?> property, String value) {
+    this.propertyOverrides.put(property.getName(), value);
+    return this;
+  }
+
   /**
    * Build an instance of the Client based on the provided setup.
    *
@@ -132,7 +144,8 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
    */
   private DaprClientImpl buildDaprClient() {
-    final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
+    final Properties properties = new Properties(this.propertyOverrides);
+    final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel(properties);
     final DaprHttp daprHttp = this.daprHttpBuilder.build();
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
