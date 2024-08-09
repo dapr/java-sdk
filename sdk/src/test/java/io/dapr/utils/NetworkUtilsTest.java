@@ -14,6 +14,7 @@ public class NetworkUtilsTest {
   private final String defaultSidecarIP = "127.0.0.1";
 
   private ManagedChannel channel;
+  private Properties properties = new Properties();
 
   @BeforeEach
   public void setUp() {
@@ -31,7 +32,7 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannel() {
-    channel = NetworkUtils.buildGrpcManagedChannel();
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -40,7 +41,7 @@ public class NetworkUtilsTest {
   @Test
   public void testBuildGrpcManagedChannel_httpEndpointNoPort() {
     System.setProperty(Properties.GRPC_ENDPOINT.getName(), "http://example.com");
-    channel = NetworkUtils.buildGrpcManagedChannel();
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:80";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -49,7 +50,7 @@ public class NetworkUtilsTest {
   @Test
   public void testBuildGrpcManagedChannel_httpEndpointWithPort() {
     System.setProperty(Properties.GRPC_ENDPOINT.getName(), "http://example.com:3000");
-    channel = NetworkUtils.buildGrpcManagedChannel();
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:3000";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -58,7 +59,7 @@ public class NetworkUtilsTest {
   @Test
   public void testBuildGrpcManagedChannel_httpsEndpointNoPort() {
     System.setProperty(Properties.GRPC_ENDPOINT.getName(), "https://example.com");
-    channel = NetworkUtils.buildGrpcManagedChannel();
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:443";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -67,7 +68,7 @@ public class NetworkUtilsTest {
   @Test
   public void testBuildGrpcManagedChannel_httpsEndpointWithPort() {
     System.setProperty(Properties.GRPC_ENDPOINT.getName(), "https://example.com:3000");
-    channel = NetworkUtils.buildGrpcManagedChannel();
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:3000";
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -138,7 +139,7 @@ public class NetworkUtilsTest {
       boolean expectSecure
   ) {
     System.setProperty(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
-    var settings = NetworkUtils.GrpcEndpointSettings.parse();
+    var settings = NetworkUtils.GrpcEndpointSettings.parse(new Properties());
 
     Assertions.assertEquals(expectedEndpoint, settings.endpoint);
     Assertions.assertEquals(expectSecure, settings.secure);
@@ -147,7 +148,7 @@ public class NetworkUtilsTest {
   private static void testGrpcEndpointParsingErrorScenario(String grpcEndpointEnvValue) {
     try {
       System.setProperty(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
-      NetworkUtils.GrpcEndpointSettings.parse();
+      NetworkUtils.GrpcEndpointSettings.parse(new Properties());
       Assert.fail();
     } catch (IllegalArgumentException e) {
       // Expected

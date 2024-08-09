@@ -152,15 +152,21 @@ public class DaprHttp implements AutoCloseable {
   private final OkHttpClient httpClient;
 
   /**
+   * Dapr API Token required to interact with DAPR APIs.
+   */
+  private final String daprApiToken;
+
+  /**
    * Creates a new instance of {@link DaprHttp}.
    *
    * @param hostname   Hostname for calling Dapr. (e.g. "127.0.0.1")
    * @param port       Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String hostname, int port, OkHttpClient httpClient) {
+  DaprHttp(String hostname, int port, String daprApiToken, OkHttpClient httpClient) {
     this.uri = URI.create(DEFAULT_HTTP_SCHEME + "://" + hostname + ":" + port);
     this.httpClient = httpClient;
+    this.daprApiToken = daprApiToken;
   }
 
   /**
@@ -169,9 +175,10 @@ public class DaprHttp implements AutoCloseable {
    * @param uri        Endpoint for calling Dapr. (e.g. "https://my-dapr-api.company.com")
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String uri, OkHttpClient httpClient) {
+  DaprHttp(String uri, String daprApiToken, OkHttpClient httpClient) {
     this.uri = URI.create(uri);
     this.httpClient = httpClient;
+    this.daprApiToken = daprApiToken;
   }
 
   /**
@@ -314,7 +321,6 @@ public class DaprHttp implements AutoCloseable {
       requestBuilder.method(method, body);
     }
 
-    String daprApiToken = Properties.API_TOKEN.get();
     if (daprApiToken != null) {
       requestBuilder.addHeader(Headers.DAPR_API_TOKEN, daprApiToken);
     }
