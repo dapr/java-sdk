@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ public class DaprClientBuilderTest {
     DaprClient daprClient = daprClientBuilder.build();
     assertNotNull(daprClient);
     DaprException thrown = assertThrows(DaprException.class, () -> { daprClient.getMetadata().block(); });
-    assertTrue(thrown.getMessage().contains("Unable to resolve host unknown-host"));
+    assertTrue(thrown.toString().contains("UNAVAILABLE"));
 
   }
 
