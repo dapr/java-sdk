@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
@@ -38,14 +39,19 @@ public class WorkflowRuntimeBuilder {
    * Constructs the WorkflowRuntimeBuilder.
    */
   public WorkflowRuntimeBuilder() {
-    this(LoggerFactory.getLogger(WorkflowRuntimeBuilder.class));
+    this(new Properties(), LoggerFactory.getLogger(WorkflowRuntimeBuilder.class));
   }
 
-  WorkflowRuntimeBuilder(Logger logger) {
+  public WorkflowRuntimeBuilder(Logger logger) {
+    this(new Properties(), logger);
+  }
+
+  WorkflowRuntimeBuilder(Properties properties, Logger logger) {
     this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
-        NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
+            NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR));
     this.logger = logger;
   }
+
 
   /**
    * Returns a WorkflowRuntime object.

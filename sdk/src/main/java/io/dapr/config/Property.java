@@ -77,7 +77,7 @@ public abstract class Property<T> {
 
   /**
    * Gets the value defined by system property first, then env variable or sticks to default.
-   *
+   * @param override overrides the property value
    * @return Value from system property (1st) or env variable (2nd) or default (last).
    */
   public T get(String override) {

@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.config.Properties;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 
@@ -25,8 +26,9 @@ public class DaprHttpBuilderTest {
 
   @Test
   public void singletonOkHttpClient() throws Exception {
-    DaprHttp daprHttp = new DaprHttpBuilder().build();
-    DaprHttp anotherDaprHttp = new DaprHttpBuilder().build();
+    Properties properties = new Properties();
+    DaprHttp daprHttp = new DaprHttpBuilder().build(properties);
+    DaprHttp anotherDaprHttp = new DaprHttpBuilder().build(properties);
 
     assertSame(getOkHttpClient(daprHttp), getOkHttpClient(anotherDaprHttp));
   }
