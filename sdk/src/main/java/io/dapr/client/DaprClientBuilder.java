@@ -112,6 +112,12 @@ public class DaprClientBuilder {
     return this;
   }
 
+  /**
+   * Allow to set up properties override for static properties.
+   * @param property that we want to override
+   * @param value the value of such property
+   * @return an instance of the setup Client
+  */
   public DaprClientBuilder withPropertyOverride(Property<?> property, String value) {
     this.propertyOverrides.put(property.getName(), value);
     return this;
@@ -146,7 +152,7 @@ public class DaprClientBuilder {
   private DaprClientImpl buildDaprClient() {
     final Properties properties = new Properties(this.propertyOverrides);
     final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    final DaprHttp daprHttp = this.daprHttpBuilder.build();
+    final DaprHttp daprHttp = this.daprHttpBuilder.build(properties);
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
     return new DaprClientImpl(

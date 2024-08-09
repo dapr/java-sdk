@@ -49,7 +49,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * Public constructor for DaprWorkflowClient. This layer constructs the GRPC Channel.
    */
   public DaprWorkflowClient() {
-    this(NetworkUtils.buildGrpcManagedChannel(WORKFLOW_INTERCEPTOR));
+    this(NetworkUtils.buildGrpcManagedChannel(new Properties(), WORKFLOW_INTERCEPTOR));
   }
 
   /**
