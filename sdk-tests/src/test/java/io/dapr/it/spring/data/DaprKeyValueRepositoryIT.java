@@ -15,6 +15,7 @@ package io.dapr.it.spring.data;
 
 import io.dapr.client.DaprClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = TestDaprSpringDataConfiguration.class)
+@Tag("testcontainers")
 public class DaprKeyValueRepositoryIT extends AbstractPostgreSQLBaseIT {
 
   @Autowired

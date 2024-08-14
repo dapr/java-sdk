@@ -21,6 +21,7 @@ import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     properties = {"dapr.pubsub.name=pubsub"}
 )
 @Testcontainers
+@Tag("testcontainers")
 public class DaprSpringMessagingIT {
 
   private static final Logger logger = LoggerFactory.getLogger(DaprSpringMessagingIT.class);
