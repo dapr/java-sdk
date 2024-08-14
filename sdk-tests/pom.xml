@@ -144,7 +144,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-workflows</artifactId>
-      <version>${dapr.alpha.sdk.version}</version>
+      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -156,31 +156,31 @@
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-core</artifactId>
-      <version>${dapr.alpha.sdk.version}</version>
+      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-data</artifactId>
-      <version>${dapr.alpha.sdk.version}</version>
+      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-messaging</artifactId>
-      <version>${dapr.alpha.sdk.version}</version>
+      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-boot-autoconfigure</artifactId>
-      <version>${dapr.alpha.sdk.version}</version>
+      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-boot-testcontainers</artifactId>
-      <version>${dapr.alpha.sdk.version}</version>
+      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
