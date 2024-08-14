@@ -7,13 +7,13 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.12.0-SNAPSHOT</version>
+    <version>1.13.0-SNAPSHOT</version>
   </parent>
 
   <groupId>io.dapr.spring</groupId>
   <artifactId>dapr-spring-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.12.0-SNAPSHOT</version>
+  <version>0.13.0-SNAPSHOT</version>
   <name>dapr-spring-parent</name>
   <description>SDK extension for Spring and Spring Boot</description>
 
@@ -28,9 +28,9 @@
 
   <properties>
     <springboot.version>3.2.6</springboot.version>
-    <testcontainers-dapr.version>0.12.0-SNAPSHOT</testcontainers-dapr.version>
+    <testcontainers-dapr.version>0.13.0-SNAPSHOT</testcontainers-dapr.version>
     <testcontainers-test.version>1.19.8</testcontainers-test.version>
-    <dapr.sdk.version>1.12.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.version>1.13.0-SNAPSHOT</dapr.sdk.version>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.release>17</maven.compiler.release>
