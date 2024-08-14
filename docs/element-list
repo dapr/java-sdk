@@ -9,7 +9,8 @@ io.dapr.client.domain.query.filters
 io.dapr.client.resiliency
 io.dapr.config
 io.dapr.exceptions
-io.dapr.internal.exceptions
+io.dapr.internal.grpc
+io.dapr.internal.grpc.interceptors
 io.dapr.internal.opencensus
 io.dapr.internal.resiliency
 io.dapr.serializer
