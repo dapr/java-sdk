@@ -16,13 +16,11 @@ package io.dapr.it.spring.data;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.junit.jupiter.api.BeforeAll;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +31,6 @@ import static io.dapr.it.spring.data.DaprSpringDataConstants.PUBSUB_NAME;
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 
 @SuppressWarnings("AbbreviationAsWordInName")
-@Testcontainers
 public abstract class AbstractPostgreSQLBaseIT {
   private static final String CONNECTION_STRING =
       "host=postgres user=postgres password=password port=5432 connect_timeout=10 database=dapr_db";

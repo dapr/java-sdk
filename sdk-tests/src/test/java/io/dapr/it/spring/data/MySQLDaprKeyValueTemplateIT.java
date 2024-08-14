@@ -51,9 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Integration tests for {@link MySQLDaprKeyValueTemplateIT}.
  */
 @SuppressWarnings("AbbreviationAsWordInName")
-@Testcontainers
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = TestDaprSpringDataConfiguration.class)
+@Testcontainers
 @Tag("testcontainers")
 public class MySQLDaprKeyValueTemplateIT {
   private static final String STATE_STORE_DSN = "mysql:password@tcp(mysql:3306)/";
@@ -75,7 +75,7 @@ public class MySQLDaprKeyValueTemplateIT {
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
-      .withAppName("local-dapr-app")
+      .withAppName("mysql-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.mysql", "v1", STATE_STORE_PROPERTIES))
       .withComponent(new Component(BINDING_NAME, "bindings.mysql", "v1", BINDING_PROPERTIES))
