@@ -21,12 +21,14 @@ import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -40,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     classes = {
         DaprClientAutoConfiguration.class,
-        TestDaprSpringMessagingConfiguration.class,
         TestApplication.class
     },
     properties = {"dapr.pubsub.name=pubsub"}
@@ -60,8 +61,11 @@ public class DaprSpringMessagingIT {
       .withAppName("local-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
+      .withAppPort(8080)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
-      .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()));
+      .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+      .withAppChannelAddress("host.testcontainers.internal");
+
 
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {
