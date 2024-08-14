@@ -75,7 +75,7 @@ public class MySQLDaprKeyValueTemplateIT {
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
-      .withAppName("mysql-dapr-app")
+      .withAppName("local-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.mysql", "v1", STATE_STORE_PROPERTIES))
       .withComponent(new Component(BINDING_NAME, "bindings.mysql", "v1", BINDING_PROPERTIES))
@@ -83,7 +83,6 @@ public class MySQLDaprKeyValueTemplateIT {
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(MY_SQL_CONTAINER);
-
 
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {

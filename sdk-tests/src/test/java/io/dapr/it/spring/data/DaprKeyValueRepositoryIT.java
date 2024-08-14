@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -42,6 +44,14 @@ public class DaprKeyValueRepositoryIT extends AbstractPostgreSQLBaseIT {
 
   @Autowired
   private TestTypeRepository repository;
+
+  @DynamicPropertySource
+  static void daprProperties(DynamicPropertyRegistry registry) {
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    DAPR_CONTAINER.start();
+    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
+    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
+  }
 
   @BeforeEach
   public void setUp() {

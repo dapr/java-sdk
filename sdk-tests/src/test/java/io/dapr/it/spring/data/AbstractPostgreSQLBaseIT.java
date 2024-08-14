@@ -16,8 +16,6 @@ package io.dapr.it.spring.data;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -51,7 +49,7 @@ public abstract class AbstractPostgreSQLBaseIT {
 
   @Container
   public static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
-      .withAppName("postgresql-dapr-app")
+      .withAppName("local-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.postgresql", "v1", STATE_STORE_PROPERTIES))
       .withComponent(new Component(BINDING_NAME, "bindings.postgresql", "v1", BINDING_PROPERTIES))
@@ -59,13 +57,6 @@ public abstract class AbstractPostgreSQLBaseIT {
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(POSTGRE_SQL_CONTAINER);
-
-  @DynamicPropertySource
-  static void daprProperties(DynamicPropertyRegistry registry) {
-    DAPR_CONTAINER.start();
-    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
-    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
-  }
 
   private static Map<String, String> createStateStoreProperties() {
     Map<String, String> result = new HashMap<>();
