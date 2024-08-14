@@ -13,18 +13,17 @@ limitations under the License.
 
 package io.dapr.it.spring.data;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.config.Properties;
-import io.dapr.spring.data.DaprKeyValueAdapterResolver;
 import io.dapr.spring.data.DaprKeyValueTemplate;
-import io.dapr.spring.data.KeyValueAdapterResolver;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.keyvalue.core.query.KeyValueQuery;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
-import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -40,43 +38,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Integration tests for {@link PostgreSQLDaprKeyValueTemplateIT}.
  */
 @SuppressWarnings("AbbreviationAsWordInName")
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = TestDaprSpringDataConfiguration.class)
+@Testcontainers
 @Tag("testcontainers")
 public class PostgreSQLDaprKeyValueTemplateIT extends AbstractPostgreSQLBaseIT {
 
-  private final ObjectMapper mapper = new ObjectMapper();
-
+  @Autowired
   private DaprClient daprClient;
+
+  @Autowired
   private DaprKeyValueTemplate keyValueTemplate;
 
   @BeforeEach
-  public void setUp() {
-    int grpcPort = DAPR_CONTAINER.getGrpcPort();
-    int httpPort = DAPR_CONTAINER.getHttpPort();
-
-    daprClient = new DaprClientBuilder()
-        .withPropertyOverride(Properties.GRPC_PORT, String.valueOf(grpcPort))
-        .withPropertyOverride(Properties.HTTP_PORT, String.valueOf(httpPort))
-        .build();
-    KeyValueAdapterResolver daprKeyValueAdapterResolver = new DaprKeyValueAdapterResolver(
-        daprClient,
-        mapper,
-        STATE_STORE_NAME,
-        BINDING_NAME
-    );
-    keyValueTemplate = new DaprKeyValueTemplate(daprKeyValueAdapterResolver);
-
-    daprClient.waitForSidecar(10000).block();
-  }
-
-  /**
-   * Cleans up the state store after each test.
-   */
-  @AfterEach
-  public void tearDown() {
+  public void waitSetup() {
+    daprClient.waitForSidecar(1000).block();
     var meta = Collections.singletonMap("sql", "delete from state");
-
     daprClient.invokeBinding(BINDING_NAME, "exec", null, meta).block();
   }
+
 
   @Test
   public void testInsertAndQueryDaprKeyValueTemplate() {

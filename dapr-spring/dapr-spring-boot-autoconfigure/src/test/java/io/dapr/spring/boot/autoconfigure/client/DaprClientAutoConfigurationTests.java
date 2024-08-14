@@ -27,8 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DaprClientAutoConfigurationTests {
 
   private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-      .withPropertyValues("dapr.client.grpc.port", "50001")
-      .withPropertyValues("dapr.client.http.port", "3500")
       .withConfiguration(AutoConfigurations.of(DaprClientAutoConfiguration.class));
 
   @Test

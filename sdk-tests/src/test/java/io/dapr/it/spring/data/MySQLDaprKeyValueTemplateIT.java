@@ -13,18 +13,22 @@ limitations under the License.
 
 package io.dapr.it.spring.data;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.config.Properties;
-import io.dapr.spring.data.DaprKeyValueAdapterResolver;
 import io.dapr.spring.data.DaprKeyValueTemplate;
-import io.dapr.spring.data.KeyValueAdapterResolver;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.keyvalue.core.query.KeyValueQuery;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
@@ -48,6 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 @SuppressWarnings("AbbreviationAsWordInName")
 @Testcontainers
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = TestDaprSpringDataConfiguration.class)
 @Tag("testcontainers")
 public class MySQLDaprKeyValueTemplateIT {
   private static final String STATE_STORE_DSN = "mysql:password@tcp(mysql:3306)/";
@@ -69,49 +75,30 @@ public class MySQLDaprKeyValueTemplateIT {
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
-      .withAppName("mysql-dapr-app")
+      .withAppName("local-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.mysql", "v1", STATE_STORE_PROPERTIES))
       .withComponent(new Component(BINDING_NAME, "bindings.mysql", "v1", BINDING_PROPERTIES))
       .withComponent(new Component(PUBSUB_NAME, "pubsub.in-memory", "v1", Collections.emptyMap()))
-      .withAppPort(8080)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
-      .withAppChannelAddress("host.testcontainers.internal")
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(MY_SQL_CONTAINER);
 
-  private final ObjectMapper mapper = new ObjectMapper();
 
+  @DynamicPropertySource
+  static void daprProperties(DynamicPropertyRegistry registry) {
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    DAPR_CONTAINER.start();
+    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
+    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
+  }
+
+  @Autowired
   private DaprClient daprClient;
+
+  @Autowired
   private DaprKeyValueTemplate keyValueTemplate;
 
-  @BeforeAll
-  static void beforeAll() {
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
-  }
-
-  @BeforeEach
-  public void setUp() {
-    int grpcPort = DAPR_CONTAINER.getGrpcPort();
-    int httpPort = DAPR_CONTAINER.getHttpPort();
-
-    System.out.println("Dapr container GRPC port: " + grpcPort);
-    System.out.println("Dapr container HTTP port: " + httpPort);
-
-    daprClient = new DaprClientBuilder()
-        .withPropertyOverride(Properties.GRPC_PORT, String.valueOf(grpcPort))
-        .withPropertyOverride(Properties.HTTP_PORT, String.valueOf(httpPort))
-        .build();
-    KeyValueAdapterResolver daprKeyValueResolver = new DaprKeyValueAdapterResolver(
-        daprClient,
-        mapper,
-        STATE_STORE_NAME,
-        BINDING_NAME
-    );
-    keyValueTemplate = new DaprKeyValueTemplate(daprKeyValueResolver);
-
-    daprClient.waitForSidecar(10000).block();
-  }
 
   private static Map<String, String> createStateStoreProperties() {
     Map<String, String> result = new HashMap<>();
@@ -122,6 +109,11 @@ public class MySQLDaprKeyValueTemplateIT {
     result.put("connectionString", STATE_STORE_DSN);
 
     return result;
+  }
+
+  @BeforeEach
+  public void waitSetup() {
+    daprClient.waitForSidecar(1000).block();
   }
 
   /**

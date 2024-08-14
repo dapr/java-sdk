@@ -59,21 +59,15 @@ public abstract class AbstractPostgreSQLBaseIT {
       .withComponent(new Component(STATE_STORE_NAME, "state.postgresql", "v1", STATE_STORE_PROPERTIES))
       .withComponent(new Component(BINDING_NAME, "bindings.postgresql", "v1", BINDING_PROPERTIES))
       .withComponent(new Component(PUBSUB_NAME, "pubsub.in-memory", "v1", Collections.emptyMap()))
-      .withAppPort(8080)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-      .withAppChannelAddress("host.testcontainers.internal")
       .dependsOn(POSTGRE_SQL_CONTAINER);
-
-  @BeforeAll
-  static void beforeAll() {
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
-  }
 
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {
-    registry.add("dapr.client.grpc.port", DAPR_CONTAINER::getGrpcPort);
-    registry.add("dapr.client.http.port", DAPR_CONTAINER::getHttpPort);
+    DAPR_CONTAINER.start();
+    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
+    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
   }
 
   private static Map<String, String> createStateStoreProperties() {

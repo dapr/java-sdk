@@ -13,22 +13,22 @@ limitations under the License.
 
 package io.dapr.it.spring.messaging;
 
-import io.dapr.client.DaprClient;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.spring.boot.autoconfigure.client.DaprClientAutoConfiguration;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -41,12 +41,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     classes = {
+        DaprClientAutoConfiguration.class,
         TestDaprSpringMessagingConfiguration.class,
         TestApplication.class
     },
     properties = {"dapr.pubsub.name=pubsub"}
 )
 @Testcontainers
+@ExtendWith(SpringExtension.class)
 @Tag("testcontainers")
 public class DaprSpringMessagingIT {
 
@@ -66,8 +68,15 @@ public class DaprSpringMessagingIT {
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal");
 
-  @Autowired
-  private DaprClient daprClient;
+
+  @DynamicPropertySource
+  static void daprProperties(DynamicPropertyRegistry registry) {
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    DAPR_CONTAINER.start();
+    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
+    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
+  }
+
 
   @Autowired
   private DaprMessagingTemplate<String> messagingTemplate;
@@ -75,21 +84,6 @@ public class DaprSpringMessagingIT {
   @Autowired
   private TestRestController testRestController;
 
-  @BeforeAll
-  static void beforeAll() {
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
-  }
-
-  @DynamicPropertySource
-  static void daprProperties(DynamicPropertyRegistry registry) {
-    registry.add("dapr.client.grpc.port", DAPR_CONTAINER::getGrpcPort);
-    registry.add("dapr.client.http.port", DAPR_CONTAINER::getHttpPort);
-  }
-
-  @BeforeEach
-  public void setUp() {
-    daprClient.waitForSidecar(10000).block();
-  }
 
   @Test
   public void testDaprMessagingTemplate() throws InterruptedException {

@@ -15,20 +15,17 @@ package io.dapr.spring.boot.autoconfigure.client;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.config.Properties;
 import io.dapr.spring.core.client.DaprClientCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 import java.util.stream.Collectors;
 
 @AutoConfiguration
 @ConditionalOnClass(DaprClient.class)
-@EnableConfigurationProperties(DaprClientProperties.class)
 public class DaprClientAutoConfiguration {
 
   @Bean
@@ -50,11 +47,8 @@ public class DaprClientAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  DaprClient daprClient(DaprClientProperties properties, DaprClientBuilder daprClientBuilder) {
-    return daprClientBuilder
-        .withPropertyOverride(Properties.GRPC_PORT, String.valueOf(properties.getGrpcPort()))
-        .withPropertyOverride(Properties.HTTP_PORT, String.valueOf(properties.getGrpcPort()))
-        .build();
+  DaprClient daprClient(DaprClientBuilder daprClientBuilder) {
+    return daprClientBuilder.build();
   }
 
 }
