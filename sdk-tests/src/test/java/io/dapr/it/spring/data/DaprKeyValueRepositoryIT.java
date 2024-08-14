@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("testcontainers")
 public class DaprKeyValueRepositoryIT {
   private static final String CONNECTION_STRING =
-      "host=postgres user=postgres password=password port=5432 connect_timeout=10 database=dapr_db_repository";
+      "host=postgres-repository user=postgres password=password port=5432 connect_timeout=10 database=dapr_db_repository";
   private static final Map<String, String> STATE_STORE_PROPERTIES = createStateStoreProperties();
 
   private static final Map<String, String> BINDING_PROPERTIES = Collections.singletonMap("connectionString", CONNECTION_STRING);
@@ -59,7 +59,7 @@ public class DaprKeyValueRepositoryIT {
 
   @Container
   private static final PostgreSQLContainer<?> POSTGRE_SQL_CONTAINER = new PostgreSQLContainer<>("postgres:16-alpine")
-      .withNetworkAliases("postgres")
+      .withNetworkAliases("postgres-repository")
       .withDatabaseName("dapr_db_repository")
       .withUsername("postgres")
       .withPassword("password")

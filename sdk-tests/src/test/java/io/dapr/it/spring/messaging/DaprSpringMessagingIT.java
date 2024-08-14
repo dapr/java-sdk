@@ -63,7 +63,7 @@ public class DaprSpringMessagingIT {
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal");
-  
+
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
