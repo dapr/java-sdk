@@ -68,6 +68,13 @@ public class DaprSpringMessagingIT {
   static void daprProperties(DynamicPropertyRegistry registry) {
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
     DAPR_CONTAINER.start();
+
+    try {
+      Thread.sleep(5000);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+
     registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
     registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
   }
