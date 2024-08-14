@@ -93,7 +93,6 @@ public class DaprKeyValueRepositoryIT {
     return result;
   }
 
-
   @Autowired
   private DaprClient daprClient;
 
@@ -102,7 +101,7 @@ public class DaprKeyValueRepositoryIT {
 
   @BeforeEach
   public void setUp() {
-    daprClient.waitForSidecar(10000).block();
+    daprClient.waitForSidecar(1000).block();
     repository.deleteAll();
   }
 
