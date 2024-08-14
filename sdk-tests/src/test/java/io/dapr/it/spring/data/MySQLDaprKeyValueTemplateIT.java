@@ -43,7 +43,6 @@ import java.util.Optional;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
-import static io.dapr.it.spring.data.DaprSpringDataConstants.PUBSUB_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -75,29 +74,20 @@ public class MySQLDaprKeyValueTemplateIT {
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
-      .withAppName("local-dapr-app")
+      .withAppName("mysql-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.mysql", "v1", STATE_STORE_PROPERTIES))
       .withComponent(new Component(BINDING_NAME, "bindings.mysql", "v1", BINDING_PROPERTIES))
-      .withComponent(new Component(PUBSUB_NAME, "pubsub.in-memory", "v1", Collections.emptyMap()))
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(MY_SQL_CONTAINER);
 
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
     DAPR_CONTAINER.start();
     registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
     registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
   }
-
-  @Autowired
-  private DaprClient daprClient;
-
-  @Autowired
-  private DaprKeyValueTemplate keyValueTemplate;
-
 
   private static Map<String, String> createStateStoreProperties() {
     Map<String, String> result = new HashMap<>();
@@ -109,6 +99,12 @@ public class MySQLDaprKeyValueTemplateIT {
 
     return result;
   }
+
+  @Autowired
+  private DaprClient daprClient;
+
+  @Autowired
+  private DaprKeyValueTemplate keyValueTemplate;
 
   @BeforeEach
   public void waitSetup() {

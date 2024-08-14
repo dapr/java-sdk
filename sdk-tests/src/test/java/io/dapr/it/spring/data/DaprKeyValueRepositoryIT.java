@@ -14,6 +14,9 @@ limitations under the License.
 package io.dapr.it.spring.data;
 
 import io.dapr.client.DaprClient;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -23,10 +26,18 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
+import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -37,21 +48,57 @@ import static org.junit.jupiter.api.Assertions.*;
 @ContextConfiguration(classes = TestDaprSpringDataConfiguration.class)
 @Testcontainers
 @Tag("testcontainers")
-public class DaprKeyValueRepositoryIT extends AbstractPostgreSQLBaseIT {
+public class DaprKeyValueRepositoryIT {
+  private static final String CONNECTION_STRING =
+      "host=postgres user=postgres password=password port=5432 connect_timeout=10 database=dapr_db_repository";
+  private static final Map<String, String> STATE_STORE_PROPERTIES = createStateStoreProperties();
+
+  private static final Map<String, String> BINDING_PROPERTIES = Collections.singletonMap("connectionString", CONNECTION_STRING);
+
+  private static final Network DAPR_NETWORK = Network.newNetwork();
+
+  @Container
+  private static final PostgreSQLContainer<?> POSTGRE_SQL_CONTAINER = new PostgreSQLContainer<>("postgres:16-alpine")
+      .withNetworkAliases("postgres")
+      .withDatabaseName("dapr_db_repository")
+      .withUsername("postgres")
+      .withPassword("password")
+      .withExposedPorts(5432)
+      .withNetwork(DAPR_NETWORK);
+
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
+      .withAppName("postgresql-repository-dapr-app")
+      .withNetwork(DAPR_NETWORK)
+      .withComponent(new Component(STATE_STORE_NAME, "state.postgresql", "v1", STATE_STORE_PROPERTIES))
+      .withComponent(new Component(BINDING_NAME, "bindings.postgresql", "v1", BINDING_PROPERTIES))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+      .dependsOn(POSTGRE_SQL_CONTAINER);
+
+  @DynamicPropertySource
+  static void daprProperties(DynamicPropertyRegistry registry) {
+    DAPR_CONTAINER.start();
+    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
+    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
+  }
+
+  private static Map<String, String> createStateStoreProperties() {
+    Map<String, String> result = new HashMap<>();
+
+    result.put("keyPrefix", "name");
+    result.put("actorStateStore", String.valueOf(true));
+    result.put("connectionString", CONNECTION_STRING);
+
+    return result;
+  }
+
 
   @Autowired
   private DaprClient daprClient;
 
   @Autowired
   private TestTypeRepository repository;
-
-  @DynamicPropertySource
-  static void daprProperties(DynamicPropertyRegistry registry) {
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
-    DAPR_CONTAINER.start();
-    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
-    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
-  }
 
   @BeforeEach
   public void setUp() {

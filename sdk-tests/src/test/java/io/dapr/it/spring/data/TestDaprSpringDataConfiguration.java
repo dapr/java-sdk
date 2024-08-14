@@ -23,7 +23,6 @@ public class TestDaprSpringDataConfiguration {
     return new ObjectMapper();
   }
 
-
   @Bean
   public DaprClientCustomizer daprClientCustomizer(@Value("${dapr.http.port:0000}") String daprHttpPort,
                                                    @Value("${dapr.grpc.port:0000}") String daprGrpcPort){
