@@ -33,7 +33,7 @@ public class TestApplication {
 
   @Configuration
   @EnableConfigurationProperties(DaprPubSubProperties.class)
-  static class DartSpringMessagingConfiguration {
+  static class DaprSpringMessagingConfiguration {
 
     @Bean
     public DaprClientCustomizer daprClientCustomizer(@Value("${dapr.http.port:0000}") String daprHttpPort,

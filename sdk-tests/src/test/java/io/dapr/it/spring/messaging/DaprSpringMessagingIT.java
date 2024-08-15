@@ -28,6 +28,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -54,6 +56,10 @@ public class DaprSpringMessagingIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
+  private static final WaitStrategy DAPR_CONTAINER_WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz/outbound")
+      .forPort(3500)
+      .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
+
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
       .withAppName("messaging-dapr-app")
@@ -62,7 +68,8 @@ public class DaprSpringMessagingIT {
       .withAppPort(8080)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-      .withAppChannelAddress("host.testcontainers.internal");
+      .withAppChannelAddress("host.testcontainers.internal")
+      .waitingFor(DAPR_CONTAINER_WAIT_STRATEGY);
 
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {
@@ -77,7 +84,6 @@ public class DaprSpringMessagingIT {
 
   @Autowired
   private TestRestController testRestController;
-
 
   @Test
   public void testDaprMessagingTemplate() throws InterruptedException {

@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.it.spring.data;
 
-import io.dapr.client.DaprClient;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -101,14 +100,10 @@ public class DaprKeyValueRepositoryIT {
   }
 
   @Autowired
-  private DaprClient daprClient;
-
-  @Autowired
   private TestTypeRepository repository;
 
   @BeforeEach
   public void setUp() {
-    daprClient.waitForSidecar(1000).block();
     repository.deleteAll();
   }
 

@@ -19,7 +19,6 @@ import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,11 +111,6 @@ public class MySQLDaprKeyValueTemplateIT {
 
   @Autowired
   private DaprKeyValueTemplate keyValueTemplate;
-
-  @BeforeEach
-  public void waitSetup() {
-    daprClient.waitForSidecar(1000).block();
-  }
 
   /**
    * Cleans up the state store after each test.

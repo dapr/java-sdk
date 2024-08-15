@@ -107,12 +107,11 @@ public class PostgreSQLDaprKeyValueTemplateIT {
   private DaprKeyValueTemplate keyValueTemplate;
 
   @BeforeEach
-  public void waitSetup() {
-    daprClient.waitForSidecar(1000).block();
+  public void setUp() {
     var meta = Collections.singletonMap("sql", "delete from state");
+
     daprClient.invokeBinding(BINDING_NAME, "exec", null, meta).block();
   }
-
 
   @Test
   public void testInsertAndQueryDaprKeyValueTemplate() {
