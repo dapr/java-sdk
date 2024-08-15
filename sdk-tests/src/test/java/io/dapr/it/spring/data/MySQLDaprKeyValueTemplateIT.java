@@ -31,6 +31,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -72,6 +74,10 @@ public class MySQLDaprKeyValueTemplateIT {
       .withExposedPorts(3306)
       .withNetwork(DAPR_NETWORK);
 
+  private static final WaitStrategy DAPR_CONTAINER_WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz")
+      .forPort(3500)
+      .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
+
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
       .withAppName("mysql-dapr-app")
@@ -80,18 +86,12 @@ public class MySQLDaprKeyValueTemplateIT {
       .withComponent(new Component(BINDING_NAME, "bindings.mysql", "v1", BINDING_PROPERTIES))
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+      .waitingFor(DAPR_CONTAINER_WAIT_STRATEGY)
       .dependsOn(MY_SQL_CONTAINER);
 
   @DynamicPropertySource
   static void daprProperties(DynamicPropertyRegistry registry) {
     DAPR_CONTAINER.start();
-
-    try {
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-
     registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
     registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
   }
