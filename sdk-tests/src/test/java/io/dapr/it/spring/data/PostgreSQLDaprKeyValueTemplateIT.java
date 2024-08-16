@@ -68,7 +68,7 @@ public class PostgreSQLDaprKeyValueTemplateIT {
       .withExposedPorts(5432)
       .withNetwork(DAPR_NETWORK);
 
-  private static final WaitStrategy DAPR_CONTAINER_WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz")
+  private static final WaitStrategy DAPR_CONTAINER_WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz/outbound")
       .forPort(3500)
       .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
 
