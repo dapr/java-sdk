@@ -13,8 +13,7 @@ limitations under the License.
 
 package io.dapr.testcontainers;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -22,7 +21,9 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Set;
 
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DaprComponentTest {
 
@@ -39,10 +40,10 @@ public class DaprComponentTest {
         .withAppChannelAddress("host.testcontainers.internal");
 
     Set<Component> components = dapr.getComponents();
-    Assert.assertEquals(1, components.size());
+    assertEquals(1, components.size());
 
     Component kvstore = components.iterator().next();
-    Assert.assertEquals(false, kvstore.getMetadata().isEmpty());
+    assertFalse(kvstore.getMetadata().isEmpty());
 
     String componentYaml = dapr.componentToYaml(kvstore);
     String expectedComponentYaml = "metadata:\n" + "  name: statestore\n"
@@ -55,25 +56,21 @@ public class DaprComponentTest {
         + "  type: state.in-memory\n"
         + "  version: v1\n";
 
-    Assert.assertEquals(expectedComponentYaml, componentYaml);
+    assertEquals(expectedComponentYaml, componentYaml);
   }
 
   @Test
   public void containerConfigurationTest() {
     DaprContainer dapr = new DaprContainer("daprio/daprd")
-            .withAppName("dapr-app")
-            .withAppPort(8081)
-            .withDaprLogLevel(DaprLogLevel.DEBUG)
-            .withAppChannelAddress("host.testcontainers.internal");
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withDaprLogLevel(DaprLogLevel.DEBUG)
+        .withAppChannelAddress("host.testcontainers.internal");
 
     dapr.configure();
 
-    assertThrows(IllegalStateException.class, () -> { dapr.getHttpEndpoint(); });
-    assertThrows(IllegalStateException.class, () -> { dapr.getGrpcPort(); });
-
-
-
-
+    assertThrows(IllegalStateException.class, dapr::getHttpEndpoint);
+    assertThrows(IllegalStateException.class, dapr::getGrpcPort);
   }
 
   @Test
@@ -85,7 +82,7 @@ public class DaprComponentTest {
         .withAppChannelAddress("host.testcontainers.internal");
 
     Set<Subscription> subscriptions = dapr.getSubscriptions();
-    Assert.assertEquals(1, subscriptions.size());
+    assertEquals(1, subscriptions.size());
 
     String subscriptionYaml = dapr.subscriptionToYaml(subscriptions.iterator().next());
     String expectedSubscriptionYaml = "metadata:\n" + "  name: my-subscription\n"
@@ -95,7 +92,7 @@ public class DaprComponentTest {
         + "  route: /events\n"
         + "  pubsubname: pubsub\n"
         + "  topic: topic\n";
-    Assert.assertEquals(expectedSubscriptionYaml, subscriptionYaml);
+    assertEquals(expectedSubscriptionYaml, subscriptionYaml);
   }
 
   @Test
@@ -110,9 +107,9 @@ public class DaprComponentTest {
         .withAppChannelAddress("host.testcontainers.internal");
 
     Set<Component> components = dapr.getComponents();
-    Assert.assertEquals(1, components.size());
+    assertEquals(1, components.size());
     Component kvstore = components.iterator().next();
-    Assert.assertEquals(false, kvstore.getMetadata().isEmpty());
+    assertFalse(kvstore.getMetadata().isEmpty());
 
     String componentYaml = dapr.componentToYaml(kvstore);
     String expectedComponentYaml = "metadata:\n"
@@ -136,6 +133,6 @@ public class DaprComponentTest {
         + "  type: null\n"
         + "  version: v1\n";
 
-    Assert.assertEquals(expectedComponentYaml, componentYaml);
+    assertEquals(expectedComponentYaml, componentYaml);
   }
 }

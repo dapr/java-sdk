@@ -17,7 +17,7 @@ public enum DaprProtocol {
   HTTP("http"),
   GRPC("grpc");
 
-  private String name;
+  private final String name;
 
   DaprProtocol(String name) {
     this.name = name;

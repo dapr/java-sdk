@@ -15,6 +15,8 @@ package io.dapr.testcontainers;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 import org.yaml.snakeyaml.DumperOptions;
@@ -38,6 +40,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
+  private static final WaitStrategy WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz/outbound")
+      .forPort(DAPRD_DEFAULT_HTTP_PORT)
+      .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
+
   private final Set<Component> components = new HashSet<>();
   private final Set<Subscription> subscriptions = new HashSet<>();
   private DaprProtocol protocol = DaprProtocol.HTTP;
@@ -59,23 +65,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public DaprContainer(DockerImageName dockerImageName) {
     super(dockerImageName);
     dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-    // For susbcriptions the container needs to access the app channel
     withAccessToHost(true);
-    // Here we don't want to wait for the Dapr sidecar to be ready, as the sidecar
-    // needs to
-    // connect with the application for susbcriptions
-
     withExposedPorts(DAPRD_DEFAULT_HTTP_PORT, DAPRD_DEFAULT_GRPC_PORT);
-
-  }
-
-  private static Yaml getYamlMapper() {
-    DumperOptions options = new DumperOptions();
-    options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-    options.setPrettyFlow(true);
-    Representer representer = new Representer(options);
-    representer.addClassTag(MetadataEntry.class, Tag.MAP);
-    return new Yaml(representer);
+    setWaitStrategy(WAIT_STRATEGY);
   }
 
   /**
@@ -123,8 +115,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     components.add(component);
     return this;
   }
-
-
 
   /**
    * Adds a Dapr component from a YAML file.
@@ -197,6 +187,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     if (!component.getMetadata().isEmpty()) {
       componentSpec.put("metadata", component.getMetadata());
     }
+
     componentProps.put("spec", componentSpec);
     return Collections.unmodifiableMap(componentProps);
   }
@@ -231,6 +222,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     if (getNetwork() == null) {
       withNetwork(Network.newNetwork());
     }
+
     if (this.placementContainer == null) {
       this.placementContainer = new DaprPlacementContainer(this.placementDockerImageName)
           .withNetwork(getNetwork())
@@ -253,10 +245,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       cmds.add("--app-channel-address");
       cmds.add(appChannelAddress);
     }
+
     if (appPort != null) {
       cmds.add("--app-port");
       cmds.add(Integer.toString(appPort));
     }
+
     cmds.add("--log-level");
     cmds.add(daprLogLevel.toString());
     cmds.add("-components-path");
@@ -337,5 +331,14 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   @Override
   public int hashCode() {
     return super.hashCode();
+  }
+
+  private static Yaml getYamlMapper() {
+    DumperOptions options = new DumperOptions();
+    options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+    options.setPrettyFlow(true);
+    Representer representer = new Representer(options);
+    representer.addClassTag(MetadataEntry.class, Tag.MAP);
+    return new Yaml(representer);
   }
 }
