@@ -18,6 +18,7 @@ import io.dapr.utils.NetworkUtils;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -191,7 +192,7 @@ public class Properties {
    * @param overrides to override static properties
    */
   public Properties(Map<String, String> overrides) {
-    this.overrides = overrides;
+    this.overrides = Collections.unmodifiableMap(overrides);
   }
 
   /**
