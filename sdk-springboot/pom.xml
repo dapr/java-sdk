@@ -18,7 +18,6 @@
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <springboot.version>3.2.6</springboot.version>
   </properties>
 
   <dependencyManagement>
