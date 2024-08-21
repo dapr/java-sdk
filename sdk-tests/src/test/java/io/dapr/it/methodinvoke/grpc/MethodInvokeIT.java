@@ -88,11 +88,12 @@ public class MethodInvokeIT extends BaseIT {
             MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
             long started = System.currentTimeMillis();
             SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
-            String message = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req)).getMessage();
+            StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
             long delay = System.currentTimeMillis() - started;
+            Status.Code code = exception.getStatus().getCode();
+
             assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
-            assertTrue(message.contains("DEADLINE_EXCEEDED"), "The message contains DEADLINE_EXCEEDED: " + message);
-            assertTrue(message.contains("CallOptions deadline exceeded after"), "The message contains DEADLINE_EXCEEDED: " + message);
+            assertEquals(Status.DEADLINE_EXCEEDED.getCode(), code, "Expected timeout error");
         }
     }
 

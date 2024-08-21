@@ -117,8 +117,10 @@ public class MethodInvokeIT extends BaseIT {
                 client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
                     .block(Duration.ofMillis(10));
             }).getMessage();
+
             long delay = System.currentTimeMillis() - started;
-            assertTrue(delay <= 200);  // 200 ms is a reasonable delay if the request timed out.
+
+            assertTrue(delay <= 200, "Delay: " + delay + " is not less than timeout: 200");
             assertEquals("Timeout on blocking read for 10000000 NANOSECONDS", message);
         }
     }
