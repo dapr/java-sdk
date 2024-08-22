@@ -22,7 +22,7 @@
     <grpc.version>1.64.0</grpc.version>
     <protobuf.version>3.25.0</protobuf.version>
     <opentelemetry.version>1.39.0</opentelemetry.version>
-    <spring-boot.version>3.3.1</spring-boot.version>
+    <springboot.version>3.3.1</springboot.version>
     <logback-classic.version>1.4.12</logback-classic.version>
     <wiremock.version>3.9.1</wiremock.version>
   </properties>
@@ -33,7 +33,7 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>${spring-boot.version}</version>
+        <version>${springboot.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -292,7 +292,7 @@
         </property>
       </activation>
       <properties>
-        <spring-boot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</spring-boot.version>
+        <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
       </properties>
       <dependencies>
         <dependency>
