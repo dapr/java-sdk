@@ -91,8 +91,8 @@ public class MethodInvokeIT extends BaseIT {
             String message = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req)).getMessage();
             long delay = System.currentTimeMillis() - started;
             assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
-            assertTrue(message.contains("DEADLINE_EXCEEDED"));
-            assertTrue(message.contains("CallOptions deadline exceeded after"));
+            assertTrue(message.contains("DEADLINE_EXCEEDED"), "The message contains DEADLINE_EXCEEDED: " + message);
+            assertTrue(message.contains("CallOptions deadline exceeded after"), "The message contains DEADLINE_EXCEEDED: " + message);
         }
     }
 
