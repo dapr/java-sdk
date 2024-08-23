@@ -25,7 +25,7 @@
     <springboot.version>3.3.1</springboot.version>
     <logback-classic.version>1.4.12</logback-classic.version>
     <wiremock.version>3.9.1</wiremock.version>
-    <testcontainers-dapr.version>0.13.0-SNAPSHOT</testcontainers-dapr.version>
+    <testcontainers-dapr.version>${dapr.sdk.alpha.version}</testcontainers-dapr.version>
     <testcontainers-test.version>1.20.0</testcontainers-test.version>
   </properties>
 
