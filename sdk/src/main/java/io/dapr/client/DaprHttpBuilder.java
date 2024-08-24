@@ -21,6 +21,14 @@ import okhttp3.OkHttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import static io.dapr.config.Properties.API_TOKEN;
+import static io.dapr.config.Properties.HTTP_CLIENT_MAX_IDLE_CONNECTIONS;
+import static io.dapr.config.Properties.HTTP_CLIENT_MAX_REQUESTS;
+import static io.dapr.config.Properties.HTTP_CLIENT_READ_TIMEOUT_SECONDS;
+import static io.dapr.config.Properties.HTTP_ENDPOINT;
+import static io.dapr.config.Properties.HTTP_PORT;
+import static io.dapr.config.Properties.SIDECAR_IP;
+
 /**
  * A builder for the DaprHttp.
  */
@@ -43,38 +51,39 @@ public class DaprHttpBuilder {
    */
   private static final int KEEP_ALIVE_DURATION = 30;
 
+
   /**
    * Build an instance of the Http client based on the provided setup.
-   *
+   * @param properties to configure the DaprHttp client
    * @return an instance of {@link DaprHttp}
    * @throws IllegalStateException if any required field is missing
    */
-  public DaprHttp build() {
-    return buildDaprHttp();
+  public DaprHttp build(Properties properties) {
+    return buildDaprHttp(properties);
   }
 
   /**
    * Creates an instance of the HTTP Client.
-   *
+   * @param properties to configure the DaprHttp client
    * @return Instance of {@link DaprHttp}
    */
-  private DaprHttp buildDaprHttp() {
+  private DaprHttp buildDaprHttp(Properties properties) {
     if (OK_HTTP_CLIENT == null) {
       synchronized (LOCK) {
         if (OK_HTTP_CLIENT == null) {
           OkHttpClient.Builder builder = new OkHttpClient.Builder();
-          Duration readTimeout = Duration.ofSeconds(Properties.HTTP_CLIENT_READ_TIMEOUT_SECONDS.get());
+          Duration readTimeout = Duration.ofSeconds(properties.getValue(HTTP_CLIENT_READ_TIMEOUT_SECONDS));
           builder.readTimeout(readTimeout);
 
           Dispatcher dispatcher = new Dispatcher();
-          dispatcher.setMaxRequests(Properties.HTTP_CLIENT_MAX_REQUESTS.get());
+          dispatcher.setMaxRequests(properties.getValue(HTTP_CLIENT_MAX_REQUESTS));
           // The maximum number of requests for each host to execute concurrently.
           // Default value is 5 in okhttp which is totally UNACCEPTABLE!
           // For sidecar case, set it the same as maxRequests.
-          dispatcher.setMaxRequestsPerHost(Properties.HTTP_CLIENT_MAX_REQUESTS.get());
+          dispatcher.setMaxRequestsPerHost(HTTP_CLIENT_MAX_REQUESTS.get());
           builder.dispatcher(dispatcher);
 
-          ConnectionPool pool = new ConnectionPool(Properties.HTTP_CLIENT_MAX_IDLE_CONNECTIONS.get(),
+          ConnectionPool pool = new ConnectionPool(properties.getValue(HTTP_CLIENT_MAX_IDLE_CONNECTIONS),
                   KEEP_ALIVE_DURATION, TimeUnit.SECONDS);
           builder.connectionPool(pool);
 
@@ -83,11 +92,14 @@ public class DaprHttpBuilder {
       }
     }
 
-    String endpoint = Properties.HTTP_ENDPOINT.get();
+    String endpoint = properties.getValue(HTTP_ENDPOINT);
     if ((endpoint != null) && !endpoint.isEmpty()) {
-      return new DaprHttp(endpoint, OK_HTTP_CLIENT);
+      return new DaprHttp(endpoint, properties.getValue(API_TOKEN), OK_HTTP_CLIENT);
     }
 
-    return new DaprHttp(Properties.SIDECAR_IP.get(), Properties.HTTP_PORT.get(), OK_HTTP_CLIENT);
+    return new DaprHttp(properties.getValue(SIDECAR_IP), properties.getValue(HTTP_PORT), properties.getValue(API_TOKEN),
+            OK_HTTP_CLIENT);
+
+
   }
 }

@@ -24,6 +24,11 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.regex.Pattern;
 
+import static io.dapr.config.Properties.GRPC_ENDPOINT;
+import static io.dapr.config.Properties.GRPC_PORT;
+import static io.dapr.config.Properties.SIDECAR_IP;
+
+
 /**
  * Utility methods for network, internal to Dapr SDK.
  */
@@ -102,12 +107,12 @@ public final class NetworkUtils {
 
   /**
    * Creates a GRPC managed channel.
-   *
+   * @param properties instance to set up the GrpcEndpoint
    * @param interceptors Optional interceptors to add to the channel.
    * @return GRPC managed channel to communicate with the sidecar.
    */
-  public static ManagedChannel buildGrpcManagedChannel(ClientInterceptor... interceptors) {
-    var settings = GrpcEndpointSettings.parse();
+  public static ManagedChannel buildGrpcManagedChannel(Properties properties, ClientInterceptor... interceptors) {
+    var settings = GrpcEndpointSettings.parse(properties);
     ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint)
         .userAgent(Version.getSdkVersion());
     if (!settings.secure) {
@@ -129,11 +134,11 @@ public final class NetworkUtils {
       this.secure = secure;
     }
 
-    static GrpcEndpointSettings parse() {
-      String address = Properties.SIDECAR_IP.get();
-      int port = Properties.GRPC_PORT.get();
+    static GrpcEndpointSettings parse(Properties properties) {
+      String address = properties.getValue(SIDECAR_IP);
+      int port = properties.getValue(GRPC_PORT);
       boolean secure = false;
-      String grpcEndpoint = Properties.GRPC_ENDPOINT.get();
+      String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
       if ((grpcEndpoint != null) && !grpcEndpoint.isEmpty()) {
         var matcher = GRPC_ENDPOINT_PATTERN.matcher(grpcEndpoint);
         if (!matcher.matches()) {
