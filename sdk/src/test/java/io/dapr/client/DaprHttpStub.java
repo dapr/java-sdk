@@ -34,7 +34,7 @@ public class DaprHttpStub extends DaprHttp {
      * Instantiates a stub for DaprHttp
      */
     public DaprHttpStub() {
-        super(null, 3000, null);
+        super(null, 3000, "stubToken", null);
     }
 
     /**
