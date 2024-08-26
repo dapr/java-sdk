@@ -11,19 +11,23 @@
 limitations under the License.
 */
 
-package io.dapr.testcontainers;
+package io.dapr.it.testcontainers;
 
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
+import io.dapr.testcontainers.DaprPlacementContainer;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@Testcontainers
 public class DaprPlacementContainerTest {
 
-  @ClassRule
-  public static DaprPlacementContainer placement = new DaprPlacementContainer("daprio/placement");
+  @Container
+  private static final DaprPlacementContainer PLACEMENT_CONTAINER = new DaprPlacementContainer("daprio/placement");
 
   @Test
   public void testDaprPlacementContainerDefaults() {
-    Assert.assertEquals("The default port is set", 50005, placement.getPort());
+    assertEquals(50005, PLACEMENT_CONTAINER.getPort(), "The default port is set");
   }
 }
