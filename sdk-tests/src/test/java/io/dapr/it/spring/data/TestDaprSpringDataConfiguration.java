@@ -24,9 +24,13 @@ public class TestDaprSpringDataConfiguration {
   }
 
   @Bean
-  public DaprClientCustomizer daprClientCustomizer(@Value("${dapr.http.port:0000}") String daprHttpPort,
-                                                   @Value("${dapr.grpc.port:0000}") String daprGrpcPort){
-    return new TestcontainersDaprClientCustomizer(daprHttpPort, daprGrpcPort);
+  public DaprClientCustomizer daprClientCustomizer(
+      @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
+      @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint,
+      @Value("${dapr.http.port}") String daprHttpPort,
+      @Value("${dapr.grpc.port}") String daprGrpcPort
+  ){
+    return new TestcontainersDaprClientCustomizer(daprHttpEndpoint, daprGrpcEndpoint, daprHttpPort, daprGrpcPort);
   }
 
   @Bean

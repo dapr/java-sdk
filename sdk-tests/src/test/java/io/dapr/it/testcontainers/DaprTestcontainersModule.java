@@ -32,6 +32,9 @@ public interface DaprTestcontainersModule {
   static void daprProperties(DynamicPropertyRegistry registry) {
     Testcontainers.exposeHostPorts(8080);
     dapr.start();
+
+    registry.add("dapr.http.endpoint", dapr::getHttpEndpoint);
+    registry.add("dapr.grpc.endpoint", dapr::getGrpcEndpoint);
     registry.add("dapr.grpc.port", dapr::getGrpcPort);
     registry.add("dapr.http.port", dapr::getHttpPort);
   }

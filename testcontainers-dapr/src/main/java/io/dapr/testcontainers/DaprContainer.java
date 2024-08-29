@@ -161,6 +161,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return getMappedPort(DAPRD_DEFAULT_GRPC_PORT);
   }
 
+  public String getGrpcEndpoint() {
+    return ":" + getMappedPort(DAPRD_DEFAULT_GRPC_PORT);
+  }
+
   public DaprContainer withAppChannelAddress(String appChannelAddress) {
     this.appChannelAddress = appChannelAddress;
     return this;
