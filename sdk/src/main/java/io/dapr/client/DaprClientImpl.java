@@ -14,8 +14,10 @@ limitations under the License.
 package io.dapr.client;
 
 import com.google.common.base.Strings;
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import com.google.protobuf.Message;
 import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
@@ -37,6 +39,7 @@ import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.Job;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
@@ -1172,6 +1175,51 @@ public class DaprClientImpl extends AbstractDaprClient {
       );
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
+    }
+  }
+
+  @Override
+  public <T> Mono<Void> scheduleJobAlpha1(Job<T> job) {
+    try {
+  	  final String name = job.getName();
+  	  final T data = job.getData();
+  
+  	  if (name == null || name.trim().isEmpty()) {
+  		  throw new IllegalArgumentException("Job name cannot be null or empty");
+  	  }
+  	  if (data == null) {
+  		  throw new IllegalArgumentException("Job data cannot be empty");
+  	  }
+  
+  	  DaprProtos.Job.Builder jobBuilder = DaprProtos.Job.newBuilder()
+  			  .setName(name);
+  	  if (data instanceof Message) {
+  		  jobBuilder.setData(Any.pack((Message)job.getData()));
+  	  } else {
+  		  jobBuilder.setData(Any.newBuilder().setValue(ByteString.copyFrom(this.objectSerializer.serialize(data))));
+  	  }
+  	  if (job.getSchedule() != null && !job.getSchedule().trim().isEmpty()) {
+  		  jobBuilder.setSchedule(job.getSchedule());
+  	  }
+  	  if (job.getRepeats() != null) {
+  		  jobBuilder.setRepeats(job.getRepeats());
+  	  }
+  	  if (job.getDueTime() != null && !job.getDueTime().trim().isEmpty()) {
+  		  jobBuilder.setDueTime(job.getDueTime());
+  	  }
+  	  if (job.getTtl() != null && !job.getTtl().trim().isEmpty()) {
+  		  jobBuilder.setTtl(job.getTtl());
+  	  }
+  
+  	  DaprProtos.ScheduleJobRequest.Builder builder =
+  			  DaprProtos.ScheduleJobRequest.newBuilder()
+  			  .setJob(jobBuilder.build());
+  
+  	  return this.<DaprProtos.ScheduleJobResponse>createMono(
+  			  it -> intercept(null, asyncStub).scheduleJobAlpha1(builder.build(), it))
+  			  .then();
+    } catch (Exception ex) {
+  	  return DaprException.wrapMono(ex);
     }
   }
 
