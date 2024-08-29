@@ -333,8 +333,6 @@
             <configuration>
               <!--suppress UnresolvedMavenProperty -->
               <skip>${skipITs}</skip>
-              <groups>${test.groups}</groups>
-              <excludedGroups>${test.excluded.groups}</excludedGroups>
             </configuration>
           </execution>
         </executions>
