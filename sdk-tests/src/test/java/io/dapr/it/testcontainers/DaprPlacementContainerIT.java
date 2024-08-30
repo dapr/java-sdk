@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers
 @Tag("testcontainers")
-public class DaprPlacementContainerTest {
+public class DaprPlacementContainerIT {
 
   @Container
   private static final DaprPlacementContainer PLACEMENT_CONTAINER = new DaprPlacementContainer("daprio/placement");

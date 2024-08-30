@@ -279,6 +279,8 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       String subscriptionYaml = subscriptionToYaml(subscription);
       withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
     }
+
+    dependsOn(placementContainer);
   }
 
   public String subscriptionToYaml(Subscription subscription) {

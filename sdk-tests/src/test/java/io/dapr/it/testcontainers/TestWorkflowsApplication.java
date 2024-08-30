@@ -15,18 +15,12 @@ package io.dapr.it.testcontainers;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 
 @SpringBootApplication
 public class TestWorkflowsApplication {
 
   public static void main(String[] args) {
     SpringApplication.run(TestWorkflowsApplication.class, args);
-  }
-
-  @ImportTestcontainers(DaprTestcontainersModule.class)
-  static class DaprTestConfiguration {
-
   }
 
 }
