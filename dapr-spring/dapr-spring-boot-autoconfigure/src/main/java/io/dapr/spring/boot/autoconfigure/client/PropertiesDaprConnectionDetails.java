@@ -1,6 +1,6 @@
 package io.dapr.spring.boot.autoconfigure.client;
 
-public class PropertiesDaprConnectionDetails implements DaprConnectionDetails {
+class PropertiesDaprConnectionDetails implements DaprConnectionDetails {
 
   private final DaprClientProperties daprClientProperties;
 
