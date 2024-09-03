@@ -15,10 +15,7 @@ package io.dapr.it.spring.messaging;
 
 import io.dapr.client.DaprClient;
 import io.dapr.spring.boot.autoconfigure.pubsub.DaprPubSubProperties;
-import io.dapr.spring.core.client.DaprClientCustomizer;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
-import io.dapr.testcontainers.TestcontainersDaprClientCustomizer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,14 +31,6 @@ public class TestApplication {
   @Configuration
   @EnableConfigurationProperties(DaprPubSubProperties.class)
   static class DaprSpringMessagingConfiguration {
-
-    @Bean
-    public DaprClientCustomizer daprClientCustomizer(
-        @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
-        @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
-    ){
-      return new TestcontainersDaprClientCustomizer(daprHttpEndpoint, daprGrpcEndpoint);
-    }
 
     @Bean
     public DaprMessagingTemplate<String> messagingTemplate(DaprClient daprClient,

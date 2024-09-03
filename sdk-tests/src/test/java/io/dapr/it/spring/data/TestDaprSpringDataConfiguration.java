@@ -3,13 +3,10 @@ package io.dapr.it.spring.data;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.spring.boot.autoconfigure.client.DaprClientAutoConfiguration;
-import io.dapr.spring.core.client.DaprClientCustomizer;
 import io.dapr.spring.data.DaprKeyValueAdapterResolver;
 import io.dapr.spring.data.DaprKeyValueTemplate;
 import io.dapr.spring.data.KeyValueAdapterResolver;
 import io.dapr.spring.data.repository.config.EnableDaprRepositories;
-import io.dapr.testcontainers.TestcontainersDaprClientCustomizer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -23,13 +20,6 @@ public class TestDaprSpringDataConfiguration {
     return new ObjectMapper();
   }
 
-  @Bean
-  public DaprClientCustomizer daprClientCustomizer(
-      @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
-      @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
-  ){
-    return new TestcontainersDaprClientCustomizer(daprHttpEndpoint, daprGrpcEndpoint);
-  }
 
   @Bean
   public KeyValueAdapterResolver keyValueAdapterResolver(DaprClient daprClient, ObjectMapper mapper) {

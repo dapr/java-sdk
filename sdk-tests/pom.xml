@@ -177,6 +177,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-tests</artifactId>
+      <version>${dapr.sdk.alpha.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.data</groupId>
       <artifactId>spring-data-keyvalue</artifactId>
     </dependency>
