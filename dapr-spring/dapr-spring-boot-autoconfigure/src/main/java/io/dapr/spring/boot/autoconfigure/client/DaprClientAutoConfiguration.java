@@ -39,7 +39,7 @@ public class DaprClientAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  DaprClientBuilder daprClientBuilder(DaprClientProperties daprClientProperties) {
+  DaprClientBuilder daprClientBuilder(DaprConnectionDetails daprConnectionDetails) {
     DaprClientBuilder builder = new DaprClientBuilder();
     builder.withPropertyOverride(Properties.HTTP_ENDPOINT, daprClientProperties.httpEndpoint());
     builder.withPropertyOverride(Properties.GRPC_ENDPOINT, daprClientProperties.grpcEndpoint());
