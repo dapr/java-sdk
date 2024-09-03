@@ -30,11 +30,6 @@ class DaprClientAutoConfigurationTests {
       .withConfiguration(AutoConfigurations.of(DaprClientAutoConfiguration.class));
 
   @Test
-  void daprClientBuilderConfigurer() {
-    contextRunner.run(context -> assertThat(context).hasSingleBean(DaprClientBuilderConfigurer.class));
-  }
-
-  @Test
   void daprClientBuilder() {
     contextRunner.run(context -> assertThat(context).hasSingleBean(DaprClientBuilder.class));
   }
