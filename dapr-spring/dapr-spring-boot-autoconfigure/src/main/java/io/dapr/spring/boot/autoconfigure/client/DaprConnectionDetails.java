@@ -5,7 +5,10 @@ import org.springframework.boot.autoconfigure.service.connection.ConnectionDetai
 
 public interface DaprConnectionDetails extends ConnectionDetails {
   String httpEndpoint();
+
   String grpcEndpoint();
+
   Integer httpPort();
+
   Integer grcpPort();
 }
