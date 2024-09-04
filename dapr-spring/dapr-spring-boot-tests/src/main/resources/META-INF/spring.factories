@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=\
+io.dapr.spring.boot.testcontainers.service.connection.DaprContainerConnectionDetailsFactory

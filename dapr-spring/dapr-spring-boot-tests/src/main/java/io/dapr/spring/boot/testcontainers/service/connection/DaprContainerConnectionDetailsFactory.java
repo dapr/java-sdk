@@ -1,4 +1,4 @@
-package io.dapr.spring.boot.tests;
+package io.dapr.spring.boot.testcontainers.service.connection;
 
 import io.dapr.spring.boot.autoconfigure.client.DaprConnectionDetails;
 import io.dapr.testcontainers.DaprContainer;
@@ -38,7 +38,7 @@ public class DaprContainerConnectionDetailsFactory
     }
 
     @Override
-    public Integer grcpPort() {
+    public Integer grpcPort() {
       return getContainer().getGrpcPort();
     }
   }

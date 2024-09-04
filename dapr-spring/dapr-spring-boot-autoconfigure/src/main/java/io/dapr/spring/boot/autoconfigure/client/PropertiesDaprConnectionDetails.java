@@ -24,7 +24,7 @@ class PropertiesDaprConnectionDetails implements DaprConnectionDetails {
   }
 
   @Override
-  public Integer grcpPort() {
+  public Integer grpcPort() {
     return this.daprClientProperties.grpcPort();
   }
 }

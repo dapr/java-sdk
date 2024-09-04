@@ -10,5 +10,5 @@ public interface DaprConnectionDetails extends ConnectionDetails {
 
   Integer httpPort();
 
-  Integer grcpPort();
+  Integer grpcPort();
 }
