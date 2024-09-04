@@ -78,8 +78,6 @@ public class DaprKeyValueRepositoryIT {
   static void daprProperties(DynamicPropertyRegistry registry) {
     registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
     registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
-    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
-    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
   }
 
   private static Map<String, String> createStateStoreProperties() {

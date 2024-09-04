@@ -45,12 +45,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static java.util.Collections.singletonMap;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 @WireMockTest(httpPort = 8081)
 @Tag("testcontainers")
-public class DaprContainerTest {
+public class DaprContainerIT {
 
   // Time-to-live for messages published.
   private static final String MESSAGE_TTL_IN_SECONDS = "1000";
@@ -123,14 +125,18 @@ public class DaprContainerTest {
 
   @Test
   public void testPlacement() throws Exception {
-    OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
-    String url = "http://" + DAPR_CONTAINER.getHost() + ":" + DAPR_CONTAINER.getHttpPort();
-    Request request = new Request.Builder().url(url + "/v1.0/metadata").build();
+    // Dapr and Placement need some time to connect
+    Thread.sleep(1000);
+
+    OkHttpClient okHttpClient = new OkHttpClient.Builder()
+        .build();
+    Request request = new Request.Builder()
+        .url(DAPR_CONTAINER.getHttpEndpoint() + "/v1.0/metadata")
+        .build();
 
     try (Response response = okHttpClient.newCall(request).execute()) {
       if (response.isSuccessful() && response.body() != null) {
         assertTrue(response.body().string().contains("placement: connected"));
-
       } else {
         throw new IOException("Unexpected response: " + response.code());
       }
@@ -151,8 +157,8 @@ public class DaprContainerTest {
   }
 
   private DaprClientBuilder createDaprClientBuilder() {
-    return  new DaprClientBuilder()
-        .withPropertyOverride(Properties.HTTP_PORT, String.valueOf(DAPR_CONTAINER.getHttpPort()))
-        .withPropertyOverride(Properties.GRPC_PORT, String.valueOf(DAPR_CONTAINER.getGrpcPort()));
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.HTTP_ENDPOINT, DAPR_CONTAINER.getHttpEndpoint())
+        .withPropertyOverride(Properties.GRPC_ENDPOINT, DAPR_CONTAINER.getGrpcEndpoint());
   }
 }

@@ -38,11 +38,9 @@ public class TestApplication {
     @Bean
     public DaprClientCustomizer daprClientCustomizer(
         @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
-        @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint,
-        @Value("${dapr.http.port}") String daprHttpPort,
-        @Value("${dapr.grpc.port}") String daprGrpcPort
+        @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
     ){
-      return new TestcontainersDaprClientCustomizer(daprHttpEndpoint, daprGrpcEndpoint, daprHttpPort, daprGrpcPort);
+      return new TestcontainersDaprClientCustomizer(daprHttpEndpoint, daprGrpcEndpoint);
     }
 
     @Bean

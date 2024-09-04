@@ -72,7 +72,7 @@ public class DaprWorkflowClientTest {
 
   @Test
   public void EmptyConstructor() {
-    assertDoesNotThrow(DaprWorkflowClient::new);
+    assertDoesNotThrow(() -> new DaprWorkflowClient());
   }
 
   @Test

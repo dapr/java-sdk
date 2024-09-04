@@ -19,6 +19,7 @@ import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
+import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collections;
@@ -26,32 +27,40 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class WorkflowRuntimeBuilder {
+  private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
   private static volatile WorkflowRuntime instance;
-  private DurableTaskGrpcWorkerBuilder builder;
-  private Logger logger;
-  private Set<String> workflows = new HashSet<String>();
-  private Set<String> activities = new HashSet<String>();
-  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
+  private final Logger logger;
+  private final Set<String> workflows = new HashSet<>();
+  private final Set<String> activities = new HashSet<>();
   private final Set<String> activitySet = Collections.synchronizedSet(new HashSet<>());
   private final Set<String> workflowSet = Collections.synchronizedSet(new HashSet<>());
+  private final DurableTaskGrpcWorkerBuilder builder;
 
   /**
    * Constructs the WorkflowRuntimeBuilder.
    */
   public WorkflowRuntimeBuilder() {
-    this(new Properties(), LoggerFactory.getLogger(WorkflowRuntimeBuilder.class));
+    this(new Properties());
+  }
+
+  /**
+   * Constructs the WorkflowRuntimeBuilder.
+   *
+   * @param properties Properties to use.
+   */
+  public WorkflowRuntimeBuilder(Properties properties) {
+    this(properties, LoggerFactory.getLogger(WorkflowRuntimeBuilder.class));
   }
 
   public WorkflowRuntimeBuilder(Logger logger) {
     this(new Properties(), logger);
   }
 
-  WorkflowRuntimeBuilder(Properties properties, Logger logger) {
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(
-            NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR));
+  private WorkflowRuntimeBuilder(Properties properties, Logger logger) {
+    ManagedChannel managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR);
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(managedChannel);
     this.logger = logger;
   }
-
 
   /**
    * Returns a WorkflowRuntime object.
@@ -66,9 +75,11 @@ public class WorkflowRuntimeBuilder {
         }
       }
     }
-    this.logger.info("List of registered workflows: " + this.workflowSet);
-    this.logger.info("List of registered activites: " + this.activitySet);
+
+    this.logger.info("List of registered workflows: {}", this.workflowSet);
+    this.logger.info("List of registered activities: {}", this.activitySet);
     this.logger.info("Successfully built dapr workflow runtime");
+
     return instance;
   }
 
@@ -80,12 +91,12 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(Class<T> clazz) {
-    this.builder = this.builder.addOrchestration(
-        new OrchestratorWrapper<>(clazz)
-    );
+    this.builder.addOrchestration(new OrchestratorWrapper<>(clazz));
     this.workflowSet.add(clazz.getCanonicalName());
-    this.logger.info("Registered Workflow: " +  clazz.getSimpleName());
     this.workflows.add(clazz.getSimpleName());
+
+    this.logger.info("Registered Workflow: " +  clazz.getSimpleName());
+
     return this;
   }
 
@@ -94,14 +105,16 @@ public class WorkflowRuntimeBuilder {
    *
    * @param clazz the class being registered
    * @param <T>   any WorkflowActivity type
+   * @return the WorkflowRuntimeBuilder
    */
-  public <T extends WorkflowActivity> void registerActivity(Class<T> clazz) {
-    this.builder = this.builder.addActivity(
-        new ActivityWrapper<>(clazz)
-    );
+  public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(Class<T> clazz) {
+    this.builder.addActivity(new ActivityWrapper<>(clazz));
     this.activitySet.add(clazz.getCanonicalName());
-    this.logger.info("Registered Activity: " +  clazz.getSimpleName());
     this.activities.add(clazz.getSimpleName());
+
+    this.logger.info("Registered Activity: " +  clazz.getSimpleName());
+
+    return this;
   }
 
 }
