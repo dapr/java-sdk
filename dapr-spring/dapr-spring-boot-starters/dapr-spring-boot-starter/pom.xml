@@ -21,6 +21,11 @@
       <artifactId>spring-boot-starter</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
+      <version>${dapr.sdk.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-core</artifactId>
       <version>${project.parent.version}</version>
