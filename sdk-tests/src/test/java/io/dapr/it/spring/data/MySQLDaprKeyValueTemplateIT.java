@@ -90,14 +90,7 @@ public class MySQLDaprKeyValueTemplateIT {
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(MY_SQL_CONTAINER);
-
-  @DynamicPropertySource
-  static void daprProperties(DynamicPropertyRegistry registry) {
-    registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
-    registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
-    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
-    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
-  }
+  
 
   private static Map<String, String> createStateStoreProperties() {
     Map<String, String> result = new HashMap<>();
