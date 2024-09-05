@@ -19,6 +19,7 @@ import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -74,8 +75,8 @@ public class DaprSpringMessagingIT {
   @Autowired
   private TestRestController testRestController;
 
-  @BeforeEach
-  public void setup(){
+  @BeforeAll
+  public static void setup(){
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
   }
 
