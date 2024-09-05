@@ -24,6 +24,7 @@
     <module>dapr-spring-boot-autoconfigure</module>
     <module>dapr-spring-boot-tests</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter</module>
+    <module>dapr-spring-boot-starters/dapr-spring-boot-starter-test</module>
   </modules>
 
   <properties>

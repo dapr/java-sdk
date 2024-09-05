@@ -12,7 +12,7 @@
 
   <artifactId>dapr-spring-boot-starter</artifactId>
   <name>dapr-spring-boot-starter</name>
-  <description>Dapr Spring Boot Starter (with Testcontainers Support)</description>
+  <description>Dapr Spring Boot Starter</description>
   <packaging>jar</packaging>
 
   <dependencies>
@@ -32,12 +32,6 @@
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
-      <artifactId>dapr-spring-boot-tests</artifactId>
-      <version>${project.parent.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-data</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
@@ -45,21 +39,6 @@
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-messaging</artifactId>
       <version>${project.parent.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>testcontainers-dapr</artifactId>
-      <version>${project.parent.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-testcontainers</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
