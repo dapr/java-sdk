@@ -52,4 +52,20 @@ public class DaprClientProperties {
   public Integer getGrpcPort() {
     return grpcPort;
   }
+
+  public void setHttpEndpoint(String httpEndpoint) {
+    this.httpEndpoint = httpEndpoint;
+  }
+
+  public void setGrpcEndpoint(String grpcEndpoint) {
+    this.grpcEndpoint = grpcEndpoint;
+  }
+
+  public void setHttpPort(Integer httpPort) {
+    this.httpPort = httpPort;
+  }
+
+  public void setGrpcPort(Integer grpcPort) {
+    this.grpcPort = grpcPort;
+  }
 }
