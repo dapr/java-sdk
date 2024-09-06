@@ -15,34 +15,33 @@ package io.dapr.spring.boot.autoconfigure.client;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.spring.core.client.DaprClientCustomizer;
-import org.springframework.beans.factory.ObjectProvider;
+import io.dapr.config.Properties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-
-import java.util.stream.Collectors;
 
 @AutoConfiguration
 @ConditionalOnClass(DaprClient.class)
+@EnableConfigurationProperties(DaprClientProperties.class)
 public class DaprClientAutoConfiguration {
 
   @Bean
-  @ConditionalOnMissingBean
-  DaprClientBuilderConfigurer daprClientBuilderConfigurer(ObjectProvider<DaprClientCustomizer> customizerProvider) {
-    DaprClientBuilderConfigurer configurer = new DaprClientBuilderConfigurer();
-    configurer.setDaprClientCustomizer(customizerProvider.orderedStream().collect(Collectors.toList()));
-
-    return configurer;
+  @ConditionalOnMissingBean(DaprConnectionDetails.class)
+  DaprConnectionDetails daprConnectionDetails(DaprClientProperties properties) {
+    return new PropertiesDaprConnectionDetails(properties);
   }
 
   @Bean
   @ConditionalOnMissingBean
-  DaprClientBuilder daprClientBuilder(DaprClientBuilderConfigurer daprClientBuilderConfigurer) {
+  DaprClientBuilder daprClientBuilder(DaprConnectionDetails daprConnectionDetails) {
     DaprClientBuilder builder = new DaprClientBuilder();
-
-    return daprClientBuilderConfigurer.configure(builder);
+    builder.withPropertyOverride(Properties.HTTP_ENDPOINT, daprConnectionDetails.httpEndpoint());
+    builder.withPropertyOverride(Properties.GRPC_ENDPOINT, daprConnectionDetails.grpcEndpoint());
+    builder.withPropertyOverride(Properties.HTTP_PORT, String.valueOf(daprConnectionDetails.httpPort()));
+    builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(daprConnectionDetails.grpcPort()));
+    return builder;
   }
 
   @Bean

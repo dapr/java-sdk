@@ -21,9 +21,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -65,6 +64,7 @@ public class DaprKeyValueRepositoryIT {
       .withNetwork(DAPR_NETWORK);
 
   @Container
+  @ServiceConnection
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
       .withAppName("postgresql-repository-dapr-app")
       .withNetwork(DAPR_NETWORK)
@@ -73,12 +73,6 @@ public class DaprKeyValueRepositoryIT {
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(POSTGRE_SQL_CONTAINER);
-
-  @DynamicPropertySource
-  static void daprProperties(DynamicPropertyRegistry registry) {
-    registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
-    registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
-  }
 
   private static Map<String, String> createStateStoreProperties() {
     Map<String, String> result = new HashMap<>();

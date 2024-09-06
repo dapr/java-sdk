@@ -19,6 +19,8 @@ import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
@@ -56,6 +59,7 @@ public class DaprSpringMessagingIT {
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
   @Container
+  @ServiceConnection
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
       .withAppName("messaging-dapr-app")
       .withNetwork(DAPR_NETWORK)
@@ -65,21 +69,16 @@ public class DaprSpringMessagingIT {
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal");
 
-  @DynamicPropertySource
-  static void daprProperties(DynamicPropertyRegistry registry) {
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
-
-    registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
-    registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
-    registry.add("dapr.grpc.port", DAPR_CONTAINER::getGrpcPort);
-    registry.add("dapr.http.port", DAPR_CONTAINER::getHttpPort);
-  }
-
   @Autowired
   private DaprMessagingTemplate<String> messagingTemplate;
 
   @Autowired
   private TestRestController testRestController;
+
+  @BeforeAll
+  public static void setup(){
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+  }
 
   @Test
   public void testDaprMessagingTemplate() throws InterruptedException {

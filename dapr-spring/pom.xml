@@ -18,11 +18,12 @@
   <description>SDK extension for Spring and Spring Boot</description>
 
   <modules>
-    <module>dapr-spring-core</module>
     <module>dapr-spring-data</module>
     <module>dapr-spring-messaging</module>
     <module>dapr-spring-boot-autoconfigure</module>
+    <module>dapr-spring-boot-tests</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter</module>
+    <module>dapr-spring-boot-starters/dapr-spring-boot-starter-test</module>
   </modules>
 
   <properties>

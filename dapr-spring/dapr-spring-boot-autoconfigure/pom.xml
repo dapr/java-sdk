@@ -17,12 +17,6 @@
   <dependencies>
     <dependency>
       <groupId>io.dapr.spring</groupId>
-      <artifactId>dapr-spring-core</artifactId>
-      <version>${project.parent.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-data</artifactId>
       <version>${project.parent.version}</version>
       <optional>true</optional>

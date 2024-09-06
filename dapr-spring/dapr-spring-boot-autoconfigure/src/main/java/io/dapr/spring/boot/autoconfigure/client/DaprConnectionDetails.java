@@ -11,21 +11,16 @@
 limitations under the License.
 */
 
-package io.dapr.spring.core.client;
+package io.dapr.spring.boot.autoconfigure.client;
 
-import io.dapr.client.DaprClientBuilder;
+import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
-/**
- * Callback interface that can be used to customize a {@link DaprClientBuilder}.
- */
-@FunctionalInterface
-public interface DaprClientCustomizer {
+public interface DaprConnectionDetails extends ConnectionDetails {
+  String httpEndpoint();
 
-  /**
-   * Callback to customize a {@link DaprClientBuilder} instance.
-   *
-   * @param daprClientBuilder the client builder to customize
-   */
-  void customize(DaprClientBuilder daprClientBuilder);
+  String grpcEndpoint();
 
+  Integer httpPort();
+
+  Integer grpcPort();
 }

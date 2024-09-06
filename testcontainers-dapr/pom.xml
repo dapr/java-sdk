@@ -41,12 +41,6 @@
             <version>${project.parent.version}</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>io.dapr.spring</groupId>
-            <artifactId>dapr-spring-core</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
-        </dependency>
 	</dependencies>
 
     <build>

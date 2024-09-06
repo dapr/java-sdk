@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.keyvalue.core.query.KeyValueQuery;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -80,6 +81,7 @@ public class MySQLDaprKeyValueTemplateIT {
       .waitingFor(MYSQL_WAIT_STRATEGY);
 
   @Container
+  @ServiceConnection
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
       .withAppName("mysql-dapr-app")
       .withNetwork(DAPR_NETWORK)
@@ -88,12 +90,7 @@ public class MySQLDaprKeyValueTemplateIT {
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(MY_SQL_CONTAINER);
-
-  @DynamicPropertySource
-  static void daprProperties(DynamicPropertyRegistry registry) {
-    registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
-    registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
-  }
+  
 
   private static Map<String, String> createStateStoreProperties() {
     Map<String, String> result = new HashMap<>();
