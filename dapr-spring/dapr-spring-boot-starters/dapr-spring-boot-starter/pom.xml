@@ -27,11 +27,6 @@
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
-      <artifactId>dapr-spring-core</artifactId>
-      <version>${project.parent.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-boot-autoconfigure</artifactId>
       <version>${project.parent.version}</version>
     </dependency>

@@ -16,15 +16,11 @@ package io.dapr.spring.boot.autoconfigure.client;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
-import io.dapr.spring.core.client.DaprClientCustomizer;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-
-import java.util.stream.Collectors;
 
 @AutoConfiguration
 @ConditionalOnClass(DaprClient.class)
