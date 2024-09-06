@@ -318,24 +318,19 @@
     <tag>HEAD</tag>
   </scm>
 
+  <modules>
+    <module>sdk-autogen</module>
+    <module>sdk</module>
+    <module>sdk-actors</module>
+    <module>sdk-workflows</module>
+    <module>sdk-springboot</module>
+    <module>dapr-spring</module>
+    <module>examples</module>
+    <!-- We are following test containers artifact convention on purpose, don't rename -->
+    <module>testcontainers-dapr</module>
+  </modules>
+
   <profiles>
-    <profile>
-      <id>default</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <modules>
-        <module>sdk-autogen</module>
-        <module>sdk</module>
-        <module>sdk-actors</module>
-        <module>sdk-workflows</module>
-        <module>sdk-springboot</module>
-        <module>dapr-spring</module>
-        <module>examples</module>
-        <!-- We are following test containers artifact convention on purpose, don't rename -->
-        <module>testcontainers-dapr</module>
-      </modules>
-    </profile>
     <profile>
       <id>integration-tests</id>
       <modules>
