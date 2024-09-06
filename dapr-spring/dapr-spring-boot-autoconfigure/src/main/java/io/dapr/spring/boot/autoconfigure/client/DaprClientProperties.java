@@ -23,6 +23,13 @@ public class DaprClientProperties {
   private Integer httpPort;
   private Integer grpcPort;
 
+
+  /**
+   * Constructs a {@link DaprClientProperties}.
+   */
+  public DaprClientProperties() {
+  }
+
   /**
    * Constructs a {@link DaprClientProperties}.
    * @param httpEndpoint http endpoint to interact with the Dapr Sidecar
