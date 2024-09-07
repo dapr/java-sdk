@@ -4,9 +4,14 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.dapr</groupId>
+  <parent>
+    <groupId>io.dapr</groupId>
+    <artifactId>dapr-sdk-parent</artifactId>
+    <version>1.13.0-SNAPSHOT</version>
+  </parent>
+
   <artifactId>dapr-sdk-tests</artifactId>
-  <version>0.0.0-SNAPSHOT</version>
+  <version>1.13.0-SNAPSHOT</version>
   <name>dapr-sdk-tests</name>
   <description>Tests for Dapr's Java SDK - not to be published as a jar.</description>
 
@@ -320,15 +325,6 @@
       <properties>
         <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
       </properties>
-      <dependencies>
-        <dependency>
-          <!-- Needed for dapr compatibility for spring boot versions before 2.7 -->
-          <groupId>com.squareup.okhttp3</groupId>
-          <artifactId>okhttp</artifactId>
-          <version>4.9.0</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
     </profile>
   </profiles>
 </project>
