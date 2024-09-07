@@ -328,10 +328,15 @@
     <module>examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
-    <!-- don't add sdk-tests to the build, 
-      it's only used for CI testing by github action
-    <module>sdk-tests</module>
-    -->
   </modules>
+
+  <profiles>
+    <profile>
+      <id>integration-tests</id>
+      <modules>
+        <module>sdk-tests</module>
+      </modules>
+    </profile>
+  </profiles>
 
 </project>
