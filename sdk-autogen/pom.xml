@@ -17,6 +17,7 @@
   <description>Auto-generated SDK for Dapr</description>
 
   <properties>
+    <java.version>17</java.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>

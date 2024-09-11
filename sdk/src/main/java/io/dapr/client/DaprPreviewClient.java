@@ -256,4 +256,16 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @return Unlock result
    */
   Mono<UnlockResponseStatus> unlock(UnlockRequest request);
+
+  /**
+   * Subscribe to pubsub via streaming.
+   * @param pubsubName Name of the pubsub component.
+   * @param topic Name of the topic to subscribe to.
+   * @param listener Callback methods to process events.
+   * @param type Type for object deserialization.
+   * @return An active subscription.
+   * @param <T> Type of object deserialization.
+   */
+  <T> Subscription subscribeToEvents(
+      String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
 }
