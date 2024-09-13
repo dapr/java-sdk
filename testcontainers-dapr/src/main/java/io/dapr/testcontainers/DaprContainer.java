@@ -45,6 +45,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
 
   private final Set<Component> components = new HashSet<>();
+  private final Set<Configuration> configurations = new HashSet<>();
   private final Set<Subscription> subscriptions = new HashSet<>();
   private DaprProtocol protocol = DaprProtocol.HTTP;
   private String appName;
@@ -84,6 +85,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public Set<Subscription> getSubscriptions() {
     return subscriptions;
+  }
+
+  public Set<Configuration> getConfigurations() {
+    return configurations;
   }
 
   public DaprContainer withAppPort(Integer port) {
@@ -149,6 +154,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  public DaprContainer withConfiguration(Configuration configuration) {
+    configurations.add(configuration);
+    return this;
+  }
+
   public int getHttpPort() {
     return getMappedPort(DAPRD_DEFAULT_HTTP_PORT);
   }
@@ -168,6 +178,41 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public DaprContainer withAppChannelAddress(String appChannelAddress) {
     this.appChannelAddress = appChannelAddress;
     return this;
+  }
+
+
+  /**
+   * Get a map of Dapr component details.
+   * @param configuration A Dapr Configuration.
+   * @return Map of component details.
+   */
+  public Map<String, Object> configurationToMap(Configuration configuration) {
+    Map<String, Object> configurationProps = new HashMap<>();
+    configurationProps.put("apiVersion", "dapr.io/v1alpha1");
+    configurationProps.put("kind", "Configuration");
+
+    Map<String, String> configurationMetadata = new LinkedHashMap<>();
+    configurationMetadata.put("name", configuration.getName());
+    configurationProps.put("metadata", configurationMetadata);
+
+    Map<String, Object> configurationSpec = new HashMap<>();
+
+
+    Map<String, Object> configurationTracing = new HashMap<>();
+    Map<String, Object> configurationTracingOtel = new HashMap<>();
+    if (configuration.getTracing() != null) {
+      configurationTracing.put("samplingRate", configuration.getTracing().getSamplingRate());
+      configurationTracing.put("stdout", configuration.getTracing().getStdout());
+      configurationTracingOtel.put("endpointAddress", configuration.getTracing().getOtelEndpoint());
+      configurationTracingOtel.put("isSecure", configuration.getTracing().getOtelIsSecure());
+      configurationTracingOtel.put("protocol", configuration.getTracing().getOtelProtocol());
+    }
+
+    configurationTracing.put("otel", configurationTracingOtel);
+    configurationSpec.put("tracing", configurationTracing);
+
+    configurationProps.put("spec", configurationSpec);
+    return Collections.unmodifiableMap(configurationProps);
   }
 
   /**
@@ -275,6 +320,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withCopyToContainer(Transferable.of(componentYaml), "/dapr-resources/" + component.getName() + ".yaml");
     }
 
+    for (Configuration configuration : configurations) {
+      String configurationYaml = configurationToYaml(configuration);
+      withCopyToContainer(Transferable.of(configurationYaml), "/dapr-resources/" + configuration.getName() + ".yaml");
+    }
+
     for (Subscription subscription : subscriptions) {
       String subscriptionYaml = subscriptionToYaml(subscription);
       withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
@@ -291,6 +341,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public String componentToYaml(Component component) {
     Map<String, Object> componentMap = componentToMap(component);
     return yaml.dumpAsMap(componentMap);
+  }
+
+  public String configurationToYaml(Configuration configuration) {
+    Map<String, Object> configurationMap = configurationToMap(configuration);
+    return yaml.dumpAsMap(configurationMap);
   }
 
   public String getAppName() {
