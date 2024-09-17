@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2024 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import java.util.List;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -33,15 +35,50 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class BindingIT extends BaseIT {
 
-  private static final String BINDING_NAME = "sample123";
-
-  private static final String BINDING_OPERATION = "create";
-
-  public static class MyClass {
-    public MyClass() {
+  @Test
+  public void httpOutputBindingError() throws Exception {
+    startDaprApp(
+        this.getClass().getSimpleName() + "-httpoutputbinding-exception",
+        60000);
+    try(DaprClient client = new DaprClientBuilder().build()) {
+      // Validate error message
+      callWithRetry(() -> {
+        System.out.println("Checking exception handling for output binding ...");
+        try {
+          client.invokeBinding("github-http-binding-404", "get", "").block();
+          fail("Should throw an exception");
+        } catch (DaprException e) {
+          assertEquals(404, e.getHttpStatusCode());
+          // This HTTP binding did not set `errorIfNot2XX` to false in component metadata, so the error payload is not
+          // consistent between HTTP and gRPC.
+          assertTrue(new String(e.getPayload()).contains(
+              "error invoking output binding github-http-binding-404: received status code 404"));
+        }
+      }, 10000);
     }
+  }
 
-    public String message;
+  @Test
+  public void httpOutputBindingErrorIgnoredByComponent() throws Exception {
+    startDaprApp(
+        this.getClass().getSimpleName() + "-httpoutputbinding-ignore-error",
+        60000);
+    try(DaprClient client = new DaprClientBuilder().build()) {
+      // Validate error message
+      callWithRetry(() -> {
+        System.out.println("Checking exception handling for output binding ...");
+        try {
+          client.invokeBinding("github-http-binding-404-success", "get", "").block();
+          fail("Should throw an exception");
+        } catch (DaprException e) {
+          assertEquals(404, e.getHttpStatusCode());
+          // The HTTP binding must set `errorIfNot2XX` to false in component metadata for the error payload to be
+          // consistent between HTTP and gRPC.
+          assertTrue(new String(e.getPayload()).contains("\"message\":\"Not Found\""));
+          assertTrue(new String(e.getPayload()).contains("\"documentation_url\":\"https://docs.github.com/rest\""));
+        }
+      }, 10000);
+    }
   }
 
   @Test
@@ -53,11 +90,13 @@ public class BindingIT extends BaseIT {
         true,
         60000);
 
+    var bidingName = "sample123";
+
     try(DaprClient client = new DaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking if input binding is up before publishing events ...");
         client.invokeBinding(
-                BINDING_NAME, BINDING_OPERATION, "ping").block();
+            bidingName, "create", "ping").block();
 
         try {
           Thread.sleep(1000);
@@ -76,14 +115,14 @@ public class BindingIT extends BaseIT {
 
       System.out.println("sending first message");
       client.invokeBinding(
-          BINDING_NAME, BINDING_OPERATION, myClass, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
+          bidingName, "create", myClass, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
 
       // This is an example of sending a plain string.  The input binding will receive
       //   cat
       final String m = "cat";
       System.out.println("sending " + m);
       client.invokeBinding(
-          BINDING_NAME, BINDING_OPERATION, m, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
+          bidingName, "create", m, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
 
       // Metadata is not used by Kafka component, so it is not possible to validate.
       callWithRetry(() -> {
@@ -114,5 +153,12 @@ public class BindingIT extends BaseIT {
         assertEquals("hello", resultClass.message);
       }, 8000);
     }
+  }
+
+  public static class MyClass {
+    public MyClass() {
+    }
+
+    public String message;
   }
 }
