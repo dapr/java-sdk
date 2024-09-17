@@ -26,7 +26,8 @@ on:
     - release-*
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: "Default Larger Runners"
     strategy:
       fail-fast: false # Keep running if one leg fails.
       matrix:
