@@ -15,11 +15,15 @@ package io.dapr.internal.grpc;
 
 import io.dapr.internal.grpc.interceptors.DaprApiTokenInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprAppIdInterceptor;
+import io.dapr.internal.grpc.interceptors.DaprMetadataInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTimeoutInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTracingInterceptor;
 import io.dapr.internal.resiliency.TimeoutPolicy;
+import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import reactor.util.context.ContextView;
+
+import java.util.function.Consumer;
 
 /**
  * Class to be used as part of your service's client stub interceptor.
@@ -35,7 +39,7 @@ public class DaprClientGrpcInterceptors {
    * @return async client instance with interceptors
    */
   public static <T extends AbstractStub<T>> T intercept(final String appId, final T client) {
-    return intercept(appId, client, null, null);
+    return intercept(appId, client, null, null, null);
   }
 
   /**
@@ -45,7 +49,7 @@ public class DaprClientGrpcInterceptors {
    * @return async client instance with interceptors
    */
   public static <T extends AbstractStub<T>> T intercept(final T client) {
-    return intercept(null, client, null, null);
+    return intercept(null, client, null, null, null);
   }
 
   /**
@@ -58,7 +62,7 @@ public class DaprClientGrpcInterceptors {
    */
   public static <T extends AbstractStub<T>> T intercept(
       final String appId, final T client, final TimeoutPolicy timeoutPolicy) {
-    return intercept(appId, client, timeoutPolicy, null);
+    return intercept(appId, client, timeoutPolicy, null, null);
   }
 
   /**
@@ -69,7 +73,7 @@ public class DaprClientGrpcInterceptors {
    * @return async client instance with interceptors
    */
   public static <T extends AbstractStub<T>> T intercept(final T client, final TimeoutPolicy timeoutPolicy) {
-    return intercept(null, client, timeoutPolicy, null);
+    return intercept(null, client, timeoutPolicy, null, null);
   }
 
   /**
@@ -82,7 +86,7 @@ public class DaprClientGrpcInterceptors {
    */
   public static <T extends AbstractStub<T>> T intercept(
       final String appId, final T client, final ContextView context) {
-    return intercept(appId, client, null, context);
+    return intercept(appId, client, null, context, null);
   }
 
   /**
@@ -93,7 +97,7 @@ public class DaprClientGrpcInterceptors {
    * @return async client instance with interceptors
    */
   public static <T extends AbstractStub<T>> T intercept(final T client, final ContextView context) {
-    return intercept(null, client, null, context);
+    return intercept(null, client, null, context, null);
   }
 
   /**
@@ -108,7 +112,24 @@ public class DaprClientGrpcInterceptors {
       final T client,
       final TimeoutPolicy timeoutPolicy,
       final ContextView context) {
-    return intercept(null, client, timeoutPolicy, context);
+    return intercept(null, client, timeoutPolicy, context, null);
+  }
+
+  /**
+   * Adds all Dapr interceptors to a gRPC async stub.
+   * @param client gRPC client
+   * @param timeoutPolicy timeout policy for gRPC call
+   * @param context Reactor context for tracing
+   * @param metadataConsumer Consumer of the gRPC metadata
+   * @param <T> async client type
+   * @return async client instance with interceptors
+   */
+  public static <T extends AbstractStub<T>> T intercept(
+      final T client,
+      final TimeoutPolicy timeoutPolicy,
+      final ContextView context,
+      final Consumer<Metadata> metadataConsumer) {
+    return intercept(null, client, timeoutPolicy, context, metadataConsumer);
   }
 
   /**
@@ -117,6 +138,7 @@ public class DaprClientGrpcInterceptors {
    * @param client gRPC client
    * @param timeoutPolicy timeout policy for gRPC call
    * @param context Reactor context for tracing
+   * @param metadataConsumer Consumer of the gRPC metadata
    * @param <T> async client type
    * @return async client instance with interceptors
    */
@@ -124,7 +146,8 @@ public class DaprClientGrpcInterceptors {
       final String appId,
       final T client,
       final TimeoutPolicy timeoutPolicy,
-      final ContextView context) {
+      final ContextView context,
+      final Consumer<Metadata> metadataConsumer) {
     if (client == null) {
       throw new IllegalArgumentException("client cannot be null");
     }
@@ -133,7 +156,8 @@ public class DaprClientGrpcInterceptors {
         new DaprAppIdInterceptor(appId),
         new DaprApiTokenInterceptor(),
         new DaprTimeoutInterceptor(timeoutPolicy),
-        new DaprTracingInterceptor(context));
+        new DaprTracingInterceptor(context),
+        new DaprMetadataInterceptor(metadataConsumer));
   }
 
 }
