@@ -25,6 +25,8 @@ jobs:
   create-release:
     name: Creates release branch and tag
     runs-on: ubuntu-latest
+    env:
+      JDK_VER: 17
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -34,6 +36,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install pcre2-utils
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: ${{ env.JDK_VER }}
       - name: Create release branch and tag
         env:
           GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
