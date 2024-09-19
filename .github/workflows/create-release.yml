@@ -36,6 +36,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install pcre2-utils
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
