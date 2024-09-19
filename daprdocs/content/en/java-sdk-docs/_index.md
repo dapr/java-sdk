@@ -46,19 +46,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.12.0</version>
+      <version>1.12.1</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.12.0</version>
+      <version>1.12.1</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.12.0</version>
+      <version>1.12.1</version>
     </dependency>
     ...
   </dependencies>
@@ -76,11 +76,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.12.0')
+    compile('io.dapr:dapr-sdk:1.12.1')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.12.0')
+    compile('io.dapr:dapr-sdk-actors:1.12.1')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.12.0')
+    compile('io.dapr:dapr-sdk-springboot:1.12.1')
 }
 ```
 
@@ -96,7 +96,7 @@ You can fix this by specifying a compatible `OkHttp` version in your project to 
 <dependency>
   <groupId>com.squareup.okhttp3</groupId>
   <artifactId>okhttp</artifactId>
-  <version>1.12.0</version>
+  <version>1.12.1</version>
 </dependency>
 ```
 
