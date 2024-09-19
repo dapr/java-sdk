@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.12.1-rc-2</version>
+    <version>1.12.1</version>
   </parent>
 
   <artifactId>dapr-sdk-actors</artifactId>
   <packaging>jar</packaging>
-  <version>1.12.1-rc-2</version>
+  <version>1.12.1</version>
   <name>dapr-sdk-actors</name>
   <description>SDK for Actors on Dapr</description>
 

@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.12.1-rc-2</version>
+    <version>1.12.1</version>
   </parent>
 
   <artifactId>dapr-sdk-autogen</artifactId>
   <packaging>jar</packaging>
-  <version>1.12.1-rc-2</version>
+  <version>1.12.1</version>
   <name>dapr-sdk-autogen</name>
   <description>Auto-generated SDK for Dapr</description>
 
