@@ -263,7 +263,7 @@ public void subscribe(@RequestBody CloudEvent<Order> cloudEvent){
 }
 ```
 
-On bootstrapping your application, Dapr will register the subscription to messages to be forwarded to the `subscribe` endpoint exposed by your application. 
+Upon bootstrapping your application, Dapr will register the subscription to messages to be forwarded to the `subscribe` endpoint exposed by your application. 
 
 If you are writing tests got these subscribers you need to make sure that let Testcontainers know that your application will be running in port 8080, 
 so containers started with Testcontainers know where your application is: 
