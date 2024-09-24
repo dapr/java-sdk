@@ -129,7 +129,7 @@ This includes implementations of Spring Data (`KeyValueTemplate` and `CrudReposi
 You can use well known Spring Data constructs relying on a Dapr-based implementation. 
 With Dapr, you don't need to add any infrastructure-related driver or client, making your Spring application lighter and decoupled from the environment where it is running. 
 
-Under the hood these implementations uses Dapr Statestore and Binding APIs. 
+Under the hood these implementations use the Dapr Statestore and Binding APIs. 
 
 ### Configuration parameters
 
