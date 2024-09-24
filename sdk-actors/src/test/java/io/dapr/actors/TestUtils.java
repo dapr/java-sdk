@@ -47,11 +47,13 @@ public final class TestUtils {
   public static <T extends Throwable> void assertThrowsDaprException(
       Class<T> expectedType,
       String expectedErrorCode,
+      String expectedErrorMessage,
       Executable executable) {
     DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
     Assertions.assertNotNull(daprException.getCause());
     Assertions.assertEquals(expectedType, daprException.getCause().getClass());
     Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
+    Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
   }
 
   public static String formatIpAddress(final String ipAddress) {

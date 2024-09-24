@@ -96,6 +96,7 @@ public class DaprGrpcClientTest {
         assertThrowsDaprException(
                 ExecutionException.class,
                 "UNKNOWN",
+                "UNKNOWN: Application error processing RPC",
                 result::block);
     }
 
@@ -111,6 +112,7 @@ public class DaprGrpcClientTest {
         assertThrowsDaprException(
                 ExecutionException.class,
                 "UNKNOWN",
+                "UNKNOWN: Application error processing RPC",
                 result::block);
     }
     @Test
