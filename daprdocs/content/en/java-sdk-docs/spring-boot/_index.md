@@ -170,7 +170,7 @@ Where `OrderRepository` is defined in an interface that extends the Spring Data 
 public interface OrderRepository extends CrudRepository<Order, String> {}
 ```
 
-Notice that `@EnableDaprRepositories` annotation, that does all the magic of wiring the Dapr APIs under the `CrudRespository` interface.
+Notice that the `@EnableDaprRepositories` annotation, does all the magic of wiring the Dapr APIs under the `CrudRespository` interface.
 Because Dapr allow users to interact with different StateStores from the same application, as a user you need to provide the following beans as a Spring Boot `@Configuration`: 
 
 ```java
