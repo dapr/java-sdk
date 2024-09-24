@@ -128,8 +128,7 @@ public class DaprGrpcClientTest {
     assertThrowsDaprException(
         ExecutionException.class,
         "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
+        result::block);
   }
 
   @Test

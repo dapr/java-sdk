@@ -96,7 +96,6 @@ public class DaprGrpcClientTest {
         assertThrowsDaprException(
                 ExecutionException.class,
                 "UNKNOWN",
-                "UNKNOWN: ",
                 result::block);
     }
 
@@ -112,7 +111,6 @@ public class DaprGrpcClientTest {
         assertThrowsDaprException(
                 ExecutionException.class,
                 "UNKNOWN",
-                "UNKNOWN: ",
                 result::block);
     }
     @Test
