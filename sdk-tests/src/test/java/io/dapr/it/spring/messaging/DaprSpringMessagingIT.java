@@ -76,12 +76,17 @@ public class DaprSpringMessagingIT {
   private TestRestController testRestController;
 
   @BeforeAll
-  public static void setup(){
+  public static void beforeAll(){
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
   }
 
+  @BeforeEach
+  public void beforeEach() throws InterruptedException {
+    Thread.sleep(1000);
+  }
+
   @Test
-  public void testDaprMessagingTemplate() throws InterruptedException {
+  public void testDaprMessagingTemplate() {
     for (int i = 0; i < 10; i++) {
       var msg = "ProduceAndReadWithPrimitiveMessageType:" + i;
 
@@ -90,12 +95,8 @@ public class DaprSpringMessagingIT {
       logger.info("++++++PRODUCE {}------", msg);
     }
 
-    // Wait for the messages to arrive
-    Thread.sleep(10000);
-
     List<CloudEvent<String>> events = testRestController.getEvents();
 
     assertThat(events.size()).isEqualTo(10);
   }
-
 }
