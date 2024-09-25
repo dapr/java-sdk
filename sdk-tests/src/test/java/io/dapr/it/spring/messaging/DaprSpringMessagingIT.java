@@ -91,7 +91,7 @@ public class DaprSpringMessagingIT {
     }
 
     // Wait for the messages to arrive
-    Thread.sleep(1000);
+    Thread.sleep(10000);
 
     List<CloudEvent<String>> events = testRestController.getEvents();
 
