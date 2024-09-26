@@ -76,8 +76,13 @@ public class DaprSpringMessagingIT {
   private TestRestController testRestController;
 
   @BeforeAll
-  public static void setup(){
+  public static void beforeAll(){
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
+  }
+
+  @BeforeEach
+  public void beforeEach() throws InterruptedException {
+    Thread.sleep(1000);
   }
 
   @Test
@@ -97,5 +102,4 @@ public class DaprSpringMessagingIT {
 
     assertThat(events.size()).isEqualTo(10);
   }
-
 }

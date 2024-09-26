@@ -104,13 +104,13 @@
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-testing</artifactId>
-        <version>1.56.1</version>
+        <version>${grpc.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-inprocess</artifactId>
-        <version>1.59.0</version>
+        <version>${grpc.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
