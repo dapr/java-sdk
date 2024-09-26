@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -107,22 +108,19 @@ public class DaprComponentTest {
                             "localhost:4317", false, "grpc")))
             .withAppChannelAddress("host.testcontainers.internal");
 
-    Set<Configuration> configurations = dapr.getConfigurations();
-    assertEquals(1, configurations.size());
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
 
-    String configurationYaml = dapr.configurationToYaml(configurations.iterator().next());
+    String configurationYaml = dapr.configurationToYaml(configuration);
     String expectedConfigurationYaml = "metadata:\n" + "  name: my-config\n"
             + "apiVersion: dapr.io/v1alpha1\n"
             + "kind: Configuration\n"
             + "spec:\n"
             + "  tracing:\n"
-//            + "    samplingRate: \"1\"\n"
             + "    stdout: true\n"
             + "    samplingRate: '1'\n"
             + "    otel:\n"
-//            + "      endpointAddress: \"localhost:4317\"\n"
             + "      endpointAddress: localhost:4317\n"
-//            + "      protocol: \"grpc\"\n"
             + "      protocol: grpc\n"
             + "      isSecure: false\n";
     assertEquals(expectedConfigurationYaml, configurationYaml);
