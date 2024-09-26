@@ -86,7 +86,7 @@ public class DaprSpringMessagingIT {
   }
 
   @Test
-  public void testDaprMessagingTemplate() {
+  public void testDaprMessagingTemplate() throws InterruptedException {
     for (int i = 0; i < 10; i++) {
       var msg = "ProduceAndReadWithPrimitiveMessageType:" + i;
 
@@ -94,6 +94,9 @@ public class DaprSpringMessagingIT {
 
       logger.info("++++++PRODUCE {}------", msg);
     }
+
+    // Wait for the messages to arrive
+    Thread.sleep(1000);
 
     List<CloudEvent<String>> events = testRestController.getEvents();
 
