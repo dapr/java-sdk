@@ -110,13 +110,12 @@ public class DaprContainerIT {
         "A subscription should be configured by default if none is provided"
     );
 
-    assertEquals(
-            1,
-            DAPR_CONTAINER.getConfigurations().size(),
-            "A configuration should be configured"
+    assertNotNull(
+            DAPR_CONTAINER.getConfiguration(),
+            "A configuration should be provided"
     );
 
-    Configuration configuration = DAPR_CONTAINER.getConfigurations().iterator().next();
+    Configuration configuration = DAPR_CONTAINER.getConfiguration();
     assertEquals("1",configuration.getTracing().getSamplingRate());
     assertEquals(true,configuration.getTracing().getStdout());
     assertEquals("localhost:4317",configuration.getTracing().getOtelEndpoint());
