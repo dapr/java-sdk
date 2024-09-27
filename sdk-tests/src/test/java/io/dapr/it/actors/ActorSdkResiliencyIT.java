@@ -14,9 +14,9 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
@@ -75,22 +75,22 @@ public class ActorSdkResiliencyIT extends BaseIT {
             true,
             60000);
 
-    demoActor = buildDemoActorProxy(null);
-    daprClient = new DaprClientBuilder().build();
+    demoActor = buildDemoActorProxy(deferClose(daprRun.newActorClient()));
+    daprClient = daprRun.newDaprClientBuilder().build();
 
     toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
     toxiProxyRun.start();
-    toxiProxyRun.use();
-    toxiDemoActor = buildDemoActorProxy(new ResiliencyOptions().setTimeout(TIMEOUT));
+
+    toxiDemoActor = buildDemoActorProxy(
+        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT)));
     resilientDemoActor = buildDemoActorProxy(
-            new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES));
+        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES)));
     oneRetryDemoActor = buildDemoActorProxy(
-            new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1));
+        toxiProxyRun.newActorClient(new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1)));
   }
 
-  private static DemoActor buildDemoActorProxy(ResiliencyOptions resiliencyOptions) {
-    ActorProxyBuilder<DemoActor> builder =
-            new ActorProxyBuilder(DemoActor.class, newActorClient(resiliencyOptions));
+  private static DemoActor buildDemoActorProxy(ActorClient actorClient) {
+    ActorProxyBuilder<DemoActor> builder = new ActorProxyBuilder(DemoActor.class, actorClient);
     return builder.build(ACTOR_ID);
   }
 

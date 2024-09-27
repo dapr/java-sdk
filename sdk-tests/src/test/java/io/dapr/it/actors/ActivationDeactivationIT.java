@@ -37,7 +37,7 @@ public class ActivationDeactivationIT extends BaseIT {
   @Test
   public void activateInvokeDeactivate() throws Exception {
     // The call below will fail if service cannot start successfully.
-    startDaprApp(
+    var run = startDaprApp(
         ActivationDeactivationIT.class.getSimpleName(),
         DemoActorService.SUCCESS_MESSAGE,
         DemoActorService.class,
@@ -46,7 +46,8 @@ public class ActivationDeactivationIT extends BaseIT {
 
     final AtomicInteger atomicInteger = new AtomicInteger(1);
     logger.debug("Creating proxy builder");
-    ActorProxyBuilder<DemoActor> proxyBuilder = new ActorProxyBuilder(DemoActor.class, newActorClient());
+    ActorProxyBuilder<DemoActor> proxyBuilder
+        = new ActorProxyBuilder(DemoActor.class, deferClose(run.newActorClient()));
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(Integer.toString(atomicInteger.getAndIncrement()));
     logger.debug("Building proxy");

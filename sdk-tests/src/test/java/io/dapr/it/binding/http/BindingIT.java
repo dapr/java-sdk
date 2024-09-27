@@ -37,10 +37,10 @@ public class BindingIT extends BaseIT {
 
   @Test
   public void httpOutputBindingError() throws Exception {
-    startDaprApp(
+    var run = startDaprApp(
         this.getClass().getSimpleName() + "-httpoutputbinding-exception",
         60000);
-    try(DaprClient client = new DaprClientBuilder().build()) {
+    try(DaprClient client = run.newDaprClientBuilder().build()) {
       // Validate error message
       callWithRetry(() -> {
         System.out.println("Checking exception handling for output binding ...");
@@ -60,10 +60,10 @@ public class BindingIT extends BaseIT {
 
   @Test
   public void httpOutputBindingErrorIgnoredByComponent() throws Exception {
-    startDaprApp(
+    var run = startDaprApp(
         this.getClass().getSimpleName() + "-httpoutputbinding-ignore-error",
         60000);
-    try(DaprClient client = new DaprClientBuilder().build()) {
+    try(DaprClient client = run.newDaprClientBuilder().build()) {
       // Validate error message
       callWithRetry(() -> {
         System.out.println("Checking exception handling for output binding ...");
@@ -92,7 +92,7 @@ public class BindingIT extends BaseIT {
 
     var bidingName = "sample123";
 
-    try(DaprClient client = new DaprClientBuilder().build()) {
+    try(DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking if input binding is up before publishing events ...");
         client.invokeBinding(

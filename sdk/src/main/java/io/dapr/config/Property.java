@@ -59,6 +59,14 @@ public abstract class Property<T> {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public String toString() {
+    return this.name;
+  }
+
+  /**
    * Gets the environment variable's name.
    * @return Name.
    */
