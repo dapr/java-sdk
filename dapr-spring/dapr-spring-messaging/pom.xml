@@ -12,6 +12,12 @@
   <artifactId>dapr-spring-messaging</artifactId>
   <name>dapr-spring-messaging</name>
   <description>Dapr Spring Messaging</description>
-  <packaging>jar</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+        </dependency>
+    </dependencies>
+    <packaging>jar</packaging>
 
 </project>

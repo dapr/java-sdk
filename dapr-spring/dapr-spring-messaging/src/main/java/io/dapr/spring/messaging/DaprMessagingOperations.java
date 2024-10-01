@@ -15,6 +15,10 @@ package io.dapr.spring.messaging;
 
 import reactor.core.publisher.Mono;
 
+/**
+ * Create a new DaprMessagingOperations.
+ * @param <T> payload type
+ */
 public interface DaprMessagingOperations<T> {
 
   /**
