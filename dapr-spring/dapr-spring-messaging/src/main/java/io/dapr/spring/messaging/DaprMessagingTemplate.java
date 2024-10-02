@@ -17,7 +17,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.Metadata;
 import reactor.core.publisher.Mono;
 
-import java.util.Collections;
+import java.util.Map;
 
 public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T> {
 
@@ -49,7 +49,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T> {
     return daprClient.publishEvent(pubsubName,
         topic,
         message,
-        Collections.singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS));
+        Map.of(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS));
   }
 
   private static class SendMessageBuilderImpl<T> implements SendMessageBuilder<T> {

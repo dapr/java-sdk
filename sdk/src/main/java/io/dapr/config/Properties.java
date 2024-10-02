@@ -18,8 +18,6 @@ import io.dapr.utils.NetworkUtils;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -194,8 +192,8 @@ public class Properties {
    * @param overridesInput to override static properties
    */
   public Properties(Map<?, String> overridesInput) {
-    this.overrides = overridesInput == null ? Collections.emptyMap() :
-        Collections.unmodifiableMap(overridesInput.entrySet().stream()
+    this.overrides = overridesInput == null ? Map.of() :
+        Map.copyOf(overridesInput.entrySet().stream()
             .filter(e -> e.getKey() != null)
             .filter(e -> e.getValue() != null)
             .collect(Collectors.toMap(

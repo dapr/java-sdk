@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,11 +21,12 @@ public class NetworkUtilsTest {
 
   @BeforeEach
   public void setUp() {
-    propertiesOverride = new HashMap<>(){{
-      put(Properties.GRPC_PORT.getName(), Integer.toString(defaultGrpcPort));
-      put(Properties.SIDECAR_IP.getName(), defaultSidecarIP);
-      put(Properties.GRPC_ENDPOINT.getName(), "");
-    }};
+    // Must be mutable for some test scenarios here.
+    propertiesOverride = new HashMap<>(Map.of(
+      Properties.GRPC_PORT.getName(), Integer.toString(defaultGrpcPort),
+      Properties.SIDECAR_IP.getName(), defaultSidecarIP,
+      Properties.GRPC_ENDPOINT.getName(), ""
+    ));
   }
 
   @AfterEach
@@ -144,7 +144,7 @@ public class NetworkUtilsTest {
       String expectedEndpoint,
       boolean expectSecure
   ) {
-    var override = Collections.singletonMap(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
+    var override = Map.of(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
     var settings = NetworkUtils.GrpcEndpointSettings.parse(new Properties(override));
 
     Assertions.assertEquals(expectedEndpoint, settings.endpoint);
@@ -153,7 +153,7 @@ public class NetworkUtilsTest {
 
   private static void testGrpcEndpointParsingErrorScenario(String grpcEndpointEnvValue) {
     try {
-      var override = Collections.singletonMap(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
+      var override = Map.of(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
       NetworkUtils.GrpcEndpointSettings.parse(new Properties(override));
       Assert.fail();
     } catch (IllegalArgumentException e) {

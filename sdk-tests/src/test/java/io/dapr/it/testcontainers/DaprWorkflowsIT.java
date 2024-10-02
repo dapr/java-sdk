@@ -37,6 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,7 +60,7 @@ public class DaprWorkflowsIT {
       .withAppName("workflow-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("kvstore", "state.in-memory", "v1",
-          Collections.singletonMap("actorStateStore", "true")))
+          Map.of("actorStateStore", "true")))
       .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))

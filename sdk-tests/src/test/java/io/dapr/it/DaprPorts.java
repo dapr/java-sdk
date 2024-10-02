@@ -19,8 +19,6 @@ import io.dapr.config.Property;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,12 +38,12 @@ public class DaprPorts {
     this.grpcPort = grpcPort;
     this.httpPort = httpPort;
     this.appPort = appPort;
-    this.overrides = Collections.unmodifiableMap(new HashMap<>(){{
-      put(Properties.GRPC_PORT, grpcPort.toString());
-      put(Properties.HTTP_PORT, httpPort.toString());
-      put(Properties.HTTP_ENDPOINT, "http://127.0.0.1:" + httpPort);
-      put(Properties.GRPC_ENDPOINT, "127.0.0.1:" + grpcPort);
-    }});
+    this.overrides = Map.of(
+      Properties.GRPC_PORT, grpcPort.toString(),
+      Properties.HTTP_PORT, httpPort.toString(),
+      Properties.HTTP_ENDPOINT, "http://127.0.0.1:" + httpPort,
+      Properties.GRPC_ENDPOINT, "127.0.0.1:" + grpcPort
+    );
   }
 
   public static DaprPorts build(boolean appPort, boolean httpPort, boolean grpcPort) {

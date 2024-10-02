@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -534,7 +535,7 @@ public class PubSubIT extends BaseIT {
             PUBSUB_NAME,
             TTL_TOPIC_NAME,
             message,
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
+            Map.of(Metadata.TTL_IN_SECONDS, "1")).block();
         System.out.println(String.format("Published message: '%s' to topic '%s' pubsub_name '%s'", message, TOPIC_NAME, PUBSUB_NAME));
       }
     }
@@ -652,7 +653,7 @@ public class PubSubIT extends BaseIT {
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
             value,
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
+            Map.of(Metadata.TTL_IN_SECONDS, "30")).block();
 
         try {
           Thread.sleep((long) (1000 * Math.random()));
