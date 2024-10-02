@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -104,7 +105,7 @@ public class PubSubIT extends BaseIT {
         this.getClass().getSimpleName(),
         60000));
 
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       assertThrowsDaprExceptionWithReason(
           "INVALID_ARGUMENT",
           "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
@@ -119,7 +120,7 @@ public class PubSubIT extends BaseIT {
         this.getClass().getSimpleName(),
         60000));
 
-    try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
+    try (DaprPreviewClient client = daprRun.newDaprClientBuilder().buildPreviewClient()) {
       assertThrowsDaprException(
             "INVALID_ARGUMENT",
             "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
@@ -151,8 +152,8 @@ public class PubSubIT extends BaseIT {
         return "application/json";
       }
     };
-    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build();
-         DaprPreviewClient previewClient = new DaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build();
+         DaprPreviewClient previewClient = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
       // Only for the gRPC test
       // Send a multiple messages on one topic in messagebus pubsub via publishEvents API.
       List<String> messages = new ArrayList<>();
@@ -282,7 +283,7 @@ public class PubSubIT extends BaseIT {
     };
 
     // Send a batch of messages on one topic
-    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TOPIC_NAME);
         //Publishing messages
@@ -494,7 +495,7 @@ public class PubSubIT extends BaseIT {
         return "application/octet-stream";
       }
     };
-    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build()) {
       client.publishEvent(
           PUBSUB_NAME,
           BINARY_TOPIC_NAME,
@@ -504,7 +505,7 @@ public class PubSubIT extends BaseIT {
 
     Thread.sleep(3000);
 
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + BINARY_TOPIC_NAME);
         final List<CloudEvent> messages = client.invokeMethod(
@@ -526,7 +527,7 @@ public class PubSubIT extends BaseIT {
         60000));
 
     // Send a batch of messages on one topic, all to be expired in 1 second.
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TTL_TOPIC_NAME);
         //Publishing messages
@@ -534,7 +535,7 @@ public class PubSubIT extends BaseIT {
             PUBSUB_NAME,
             TTL_TOPIC_NAME,
             message,
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
+            Map.of(Metadata.TTL_IN_SECONDS, "1")).block();
         System.out.println(String.format("Published message: '%s' to topic '%s' pubsub_name '%s'", message, TOPIC_NAME, PUBSUB_NAME));
       }
     }
@@ -555,7 +556,7 @@ public class PubSubIT extends BaseIT {
     Thread.sleep(5000);
 
     final String appId = daprRun.getAppName();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + TTL_TOPIC_NAME);
         final List<String> messages = client.invokeMethod(appId, "messages/" + TTL_TOPIC_NAME, null, HttpExtension.GET, List.class).block();
@@ -576,7 +577,7 @@ public class PubSubIT extends BaseIT {
             60000));
 
     // Send a batch of messages on one topic.
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, BULK_SUB_TOPIC_NAME);
         // Publishing messages
@@ -590,7 +591,7 @@ public class PubSubIT extends BaseIT {
     Thread.sleep(5000);
 
     final String appId = daprRun.getAppName();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + BULK_SUB_TOPIC_NAME);
 
@@ -643,7 +644,7 @@ public class PubSubIT extends BaseIT {
       values.add(val);
     }
     Iterator<ConvertToLong> valuesIt = values.iterator();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         ConvertToLong value = valuesIt.next();
         System.out.println("The long value sent " + value.getValue());
@@ -652,7 +653,7 @@ public class PubSubIT extends BaseIT {
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
             value,
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
+            Map.of(Metadata.TTL_IN_SECONDS, "30")).block();
 
         try {
           Thread.sleep((long) (1000 * Math.random()));
@@ -665,7 +666,7 @@ public class PubSubIT extends BaseIT {
     }
 
     Set<ConvertToLong> actual = new HashSet<>();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + LONG_TOPIC_NAME);
         final List<CloudEvent<ConvertToLong>> messages = client.invokeMethod(

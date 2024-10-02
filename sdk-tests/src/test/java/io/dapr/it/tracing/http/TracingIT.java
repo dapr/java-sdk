@@ -46,7 +46,7 @@ public class TracingIT extends BaseIT {
         String spanName = UUID.randomUUID().toString();
         Span span = tracer.spanBuilder(spanName).setSpanKind(SpanKind.CLIENT).startSpan();
 
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             try (Scope scope = span.makeCurrent()) {
                 client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)

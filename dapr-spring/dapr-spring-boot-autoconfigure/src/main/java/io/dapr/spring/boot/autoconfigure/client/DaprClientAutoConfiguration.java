@@ -37,10 +37,18 @@ public class DaprClientAutoConfiguration {
   @ConditionalOnMissingBean
   DaprClientBuilder daprClientBuilder(DaprConnectionDetails daprConnectionDetails) {
     DaprClientBuilder builder = new DaprClientBuilder();
-    builder.withPropertyOverride(Properties.HTTP_ENDPOINT, daprConnectionDetails.httpEndpoint());
-    builder.withPropertyOverride(Properties.GRPC_ENDPOINT, daprConnectionDetails.grpcEndpoint());
-    builder.withPropertyOverride(Properties.HTTP_PORT, String.valueOf(daprConnectionDetails.httpPort()));
-    builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(daprConnectionDetails.grpcPort()));
+    if (daprConnectionDetails.httpEndpoint() != null) {
+      builder.withPropertyOverride(Properties.HTTP_ENDPOINT, daprConnectionDetails.httpEndpoint());
+    }
+    if (daprConnectionDetails.grpcEndpoint() != null) {
+      builder.withPropertyOverride(Properties.GRPC_ENDPOINT, daprConnectionDetails.grpcEndpoint());
+    }
+    if (daprConnectionDetails.httpPort() != null) {
+      builder.withPropertyOverride(Properties.HTTP_PORT, String.valueOf(daprConnectionDetails.httpPort()));
+    }
+    if (daprConnectionDetails.grpcPort() != null) {
+      builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(daprConnectionDetails.grpcPort()));
+    }
     return builder;
   }
 

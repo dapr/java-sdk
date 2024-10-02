@@ -33,20 +33,18 @@ public class DaprErrorDetails {
   static final DaprErrorDetails EMPTY_INSTANCE = new DaprErrorDetails((Status) null);
 
   private static final Map<Class<? extends Message>, ErrorDetailType> SUPPORTED_ERROR_TYPES =
-      Collections.unmodifiableMap(new HashMap<>() {
-        {
-          put(com.google.rpc.ErrorInfo.class, ErrorDetailType.ERROR_INFO);
-          put(com.google.rpc.RetryInfo.class, ErrorDetailType.RETRY_INFO);
-          put(com.google.rpc.DebugInfo.class, ErrorDetailType.DEBUG_INFO);
-          put(com.google.rpc.QuotaFailure.class, ErrorDetailType.QUOTA_FAILURE);
-          put(com.google.rpc.PreconditionFailure.class, ErrorDetailType.PRECONDITION_FAILURE);
-          put(com.google.rpc.BadRequest.class, ErrorDetailType.BAD_REQUEST);
-          put(com.google.rpc.RequestInfo.class, ErrorDetailType.REQUEST_INFO);
-          put(com.google.rpc.ResourceInfo.class, ErrorDetailType.RESOURCE_INFO);
-          put(com.google.rpc.Help.class, ErrorDetailType.HELP);
-          put(com.google.rpc.LocalizedMessage.class, ErrorDetailType.LOCALIZED_MESSAGE);
-        }
-      });
+      Map.of(
+          com.google.rpc.ErrorInfo.class, ErrorDetailType.ERROR_INFO,
+          com.google.rpc.RetryInfo.class, ErrorDetailType.RETRY_INFO,
+          com.google.rpc.DebugInfo.class, ErrorDetailType.DEBUG_INFO,
+          com.google.rpc.QuotaFailure.class, ErrorDetailType.QUOTA_FAILURE,
+          com.google.rpc.PreconditionFailure.class, ErrorDetailType.PRECONDITION_FAILURE,
+          com.google.rpc.BadRequest.class, ErrorDetailType.BAD_REQUEST,
+          com.google.rpc.RequestInfo.class, ErrorDetailType.REQUEST_INFO,
+          com.google.rpc.ResourceInfo.class, ErrorDetailType.RESOURCE_INFO,
+          com.google.rpc.Help.class, ErrorDetailType.HELP,
+          com.google.rpc.LocalizedMessage.class, ErrorDetailType.LOCALIZED_MESSAGE
+      );
 
   private static final Map<String, Class<? extends Message>> ERROR_TYPES_FQN_REVERSE_LOOKUP =
       SUPPORTED_ERROR_TYPES.keySet().stream().collect(Collectors.toMap(
