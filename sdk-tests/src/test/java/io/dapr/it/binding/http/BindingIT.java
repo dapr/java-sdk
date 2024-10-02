@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,10 +38,10 @@ public class BindingIT extends BaseIT {
 
   @Test
   public void httpOutputBindingError() throws Exception {
-    startDaprApp(
+    var run = startDaprApp(
         this.getClass().getSimpleName() + "-httpoutputbinding-exception",
         60000);
-    try(DaprClient client = new DaprClientBuilder().build()) {
+    try(DaprClient client = run.newDaprClientBuilder().build()) {
       // Validate error message
       callWithRetry(() -> {
         System.out.println("Checking exception handling for output binding ...");
@@ -60,10 +61,10 @@ public class BindingIT extends BaseIT {
 
   @Test
   public void httpOutputBindingErrorIgnoredByComponent() throws Exception {
-    startDaprApp(
+    var run = startDaprApp(
         this.getClass().getSimpleName() + "-httpoutputbinding-ignore-error",
         60000);
-    try(DaprClient client = new DaprClientBuilder().build()) {
+    try(DaprClient client = run.newDaprClientBuilder().build()) {
       // Validate error message
       callWithRetry(() -> {
         System.out.println("Checking exception handling for output binding ...");
@@ -92,7 +93,7 @@ public class BindingIT extends BaseIT {
 
     var bidingName = "sample123";
 
-    try(DaprClient client = new DaprClientBuilder().build()) {
+    try(DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking if input binding is up before publishing events ...");
         client.invokeBinding(
@@ -115,14 +116,14 @@ public class BindingIT extends BaseIT {
 
       System.out.println("sending first message");
       client.invokeBinding(
-          bidingName, "create", myClass, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
+          bidingName, "create", myClass, Map.of("MyMetadata", "MyValue"), Void.class).block();
 
       // This is an example of sending a plain string.  The input binding will receive
       //   cat
       final String m = "cat";
       System.out.println("sending " + m);
       client.invokeBinding(
-          bidingName, "create", m, Collections.singletonMap("MyMetadata", "MyValue"), Void.class).block();
+          bidingName, "create", m, Map.of("MyMetadata", "MyValue"), Void.class).block();
 
       // Metadata is not used by Kafka component, so it is not possible to validate.
       callWithRetry(() -> {

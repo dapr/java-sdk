@@ -41,7 +41,6 @@ public class DaprClientBuilderTest {
 
   @Test
   public void buildWithOverrideSidecarIP() {
-
     DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
     daprClientBuilder.withPropertyOverride(Properties.SIDECAR_IP, "unknown-host");
     DaprClient daprClient = daprClientBuilder.build();

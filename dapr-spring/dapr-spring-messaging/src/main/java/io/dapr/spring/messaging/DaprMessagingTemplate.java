@@ -31,9 +31,13 @@ import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
+<<<<<<< HEAD
 import reactor.util.context.Context;
 import java.util.Collections;
 import java.util.HashMap;
+=======
+
+>>>>>>> 7490434d (Remove all global state from setProperty (#1138))
 import java.util.Map;
 
 /**

@@ -18,8 +18,8 @@ import io.dapr.utils.NetworkUtils;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Global properties for Dapr's SDK, using Supplier so they are dynamically resolved.
@@ -189,10 +189,17 @@ public class Properties {
 
   /**
    * Creates a new instance to handle Properties per instance.
-   * @param overrides to override static properties
+   * @param overridesInput to override static properties
    */
-  public Properties(Map<String, String> overrides) {
-    this.overrides = Collections.unmodifiableMap(overrides);
+  public Properties(Map<?, String> overridesInput) {
+    this.overrides = overridesInput == null ? Map.of() :
+        Map.copyOf(overridesInput.entrySet().stream()
+            .filter(e -> e.getKey() != null)
+            .filter(e -> e.getValue() != null)
+            .collect(Collectors.toMap(
+                entry -> entry.getKey().toString(),
+                entry -> entry.getValue()
+            )));
   }
 
   /**

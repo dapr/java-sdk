@@ -124,7 +124,6 @@ public class DaprClientHttpTest {
   @Test
   public void waitForSidecarBadHealthCheck() throws Exception {
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, okHttpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
@@ -149,7 +148,6 @@ public class DaprClientHttpTest {
   @Test
   public void waitForSidecarSlowSuccessfulHealthCheck() throws Exception {
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
     daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, okHttpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
@@ -178,7 +176,6 @@ public class DaprClientHttpTest {
   @Test
   public void waitForSidecarOK() throws Exception {
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
     daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, okHttpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
@@ -201,7 +198,6 @@ public class DaprClientHttpTest {
             .respond(204);
     try (ServerSocket serverSocket = new ServerSocket(0)) {
       final int port = serverSocket.getLocalPort();
-      System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
       Thread t = new Thread(() -> {
         try {
             try (Socket socket = serverSocket.accept()) {

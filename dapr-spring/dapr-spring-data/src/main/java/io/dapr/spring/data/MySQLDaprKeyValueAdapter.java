@@ -164,13 +164,13 @@ public class MySQLDaprKeyValueAdapter extends AbstractDaprKeyValueAdapter {
   }
 
   private void execUsingBinding(String sql) {
-    Map<String, String> meta = Collections.singletonMap("sql", sql);
+    Map<String, String> meta = Map.of("sql", sql);
 
     daprClient.invokeBinding(bindingName, "exec", null, meta).block();
   }
 
   private <T> T queryUsingBinding(String sql, TypeRef<T> typeRef) {
-    Map<String, String> meta = Collections.singletonMap("sql", sql);
+    Map<String, String> meta = Map.of("sql", sql);
 
     return daprClient.invokeBinding(bindingName, "query", null, meta, typeRef).block();
   }

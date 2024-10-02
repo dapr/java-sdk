@@ -33,7 +33,7 @@ public class ActorMethodNameIT extends BaseIT {
   @Test
   public void actorMethodNameChange() throws Exception {
     // The call below will fail if service cannot start successfully.
-    startDaprApp(
+    var run = startDaprApp(
         ActorMethodNameIT.class.getSimpleName(),
         MyActorService.SUCCESS_MESSAGE,
         MyActorService.class,
@@ -42,7 +42,7 @@ public class ActorMethodNameIT extends BaseIT {
 
     logger.debug("Creating proxy builder");
     ActorProxyBuilder<MyActor> proxyBuilder =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, newActorClient());
+        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient()));
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId("1");
     logger.debug("Building proxy");
@@ -57,7 +57,7 @@ public class ActorMethodNameIT extends BaseIT {
 
     logger.debug("Creating proxy builder 2");
     ActorProxyBuilder<ActorProxy> proxyBuilder2 =
-        new ActorProxyBuilder("MyActorTest", ActorProxy.class, newActorClient());
+        new ActorProxyBuilder("MyActorTest", ActorProxy.class, deferClose(run.newActorClient()));
     logger.debug("Building proxy 2");
     ActorProxy proxy2 = proxyBuilder2.build(actorId1);
 
