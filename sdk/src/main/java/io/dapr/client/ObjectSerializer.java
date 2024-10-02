@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.protobuf.MessageLite;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
@@ -35,6 +36,7 @@ public class ObjectSerializer {
    */
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+          .registerModule(new JavaTimeModule())
       .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   /**
