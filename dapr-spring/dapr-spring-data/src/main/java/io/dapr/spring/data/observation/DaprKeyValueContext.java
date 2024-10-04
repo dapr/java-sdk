@@ -41,16 +41,16 @@ public final class DaprKeyValueContext extends SenderContext<DaprKeyValueContext
 
 
   /**
-   * The name of the bean sending the message (typically a {@code DaprMessagingTemplate}).
-   * @return the name of the bean sending the message
+   * The name of the bean interacting with the KeyValue Store (typically a {@code DaprKeyValueTemplate}).
+   * @return the name of the bean interacting with the KeyValue store
    */
   public String getBeanName() {
     return this.beanName;
   }
 
   /**
-   * The destination topic for the message.
-   * @return the topic the message is being sent to
+   * The KeyValue store used for storing/retriving data.
+   * @return the key value store used
    */
   public String getKeyValueStore() {
     return this.keyValueStore;

@@ -25,6 +25,12 @@
     <!--Temporarily ignoring checking after upgrade to new spotbugs version-->
     <Match>
         <Package name="~io\.dapr.*"/>
+        <Bug pattern="SS_SHOULD_BE_STATIC"/>
+    </Match>
+
+    <!--Temporarily ignoring checking after upgrade to new spotbugs version-->
+    <Match>
+        <Package name="~io\.dapr.*"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
 
@@ -46,9 +52,17 @@
         <Bug pattern="UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD"/>
     </Match>
 
-    <!--Temporarily ignoring checking after upgrade to new spotbugs version-->
     <Match>
-        <Package name="~io\.dapr.*"/>
-        <Bug pattern="NP_UNWRITTEN_FIELD"/>
+        <Package name="io.dapr.spring.data.observation"/>
+        <Class name="DaprKeyValueContext"/>
+        <Method name="properties"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    </Match>
+
+    <Match>
+        <Package name="io.dapr.spring.messaging.observation"/>
+        <Class name="DaprMessagingSenderContext"/>
+        <Method name="properties"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
 </FindBugsFilter>
