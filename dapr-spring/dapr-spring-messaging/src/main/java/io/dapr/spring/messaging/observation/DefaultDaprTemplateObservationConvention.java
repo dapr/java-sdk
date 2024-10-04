@@ -3,7 +3,7 @@ package io.dapr.spring.messaging.observation;
 import io.micrometer.common.KeyValues;
 
 /**
- * Default {@link DefaultDaprTemplateObservationConvention} for Pulsar template key values.
+ * Default {@link DefaultDaprTemplateObservationConvention} for Dapr template key values.
  *
  */
 public class DefaultDaprTemplateObservationConvention implements DaprTemplateObservationConvention {
@@ -24,7 +24,7 @@ public class DefaultDaprTemplateObservationConvention implements DaprTemplateObs
   // https://github.com/micrometer-metrics/micrometer-docs-generator/issues/30
   @Override
   public String getName() {
-    return "spring.dapr.template";
+    return "spring.dapr.messaging.template";
   }
 
   @Override

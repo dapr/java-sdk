@@ -17,7 +17,7 @@ public interface DaprTemplateObservationConvention extends ObservationConvention
 
   @Override
   default String getName() {
-    return "spring.dapr.template";
+    return "spring.dapr.messaging.template";
   }
 
 }

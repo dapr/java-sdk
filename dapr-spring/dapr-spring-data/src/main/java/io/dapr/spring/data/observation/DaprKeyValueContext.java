@@ -1,37 +1,38 @@
-package io.dapr.spring.messaging.observation;
+package io.dapr.spring.data.observation;
 
 import io.micrometer.observation.transport.SenderContext;
+
 import java.util.HashMap;
 import java.util.Map;
 
 
 /**
- * {@link SenderContext} for Dapr Messaging.
+ * {@link SenderContext} for Dapr KeyValue context.
  *
  */
-public final class DaprMessageSenderContext extends SenderContext<DaprMessageSenderContext.MessageHolder> {
+public final class DaprKeyValueContext extends SenderContext<DaprKeyValueContext.KeyValueHolder> {
 
   private final String beanName;
 
-  private final String destination;
+  private final String keyValueStore;
 
 
-  private DaprMessageSenderContext(MessageHolder messageHolder, String topic, String beanName) {
-    super((carrier, key, value) -> messageHolder.property(key, value));
-    setCarrier(messageHolder);
+  private DaprKeyValueContext(KeyValueHolder keyValueHolder, String keyValueStore, String beanName) {
+    super((carrier, key, value) -> keyValueHolder.property(key, value));
+    setCarrier(keyValueHolder);
     this.beanName = beanName;
-    this.destination = topic;
+    this.keyValueStore = keyValueStore;
   }
 
   /**
    * Create a new context.
-   * @param topic topic to be used
+   * @param kvStore KVStore to be used
    * @param beanName name of the bean used usually (typically a {@code DaprMessagingTemplate})
    * @return DaprMessageSenderContext
    */
-  public static DaprMessageSenderContext newContext(String topic, String beanName) {
-    MessageHolder messageHolder = new MessageHolder();
-    return new DaprMessageSenderContext(messageHolder, topic, beanName);
+  public static DaprKeyValueContext newContext(String kvStore, String beanName) {
+    KeyValueHolder keyValueHolder = new KeyValueHolder();
+    return new DaprKeyValueContext(keyValueHolder, kvStore, beanName);
   }
 
   public Map<String, String> properties() {
@@ -51,20 +52,20 @@ public final class DaprMessageSenderContext extends SenderContext<DaprMessageSen
    * The destination topic for the message.
    * @return the topic the message is being sent to
    */
-  public String getDestination() {
-    return this.destination;
+  public String getKeyValueStore() {
+    return this.keyValueStore;
   }
 
 
   /**
-   * Acts as a carrier for a Dapr message and records the propagated properties for
+   * Acts as a carrier for a Dapr KeyValue and records the propagated properties for
    * later access by the Dapr.
    */
-  public static final class MessageHolder {
+  public static final class KeyValueHolder {
 
     private final Map<String, String> properties = new HashMap<>();
 
-    private MessageHolder() {
+    private KeyValueHolder() {
     }
 
     public void property(String key, String value) {

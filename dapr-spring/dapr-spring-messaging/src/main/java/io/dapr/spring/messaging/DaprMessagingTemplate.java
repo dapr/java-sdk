@@ -21,18 +21,17 @@ import io.dapr.spring.messaging.observation.DaprTemplateObservationConvention;
 import io.dapr.spring.messaging.observation.DefaultDaprTemplateObservationConvention;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.ContextKey;
-import io.opentelemetry.context.propagation.TextMapSetter;
+import io.micrometer.tracing.Tracer;
+import io.opentelemetry.api.OpenTelemetry;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-
+import reactor.util.context.Context;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +56,18 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>,
   private final boolean observationEnabled;
 
   /**
+   * Micrometer's Tracer.
+   */
+  @Nullable
+  private Tracer tracer;
+
+  /**
+   * Micrometer's Tracer.
+   */
+  @Nullable
+  private OpenTelemetry openTelemetry;
+
+  /**
    * The registry to record observations with.
    */
   @Nullable
@@ -71,6 +82,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>,
   @Nullable
   private ApplicationContext applicationContext;
 
+
   private String beanName = "";
 
   /**
@@ -84,6 +96,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>,
     this.daprClient = daprClient;
     this.pubsubName = pubsubName;
     this.observationEnabled = observationEnabled;
+    Hooks.enableAutomaticContextPropagation();
   }
 
   /**
@@ -102,6 +115,10 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>,
     }
     this.observationRegistry = this.applicationContext.getBeanProvider(ObservationRegistry.class)
             .getIfUnique(() -> this.observationRegistry);
+    this.tracer = this.applicationContext.getBeanProvider(Tracer.class)
+            .getIfUnique(() -> this.tracer);
+    this.openTelemetry = this.applicationContext.getBeanProvider(OpenTelemetry.class)
+            .getIfUnique(() -> this.openTelemetry);
     this.observationConvention = this.applicationContext.getBeanProvider(DaprTemplateObservationConvention.class)
             .getIfUnique(() -> this.observationConvention);
   }
@@ -131,94 +148,41 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>,
   }
 
   private Mono<Void> doSendAsync(String topic, T message) {
-
     this.logger.trace(() -> "Sending msg to '%s' topic".formatted(topic));
 
     DaprMessageSenderContext senderContext = DaprMessageSenderContext.newContext(topic, this.beanName);
     Observation observation = newObservation(senderContext);
-    observation.start();
 
+    return observation.observe(() -> {
+      System.out.printf("**** Sending [%s]%n", message);
 
-    return  daprClient.publishEvent(pubsubName,
-                    topic,
-                    message,
-                    Collections.singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))
-            .contextWrite(getReactorContext(observation.getContextView())).doOnError(
-                    (err) -> {
+      return daprClient.publishEvent(pubsubName,
+                      topic,
+                      message,
+                      Collections.singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))
+              .contextWrite(this::addTracingHeaders)
+              .doOnError(
+                      (err) -> {
 
-                      this.logger.error(err, () -> "Failed to send msg to '%s' topic".formatted(topic));
-                      observation.error(err);
-                      observation.stop();
-                    }
-            ).doOnSuccess((err) -> {
-              this.logger.trace(() -> "Sent msg to '%s' topic".formatted(topic));
-              observation.stop();
-            });
-  }
-
-  /**
-   * Converts current OpenTelemetry's context into Reactor's context.
-   * @return Reactor's context.
-   */
-  public static reactor.util.context.ContextView getReactorContext() {
-    return getReactorContext(Context.current());
-  }
-
-  /**
-   * Converts given OpenTelemetry's context into Reactor's context.
-   * @param context OpenTelemetry's context.
-   * @return Reactor's context.
-   */
-  public static reactor.util.context.Context getReactorContext(Context context) {
-    Map<String, String> map = new HashMap<>();
-    TextMapSetter<Map<String, String>> setter =
-            (carrier, key, value) -> map.put(key, value);
-
-    GlobalOpenTelemetry.getPropagators().getTextMapPropagator().inject(context, map, setter);
-    reactor.util.context.Context reactorContext = reactor.util.context.Context.empty();
-    for (Map.Entry<String, String> entry : map.entrySet()) {
-      reactorContext = reactorContext.put(entry.getKey(), entry.getValue());
-    }
-    return reactorContext;
-  }
-
-  /**
-   * Converts given Micrometer's context into Reactor's context.
-   * @param contextView Micrometers's contextView.
-   * @return Reactor's context.
-   */
-  public static reactor.util.context.Context getReactorContext(io.micrometer.observation.Observation.ContextView
-                                                                       contextView) {
-    Map<String, String> map = new HashMap<>();
-    TextMapSetter<Map<String, String>> setter =
-            (carrier, key, value) -> map.put(key, value);
-
-    final reactor.util.context.Context reactorContext = reactor.util.context.Context.empty();
-
-    contextView.getAllKeyValues().forEach((entry) -> {
-      reactorContext.put(entry.getKey(), entry.getValue());
+                        this.logger.error(err, () -> "Failed to send msg to '%s' topic".formatted(topic));
+                        observation.error(err);
+                        observation.stop();
+                      }
+              ).doOnSuccess((err) -> {
+                this.logger.trace(() -> "Sent msg to '%s' topic".formatted(topic));
+                observation.stop();
+              });
     });
-
-    Context otelContext = Context.root();
-    reactorContext.stream()
-            .forEach(entry -> {
-              Object key = entry.getKey();
-              Object value = entry.getValue();
-
-              // Create a Context.Key for OpenTelemetry
-              ContextKey<Object> otelKey = ContextKey.named(key.toString());
-
-              // Store the entry in OpenTelemetry Context
-              otelContext.with(otelKey, value);
-            });
-
-    GlobalOpenTelemetry.getPropagators().getTextMapPropagator()
-            .inject(otelContext, map, setter);
-    return reactorContext;
   }
 
-
-
+  private Context addTracingHeaders(reactor.util.context.Context context) {
+    Map<String, String> map = new HashMap<>();
+    openTelemetry.getPropagators().getTextMapPropagator()
+            .inject(io.opentelemetry.context.Context.current(), map, (carrier, key, value) -> {
+              map.put(key, value);
+            });
+    return context.putAll(Context.of(map).readOnly());
+  }
 
   private Observation newObservation(DaprMessageSenderContext senderContext) {
     if (this.observationRegistry == null) {
