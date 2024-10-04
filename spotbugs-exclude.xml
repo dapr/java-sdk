@@ -53,15 +53,13 @@
     </Match>
 
     <Match>
-        <Package name="io.dapr.spring.data.observation"/>
-        <Class name="DaprKeyValueContext"/>
+        <Class name="io.dapr.spring.data.observation.DaprKeyValueContext"/>
         <Method name="properties"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
 
     <Match>
-        <Package name="io.dapr.spring.messaging.observation"/>
-        <Class name="DaprMessagingSenderContext"/>
+        <Class name="io.dapr.spring.messaging.observation.DaprMessageSenderContext"/>
         <Method name="properties"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
