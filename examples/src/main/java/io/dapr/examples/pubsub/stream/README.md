@@ -65,9 +65,9 @@ public class Subscriber {
           new SubscriptionListener<>() {
 
             @Override
-            public Status onEvent(CloudEvent<String> event) {
+            public Mono<Status> onEvent(CloudEvent<String> event) {
               System.out.println("Subscriber got: " + event.getData());
-              return Status.SUCCESS;
+              return Mono.just(Status.SUCCESS);
             }
 
             @Override

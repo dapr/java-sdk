@@ -503,7 +503,7 @@ public class DaprPreviewClientGrpcTest {
 				"topic",
 				new SubscriptionListener<>() {
 					@Override
-					public Status onEvent(CloudEvent<String> event) {
+					public Mono<Status> onEvent(CloudEvent<String> event) {
 						if (event.getPubsubName().equals(pubsubName) &&
 						event.getTopic().equals(topicName) &&
 						event.getData().equals(data)) {
@@ -517,11 +517,11 @@ public class DaprPreviewClientGrpcTest {
 							if (success.size() >= numEvents) {
 								gotAll.release();
 							}
-							return Status.SUCCESS;
+							return Mono.just(Status.SUCCESS);
 						}
 
 						dropCounter.incrementAndGet();
-						return Status.DROP;
+						return Mono.just(Status.DROP);
 					}
 
 					@Override

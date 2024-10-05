@@ -14,17 +14,10 @@ limitations under the License.
 package io.dapr.examples.pubsub.stream;
 
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.SubscriptionListener;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.examples.DaprApplication;
 import io.dapr.utils.TypeRef;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import reactor.core.publisher.Mono;
 
 /**
  * Subscriber using bi-directional gRPC streaming, which does not require an app port.
@@ -57,9 +50,9 @@ public class Subscriber {
           new SubscriptionListener<>() {
 
             @Override
-            public Status onEvent(CloudEvent<String> event) {
+            public Mono<Status> onEvent(CloudEvent<String> event) {
               System.out.println("Subscriber got: " + event.getData());
-              return Status.SUCCESS;
+              return Mono.just(Status.SUCCESS);
             }
 
             @Override

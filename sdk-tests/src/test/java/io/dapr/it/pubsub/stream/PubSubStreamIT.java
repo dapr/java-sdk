@@ -22,6 +22,7 @@ import io.dapr.it.DaprRun;
 import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,23 +83,25 @@ public class PubSubStreamIT extends BaseIT {
       var random = new Random(37);  // predictable random.
       var listener = new SubscriptionListener<String>() {
         @Override
-        public Status onEvent(CloudEvent<String> event) {
-          // Useful to avoid false negatives running locally multiple times.
-          if (event.getData().contains(runId)) {
-            // 5% failure rate.
-            var decision = random.nextInt(100);
-            if (decision < 5) {
-              if (decision % 2 == 0) {
-                throw new RuntimeException("artificial exception on message " + event.getId());
+        public Mono<Status> onEvent(CloudEvent<String> event) {
+          return Mono.fromCallable(() -> {
+            // Useful to avoid false negatives running locally multiple times.
+            if (event.getData().contains(runId)) {
+              // 5% failure rate.
+              var decision = random.nextInt(100);
+              if (decision < 5) {
+                if (decision % 2 == 0) {
+                  throw new RuntimeException("artificial exception on message " + event.getId());
+                }
+                return Status.RETRY;
               }
-              return Status.RETRY;
+
+              messages.add(event.getId());
+              return Status.SUCCESS;
             }
 
-            messages.add(event.getId());
-            return Status.SUCCESS;
-          }
-
-          return Status.DROP;
+            return Status.DROP;
+          });
         }
 
         @Override

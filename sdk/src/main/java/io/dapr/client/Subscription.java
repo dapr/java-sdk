@@ -20,9 +20,9 @@ import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -106,13 +106,14 @@ public class Subscription<T> implements Closeable {
                 return;
               }
 
-              var status = onEvent(listener, cloudEvent);
-              if (status == null) {
-                status = SubscriptionListener.Status.RETRY;
-              }
-
-              var ack = buildAckRequest(id, status);
-              ackQueue.put(ack);
+              onEvent(listener, cloudEvent).subscribe(status -> {
+                var ack = buildAckRequest(id, status);
+                try {
+                  ackQueue.put(ack);
+                } catch (InterruptedException e) {
+                  throw new RuntimeException(e);
+                }
+              });
             } catch (Exception e) {
               this.onError(DaprException.propagate(e));
             }
@@ -143,13 +144,13 @@ public class Subscription<T> implements Closeable {
     });
   }
 
-  private static <T> SubscriptionListener.Status onEvent(SubscriptionListener<T> listener, CloudEvent<T> cloudEvent) {
-    try {
-      return listener.onEvent(cloudEvent);
-    } catch (Exception e) {
-      listener.onError(DaprException.propagate(e));
-      return SubscriptionListener.Status.RETRY;
-    }
+  private static <T> Mono<SubscriptionListener.Status> onEvent(
+      SubscriptionListener<T> listener, CloudEvent<T> cloudEvent) {
+    return listener.onEvent(cloudEvent).onErrorMap(t -> {
+      var exception = DaprException.propagate(t);
+      listener.onError(exception);
+      return exception;
+    }).onErrorReturn(SubscriptionListener.Status.RETRY);
   }
 
   @NotNull

@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.client.domain.CloudEvent;
+import reactor.core.publisher.Mono;
 
 /**
  * Callback interface to receive events from a streaming subscription of events.
@@ -35,7 +36,7 @@ public interface SubscriptionListener<T> {
    * @param event Event received.
    * @return Acknowledgement status.
    */
-  Status onEvent(CloudEvent<T> event);
+  Mono<Status> onEvent(CloudEvent<T> event);
 
   /**
    * Processes an exception during streaming subscription.
