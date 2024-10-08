@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.testcontainers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -28,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +41,7 @@ import java.util.Set;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
 
+  private static final Logger log = LoggerFactory.getLogger(DaprContainer.class);
   private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
   private static final WaitStrategy WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz/outbound")
@@ -45,6 +49,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
 
   private final Set<Component> components = new HashSet<>();
+  private Configuration configuration;
   private final Set<Subscription> subscriptions = new HashSet<>();
   private DaprProtocol protocol = DaprProtocol.HTTP;
   private String appName;
@@ -84,6 +89,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public Set<Subscription> getSubscriptions() {
     return subscriptions;
+  }
+
+  public Configuration getConfiguration() {
+    return configuration;
   }
 
   public DaprContainer withAppPort(Integer port) {
@@ -149,6 +158,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  public DaprContainer withConfiguration(Configuration configuration) {
+    this.configuration = configuration;
+    return this;
+  }
+
   public int getHttpPort() {
     return getMappedPort(DAPRD_DEFAULT_HTTP_PORT);
   }
@@ -168,6 +182,41 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public DaprContainer withAppChannelAddress(String appChannelAddress) {
     this.appChannelAddress = appChannelAddress;
     return this;
+  }
+
+
+  /**
+   * Get a map of Dapr component details.
+   * @param configuration A Dapr Configuration.
+   * @return Map of component details.
+   */
+  public Map<String, Object> configurationToMap(Configuration configuration) {
+    Map<String, Object> configurationProps = new HashMap<>();
+    configurationProps.put("apiVersion", "dapr.io/v1alpha1");
+    configurationProps.put("kind", "Configuration");
+
+    Map<String, String> configurationMetadata = new LinkedHashMap<>();
+    configurationMetadata.put("name", configuration.getName());
+    configurationProps.put("metadata", configurationMetadata);
+
+    Map<String, Object> configurationSpec = new HashMap<>();
+
+
+    Map<String, Object> configurationTracing = new HashMap<>();
+    Map<String, Object> configurationTracingOtel = new HashMap<>();
+    if (configuration.getTracing() != null) {
+      configurationTracing.put("samplingRate", configuration.getTracing().getSamplingRate());
+      configurationTracing.put("stdout", configuration.getTracing().getStdout());
+      configurationTracingOtel.put("endpointAddress", configuration.getTracing().getOtelEndpoint());
+      configurationTracingOtel.put("isSecure", configuration.getTracing().getOtelIsSecure());
+      configurationTracingOtel.put("protocol", configuration.getTracing().getOtelProtocol());
+    }
+
+    configurationTracing.put("otel", configurationTracingOtel);
+    configurationSpec.put("tracing", configurationTracing);
+
+    configurationProps.put("spec", configurationSpec);
+    return Collections.unmodifiableMap(configurationProps);
   }
 
   /**
@@ -255,11 +304,21 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       cmds.add(Integer.toString(appPort));
     }
 
+    if (configuration != null) {
+      cmds.add("--config");
+      cmds.add("/dapr-resources/" + configuration.getName() + ".yaml");
+    }
+
     cmds.add("--log-level");
     cmds.add(daprLogLevel.toString());
-    cmds.add("-components-path");
+    cmds.add("--resources-path");
     cmds.add("/dapr-resources");
-    withCommand(cmds.toArray(new String[]{}));
+
+    String[] cmdArray = cmds.toArray(new String[]{});
+    log.info("> `daprd` Command: \n");
+    log.info("\t" + Arrays.toString(cmdArray) + "\n");
+
+    withCommand(cmdArray);
 
     if (components.isEmpty()) {
       components.add(new Component("kvstore", "state.in-memory", "v1", Collections.emptyMap()));
@@ -275,6 +334,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withCopyToContainer(Transferable.of(componentYaml), "/dapr-resources/" + component.getName() + ".yaml");
     }
 
+    if (configuration != null) {
+      String configurationYaml = configurationToYaml(configuration);
+      withCopyToContainer(Transferable.of(configurationYaml), "/dapr-resources/" + configuration.getName() + ".yaml");
+    }
+
     for (Subscription subscription : subscriptions) {
       String subscriptionYaml = subscriptionToYaml(subscription);
       withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
@@ -283,14 +347,43 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     dependsOn(placementContainer);
   }
 
+  /**
+   * Get a Yaml representation of a Subscription.
+   * @param subscription A Dapr Subscription.
+   * @return String representing the Subscription in Yaml format
+   */
   public String subscriptionToYaml(Subscription subscription) {
     Map<String, Object> subscriptionMap = subscriptionToMap(subscription);
-    return yaml.dumpAsMap(subscriptionMap);
+    String subscriptionYaml = yaml.dumpAsMap(subscriptionMap);
+    log.info("> Subscription YAML: \n");
+    log.info("\t\n" + subscriptionYaml + "\n");
+    return subscriptionYaml;
   }
 
+  /**
+   * Get a Yaml representation of a Component.
+   * @param component A Dapr Subscription.
+   * @return String representing the Component in Yaml format
+   */
   public String componentToYaml(Component component) {
     Map<String, Object> componentMap = componentToMap(component);
-    return yaml.dumpAsMap(componentMap);
+    String componentYaml = yaml.dumpAsMap(componentMap);
+    log.info("> Component YAML: \n");
+    log.info("\t\n" + componentYaml + "\n");
+    return componentYaml;
+  }
+
+  /**
+   * Get a Yaml representation of a Configuration.
+   * @param configuration A Dapr Subscription.
+   * @return String representing the Configuration in Yaml format
+   */
+  public String configurationToYaml(Configuration configuration) {
+    Map<String, Object> configurationMap = configurationToMap(configuration);
+    String configurationYaml = yaml.dumpAsMap(configurationMap);
+    log.info("> Configuration YAML: \n");
+    log.info("\t\n" + configurationYaml + "\n");
+    return configurationYaml;
   }
 
   public String getAppName() {

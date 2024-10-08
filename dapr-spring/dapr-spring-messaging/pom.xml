@@ -12,6 +12,16 @@
   <artifactId>dapr-spring-messaging</artifactId>
   <name>dapr-spring-messaging</name>
   <description>Dapr Spring Messaging</description>
+    <dependencies>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing</artifactId>
+        </dependency>
+    </dependencies>
     <packaging>jar</packaging>
 
 </project>

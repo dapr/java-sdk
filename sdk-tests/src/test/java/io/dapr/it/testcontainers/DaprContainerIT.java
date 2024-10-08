@@ -20,7 +20,9 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.State;
 
 import io.dapr.config.Properties;
+import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.TracingConfigParameters;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -64,6 +66,9 @@ public class DaprContainerIT {
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
       .withAppName("dapr-app")
       .withAppPort(8081)
+      .withConfiguration(new Configuration("my-config",
+              new TracingConfigParameters("1", true,
+                      "localhost:4317", false, "grpc")))
       .withAppChannelAddress("host.testcontainers.internal");
 
   /**
@@ -103,6 +108,18 @@ public class DaprContainerIT {
         DAPR_CONTAINER.getSubscriptions().size(),
         "A subscription should be configured by default if none is provided"
     );
+
+    assertNotNull(
+            DAPR_CONTAINER.getConfiguration(),
+            "A configuration should be provided"
+    );
+
+    Configuration configuration = DAPR_CONTAINER.getConfiguration();
+    assertEquals("1",configuration.getTracing().getSamplingRate());
+    assertEquals(true,configuration.getTracing().getStdout());
+    assertEquals("localhost:4317",configuration.getTracing().getOtelEndpoint());
+    assertEquals("grpc",configuration.getTracing().getOtelProtocol());
+    assertEquals(false,configuration.getTracing().getOtelIsSecure());
   }
 
   @Test

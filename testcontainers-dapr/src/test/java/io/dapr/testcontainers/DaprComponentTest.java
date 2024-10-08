@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -94,6 +95,37 @@ public class DaprComponentTest {
         + "  topic: topic\n";
     assertEquals(expectedSubscriptionYaml, subscriptionYaml);
   }
+
+
+  @Test
+  public void configurationSerializationTest() {
+
+    DaprContainer dapr = new DaprContainer("daprio/daprd")
+            .withAppName("dapr-app")
+            .withAppPort(8081)
+            .withConfiguration(new Configuration("my-config",
+                    new TracingConfigParameters("1", true,
+                            "localhost:4317", false, "grpc")))
+            .withAppChannelAddress("host.testcontainers.internal");
+
+    Configuration configuration = dapr.getConfiguration();
+    assertNotNull(configuration);
+
+    String configurationYaml = dapr.configurationToYaml(configuration);
+    String expectedConfigurationYaml = "metadata:\n" + "  name: my-config\n"
+            + "apiVersion: dapr.io/v1alpha1\n"
+            + "kind: Configuration\n"
+            + "spec:\n"
+            + "  tracing:\n"
+            + "    stdout: true\n"
+            + "    samplingRate: '1'\n"
+            + "    otel:\n"
+            + "      endpointAddress: localhost:4317\n"
+            + "      protocol: grpc\n"
+            + "      isSecure: false\n";
+    assertEquals(expectedConfigurationYaml, configurationYaml);
+  }
+
 
   @Test
   public void withComponentFromPath() {
