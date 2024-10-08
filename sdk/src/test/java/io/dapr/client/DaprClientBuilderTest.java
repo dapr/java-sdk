@@ -42,11 +42,11 @@ public class DaprClientBuilderTest {
   @Test
   public void buildWithOverrideSidecarIP() {
     DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
-    daprClientBuilder.withPropertyOverride(Properties.SIDECAR_IP, "unknown-host");
+    daprClientBuilder.withPropertyOverride(Properties.SIDECAR_IP, "unknownhost");
     DaprClient daprClient = daprClientBuilder.build();
     assertNotNull(daprClient);
     DaprException thrown = assertThrows(DaprException.class, () -> { daprClient.getMetadata().block(); });
-    assertTrue(thrown.toString().contains("UNAVAILABLE"));
+    assertTrue(thrown.toString().contains("UNAVAILABLE"), thrown.toString());
 
   }
 

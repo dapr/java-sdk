@@ -23,6 +23,7 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
@@ -75,11 +76,11 @@ import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
 import io.dapr.v1.DaprProtos.PubsubSubscription;
 import io.dapr.v1.DaprProtos.PubsubSubscriptionRule;
 import io.dapr.v1.DaprProtos.RegisteredComponents;
-import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -141,7 +142,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   /**
-   * Default access level constructor, in order to create an instance of this 
+   * Default access level constructor, in order to create an instance of this
    * class use io.dapr.client.DaprClientBuilder
    *
    * @param channel           Facade for the managed GRPC channel
@@ -399,6 +400,59 @@ public class DaprClientImpl extends AbstractDaprClient {
     } catch (RuntimeException ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Subscription subscribeToEvents(
+      String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type) {
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+            .setTopic(topic)
+            .setPubsubName(pubsubName)
+            .build();
+    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+            .setInitialRequest(initialRequest)
+            .build();
+    return buildSubscription(listener, type, request);
+  }
+
+  @NotNull
+  private <T> Subscription<T> buildSubscription(
+      SubscriptionListener<T> listener,
+      TypeRef<T> type,
+      DaprProtos.SubscribeTopicEventsRequestAlpha1 request) {
+    Subscription<T> subscription = new Subscription<>(this.asyncStub, request, listener, response -> {
+      if (response.getEventMessage() == null) {
+        return null;
+      }
+
+      var message = response.getEventMessage();
+      if ((message.getPubsubName() == null) || message.getPubsubName().isEmpty()) {
+        return null;
+      }
+
+      try {
+        CloudEvent<T> cloudEvent = new CloudEvent<>();
+        var object =
+            DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+        cloudEvent.setData(object);
+        cloudEvent.setDatacontenttype(message.getDataContentType());
+        cloudEvent.setId(message.getId());
+        cloudEvent.setTopic(message.getTopic());
+        cloudEvent.setSpecversion(message.getSpecVersion());
+        cloudEvent.setType(message.getType());
+        cloudEvent.setPubsubName(message.getPubsubName());
+        return cloudEvent;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
+    subscription.start();
+    return subscription;
   }
 
   @Override
