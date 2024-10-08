@@ -25,6 +25,7 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
@@ -59,6 +60,7 @@ import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.exceptions.DaprException;
+import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
@@ -77,10 +79,11 @@ import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
 import io.dapr.v1.DaprProtos.PubsubSubscription;
 import io.dapr.v1.DaprProtos.PubsubSubscriptionRule;
 import io.dapr.v1.DaprProtos.RegisteredComponents;
-import io.grpc.CallOptions;
 import io.grpc.Channel;
+import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -101,6 +104,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static io.dapr.internal.exceptions.DaprHttpException.isSuccessfulHttpStatusCode;
+import static io.dapr.internal.exceptions.DaprHttpException.isValidHttpStatusCode;
+import static io.dapr.internal.exceptions.DaprHttpException.parseHttpStatusCode;
 
 /**
  * Implementation of the Dapr client combining gRPC and HTTP (when applicable).
@@ -138,7 +145,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   /**
-   * Default access level constructor, in order to create an instance of this 
+   * Default access level constructor, in order to create an instance of this
    * class use io.dapr.client.DaprClientBuilder
    *
    * @param channel           Facade for the managed GRPC channel
@@ -398,6 +405,59 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Subscription subscribeToEvents(
+      String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type) {
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+            .setTopic(topic)
+            .setPubsubName(pubsubName)
+            .build();
+    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+            .setInitialRequest(initialRequest)
+            .build();
+    return buildSubscription(listener, type, request);
+  }
+
+  @NotNull
+  private <T> Subscription<T> buildSubscription(
+      SubscriptionListener<T> listener,
+      TypeRef<T> type,
+      DaprProtos.SubscribeTopicEventsRequestAlpha1 request) {
+    Subscription<T> subscription = new Subscription<>(this.asyncStub, request, listener, response -> {
+      if (response.getEventMessage() == null) {
+        return null;
+      }
+
+      var message = response.getEventMessage();
+      if ((message.getPubsubName() == null) || message.getPubsubName().isEmpty()) {
+        return null;
+      }
+
+      try {
+        CloudEvent<T> cloudEvent = new CloudEvent<>();
+        var object =
+            DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+        cloudEvent.setData(object);
+        cloudEvent.setDatacontenttype(message.getDataContentType());
+        cloudEvent.setId(message.getId());
+        cloudEvent.setTopic(message.getTopic());
+        cloudEvent.setSpecversion(message.getSpecVersion());
+        cloudEvent.setType(message.getType());
+        cloudEvent.setPubsubName(message.getPubsubName());
+        return cloudEvent;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
+    subscription.start();
+    return subscription;
+  }
+
   @Override
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
@@ -489,12 +549,22 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
+      Metadata responseMetadata = new Metadata();
       return Mono.deferContextual(
           context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+              responseMetadata,
+              it -> intercept(context, asyncStub, m -> responseMetadata.merge(m)).invokeBinding(envelope, it)
           )
       ).flatMap(
           it -> {
+            int httpStatusCode =
+                parseHttpStatusCode(it.getMetadataMap().getOrDefault("statusCode", ""));
+            if (isValidHttpStatusCode(httpStatusCode) && !isSuccessfulHttpStatusCode(httpStatusCode)) {
+              // Exception condition in a successful request.
+              // This is useful to send an exception due to an error from the HTTP binding component.
+              throw DaprException.propagate(new DaprHttpException(httpStatusCode, it.getData().toByteArray()));
+            }
+
             try {
               return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
             } catch (IOException e) {
@@ -1249,17 +1319,39 @@ public class DaprClientImpl extends AbstractDaprClient {
     return DaprClientGrpcInterceptors.intercept(client, this.timeoutPolicy, context);
   }
 
+  /**
+   * Populates GRPC client with interceptors for telemetry.
+   *
+   * @param context Reactor's context.
+   * @param client  GRPC client for Dapr.
+   * @param metadataConsumer Consumer of gRPC metadata.
+   * @return Client after adding interceptors.
+   */
+  private DaprGrpc.DaprStub intercept(
+      ContextView context, DaprGrpc.DaprStub client, Consumer<Metadata> metadataConsumer) {
+    return DaprClientGrpcInterceptors.intercept(client, this.timeoutPolicy, context, metadataConsumer);
+  }
+
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
+    return this.createMono(null, consumer);
+  }
+
+  private <T> Mono<T> createMono(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
     return retryPolicy.apply(
-        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
+        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(
+            createStreamObserver(sink, metadata))).run()));
   }
 
   private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
-    return retryPolicy.apply(
-        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
+    return this.createFlux(null, consumer);
   }
 
-  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
+  private <T> Flux<T> createFlux(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
+    return retryPolicy.apply(
+        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink, metadata))).run()));
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink, Metadata grpcMetadata) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T value) {
@@ -1268,7 +1360,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       @Override
       public void onError(Throwable t) {
-        sink.error(DaprException.propagate(new ExecutionException(t)));
+        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
       }
 
       @Override
@@ -1278,7 +1370,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     };
   }
 
-  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink) {
+  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink, final Metadata grpcMetadata) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T value) {
@@ -1287,7 +1379,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       @Override
       public void onError(Throwable t) {
-        sink.error(DaprException.propagate(new ExecutionException(t)));
+        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
       }
 
       @Override

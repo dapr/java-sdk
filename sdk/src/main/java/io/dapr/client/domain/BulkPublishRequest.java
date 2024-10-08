@@ -72,10 +72,8 @@ public final class BulkPublishRequest<T> {
                             Map<String, String> metadata) {
     this.pubsubName = pubsubName;
     this.topic = topic;
-    this.entries = entries == null ? Collections.unmodifiableList(new ArrayList<>()) :
-        Collections.unmodifiableList(entries);
-    this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
-        Collections.unmodifiableMap(metadata);
+    this.entries = entries == null ? List.of() : Collections.unmodifiableList(entries);
+    this.metadata = metadata == null ? Map.of() : Collections.unmodifiableMap(metadata);
   }
 
   public String getPubsubName() {

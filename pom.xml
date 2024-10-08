@@ -1,6 +1,6 @@
 <project
-    xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -17,7 +17,8 @@
     <grpc.version>1.64.0</grpc.version>
     <protobuf.version>3.25.0</protobuf.version>
     <protocCommand>protoc</protocCommand>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.14.0-rc.2/dapr/proto</dapr.proto.baseurl>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.14.4/dapr/proto</dapr.proto.baseurl>
+    <dapr.sdk.version>1.13.0-SNAPSHOT</dapr.sdk.version>
     <dapr.sdk.alpha.version>0.13.0-SNAPSHOT</dapr.sdk.alpha.version>
     <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
@@ -43,6 +44,7 @@
     <junit-bom.version>5.8.2</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
     <testcontainers.version>1.20.0</testcontainers.version>
+    <springboot.version>3.2.6</springboot.version>
   </properties>
 
   <distributionManagement>
@@ -102,13 +104,13 @@
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-testing</artifactId>
-        <version>1.56.1</version>
+        <version>${grpc.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-inprocess</artifactId>
-        <version>1.59.0</version>
+        <version>${grpc.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
@@ -322,13 +324,19 @@
     <module>sdk-actors</module>
     <module>sdk-workflows</module>
     <module>sdk-springboot</module>
+    <module>dapr-spring</module>
     <module>examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
-    <!-- don't add sdk-tests to the build, 
-      it's only used for CI testing by github action
-    <module>sdk-tests</module>
-    -->
   </modules>
+
+  <profiles>
+    <profile>
+      <id>integration-tests</id>
+      <modules>
+        <module>sdk-tests</module>
+      </modules>
+    </profile>
+  </profiles>
 
 </project>

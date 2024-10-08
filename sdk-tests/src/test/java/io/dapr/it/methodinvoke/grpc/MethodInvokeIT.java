@@ -49,7 +49,7 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvoke() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
@@ -81,24 +81,25 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
             MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
             long started = System.currentTimeMillis();
             SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
-            String message = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req)).getMessage();
+            StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
             long delay = System.currentTimeMillis() - started;
+            Status.Code code = exception.getStatus().getCode();
+
             assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
-            assertTrue(message.contains("DEADLINE_EXCEEDED"));
-            assertTrue(message.contains("CallOptions deadline exceeded after"));
+            assertEquals(Status.DEADLINE_EXCEEDED.getCode(), code, "Expected timeout error");
         }
     }
 
     @Test
     public void testInvokeException() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 

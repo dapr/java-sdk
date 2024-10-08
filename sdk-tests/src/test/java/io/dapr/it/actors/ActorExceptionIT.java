@@ -33,7 +33,7 @@ public class ActorExceptionIT extends BaseIT {
   @Test
   public void exceptionTest() throws Exception {
     // The call below will fail if service cannot start successfully.
-    startDaprApp(
+    var run = startDaprApp(
         ActorExceptionIT.class.getSimpleName(),
         MyActorService.SUCCESS_MESSAGE,
         MyActorService.class,
@@ -42,7 +42,7 @@ public class ActorExceptionIT extends BaseIT {
 
     logger.debug("Creating proxy builder");
     ActorProxyBuilder<MyActor> proxyBuilder =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, newActorClient());
+        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient()));
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId("1");
     logger.debug("Building proxy");

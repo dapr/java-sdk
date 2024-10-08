@@ -129,7 +129,7 @@ public class DaprGrpcClientTest {
         ExecutionException.class,
         "UNKNOWN",
         "UNKNOWN: ",
-        () -> result.block());
+        result::block);
   }
 
   @Test

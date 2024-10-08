@@ -18,6 +18,7 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
+import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.utils.Version;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -70,8 +71,7 @@ public class DaprHttp implements AutoCloseable {
   /**
    * Context entries allowed to be in HTTP Headers.
    */
-  private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS =
-      Collections.unmodifiableSet(new HashSet<>(Arrays.asList("grpc-trace-bin", "traceparent", "tracestate")));
+  private static final Set<String> ALLOWED_CONTEXT_IN_HEADERS = Set.of("grpc-trace-bin", "traceparent", "tracestate");
 
   /**
    * Object mapper to parse DaprError with or without details.
@@ -152,15 +152,21 @@ public class DaprHttp implements AutoCloseable {
   private final OkHttpClient httpClient;
 
   /**
+   * Dapr API Token required to interact with DAPR APIs.
+   */
+  private final String daprApiToken;
+
+  /**
    * Creates a new instance of {@link DaprHttp}.
    *
    * @param hostname   Hostname for calling Dapr. (e.g. "127.0.0.1")
    * @param port       Port for calling Dapr. (e.g. 3500)
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String hostname, int port, OkHttpClient httpClient) {
+  DaprHttp(String hostname, int port, String daprApiToken, OkHttpClient httpClient) {
     this.uri = URI.create(DEFAULT_HTTP_SCHEME + "://" + hostname + ":" + port);
     this.httpClient = httpClient;
+    this.daprApiToken = daprApiToken;
   }
 
   /**
@@ -169,9 +175,10 @@ public class DaprHttp implements AutoCloseable {
    * @param uri        Endpoint for calling Dapr. (e.g. "https://my-dapr-api.company.com")
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String uri, OkHttpClient httpClient) {
+  DaprHttp(String uri, String daprApiToken, OkHttpClient httpClient) {
     this.uri = URI.create(uri);
     this.httpClient = httpClient;
+    this.daprApiToken = daprApiToken;
   }
 
   /**
@@ -314,7 +321,6 @@ public class DaprHttp implements AutoCloseable {
       requestBuilder.method(method, body);
     }
 
-    String daprApiToken = Properties.API_TOKEN.get();
     if (daprApiToken != null) {
       requestBuilder.addHeader(Headers.DAPR_API_TOKEN, daprApiToken);
     }
@@ -381,17 +387,19 @@ public class DaprHttp implements AutoCloseable {
 
     @Override
     public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
-      if (!response.isSuccessful()) {
+      int httpStatusCode = parseHttpStatusCode(response.header("Metadata.statuscode"), response.code());
+      if (!DaprHttpException.isSuccessfulHttpStatusCode(httpStatusCode)) {
         try {
           byte[] payload = getBodyBytesOrEmptyArray(response);
           DaprError error = parseDaprError(payload);
+
           if (error != null) {
-            future.completeExceptionally(new DaprException(error, payload, response.code()));
+            future.completeExceptionally(new DaprException(error, payload, httpStatusCode));
             return;
           }
 
           future.completeExceptionally(
-              new DaprException("UNKNOWN", "", payload, response.code()));
+              new DaprException("UNKNOWN", "", payload, httpStatusCode));
           return;
         } catch (DaprException e) {
           future.completeExceptionally(e);
@@ -404,8 +412,24 @@ public class DaprHttp implements AutoCloseable {
       response.headers().forEach(pair -> {
         mapHeaders.put(pair.getFirst(), pair.getSecond());
       });
-      future.complete(new Response(result, mapHeaders, response.code()));
+      future.complete(new Response(result, mapHeaders, httpStatusCode));
     }
   }
 
+  private static int parseHttpStatusCode(String headerValue, int defaultStatusCode) {
+    if ((headerValue == null) || headerValue.isEmpty()) {
+      return defaultStatusCode;
+    }
+
+    // Metadata used to override status code with code received from HTTP binding.
+    try {
+      int httpStatusCode = Integer.parseInt(headerValue);
+      if (DaprHttpException.isValidHttpStatusCode(httpStatusCode)) {
+        return httpStatusCode;
+      }
+      return defaultStatusCode;
+    } catch (NumberFormatException nfe) {
+      return defaultStatusCode;
+    }
+  }
 }

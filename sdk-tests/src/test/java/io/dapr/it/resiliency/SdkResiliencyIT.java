@@ -63,22 +63,21 @@ public class SdkResiliencyIT extends BaseIT {
   @BeforeAll
   public static void init() throws Exception {
     DaprRun daprRun = startDaprApp(SdkResiliencyIT.class.getSimpleName(), 5000);
-    daprClient = new DaprClientBuilder().build();
+    daprClient = daprRun.newDaprClientBuilder().build();
     daprClient.waitForSidecar(8000).block();
 
     toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
     toxiProxyRun.start();
-    toxiProxyRun.use();
 
-    daprToxiClient = new DaprClientBuilder()
+    daprToxiClient = toxiProxyRun.newDaprClientBuilder()
             .withResiliencyOptions(
                     new ResiliencyOptions().setTimeout(TIMEOUT))
             .build();
-    daprResilientClient = new DaprClientBuilder()
+    daprResilientClient = toxiProxyRun.newDaprClientBuilder()
             .withResiliencyOptions(
                     new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES))
             .build();
-    daprRetriesOnceClient = new DaprClientBuilder()
+    daprRetriesOnceClient = toxiProxyRun.newDaprClientBuilder()
             .withResiliencyOptions(
                     new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1))
             .build();

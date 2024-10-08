@@ -247,7 +247,7 @@ public interface DaprClient extends AutoCloseable {
   /**
    * Invokes a Binding operation.
    *
-   * @param bindingName      The bindingName of the biding to call.
+   * @param bindingName      The bindingName of the binding to call.
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, use byte[] to skip serialization.
    * @return an empty Mono.
@@ -257,7 +257,7 @@ public interface DaprClient extends AutoCloseable {
   /**
    * Invokes a Binding operation, skipping serialization.
    *
-   * @param bindingName      The name of the biding to call.
+   * @param bindingName      The name of the binding to call.
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, skipping serialization.
    * @param metadata  The metadata map.
@@ -268,7 +268,7 @@ public interface DaprClient extends AutoCloseable {
   /**
    * Invokes a Binding operation.
    *
-   * @param bindingName      The name of the biding to call.
+   * @param bindingName      The name of the binding to call.
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, use byte[] to skip serialization.
    * @param type      The type being returned.
@@ -280,7 +280,7 @@ public interface DaprClient extends AutoCloseable {
   /**
    * Invokes a Binding operation.
    *
-   * @param bindingName      The name of the biding to call.
+   * @param bindingName      The name of the binding to call.
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, use byte[] to skip serialization.
    * @param clazz     The type being returned.
@@ -292,7 +292,7 @@ public interface DaprClient extends AutoCloseable {
   /**
    * Invokes a Binding operation.
    *
-   * @param bindingName      The name of the biding to call.
+   * @param bindingName      The name of the binding to call.
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, use byte[] to skip serialization.
    * @param metadata  The metadata map.
@@ -306,7 +306,7 @@ public interface DaprClient extends AutoCloseable {
   /**
    * Invokes a Binding operation.
    *
-   * @param bindingName      The name of the biding to call.
+   * @param bindingName      The name of the binding to call.
    * @param operation The operation to be performed by the binding request processor.
    * @param data      The data to be processed, use byte[] to skip serialization.
    * @param metadata  The metadata map.
