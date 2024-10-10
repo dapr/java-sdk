@@ -43,11 +43,6 @@ import java.util.function.Consumer;
 class DaprClientImpl implements DaprClient {
 
   /**
-   * Timeout policy for SDK calls to Dapr API.
-   */
-  private final TimeoutPolicy timeoutPolicy;
-
-  /**
    * Retry policy for SDK calls to Dapr API.
    */
   private final RetryPolicy retryPolicy;
@@ -58,15 +53,21 @@ class DaprClientImpl implements DaprClient {
   private final DaprGrpc.DaprStub client;
 
   /**
+   * gRPC client interceptors.
+   */
+  private final DaprClientGrpcInterceptors grpcInterceptors;
+
+  /**
    * Internal constructor.
    *
    * @param grpcClient Dapr's GRPC client.
-   * @param resiliencyOptions Client resiliency options (optional)
+   * @param resiliencyOptions Client resiliency options (optional).
+   * @param daprApiToken Dapr API token (optional).
    */
-  DaprClientImpl(DaprGrpc.DaprStub grpcClient, ResiliencyOptions resiliencyOptions) {
-    this.client = intercept(grpcClient);
-    this.timeoutPolicy = new TimeoutPolicy(
-        resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
+  DaprClientImpl(DaprGrpc.DaprStub grpcClient, ResiliencyOptions resiliencyOptions, String daprApiToken) {
+    this.client = grpcClient;
+    this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken,
+        new TimeoutPolicy(resiliencyOptions == null ? null : resiliencyOptions.getTimeout()));
     this.retryPolicy = new RetryPolicy(
         resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
   }
@@ -85,52 +86,9 @@ class DaprClientImpl implements DaprClient {
             .build();
     return Mono.deferContextual(
         context -> this.<DaprProtos.InvokeActorResponse>createMono(
-            it -> intercept(context, this.timeoutPolicy, client).invokeActor(req, it)
+            it -> this.grpcInterceptors.intercept(client, context).invokeActor(req, it)
         )
     ).map(r -> r.getData().toByteArray());
-  }
-
-  /**
-   * Populates GRPC client with interceptors.
-   *
-   * @param client GRPC client for Dapr.
-   * @return Client after adding interceptors.
-   */
-  private DaprGrpc.DaprStub intercept(DaprGrpc.DaprStub client) {
-    ClientInterceptor interceptor = new ClientInterceptor() {
-      @Override
-      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-          MethodDescriptor<ReqT, RespT> methodDescriptor,
-          CallOptions options,
-          Channel channel) {
-        ClientCall<ReqT, RespT> clientCall = channel.newCall(methodDescriptor, timeoutPolicy.apply(options));
-        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
-          @Override
-          public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-            String daprApiToken = Properties.API_TOKEN.get();
-            if (daprApiToken != null) {
-              metadata.put(Metadata.Key.of("dapr-api-token", Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
-            }
-
-            super.start(responseListener, metadata);
-          }
-        };
-      }
-    };
-    return client.withInterceptors(interceptor);
-  }
-
-  /**
-   * Populates GRPC client with interceptors for telemetry.
-   *
-   * @param context Reactor's context.
-   * @param timeoutPolicy Timeout policy for gRPC call.
-   * @param client GRPC client for Dapr.
-   * @return Client after adding interceptors.
-   */
-  private static DaprGrpc.DaprStub intercept(
-      ContextView context, TimeoutPolicy timeoutPolicy, DaprGrpc.DaprStub client) {
-    return DaprClientGrpcInterceptors.intercept(client, timeoutPolicy, context);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {

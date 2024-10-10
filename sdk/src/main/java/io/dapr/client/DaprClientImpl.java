@@ -120,11 +120,6 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final GrpcChannelFacade channel;
 
   /**
-   * The timeout policy.
-   */
-  private final TimeoutPolicy timeoutPolicy;
-
-  /**
    * The retry policy.
    */
   private final RetryPolicy retryPolicy;
@@ -141,9 +136,10 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   private final DaprHttp httpClient;
 
+  private final DaprClientGrpcInterceptors grpcInterceptors;
+
   /**
-   * Default access level constructor, in order to create an instance of this
-   * class use io.dapr.client.DaprClientBuilder
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
    * @param channel           Facade for the managed GRPC channel
    * @param asyncStub         async gRPC stub
@@ -157,7 +153,27 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprHttp httpClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
-    this(channel, asyncStub, httpClient, objectSerializer, stateSerializer, null);
+    this(channel, asyncStub, httpClient, objectSerializer, stateSerializer, null, null);
+  }
+
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
+   * @param daprApiToken      Dapr API Token.
+   * @see DaprClientBuilder
+   */
+  DaprClientImpl(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprHttp httpClient,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer,
+      String daprApiToken) {
+    this(channel, asyncStub, httpClient, objectSerializer, stateSerializer, null, daprApiToken);
   }
 
   /**
@@ -169,6 +185,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    * @param objectSerializer  Serializer for transient request/response objects.
    * @param stateSerializer   Serializer for state objects.
    * @param resiliencyOptions Client-level override for resiliency options.
+   * @param daprApiToken      Dapr API Token.
    * @see DaprClientBuilder
    */
   DaprClientImpl(
@@ -177,15 +194,47 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprHttp httpClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer,
-      ResiliencyOptions resiliencyOptions) {
+      ResiliencyOptions resiliencyOptions,
+      String daprApiToken) {
+    this(
+        channel,
+        asyncStub,
+        httpClient,
+        objectSerializer,
+        stateSerializer,
+        new TimeoutPolicy(resiliencyOptions == null ? null : resiliencyOptions.getTimeout()),
+        new RetryPolicy(resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries()),
+        daprApiToken);
+  }
+
+  /**
+   * Instantiates a new DaprClient.
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param httpClient        client for http service invocation
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
+   * @param timeoutPolicy     Client-level timeout policy.
+   * @param retryPolicy       Client-level retry policy.
+   * @param daprApiToken      Dapr API Token.
+   * @see DaprClientBuilder
+   */
+  private DaprClientImpl(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprHttp httpClient,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer,
+      TimeoutPolicy timeoutPolicy,
+      RetryPolicy retryPolicy,
+      String daprApiToken) {
     super(objectSerializer, stateSerializer);
     this.channel = channel;
     this.asyncStub = asyncStub;
     this.httpClient = httpClient;
-    this.timeoutPolicy = new TimeoutPolicy(
-        resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
-    this.retryPolicy = new RetryPolicy(
-        resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
+    this.retryPolicy = retryPolicy;
+    this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -215,7 +264,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   public <T extends AbstractStub<T>> T newGrpcStub(String appId, Function<Channel, T> stubBuilder) {
     // Adds Dapr interceptors to populate gRPC metadata automatically.
-    return DaprClientGrpcInterceptors.intercept(appId, stubBuilder.apply(this.channel.getGrpcChannel()), timeoutPolicy);
+    return this.grpcInterceptors.intercept(appId, stubBuilder.apply(this.channel.getGrpcChannel()));
   }
 
   /**
@@ -425,7 +474,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       SubscriptionListener<T> listener,
       TypeRef<T> type,
       DaprProtos.SubscribeTopicEventsRequestAlpha1 request) {
-    Subscription<T> subscription = new Subscription<>(this.asyncStub, request, listener, response -> {
+    var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
+    Subscription<T> subscription = new Subscription<>(interceptedStub, request, listener, response -> {
       if (response.getEventMessage() == null) {
         return null;
       }
@@ -1268,7 +1318,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    * @return Client after adding interceptors.
    */
   private DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
-    return DaprClientGrpcInterceptors.intercept(client, this.timeoutPolicy, context);
+    return this.grpcInterceptors.intercept(client, context);
   }
 
   /**
@@ -1281,7 +1331,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   private DaprGrpc.DaprStub intercept(
       ContextView context, DaprGrpc.DaprStub client, Consumer<Metadata> metadataConsumer) {
-    return DaprClientGrpcInterceptors.intercept(client, this.timeoutPolicy, context, metadataConsumer);
+    return this.grpcInterceptors.intercept(client, context, metadataConsumer);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {

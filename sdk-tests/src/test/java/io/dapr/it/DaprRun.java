@@ -30,7 +30,10 @@ import okhttp3.Response;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -68,19 +71,34 @@ public class DaprRun implements Stoppable {
 
   private final boolean hasAppHealthCheck;
 
+  private final Map<Property<?>, String> propertyOverrides;
+
   private DaprRun(String testName,
                   DaprPorts ports,
                   String successMessage,
                   Class serviceClass,
                   int maxWaitMilliseconds,
                   AppRun.AppProtocol appProtocol) {
+    this(testName, ports, successMessage, serviceClass, maxWaitMilliseconds, appProtocol, UUID.randomUUID().toString());
+  }
+
+  private DaprRun(String testName,
+                  DaprPorts ports,
+                  String successMessage,
+                  Class serviceClass,
+                  int maxWaitMilliseconds,
+                  AppRun.AppProtocol appProtocol,
+                  String daprApiToken) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
     this.appName = serviceClass == null ?
         testName.toLowerCase() :
         String.format("%s-%s", testName, serviceClass.getSimpleName()).toLowerCase();
     this.appProtocol = appProtocol;
     this.startCommand =
-        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, appProtocol));
+        new Command(
+            successMessage,
+            buildDaprCommand(this.appName, serviceClass, ports, appProtocol),
+            Map.of("DAPR_API_TOKEN", daprApiToken));
     this.listCommand = new Command(
       this.appName,
       "dapr list");
@@ -91,6 +109,9 @@ public class DaprRun implements Stoppable {
     this.maxWaitMilliseconds = maxWaitMilliseconds;
     this.started = new AtomicBoolean(false);
     this.hasAppHealthCheck = isAppHealthCheckEnabled(serviceClass);
+    this.propertyOverrides = Collections.unmodifiableMap(new HashMap<>(ports.getPropertyOverrides()) {{
+      put(Properties.API_TOKEN, daprApiToken);
+    }});
   }
 
   public void start() throws InterruptedException, IOException {
@@ -149,7 +170,7 @@ public class DaprRun implements Stoppable {
   }
 
   public Map<Property<?>, String> getPropertyOverrides() {
-    return this.ports.getPropertyOverrides();
+    return this.propertyOverrides;
   }
 
   public DaprClientBuilder newDaprClientBuilder() {
@@ -239,17 +260,13 @@ public class DaprRun implements Stoppable {
 
   public DaprClient newDaprClient() {
     return new DaprClientBuilder()
-        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
-        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
-        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .withPropertyOverrides(this.getPropertyOverrides())
         .build();
   }
 
   public DaprPreviewClient newDaprPreviewClient() {
     return new DaprClientBuilder()
-        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
-        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
-        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .withPropertyOverrides(this.getPropertyOverrides())
         .buildPreviewClient();
   }
 
