@@ -14,7 +14,10 @@ limitations under the License.
 package io.dapr.it.actors.app;
 
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.it.DaprRunConfig;
 
+// Enable dapr-api-token once runtime supports it in standalone mode.
+@DaprRunConfig(enableDaprApiToken = false)
 public class MyActorService {
   public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running";
 
