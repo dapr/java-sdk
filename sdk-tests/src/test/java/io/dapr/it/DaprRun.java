@@ -416,7 +416,8 @@ public class DaprRun implements Stoppable {
               DAPR_SUCCESS_MESSAGE,
               null,
               this.maxWaitMilliseconds,
-              this.appProtocol);
+              this.appProtocol,
+              resolveDaprApiToken(serviceClass));
 
       return new ImmutablePair<>(appRun, daprRun);
     }
