@@ -17,6 +17,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>17</java.version>
+    <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
@@ -147,6 +149,12 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
+      <version>${dapr.sdk.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-workflows</artifactId>
       <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
@@ -237,13 +245,6 @@
         <groupId>jakarta.servlet</groupId>
         <artifactId>jakarta.servlet-api</artifactId>
         <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <!-- javax.servlet is needed for OpenTelemetry -->
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <version>4.0.1</version>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 

@@ -14,7 +14,13 @@ limitations under the License.
 package io.dapr.it;
 
 import com.google.protobuf.Empty;
+import io.dapr.actors.client.ActorClient;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
+import io.dapr.config.Property;
 import io.dapr.v1.AppCallbackHealthCheckGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -24,6 +30,7 @@ import okhttp3.Response;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -141,8 +148,20 @@ public class DaprRun implements Stoppable {
     }
   }
 
-  public void use() {
-    this.ports.use();
+  public Map<Property<?>, String> getPropertyOverrides() {
+    return this.ports.getPropertyOverrides();
+  }
+
+  public DaprClientBuilder newDaprClientBuilder() {
+    return new DaprClientBuilder().withPropertyOverrides(this.getPropertyOverrides());
+  }
+
+  public ActorClient newActorClient() {
+    return this.newActorClient(null);
+  }
+
+  public ActorClient newActorClient(ResiliencyOptions resiliencyOptions) {
+    return new ActorClient(new Properties(this.getPropertyOverrides()), resiliencyOptions);
   }
 
   public void waitForAppHealth(int maxWaitMilliseconds) throws InterruptedException {
@@ -216,6 +235,22 @@ public class DaprRun implements Stoppable {
 
   public String getAppName() {
     return appName;
+  }
+
+  public DaprClient newDaprClient() {
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
+        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
+        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .build();
+  }
+
+  public DaprPreviewClient newDaprPreviewClient() {
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
+        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
+        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .buildPreviewClient();
   }
 
   public void checkRunState(long timeout, boolean shouldBeRunning) throws InterruptedException {

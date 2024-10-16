@@ -14,8 +14,10 @@ limitations under the License.
 package io.dapr.it.actors;
 
 import io.dapr.actors.ActorId;
+import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.config.Properties;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.MyActorService;
@@ -72,7 +74,7 @@ public class ActorReminderFailoverIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(clientAppRun.newActorClient()));
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);
@@ -91,8 +93,6 @@ public class ActorReminderFailoverIT extends BaseIT {
    */
   @Test
   public void reminderRecoveryTest() throws Exception {
-    clientAppRun.use();
-
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
     proxy.invokeMethod("startReminder", "myReminder").block();
 

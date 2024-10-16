@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.Map;
 
 public abstract class AbstractDaprKeyValueAdapter implements KeyValueAdapter {
-  private static final Map<String, String> CONTENT_TYPE_META = Collections.singletonMap(
+  private static final Map<String, String> CONTENT_TYPE_META = Map.of(
       "contentType", "application/json");
 
   private final DaprClient daprClient;

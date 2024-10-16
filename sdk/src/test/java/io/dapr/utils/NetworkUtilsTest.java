@@ -5,23 +5,15 @@ import io.grpc.ManagedChannel;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.Map;
 
 
 public class NetworkUtilsTest {
-  private final int defaultGrpcPort = 4000;
+  private final int defaultGrpcPort = 50001;
   private final String defaultSidecarIP = "127.0.0.1";
-
   private ManagedChannel channel;
-  private Properties properties = new Properties();
-
-  @BeforeEach
-  public void setUp() {
-    System.setProperty(Properties.GRPC_PORT.getName(), Integer.toString(defaultGrpcPort));
-    System.setProperty(Properties.SIDECAR_IP.getName(), defaultSidecarIP);
-    System.setProperty(Properties.GRPC_ENDPOINT.getName(), "");
-  }
 
   @AfterEach
   public void tearDown() {
@@ -32,7 +24,7 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannel() {
-    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channel = NetworkUtils.buildGrpcManagedChannel(new Properties());
 
     String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
     Assertions.assertEquals(expectedAuthority, channel.authority());
@@ -40,7 +32,7 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannel_httpEndpointNoPort() {
-    System.setProperty(Properties.GRPC_ENDPOINT.getName(), "http://example.com");
+    var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "http://example.com"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:80";
@@ -49,7 +41,7 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannel_httpEndpointWithPort() {
-    System.setProperty(Properties.GRPC_ENDPOINT.getName(), "http://example.com:3000");
+    var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "http://example.com:3000"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:3000";
@@ -58,7 +50,7 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannel_httpsEndpointNoPort() {
-    System.setProperty(Properties.GRPC_ENDPOINT.getName(), "https://example.com");
+    var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "https://example.com"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:443";
@@ -67,7 +59,7 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannel_httpsEndpointWithPort() {
-    System.setProperty(Properties.GRPC_ENDPOINT.getName(), "https://example.com:3000");
+    var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), "https://example.com:3000"));
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
 
     String expectedAuthority = "example.com:3000";
@@ -138,8 +130,8 @@ public class NetworkUtilsTest {
       String expectedEndpoint,
       boolean expectSecure
   ) {
-    System.setProperty(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
-    var settings = NetworkUtils.GrpcEndpointSettings.parse(new Properties());
+    var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue));
+    var settings = NetworkUtils.GrpcEndpointSettings.parse(properties);
 
     Assertions.assertEquals(expectedEndpoint, settings.endpoint);
     Assertions.assertEquals(expectSecure, settings.secure);
@@ -147,8 +139,8 @@ public class NetworkUtilsTest {
 
   private static void testGrpcEndpointParsingErrorScenario(String grpcEndpointEnvValue) {
     try {
-      System.setProperty(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue);
-      NetworkUtils.GrpcEndpointSettings.parse(new Properties());
+      var properties = new Properties(Map.of(Properties.GRPC_ENDPOINT.getName(), grpcEndpointEnvValue));
+      NetworkUtils.GrpcEndpointSettings.parse(properties);
       Assert.fail();
     } catch (IllegalArgumentException e) {
       // Expected

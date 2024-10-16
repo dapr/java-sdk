@@ -117,9 +117,21 @@ public class DaprClientBuilder {
    * @param property that we want to override
    * @param value the value of such property
    * @return an instance of the setup Client
-  */
+   */
   public DaprClientBuilder withPropertyOverride(Property<?> property, String value) {
     this.propertyOverrides.put(property.getName(), value);
+    return this;
+  }
+
+  /**
+   * Allow to set up properties override for static properties.
+   * @param overrides properties to override
+   * @return an instance of the setup Client
+   */
+  public DaprClientBuilder withPropertyOverrides(Map<Property<?>, String> overrides) {
+    for (final Map.Entry<Property<?>, String> override : overrides.entrySet()) {
+      this.propertyOverrides.put(override.getKey().getName(), override.getValue());
+    }
     return this;
   }
 

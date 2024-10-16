@@ -55,7 +55,7 @@ public final class BulkPublishEntry<T> {
     this.entryId = entryId;
     this.event = event;
     this.contentType = contentType;
-    this.metadata = Collections.unmodifiableMap(new HashMap<>());
+    this.metadata = Map.of();
   }
 
   /**
@@ -70,8 +70,7 @@ public final class BulkPublishEntry<T> {
     this.entryId = entryId;
     this.event = event;
     this.contentType = contentType;
-    this.metadata = metadata == null ? Collections.unmodifiableMap(new HashMap<>()) :
-        Collections.unmodifiableMap(metadata);
+    this.metadata = metadata == null ? Map.of() : Collections.unmodifiableMap(metadata);
   }
 
   public String getEntryId() {

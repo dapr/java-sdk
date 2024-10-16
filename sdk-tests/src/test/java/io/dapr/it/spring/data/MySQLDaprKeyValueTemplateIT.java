@@ -63,7 +63,7 @@ public class MySQLDaprKeyValueTemplateIT {
   private static final String BINDING_DSN = "mysql:password@tcp(mysql:3306)/dapr_db";
   private static final Map<String, String> STATE_STORE_PROPERTIES = createStateStoreProperties();
 
-  private static final Map<String, String> BINDING_PROPERTIES = Collections.singletonMap("url", BINDING_DSN);
+  private static final Map<String, String> BINDING_PROPERTIES = Map.of("url", BINDING_DSN);
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
@@ -114,7 +114,7 @@ public class MySQLDaprKeyValueTemplateIT {
    */
   @AfterEach
   public void tearDown() {
-    var meta = Collections.singletonMap("sql", "delete from state");
+    var meta = Map.of("sql", "delete from state");
 
     daprClient.invokeBinding(BINDING_NAME, "exec", null, meta).block();
   }

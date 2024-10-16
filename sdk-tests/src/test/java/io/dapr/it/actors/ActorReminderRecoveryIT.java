@@ -96,7 +96,6 @@ public class ActorReminderRecoveryIT extends BaseIT {
     // Run that will stay up for integration tests.
     // appId must not contain the appId from the other run, otherwise ITs will not run properly.
     clientRun = startDaprApp("ActorReminderRecoveryTestClient", 5000);
-    clientRun.use();
 
     Thread.sleep(3000);
 
@@ -104,7 +103,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(clientRun.newActorClient()));
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);

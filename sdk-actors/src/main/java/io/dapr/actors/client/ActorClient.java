@@ -20,16 +20,12 @@ import io.dapr.v1.DaprGrpc;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 /**
  * Holds a client for Dapr sidecar communication. ActorClient should be reused.
  */
 public class ActorClient implements AutoCloseable {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ActorClient.class);
 
   /**
    * gRPC channel for communication with Dapr sidecar.
@@ -45,7 +41,7 @@ public class ActorClient implements AutoCloseable {
    * Instantiates a new channel for Dapr sidecar communication.
    */
   public ActorClient() {
-    this(null);
+    this(new Properties(), null);
   }
 
   /**
@@ -53,8 +49,27 @@ public class ActorClient implements AutoCloseable {
    *
    * @param resiliencyOptions Client resiliency options.
    */
-  private ActorClient(ResiliencyOptions resiliencyOptions) {
-    this(buildManagedChannel(), resiliencyOptions);
+  public ActorClient(ResiliencyOptions resiliencyOptions) {
+    this(new Properties(), resiliencyOptions);
+  }
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   *
+   * @param overrideProperties Override properties.
+   */
+  public ActorClient(Properties overrideProperties) {
+    this(buildManagedChannel(overrideProperties), null);
+  }
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   *
+   * @param overrideProperties Override properties.
+   * @param resiliencyOptions Client resiliency options.
+   */
+  public ActorClient(Properties overrideProperties, ResiliencyOptions resiliencyOptions) {
+    this(buildManagedChannel(overrideProperties), resiliencyOptions);
   }
 
   /**
@@ -96,15 +111,18 @@ public class ActorClient implements AutoCloseable {
   /**
    * Creates a GRPC managed channel (or null, if not applicable).
    *
+   * @param overrideProperties Overrides
    * @return GRPC managed channel or null.
    */
-  private static ManagedChannel buildManagedChannel() {
-    int port = Properties.GRPC_PORT.get();
+  private static ManagedChannel buildManagedChannel(Properties overrideProperties) {
+    int port = overrideProperties.getValue(Properties.GRPC_PORT);
     if (port <= 0) {
       throw new IllegalArgumentException("Invalid port.");
     }
 
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+    var sidecarHost = overrideProperties.getValue(Properties.SIDECAR_IP);
+
+    return ManagedChannelBuilder.forAddress(sidecarHost, port)
       .usePlaintext()
       .userAgent(Version.getSdkVersion())
       .build();

@@ -51,7 +51,7 @@ public class DaprKeyValueRepositoryIT {
       "host=postgres-repository user=postgres password=password port=5432 connect_timeout=10 database=dapr_db_repository";
   private static final Map<String, String> STATE_STORE_PROPERTIES = createStateStoreProperties();
 
-  private static final Map<String, String> BINDING_PROPERTIES = Collections.singletonMap("connectionString", CONNECTION_STRING);
+  private static final Map<String, String> BINDING_PROPERTIES = Map.of("connectionString", CONNECTION_STRING);
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
 

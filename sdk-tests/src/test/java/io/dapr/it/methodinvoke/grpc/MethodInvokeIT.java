@@ -49,7 +49,7 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvoke() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
@@ -81,7 +81,7 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
@@ -99,7 +99,7 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeException() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
