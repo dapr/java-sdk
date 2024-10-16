@@ -14,10 +14,12 @@ limitations under the License.
 package io.dapr.it.actors.services.springboot;
 
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.it.DaprRunConfig;
 import io.dapr.serializer.DefaultObjectSerializer;
 
 import java.time.Duration;
 
+@DaprRunConfig(enableDaprApiToken = false)
 public class StatefulActorService {
 
   public static final String SUCCESS_MESSAGE = "dapr initialized. Status: Running";

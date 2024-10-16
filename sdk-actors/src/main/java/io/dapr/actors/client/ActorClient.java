@@ -59,7 +59,7 @@ public class ActorClient implements AutoCloseable {
    * @param overrideProperties Override properties.
    */
   public ActorClient(Properties overrideProperties) {
-    this(buildManagedChannel(overrideProperties), null);
+    this(buildManagedChannel(overrideProperties), null, overrideProperties.getValue(Properties.API_TOKEN));
   }
 
   /**
@@ -69,7 +69,7 @@ public class ActorClient implements AutoCloseable {
    * @param resiliencyOptions Client resiliency options.
    */
   public ActorClient(Properties overrideProperties, ResiliencyOptions resiliencyOptions) {
-    this(buildManagedChannel(overrideProperties), resiliencyOptions);
+    this(buildManagedChannel(overrideProperties), resiliencyOptions, overrideProperties.getValue(Properties.API_TOKEN));
   }
 
   /**
@@ -80,9 +80,10 @@ public class ActorClient implements AutoCloseable {
    */
   private ActorClient(
       ManagedChannel grpcManagedChannel,
-      ResiliencyOptions resiliencyOptions) {
+      ResiliencyOptions resiliencyOptions,
+      String daprApiToken) {
     this.grpcManagedChannel = grpcManagedChannel;
-    this.daprClient = buildDaprClient(grpcManagedChannel, resiliencyOptions);
+    this.daprClient = buildDaprClient(grpcManagedChannel, resiliencyOptions, daprApiToken);
   }
 
   /**
@@ -136,7 +137,11 @@ public class ActorClient implements AutoCloseable {
    */
   private static DaprClient buildDaprClient(
       Channel grpcManagedChannel,
-      ResiliencyOptions resiliencyOptions) {
-    return new DaprClientImpl(DaprGrpc.newStub(grpcManagedChannel), resiliencyOptions);
+      ResiliencyOptions resiliencyOptions,
+      String daprApiToken) {
+    return new DaprClientImpl(
+        DaprGrpc.newStub(grpcManagedChannel),
+        resiliencyOptions,
+        daprApiToken);
   }
 }
