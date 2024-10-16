@@ -67,39 +67,4 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
     // There is no global context to be changed in post handle since it is done in preHandle on a new call.
   }
 
-  
-  // Implementation for springboot 3.0, which uses jakarta.servlet instead of javax.servlet
-  private static final TextMapGetter<javax.servlet.http.HttpServletRequest> JAVA_HTTP_SERVLET_REQUEST_GETTER =
-      new TextMapGetter<>() {
-        @Override
-        public Iterable<String> keys(javax.servlet.http.HttpServletRequest carrier) {
-          return Collections.list(carrier.getHeaderNames());
-        }
-
-        @Override
-        public String get(javax.servlet.http.HttpServletRequest carrier, String key) {
-          return carrier.getHeader(key);
-      }
-  };
-
-  public boolean preHandle(
-      javax.servlet.http.HttpServletRequest request, javax.servlet.http.HttpServletResponse response, Object handler) {
-    final TextMapPropagator textFormat = openTelemetry.getPropagators().getTextMapPropagator();
-    // preHandle is called twice for asynchronous request. For more information, read:
-    // https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/servlet/AsyncHandlerInterceptor.html
-    if (request.getDispatcherType() == javax.servlet.DispatcherType.ASYNC) {
-      return true;
-    }
-
-    Context context = textFormat.extract(Context.current(), request, JAVA_HTTP_SERVLET_REQUEST_GETTER);
-    request.setAttribute("opentelemetry-context", context);
-    return true;
-  }
-
-  public void postHandle(
-      javax.servlet.http.HttpServletRequest request, javax.servlet.http.HttpServletResponse response, Object handler,
-      ModelAndView modelAndView) {
-    // There is no global context to be changed in post handle since it is done in preHandle on a new call.
-  }
-
 }
