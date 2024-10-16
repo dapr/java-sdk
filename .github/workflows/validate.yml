@@ -160,3 +160,7 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/workflows/README.md
+      - name: Validate streaming subscription example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md

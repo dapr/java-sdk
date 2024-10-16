@@ -15,7 +15,9 @@ package io.dapr.it;
 
 import com.google.protobuf.Empty;
 import io.dapr.actors.client.ActorClient;
+import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.config.Property;
@@ -233,6 +235,22 @@ public class DaprRun implements Stoppable {
 
   public String getAppName() {
     return appName;
+  }
+
+  public DaprClient newDaprClient() {
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
+        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
+        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .build();
+  }
+
+  public DaprPreviewClient newDaprPreviewClient() {
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
+        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
+        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .buildPreviewClient();
   }
 
   public void checkRunState(long timeout, boolean shouldBeRunning) throws InterruptedException {
