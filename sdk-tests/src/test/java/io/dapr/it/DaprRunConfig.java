@@ -26,4 +26,6 @@ import java.lang.annotation.Target;
 public @interface DaprRunConfig {
 
     boolean enableAppHealthCheck() default false;
+
+    boolean enableDaprApiToken() default true;
 }

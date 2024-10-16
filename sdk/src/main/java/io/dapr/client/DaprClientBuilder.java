@@ -173,6 +173,7 @@ public class DaprClientBuilder {
         daprHttp,
         this.objectSerializer,
         this.stateSerializer,
-        this.resiliencyOptions);
+        this.resiliencyOptions,
+        properties.getValue(Properties.API_TOKEN));
   }
 }

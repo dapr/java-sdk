@@ -30,7 +30,10 @@ import okhttp3.Response;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -40,6 +43,7 @@ import static io.dapr.it.Retry.callWithRetry;
 
 public class DaprRun implements Stoppable {
 
+  private static final String DEFAULT_DAPR_API_TOKEN = UUID.randomUUID().toString();
   private static final String DAPR_SUCCESS_MESSAGE = "You're up and running!";
 
   private static final String DAPR_RUN = "dapr run --app-id %s --app-protocol %s " +
@@ -68,19 +72,41 @@ public class DaprRun implements Stoppable {
 
   private final boolean hasAppHealthCheck;
 
+  private final Map<Property<?>, String> propertyOverrides;
+
   private DaprRun(String testName,
                   DaprPorts ports,
                   String successMessage,
                   Class serviceClass,
                   int maxWaitMilliseconds,
                   AppRun.AppProtocol appProtocol) {
+    this(
+        testName,
+        ports,
+        successMessage,
+        serviceClass,
+        maxWaitMilliseconds,
+        appProtocol,
+        resolveDaprApiToken(serviceClass));
+  }
+
+  private DaprRun(String testName,
+                  DaprPorts ports,
+                  String successMessage,
+                  Class serviceClass,
+                  int maxWaitMilliseconds,
+                  AppRun.AppProtocol appProtocol,
+                  String daprApiToken) {
     // The app name needs to be deterministic since we depend on it to kill previous runs.
     this.appName = serviceClass == null ?
         testName.toLowerCase() :
         String.format("%s-%s", testName, serviceClass.getSimpleName()).toLowerCase();
     this.appProtocol = appProtocol;
     this.startCommand =
-        new Command(successMessage, buildDaprCommand(this.appName, serviceClass, ports, appProtocol));
+        new Command(
+            successMessage,
+            buildDaprCommand(this.appName, serviceClass, ports, appProtocol),
+            daprApiToken == null ? null : Map.of("DAPR_API_TOKEN", daprApiToken));
     this.listCommand = new Command(
       this.appName,
       "dapr list");
@@ -91,6 +117,10 @@ public class DaprRun implements Stoppable {
     this.maxWaitMilliseconds = maxWaitMilliseconds;
     this.started = new AtomicBoolean(false);
     this.hasAppHealthCheck = isAppHealthCheckEnabled(serviceClass);
+    this.propertyOverrides = daprApiToken == null ? ports.getPropertyOverrides() :
+        Collections.unmodifiableMap(new HashMap<>(ports.getPropertyOverrides()) {{
+          put(Properties.API_TOKEN, daprApiToken);
+        }});
   }
 
   public void start() throws InterruptedException, IOException {
@@ -149,7 +179,7 @@ public class DaprRun implements Stoppable {
   }
 
   public Map<Property<?>, String> getPropertyOverrides() {
-    return this.ports.getPropertyOverrides();
+    return this.propertyOverrides;
   }
 
   public DaprClientBuilder newDaprClientBuilder() {
@@ -239,17 +269,13 @@ public class DaprRun implements Stoppable {
 
   public DaprClient newDaprClient() {
     return new DaprClientBuilder()
-        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
-        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
-        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .withPropertyOverrides(this.getPropertyOverrides())
         .build();
   }
 
   public DaprPreviewClient newDaprPreviewClient() {
     return new DaprClientBuilder()
-        .withPropertyOverride(Properties.GRPC_PORT, ports.getGrpcPort().toString())
-        .withPropertyOverride(Properties.HTTP_PORT, ports.getHttpPort().toString())
-        .withPropertyOverride(Properties.SIDECAR_IP, "127.0.0.1")
+        .withPropertyOverrides(this.getPropertyOverrides())
         .buildPreviewClient();
   }
 
@@ -298,6 +324,22 @@ public class DaprRun implements Stoppable {
     return false;
   }
 
+  private static String resolveDaprApiToken(Class serviceClass) {
+    if (serviceClass != null) {
+      DaprRunConfig daprRunConfig = (DaprRunConfig) serviceClass.getAnnotation(DaprRunConfig.class);
+      if (daprRunConfig != null) {
+        if (!daprRunConfig.enableDaprApiToken()) {
+          return null;
+        }
+          // We use the clas name itself as the token. Just needs to be deterministic.
+        return serviceClass.getCanonicalName();
+      }
+    }
+
+    // By default, we use a token.
+    return DEFAULT_DAPR_API_TOKEN;
+  }
+
   private static void assertListeningOnPort(int port) {
     System.out.printf("Checking port %d ...\n", port);
 
@@ -325,6 +367,8 @@ public class DaprRun implements Stoppable {
 
     private AppRun.AppProtocol appProtocol;
 
+    private String daprApiToken;
+
     Builder(
         String testName,
         Supplier<DaprPorts> portsSupplier,
@@ -336,6 +380,7 @@ public class DaprRun implements Stoppable {
       this.successMessage = successMessage;
       this.maxWaitMilliseconds = maxWaitMilliseconds;
       this.appProtocol = appProtocol;
+      this.daprApiToken = UUID.randomUUID().toString();
     }
 
     public Builder withServiceClass(Class serviceClass) {
@@ -371,7 +416,8 @@ public class DaprRun implements Stoppable {
               DAPR_SUCCESS_MESSAGE,
               null,
               this.maxWaitMilliseconds,
-              this.appProtocol);
+              this.appProtocol,
+              resolveDaprApiToken(serviceClass));
 
       return new ImmutablePair<>(appRun, daprRun);
     }
