@@ -13,23 +13,14 @@ limitations under the License.
 
 package io.dapr.it.resiliency;
 
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientImpl;
-import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.ToxiProxyRun;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

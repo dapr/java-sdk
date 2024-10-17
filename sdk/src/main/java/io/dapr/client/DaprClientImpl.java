@@ -81,6 +81,8 @@ import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -97,7 +99,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -113,6 +114,8 @@ import static io.dapr.internal.exceptions.DaprHttpException.parseHttpStatusCode;
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientImpl extends AbstractDaprClient {
+
+  private final Logger logger;
 
   /**
    * The GRPC managed channel to be used.
@@ -235,6 +238,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.httpClient = httpClient;
     this.retryPolicy = retryPolicy;
     this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
+    this.logger = LoggerFactory.getLogger(DaprClientImpl.class);
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -279,7 +283,15 @@ public class DaprClientImpl extends AbstractDaprClient {
         null, "", null, null);
 
     return responseMono
-        .retryWhen(Retry.indefinitely())
+        // No method to "retry forever every 500ms", so we make it practically forever.
+        // 9223372036854775807 * 500 ms = 1.46235604 x 10^11 years
+        // If anyone needs to wait for the sidecar for longer than that, sorry.
+        .retryWhen(
+            Retry
+                .fixedDelay(Long.MAX_VALUE, Duration.ofMillis(500))
+                .doBeforeRetry(s -> {
+                  this.logger.info("Retrying sidecar health check ...");
+                }))
         .timeout(Duration.ofMillis(timeoutInMilliseconds))
         .onErrorResume(DaprException.class, e ->
             Mono.error(new RuntimeException(e)))
