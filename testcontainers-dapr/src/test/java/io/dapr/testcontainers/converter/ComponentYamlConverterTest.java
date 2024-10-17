@@ -5,7 +5,7 @@ import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
-import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,7 +24,7 @@ class ComponentYamlConverterTest {
             "statestore",
             "state.in-memory",
             "v1",
-            Collections.singletonMap("actorStateStore", "true")))
+            Map.of("actorStateStore", "true")))
         .withAppChannelAddress("host.testcontainers.internal");
 
     Set<Component> components = dapr.getComponents();
@@ -38,11 +38,11 @@ class ComponentYamlConverterTest {
         + "apiVersion: dapr.io/v1alpha1\n"
         + "kind: Component\n"
         + "spec:\n"
+        + "  type: state.in-memory\n"
+        + "  version: v1\n"
         + "  metadata:\n"
         + "  - name: actorStateStore\n"
-        + "    value: 'true'\n"
-        + "  type: state.in-memory\n"
-        + "  version: v1\n";
+        + "    value: 'true'\n";
 
     assertEquals(expectedComponentYaml, componentYaml);
   }
