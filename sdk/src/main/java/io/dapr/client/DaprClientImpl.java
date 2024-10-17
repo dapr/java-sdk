@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
@@ -59,6 +60,7 @@ import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
+import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
@@ -92,6 +94,7 @@ import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,6 +143,10 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   private final DaprClientGrpcInterceptors grpcInterceptors;
+  
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  
+  private static final Charset CHARSET = Properties.STRING_CHARSET.get();
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -1313,10 +1320,15 @@ public class DaprClientImpl extends AbstractDaprClient {
   
   	  DaprProtos.Job.Builder jobBuilder = DaprProtos.Job.newBuilder()
   			  .setName(name);
-  	  if (data instanceof Message) {
-  		  jobBuilder.setData(Any.pack((Message)job.getData()));
+  	  if (data instanceof String) {
+  		  jobBuilder.setData(Any.newBuilder().setValue(ByteString.copyFrom((String) data, CHARSET)));
+  	  } else if (data instanceof byte[]) {
+  		  String base64 = OBJECT_MAPPER.writeValueAsString(data);
+  		  jobBuilder.setData(Any.newBuilder().setValue(ByteString.copyFrom(base64, CHARSET)));
   	  } else {
-  		  jobBuilder.setData(Any.newBuilder().setValue(ByteString.copyFrom(this.objectSerializer.serialize(data))));
+  		return Mono.error(() -> {
+            throw new IllegalArgumentException("Job data value must be String or byte[]");
+          });
   	  }
   	  if (job.getSchedule() != null && !job.getSchedule().trim().isEmpty()) {
   		  jobBuilder.setSchedule(job.getSchedule());
@@ -1341,6 +1353,46 @@ public class DaprClientImpl extends AbstractDaprClient {
     } catch (Exception ex) {
   	  return DaprException.wrapMono(ex);
     }
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T> Mono<Job<T>> getJobAlpha1(String name, Class<T> clazz) {
+	  try {
+		  if (name == null || name.trim().isEmpty()) {
+	  		  throw new IllegalArgumentException("Job name cannot be null or empty");
+	  	  }
+		  return this.<DaprProtos.GetJobResponse>createMono(
+				  it -> intercept(null, asyncStub).getJobAlpha1(DaprProtos.GetJobRequest.newBuilder().setName(name).build(), it))
+		  .map(it -> {
+			  DaprProtos.Job _job = it.getJob();
+			  T data = null;
+			  if (clazz.isInstance(String.class)) {
+				  data = (T)_job.getData().toByteString().toString(CHARSET);
+			  } else if (clazz.isInstance(byte[].class)) {
+				  data = (T) _job.getData().toByteArray();
+			  } else {
+				  throw new IllegalArgumentException("Job data type must be String or byte[]");
+			  }
+			  return new Job<>(_job.getName(), _job.getSchedule(), _job.getRepeats(), _job.getDueTime(), _job.getTtl(), data);
+		  });
+	  } catch (Exception ex) {
+		  return DaprException.wrapMono(ex);
+	  }
+  }
+  
+  @Override
+  public Mono<Void> deleteJobAlpha1(String name) {
+	  try {
+		  if (name == null || name.trim().isEmpty()) {
+	  		  throw new IllegalArgumentException("Job name cannot be null or empty");
+	  	  }
+		  return this.<DaprProtos.DeleteJobResponse>createMono(
+				  it -> intercept(null, asyncStub).deleteJobAlpha1(DaprProtos.DeleteJobRequest.newBuilder().setName(name).build(), it))
+				  .then();
+	  } catch (Exception ex) {
+		  return DaprException.wrapMono(ex);
+	  }
   }
 
   /**

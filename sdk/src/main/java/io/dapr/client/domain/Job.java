@@ -32,6 +32,26 @@ public final class Job<T> {
 		this.data = data;
 	}
 
+	/**
+	 * Constructor for Job
+	 * 
+	 * @param name name of the job to create
+	 * @param schedule schedule for the job
+	 * @param repeats jobs with fixed repeat counts (accounting for Actor Reminders).
+	 * @param dueTime sets time at which or time interval before the callback is invoked for the first time.
+	 * @param ttl Time To Live to allow for auto deletes (accounting for Actor Reminders).
+	 * @param data Job data
+	 */
+	public Job(String name, String schedule, Integer repeats, String dueTime, String ttl, T data) {
+		super();
+		this.name = name;
+		this.schedule = schedule;
+		this.repeats = repeats;
+		this.dueTime = dueTime;
+		this.ttl = ttl;
+		this.data = data;
+	}
+
 	public String getSchedule() {
 		return schedule;
 	}

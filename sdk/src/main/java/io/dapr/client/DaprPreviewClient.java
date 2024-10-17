@@ -17,6 +17,7 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.Job;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -268,4 +269,30 @@ public interface DaprPreviewClient extends AutoCloseable {
    */
   <T> Subscription subscribeToEvents(
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
+  
+  /**
+   * ScheduleJobAlpha1 creates and schedules a job.
+   * 
+   * @param <T> The type of the data for the job.
+   * @param job job to be scheduled
+   * @return a Mono plan of type Void.
+   */
+  <T> Mono<Void> scheduleJobAlpha1(Job<T> job);
+  
+  /**
+   * GetJobAlpha1 retrieve Job by name.
+   * 
+   * @param <T> The type of the data for the job.
+   * @param name name of the job
+   * @return a Mono of Job
+   */
+  <T> Mono<Job<T>> getJobAlpha1(String name, Class<T> clazz);
+  
+  /**
+   * Delete a Job.
+   * 
+   * @param name name of the job
+   * @return
+   */
+  Mono<Void> deleteJobAlpha1(String name);
 }

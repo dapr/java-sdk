@@ -666,14 +666,6 @@ public interface DaprClient extends AutoCloseable {
    */
   Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request);
   
-  /**
-   * ScheduleJobAlpha1 creates and schedules a job.
-   * 
-   * @param <T> The type of the data for the job.
-   * @param job job to be scheduled
-   * @return a Mono plan of type Void.
-   */
-  <T> Mono<Void> scheduleJobAlpha1(Job<T> job);
 
   /**
    * Returns a newly created gRPC stub with proper interceptors and channel for gRPC proxy invocation.
