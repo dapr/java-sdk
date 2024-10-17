@@ -49,8 +49,8 @@ class ConfigurationYamlConverterTest {
         + "    stdout: true\n"
         + "    otel:\n"
         + "      endpointAddress: localhost:4317\n"
-        + "      protocol: grpc\n"
-        + "      isSecure: false\n";
+        + "      isSecure: false\n"
+        + "      protocol: grpc\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
