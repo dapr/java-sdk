@@ -30,9 +30,9 @@ class SubscriptionYamlConverterTest {
         + "apiVersion: dapr.io/v1alpha1\n"
         + "kind: Subscription\n"
         + "spec:\n"
-        + "  route: /events\n"
         + "  pubsubname: pubsub\n"
-        + "  topic: topic\n";
+        + "  topic: topic\n"
+        + "  route: /events\n";
 
     assertEquals(expectedSubscriptionYaml, subscriptionYaml);
   }
