@@ -34,9 +34,11 @@ class ComponentYamlConverterTest {
     assertFalse(kvstore.getMetadata().isEmpty());
 
     String componentYaml = converter.convert(kvstore);
-    String expectedComponentYaml = "metadata:\n" + "  name: statestore\n"
-        + "apiVersion: dapr.io/v1alpha1\n"
+    String expectedComponentYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
         + "kind: Component\n"
+        + "metadata:\n"
+        + "  name: statestore\n"
         + "spec:\n"
         + "  type: state.in-memory\n"
         + "  version: v1\n"

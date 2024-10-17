@@ -38,9 +38,11 @@ class ConfigurationYamlConverterTest {
     assertNotNull(configuration);
 
     String configurationYaml = converter.convert(configuration);
-    String expectedConfigurationYaml = "metadata:\n" + "  name: my-config\n"
-        + "apiVersion: dapr.io/v1alpha1\n"
+    String expectedConfigurationYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
         + "kind: Configuration\n"
+        + "metadata:\n"
+        + "  name: my-config\n"
         + "spec:\n"
         + "  tracing:\n"
         + "    samplingRate: '1'\n"

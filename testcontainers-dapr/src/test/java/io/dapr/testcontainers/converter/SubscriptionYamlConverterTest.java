@@ -26,9 +26,11 @@ class SubscriptionYamlConverterTest {
 
     Subscription subscription = subscriptions.iterator().next();
     String subscriptionYaml = converter.convert(subscription);
-    String expectedSubscriptionYaml = "metadata:\n" + "  name: my-subscription\n"
-        + "apiVersion: dapr.io/v1alpha1\n"
+    String expectedSubscriptionYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
         + "kind: Subscription\n"
+        + "metadata:\n"
+        + "  name: my-subscription\n"
         + "spec:\n"
         + "  pubsubname: pubsub\n"
         + "  topic: topic\n"
