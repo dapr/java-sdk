@@ -62,11 +62,14 @@ public class DaprComponentTest {
     assertFalse(kvstore.getMetadata().isEmpty());
 
     String componentYaml = converter.convert(kvstore);
-    String expectedComponentYaml = "metadata:\n"
-        + "  name: statestore\n"
-        + "apiVersion: dapr.io/v1alpha1\n"
+    String expectedComponentYaml =
+          "apiVersion: dapr.io/v1alpha1\n"
         + "kind: Component\n"
+        + "metadata:\n"
+        + "  name: statestore\n"
         + "spec:\n"
+        + "  type: null\n"
+        + "  version: v1\n"
         + "  metadata:\n"
         + "  - name: name\n"
         + "    value: keyPrefix\n"
@@ -79,9 +82,7 @@ public class DaprComponentTest {
         + "  - name: name\n"
         + "    value: redisPassword\n"
         + "  - name: value\n"
-        + "    value: ''\n"
-        + "  type: null\n"
-        + "  version: v1\n";
+        + "    value: ''\n";
 
     assertEquals(expectedComponentYaml, componentYaml);
   }
