@@ -133,16 +133,11 @@ public class DaprClientHttpTest {
               .times(6)
               .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
 
-    // retry the max allowed retries (5 times)
+    // it will timeout.
     StepVerifier.create(daprClientHttp.waitForSidecar(5000))
             .expectSubscription()
-            .expectErrorMatches(throwable -> {
-              if (throwable instanceof RuntimeException) {
-                return "Retries exhausted: 5/5".equals(throwable.getMessage());
-              }
-              return false;
-            })
-            .verify(Duration.ofSeconds(20));
+            .expectError()
+            .verify(Duration.ofMillis(6000));
   }
 
   @Test
