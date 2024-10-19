@@ -15,20 +15,96 @@ package io.dapr.spring.messaging;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.Metadata;
+import io.dapr.spring.messaging.observation.DaprMessagingObservationConvention;
+import io.dapr.spring.messaging.observation.DaprMessagingObservationDocumentation;
+import io.dapr.spring.messaging.observation.DaprMessagingSenderContext;
+import io.dapr.spring.messaging.observation.DefaultDaprMessagingObservationConvention;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import reactor.core.publisher.Mono;
+
+import javax.annotation.Nullable;
 
 import java.util.Map;
 
-public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T> {
+/**
+ * Create a new DaprMessagingTemplate.
+ * @param <T> templated message type
+ */
+public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, ApplicationContextAware, BeanNameAware,
+    SmartInitializingSingleton {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(DaprMessagingTemplate.class);
   private static final String MESSAGE_TTL_IN_SECONDS = "10";
+  private static final DaprMessagingObservationConvention DEFAULT_OBSERVATION_CONVENTION =
+      DefaultDaprMessagingObservationConvention.INSTANCE;
 
   private final DaprClient daprClient;
   private final String pubsubName;
+  private final Map<String, String> metadata;
+  private final boolean observationEnabled;
 
-  public DaprMessagingTemplate(DaprClient daprClient, String pubsubName) {
+  @Nullable
+  private ApplicationContext applicationContext;
+
+  @Nullable
+  private String beanName;
+
+  @Nullable
+  private ObservationRegistry observationRegistry;
+
+  @Nullable
+  private DaprMessagingObservationConvention observationConvention;
+
+  /**
+   * Constructs a new DaprMessagingTemplate.
+   * @param daprClient Dapr client
+   * @param pubsubName pubsub name
+   * @param observationEnabled whether to enable observations
+   */
+  public DaprMessagingTemplate(DaprClient daprClient, String pubsubName, boolean observationEnabled) {
     this.daprClient = daprClient;
     this.pubsubName = pubsubName;
+    this.metadata = Map.of(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS);
+    this.observationEnabled = observationEnabled;
+  }
+
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
+  }
+
+  @Override
+  public void setBeanName(String beanName) {
+    this.beanName = beanName;
+  }
+
+  /**
+   * If observations are enabled, attempt to obtain the Observation registry and
+   * convention.
+   */
+  @Override
+  public void afterSingletonsInstantiated() {
+    if (!observationEnabled) {
+      LOGGER.debug("Observations are not enabled - not recording");
+      return;
+    }
+
+    if (applicationContext == null) {
+      LOGGER.warn("Observations enabled but application context null - not recording");
+      return;
+    }
+
+    observationRegistry = applicationContext.getBeanProvider(ObservationRegistry.class)
+        .getIfUnique(() -> observationRegistry);
+    observationConvention = applicationContext.getBeanProvider(DaprMessagingObservationConvention.class)
+        .getIfUnique(() -> observationConvention);
   }
 
   @Override
@@ -38,7 +114,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T> {
 
   @Override
   public SendMessageBuilder<T> newMessage(T message) {
-    return new SendMessageBuilderImpl<>(this, message);
+    return new DeefaultSendMessageBuilder<>(this, message);
   }
 
   private void doSend(String topic, T message) {
@@ -46,13 +122,56 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T> {
   }
 
   private Mono<Void> doSendAsync(String topic, T message) {
-    return daprClient.publishEvent(pubsubName,
-        topic,
-        message,
-        Map.of(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS));
+    LOGGER.trace("Sending message to '{}' topic", topic);
+
+    if (canUseObservation()) {
+      return publishEventWithObservation(pubsubName, topic, message);
+    }
+
+    return publishEvent(pubsubName, topic, message);
   }
 
-  private static class SendMessageBuilderImpl<T> implements SendMessageBuilder<T> {
+  private boolean canUseObservation() {
+    return observationEnabled
+        && observationRegistry != null
+        && observationConvention != null
+        && beanName != null;
+  }
+
+  private Mono<Void> publishEvent(String pubsubName, String topic, T message) {
+    return daprClient.publishEvent(pubsubName, topic, message, metadata);
+  }
+
+  private Mono<Void> publishEventWithObservation(String pubsubName, String topic, T message) {
+    DaprMessagingSenderContext senderContext = DaprMessagingSenderContext.newContext(topic, this.beanName);
+    Observation observation = createObservation(senderContext);
+
+    return observation.observe(() ->
+      publishEvent(pubsubName, topic, message)
+        .doOnError(err -> {
+          LOGGER.error("Failed to send msg to '{}' topic", topic, err);
+
+          observation.error(err);
+          observation.stop();
+        })
+        .doOnSuccess(ignore -> {
+          LOGGER.trace("Sent msg to '{}' topic", topic);
+
+          observation.stop();
+        })
+    );
+  }
+
+  private Observation createObservation(DaprMessagingSenderContext senderContext) {
+    return DaprMessagingObservationDocumentation.TEMPLATE_OBSERVATION.observation(
+        observationConvention,
+        DEFAULT_OBSERVATION_CONVENTION,
+        () -> senderContext,
+        observationRegistry
+    );
+  }
+
+  private static class DeefaultSendMessageBuilder<T> implements SendMessageBuilder<T> {
 
     private final DaprMessagingTemplate<T> template;
 
@@ -60,7 +179,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T> {
 
     private String topic;
 
-    SendMessageBuilderImpl(DaprMessagingTemplate<T> template, T message) {
+    DeefaultSendMessageBuilder(DaprMessagingTemplate<T> template, T message) {
       this.template = template;
       this.message = message;
     }
@@ -74,12 +193,12 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T> {
 
     @Override
     public void send() {
-      this.template.doSend(this.topic, this.message);
+      template.doSend(topic, message);
     }
 
     @Override
     public Mono<Void> sendAsync() {
-      return this.template.doSendAsync(this.topic, this.message);
+      return template.doSendAsync(topic, message);
     }
 
   }
