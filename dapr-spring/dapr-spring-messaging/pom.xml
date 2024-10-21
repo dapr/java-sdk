@@ -14,11 +14,4 @@
   <description>Dapr Spring Messaging</description>
   <packaging>jar</packaging>
 
-  <dependencies>
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-tracing</artifactId>
-    </dependency>
-  </dependencies>
-
 </project>
