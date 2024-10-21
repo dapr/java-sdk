@@ -32,4 +32,8 @@ public interface DaprMessagingObservationConvention extends ObservationConventio
     return "spring.dapr.messaging.template";
   }
 
+  static DaprMessagingObservationConvention getDefault() {
+    return DefaultDaprMessagingObservationConvention.INSTANCE;
+  }
+
 }

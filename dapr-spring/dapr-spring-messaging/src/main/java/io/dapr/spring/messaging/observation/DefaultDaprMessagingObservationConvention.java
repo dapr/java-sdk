@@ -19,7 +19,7 @@ import io.micrometer.common.KeyValues;
  * Default {@link DefaultDaprMessagingObservationConvention} for Dapr template key values.
  *
  */
-public class DefaultDaprMessagingObservationConvention implements DaprMessagingObservationConvention {
+class DefaultDaprMessagingObservationConvention implements DaprMessagingObservationConvention {
   /**
    * A singleton instance of the convention.
    */

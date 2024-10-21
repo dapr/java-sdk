@@ -18,7 +18,6 @@ import io.dapr.client.domain.Metadata;
 import io.dapr.spring.messaging.observation.DaprMessagingObservationConvention;
 import io.dapr.spring.messaging.observation.DaprMessagingObservationDocumentation;
 import io.dapr.spring.messaging.observation.DaprMessagingSenderContext;
-import io.dapr.spring.messaging.observation.DefaultDaprMessagingObservationConvention;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
@@ -43,7 +42,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
   private static final Logger LOGGER = LoggerFactory.getLogger(DaprMessagingTemplate.class);
   private static final String MESSAGE_TTL_IN_SECONDS = "10";
   private static final DaprMessagingObservationConvention DEFAULT_OBSERVATION_CONVENTION =
-      DefaultDaprMessagingObservationConvention.INSTANCE;
+      DaprMessagingObservationConvention.getDefault();
 
   private final DaprClient daprClient;
   private final String pubsubName;
