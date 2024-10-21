@@ -113,7 +113,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
 
   @Override
   public SendMessageBuilder<T> newMessage(T message) {
-    return new DeefaultSendMessageBuilder<>(this, message);
+    return new DefaultSendMessageBuilder<>(this, message);
   }
 
   private void doSend(String topic, T message) {
@@ -170,7 +170,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
     );
   }
 
-  private static class DeefaultSendMessageBuilder<T> implements SendMessageBuilder<T> {
+  private static class DefaultSendMessageBuilder<T> implements SendMessageBuilder<T> {
 
     private final DaprMessagingTemplate<T> template;
 
@@ -178,7 +178,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
 
     private String topic;
 
-    DeefaultSendMessageBuilder(DaprMessagingTemplate<T> template, T message) {
+    DefaultSendMessageBuilder(DaprMessagingTemplate<T> template, T message) {
       this.template = template;
       this.message = message;
     }
