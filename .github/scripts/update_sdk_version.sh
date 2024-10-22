@@ -24,4 +24,7 @@ mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f sdk-workflows/pom.
 # testcontainers-dapr
 mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f testcontainers-dapr/pom.xml
 
+# dapr-spring
+mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f dapr-spring/pom.xml
+
 git clean -f
