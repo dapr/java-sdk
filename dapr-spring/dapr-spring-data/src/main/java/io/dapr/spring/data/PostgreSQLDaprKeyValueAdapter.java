@@ -152,7 +152,8 @@ public class PostgreSQLDaprKeyValueAdapter extends AbstractDaprKeyValueAdapter {
   private String createSql(String sqlPattern, String keyspace, Object criteria) {
     String keyspaceFilter = getKeyspaceFilter(keyspace);
 
-    if (criteria instanceof DaprPredicate daprPredicate) {
+    if (criteria instanceof DaprPredicate) {
+      var daprPredicate = (DaprPredicate) criteria;
       String path = daprPredicate.getPath().toString();
       String pathWithOutType = String.format("'%s'", path.substring(path.indexOf(".") + 1));
       String value = String.format("'%s'", daprPredicate.getValue().toString());
