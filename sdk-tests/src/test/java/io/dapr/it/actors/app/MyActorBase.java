@@ -60,19 +60,21 @@ public abstract class MyActorBase<T> extends AbstractActor implements MyActor, R
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
   @Override
-  public String say(String something) {
-    String reversedString = "";
-    try {
-      this.formatAndLog(true, "say");
-      reversedString = new StringBuilder(something).reverse().toString();
+  public Mono<String> say(String something) {
+    return Mono.fromCallable(() -> {
+      String reversedString = "";
+      try {
+        this.formatAndLog(true, "say");
+        reversedString = new StringBuilder(something).reverse().toString();
 
-      this.formatAndLog(false, "say");
-    } catch(Exception e) {
-      // We don't throw, but the proxy side will know it failed because it expects a reversed input
-      System.out.println("Caught " + e);
-    }
+        this.formatAndLog(false, "say");
+      } catch(Exception e) {
+        // We don't throw, but the proxy side will know it failed because it expects a reversed input
+        System.out.println("Caught " + e);
+      }
 
-    return reversedString;
+      return reversedString;
+    });
   }
 
   @Override

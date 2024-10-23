@@ -14,12 +14,13 @@ limitations under the License.
 package io.dapr.it.actors.app;
 
 import io.dapr.actors.ActorMethod;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public interface MyActor {
-  String say(String something);
+  Mono<String> say(String something);
 
   List<String> retrieveActiveActors();
 
