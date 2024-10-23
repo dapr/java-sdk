@@ -13,7 +13,7 @@
   <groupId>io.dapr.spring</groupId>
   <artifactId>dapr-spring-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.13.0-SNAPSHOT</version>
+  <version>0.13.0-rc-1</version>
   <name>dapr-spring-parent</name>
   <description>SDK extension for Spring and Spring Boot</description>
 
@@ -28,9 +28,9 @@
 
   <properties>
     <springboot.version>3.2.6</springboot.version>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>11</maven.compiler.release>
   </properties>
 
   <dependencyManagement>
@@ -108,7 +108,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.7.0</version>
+        <version>3.2.0</version>
         <executions>
           <execution>
             <id>attach-javadocs</id>
