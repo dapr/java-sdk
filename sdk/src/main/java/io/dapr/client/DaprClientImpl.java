@@ -13,9 +13,12 @@ limitations under the License.
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import com.google.protobuf.Message;
 import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
@@ -38,6 +41,7 @@ import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.Job;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
@@ -56,6 +60,7 @@ import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
+import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
@@ -91,6 +96,7 @@ import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,6 +146,10 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprHttp httpClient;
 
   private final DaprClientGrpcInterceptors grpcInterceptors;
+  
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  
+  private static final Charset CHARSET = Properties.STRING_CHARSET.get();
 
   /**
    * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
@@ -1265,6 +1275,96 @@ public class DaprClientImpl extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  @Override
+  public <T> Mono<Void> scheduleJobAlpha1(Job<T> job) {
+    try {
+  	  final String name = job.getName();
+  	  final T data = job.getData();
+  
+  	  if (name == null || name.trim().isEmpty()) {
+  		  throw new IllegalArgumentException("Job name cannot be null or empty");
+  	  }
+  	  if (data == null) {
+  		  throw new IllegalArgumentException("Job data cannot be empty");
+  	  }
+  
+  	  DaprProtos.Job.Builder jobBuilder = DaprProtos.Job.newBuilder()
+  			  .setName(name);
+  	  if (data instanceof String) {
+  		  jobBuilder.setData(Any.newBuilder().setValue(ByteString.copyFrom((String) data, CHARSET)));
+  	  } else if (data instanceof byte[]) {
+  		  String base64 = OBJECT_MAPPER.writeValueAsString(data);
+  		  jobBuilder.setData(Any.newBuilder().setValue(ByteString.copyFrom(base64, CHARSET)));
+  	  } else {
+  		return Mono.error(() -> {
+            throw new IllegalArgumentException("Job data value must be String or byte[]");
+          });
+  	  }
+  	  if (job.getSchedule() != null && !job.getSchedule().trim().isEmpty()) {
+  		  jobBuilder.setSchedule(job.getSchedule());
+  	  }
+  	  if (job.getRepeats() != null) {
+  		  jobBuilder.setRepeats(job.getRepeats());
+  	  }
+  	  if (job.getDueTime() != null && !job.getDueTime().trim().isEmpty()) {
+  		  jobBuilder.setDueTime(job.getDueTime());
+  	  }
+  	  if (job.getTtl() != null && !job.getTtl().trim().isEmpty()) {
+  		  jobBuilder.setTtl(job.getTtl());
+  	  }
+  
+  	  DaprProtos.ScheduleJobRequest.Builder builder =
+  			  DaprProtos.ScheduleJobRequest.newBuilder()
+  			  .setJob(jobBuilder.build());
+  
+  	  return this.<DaprProtos.ScheduleJobResponse>createMono(
+  			  it -> intercept(null, asyncStub).scheduleJobAlpha1(builder.build(), it))
+  			  .then();
+    } catch (Exception ex) {
+  	  return DaprException.wrapMono(ex);
+    }
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T> Mono<Job<T>> getJobAlpha1(String name, Class<T> clazz) {
+	  try {
+		  if (name == null || name.trim().isEmpty()) {
+	  		  throw new IllegalArgumentException("Job name cannot be null or empty");
+	  	  }
+		  return this.<DaprProtos.GetJobResponse>createMono(
+				  it -> intercept(null, asyncStub).getJobAlpha1(DaprProtos.GetJobRequest.newBuilder().setName(name).build(), it))
+		  .map(it -> {
+			  DaprProtos.Job _job = it.getJob();
+			  T data = null;
+			  if (clazz.isInstance(String.class)) {
+				  data = (T)_job.getData().toByteString().toString(CHARSET);
+			  } else if (clazz.isInstance(byte[].class)) {
+				  data = (T) _job.getData().toByteArray();
+			  } else {
+				  throw new IllegalArgumentException("Job data type must be String or byte[]");
+			  }
+			  return new Job<>(_job.getName(), _job.getSchedule(), _job.getRepeats(), _job.getDueTime(), _job.getTtl(), data);
+		  });
+	  } catch (Exception ex) {
+		  return DaprException.wrapMono(ex);
+	  }
+  }
+  
+  @Override
+  public Mono<Void> deleteJobAlpha1(String name) {
+	  try {
+		  if (name == null || name.trim().isEmpty()) {
+	  		  throw new IllegalArgumentException("Job name cannot be null or empty");
+	  	  }
+		  return this.<DaprProtos.DeleteJobResponse>createMono(
+				  it -> intercept(null, asyncStub).deleteJobAlpha1(DaprProtos.DeleteJobRequest.newBuilder().setName(name).build(), it))
+				  .then();
+	  } catch (Exception ex) {
+		  return DaprException.wrapMono(ex);
+	  }
   }
 
   /**
