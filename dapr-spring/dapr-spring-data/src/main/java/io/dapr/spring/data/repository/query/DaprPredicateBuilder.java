@@ -46,7 +46,9 @@ class DaprPredicateBuilder {
   public Predicate<Object> isEqualTo(Object value) {
     return new DaprPredicate(part.getProperty(), value, o -> {
       if (!ObjectUtils.nullSafeEquals(Part.IgnoreCaseType.NEVER, part.shouldIgnoreCase())) {
-        if (o instanceof String s1 && value instanceof String s2) {
+        if ((o instanceof String) && (value instanceof String)) {
+          var s1 = (String)o;
+          var s2 = (String)value;
           return s1.equalsIgnoreCase(s2);
         }
       }
@@ -85,7 +87,8 @@ class DaprPredicateBuilder {
         return ObjectUtils.nullSafeEquals(o, value);
       }
 
-      if (value instanceof Pattern pattern) {
+      if (value instanceof Pattern) {
+        var pattern = (Pattern)value;
         return pattern.matcher(o.toString()).find();
       }
 
@@ -95,8 +98,10 @@ class DaprPredicateBuilder {
 
   public Predicate<Object> in(Object value) {
     return new DaprPredicate(part.getProperty(), value, o -> {
-      if (value instanceof Collection<?> collection) {
-        if (o instanceof Collection<?> subSet) {
+      if (value instanceof Collection<?>) {
+        var collection = (Collection<?>)value;
+        if (o instanceof Collection<?>) {
+          var subSet = (Collection<?>)o;
           return collection.containsAll(subSet);
         }
 
@@ -117,7 +122,8 @@ class DaprPredicateBuilder {
         return false;
       }
 
-      if (o instanceof Collection<?> collection) {
+      if (o instanceof Collection<?>) {
+        var collection = (Collection<?>)o;
         return collection.contains(value);
       }
 
@@ -125,7 +131,8 @@ class DaprPredicateBuilder {
         return ObjectUtils.containsElement(ObjectUtils.toObjectArray(o), value);
       }
 
-      if (o instanceof Map<?, ?> map) {
+      if (o instanceof Map<?, ?>) {
+        var map = (Map<?, ?>)o;
         return map.containsValue(value);
       }
 
@@ -145,9 +152,10 @@ class DaprPredicateBuilder {
 
   public Predicate<Object> startsWith(Object value) {
     return new DaprPredicate(part.getProperty(), value, o -> {
-      if (!(o instanceof String s)) {
+      if (!(o instanceof String)) {
         return false;
       }
+      var s = (String)o;
 
       if (ObjectUtils.nullSafeEquals(Part.IgnoreCaseType.NEVER, part.shouldIgnoreCase())) {
         return s.startsWith(value.toString());
@@ -159,10 +167,11 @@ class DaprPredicateBuilder {
 
   public Predicate<Object> endsWith(Object value) {
     return new DaprPredicate(part.getProperty(), value, o -> {
-      if (!(o instanceof String s)) {
+      if (!(o instanceof String)) {
         return false;
       }
 
+      var s = (String)o;
       if (ObjectUtils.nullSafeEquals(Part.IgnoreCaseType.NEVER, part.shouldIgnoreCase())) {
         return s.endsWith(value.toString());
       }
