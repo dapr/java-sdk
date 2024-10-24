@@ -35,7 +35,9 @@ public class TestApplication {
     @Bean
     public DaprMessagingTemplate<String> messagingTemplate(DaprClient daprClient,
                                                            DaprPubSubProperties daprPubSubProperties) {
-      return new DaprMessagingTemplate<>(daprClient, daprPubSubProperties.getName());
+      String pubsubName = daprPubSubProperties.getName();
+      boolean observationEnabled = daprPubSubProperties.isObservationEnabled();
+      return new DaprMessagingTemplate<>(daprClient, pubsubName, observationEnabled);
     }
 
   }

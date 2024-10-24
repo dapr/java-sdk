@@ -12,6 +12,6 @@
   <artifactId>dapr-spring-messaging</artifactId>
   <name>dapr-spring-messaging</name>
   <description>Dapr Spring Messaging</description>
-    <packaging>jar</packaging>
+  <packaging>jar</packaging>
 
 </project>
