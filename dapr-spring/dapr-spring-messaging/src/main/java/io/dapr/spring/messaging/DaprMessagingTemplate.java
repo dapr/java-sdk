@@ -20,6 +20,8 @@ import io.dapr.spring.messaging.observation.DaprMessagingObservationDocumentatio
 import io.dapr.spring.messaging.observation.DaprMessagingSenderContext;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
@@ -27,9 +29,11 @@ import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import javax.annotation.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -54,6 +58,9 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
 
   @Nullable
   private String beanName;
+
+  @Nullable
+  private OpenTelemetry openTelemetry;
 
   @Nullable
   private ObservationRegistry observationRegistry;
@@ -102,6 +109,8 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
 
     observationRegistry = applicationContext.getBeanProvider(ObservationRegistry.class)
         .getIfUnique(() -> observationRegistry);
+    this.openTelemetry = this.applicationContext.getBeanProvider(OpenTelemetry.class)
+        .getIfUnique(() -> this.openTelemetry);
     observationConvention = applicationContext.getBeanProvider(DaprMessagingObservationConvention.class)
         .getIfUnique(() -> observationConvention);
   }
@@ -133,7 +142,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
   private boolean canUseObservation() {
     return observationEnabled
         && observationRegistry != null
-        && observationConvention != null
+        && openTelemetry != null
         && beanName != null;
   }
 
@@ -147,6 +156,7 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
 
     return observation.observe(() ->
       publishEvent(pubsubName, topic, message)
+        .contextWrite(getReactorContext())
         .doOnError(err -> {
           LOGGER.error("Failed to send msg to '{}' topic", topic, err);
 
@@ -159,6 +169,16 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
           observation.stop();
         })
     );
+  }
+
+  private Context getReactorContext() {
+    Map<String, String> map = new HashMap<>();
+    TextMapSetter<Map<String, String>> setter = (carrier, key, value) -> map.put(key, value);
+    io.opentelemetry.context.Context otelContext = io.opentelemetry.context.Context.current();
+
+    openTelemetry.getPropagators().getTextMapPropagator().inject(otelContext, map, setter);
+
+    return Context.of(map);
   }
 
   private Observation createObservation(DaprMessagingSenderContext senderContext) {
