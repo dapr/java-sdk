@@ -106,7 +106,7 @@ public class DaprRun implements Stoppable {
         new Command(
             successMessage,
             buildDaprCommand(this.appName, serviceClass, ports, appProtocol),
-            daprApiToken == null ? null : Map.of("DAPR_API_TOKEN", daprApiToken));
+            buildEnvMap(daprApiToken));
     this.listCommand = new Command(
       this.appName,
       "dapr list");
@@ -338,6 +338,15 @@ public class DaprRun implements Stoppable {
 
     // By default, we use a token.
     return DEFAULT_DAPR_API_TOKEN;
+  }
+
+  private static final Map<String, String> buildEnvMap(String daprApiToken) {
+    final Map<String, String> envMap = new HashMap<>();
+    envMap.put("DAPR_HOST_IP", "127.0.01");
+    if (daprApiToken != null) {
+      envMap.put("DAPR_API_TOKEN", daprApiToken);
+    }
+    return Collections.unmodifiableMap(envMap);
   }
 
   private static void assertListeningOnPort(int port) {

@@ -34,10 +34,9 @@ public class OpenTelemetry {
 
   /**
    * Creates an opentelemetry instance.
-   * @param serviceName Name of the service in Zipkin
    * @return OpenTelemetry.
    */
-  public static io.opentelemetry.api.OpenTelemetry createOpenTelemetry(String serviceName) throws InterruptedException {
+  public static io.opentelemetry.api.OpenTelemetry createOpenTelemetry() throws InterruptedException {
     waitForZipkin();
     String httpUrl = String.format("http://localhost:%d", ZIPKIN_PORT);
     ZipkinSpanExporter zipkinExporter = ZipkinSpanExporter.builder().setEndpoint(httpUrl + ENDPOINT_V2_SPANS).build();

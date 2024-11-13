@@ -1,7 +1,6 @@
 package io.dapr.it.tracing.grpc;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
@@ -42,7 +41,7 @@ public class TracingIT extends BaseIT {
 
     @Test
     public void testInvoke() throws Exception {
-        OpenTelemetry openTelemetry = createOpenTelemetry("service over grpc");
+        OpenTelemetry openTelemetry = createOpenTelemetry();
         Tracer tracer = openTelemetry.getTracer("grpc integration test tracer");
         String spanName = UUID.randomUUID().toString();
         Span span = tracer.spanBuilder(spanName).setSpanKind(SpanKind.CLIENT).startSpan();
@@ -59,6 +58,6 @@ public class TracingIT extends BaseIT {
 
         span.end();
 
-        Validation.validate(spanName, "calllocal/tracingitgrpc-service/sleepovergrpc");
+        Validation.validateSleep(spanName, "calllocal/tracingitgrpc-service/sleepovergrpc");
     }
 }
