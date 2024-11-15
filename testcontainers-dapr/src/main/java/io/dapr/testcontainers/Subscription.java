@@ -14,10 +14,10 @@ limitations under the License.
 package io.dapr.testcontainers;
 
 public class Subscription {
-  private String name;
-  private String pubsubName;
-  private String topic;
-  private String route;
+  private final String name;
+  private final String pubsubName;
+  private final String topic;
+  private final String route;
 
   /**
    * Creates a new subscription.

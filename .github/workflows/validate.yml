@@ -37,9 +37,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.13.0-rc.1
-      DAPR_RUNTIME_VER: 1.13.0-rc.5
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.13.0-rc.1/install/install.sh
+      DAPR_CLI_VER: 1.14.0
+      DAPR_RUNTIME_VER: 1.14.4
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.14.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
     steps:
@@ -47,7 +47,7 @@ jobs:
       - name: Set up OpenJDK ${{ env.JDK_VER }}
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}
       - name: Set up Dapr CLI
         run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash -s ${{ env.DAPR_CLI_VER }}
@@ -100,6 +100,8 @@ jobs:
           echo "PATH=$PATH:$HOME/.local/bin" >> $GITHUB_ENV
           pip3 install setuptools wheel
           pip3 install mechanical-markdown
+      - name: Verify scheduler is listening on port.
+        run: sleep 30 && docker logs dapr_scheduler && nc -vz localhost 50006
       - name: Clean up files
         run: ./mvnw clean
       - name: Build sdk
@@ -158,3 +160,7 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/workflows/README.md
+      - name: Validate streaming subscription example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md

@@ -4,27 +4,35 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.dapr</groupId>
+  <parent>
+    <groupId>io.dapr</groupId>
+    <artifactId>dapr-sdk-parent</artifactId>
+    <version>1.13.0-SNAPSHOT</version>
+  </parent>
+
   <artifactId>dapr-sdk-tests</artifactId>
-  <version>0.0.0-SNAPSHOT</version>
+  <version>1.13.0-SNAPSHOT</version>
   <name>dapr-sdk-tests</name>
   <description>Tests for Dapr's Java SDK - not to be published as a jar.</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>17</java.version>
+    <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <dapr.sdk.version>1.12.0-SNAPSHOT</dapr.sdk.version>
-    <dapr.sdk.alpha.version>0.12.0-SNAPSHOT</dapr.sdk.alpha.version>
+    <dapr.sdk.version>1.13.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.alpha.version>0.13.0-SNAPSHOT</dapr.sdk.alpha.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
-    <grpc.version>1.59.0</grpc.version>
-    <protobuf.version>3.17.3</protobuf.version>
+    <grpc.version>1.64.0</grpc.version>
+    <protobuf.version>3.25.0</protobuf.version>
     <opentelemetry.version>1.39.0</opentelemetry.version>
-    <spring-boot.version>3.3.1</spring-boot.version>
+    <springboot.version>3.3.1</springboot.version>
     <logback-classic.version>1.4.12</logback-classic.version>
     <wiremock.version>3.9.1</wiremock.version>
+    <testcontainers-test.version>1.20.0</testcontainers-test.version>
   </properties>
 
   <dependencyManagement>
@@ -33,7 +41,7 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>${spring-boot.version}</version>
+        <version>${springboot.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -135,12 +143,6 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>testcontainers-dapr</artifactId>
-      <version>${dapr.sdk.alpha.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
       <version>${dapr.sdk.version}</version>
       <scope>test</scope>
@@ -150,6 +152,31 @@
       <artifactId>dapr-sdk-springboot</artifactId>
       <version>${dapr.sdk.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-workflows</artifactId>
+      <version>${dapr.sdk.alpha.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-starter</artifactId>
+      <version>${dapr.sdk.alpha.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-boot-starter-test</artifactId>
+      <version>${dapr.sdk.alpha.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-keyvalue</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -186,6 +213,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${testcontainers-test.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mysql</artifactId>
+      <version>${testcontainers-test.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
       <version>2.1.1</version>
@@ -206,13 +245,6 @@
         <groupId>jakarta.servlet</groupId>
         <artifactId>jakarta.servlet-api</artifactId>
         <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <!-- javax.servlet is needed for OpenTelemetry -->
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <version>4.0.1</version>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 
@@ -292,17 +324,8 @@
         </property>
       </activation>
       <properties>
-        <spring-boot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</spring-boot.version>
+        <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
       </properties>
-      <dependencies>
-        <dependency>
-          <!-- Needed for dapr compatibility for spring boot versions before 2.7 -->
-          <groupId>com.squareup.okhttp3</groupId>
-          <artifactId>okhttp</artifactId>
-          <version>4.9.0</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
     </profile>
   </profiles>
 </project>

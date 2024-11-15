@@ -15,11 +15,15 @@ package io.dapr.internal.grpc;
 
 import io.dapr.internal.grpc.interceptors.DaprApiTokenInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprAppIdInterceptor;
+import io.dapr.internal.grpc.interceptors.DaprMetadataInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTimeoutInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTracingInterceptor;
 import io.dapr.internal.resiliency.TimeoutPolicy;
+import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import reactor.util.context.ContextView;
+
+import java.util.function.Consumer;
 
 /**
  * Class to be used as part of your service's client stub interceptor.
@@ -27,15 +31,17 @@ import reactor.util.context.ContextView;
  */
 public class DaprClientGrpcInterceptors {
 
-  /**
-   * Adds all Dapr interceptors to a gRPC async stub.
-   * @param appId the appId to be invoked
-   * @param client gRPC client
-   * @param <T> async client type
-   * @return async client instance with interceptors
-   */
-  public static <T extends AbstractStub<T>> T intercept(final String appId, final T client) {
-    return intercept(appId, client, null, null);
+  private final String daprApiToken;
+
+  private final TimeoutPolicy timeoutPolicy;
+
+  public DaprClientGrpcInterceptors() {
+    this(null, null);
+  }
+
+  public DaprClientGrpcInterceptors(String daprApiToken, TimeoutPolicy timeoutPolicy) {
+    this.daprApiToken = daprApiToken;
+    this.timeoutPolicy = timeoutPolicy;
   }
 
   /**
@@ -44,45 +50,21 @@ public class DaprClientGrpcInterceptors {
    * @param <T> async client type
    * @return async client instance with interceptors
    */
-  public static <T extends AbstractStub<T>> T intercept(final T client) {
+  public <T extends AbstractStub<T>> T intercept(final T client) {
     return intercept(null, client, null, null);
   }
 
   /**
    * Adds all Dapr interceptors to a gRPC async stub.
-   * @param appId the appId to be invoked
+   * @param appId Application ID to invoke.
    * @param client gRPC client
-   * @param timeoutPolicy timeout policy for gRPC call
    * @param <T> async client type
    * @return async client instance with interceptors
    */
-  public static <T extends AbstractStub<T>> T intercept(
-      final String appId, final T client, final TimeoutPolicy timeoutPolicy) {
-    return intercept(appId, client, timeoutPolicy, null);
-  }
-
-  /**
-   * Adds all Dapr interceptors to a gRPC async stub.
-   * @param client gRPC client
-   * @param timeoutPolicy timeout policy for gRPC call
-   * @param <T> async client type
-   * @return async client instance with interceptors
-   */
-  public static <T extends AbstractStub<T>> T intercept(final T client, final TimeoutPolicy timeoutPolicy) {
-    return intercept(null, client, timeoutPolicy, null);
-  }
-
-  /**
-   * Adds all Dapr interceptors to a gRPC async stub.
-   * @param appId the appId to be invoked
-   * @param client gRPC client
-   * @param context Reactor context for tracing
-   * @param <T> async client type
-   * @return async client instance with interceptors
-   */
-  public static <T extends AbstractStub<T>> T intercept(
-      final String appId, final T client, final ContextView context) {
-    return intercept(appId, client, null, context);
+  public <T extends AbstractStub<T>> T intercept(
+      final String appId,
+      final T client) {
+    return this.intercept(appId, client, null, null);
   }
 
   /**
@@ -92,48 +74,51 @@ public class DaprClientGrpcInterceptors {
    * @param <T> async client type
    * @return async client instance with interceptors
    */
-  public static <T extends AbstractStub<T>> T intercept(final T client, final ContextView context) {
-    return intercept(null, client, null, context);
-  }
-
-  /**
-   * Adds all Dapr interceptors to a gRPC async stub.
-   * @param client gRPC client
-   * @param timeoutPolicy timeout policy for gRPC call
-   * @param context Reactor context for tracing
-   * @param <T> async client type
-   * @return async client instance with interceptors
-   */
-  public static <T extends AbstractStub<T>> T intercept(
+  public <T extends AbstractStub<T>> T intercept(
       final T client,
-      final TimeoutPolicy timeoutPolicy,
       final ContextView context) {
-    return intercept(null, client, timeoutPolicy, context);
+    return intercept(null, client, context, null);
   }
 
   /**
    * Adds all Dapr interceptors to a gRPC async stub.
-   * @param appId the appId to be invoked
    * @param client gRPC client
-   * @param timeoutPolicy timeout policy for gRPC call
    * @param context Reactor context for tracing
+   * @param metadataConsumer Consumer of the gRPC metadata
    * @param <T> async client type
    * @return async client instance with interceptors
    */
-  public static <T extends AbstractStub<T>> T intercept(
+  public <T extends AbstractStub<T>> T intercept(
+      final T client,
+      final ContextView context,
+      final Consumer<Metadata> metadataConsumer) {
+    return this.intercept(null, client, context, metadataConsumer);
+  }
+
+  /**
+   * Adds all Dapr interceptors to a gRPC async stub.
+   * @param appId Application ID to invoke.
+   * @param client gRPC client
+   * @param context Reactor context for tracing
+   * @param metadataConsumer Consumer of the gRPC metadata
+   * @param <T> async client type
+   * @return async client instance with interceptors
+   */
+  public <T extends AbstractStub<T>> T intercept(
       final String appId,
       final T client,
-      final TimeoutPolicy timeoutPolicy,
-      final ContextView context) {
+      final ContextView context,
+      final Consumer<Metadata> metadataConsumer) {
     if (client == null) {
       throw new IllegalArgumentException("client cannot be null");
     }
 
     return client.withInterceptors(
         new DaprAppIdInterceptor(appId),
-        new DaprApiTokenInterceptor(),
-        new DaprTimeoutInterceptor(timeoutPolicy),
-        new DaprTracingInterceptor(context));
+        new DaprApiTokenInterceptor(this.daprApiToken),
+        new DaprTimeoutInterceptor(this.timeoutPolicy),
+        new DaprTracingInterceptor(context),
+        new DaprMetadataInterceptor(metadataConsumer));
   }
 
 }

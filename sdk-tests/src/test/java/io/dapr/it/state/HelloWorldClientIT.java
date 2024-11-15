@@ -13,13 +13,10 @@ limitations under the License.
 
 package io.dapr.it.state;
 
-import io.dapr.config.Properties;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,45 +31,44 @@ public class HelloWorldClientIT extends BaseIT {
         false,
         2000
     );
-    ManagedChannel channel =
-      ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), daprRun.getGrpcPort()).usePlaintext().build();
-    DaprGrpc.DaprBlockingStub client = DaprGrpc.newBlockingStub(channel);
+    try (var client = daprRun.newDaprClientBuilder().build()) {
+      var stub = client.newGrpcStub("n/a", DaprGrpc::newBlockingStub);
 
-    String key = "mykey";
-    {
-      DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
-        .newBuilder()
-        .setStoreName(STATE_STORE_NAME)
-        .setKey(key)
-        .build();
-      DaprProtos.GetStateResponse response = client.getState(req);
-      String value = response.getData().toStringUtf8();
-      System.out.println("Got: " + value);
-      Assertions.assertEquals("Hello World", value);
-    }
+      String key = "mykey";
+      {
+        DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
+            .newBuilder()
+            .setStoreName(STATE_STORE_NAME)
+            .setKey(key)
+            .build();
+        DaprProtos.GetStateResponse response = stub.getState(req);
+        String value = response.getData().toStringUtf8();
+        System.out.println("Got: " + value);
+        Assertions.assertEquals("Hello World", value);
+      }
 
-    // Then, delete it.
-    {
-      DaprProtos.DeleteStateRequest req = DaprProtos.DeleteStateRequest
-        .newBuilder()
-        .setStoreName(STATE_STORE_NAME)
-        .setKey(key)
-        .build();
-      client.deleteState(req);
-      System.out.println("Deleted!");
-    }
+      // Then, delete it.
+      {
+        DaprProtos.DeleteStateRequest req = DaprProtos.DeleteStateRequest
+            .newBuilder()
+            .setStoreName(STATE_STORE_NAME)
+            .setKey(key)
+            .build();
+        stub.deleteState(req);
+        System.out.println("Deleted!");
+      }
 
-    {
-      DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
-        .newBuilder()
-        .setStoreName(STATE_STORE_NAME)
-        .setKey(key)
-        .build();
-      DaprProtos.GetStateResponse response = client.getState(req);
-      String value = response.getData().toStringUtf8();
-      System.out.println("Got: " + value);
-      Assertions.assertEquals("", value);
+      {
+        DaprProtos.GetStateRequest req = DaprProtos.GetStateRequest
+            .newBuilder()
+            .setStoreName(STATE_STORE_NAME)
+            .setKey(key)
+            .build();
+        DaprProtos.GetStateResponse response = stub.getState(req);
+        String value = response.getData().toStringUtf8();
+        System.out.println("Got: " + value);
+        Assertions.assertEquals("", value);
+      }
     }
-    channel.shutdown();
   }
 }

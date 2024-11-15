@@ -49,19 +49,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.11.0</version>
+      <version>1.12.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.11.0</version>
+      <version>1.12.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.11.0</version>
+      <version>1.12.0</version>
     </dependency>
     ...
   </dependencies>
@@ -75,11 +75,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.11.0')
+    compile('io.dapr:dapr-sdk:1.12.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.11.0')
+    compile('io.dapr:dapr-sdk-actors:1.12.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.11.0')
+    compile('io.dapr:dapr-sdk-springboot:1.12.0')
 }
 ```
 
@@ -102,8 +102,10 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [Invoking a Grpc service](./examples/src/main/java/io/dapr/examples/invoke/grpc)
 * [State management](./examples/src/main/java/io/dapr/examples/state)
 * [PubSub with subscriber](./examples/src/main/java/io/dapr/examples/pubsub/)
+* [PubSub with streaming subscription](./examples/src/main/java/io/dapr/examples/pubsub/stream/)
 * [Binding with input over Http](./examples/src/main/java/io/dapr/examples/bindings/http)
 * [Actors](./examples/src/main/java/io/dapr/examples/actors/)
+* [Workflows](./examples/src/main/java/io/dapr/examples/workflows/)
 * [Secrets management](./examples/src/main/java/io/dapr/examples/secrets)
 * [Configuration](./examples/src/main/java/io/dapr/examples/configuration)
 * [Distributed tracing with OpenTelemetry SDK](./examples/src/main/java/io/dapr/examples/tracing)

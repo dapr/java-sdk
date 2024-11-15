@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.12.0-SNAPSHOT</version>
+    <version>1.13.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk-examples</artifactId>
   <packaging>jar</packaging>
-  <version>1.12.0-SNAPSHOT</version>
+  <version>1.13.0-SNAPSHOT</version>
   <name>dapr-sdk-examples</name>
 
   <properties>
@@ -24,7 +24,6 @@
     <maven.deploy.skip>true</maven.deploy.skip>
     <spotbugs.fail>false</spotbugs.fail>
     <opentelemetry.version>0.14.0</opentelemetry.version>
-    <springboot.version>3.2.6</springboot.version>
   </properties>
 
   <dependencies>
@@ -213,14 +212,6 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <configuration>
           <!-- Skip checkstyle for auto-generated code -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <configuration>
-          <!-- Spring Boot 3 has a Java 17 baseline, no Java 8 support -->
           <skip>true</skip>
         </configuration>
       </plugin>
