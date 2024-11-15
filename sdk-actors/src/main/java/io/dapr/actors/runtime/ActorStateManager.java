@@ -20,7 +20,6 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -31,6 +30,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * All changes are cached in-memory until save() is called.
  */
 public class ActorStateManager {
+
+  private static final StateChangeMetadata REMOVE_STATE_CHANGE_METADATA =
+      new StateChangeMetadata(ActorStateChangeKind.REMOVE, null, null);
 
   /**
    * Provides states using a state store.
@@ -206,9 +208,10 @@ public class ActorStateManager {
         .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName)
             .map(exists -> {
               var expiration = buildExpiration(ttl);
+              ActorStateChangeKind changeKind = exists ? ActorStateChangeKind.UPDATE : ActorStateChangeKind.ADD;
               this.stateChangeTracker.put(stateName,
                   new StateChangeMetadata(
-                      exists ? ActorStateChangeKind.UPDATE : ActorStateChangeKind.ADD, value, expiration));
+                      changeKind, value, expiration));
               return exists;
             }))
         .then();
@@ -238,7 +241,7 @@ public class ActorStateManager {
           return true;
         }
 
-        this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null, null));
+        this.stateChangeTracker.put(stateName, REMOVE_STATE_CHANGE_METADATA);
         return true;
       }
 
@@ -248,7 +251,7 @@ public class ActorStateManager {
         .switchIfEmpty(this.stateProvider.contains(this.actorTypeName, this.actorId, stateName))
         .filter(exists -> exists)
         .map(exists -> {
-          this.stateChangeTracker.put(stateName, new StateChangeMetadata(ActorStateChangeKind.REMOVE, null, null));
+          this.stateChangeTracker.put(stateName, REMOVE_STATE_CHANGE_METADATA);
           return exists;
         })
         .then();
