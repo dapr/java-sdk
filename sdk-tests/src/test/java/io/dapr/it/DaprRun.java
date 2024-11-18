@@ -342,7 +342,7 @@ public class DaprRun implements Stoppable {
 
   private static final Map<String, String> buildEnvMap(String daprApiToken) {
     final Map<String, String> envMap = new HashMap<>();
-    envMap.put("DAPR_HOST_IP", "127.0.01");
+    envMap.put("DAPR_HOST_IP", "127.0.0.1");
     if (daprApiToken != null) {
       envMap.put("DAPR_API_TOKEN", daprApiToken);
     }
