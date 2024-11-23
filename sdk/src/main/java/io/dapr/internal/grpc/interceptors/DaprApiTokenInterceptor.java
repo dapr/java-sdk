@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.internal.grpc.interceptors;
 
 import io.dapr.client.Headers;
-import io.dapr.config.Properties;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
