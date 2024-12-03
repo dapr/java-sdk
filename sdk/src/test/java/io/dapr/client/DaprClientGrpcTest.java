@@ -25,6 +25,7 @@ import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetStateRequest;
+import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.State;
@@ -327,7 +328,7 @@ public class DaprClientGrpcTest {
   @Test
   public void invokeBindingTest() throws IOException {
     DaprProtos.InvokeBindingResponse.Builder responseBuilder =
-      DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
       observer.onNext(responseBuilder.build());
@@ -336,6 +337,23 @@ public class DaprClientGrpcTest {
     }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
     Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request");
+    result.block();
+  }
+
+  @Test
+  public void invokeBindingVoidReturnTest() throws IOException {
+    DaprProtos.InvokeBindingResponse.Builder responseBuilder =
+        DaprProtos.InvokeBindingResponse.newBuilder().setData(serialize("OK"));
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.InvokeBindingResponse> observer = (StreamObserver<DaprProtos.InvokeBindingResponse>) invocation.getArguments()[1];
+      observer.onNext(responseBuilder.build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
+
+    var request = new InvokeBindingRequest("BindingName", "MyOperation");
+    request.setData("request");
+    Mono<Void> result = client.invokeBinding(request, null);
     result.block();
   }
 
