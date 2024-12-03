@@ -22,6 +22,9 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Holds a client for Dapr sidecar communication. ActorClient should be reused.
  */
@@ -59,7 +62,7 @@ public class ActorClient implements AutoCloseable {
    * @param overrideProperties Override properties.
    */
   public ActorClient(Properties overrideProperties) {
-    this(buildManagedChannel(overrideProperties), null, overrideProperties.getValue(Properties.API_TOKEN));
+    this(overrideProperties, null);
   }
 
   /**
@@ -69,21 +72,38 @@ public class ActorClient implements AutoCloseable {
    * @param resiliencyOptions Client resiliency options.
    */
   public ActorClient(Properties overrideProperties, ResiliencyOptions resiliencyOptions) {
-    this(buildManagedChannel(overrideProperties), resiliencyOptions, overrideProperties.getValue(Properties.API_TOKEN));
+    this(overrideProperties, null, resiliencyOptions);
+  }
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   *
+   * @param overrideProperties Override properties.
+   * @param metadata gRPC metadata or HTTP headers for actor invocation.
+   * @param resiliencyOptions Client resiliency options.
+   */
+  public ActorClient(Properties overrideProperties, Map<String, String> metadata, ResiliencyOptions resiliencyOptions) {
+    this(buildManagedChannel(overrideProperties),
+        metadata,
+        resiliencyOptions,
+        overrideProperties.getValue(Properties.API_TOKEN));
   }
 
   /**
    * Instantiates a new channel for Dapr sidecar communication.
    *
    * @param grpcManagedChannel gRPC channel.
+   * @param metadata gRPC metadata or HTTP headers for actor invocation.
    * @param resiliencyOptions Client resiliency options.
+   * @param daprApiToken Dapr API token.
    */
   private ActorClient(
       ManagedChannel grpcManagedChannel,
+      Map<String, String> metadata,
       ResiliencyOptions resiliencyOptions,
       String daprApiToken) {
     this.grpcManagedChannel = grpcManagedChannel;
-    this.daprClient = buildDaprClient(grpcManagedChannel, resiliencyOptions, daprApiToken);
+    this.daprClient = buildDaprClient(grpcManagedChannel, metadata, resiliencyOptions, daprApiToken);
   }
 
   /**
@@ -137,10 +157,12 @@ public class ActorClient implements AutoCloseable {
    */
   private static DaprClient buildDaprClient(
       Channel grpcManagedChannel,
+      Map<String, String> metadata,
       ResiliencyOptions resiliencyOptions,
       String daprApiToken) {
     return new DaprClientImpl(
         DaprGrpc.newStub(grpcManagedChannel),
+        metadata == null ? null : Collections.unmodifiableMap(metadata),
         resiliencyOptions,
         daprApiToken);
   }
