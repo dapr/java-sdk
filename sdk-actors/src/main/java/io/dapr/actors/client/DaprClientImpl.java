@@ -34,6 +34,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.ContextView;
 
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
@@ -58,18 +59,29 @@ class DaprClientImpl implements DaprClient {
   private final DaprClientGrpcInterceptors grpcInterceptors;
 
   /**
+   * Metadata for actor invocation requests.
+   */
+  private final Map<String, String> metadata;
+
+  /**
    * Internal constructor.
    *
    * @param grpcClient Dapr's GRPC client.
+   * @param metadata gRPC metadata or HTTP headers for actor server to receive.
    * @param resiliencyOptions Client resiliency options (optional).
    * @param daprApiToken Dapr API token (optional).
    */
-  DaprClientImpl(DaprGrpc.DaprStub grpcClient, ResiliencyOptions resiliencyOptions, String daprApiToken) {
+  DaprClientImpl(
+      DaprGrpc.DaprStub grpcClient,
+      Map<String, String> metadata,
+      ResiliencyOptions resiliencyOptions,
+      String daprApiToken) {
     this.client = grpcClient;
     this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken,
         new TimeoutPolicy(resiliencyOptions == null ? null : resiliencyOptions.getTimeout()));
     this.retryPolicy = new RetryPolicy(
         resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
+    this.metadata = metadata == null ? Map.of() : metadata;
   }
 
   /**
@@ -82,6 +94,7 @@ class DaprClientImpl implements DaprClient {
             .setActorType(actorType)
             .setActorId(actorId)
             .setMethod(methodName)
+            .putAllMetadata(this.metadata)
             .setData(jsonPayload == null ? ByteString.EMPTY : ByteString.copyFrom(jsonPayload))
             .build();
     return Mono.deferContextual(
