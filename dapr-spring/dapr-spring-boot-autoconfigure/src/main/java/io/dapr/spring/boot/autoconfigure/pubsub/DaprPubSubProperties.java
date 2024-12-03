@@ -25,6 +25,7 @@ public class DaprPubSubProperties {
    * Name of the PubSub Dapr component.
    */
   private String name;
+  private boolean observationEnabled;
 
   public String getName() {
     return name;
@@ -34,4 +35,11 @@ public class DaprPubSubProperties {
     this.name = name;
   }
 
+  public boolean isObservationEnabled() {
+    return observationEnabled;
+  }
+
+  public void setObservationEnabled(boolean observationEnabled) {
+    this.observationEnabled = observationEnabled;
+  }
 }

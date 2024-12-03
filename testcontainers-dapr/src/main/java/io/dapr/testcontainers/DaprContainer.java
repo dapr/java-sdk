@@ -18,6 +18,8 @@ import io.dapr.testcontainers.converter.ConfigurationYamlConverter;
 import io.dapr.testcontainers.converter.SubscriptionYamlConverter;
 import io.dapr.testcontainers.converter.YamlConverter;
 import io.dapr.testcontainers.converter.YamlMapperFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(DaprContainer.class);
   private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
   private static final DaprProtocol DAPR_PROTOCOL = DaprProtocol.HTTP;
@@ -235,14 +239,28 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       cmds.add(Integer.toString(appPort));
     }
 
+    if (configuration != null) {
+      cmds.add("--config");
+      cmds.add("/dapr-resources/" + configuration.getName() + ".yaml");
+    }
+
     cmds.add("--log-level");
     cmds.add(daprLogLevel.toString());
     cmds.add("--resources-path");
     cmds.add("/dapr-resources");
-    withCommand(cmds.toArray(new String[]{}));
+
+    String[] cmdArray = cmds.toArray(new String[]{});
+    LOGGER.info("> `daprd` Command: \n");
+    LOGGER.info("\t" + Arrays.toString(cmdArray) + "\n");
+
+    withCommand(cmdArray);
 
     if (configuration != null) {
       String configurationYaml = CONFIGURATION_CONVERTER.convert(configuration);
+
+      LOGGER.info("> Configuration YAML: \n");
+      LOGGER.info("\t\n" + configurationYaml + "\n");
+
       withCopyToContainer(Transferable.of(configurationYaml), "/dapr-resources/" + configuration.getName() + ".yaml");
     }
 
@@ -257,11 +275,19 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     for (Component component : components) {
       String componentYaml = COMPONENT_CONVERTER.convert(component);
+
+      LOGGER.info("> Component YAML: \n");
+      LOGGER.info("\t\n" + componentYaml + "\n");
+
       withCopyToContainer(Transferable.of(componentYaml), "/dapr-resources/" + component.getName() + ".yaml");
     }
 
     for (Subscription subscription : subscriptions) {
       String subscriptionYaml = SUBSCRIPTION_CONVERTER.convert(subscription);
+
+      LOGGER.info("> Subscription YAML: \n");
+      LOGGER.info("\t\n" + subscriptionYaml + "\n");
+
       withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
     }
 
