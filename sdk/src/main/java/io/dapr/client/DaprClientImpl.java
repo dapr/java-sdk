@@ -459,8 +459,10 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       try {
         CloudEvent<T> cloudEvent = new CloudEvent<>();
-        var object =
-            DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+        T object = null;
+        if (type != null) {
+          object = DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+        }
         cloudEvent.setData(object);
         cloudEvent.setDatacontenttype(message.getDataContentType());
         cloudEvent.setId(message.getId());
@@ -528,6 +530,10 @@ public class DaprClientImpl extends AbstractDaprClient {
 
   private <T> Mono<T> getMonoForHttpResponse(TypeRef<T> type, DaprHttp.Response r) {
     try {
+      if (type == null) {
+        return Mono.empty();
+      }
+
       T object = objectSerializer.deserialize(r.getBody(), type);
       if (object == null) {
         return Mono.empty();
@@ -585,6 +591,9 @@ public class DaprClientImpl extends AbstractDaprClient {
             }
 
             try {
+              if (type == null) {
+                return Mono.empty();
+              }
               return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
             } catch (IOException e) {
               throw DaprException.propagate(e);
@@ -706,13 +715,18 @@ public class DaprClientImpl extends AbstractDaprClient {
       return new State<>(key, error);
     }
 
-    ByteString payload = item.getData();
-    byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
     String etag = item.getEtag();
     if (etag.equals("")) {
       etag = null;
     }
+
+    T value = null;
+    if (type != null) {
+      ByteString payload = item.getData();
+      byte[] data = payload == null ? null : payload.toByteArray();
+      value = stateSerializer.deserialize(data, type);
+    }
+
     return new State<>(key, value, etag, item.getMetadataMap(), null);
   }
 
@@ -723,7 +737,11 @@ public class DaprClientImpl extends AbstractDaprClient {
       TypeRef<T> type) throws IOException {
     ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
+    T value = null;
+    if (type != null) {
+      value = stateSerializer.deserialize(data, type);
+    }
+
     String etag = response.getEtag();
     if (etag.equals("")) {
       etag = null;
@@ -1108,7 +1126,11 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
     ByteString payload = item.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
+    T value = null;
+    if (type != null) {
+      value = stateSerializer.deserialize(data, type);
+    }
+
     String etag = item.getEtag();
     if (etag.equals("")) {
       etag = null;

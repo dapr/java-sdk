@@ -274,6 +274,14 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
    * {@inheritDoc}
    */
   @Override
+  public Mono<Void> invokeBinding(InvokeBindingRequest request) {
+    return this.invokeBinding(request, TypeRef.VOID);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public <T> Mono<State<T>> getState(String storeName, State<T> state, TypeRef<T> type) {
     return this.getState(storeName, state.getKey(), state.getOptions(), type);
   }
