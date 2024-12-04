@@ -212,7 +212,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * {@inheritDoc}
    */
   @Override
-  public <V> Task<V> callSubWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
+  public <V> Task<V> callChildWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
       @Nullable TaskOptions options, Class<V> returnType) {
 
     return this.innerContext.callSubOrchestrator(name, input, instanceID, options, returnType);
