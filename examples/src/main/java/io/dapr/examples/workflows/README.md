@@ -51,7 +51,7 @@ Those examples contain the following workflow patterns:
 2. [Fan-out/Fan-in Pattern](#fan-outfan-in-pattern)
 3. [Continue As New Pattern](#continue-as-new-pattern)
 4. [External Event Pattern](#external-event-pattern)
-5. [Sub-workflow Pattern](#sub-workflow-pattern)
+5. [child-workflow Pattern](#child-workflow-pattern)
 
 ### Chaining Pattern
 In the chaining pattern, a sequence of activities executes in a specific order.
@@ -443,10 +443,10 @@ Started a new external-event model workflow with instance ID: 23410d96-1afe-4698
 workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
 ```
 
-### Sub-workflow Pattern
-The sub-workflow pattern allows you to call a workflow from another workflow.
+### child-workflow Pattern
+The child-workflow pattern allows you to call a workflow from another workflow.
 
-The `DemoWorkflow` class defines the workflow. It calls a sub-workflow `DemoSubWorkflow` to do the work. See the code snippet below:
+The `DemoWorkflow` class defines the workflow. It calls a child-workflow `DemoChildWorkflow` to do the work. See the code snippet below:
 ```java
 public class DemoWorkflow extends Workflow {
   @Override
@@ -454,40 +454,40 @@ public class DemoWorkflow extends Workflow {
     return ctx -> {
       ctx.getLogger().info("Starting Workflow: " + ctx.getName());
 
-      var subWorkflowInput = "Hello Dapr Workflow!";
-      ctx.getLogger().info("calling subworkflow with input: " + subWorkflowInput);
+      var childWorkflowInput = "Hello Dapr Workflow!";
+      ctx.getLogger().info("calling childworkflow with input: " + childWorkflowInput);
 
-      var subWorkflowOutput =
-              ctx.callSubWorkflow(DemoSubWorkflow.class.getName(), subWorkflowInput, String.class).await();
+      var childWorkflowOutput =
+              ctx.callChildWorkflow(DemoChildWorkflow.class.getName(), childWorkflowInput, String.class).await();
 
-      ctx.getLogger().info("subworkflow finished with: " + subWorkflowOutput);
+      ctx.getLogger().info("childworkflow finished with: " + childWorkflowOutput);
     };
   }
 }
 ```
 
-The `DemoSubWorkflow` class defines the sub-workflow. It call the activity to do the work and returns the result. See the code snippet below:
+The `DemoChildWorkflow` class defines the child-workflow. It call the activity to do the work and returns the result. See the code snippet below:
 ```java
-public class DemoSubWorkflow extends Workflow {
+public class DemoChildWorkflow extends Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
-      ctx.getLogger().info("Starting SubWorkflow: " + ctx.getName());
+      ctx.getLogger().info("Starting ChildWorkflow: " + ctx.getName());
 
-      var subWorkflowInput = ctx.getInput(String.class);
-      ctx.getLogger().info("SubWorkflow received input: " + subWorkflowInput);
+      var childWorkflowInput = ctx.getInput(String.class);
+      ctx.getLogger().info("ChildWorkflow received input: " + childWorkflowInput);
 
-      ctx.getLogger().info("SubWorkflow is calling Activity: " + ReverseActivity.class.getName());
-      String result = ctx.callActivity(ReverseActivity.class.getName(), subWorkflowInput, String.class).await();
+      ctx.getLogger().info("ChildWorkflow is calling Activity: " + ReverseActivity.class.getName());
+      String result = ctx.callActivity(ReverseActivity.class.getName(), childWorkflowInput, String.class).await();
 
-      ctx.getLogger().info("SubWorkflow finished with: " + result);
+      ctx.getLogger().info("ChildWorkflow finished with: " + result);
       ctx.complete(result);
     };
   }
 }
 ```
 
-The `ReverseActivity` class defines the logics for a single acitvity, in this case, it reverses a string. See the code snippet below:
+The `ReverseActivity` class defines the logics for a single activity, in this case, it reverses a string. See the code snippet below:
 ```java
 public class ReverseActivity implements WorkflowActivity {
   @Override
@@ -513,29 +513,29 @@ Start the workflow and client using the following commands:
 
 ex
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkflowWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.childworkflow.DemoChildWorkflowWorker
 ```
 
 ```sh
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkerflowClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.childworkflow.DemoChildWorkerflowClient
 ```
 
 The log from worker:
 ```text
-== APP == 2023-11-07 20:08:52,521 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.subworkflow.DemoWorkflow
-== APP == 2023-11-07 20:08:52,523 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling subworkflow with input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,561 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting SubWorkflow: io.dapr.examples.workflows.subworkflow.DemoSubWorkflow
-== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow received input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow is calling Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
-== APP == 2023-11-07 20:08:52,576 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
-== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
-== APP == 2023-11-07 20:08:52,596 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow finished with: !wolfkroW rpaD olleH
-== APP == 2023-11-07 20:08:52,611 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - subworkflow finished with: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,521 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.childworkflow.DemoWorkflow
+== APP == 2023-11-07 20:08:52,523 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling childworkflow with input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,561 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting ChildWorkflow: io.dapr.examples.workflows.childworkflow.DemoChildWorkflow
+== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow received input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow is calling Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
+== APP == 2023-11-07 20:08:52,576 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
+== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,596 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow finished with: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,611 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - childworkflow finished with: !wolfkroW rpaD olleH
 ```
 
 The log from client:
 ```text
-Started a new sub-workflow model workflow with instance ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb
+Started a new child-workflow model workflow with instance ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb
 workflow instance with ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb completed with result: !wolfkroW rpaD olleH
 ```

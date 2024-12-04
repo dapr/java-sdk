@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.subworkflow;
+package io.dapr.examples.workflows.childworkflow;
 
 import io.dapr.workflows.runtime.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowActivityContext;

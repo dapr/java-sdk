@@ -125,7 +125,7 @@ public class DaprWorkflowContextImplTest {
       }
 
       @Override
-      public <V> Task<V> callSubWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
+      public <V> Task<V> callChildWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
                                          @Nullable TaskOptions options, Class<V> returnType) {
         return null;
       }
@@ -278,31 +278,31 @@ public class DaprWorkflowContextImplTest {
   }
 
   @Test
-  public void callSubWorkflowWithName() {
+  public void callChildWorkflowWithName() {
     String expectedName = "TestActivity";
 
-    context.callSubWorkflow(expectedName);
+    context.callChildWorkflow(expectedName);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, null, null, null, null);
   }
 
   @Test
-  public void callSubWorkflowWithOptions() {
+  public void callChildWorkflowWithOptions() {
     String expectedName = "TestActivity";
     String expectedInput = "TestInput";
     String expectedInstanceId = "TestInstanceId";
     TaskOptions expectedOptions = new TaskOptions(new RetryPolicy(1, Duration.ofSeconds(10)));
 
-    context.callSubWorkflow(expectedName, expectedInput, expectedInstanceId, expectedOptions, String.class);
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, expectedOptions, String.class);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, expectedInstanceId,
         expectedOptions, String.class);
   }
 
   @Test
-  public void callSubWorkflow() {
+  public void callChildWorkflow() {
     String expectedName = "TestActivity";
     String expectedInput = "TestInput";
 
-    context.callSubWorkflow(expectedName, expectedInput, String.class);
+    context.callChildWorkflow(expectedName, expectedInput, String.class);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
   }
 
