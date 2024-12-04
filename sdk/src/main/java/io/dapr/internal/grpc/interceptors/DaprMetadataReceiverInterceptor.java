@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 /**
  * Consumes gRPC metadata.
  */
-public class DaprMetadataInterceptor implements ClientInterceptor {
+public class DaprMetadataReceiverInterceptor implements ClientInterceptor {
 
   private final Consumer<Metadata> metadataConsumer;
 
@@ -35,7 +35,7 @@ public class DaprMetadataInterceptor implements ClientInterceptor {
    * Creates an instance of the consumer for gRPC metadata.
    * @param metadataConsumer gRPC metadata consumer
    */
-  public DaprMetadataInterceptor(Consumer<Metadata> metadataConsumer) {
+  public DaprMetadataReceiverInterceptor(Consumer<Metadata> metadataConsumer) {
     this.metadataConsumer = metadataConsumer;
   }
 

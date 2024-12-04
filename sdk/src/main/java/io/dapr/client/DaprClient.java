@@ -321,6 +321,14 @@ public interface DaprClient extends AutoCloseable {
    * Invokes a Binding operation.
    *
    * @param request The binding invocation request.
+   * @return a Mono with void.
+   */
+  Mono<Void> invokeBinding(InvokeBindingRequest request);
+
+  /**
+   * Invokes a Binding operation.
+   *
+   * @param request The binding invocation request.
    * @param type    The type being returned.
    * @param <T>     The type of the return
    * @return a Mono plan of type T.

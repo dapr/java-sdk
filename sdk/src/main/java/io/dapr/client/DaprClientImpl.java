@@ -86,6 +86,8 @@ import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -103,7 +105,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -119,6 +120,8 @@ import static io.dapr.internal.exceptions.DaprHttpException.parseHttpStatusCode;
  * @see io.dapr.client.DaprClient
  */
 public class DaprClientImpl extends AbstractDaprClient {
+
+  private final Logger logger;
 
   /**
    * The GRPC managed channel to be used.
@@ -245,6 +248,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     this.httpClient = httpClient;
     this.retryPolicy = retryPolicy;
     this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
+    this.logger = LoggerFactory.getLogger(DaprClientImpl.class);
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -283,53 +287,21 @@ public class DaprClientImpl extends AbstractDaprClient {
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
     String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
-    int maxRetries = 5;
-
-    Retry retrySpec = Retry
-        .fixedDelay(maxRetries, Duration.ofMillis(500))
-        .doBeforeRetry(retrySignal -> {
-          System.out.println("Retrying component health check...");
-        });
-
-    /*
-    NOTE: (Cassie) Uncomment this once it actually gets implemented:
-    https://github.com/grpc/grpc-java/issues/4359
-
-    int maxChannelStateRetries = 5;
-
-    // Retry logic for checking the channel state
-    Retry channelStateRetrySpec = Retry
-            .fixedDelay(maxChannelStateRetries, Duration.ofMillis(500))
-            .doBeforeRetry(retrySignal -> {
-              System.out.println("Retrying channel state check...");
-            });
-    */
 
     // Do the Dapr Http endpoint check to have parity with Dotnet
     Mono<DaprHttp.Response> responseMono = this.httpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
         null, "", null, null);
 
     return responseMono
-        .retryWhen(retrySpec)
-        /*
-        NOTE: (Cassie) Uncomment this once it actually gets implemented:
-        https://github.com/grpc/grpc-java/issues/4359
-        .flatMap(response -> {
-          // Check the status code
-          int statusCode = response.getStatusCode();
-
-          // Check if the channel's state is READY
-          return Mono.defer(() -> {
-            if (this.channel.getState(true) == ConnectivityState.READY) {
-              // Return true if the status code is in the 2xx range
-              if (statusCode >= 200 && statusCode < 300) {
-                return Mono.empty(); // Continue with the flow
-              }
-            }
-            return Mono.error(new RuntimeException("Health check failed"));
-          }).retryWhen(channelStateRetrySpec);
-        })
-        */
+        // No method to "retry forever every 500ms", so we make it practically forever.
+        // 9223372036854775807 * 500 ms = 1.46235604 x 10^11 years
+        // If anyone needs to wait for the sidecar for longer than that, sorry.
+        .retryWhen(
+            Retry
+                .fixedDelay(Long.MAX_VALUE, Duration.ofMillis(500))
+                .doBeforeRetry(s -> {
+                  this.logger.info("Retrying sidecar health check ...");
+                }))
         .timeout(Duration.ofMillis(timeoutInMilliseconds))
         .onErrorResume(DaprException.class, e ->
             Mono.error(new RuntimeException(e)))
@@ -497,8 +469,10 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       try {
         CloudEvent<T> cloudEvent = new CloudEvent<>();
-        var object =
-            DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+        T object = null;
+        if (type != null) {
+          object = DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+        }
         cloudEvent.setData(object);
         cloudEvent.setDatacontenttype(message.getDataContentType());
         cloudEvent.setId(message.getId());
@@ -566,6 +540,10 @@ public class DaprClientImpl extends AbstractDaprClient {
 
   private <T> Mono<T> getMonoForHttpResponse(TypeRef<T> type, DaprHttp.Response r) {
     try {
+      if (type == null) {
+        return Mono.empty();
+      }
+
       T object = objectSerializer.deserialize(r.getBody(), type);
       if (object == null) {
         return Mono.empty();
@@ -623,6 +601,9 @@ public class DaprClientImpl extends AbstractDaprClient {
             }
 
             try {
+              if (type == null) {
+                return Mono.empty();
+              }
               return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
             } catch (IOException e) {
               throw DaprException.propagate(e);
@@ -744,13 +725,18 @@ public class DaprClientImpl extends AbstractDaprClient {
       return new State<>(key, error);
     }
 
-    ByteString payload = item.getData();
-    byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
     String etag = item.getEtag();
     if (etag.equals("")) {
       etag = null;
     }
+
+    T value = null;
+    if (type != null) {
+      ByteString payload = item.getData();
+      byte[] data = payload == null ? null : payload.toByteArray();
+      value = stateSerializer.deserialize(data, type);
+    }
+
     return new State<>(key, value, etag, item.getMetadataMap(), null);
   }
 
@@ -761,7 +747,11 @@ public class DaprClientImpl extends AbstractDaprClient {
       TypeRef<T> type) throws IOException {
     ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
+    T value = null;
+    if (type != null) {
+      value = stateSerializer.deserialize(data, type);
+    }
+
     String etag = response.getEtag();
     if (etag.equals("")) {
       etag = null;
@@ -1146,7 +1136,11 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
     ByteString payload = item.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
+    T value = null;
+    if (type != null) {
+      value = stateSerializer.deserialize(data, type);
+    }
+
     String etag = item.getEtag();
     if (etag.equals("")) {
       etag = null;

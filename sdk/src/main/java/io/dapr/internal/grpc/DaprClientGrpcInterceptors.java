@@ -15,7 +15,7 @@ package io.dapr.internal.grpc;
 
 import io.dapr.internal.grpc.interceptors.DaprApiTokenInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprAppIdInterceptor;
-import io.dapr.internal.grpc.interceptors.DaprMetadataInterceptor;
+import io.dapr.internal.grpc.interceptors.DaprMetadataReceiverInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTimeoutInterceptor;
 import io.dapr.internal.grpc.interceptors.DaprTracingInterceptor;
 import io.dapr.internal.resiliency.TimeoutPolicy;
@@ -35,10 +35,18 @@ public class DaprClientGrpcInterceptors {
 
   private final TimeoutPolicy timeoutPolicy;
 
+  /**
+   * Instantiates a holder of all gRPC interceptors.
+   */
   public DaprClientGrpcInterceptors() {
     this(null, null);
   }
 
+  /**
+   * Instantiates a holder of all gRPC interceptors.
+   * @param daprApiToken Dapr API token.
+   * @param timeoutPolicy Timeout Policy.
+   */
   public DaprClientGrpcInterceptors(String daprApiToken, TimeoutPolicy timeoutPolicy) {
     this.daprApiToken = daprApiToken;
     this.timeoutPolicy = timeoutPolicy;
@@ -118,7 +126,7 @@ public class DaprClientGrpcInterceptors {
         new DaprApiTokenInterceptor(this.daprApiToken),
         new DaprTimeoutInterceptor(this.timeoutPolicy),
         new DaprTracingInterceptor(context),
-        new DaprMetadataInterceptor(metadataConsumer));
+        new DaprMetadataReceiverInterceptor(metadataConsumer));
   }
 
 }

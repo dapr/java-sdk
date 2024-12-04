@@ -187,11 +187,19 @@ public class DaprRun implements Stoppable {
   }
 
   public ActorClient newActorClient() {
-    return this.newActorClient(null);
+    return this.newActorClient(null, null);
+  }
+
+  public ActorClient newActorClient(Map<String, String> metadata) {
+    return this.newActorClient(metadata, null);
   }
 
   public ActorClient newActorClient(ResiliencyOptions resiliencyOptions) {
-    return new ActorClient(new Properties(this.getPropertyOverrides()), resiliencyOptions);
+    return this.newActorClient(null, resiliencyOptions);
+  }
+
+  public ActorClient newActorClient(Map<String, String> metadata, ResiliencyOptions resiliencyOptions) {
+    return new ActorClient(new Properties(this.getPropertyOverrides()), metadata, resiliencyOptions);
   }
 
   public void waitForAppHealth(int maxWaitMilliseconds) throws InterruptedException {
