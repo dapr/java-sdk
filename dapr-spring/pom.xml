@@ -20,6 +20,7 @@
   <modules>
     <module>dapr-spring-data</module>
     <module>dapr-spring-messaging</module>
+    <module>dapr-spring-workflows</module>
     <module>dapr-spring-boot-autoconfigure</module>
     <module>dapr-spring-boot-tests</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter</module>
