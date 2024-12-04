@@ -14,9 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.v1.DaprGrpc;
-import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
-import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -45,6 +43,14 @@ class GrpcChannelFacade implements Closeable {
     this.channel = channel;
   }
 
+  /**
+   * Returns the gRPC channel to the sidecar.
+   * @return Sidecar's gRPC channel.
+   */
+  ManagedChannel getGrpcChannel() {
+    return this.channel;
+  }
+
   @Override
   public void close() throws IOException {
     if (channel != null && !channel.isShutdown()) {
@@ -52,25 +58,4 @@ class GrpcChannelFacade implements Closeable {
     }
   }
 
-  public Mono<Void> waitForChannelReady(int timeoutInMilliseconds) {
-    return Mono.fromRunnable(() -> {
-      boolean isReady = false;
-      long startTime = System.currentTimeMillis();
-      while (!isReady && System.currentTimeMillis() - startTime < timeoutInMilliseconds) {
-        isReady = this.channel.getState(true) == ConnectivityState.READY;
-        if (!isReady) {
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Waiting for gRPC channel ready interrupted.", e);
-          }
-        }
-      }
-
-      if (!isReady) {
-        throw new RuntimeException("Timeout waiting for gRPC channel to be ready.");
-      }
-    });
-  }
 }

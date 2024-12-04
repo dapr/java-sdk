@@ -22,22 +22,24 @@ import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.ActorReminderDataParam;
 import io.dapr.it.actors.app.MyActorService;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.dapr.it.Retry.callWithRetry;
-import static io.dapr.it.actors.MyActorTestUtils.*;
+import static io.dapr.it.actors.MyActorTestUtils.countMethodCalls;
+import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
+import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 
 public class ActorReminderRecoveryIT extends BaseIT {
 
@@ -94,7 +96,6 @@ public class ActorReminderRecoveryIT extends BaseIT {
     // Run that will stay up for integration tests.
     // appId must not contain the appId from the other run, otherwise ITs will not run properly.
     clientRun = startDaprApp("ActorReminderRecoveryTestClient", 5000);
-    clientRun.use();
 
     Thread.sleep(3000);
 
@@ -102,7 +103,7 @@ public class ActorReminderRecoveryIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(clientRun.newActorClient()));
     logger.debug("Creating actorId");
     logger.debug("Building proxy");
     proxy = proxyBuilder.build(actorId);
@@ -128,6 +129,9 @@ public class ActorReminderRecoveryIT extends BaseIT {
   ) throws Exception {
     setup(actorType);
 
+    logger.debug("Pausing 3 seconds to let gRPC connection get ready");
+    Thread.sleep(3000);
+    
     logger.debug("Invoking actor method 'startReminder' which will register a reminder");
     proxy.invokeMethod("setReminderData", reminderDataParam).block();
 

@@ -32,30 +32,25 @@ import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.utils.TypeRef;
-import org.junit.After;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprException;
+import static io.dapr.it.TestUtils.assertThrowsDaprExceptionWithReason;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -104,72 +99,43 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void publishPubSubNotFound(boolean useGrpc) throws Exception {
+  @Test
+  public void publishPubSubNotFound() throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
-    try (DaprClient client = new DaprClientBuilder().build()) {
-
-      if (useGrpc) {
-        assertThrowsDaprException(
-            "INVALID_ARGUMENT",
-            "INVALID_ARGUMENT: pubsub unknown pubsub not found",
-            () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
-      } else {
-        assertThrowsDaprException(
-            "ERR_PUBSUB_NOT_FOUND",
-            "ERR_PUBSUB_NOT_FOUND: pubsub unknown pubsub not found",
-            () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
-      }
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+      assertThrowsDaprExceptionWithReason(
+          "INVALID_ARGUMENT",
+          "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
+          "DAPR_PUBSUB_NOT_FOUND",
+          () -> client.publishEvent("unknown pubsub", "mytopic", "payload").block());
     }
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void testBulkPublishPubSubNotFound(boolean useGrpc) throws Exception {
+  @Test
+  public void testBulkPublishPubSubNotFound() throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      // No HTTP implementation for bulk publish
-      System.out.println("no HTTP impl for bulkPublish");
-      return;
-    }
 
-    try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
+    try (DaprPreviewClient client = daprRun.newDaprClientBuilder().buildPreviewClient()) {
       assertThrowsDaprException(
             "INVALID_ARGUMENT",
-            "INVALID_ARGUMENT: pubsub unknown pubsub not found",
+            "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
             () -> client.publishEvents("unknown pubsub", "mytopic","text/plain", "message").block());
     }
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void testBulkPublish(boolean useGrpc) throws Exception {
+  @Test
+  public void testBulkPublish() throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
         SubscriberService.class,
         true,
         60000));
-    // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      System.out.println("HTTP BulkPublish is not implemented. So skipping tests");
-      return;
-    }
     DaprObjectSerializer serializer = new DaprObjectSerializer() {
       @Override
       public byte[] serialize(Object o) throws JsonProcessingException {
@@ -186,8 +152,8 @@ public class PubSubIT extends BaseIT {
         return "application/json";
       }
     };
-    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build();
-         DaprPreviewClient previewClient = new DaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build();
+         DaprPreviewClient previewClient = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).buildPreviewClient()) {
       // Only for the gRPC test
       // Send a multiple messages on one topic in messagebus pubsub via publishEvents API.
       List<String> messages = new ArrayList<>();
@@ -290,21 +256,14 @@ public class PubSubIT extends BaseIT {
 
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void testPubSub(boolean useGrpc) throws Exception {
+  @Test
+  public void testPubSub() throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
         SubscriberService.class,
         true,
         60000));
-    // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
     DaprObjectSerializer serializer = new DaprObjectSerializer() {
       @Override
@@ -324,7 +283,7 @@ public class PubSubIT extends BaseIT {
     };
 
     // Send a batch of messages on one topic
-    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TOPIC_NAME);
         //Publishing messages
@@ -511,21 +470,14 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void testPubSubBinary(boolean useGrpc) throws Exception {
+  @Test
+  public void testPubSubBinary() throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
         SubscriberService.class,
         true,
         60000));
-    // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
     DaprObjectSerializer serializer = new DaprObjectSerializer() {
       @Override
@@ -543,7 +495,7 @@ public class PubSubIT extends BaseIT {
         return "application/octet-stream";
       }
     };
-    try (DaprClient client = new DaprClientBuilder().withObjectSerializer(serializer).build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().withObjectSerializer(serializer).build()) {
       client.publishEvent(
           PUBSUB_NAME,
           BINARY_TOPIC_NAME,
@@ -553,7 +505,7 @@ public class PubSubIT extends BaseIT {
 
     Thread.sleep(3000);
 
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + BINARY_TOPIC_NAME);
         final List<CloudEvent> messages = client.invokeMethod(
@@ -568,20 +520,14 @@ public class PubSubIT extends BaseIT {
     }
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void testPubSubTTLMetadata(boolean useGrpc) throws Exception {
+  @Test
+  public void testPubSubTTLMetadata() throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         60000));
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
     // Send a batch of messages on one topic, all to be expired in 1 second.
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TTL_TOPIC_NAME);
         //Publishing messages
@@ -589,7 +535,7 @@ public class PubSubIT extends BaseIT {
             PUBSUB_NAME,
             TTL_TOPIC_NAME,
             message,
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "1")).block();
+            Map.of(Metadata.TTL_IN_SECONDS, "1")).block();
         System.out.println(String.format("Published message: '%s' to topic '%s' pubsub_name '%s'", message, TOPIC_NAME, PUBSUB_NAME));
       }
     }
@@ -605,17 +551,12 @@ public class PubSubIT extends BaseIT {
         SubscriberService.class,
         true,
         60000));
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
     // Sleeps for five seconds to give subscriber a chance to receive messages.
     Thread.sleep(5000);
 
     final String appId = daprRun.getAppName();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + TTL_TOPIC_NAME);
         final List<String> messages = client.invokeMethod(appId, "messages/" + TTL_TOPIC_NAME, null, HttpExtension.GET, List.class).block();
@@ -626,23 +567,17 @@ public class PubSubIT extends BaseIT {
     daprRun.stop();
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void testPubSubBulkSubscribe(boolean useGrpc) throws Exception {
+  @Test
+  public void testPubSubBulkSubscribe() throws Exception {
     DaprRun daprRun = closeLater(startDaprApp(
             this.getClass().getSimpleName(),
             SubscriberService.SUCCESS_MESSAGE,
             SubscriberService.class,
             true,
             60000));
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
     // Send a batch of messages on one topic.
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, BULK_SUB_TOPIC_NAME);
         // Publishing messages
@@ -656,7 +591,7 @@ public class PubSubIT extends BaseIT {
     Thread.sleep(5000);
 
     final String appId = daprRun.getAppName();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + BULK_SUB_TOPIC_NAME);
 
@@ -689,21 +624,14 @@ public class PubSubIT extends BaseIT {
     daprRun.stop();
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void testLongValues(boolean useGrpc) throws Exception {
+  @Test
+  public void testLongValues() throws Exception {
     final DaprRun daprRun = closeLater(startDaprApp(
         this.getClass().getSimpleName(),
         SubscriberService.SUCCESS_MESSAGE,
         SubscriberService.class,
         true,
         60000));
-    // At this point, it is guaranteed that the service above is running and all ports being listened to.
-    if (useGrpc) {
-      daprRun.switchToGRPC();
-    } else {
-      daprRun.switchToHTTP();
-    }
 
     Random random = new Random(590518626939830271L);
     Set<ConvertToLong> values = new HashSet<>();
@@ -716,7 +644,7 @@ public class PubSubIT extends BaseIT {
       values.add(val);
     }
     Iterator<ConvertToLong> valuesIt = values.iterator();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         ConvertToLong value = valuesIt.next();
         System.out.println("The long value sent " + value.getValue());
@@ -725,7 +653,7 @@ public class PubSubIT extends BaseIT {
             PUBSUB_NAME,
             LONG_TOPIC_NAME,
             value,
-            Collections.singletonMap(Metadata.TTL_IN_SECONDS, "30")).block();
+            Map.of(Metadata.TTL_IN_SECONDS, "30")).block();
 
         try {
           Thread.sleep((long) (1000 * Math.random()));
@@ -738,7 +666,7 @@ public class PubSubIT extends BaseIT {
     }
 
     Set<ConvertToLong> actual = new HashSet<>();
-    try (DaprClient client = new DaprClientBuilder().build()) {
+    try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
       callWithRetry(() -> {
         System.out.println("Checking results for topic " + LONG_TOPIC_NAME);
         final List<CloudEvent<ConvertToLong>> messages = client.invokeMethod(

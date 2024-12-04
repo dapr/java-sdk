@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.actors.client;
 
-import io.dapr.client.DaprApiProtocol;
-import io.dapr.client.DaprHttpBuilder;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
 import io.dapr.utils.Version;
@@ -22,16 +20,15 @@ import io.dapr.v1.DaprGrpc;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Holds a client for Dapr sidecar communication. ActorClient should be reused.
  */
 public class ActorClient implements AutoCloseable {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ActorClient.class);
 
   /**
    * gRPC channel for communication with Dapr sidecar.
@@ -47,7 +44,7 @@ public class ActorClient implements AutoCloseable {
    * Instantiates a new channel for Dapr sidecar communication.
    */
   public ActorClient() {
-    this(null);
+    this(new Properties(), null);
   }
 
   /**
@@ -56,32 +53,57 @@ public class ActorClient implements AutoCloseable {
    * @param resiliencyOptions Client resiliency options.
    */
   public ActorClient(ResiliencyOptions resiliencyOptions) {
-    this(Properties.API_PROTOCOL.get(), resiliencyOptions);
+    this(new Properties(), resiliencyOptions);
   }
 
   /**
    * Instantiates a new channel for Dapr sidecar communication.
    *
-   * @param apiProtocol    Dapr's API protocol.
+   * @param overrideProperties Override properties.
+   */
+  public ActorClient(Properties overrideProperties) {
+    this(overrideProperties, null);
+  }
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   *
+   * @param overrideProperties Override properties.
    * @param resiliencyOptions Client resiliency options.
    */
-  private ActorClient(DaprApiProtocol apiProtocol, ResiliencyOptions resiliencyOptions) {
-    this(apiProtocol, buildManagedChannel(apiProtocol), resiliencyOptions);
+  public ActorClient(Properties overrideProperties, ResiliencyOptions resiliencyOptions) {
+    this(overrideProperties, null, resiliencyOptions);
   }
 
   /**
    * Instantiates a new channel for Dapr sidecar communication.
    *
-   * @param apiProtocol    Dapr's API protocol.
-   * @param grpcManagedChannel gRPC channel.
+   * @param overrideProperties Override properties.
+   * @param metadata gRPC metadata or HTTP headers for actor invocation.
    * @param resiliencyOptions Client resiliency options.
+   */
+  public ActorClient(Properties overrideProperties, Map<String, String> metadata, ResiliencyOptions resiliencyOptions) {
+    this(buildManagedChannel(overrideProperties),
+        metadata,
+        resiliencyOptions,
+        overrideProperties.getValue(Properties.API_TOKEN));
+  }
+
+  /**
+   * Instantiates a new channel for Dapr sidecar communication.
+   *
+   * @param grpcManagedChannel gRPC channel.
+   * @param metadata gRPC metadata or HTTP headers for actor invocation.
+   * @param resiliencyOptions Client resiliency options.
+   * @param daprApiToken Dapr API token.
    */
   private ActorClient(
-      DaprApiProtocol apiProtocol,
       ManagedChannel grpcManagedChannel,
-      ResiliencyOptions resiliencyOptions) {
+      Map<String, String> metadata,
+      ResiliencyOptions resiliencyOptions,
+      String daprApiToken) {
     this.grpcManagedChannel = grpcManagedChannel;
-    this.daprClient = buildDaprClient(apiProtocol, grpcManagedChannel, resiliencyOptions);
+    this.daprClient = buildDaprClient(grpcManagedChannel, metadata, resiliencyOptions, daprApiToken);
   }
 
   /**
@@ -110,20 +132,18 @@ public class ActorClient implements AutoCloseable {
   /**
    * Creates a GRPC managed channel (or null, if not applicable).
    *
-   * @param apiProtocol Dapr's API protocol.
+   * @param overrideProperties Overrides
    * @return GRPC managed channel or null.
    */
-  private static ManagedChannel buildManagedChannel(DaprApiProtocol apiProtocol) {
-    if (apiProtocol != DaprApiProtocol.GRPC) {
-      return null;
-    }
-
-    int port = Properties.GRPC_PORT.get();
+  private static ManagedChannel buildManagedChannel(Properties overrideProperties) {
+    int port = overrideProperties.getValue(Properties.GRPC_PORT);
     if (port <= 0) {
       throw new IllegalArgumentException("Invalid port.");
     }
 
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+    var sidecarHost = overrideProperties.getValue(Properties.SIDECAR_IP);
+
+    return ManagedChannelBuilder.forAddress(sidecarHost, port)
       .usePlaintext()
       .userAgent(Version.getSdkVersion())
       .build();
@@ -136,16 +156,14 @@ public class ActorClient implements AutoCloseable {
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   private static DaprClient buildDaprClient(
-      DaprApiProtocol apiProtocol,
       Channel grpcManagedChannel,
-      ResiliencyOptions resiliencyOptions) {
-    switch (apiProtocol) {
-      case GRPC: return new DaprGrpcClient(DaprGrpc.newStub(grpcManagedChannel), resiliencyOptions);
-      case HTTP: {
-        LOGGER.warn("HTTP client protocol is deprecated and will be removed in Dapr's Java SDK version 1.10.");
-        return new DaprHttpClient(new DaprHttpBuilder().build());
-      }
-      default: throw new IllegalStateException("Unsupported protocol: " + apiProtocol.name());
-    }
+      Map<String, String> metadata,
+      ResiliencyOptions resiliencyOptions,
+      String daprApiToken) {
+    return new DaprClientImpl(
+        DaprGrpc.newStub(grpcManagedChannel),
+        metadata == null ? null : Collections.unmodifiableMap(metadata),
+        resiliencyOptions,
+        daprApiToken);
   }
 }

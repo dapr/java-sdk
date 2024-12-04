@@ -13,7 +13,7 @@ This example contains the follow classes:
  
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -171,7 +171,7 @@ timeout_seconds: 90
 
 Now, execute the following script in order to run DemoActorService:
 ```sh
-dapr run --components-path ./components/actors --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
+dapr run --resources-path ./components/actors --app-id demoactorservice --app-port 3000 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorService -p 3000
 ```
 <!-- END_STEP -->
 ### Running the Actor client
@@ -252,7 +252,7 @@ timeout_seconds: 45
 
 
 ```sh
-dapr run --components-path ./components/actors --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
+dapr run --resources-path ./components/actors --app-id demoactorclient -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.actors.DemoActorClient
 ```
 
 <!-- END_STEP -->

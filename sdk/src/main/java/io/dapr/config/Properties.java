@@ -13,11 +13,13 @@ limitations under the License.
 
 package io.dapr.config;
 
-import io.dapr.client.DaprApiProtocol;
+import io.dapr.utils.NetworkUtils;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Global properties for Dapr's SDK, using Supplier so they are dynamically resolved.
@@ -27,7 +29,7 @@ public class Properties {
   /**
    * Dapr's default IP for HTTP and gRPC communication.
    */
-  private static final String DEFAULT_SIDECAR_IP = "127.0.0.1";
+  private static final String DEFAULT_SIDECAR_IP = NetworkUtils.getHostLoopbackAddress();
 
   /**
    * Dapr's default HTTP port.
@@ -48,16 +50,6 @@ public class Properties {
    * Dapr's default timeout in seconds.
    */
   private static final Duration DEFAULT_API_TIMEOUT = Duration.ofMillis(0L);
-
-  /**
-   * Dapr's default use of gRPC or HTTP.
-   */
-  private static final DaprApiProtocol DEFAULT_API_PROTOCOL = DaprApiProtocol.GRPC;
-
-  /**
-   * Dapr's default use of gRPC or HTTP for Dapr's method invocation APIs.
-   */
-  private static final DaprApiProtocol DEFAULT_API_METHOD_INVOCATION_PROTOCOL = DaprApiProtocol.HTTP;
 
   /**
    * Dapr's default String encoding: UTF-8.
@@ -143,28 +135,6 @@ public class Properties {
       DEFAULT_API_TIMEOUT);
 
   /**
-   * Determines if Dapr client will use gRPC or HTTP to talk to Dapr's side car.
-   * @deprecated This attribute will be deleted at SDK version 1.10.
-   */
-  @Deprecated
-  public static final Property<DaprApiProtocol> API_PROTOCOL = new GenericProperty<>(
-      "dapr.api.protocol",
-      "DAPR_API_PROTOCOL",
-      DEFAULT_API_PROTOCOL,
-      (s) -> DaprApiProtocol.valueOf(s.toUpperCase()));
-
-  /**
-   * Determines if Dapr client should use gRPC or HTTP for Dapr's service method invocation APIs.
-   * @deprecated This attribute will be deleted at SDK version 1.10.
-   */
-  @Deprecated
-  public static final Property<DaprApiProtocol> API_METHOD_INVOCATION_PROTOCOL = new GenericProperty<>(
-      "dapr.api.methodInvocation.protocol",
-      "DAPR_API_METHOD_INVOCATION_PROTOCOL",
-      DEFAULT_API_METHOD_INVOCATION_PROTOCOL,
-      (s) -> DaprApiProtocol.valueOf(s.toUpperCase()));
-
-  /**
    * API token for authentication between App and Dapr's side car.
    */
   public static final Property<String> API_TOKEN = new StringProperty(
@@ -204,4 +174,46 @@ public class Properties {
           "dapr.http.client.maxIdleConnections",
           "DAPR_HTTP_CLIENT_MAX_IDLE_CONNECTIONS",
           DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
+
+  /**
+   * Mechanism to override properties set in a static context.
+   */
+  private final Map<String, String> overrides;
+
+  /**
+   * Creates a new instance to handle Properties per instance.
+   */
+  public Properties() {
+    this.overrides = null;
+  }
+
+  /**
+   * Creates a new instance to handle Properties per instance.
+   * @param overridesInput to override static properties
+   */
+  public Properties(Map<?, String> overridesInput) {
+    this.overrides = overridesInput == null ? Map.of() :
+        Map.copyOf(overridesInput.entrySet().stream()
+            .filter(e -> e.getKey() != null)
+            .filter(e -> e.getValue() != null)
+            .collect(Collectors.toMap(
+                entry -> entry.getKey().toString(),
+                entry -> entry.getValue()
+            )));
+  }
+
+  /**
+   * Gets a property value taking in consideration the override values.
+   * @param <T> type of the property that we want to get the value from
+   * @param property to override static property value from overrides
+   * @return the property's value
+   */
+  public <T> T getValue(Property<T> property) {
+    if (overrides != null) {
+      String override = overrides.get(property.getName());
+      return property.get(override);
+    } else {
+      return property.get();
+    }
+  }
 }

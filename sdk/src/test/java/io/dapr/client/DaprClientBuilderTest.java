@@ -13,12 +13,15 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprErrorDetails;
+import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +37,17 @@ public class DaprClientBuilderTest {
     daprClientBuilder.withStateSerializer(stateSerializer);
     DaprClient daprClient = daprClientBuilder.build();
     assertNotNull(daprClient);
+  }
+
+  @Test
+  public void buildWithOverrideSidecarIP() {
+    DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
+    daprClientBuilder.withPropertyOverride(Properties.SIDECAR_IP, "unknownhost");
+    DaprClient daprClient = daprClientBuilder.build();
+    assertNotNull(daprClient);
+    DaprException thrown = assertThrows(DaprException.class, () -> { daprClient.getMetadata().block(); });
+    assertTrue(thrown.toString().contains("UNAVAILABLE"), thrown.toString());
+
   }
 
   @Test

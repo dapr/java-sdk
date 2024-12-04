@@ -15,13 +15,15 @@ package io.dapr.client;
 
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
+import io.dapr.config.Property;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.ManagedChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A builder for the DaprClient,
@@ -29,17 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DaprClientBuilder {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DaprClientBuilder.class);
-
-  /**
-   * Determine if this builder will create GRPC clients instead of HTTP clients.
-   */
-  private final DaprApiProtocol apiProtocol;
-
-  /**
-   * Determine if this builder will use HTTP client for service method invocation APIs.
-   */
-  private final DaprApiProtocol methodInvocationApiProtocol;
+  private final Map<String, String> propertyOverrides = new HashMap<>();
 
   /**
    * Builder for Dapr's HTTP Client.
@@ -70,8 +62,6 @@ public class DaprClientBuilder {
   public DaprClientBuilder() {
     this.objectSerializer = new DefaultObjectSerializer();
     this.stateSerializer = new DefaultObjectSerializer();
-    this.apiProtocol = Properties.API_PROTOCOL.get();
-    this.methodInvocationApiProtocol = Properties.API_METHOD_INVOCATION_PROTOCOL.get();
     this.daprHttpBuilder = new DaprHttpBuilder();
   }
 
@@ -123,21 +113,36 @@ public class DaprClientBuilder {
   }
 
   /**
+   * Allow to set up properties override for static properties.
+   * @param property that we want to override
+   * @param value the value of such property
+   * @return an instance of the setup Client
+   */
+  public DaprClientBuilder withPropertyOverride(Property<?> property, String value) {
+    this.propertyOverrides.put(property.getName(), value);
+    return this;
+  }
+
+  /**
+   * Allow to set up properties override for static properties.
+   * @param overrides properties to override
+   * @return an instance of the setup Client
+   */
+  public DaprClientBuilder withPropertyOverrides(Map<Property<?>, String> overrides) {
+    for (final Map.Entry<Property<?>, String> override : overrides.entrySet()) {
+      this.propertyOverrides.put(override.getKey().getName(), override.getValue());
+    }
+    return this;
+  }
+
+  /**
    * Build an instance of the Client based on the provided setup.
    *
    * @return an instance of the setup Client
    * @throws java.lang.IllegalStateException if any required field is missing
    */
   public DaprClient build() {
-    if (this.apiProtocol == DaprApiProtocol.HTTP) {
-      LOGGER.warn("HTTP client protocol is deprecated and will be removed in Dapr's Java SDK version 1.10.");
-    }
-
-    if (this.apiProtocol != this.methodInvocationApiProtocol) {
-      return new DaprClientProxy(buildDaprClient(this.apiProtocol), buildDaprClient(this.methodInvocationApiProtocol));
-    }
-
-    return buildDaprClient(this.apiProtocol);
+    return buildDaprClient();
   }
 
   /**
@@ -147,26 +152,7 @@ public class DaprClientBuilder {
    * @throws IllegalStateException if any required field is missing
    */
   public DaprPreviewClient buildPreviewClient() {
-    return (DaprPreviewClient) buildDaprClient(this.apiProtocol);
-  }
-
-  /**
-   * Creates an instance of a Dapr Client based on the chosen protocol.
-   *
-   * @param protocol Dapr API's protocol.
-   * @return the GRPC Client.
-   * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
-   */
-  private DaprClient buildDaprClient(DaprApiProtocol protocol) {
-    if (protocol == null) {
-      throw new IllegalStateException("Protocol is required.");
-    }
-
-    switch (protocol) {
-      case GRPC: return buildDaprClientGrpc();
-      case HTTP: return buildDaprClientHttp();
-      default: throw new IllegalStateException("Unsupported protocol: " + protocol.name());
-    }
+    return buildDaprClient();
   }
 
   /**
@@ -175,25 +161,19 @@ public class DaprClientBuilder {
    * @return the GRPC Client.
    * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
    */
-  private DaprClient buildDaprClientGrpc() {
-    final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel();
+  private DaprClientImpl buildDaprClient() {
+    final Properties properties = new Properties(this.propertyOverrides);
+    final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    final DaprHttp daprHttp = this.daprHttpBuilder.build(properties);
     final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    return new DaprClientGrpc(
+    return new DaprClientImpl(
         channelFacade,
         asyncStub,
+        daprHttp,
         this.objectSerializer,
         this.stateSerializer,
-        this.resiliencyOptions);
+        this.resiliencyOptions,
+        properties.getValue(Properties.API_TOKEN));
   }
-
-  /**
-   * Creates and instance of DaprClient over HTTP.
-   *
-   * @return DaprClient over HTTP.
-   */
-  private DaprClient buildDaprClientHttp() {
-    return new DaprClientHttp(this.daprHttpBuilder.build(), this.objectSerializer, this.stateSerializer);
-  }
-
 }

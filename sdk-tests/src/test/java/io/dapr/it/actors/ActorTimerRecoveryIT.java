@@ -25,15 +25,14 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
-import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static io.dapr.it.actors.MyActorTestUtils.validateMessageContent;
+import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ActorTimerRecoveryIT extends BaseIT {
@@ -60,7 +59,7 @@ public class ActorTimerRecoveryIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(runs.right.newActorClient()));
     logger.debug("Creating actorId");
     ActorId actorId = new ActorId(UUID.randomUUID().toString());
     logger.debug("Building proxy");
@@ -82,21 +81,17 @@ public class ActorTimerRecoveryIT extends BaseIT {
 
     // Restarts app only.
     runs.left.stop();
-
-    // Pause a bit to let placements settle.
-    logger.info("Pausing 10 seconds to let placements settle.");
-    Thread.sleep(Duration.ofSeconds(10).toMillis());
-
+    // Cannot sleep between app's stop and start since it can trigger unhealthy actor in runtime and lose timers.
+    // Timers will survive only if the restart is "quick" and survives the runtime's actor health check.
+    // Starting in 1.13, sidecar is more sensitive to an app restart and will not keep actors active for "too long".
     runs.left.start();
 
-    logger.debug("Pausing 10 seconds to allow timer to fire");
-    Thread.sleep(10000);
     final List<MethodEntryTracker> newLogs = new ArrayList<>();
     callWithRetry(() -> {
       newLogs.clear();
       newLogs.addAll(fetchMethodCallLogs(proxy));
       validateMethodCalls(newLogs, METHOD_NAME, 3);
-    }, 5000);
+    }, 10000);
 
     // Check that the restart actually happened by confirming the old logs are not in the new logs.
     for (MethodEntryTracker oldLog: logs) {

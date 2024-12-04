@@ -17,9 +17,10 @@ package io.dapr.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -27,6 +28,8 @@ import io.dapr.client.domain.UnlockResponseStatus;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
+import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.Status;
@@ -44,9 +47,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,15 +82,17 @@ public class DaprPreviewClientGrpcTest {
 
 	private GrpcChannelFacade channel;
 	private DaprGrpc.DaprStub daprStub;
+	private DaprHttp daprHttp;
 	private DaprPreviewClient previewClient;
 
 	@BeforeEach
 	public void setup() throws IOException {
 		channel = mock(GrpcChannelFacade.class);
 		daprStub = mock(DaprGrpc.DaprStub.class);
+		daprHttp = mock(DaprHttp.class);
 		when(daprStub.withInterceptors(any())).thenReturn(daprStub);
-		previewClient = new DaprClientGrpc(
-				channel, daprStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+		previewClient = new DaprClientImpl(
+				channel, daprStub, daprHttp, new DefaultObjectSerializer(), new DefaultObjectSerializer());
 		doNothing().when(channel).close();
 	}
 
@@ -147,7 +157,7 @@ public class DaprPreviewClientGrpcTest {
 	@Test
 	public void publishEventsSerializeException() throws IOException {
 		DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
-		previewClient = new DaprClientGrpc(channel, daprStub, mockSerializer, new DefaultObjectSerializer());
+		previewClient = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, new DefaultObjectSerializer());
 		doAnswer((Answer<Void>) invocation -> {
 			StreamObserver<DaprProtos.BulkPublishResponse> observer =
 					(StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
@@ -415,6 +425,120 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals(UnlockResponseStatus.SUCCESS, result);
 	}
 
+	@Test
+	public void subscribeEventTest() throws Exception {
+		var numEvents = 100;
+		var numErrors = 3;
+		var numDrops = 2;
+
+		var pubsubName = "pubsubName";
+		var topicName = "topicName";
+		var data = "my message";
+
+		var started = new Semaphore(0);
+
+		doAnswer((Answer<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
+			StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1> observer =
+					(StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+			var emitterThread = new Thread(() -> {
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+				for (int i = 0; i < numEvents; i++) {
+					observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+							.setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+									.setId(Integer.toString(i))
+									.setPubsubName(pubsubName)
+									.setTopic(topicName)
+									.setData(ByteString.copyFromUtf8("\"" + data + "\""))
+									.setDataContentType("application/json")
+									.build())
+							.build());
+				}
+
+				for (int i = 0; i < numDrops; i++) {
+					// Bad messages
+					observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
+							.setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+									.setId(UUID.randomUUID().toString())
+									.setPubsubName("bad pubsub")
+									.setTopic("bad topic")
+									.setData(ByteString.copyFromUtf8("\"\""))
+									.setDataContentType("application/json")
+									.build())
+							.build());
+				}
+				observer.onCompleted();
+			});
+			emitterThread.start();
+			return new StreamObserver<>() {
+
+				@Override
+				public void onNext(DaprProtos.SubscribeTopicEventsRequestAlpha1 subscribeTopicEventsRequestAlpha1) {
+					started.release();
+				}
+
+				@Override
+				public void onError(Throwable throwable) {
+				}
+
+				@Override
+				public void onCompleted() {
+				}
+			};
+		}).when(daprStub).subscribeTopicEventsAlpha1(any(StreamObserver.class));
+
+		final Set<String> success = Collections.synchronizedSet(new HashSet<>());
+		final Set<String> errors = Collections.synchronizedSet(new HashSet<>());
+		final AtomicInteger dropCounter = new AtomicInteger();
+		final Semaphore gotAll = new Semaphore(0);
+
+		final AtomicInteger errorsToBeEmitted = new AtomicInteger(numErrors);
+
+		var subscription = previewClient.subscribeToEvents(
+				"pubsubname",
+				"topic",
+				new SubscriptionListener<>() {
+					@Override
+					public Mono<Status> onEvent(CloudEvent<String> event) {
+						if (event.getPubsubName().equals(pubsubName) &&
+						event.getTopic().equals(topicName) &&
+						event.getData().equals(data)) {
+
+							// Simulate an error
+							if ((success.size() == 4 /* some random entry */) && errorsToBeEmitted.decrementAndGet() >= 0) {
+								throw new RuntimeException("simulated exception on event " + event.getId());
+							}
+
+							success.add(event.getId());
+							if (success.size() >= numEvents) {
+								gotAll.release();
+							}
+							return Mono.just(Status.SUCCESS);
+						}
+
+						dropCounter.incrementAndGet();
+						return Mono.just(Status.DROP);
+					}
+
+					@Override
+					public void onError(RuntimeException exception) {
+						errors.add(exception.getMessage());
+					}
+
+				},
+				TypeRef.STRING);
+
+		gotAll.acquire();
+		subscription.close();
+
+		assertEquals(numEvents, success.size());
+		assertEquals(numDrops, dropCounter.get());
+		assertEquals(numErrors, errors.size());
+	}
 	private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)
 			throws JsonProcessingException {
 		List<DaprProtos.QueryStateItem> items = new ArrayList<>();

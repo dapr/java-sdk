@@ -8,11 +8,11 @@ import io.dapr.it.DaprRun;
 import io.dapr.it.tracing.Validation;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -26,7 +26,8 @@ public class TracingIT extends BaseIT {
      */
     private DaprRun daprRun = null;
 
-    public void setup(boolean useGrpc) throws Exception {
+    @BeforeEach
+    public void setup() throws Exception {
         daprRun = startDaprApp(
           TracingIT.class.getSimpleName() + "http",
           Service.SUCCESS_MESSAGE,
@@ -34,37 +35,27 @@ public class TracingIT extends BaseIT {
           true,
           30000);
 
-        if (useGrpc) {
-            daprRun.switchToGRPC();
-        } else {
-            daprRun.switchToHTTP();
-        }
-
         // Wait since service might be ready even after port is available.
         Thread.sleep(2000);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testInvoke(boolean useGrpc) throws Exception {
-        setup(useGrpc);
+    @Test
+    public void testInvoke() throws Exception {
+        OpenTelemetry openTelemetry = createOpenTelemetry(OpenTelemetryConfig.SERVICE_NAME);
+        Tracer tracer = openTelemetry.getTracer(OpenTelemetryConfig.TRACER_NAME);
+        String spanName = UUID.randomUUID().toString();
+        Span span = tracer.spanBuilder(spanName).setSpanKind(SpanKind.CLIENT).startSpan();
 
-        final OpenTelemetry openTelemetry = createOpenTelemetry(OpenTelemetryConfig.SERVICE_NAME);
-        final Tracer tracer = openTelemetry.getTracer(OpenTelemetryConfig.TRACER_NAME);
-
-        final String spanName = UUID.randomUUID().toString();
-        Span span = tracer.spanBuilder(spanName).setSpanKind(Span.Kind.CLIENT).startSpan();
-
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             try (Scope scope = span.makeCurrent()) {
                 client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
-                    .contextWrite(getReactorContext())
+                    .contextWrite(getReactorContext(openTelemetry))
                     .block();
             }
         }
+
         span.end();
-        OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
 
         Validation.validate(spanName, "calllocal/tracingithttp-service/sleep");
     }

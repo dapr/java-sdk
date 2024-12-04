@@ -13,17 +13,19 @@ limitations under the License.
 
 package io.dapr.client;
 
+import io.dapr.serializer.DefaultObjectSerializer;
+
 /**
  * Builder for DaprClient used in tests only.
  */
 public class DaprClientTestBuilder {
 
     /**
-     * Builds a DaprClient.
+     * Builds a DaprClient only for HTTP calls.
      * @param client DaprHttp used for http calls (can be mocked or stubbed)
      * @return New instance of DaprClient.
      */
-    public static DaprClient buildHttpClient(DaprHttp client) {
-        return new DaprClientHttp(client);
+    public static DaprClient buildClientForHttpOnly(DaprHttp client) {
+        return new DaprClientImpl(null, null, client, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     }
 }

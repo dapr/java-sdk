@@ -18,6 +18,7 @@ import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskFailedException;
 import com.microsoft.durabletask.TaskOptions;
+import io.dapr.workflows.saga.SagaContext;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -27,6 +28,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Context object used by workflow implementations to perform actions such as scheduling activities,
@@ -514,4 +516,27 @@ public interface WorkflowContext {
    *                                  history, otherwise {@code false}
    */
   void continueAsNew(Object input, boolean preserveUnprocessedEvents);
+
+  /**
+   * Create a new UUID that is safe for replay within a workflow.
+   *
+   * <p>
+   * The default implementation of this method creates a name-based UUID
+   * using the algorithm from RFC 4122 §4.3. The name input used to generate
+   * this value is a combination of the workflow instance ID and an
+   * internally managed sequence number.
+   *</p>
+   * @return a deterministic UUID
+   */
+  default UUID newUuid() {
+    throw new RuntimeException("No implementation found.");
+  }
+
+  /**
+   * get saga context.
+   * 
+   * @return saga context
+   * @throws UnsupportedOperationException if saga is not enabled.
+   */
+  SagaContext getSagaContext();
 }

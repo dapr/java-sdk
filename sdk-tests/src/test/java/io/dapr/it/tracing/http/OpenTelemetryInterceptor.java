@@ -15,16 +15,16 @@ package io.dapr.it.tracing.http;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import javax.annotation.Nullable;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.Collections;
 
 @Component
@@ -33,21 +33,20 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
   @Autowired
   private OpenTelemetry openTelemetry;
 
-  private static final TextMapPropagator.Getter<HttpServletRequest> HTTP_SERVLET_REQUEST_GETTER =
-      new TextMapPropagator.Getter<>() {
+  // Implementation for springboot 3.0, which uses jakarta.servlet instead of javax.servlet
+  private static final TextMapGetter<HttpServletRequest> JAKARTA_HTTP_SERVLET_REQUEST_GETTER =
+      new TextMapGetter<>() {
         @Override
         public Iterable<String> keys(HttpServletRequest carrier) {
           return Collections.list(carrier.getHeaderNames());
         }
 
-        @Nullable
         @Override
-        public String get(@Nullable HttpServletRequest carrier, String key) {
+        public String get(HttpServletRequest carrier, String key) {
           return carrier.getHeader(key);
       }
   };
 
-  @Override
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
     final TextMapPropagator textFormat = openTelemetry.getPropagators().getTextMapPropagator();
@@ -57,12 +56,11 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
       return true;
     }
 
-    Context context = textFormat.extract(Context.current(), request, HTTP_SERVLET_REQUEST_GETTER);
+    Context context = textFormat.extract(Context.current(), request, JAKARTA_HTTP_SERVLET_REQUEST_GETTER);
     request.setAttribute("opentelemetry-context", context);
     return true;
   }
 
-  @Override
   public void postHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler,
       ModelAndView modelAndView) {

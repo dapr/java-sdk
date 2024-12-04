@@ -18,6 +18,9 @@ import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
+import io.dapr.workflows.saga.DaprSagaContextImpl;
+import io.dapr.workflows.saga.Saga;
+import io.dapr.workflows.saga.SagaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
@@ -27,10 +30,12 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 public class DaprWorkflowContextImpl implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
   private final Logger logger;
+  private final Saga saga;
 
   /**
    * Constructor for DaprWorkflowContextImpl.
@@ -50,6 +55,23 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * @throws IllegalArgumentException if context or logger is null
    */
   public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
+    this(context, logger, null);
+  }
+
+  public DaprWorkflowContextImpl(TaskOrchestrationContext context, Saga saga) throws IllegalArgumentException {
+    this(context, LoggerFactory.getLogger(WorkflowContext.class), saga);
+  }
+
+  /**
+   * Constructor for DaprWorkflowContextImpl.
+   *
+   * @param context TaskOrchestrationContext
+   * @param logger  Logger
+   * @param saga    saga object, if null, saga is disabled
+   * @throws IllegalArgumentException if context or logger is null
+   */
+  public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger, Saga saga)
+      throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
@@ -59,6 +81,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
 
     this.innerContext = context;
     this.logger = logger;
+    this.saga = saga;
   }
 
   /**
@@ -109,15 +132,20 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   }
 
   /**
-   * Waits for an event to be raised named {@code name} and returns a {@link Task} that completes when the event is
+   * Waits for an event to be raised named {@code name} and returns a {@link Task}
+   * that completes when the event is
    * received or is canceled when {@code timeout} expires.
    *
-   * <p>See {@link #waitForExternalEvent(String, Duration, Class)} for a full description.
+   * <p>See {@link #waitForExternalEvent(String, Duration, Class)} for a full
+   * description.
    *
    * @param name    the case-insensitive name of the event to wait for
-   * @param timeout the amount of time to wait before canceling the returned {@code Task}
-   * @return a new {@link Task} that completes when the external event is received or when {@code timeout} expires
-   * @throws TaskCanceledException if the specified {@code timeout} value expires before the event is received
+   * @param timeout the amount of time to wait before canceling the returned
+   *                {@code Task}
+   * @return a new {@link Task} that completes when the external event is received
+   *         or when {@code timeout} expires
+   * @throws TaskCanceledException if the specified {@code timeout} value expires
+   *                               before the event is received
    */
   @Override
   public <V> Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
@@ -125,10 +153,12 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   }
 
   /**
-   * Waits for an event to be raised named {@code name} and returns a {@link Task} that completes when the event is
+   * Waits for an event to be raised named {@code name} and returns a {@link Task}
+   * that completes when the event is
    * received.
    *
-   * <p>See {@link #waitForExternalEvent(String, Duration, Class)} for a full description.
+   * <p>See {@link #waitForExternalEvent(String, Duration, Class)} for a full
+   * description.
    *
    * @param name the case-insensitive name of the event to wait for
    * @return a new {@link Task} that completes when the external event is received
@@ -171,7 +201,6 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
     return this.innerContext.createTimer(duration);
   }
 
-
   /**
    * {@inheritDoc}
    */
@@ -184,7 +213,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    */
   @Override
   public <V> Task<V> callSubWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
-                                     @Nullable TaskOptions options, Class<V> returnType) {
+      @Nullable TaskOptions options, Class<V> returnType) {
 
     return this.innerContext.callSubOrchestrator(name, input, instanceID, options, returnType);
   }
@@ -203,5 +232,22 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
   @Override
   public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
     this.innerContext.continueAsNew(input, preserveUnprocessedEvents);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public UUID newUuid() {
+    return this.innerContext.newUUID();
+  }
+
+  @Override
+  public SagaContext getSagaContext() {
+    if (this.saga == null) {
+      throw new UnsupportedOperationException("Saga is not enabled");
+    }
+
+    return new DaprSagaContextImpl(this.saga, this);
   }
 }

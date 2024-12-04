@@ -14,12 +14,14 @@ limitations under the License.
 package io.dapr.it;
 
 import io.dapr.config.Properties;
+import io.dapr.config.Property;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class DaprPorts {
@@ -30,10 +32,18 @@ public class DaprPorts {
 
   private final Integer appPort;
 
+  private final Map<Property<?>, String> overrides;
+
   private DaprPorts(Integer appPort, Integer httpPort, Integer grpcPort) {
     this.grpcPort = grpcPort;
     this.httpPort = httpPort;
     this.appPort = appPort;
+    this.overrides = Map.of(
+      Properties.GRPC_PORT, grpcPort.toString(),
+      Properties.HTTP_PORT, httpPort.toString(),
+      Properties.HTTP_ENDPOINT, "http://127.0.0.1:" + httpPort,
+      Properties.GRPC_ENDPOINT, "127.0.0.1:" + grpcPort
+    );
   }
 
   public static DaprPorts build(boolean appPort, boolean httpPort, boolean grpcPort) {
@@ -48,20 +58,6 @@ public class DaprPorts {
     }
   }
 
-  public void use() {
-    if (this.httpPort != null) {
-      System.getProperties().setProperty(Properties.HTTP_PORT.getName(), String.valueOf(this.httpPort));
-      System.getProperties().setProperty(
-              Properties.HTTP_ENDPOINT.getName(), "http://127.0.0.1:" + this.httpPort);
-    }
-
-    if (this.grpcPort != null) {
-      System.getProperties().setProperty(Properties.GRPC_PORT.getName(), String.valueOf(this.grpcPort));
-      System.getProperties().setProperty(
-              Properties.GRPC_ENDPOINT.getName(), "http://127.0.0.1:" + this.grpcPort);
-    }
-  }
-
   public Integer getGrpcPort() {
     return grpcPort;
   }
@@ -72,6 +68,10 @@ public class DaprPorts {
 
   public Integer getAppPort() {
     return appPort;
+  }
+
+  public Map<Property<?>, String> getPropertyOverrides() {
+    return this.overrides;
   }
 
   private static Set<Integer> findFreePorts(int n) throws IOException {

@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.utils;
 
+import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
@@ -58,10 +59,32 @@ public final class TestUtils {
     Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
   }
 
+  public static <T extends Throwable> void assertThrowsDaprException(
+          Class<T> expectedType,
+          String expectedErrorCode,
+          String expectedErrorMessage,
+          DaprErrorDetails expectedStatusDetails,
+          Executable executable) {
+    DaprException daprException = Assertions.assertThrows(DaprException.class, executable);
+    Assertions.assertNotNull(daprException.getCause());
+    Assertions.assertEquals(expectedType, daprException.getCause().getClass());
+    Assertions.assertEquals(expectedErrorCode, daprException.getErrorCode());
+    Assertions.assertEquals(expectedErrorMessage, daprException.getMessage());
+    Assertions.assertEquals(expectedStatusDetails, daprException.getErrorDetails());
+  }
+
   public static int findFreePort() throws IOException {
     try (ServerSocket socket = new ServerSocket(0)) {
       socket.setReuseAddress(true);
       return socket.getLocalPort();
     }
+  }
+
+  public static String formatIpAddress(final String ipAddress) {
+    String formattedIpAddress = ipAddress;
+    if(NetworkUtils.isIPv6(ipAddress)) {
+      formattedIpAddress = "[" + ipAddress + "]"; // per URL spec https://url.spec.whatwg.org/#host-writing
+    }
+    return formattedIpAddress;
   }
 }

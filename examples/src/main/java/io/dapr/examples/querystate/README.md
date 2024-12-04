@@ -4,8 +4,11 @@ This sample illustrates the capabilities provided by Dapr Java SDK for querying 
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
-* Java JDK 11 (or greater): [Oracle JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11) or [OpenJDK](https://jdk.java.net/13/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
+* Java JDK 11 (or greater):
+    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
+    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
+    * [OpenJDK 11](https://jdk.java.net/11/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -32,6 +35,20 @@ cd examples
 ### Initialize Dapr
 
 Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
+### Run MongoDB
+
+<!-- STEP
+name: Setup mongo container
+sleep: 5
+-->
+
+```bash
+docker compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml up -d
+```
+
+<!-- END_STEP -->
+
 
 ### Running the State Client
 This example uses the Java SDK Dapr client in order to save bulk state and query state, in this case, an instance of a class. See the code snippets below:
@@ -243,7 +260,7 @@ sleep: 10
 
 Run this example with the following command:
 ```bash
-dapr run --components-path ./components/state --app-id query-state-example -H 3600 -- java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.querystate.QuerySavedState
+dapr run --resources-path ./components/state --app-id query-state-example -H 3600 -- java -Ddapr.api.protocol=HTTP -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.querystate.QuerySavedState
 ```
 
 <!-- END_STEP -->
@@ -278,6 +295,17 @@ name: Cleanup
 
 ```bash
 dapr stop --app-id query-state-example
+```
+<!-- END_STEP -->
+
+Then, stop MongoDB container.
+
+<!-- STEP
+name: Cleanup MongoDB containers
+-->
+
+```bash
+docker compose -f ./src/main/java/io/dapr/examples/querystate/docker-compose-single-mongo.yml down
 ```
 
 <!-- END_STEP -->

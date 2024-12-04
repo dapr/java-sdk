@@ -17,10 +17,12 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.actors.runtime.DaprClientHttpUtils;
-import io.dapr.client.DaprHttp;
-import io.dapr.client.DaprHttpBuilder;
+import io.dapr.config.Properties;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.app.MyActorService;
+import io.dapr.utils.Version;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -54,14 +56,15 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   @AfterEach
   public void cleanUpTestCase() {
     // Delete the reminder in case the test failed, otherwise it may interfere with future tests since it is persisted.
-    DaprHttp client = new DaprHttpBuilder().build();
-    System.out.println("Invoking during cleanup");
+    var channel = buildManagedChannel();
     try {
-      DaprClientHttpUtils.unregisterActorReminder(client, ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
-    } catch(Exception e) {
+      System.out.println("Invoking during cleanup");
+      DaprClientHttpUtils.unregisterActorReminder(channel, ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
+    } catch (Exception e) {
       e.printStackTrace();
+    } finally {
+      channel.shutdown();
     }
-
   }
 
   /**
@@ -77,7 +80,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   public void invokeOneActorMethodReminderAndTimer() throws Exception {
     System.out.println("Starting test 'actorTest1'");
 
-    startDaprApp(
+    var run = startDaprApp(
       ActorTurnBasedConcurrencyIT.class.getSimpleName(),
       MyActorService.SUCCESS_MESSAGE,
       MyActorService.class,
@@ -89,7 +92,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(ACTOR_ID);
     logger.debug("Building proxy");
@@ -224,5 +227,17 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
         throw new RuntimeException(errorMessage);
       }
     }
+  }
+
+  private static ManagedChannel buildManagedChannel() {
+    int port = Properties.GRPC_PORT.get();
+    if (port <= 0) {
+      throw new IllegalStateException("Invalid port.");
+    }
+
+    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
+        .usePlaintext()
+        .userAgent(Version.getSdkVersion())
+        .build();
   }
 }

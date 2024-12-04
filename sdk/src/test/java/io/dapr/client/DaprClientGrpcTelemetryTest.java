@@ -15,10 +15,10 @@ package io.dapr.client;
 
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.utils.TypeRef;
+import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprProtos;
 import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
@@ -28,25 +28,27 @@ import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import reactor.util.context.ContextView;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnableRuleMigrationSupport
 public class DaprClientGrpcTelemetryTest {
@@ -67,7 +69,16 @@ public class DaprClientGrpcTelemetryTest {
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
+  private DaprGrpc.DaprStub daprStub;
+
   private DaprClient client;
+
+  @AfterEach
+  public void teardown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
+  }
 
   public static Stream<Arguments> data() {
     return Stream.of(
@@ -137,9 +148,7 @@ null,
 
     // Create a client channel and register for automatic graceful shutdown.
     ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
-    DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    client = new DaprClientGrpc(
-        new GrpcChannelFacade(channel), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    daprStub = DaprGrpc.newStub(channel);
   }
 
   public void setup() throws IOException {
@@ -176,9 +185,15 @@ null,
 
     // Create a client channel and register for automatic graceful shutdown.
     ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
-    DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
-    client = new DaprClientGrpc(
-      new GrpcChannelFacade(channel), asyncStub, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+    this.daprStub = DaprGrpc.newStub(channel);
+  }
+
+
+  @AfterEach
+  public void tearDown() throws Exception {
+    if (client != null) {
+      client.close();
+    }
   }
 
   @ParameterizedTest
@@ -196,10 +211,7 @@ null,
       }
 
     final Context contextCopy = context;
-    InvokeMethodRequest req = new InvokeMethodRequest("appId", "method")
-        .setBody("request")
-        .setHttpExtension(HttpExtension.NONE);
-    Mono<Void> result = this.client.invokeMethod(req, TypeRef.get(Void.class))
+    Mono<Void> result = this.invoke()
         .contextWrite(it -> it.putAll(contextCopy));
     result.block();
   }
@@ -215,8 +227,42 @@ null,
     InvokeMethodRequest req = new InvokeMethodRequest("appId", "method")
       .setBody("request")
       .setHttpExtension(HttpExtension.NONE);
-    Mono<Void> result = this.client.invokeMethod(req, TypeRef.get(Void.class))
+    Mono<Void> result = this.invoke()
       .contextWrite(it -> it.putAll(contextCopy == null ? (ContextView) Context.empty() : contextCopy));
     result.block();
+  }
+
+  private Mono<Void> invoke() {
+    DaprProtos.InvokeServiceRequest req =
+        DaprProtos.InvokeServiceRequest.newBuilder()
+            .build();
+    return Mono.deferContextual(
+        context -> this.<CommonProtos.InvokeResponse>createMono(
+            it -> new DaprClientGrpcInterceptors().intercept(daprStub, context).invokeService(req, it)
+        )
+    ).then();
+  }
+
+  private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
+    return Mono.create(sink -> consumer.accept(createStreamObserver(sink)));
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
+    return new StreamObserver<T>() {
+      @Override
+      public void onNext(T value) {
+        sink.success(value);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        sink.error(new ExecutionException(t));
+      }
+
+      @Override
+      public void onCompleted() {
+        sink.success();
+      }
+    };
   }
 }

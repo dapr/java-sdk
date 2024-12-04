@@ -11,6 +11,8 @@ cascade:
   github_branch: master
 ---
 
+Dapr offers a variety of packages to help with the development of Java applications. Using them you can create Java clients, servers, and virtual actors with Dapr.
+
 ## Prerequisites
 
 - [Dapr CLI]({{< ref install-dapr-cli.md >}}) installed
@@ -44,19 +46,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.9.0</version>
+      <version>1.12.0</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.9.0</version>
+      <version>1.12.0</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.9.0</version>
+      <version>1.12.0</version>
     </dependency>
     ...
   </dependencies>
@@ -74,11 +76,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.9.0')
+    compile('io.dapr:dapr-sdk:1.12.0')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.9.0')
+    compile('io.dapr:dapr-sdk-actors:1.12.0')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.9.0')
+    compile('io.dapr:dapr-sdk-springboot:1.12.0')
 }
 ```
 
@@ -94,7 +96,7 @@ You can fix this by specifying a compatible `OkHttp` version in your project to 
 <dependency>
   <groupId>com.squareup.okhttp3</groupId>
   <artifactId>okhttp</artifactId>
-  <version>4.9.0</version>
+  <version>1.12.0</version>
 </dependency>
 ```
 
@@ -107,6 +109,37 @@ Put the Dapr Java SDK to the test. Walk through the Java quickstarts and tutoria
 | [Quickstarts]({{< ref quickstarts >}}) | Experience Dapr's API building blocks in just a few minutes using the Java SDK. |
 | [SDK samples](https://github.com/dapr/java-sdk/tree/master/examples) | Clone the SDK repo to try out some examples and get started. |
 
-## More information
+```java
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
 
-Learn more about the [Dapr Java SDK packages available to add to your Java applications](https://dapr.github.io/java-sdk/).
+try (DaprClient client = (new DaprClientBuilder()).build()) {
+  // sending a class with message; BINDING_OPERATION="create"
+  client.invokeBinding(BINDING_NAME, BINDING_OPERATION, myClass).block();
+
+  // sending a plain string
+  client.invokeBinding(BINDING_NAME, BINDING_OPERATION, message).block();
+}
+```
+
+- For a full guide on output bindings visit [How-To: Output bindings]({{< ref howto-bindings.md >}}).
+- Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http) for code samples and instructions to try out output bindings.
+
+## Available packages
+
+<div class="card-deck">
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title"><b>Client</b></h5>
+      <p class="card-text">Create Java clients that interact with a Dapr sidecar and other Dapr applications.</p>
+      <a href="{{< ref java-client >}}" class="stretched-link"></a>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title"><b>Workflow</b></h5>
+      <p class="card-text">Create and manage workflows that work with other Dapr APIs in Java.</p>
+      <a href="{{< ref workflow >}}" class="stretched-link"></a>
+    </div>
+  </div>
+</div>

@@ -15,16 +15,25 @@ package io.dapr.examples.invoke.grpc;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.domain.HttpExtension;
+import io.dapr.examples.DaprExamplesProtos.HelloReply;
+import io.dapr.examples.DaprExamplesProtos.HelloRequest;
+import io.dapr.examples.HelloWorldGrpc;
+import io.grpc.StatusRuntimeException;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * 1. Build and install jars:
  * mvn clean install
  * 2. cd [repo root]/examples
  * 2. Send messages to the server:
- * dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.invoke.grpc.HelloWorldClient
+ * dapr run -- java -jar target/dapr-java-sdk-examples-exec.jar
+ * io.dapr.examples.invoke.grpc.HelloWorldClient
  */
 public class HelloWorldClient {
+
+  private static final Logger logger = Logger.getLogger(HelloWorldClient.class.getName());
 
   /**
    * The main method of the client app.
@@ -32,23 +41,19 @@ public class HelloWorldClient {
    * @param args Array of messages to be sent.
    */
   public static void main(String[] args) throws Exception {
+    String user = "World";
     try (DaprClient client = new DaprClientBuilder().build()) {
+      HelloWorldGrpc.HelloWorldBlockingStub blockingStub = client.newGrpcStub(
+          "hellogrpc",
+          channel -> HelloWorldGrpc.newBlockingStub(channel));
 
-      String serviceAppId = "hellogrpc";
-      String method = "say";
-
-      int count = 0;
-      while (true) {
-        String message = "Message #" + (count++);
-        System.out.println("Sending message: " + message);
-        client.invokeMethod(serviceAppId, method, message, HttpExtension.NONE).block();
-        System.out.println("Message sent: " + message);
-
-        Thread.sleep(1000);
-
-        // This is an example, so for simplicity we are just exiting here.
-        // Normally a dapr app would be a web service and not exit main.
-        System.out.println("Done");
+      logger.info("Will try to greet " + user + " ...");
+      try {
+        HelloRequest request = HelloRequest.newBuilder().setName(user).build();
+        HelloReply response = blockingStub.sayHello(request);
+        logger.info("Greeting: " + response.getMessage());
+      } catch (StatusRuntimeException e) {
+        logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
       }
     }
   }

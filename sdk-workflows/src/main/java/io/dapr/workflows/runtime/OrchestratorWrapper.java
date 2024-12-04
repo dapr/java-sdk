@@ -17,6 +17,7 @@ import com.microsoft.durabletask.TaskOrchestration;
 import com.microsoft.durabletask.TaskOrchestrationFactory;
 import io.dapr.workflows.DaprWorkflowContextImpl;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.saga.Saga;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -55,7 +56,13 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
             String.format("Unable to instantiate instance of workflow class '%s'", this.name), e
         );
       }
-      workflow.run(new DaprWorkflowContextImpl(ctx));
+
+      if (workflow.getSagaOption() != null) {
+        Saga saga = new Saga(workflow.getSagaOption());
+        workflow.run(new DaprWorkflowContextImpl(ctx, saga));
+      } else {
+        workflow.run(new DaprWorkflowContextImpl(ctx));
+      }
     };
 
   }

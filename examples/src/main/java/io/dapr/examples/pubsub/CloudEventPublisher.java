@@ -19,6 +19,7 @@ import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
 
+import java.util.Map;
 import java.util.UUID;
 
 import static java.util.Collections.singletonMap;
@@ -29,7 +30,7 @@ import static java.util.Collections.singletonMap;
  * mvn clean install
  * 2. cd [repo root]/examples
  * 3. Run the program:
- * dapr run --components-path ./components/pubsub --app-id publisher -- \
+ * dapr run --resources-path ./components/pubsub --app-id publisher -- \
  *   java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.pubsub.CloudEventPublisher
  */
 public class CloudEventPublisher {
@@ -66,7 +67,7 @@ public class CloudEventPublisher {
         client.publishEvent(
             new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
                 .setContentType(CloudEvent.CONTENT_TYPE)
-                .setMetadata(singletonMap(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))).block();
+                .setMetadata(Map.of(Metadata.TTL_IN_SECONDS, MESSAGE_TTL_IN_SECONDS))).block();
         System.out.println("Published cloud event with message: " + cloudEvent.getData());
 
         try {

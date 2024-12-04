@@ -4,7 +4,7 @@ This sample illustrates the capabilities provided by Dapr Java SDK for state man
 
 ## Pre-requisites
 
-* [Dapr and Dapr Cli](https://docs.dapr.io/getting-started/install-dapr/).
+* [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
     * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
     * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
@@ -35,6 +35,19 @@ cd examples
 ### Initialize Dapr
 
 Run `dapr init` to initialize Dapr in Self-Hosted Mode if it's not already initialized.
+
+### Run MongoDB
+
+<!-- STEP
+name: Setup mongo container
+sleep: 5
+-->
+
+```bash
+docker compose -f ./src/main/java/io/dapr/examples/state/docker-compose-single-mongo.yml up -d
+```
+
+<!-- END_STEP -->
 
 ### Running the StateClient
 This example uses the Java SDK Dapr client in order to save, retrieve and delete a state, in this case, an instance of a class. Multiple state stores are supported since Dapr 0.4. See the code snippet bellow: 
@@ -166,7 +179,7 @@ sleep: 5
 
 Run this example with the following command:
 ```bash
-dapr run --components-path ./components/state --app-id state-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
+dapr run --resources-path ./components/state --app-id state-example -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.state.StateClient 'my message'
 ```
 
 <!-- END_STEP -->
@@ -203,6 +216,18 @@ name: Cleanup
 
 ```bash
 dapr stop --app-id state-example
+```
+
+<!-- END_STEP -->
+
+Then, stop MongoDB container.
+
+<!-- STEP
+name: Cleanup MongoDB container
+-->
+
+```bash
+docker compose -f ./src/main/java/io/dapr/examples/state/docker-compose-single-mongo.yml down
 ```
 
 <!-- END_STEP -->
