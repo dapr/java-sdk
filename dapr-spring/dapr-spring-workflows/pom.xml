@@ -14,4 +14,11 @@
   <description>Dapr Spring Workflows</description>
   <packaging>jar</packaging>
 
+  <dependencies>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-workflows</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
 </project>
