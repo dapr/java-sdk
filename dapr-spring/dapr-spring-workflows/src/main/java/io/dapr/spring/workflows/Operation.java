@@ -8,5 +8,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Operation {
+  /**
+   * Operation's name.
+   * Default empty String
+   * @return String with the name
+   */
   String name() default "";
 }
