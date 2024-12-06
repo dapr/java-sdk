@@ -84,26 +84,26 @@ fi
 echo "$RELEASE_BRANCH branch is ready."
 
 if [ `git rev-parse --verify $RELEASE_TAG 2>/dev/null` ]; then
-  echo "$RELEASE_TAG tag already exists, aborting ..."
-  exit 2
+  echo "$RELEASE_TAG tag already exists, checking it out ..."
+  git checkout $RELEASE_TAG
+else
+  ${script_dir}/update_sdk_version.sh $REL_VERSION
+  git commit -s -m "Release $REL_VERSION" -a
+  if [ "$VARIANT" = "" ]; then
+    echo "Generating docs ..."
+    ${script_dir}/update_docs.sh $REL_VERSION
+    git commit -s -m "Generate updated javadocs for $REL_VERSION" -a
+  fi
+  git push origin $RELEASE_BRANCH
+
+  echo "Tagging $RELEASE_TAG ..."
+  git tag $RELEASE_TAG
+  echo "$RELEASE_TAG is tagged."
+
+  echo "Pushing $RELEASE_TAG tag ..."
+  git push origin $RELEASE_TAG
+  echo "$RELEASE_TAG tag is pushed."
 fi
-
-${script_dir}/update_sdk_version.sh $REL_VERSION
-git commit -s -m "Release $REL_VERSION" -a
-if [ "$VARIANT" = "" ]; then
-  echo "Generating docs ..."
-  ${script_dir}/update_docs.sh $REL_VERSION
-  git commit -s -m "Generate updated javadocs for $REL_VERSION" -a
-fi
-git push origin $RELEASE_BRANCH
-
-echo "Tagging $RELEASE_TAG ..."
-git tag $RELEASE_TAG
-echo "$RELEASE_TAG is tagged."
-
-echo "Pushing $RELEASE_TAG tag ..."
-git push origin $RELEASE_TAG
-echo "$RELEASE_TAG tag is pushed."
 
 if [ "$VARIANT" = "" ]; then
   git clean -xdf
