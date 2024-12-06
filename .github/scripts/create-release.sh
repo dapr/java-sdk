@@ -42,12 +42,12 @@ if [ "$VARIANT" = "SNAPSHOT" ]; then
   git checkout -b $branch_name
   ${script_dir}/update_sdk_version.sh $REL_VERSION
   git clean -xdf
-  git commit -s -m "Update master version to ${$REL_VERSION}" -a
+  git commit -s -m "Update master version to ${REL_VERSION}" -a
   git push origin $branch_name
   gh pr create --repo ${GITHUB_REPOSITORY} \
     --base master \
-    --title "Update master version to ${$REL_VERSION}" \
-    --body "Update master version to ${$REL_VERSION}"
+    --title "Update master version to ${REL_VERSION}" \
+    --body "Update master version to ${REL_VERSION}"
   echo "Done."
   exit 0
 elif [ "$VARIANT" = "rc" ]; then
@@ -114,8 +114,8 @@ if [ "$VARIANT" = "" ]; then
   git push origin $branch_name
   gh pr create --repo ${GITHUB_REPOSITORY} \
     --base master \
-    --title "Update master docs for ${$REL_VERSION} release" \
-    --body "Update master docs for ${$REL_VERSION} release"
+    --title "Update master docs for ${REL_VERSION} release" \
+    --body "Update master docs for ${REL_VERSION} release"
 fi
 
 echo "Done."
