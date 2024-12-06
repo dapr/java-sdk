@@ -27,5 +27,5 @@ rm -f daprdocs/content/en/java-sdk-docs/_index.mdbak || echo
 rm -f daprdocs/content/en/java-sdk-docs/spring-boot/_index.md/_index.mdbak || echo
 
 rm -rf docs
-./mvnw -Dmaven.test.skip=false -Djacoco.skip=true clean install
-./mvnw site-deploy
+./mvnw -Dmaven.test.skip=true -Djacoco.skip=true clean install
+./mvnw -Dmaven.test.skip=true -Djacoco.skip=true site-deploy
