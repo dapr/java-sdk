@@ -17,6 +17,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
 import io.dapr.workflows.client.DaprWorkflowClient;
+import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -65,14 +66,26 @@ public class DaprClientAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   DaprWorkflowClient daprWorkflowClient(DaprConnectionDetails daprConnectionDetails) {
+    final Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    return new DaprWorkflowClient(properties);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  WorkflowRuntimeBuilder daprWorkflowRuntimeBuilder(DaprConnectionDetails daprConnectionDetails) {
+    final Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    return new WorkflowRuntimeBuilder(properties);
+  }
+
+  private Properties createPropertiesFromConnectionDetails(DaprConnectionDetails daprConnectionDetails) {
     final Map<String, String> propertyOverrides = new HashMap<>();
     propertyOverrides.put(Properties.HTTP_ENDPOINT.getName(), daprConnectionDetails.httpEndpoint());
     propertyOverrides.put(Properties.HTTP_PORT.getName(), String.valueOf(daprConnectionDetails.httpPort()));
     propertyOverrides.put(Properties.GRPC_ENDPOINT.getName(), daprConnectionDetails.grpcEndpoint());
     propertyOverrides.put(Properties.GRPC_PORT.getName(), String.valueOf(daprConnectionDetails.grpcPort()));
-    final Properties properties = new Properties(propertyOverrides);
-    return new DaprWorkflowClient(properties);
+    return new Properties(propertyOverrides);
   }
+
 
 
 }
