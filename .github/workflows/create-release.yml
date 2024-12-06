@@ -25,11 +25,18 @@ jobs:
   create-release:
     name: Creates release branch and tag
     runs-on: ubuntu-latest
+    env:
+      JDK_VER: '17'
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JDK_VER }}
       - name: Install required packages
         run: |
           sudo apt-get update
