@@ -496,8 +496,6 @@ public class DistributedLockGrpcClient {
 
 ### Workflow
 
-> Dapr Workflow is currently in beta state.
-
 ```java
 package io.dapr.examples.workflows;
 
