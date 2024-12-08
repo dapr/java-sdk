@@ -41,7 +41,7 @@ import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskOptions;
 
 import io.dapr.workflows.WorkflowContext;
-import io.dapr.workflows.runtime.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowActivityContext;
 
 public class SagaTest {
