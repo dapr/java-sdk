@@ -63,7 +63,7 @@ public class WorkflowActivityWrapper<T extends WorkflowActivity> implements Task
         );
       }
 
-      result = activity.run(new WorkflowActivityContext(ctx));
+      result = activity.run(new DaprWorkflowActivityContext(ctx));
       return result;
     };
   }
