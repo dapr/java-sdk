@@ -17,6 +17,7 @@ import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;

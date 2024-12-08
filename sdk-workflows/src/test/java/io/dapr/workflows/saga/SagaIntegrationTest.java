@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import com.microsoft.durabletask.TaskActivityContext;
 
-import io.dapr.workflows.runtime.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowActivityContext;
 
 public class SagaIntegrationTest {
