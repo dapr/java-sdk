@@ -91,7 +91,7 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(Class<T> clazz) {
-    this.builder.addOrchestration(new OrchestratorWrapper<>(clazz));
+    this.builder.addOrchestration(new WorkflowWrapper<>(clazz));
     this.workflowSet.add(clazz.getCanonicalName());
     this.workflows.add(clazz.getSimpleName());
 
@@ -108,7 +108,7 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(Class<T> clazz) {
-    this.builder.addActivity(new ActivityWrapper<>(clazz));
+    this.builder.addActivity(new WorkflowActivityWrapper<>(clazz));
     this.activitySet.add(clazz.getCanonicalName());
     this.activities.add(clazz.getSimpleName());
 
