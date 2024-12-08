@@ -15,6 +15,7 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskActivity;
 import com.microsoft.durabletask.TaskActivityFactory;
+import io.dapr.workflows.WorkflowActivity;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
