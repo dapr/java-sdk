@@ -15,6 +15,7 @@ package io.dapr.workflows.runtime;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

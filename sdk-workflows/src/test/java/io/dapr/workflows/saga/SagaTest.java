@@ -32,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import io.dapr.workflows.WorkflowActivityContext;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -42,7 +43,6 @@ import com.microsoft.durabletask.TaskOptions;
 
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowActivity;
-import io.dapr.workflows.runtime.WorkflowActivityContext;
 
 public class SagaTest {
 

@@ -13,8 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import io.dapr.workflows.runtime.WorkflowActivityContext;
-
 /**
  * Common interface for task activity implementations.
  *
