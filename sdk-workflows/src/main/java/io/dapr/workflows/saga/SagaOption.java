@@ -92,8 +92,8 @@ public final class SagaOption {
     }
 
     /**
-     * Build Saga optiion.
-     * @return Saga optiion
+     * Build Saga option.
+     * @return Saga option
      */
     public SagaOption build() {
       return new SagaOption(this.parallelCompensation, this.maxParallelThread, this.continueWithError);

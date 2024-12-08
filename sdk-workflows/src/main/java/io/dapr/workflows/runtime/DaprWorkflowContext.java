@@ -19,7 +19,7 @@ import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
-import io.dapr.workflows.saga.DaprSagaContextImpl;
+import io.dapr.workflows.runtime.saga.DaprSagaContext;
 import io.dapr.workflows.saga.Saga;
 import io.dapr.workflows.saga.SagaContext;
 import org.slf4j.Logger;
@@ -249,6 +249,6 @@ public class DaprWorkflowContext implements WorkflowContext {
       throw new UnsupportedOperationException("Saga is not enabled");
     }
 
-    return new DaprSagaContextImpl(this.saga, this);
+    return new DaprSagaContext(this.saga, this);
   }
 }

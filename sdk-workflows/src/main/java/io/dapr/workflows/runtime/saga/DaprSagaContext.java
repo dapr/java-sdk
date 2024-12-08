@@ -11,14 +11,16 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.saga;
+package io.dapr.workflows.runtime.saga;
 
 import io.dapr.workflows.WorkflowContext;
+import io.dapr.workflows.saga.Saga;
+import io.dapr.workflows.saga.SagaContext;
 
 /**
  * Dapr Saga Context implementation.
  */
-public class DaprSagaContextImpl implements SagaContext {
+public class DaprSagaContext implements SagaContext {
 
   private final Saga saga;
   private final WorkflowContext workflowContext;
@@ -30,7 +32,7 @@ public class DaprSagaContextImpl implements SagaContext {
    * @param workflowContext Workflow context.
    * @throws IllegalArgumentException if saga or workflowContext is null.
    */
-  public DaprSagaContextImpl(Saga saga, WorkflowContext workflowContext) {
+  public DaprSagaContext(Saga saga, WorkflowContext workflowContext) {
     if (saga == null) {
       throw new IllegalArgumentException("Saga should not be null");
     }

@@ -6,11 +6,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.dapr.workflows.runtime.saga.DaprSagaContext;
 import org.junit.Test;
 
 import io.dapr.workflows.WorkflowContext;
 
-public class DaprSagaContextImplTest {
+public class DaprSagaContextTest {
 
   @Test
   public void testDaprSagaContextImpl_IllegalArgumentException() {
@@ -18,11 +19,11 @@ public class DaprSagaContextImplTest {
     WorkflowContext workflowContext = mock(WorkflowContext.class);
 
     assertThrows(IllegalArgumentException.class, () -> {
-      new DaprSagaContextImpl(saga, null);
+      new DaprSagaContext(saga, null);
     });
 
     assertThrows(IllegalArgumentException.class, () -> {
-      new DaprSagaContextImpl(null, workflowContext);
+      new DaprSagaContext(null, workflowContext);
     });
   }
 
@@ -30,7 +31,7 @@ public class DaprSagaContextImplTest {
   public void test_registerCompensation() {
     Saga saga = mock(Saga.class);
     WorkflowContext workflowContext = mock(WorkflowContext.class);
-    DaprSagaContextImpl ctx = new DaprSagaContextImpl(saga, workflowContext);
+    DaprSagaContext ctx = new DaprSagaContext(saga, workflowContext);
 
     String activityClassName = "name1";
     Object activityInput = new Object();
@@ -44,7 +45,7 @@ public class DaprSagaContextImplTest {
   public void test_compensate() {
     Saga saga = mock(Saga.class);
     WorkflowContext workflowContext = mock(WorkflowContext.class);
-    DaprSagaContextImpl ctx = new DaprSagaContextImpl(saga, workflowContext);
+    DaprSagaContext ctx = new DaprSagaContext(saga, workflowContext);
 
     doNothing().when(saga).compensate(workflowContext);
 

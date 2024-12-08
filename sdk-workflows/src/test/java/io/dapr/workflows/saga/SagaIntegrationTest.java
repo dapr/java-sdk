@@ -2,10 +2,7 @@ package io.dapr.workflows.saga;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.dapr.workflows.runtime.DaprWorkflowActivityContext;
 import org.junit.Test;
-
-import com.microsoft.durabletask.TaskActivityContext;
 
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
@@ -126,7 +123,7 @@ public class SagaIntegrationTest {
     try {
       Class<?> activityClass = Class.forName(activityClassName);
       WorkflowActivity activity = (WorkflowActivity) activityClass.getDeclaredConstructor().newInstance();
-      WorkflowActivityContext ctx = new DaprWorkflowActivityContext(new TaskActivityContext() {
+      WorkflowActivityContext ctx = new WorkflowActivityContext() {
 
         @Override
         public java.lang.String getName() {
@@ -137,7 +134,7 @@ public class SagaIntegrationTest {
         public <T> T getInput(Class<T> targetType) {
           return (T) input;
         }
-      });
+      };
 
       randomFail();
 
