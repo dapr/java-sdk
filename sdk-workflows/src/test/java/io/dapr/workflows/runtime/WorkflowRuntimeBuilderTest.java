@@ -27,7 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 public class WorkflowRuntimeBuilderTest {
-  public static class TestWorkflow extends Workflow {
+  public static class TestWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
       return ctx -> {

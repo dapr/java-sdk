@@ -16,7 +16,7 @@ package io.dapr.examples.workflows.chain;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 
-public class DemoChainWorkflow extends Workflow {
+public class DemoChainWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
