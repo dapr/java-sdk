@@ -104,7 +104,7 @@ public final class Saga {
       } catch (Exception e) {
         if (sagaException == null) {
           sagaException = new SagaCompensationException(
-              "Exception in saga compensatation: activity=" + activityClassName, e);
+              "Exception in saga compensation: activity=" + activityClassName, e);
         } else {
           sagaException.addSuppressed(e);
         }
