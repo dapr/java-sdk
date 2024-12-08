@@ -1,6 +1,7 @@
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskActivityContext;
+import io.dapr.workflows.WorkflowActivity;
 import org.junit.Assert;
 import org.junit.Test;
 

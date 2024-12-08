@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.childworkflow;
 
-import io.dapr.workflows.runtime.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.runtime.WorkflowActivityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
