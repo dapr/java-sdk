@@ -15,7 +15,6 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskOrchestration;
 import com.microsoft.durabletask.TaskOrchestrationFactory;
-import io.dapr.workflows.DaprWorkflowContextImpl;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.saga.Saga;
 
@@ -59,9 +58,9 @@ class WorkflowWrapper<T extends Workflow> implements TaskOrchestrationFactory {
 
       if (workflow.getSagaOption() != null) {
         Saga saga = new Saga(workflow.getSagaOption());
-        workflow.run(new DaprWorkflowContextImpl(ctx, saga));
+        workflow.run(new DaprWorkflowContext(ctx, saga));
       } else {
-        workflow.run(new DaprWorkflowContextImpl(ctx));
+        workflow.run(new DaprWorkflowContext(ctx));
       }
     };
 
