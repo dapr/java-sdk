@@ -16,7 +16,7 @@ package io.dapr.examples.workflows.externalevent;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 
-public class DemoExternalEventWorkflow extends Workflow {
+public class DemoExternalEventWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class WorkflowWrapperTest {
-  public static class TestWorkflow extends Workflow {
+  public static class TestWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
       return WorkflowContext::getInstanceId;
