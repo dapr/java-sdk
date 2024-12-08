@@ -21,16 +21,13 @@ import io.dapr.workflows.saga.SagaOption;
 /**
  * Common interface for workflow implementations.
  */
-public abstract class Workflow {
-  public Workflow() {
-  }
-
+public interface Workflow {
   /**
    * Executes the workflow logic.
    *
    * @return A WorkflowStub.
    */
-  public abstract WorkflowStub create();
+  WorkflowStub create();
 
   /**
    * Executes the workflow logic.
@@ -39,7 +36,7 @@ public abstract class Workflow {
    *            getting information about the current
    *            workflow instance.
    */
-  public void run(WorkflowContext ctx) {
+  default void run(WorkflowContext ctx) {
     WorkflowStub stub = this.create();
 
     if (!this.isSagaEnabled()) {
@@ -68,7 +65,7 @@ public abstract class Workflow {
     }
   }
 
-  public boolean isSagaEnabled() {
+  default boolean isSagaEnabled() {
     return this.getSagaOption() != null;
   }
 
@@ -77,7 +74,7 @@ public abstract class Workflow {
    * 
    * @return saga configuration
    */
-  public SagaOption getSagaOption() {
+  default SagaOption getSagaOption() {
     // by default, saga is disabled
     return null;
   }

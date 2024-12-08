@@ -44,7 +44,7 @@ public class DaprWorkflowClientTest {
   private DurableTaskClient mockInnerClient;
   private ManagedChannel mockGrpcChannel;
 
-  public static class TestWorkflow extends Workflow {
+  public static class TestWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
       return WorkflowContext::getInstanceId;

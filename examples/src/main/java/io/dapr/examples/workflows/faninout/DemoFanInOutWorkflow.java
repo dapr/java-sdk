@@ -20,7 +20,7 @@ import io.dapr.workflows.WorkflowStub;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DemoFanInOutWorkflow extends Workflow {
+public class DemoFanInOutWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {

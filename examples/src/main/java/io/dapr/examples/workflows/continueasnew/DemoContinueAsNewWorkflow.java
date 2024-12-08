@@ -18,7 +18,7 @@ import io.dapr.workflows.WorkflowStub;
 
 import java.time.Duration;
 
-public class DemoContinueAsNewWorkflow extends Workflow {
+public class DemoContinueAsNewWorkflow implements Workflow {
   /*
   Compared with a CRON schedule, this periodic workflow example will never overlap.
   For example, a CRON schedule that executes a cleanup every hour will execute it at 1:00, 2:00, 3:00 etc.

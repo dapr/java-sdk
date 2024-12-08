@@ -162,7 +162,7 @@ public class WorkflowTest {
     verify(sagaContext, times(1)).compensate();
   }
 
-  public static class WorkflowWithoutSaga extends Workflow {
+  public static class WorkflowWithoutSaga implements Workflow {
     private final WorkflowStub stub;
 
     public WorkflowWithoutSaga(WorkflowStub stub) {
@@ -175,7 +175,7 @@ public class WorkflowTest {
     }
   }
 
-  public static class WorkflowWithSaga extends Workflow {
+  public static class WorkflowWithSaga implements Workflow {
     private final WorkflowStub stub;
 
     public WorkflowWithSaga(WorkflowStub stub) {
