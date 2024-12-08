@@ -11,13 +11,14 @@
 limitations under the License.
 */
 
-package io.dapr.workflows;
+package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.CompositeTaskFailedException;
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
+import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.saga.DaprSagaContextImpl;
 import io.dapr.workflows.saga.Saga;
 import io.dapr.workflows.saga.SagaContext;
@@ -32,7 +33,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-public class DaprWorkflowContextImpl implements WorkflowContext {
+public class DaprWorkflowContext implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
   private final Logger logger;
   private final Saga saga;
@@ -43,7 +44,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * @param context TaskOrchestrationContext
    * @throws IllegalArgumentException if context is null
    */
-  public DaprWorkflowContextImpl(TaskOrchestrationContext context) throws IllegalArgumentException {
+  public DaprWorkflowContext(TaskOrchestrationContext context) throws IllegalArgumentException {
     this(context, LoggerFactory.getLogger(WorkflowContext.class));
   }
 
@@ -54,11 +55,11 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * @param logger  Logger
    * @throws IllegalArgumentException if context or logger is null
    */
-  public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
+  public DaprWorkflowContext(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
     this(context, logger, null);
   }
 
-  public DaprWorkflowContextImpl(TaskOrchestrationContext context, Saga saga) throws IllegalArgumentException {
+  public DaprWorkflowContext(TaskOrchestrationContext context, Saga saga) throws IllegalArgumentException {
     this(context, LoggerFactory.getLogger(WorkflowContext.class), saga);
   }
 
@@ -70,7 +71,7 @@ public class DaprWorkflowContextImpl implements WorkflowContext {
    * @param saga    saga object, if null, saga is disabled
    * @throws IllegalArgumentException if context or logger is null
    */
-  public DaprWorkflowContextImpl(TaskOrchestrationContext context, Logger logger, Saga saga)
+  public DaprWorkflowContext(TaskOrchestrationContext context, Logger logger, Saga saga)
       throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
