@@ -13,31 +13,29 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.TaskActivity;
-import com.microsoft.durabletask.TaskActivityFactory;
+import com.microsoft.durabletask.TaskOrchestration;
+import com.microsoft.durabletask.TaskOrchestrationFactory;
+import io.dapr.workflows.DaprWorkflowContextImpl;
+import io.dapr.workflows.Workflow;
+import io.dapr.workflows.saga.Saga;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 /**
- * Wrapper for Durable Task Framework task activity factory.
+ * Wrapper for Durable Task Framework orchestration factory.
  */
-public class ActivityWrapper<T extends WorkflowActivity> implements TaskActivityFactory {
-  private final Constructor<T> activityConstructor;
+class WorkflowWrapper<T extends Workflow> implements TaskOrchestrationFactory {
+  private final Constructor<T> workflowConstructor;
   private final String name;
 
-  /**
-   * Constructor for ActivityWrapper.
-   *
-   * @param clazz Class of the activity to wrap.
-   */
-  public ActivityWrapper(Class<T> clazz) {
+  public WorkflowWrapper(Class<T> clazz) {
     this.name = clazz.getCanonicalName();
     try {
-      this.activityConstructor = clazz.getDeclaredConstructor();
+      this.workflowConstructor = clazz.getDeclaredConstructor();
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(
-          String.format("No constructor found for activity class '%s'.", this.name), e
+          String.format("No constructor found for workflow class '%s'.", this.name), e
       );
     }
   }
@@ -47,23 +45,25 @@ public class ActivityWrapper<T extends WorkflowActivity> implements TaskActivity
     return name;
   }
 
-
   @Override
-  public TaskActivity create() {
+  public TaskOrchestration create() {
     return ctx -> {
-      Object result;
-      T activity;
-      
+      T workflow;
       try {
-        activity = this.activityConstructor.newInstance();
+        workflow = this.workflowConstructor.newInstance();
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(
-            String.format("Unable to instantiate instance of activity class '%s'", this.name), e
+            String.format("Unable to instantiate instance of workflow class '%s'", this.name), e
         );
       }
 
-      result = activity.run(new WorkflowActivityContext(ctx));
-      return result;
+      if (workflow.getSagaOption() != null) {
+        Saga saga = new Saga(workflow.getSagaOption());
+        workflow.run(new DaprWorkflowContextImpl(ctx, saga));
+      } else {
+        workflow.run(new DaprWorkflowContextImpl(ctx));
+      }
     };
+
   }
 }
