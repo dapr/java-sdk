@@ -19,7 +19,7 @@ import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
-import io.dapr.workflows.runtime.saga.DaprSagaContext;
+import io.dapr.workflows.runtime.saga.DefaultSagaContext;
 import io.dapr.workflows.saga.Saga;
 import io.dapr.workflows.saga.SagaContext;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-public class DaprWorkflowContext implements WorkflowContext {
+public class DefaultWorkflowContext implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
   private final Logger logger;
   private final Saga saga;
@@ -44,7 +44,7 @@ public class DaprWorkflowContext implements WorkflowContext {
    * @param context TaskOrchestrationContext
    * @throws IllegalArgumentException if context is null
    */
-  public DaprWorkflowContext(TaskOrchestrationContext context) throws IllegalArgumentException {
+  public DefaultWorkflowContext(TaskOrchestrationContext context) throws IllegalArgumentException {
     this(context, LoggerFactory.getLogger(WorkflowContext.class));
   }
 
@@ -55,11 +55,11 @@ public class DaprWorkflowContext implements WorkflowContext {
    * @param logger  Logger
    * @throws IllegalArgumentException if context or logger is null
    */
-  public DaprWorkflowContext(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
+  public DefaultWorkflowContext(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
     this(context, logger, null);
   }
 
-  public DaprWorkflowContext(TaskOrchestrationContext context, Saga saga) throws IllegalArgumentException {
+  public DefaultWorkflowContext(TaskOrchestrationContext context, Saga saga) throws IllegalArgumentException {
     this(context, LoggerFactory.getLogger(WorkflowContext.class), saga);
   }
 
@@ -71,7 +71,7 @@ public class DaprWorkflowContext implements WorkflowContext {
    * @param saga    saga object, if null, saga is disabled
    * @throws IllegalArgumentException if context or logger is null
    */
-  public DaprWorkflowContext(TaskOrchestrationContext context, Logger logger, Saga saga)
+  public DefaultWorkflowContext(TaskOrchestrationContext context, Logger logger, Saga saga)
       throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
@@ -249,6 +249,6 @@ public class DaprWorkflowContext implements WorkflowContext {
       throw new UnsupportedOperationException("Saga is not enabled");
     }
 
-    return new DaprSagaContext(this.saga, this);
+    return new DefaultSagaContext(this.saga, this);
   }
 }

@@ -58,9 +58,9 @@ class WorkflowWrapper<T extends Workflow> implements TaskOrchestrationFactory {
 
       if (workflow.getSagaOption() != null) {
         Saga saga = new Saga(workflow.getSagaOption());
-        workflow.run(new DaprWorkflowContext(ctx, saga));
+        workflow.run(new DefaultWorkflowContext(ctx, saga));
       } else {
-        workflow.run(new DaprWorkflowContext(ctx));
+        workflow.run(new DefaultWorkflowContext(ctx));
       }
     };
 
