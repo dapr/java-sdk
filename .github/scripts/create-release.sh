@@ -110,7 +110,7 @@ if [ "$VARIANT" = "" ]; then
   echo "Creating pull request to update docs ..."
   branch_name="automation/update_docs_${current_time}"
   git reset --hard origin/master
-  git cherry-pick $RELEASE_TAG
+  git cherry-pick --strategy=recursive -X theirs $RELEASE_TAG
   git push origin $branch_name
   gh pr create --repo ${GITHUB_REPOSITORY} \
     --base master \

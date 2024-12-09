@@ -57,8 +57,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: create-release
     steps:
-      - name: Triggers the build
+      - name: Identify build ref to trigger build and release.
+        run: |
+          if [[ "${{ inputs.rel_version }}" == *"SNAPSHOT"* ]]; then
+            echo "BUILD_GIT_REF=master" >> $GITHUB_ENV
+          else
+            echo "BUILD_GIT_REF=v${{ inputs.rel_version }}" >> $GITHUB_ENV
+          fi
+      - name: Triggers the build and release.
         env:
           GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
         run: |
-          gh workflow run build.yml --repo ${GITHUB_REPOSITORY} --ref v$(echo '${{ inputs.rel_version }}' | sed -r 's/^[vV]?([0-9].+)$/\1/')
+          gh workflow run build.yml --repo ${GITHUB_REPOSITORY} --ref v$(echo '${{ env.BUILD_GIT_REF }}' | sed -r 's/^[vV]?([0-9].+)$/\1/')
