@@ -18,24 +18,24 @@ import com.microsoft.durabletask.TaskOptions;
 /**
  * Information for a compensation activity.
  */
-class CompensatationInformation {
-  private final String compensatationActivityClassName;
-  private final Object compensatationActivityInput;
+class CompensationInformation {
+  private final String compensationActivityClassName;
+  private final Object compensationActivityInput;
   private final TaskOptions taskOptions;
 
   /**
    * Constructor for a compensation information.
    * 
-   * @param compensatationActivityClassName Class name of the activity to do
-   *                                        compensatation.
-   * @param compensatationActivityInput     Input of the activity to do
-   *                                        compensatation.
+   * @param compensationActivityClassName Class name of the activity to do
+   *                                        compensation.
+   * @param compensationActivityInput     Input of the activity to do
+   *                                        compensation.
    * @param taskOptions                     task options to set retry strategy
    */
-  public CompensatationInformation(String compensatationActivityClassName,
-      Object compensatationActivityInput, TaskOptions taskOptions) {
-    this.compensatationActivityClassName = compensatationActivityClassName;
-    this.compensatationActivityInput = compensatationActivityInput;
+  public CompensationInformation(String compensationActivityClassName,
+                                 Object compensationActivityInput, TaskOptions taskOptions) {
+    this.compensationActivityClassName = compensationActivityClassName;
+    this.compensationActivityInput = compensationActivityInput;
     this.taskOptions = taskOptions;
   }
 
@@ -44,8 +44,8 @@ class CompensatationInformation {
    * 
    * @return the class name of the activity.
    */
-  public String getCompensatationActivityClassName() {
-    return compensatationActivityClassName;
+  public String getCompensationActivityClassName() {
+    return compensationActivityClassName;
   }
 
   /**
@@ -53,8 +53,8 @@ class CompensatationInformation {
    * 
    * @return the input of the activity.
    */
-  public Object getCompensatationActivityInput() {
-    return compensatationActivityInput;
+  public Object getCompensationActivityInput() {
+    return compensationActivityInput;
   }
 
   /**
