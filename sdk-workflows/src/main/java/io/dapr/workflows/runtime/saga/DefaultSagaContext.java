@@ -20,7 +20,7 @@ import io.dapr.workflows.saga.SagaContext;
 /**
  * Dapr Saga Context implementation.
  */
-public class DaprSagaContext implements SagaContext {
+public class DefaultSagaContext implements SagaContext {
 
   private final Saga saga;
   private final WorkflowContext workflowContext;
@@ -32,7 +32,7 @@ public class DaprSagaContext implements SagaContext {
    * @param workflowContext Workflow context.
    * @throws IllegalArgumentException if saga or workflowContext is null.
    */
-  public DaprSagaContext(Saga saga, WorkflowContext workflowContext) {
+  public DefaultSagaContext(Saga saga, WorkflowContext workflowContext) {
     if (saga == null) {
       throw new IllegalArgumentException("Saga should not be null");
     }
