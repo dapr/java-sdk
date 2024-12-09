@@ -19,7 +19,7 @@ import io.dapr.workflows.WorkflowActivityContext;
 /**
  * Wrapper for Durable Task Framework {@link TaskActivityContext}.
  */
-class DaprWorkflowActivityContext implements WorkflowActivityContext {
+class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   private final TaskActivityContext innerContext;
 
   /**
@@ -28,7 +28,7 @@ class DaprWorkflowActivityContext implements WorkflowActivityContext {
    * @param context TaskActivityContext
    * @throws IllegalArgumentException if context is null
    */
-  public DaprWorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
+  public DefaultWorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
