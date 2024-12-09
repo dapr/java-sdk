@@ -44,7 +44,7 @@ public final class Validation {
   public static final String JSONPATH_SLEEP_SPAN_ID =
       "$..[?(@.parentId=='%s' && @.duration > 1000000 && @.name=='%s')]['id']";
 
-  public static void validate(String spanName, String sleepSpanName) throws Exception {
+  public static void validateSleep(String spanName, String sleepSpanName) throws Exception {
     // Must wait for some time to make sure Zipkin receives all spans.
     Thread.sleep(10000);
     HttpUrl.Builder urlBuilder = new HttpUrl.Builder();

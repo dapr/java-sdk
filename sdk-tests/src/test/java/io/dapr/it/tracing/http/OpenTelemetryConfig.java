@@ -28,11 +28,9 @@ public class OpenTelemetryConfig {
 
   public static final String TRACER_NAME = "integration testing tracer";
 
-  public static final String SERVICE_NAME = "integration testing service over http";
-
   @Bean
   public OpenTelemetry initOpenTelemetry() throws InterruptedException {
-    return io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry(SERVICE_NAME);
+    return io.dapr.it.tracing.OpenTelemetry.createOpenTelemetry();
   }
 
   @Bean

@@ -41,7 +41,7 @@ public class TracingIT extends BaseIT {
 
     @Test
     public void testInvoke() throws Exception {
-        OpenTelemetry openTelemetry = createOpenTelemetry(OpenTelemetryConfig.SERVICE_NAME);
+        OpenTelemetry openTelemetry = createOpenTelemetry();
         Tracer tracer = openTelemetry.getTracer(OpenTelemetryConfig.TRACER_NAME);
         String spanName = UUID.randomUUID().toString();
         Span span = tracer.spanBuilder(spanName).setSpanKind(SpanKind.CLIENT).startSpan();
@@ -57,7 +57,7 @@ public class TracingIT extends BaseIT {
 
         span.end();
 
-        Validation.validate(spanName, "calllocal/tracingithttp-service/sleep");
+        Validation.validateSleep(spanName, "calllocal/tracingithttp-service/sleep");
     }
 
 }
