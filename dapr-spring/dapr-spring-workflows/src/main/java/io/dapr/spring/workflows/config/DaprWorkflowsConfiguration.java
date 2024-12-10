@@ -10,34 +10,32 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 
 import java.util.Map;
 
 @Configuration
-@ComponentScan("io.dapr.spring.workflows.config")
-public class DaprWorkflowsConfig implements ApplicationContextAware {
-  private static final Logger LOGGER = LoggerFactory.getLogger(DaprWorkflowsConfig.class);
-  @Autowired
+public class DaprWorkflowsConfiguration implements ApplicationContextAware {
+  private static final Logger LOGGER = LoggerFactory.getLogger(DaprWorkflowsConfiguration.class);
+
   private WorkflowRuntimeBuilder workflowRuntimeBuilder;
 
-  private static ApplicationContext context;
+  public DaprWorkflowsConfiguration(WorkflowRuntimeBuilder workflowRuntimeBuilder) {
+    this.workflowRuntimeBuilder = workflowRuntimeBuilder;
+  }
 
   /**
    * Register workflows and activities to the workflowRuntimeBuilder.
    */
-  public void registerWorkflowsAndActivities() {
+  public void registerWorkflowsAndActivities(ApplicationContext applicationContext) {
     LOGGER.info("Registering Dapr Workflows and Activities");
-    Map<String, Workflow> workflowBeans = context.getBeansOfType(Workflow.class);
+    Map<String, Workflow> workflowBeans = applicationContext.getBeansOfType(Workflow.class);
     for (Workflow w :  workflowBeans.values()) {
       LOGGER.info("Dapr Workflow: '{}' registered", w.getClass().getName());
       workflowRuntimeBuilder.registerWorkflow(w.getClass());
     }
 
-    Map<String, WorkflowActivity> workflowActivitiesBeans = context.getBeansOfType(WorkflowActivity.class);
+    Map<String, WorkflowActivity> workflowActivitiesBeans = applicationContext.getBeansOfType(WorkflowActivity.class);
     for (WorkflowActivity a :  workflowActivitiesBeans.values()) {
       LOGGER.info("Dapr Workflow Activity: '{}' registered", a.getClass().getName());
       workflowRuntimeBuilder.registerActivity(a.getClass());
@@ -51,7 +49,6 @@ public class DaprWorkflowsConfig implements ApplicationContextAware {
 
   @Override
   public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    context = applicationContext;
-    registerWorkflowsAndActivities();
+    registerWorkflowsAndActivities(applicationContext);
   }
 }
