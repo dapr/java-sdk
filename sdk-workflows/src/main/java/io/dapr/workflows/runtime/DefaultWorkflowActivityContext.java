@@ -14,11 +14,12 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskActivityContext;
+import io.dapr.workflows.WorkflowActivityContext;
 
 /**
  * Wrapper for Durable Task Framework {@link TaskActivityContext}.
  */
-public class WorkflowActivityContext implements TaskActivityContext {
+class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   private final TaskActivityContext innerContext;
 
   /**
@@ -27,7 +28,7 @@ public class WorkflowActivityContext implements TaskActivityContext {
    * @param context TaskActivityContext
    * @throws IllegalArgumentException if context is null
    */
-  public WorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
+  public DefaultWorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
@@ -39,6 +40,7 @@ public class WorkflowActivityContext implements TaskActivityContext {
    *
    * @return the name of the current activity
    */
+  @Override
   public String getName() {
     return this.innerContext.getName();
   }
@@ -50,6 +52,7 @@ public class WorkflowActivityContext implements TaskActivityContext {
    * @param targetType targetType of the input
    * @return the input of the current activity
    */
+  @Override
   public <T> T getInput(Class<T> targetType) {
     return this.innerContext.getInput(targetType);
   }

@@ -14,6 +14,8 @@ package io.dapr.workflows.runtime;
 
 
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -25,7 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 public class WorkflowRuntimeBuilderTest {
-  public static class TestWorkflow extends Workflow {
+  public static class TestWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
       return ctx -> {
