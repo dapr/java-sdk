@@ -66,14 +66,14 @@ public class DaprClientAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   DaprWorkflowClient daprWorkflowClient(DaprConnectionDetails daprConnectionDetails) {
-    final Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
     return new DaprWorkflowClient(properties);
   }
 
   @Bean
   @ConditionalOnMissingBean
   WorkflowRuntimeBuilder daprWorkflowRuntimeBuilder(DaprConnectionDetails daprConnectionDetails) {
-    final Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
     return new WorkflowRuntimeBuilder(properties);
   }
 

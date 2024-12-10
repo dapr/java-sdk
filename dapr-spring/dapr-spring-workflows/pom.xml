@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>dapr-spring-workflows</artifactId>
-  <name>dapr-spring-workflow</name>
+  <name>dapr-spring-workflows</name>
   <description>Dapr Spring Workflows</description>
   <packaging>jar</packaging>
 

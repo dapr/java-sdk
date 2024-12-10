@@ -11,6 +11,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Retention(RUNTIME)
 @Target(TYPE)
-@Import(DaprWorkflowsConfig.class)
+@Import(DaprWorkflowsConfiguration.class)
 public @interface EnableDaprWorkflows {
 }

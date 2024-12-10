@@ -2,11 +2,22 @@ package io.dapr.spring.boot.autoconfigure.client.workflows;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.client.RestTemplate;
 
 public class TestWorkflow extends Workflow {
 
+  @Autowired
+  private RestTemplate restTemplate;
+
   @Override
   public WorkflowStub create() {
-    return null;
+    return ctx -> {
+      ctx.callActivity(TestActivity.class.getName(), null).await();
+    };
+  }
+
+  public RestTemplate getRestTemplate() {
+    return restTemplate;
   }
 }
