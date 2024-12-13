@@ -26,6 +26,7 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
 
   /**
    * Register workflows and activities to the workflowRuntimeBuilder.
+   * @param applicationContext Spring Application Context
    */
   public void registerWorkflowsAndActivities(ApplicationContext applicationContext) {
     LOGGER.info("Registering Dapr Workflows and Activities");
