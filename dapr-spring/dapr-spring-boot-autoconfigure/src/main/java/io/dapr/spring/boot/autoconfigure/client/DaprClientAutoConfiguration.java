@@ -16,11 +16,16 @@ package io.dapr.spring.boot.autoconfigure.client;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
+import io.dapr.workflows.client.DaprWorkflowClient;
+import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @AutoConfiguration
 @ConditionalOnClass(DaprClient.class)
@@ -57,5 +62,30 @@ public class DaprClientAutoConfiguration {
   DaprClient daprClient(DaprClientBuilder daprClientBuilder) {
     return daprClientBuilder.build();
   }
+
+  @Bean
+  @ConditionalOnMissingBean
+  DaprWorkflowClient daprWorkflowClient(DaprConnectionDetails daprConnectionDetails) {
+    Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    return new DaprWorkflowClient(properties);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  WorkflowRuntimeBuilder daprWorkflowRuntimeBuilder(DaprConnectionDetails daprConnectionDetails) {
+    Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    return new WorkflowRuntimeBuilder(properties);
+  }
+
+  private Properties createPropertiesFromConnectionDetails(DaprConnectionDetails daprConnectionDetails) {
+    final Map<String, String> propertyOverrides = new HashMap<>();
+    propertyOverrides.put(Properties.HTTP_ENDPOINT.getName(), daprConnectionDetails.httpEndpoint());
+    propertyOverrides.put(Properties.HTTP_PORT.getName(), String.valueOf(daprConnectionDetails.httpPort()));
+    propertyOverrides.put(Properties.GRPC_ENDPOINT.getName(), daprConnectionDetails.grpcEndpoint());
+    propertyOverrides.put(Properties.GRPC_PORT.getName(), String.valueOf(daprConnectionDetails.grpcPort()));
+    return new Properties(propertyOverrides);
+  }
+
+
 
 }
