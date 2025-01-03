@@ -109,6 +109,8 @@ jobs:
         /home/runner/.local/bin/toxiproxy-server --version
     - name: Clean up files
       run: ./mvnw clean -B
+    - name: Check protoc version
+      run: protoc --version || echo "protoc not found"
     - name: Build sdk
       run: ./mvnw compile -B -q
     - name: Unit tests
