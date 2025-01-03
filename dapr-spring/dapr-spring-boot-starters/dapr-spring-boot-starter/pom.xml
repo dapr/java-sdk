@@ -40,6 +40,11 @@
       <artifactId>dapr-spring-messaging</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-workflows</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
   </dependencies>
 
 </project>
