@@ -145,7 +145,7 @@
             <configuration>
               <protocCommand>protoc</protocCommand>
               <protocVersion>${protobuf.version}</protocVersion>
-              <protocArtifact>com.google.protobuf:protoc:3.21.1</protocArtifact>
+              <protocArtifact>com.google.protobuf:protoc:4.29.2</protocArtifact>
               <addProtoSources>inputs</addProtoSources>
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>
