@@ -1,7 +1,7 @@
 package io.dapr.spring.boot.autoconfigure.client.workflows;
 
-import io.dapr.workflows.runtime.WorkflowActivity;
-import io.dapr.workflows.runtime.WorkflowActivityContext;
+import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestTemplate;
 
