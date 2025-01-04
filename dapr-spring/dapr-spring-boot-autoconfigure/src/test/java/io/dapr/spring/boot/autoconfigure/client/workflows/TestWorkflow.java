@@ -5,7 +5,7 @@ import io.dapr.workflows.WorkflowStub;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestTemplate;
 
-public class TestWorkflow extends Workflow {
+public class TestWorkflow implements Workflow {
 
   @Autowired
   private RestTemplate restTemplate;

@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 
-public class TestWorkflow extends Workflow {
+public class TestWorkflow implements Workflow {
 
   @Override
   public WorkflowStub create() {

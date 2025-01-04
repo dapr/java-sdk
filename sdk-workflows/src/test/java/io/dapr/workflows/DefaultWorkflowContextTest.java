@@ -20,6 +20,7 @@ import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 
+import io.dapr.workflows.runtime.DefaultWorkflowContext;
 import io.dapr.workflows.saga.Saga;
 import io.dapr.workflows.saga.SagaContext;
 
@@ -43,15 +44,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DaprWorkflowContextImplTest {
-  private DaprWorkflowContextImpl context;
+public class DefaultWorkflowContextTest {
+  private DefaultWorkflowContext context;
   private TaskOrchestrationContext mockInnerContext;
   private WorkflowContext testWorkflowContext;
 
   @BeforeEach
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
-    context = new DaprWorkflowContextImpl(mockInnerContext);
+    context = new DefaultWorkflowContext(mockInnerContext);
     testWorkflowContext = new WorkflowContext() {
       @Override
       public Logger getLogger() {
@@ -190,13 +191,13 @@ public class DaprWorkflowContextImplTest {
   @Test
   public void DaprWorkflowContextWithEmptyInnerContext() {
     assertThrows(IllegalArgumentException.class, () -> {
-      context = new DaprWorkflowContextImpl(mockInnerContext, (Logger)null);
+      context = new DefaultWorkflowContext(mockInnerContext, (Logger)null);
     });  }
 
   @Test
   public void DaprWorkflowContextWithEmptyLogger() {
     assertThrows(IllegalArgumentException.class, () -> {
-      context = new DaprWorkflowContextImpl(null, (Logger)null);
+      context = new DefaultWorkflowContext(null, (Logger)null);
     });
   }
 
@@ -216,7 +217,7 @@ public class DaprWorkflowContextImplTest {
   public void getLoggerReplayingTest() {
     Logger mockLogger = mock(Logger.class);
     when(context.isReplaying()).thenReturn(true);
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
+    DefaultWorkflowContext testContext = new DefaultWorkflowContext(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
     testContext.getLogger().info(expectedArg);
@@ -228,7 +229,7 @@ public class DaprWorkflowContextImplTest {
   public void getLoggerFirstTimeTest() {
     Logger mockLogger = mock(Logger.class);
     when(context.isReplaying()).thenReturn(false);
-    DaprWorkflowContextImpl testContext = new DaprWorkflowContextImpl(mockInnerContext, mockLogger);
+    DefaultWorkflowContext testContext = new DefaultWorkflowContext(mockInnerContext, mockLogger);
 
     String expectedArg = "test print";
     testContext.getLogger().info(expectedArg);
@@ -322,7 +323,7 @@ public class DaprWorkflowContextImplTest {
   @Test
   public void getSagaContextTest_sagaEnabled() {
     Saga saga = mock(Saga.class);
-    WorkflowContext context = new DaprWorkflowContextImpl(mockInnerContext, saga);
+    WorkflowContext context = new DefaultWorkflowContext(mockInnerContext, saga);
 
     SagaContext sagaContext = context.getSagaContext();
     assertNotNull("SagaContext should not be null", sagaContext);
@@ -330,7 +331,7 @@ public class DaprWorkflowContextImplTest {
 
   @Test
   public void getSagaContextTest_sagaDisabled() {
-    WorkflowContext context = new DaprWorkflowContextImpl(mockInnerContext);
+    WorkflowContext context = new DefaultWorkflowContext(mockInnerContext);
     assertThrows(UnsupportedOperationException.class, () -> {
       context.getSagaContext();
     });

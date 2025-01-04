@@ -15,6 +15,7 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskActivity;
 import com.microsoft.durabletask.TaskActivityFactory;
+import io.dapr.workflows.WorkflowActivity;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -22,16 +23,16 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Wrapper for Durable Task Framework task activity factory.
  */
-public class ActivityWrapper<T extends WorkflowActivity> implements TaskActivityFactory {
+public class WorkflowActivityWrapper<T extends WorkflowActivity> implements TaskActivityFactory {
   private final Constructor<T> activityConstructor;
   private final String name;
 
   /**
-   * Constructor for ActivityWrapper.
+   * Constructor for WorkflowActivityWrapper.
    *
    * @param clazz Class of the activity to wrap.
    */
-  public ActivityWrapper(Class<T> clazz) {
+  public WorkflowActivityWrapper(Class<T> clazz) {
     this.name = clazz.getCanonicalName();
     try {
       this.activityConstructor = clazz.getDeclaredConstructor();
@@ -62,7 +63,7 @@ public class ActivityWrapper<T extends WorkflowActivity> implements TaskActivity
         );
       }
 
-      result = activity.run(new WorkflowActivityContext(ctx));
+      result = activity.run(new DefaultWorkflowActivityContext(ctx));
       return result;
     };
   }

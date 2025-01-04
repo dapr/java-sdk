@@ -42,7 +42,7 @@ public class DaprWorkflowExampleTest {
   private static final String noTimeoutWorkflow = "DemoWorkflowNoTimeout";
   private static final String workflowDefaultId = "demo-workflow-123";
 
-  private class DemoWorkflow extends Workflow {
+  private class DemoWorkflow implements Workflow {
 
     @Override
     public WorkflowStub create() {
