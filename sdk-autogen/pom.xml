@@ -23,7 +23,7 @@
     <maven.deploy.skip>false</maven.deploy.skip>
     <grpc.version>1.69.0</grpc.version>
     <protocCommand>protoc</protocCommand>
-    <protobuf.version>4.29.2</protobuf.version>
+    <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
   <dependencies>
@@ -59,11 +59,6 @@
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio</artifactId>
       <version>3.9.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>${protobuf.version}</version>
     </dependency>
   </dependencies>
 
@@ -140,7 +135,7 @@
             <configuration>
               <protocCommand>protoc</protocCommand>
               <protocVersion>${protobuf.version}</protocVersion>
-              <protocArtifact>com.google.protobuf:protoc:${protobuf.version}</protocArtifact>
+              <protocArtifact>com.google.protobuf:protoc:3.25.5</protocArtifact>
               <addProtoSources>inputs</addProtoSources>
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>
