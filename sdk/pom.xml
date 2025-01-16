@@ -29,12 +29,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-resources-plugin</artifactId>
-      <version>3.3.1</version>
-      <type>maven-plugin</type>
-    </dependency>
-    <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-autogen</artifactId>
       <version>${project.version}</version>
