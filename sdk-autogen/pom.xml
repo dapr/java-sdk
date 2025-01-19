@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.13.0-SNAPSHOT</version>
+    <version>1.14.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk-autogen</artifactId>
   <packaging>jar</packaging>
-  <version>1.13.0-SNAPSHOT</version>
+  <version>1.14.0-SNAPSHOT</version>
   <name>dapr-sdk-autogen</name>
   <description>Auto-generated SDK for Dapr</description>
 
@@ -21,9 +21,9 @@
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <grpc.version>1.64.0</grpc.version>
+    <grpc.version>1.69.0</grpc.version>
     <protocCommand>protoc</protocCommand>
-    <protobuf.version>3.25.0</protobuf.version>
+    <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
   <dependencies>
@@ -54,6 +54,11 @@
       <artifactId>grpc-testing</artifactId>
       <version>${grpc.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okio</groupId>
+      <artifactId>okio</artifactId>
+      <version>3.9.1</version>
     </dependency>
   </dependencies>
 
@@ -130,7 +135,7 @@
             <configuration>
               <protocCommand>protoc</protocCommand>
               <protocVersion>${protobuf.version}</protocVersion>
-              <protocArtifact>com.google.protobuf:protoc:3.21.1</protocArtifact>
+              <protocArtifact>com.google.protobuf:protoc:3.25.5</protocArtifact>
               <addProtoSources>inputs</addProtoSources>
               <includeMavenTypes>direct</includeMavenTypes>
               <includeStdTypes>true</includeStdTypes>
