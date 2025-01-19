@@ -16,10 +16,11 @@ package io.dapr.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class Version {
 
-  private static String sdkVersion = null;
+  private static volatile AtomicReference<String> sdkVersion = new AtomicReference<>();
 
   /**
    * Retrieves sdk version from resources.
@@ -27,20 +28,31 @@ public final class Version {
    * @return String version of sdk.
    */
   public static String getSdkVersion() {
+    var version = sdkVersion.get();
 
-    if (sdkVersion != null) {
-      return sdkVersion;
+    if ((version != null) && !version.isBlank()) {
+      return version;
     }
 
-    try (InputStream input = Version.class.getResourceAsStream("/sdk_version.properties");) {
+    try (InputStream input = Version.class.getResourceAsStream("/sdk_version.properties")) {
       Properties properties = new Properties();
       properties.load(input);
-      sdkVersion = "dapr-sdk-java/v" + properties.getProperty("sdk_version", "unknown");
+      var v = properties.getProperty("sdk_version", null);
+      if (v == null) {
+        throw new IllegalStateException("Did not find sdk_version property!");
+      }
+
+      if (v.isBlank()) {
+        throw new IllegalStateException("Property sdk_version cannot be blank.");
+      }
+
+      version = "dapr-sdk-java/v" + v;
+      sdkVersion.set(version);
     } catch (IOException e) {
-      sdkVersion = "unknown";
+      throw new IllegalStateException("Could not load sdk_version property!", e);
     }
 
-    return sdkVersion;
+    return version;
   }
 
 }
