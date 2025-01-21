@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.13.2</version>
+    <version>1.13.3</version>
   </parent>
 
   <artifactId>dapr-sdk</artifactId>
   <packaging>jar</packaging>
-  <version>1.13.2</version>
+  <version>1.13.3</version>
   <name>dapr-sdk</name>
   <description>SDK for Dapr</description>
 
@@ -141,7 +141,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-autogen</artifactId>
-      <version>1.13.2</version>
+      <version>1.13.3</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>
