@@ -11,14 +11,14 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.subworkflow;
+package io.dapr.examples.workflows.childworkflow;
 
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
 import java.util.concurrent.TimeoutException;
 
-public class DemoSubWorkerflowClient {
+public class DemoChildWorkerflowClient {
   /**
    * The main method to start the client.
    *
@@ -28,7 +28,7 @@ public class DemoSubWorkerflowClient {
   public static void main(String[] args) {
     try (DaprWorkflowClient client = new DaprWorkflowClient()) {
       String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
-      System.out.printf("Started a new sub-workflow model workflow with instance ID: %s%n", instanceId);
+      System.out.printf("Started a new child-workflow model workflow with instance ID: %s%n", instanceId);
       WorkflowInstanceStatus workflowInstanceStatus =
           client.waitForInstanceCompletion(instanceId, null, true);
 

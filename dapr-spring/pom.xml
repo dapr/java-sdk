@@ -7,19 +7,20 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.13.0-SNAPSHOT</version>
+    <version>1.14.0-SNAPSHOT</version>
   </parent>
 
   <groupId>io.dapr.spring</groupId>
   <artifactId>dapr-spring-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.13.0-SNAPSHOT</version>
+  <version>0.14.0-SNAPSHOT</version>
   <name>dapr-spring-parent</name>
   <description>SDK extension for Spring and Spring Boot</description>
 
   <modules>
     <module>dapr-spring-data</module>
     <module>dapr-spring-messaging</module>
+    <module>dapr-spring-workflows</module>
     <module>dapr-spring-boot-autoconfigure</module>
     <module>dapr-spring-boot-tests</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter</module>

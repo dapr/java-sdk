@@ -15,7 +15,6 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.TaskOrchestration;
 import com.microsoft.durabletask.TaskOrchestrationFactory;
-import io.dapr.workflows.DaprWorkflowContextImpl;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.saga.Saga;
 
@@ -25,11 +24,11 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Wrapper for Durable Task Framework orchestration factory.
  */
-class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactory {
+class WorkflowWrapper<T extends Workflow> implements TaskOrchestrationFactory {
   private final Constructor<T> workflowConstructor;
   private final String name;
 
-  public OrchestratorWrapper(Class<T> clazz) {
+  public WorkflowWrapper(Class<T> clazz) {
     this.name = clazz.getCanonicalName();
     try {
       this.workflowConstructor = clazz.getDeclaredConstructor();
@@ -59,9 +58,9 @@ class OrchestratorWrapper<T extends Workflow> implements TaskOrchestrationFactor
 
       if (workflow.getSagaOption() != null) {
         Saga saga = new Saga(workflow.getSagaOption());
-        workflow.run(new DaprWorkflowContextImpl(ctx, saga));
+        workflow.run(new DefaultWorkflowContext(ctx, saga));
       } else {
-        workflow.run(new DaprWorkflowContextImpl(ctx));
+        workflow.run(new DefaultWorkflowContext(ctx));
       }
     };
 

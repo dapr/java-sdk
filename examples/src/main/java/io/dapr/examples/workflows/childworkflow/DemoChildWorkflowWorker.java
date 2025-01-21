@@ -11,12 +11,12 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.subworkflow;
+package io.dapr.examples.workflows.childworkflow;
 
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 
-public class DemoSubWorkflowWorker {
+public class DemoChildWorkflowWorker {
   /**
    * The main method of this app.
    *
@@ -27,7 +27,7 @@ public class DemoSubWorkflowWorker {
     // Register the Workflow with the builder.
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder()
         .registerWorkflow(DemoWorkflow.class)
-            .registerWorkflow(DemoSubWorkflow.class);
+            .registerWorkflow(DemoChildWorkflow.class);
     builder.registerActivity(ReverseActivity.class);
 
     // Build and then start the workflow runtime pulling and executing tasks

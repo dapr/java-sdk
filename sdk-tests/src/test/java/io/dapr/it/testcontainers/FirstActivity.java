@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.it.testcontainers;
 
-import io.dapr.workflows.runtime.WorkflowActivity;
-import io.dapr.workflows.runtime.WorkflowActivityContext;
+import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
 
 public class FirstActivity implements WorkflowActivity {
 

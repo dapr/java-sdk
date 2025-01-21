@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.13.0-SNAPSHOT</version>
+    <version>1.14.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk</artifactId>
   <packaging>jar</packaging>
-  <version>1.13.0-SNAPSHOT</version>
+  <version>1.14.0-SNAPSHOT</version>
   <name>dapr-sdk</name>
   <description>SDK for Dapr</description>
 
@@ -21,18 +21,13 @@
     <argLine>
       --add-opens java.base/java.util=ALL-UNNAMED
     </argLine>
+          
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-resources-plugin</artifactId>
-      <version>3.3.0</version>
-      <type>maven-plugin</type>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
@@ -52,7 +47,13 @@
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
-      <version>4.9.2</version>
+      <version>4.12.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jetbrains.kotlin</groupId>
+          <artifactId>kotlin-stdlib-jdk8</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -72,9 +73,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.github.gmazzo</groupId>
-      <artifactId>okhttp-mock</artifactId>
-      <version>1.4.1</version>
+      <groupId>com.github.gmazzo.okhttp.mock</groupId>
+      <artifactId>mock-client</artifactId>
+      <version>2.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -137,12 +138,6 @@
       <artifactId>grpc-inprocess</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-autogen</artifactId>
-      <version>1.13.0-SNAPSHOT</version>
-      <scope>compile</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -163,6 +158,10 @@
       </resource>
     </resources>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>

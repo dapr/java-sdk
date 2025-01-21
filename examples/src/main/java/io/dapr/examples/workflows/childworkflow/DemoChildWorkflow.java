@@ -11,24 +11,24 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.subworkflow;
+package io.dapr.examples.workflows.childworkflow;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 
-public class DemoSubWorkflow extends Workflow {
+public class DemoChildWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
-      ctx.getLogger().info("Starting SubWorkflow: " + ctx.getName());
+      ctx.getLogger().info("Starting ChildWorkflow: " + ctx.getName());
 
-      var subWorkflowInput = ctx.getInput(String.class);
-      ctx.getLogger().info("SubWorkflow received input: " + subWorkflowInput);
+      var childWorkflowInput = ctx.getInput(String.class);
+      ctx.getLogger().info("ChildWorkflow received input: " + childWorkflowInput);
 
-      ctx.getLogger().info("SubWorkflow is calling Activity: " + ReverseActivity.class.getName());
-      String result = ctx.callActivity(ReverseActivity.class.getName(), subWorkflowInput, String.class).await();
+      ctx.getLogger().info("ChildWorkflow is calling Activity: " + ReverseActivity.class.getName());
+      String result = ctx.callActivity(ReverseActivity.class.getName(), childWorkflowInput, String.class).await();
 
-      ctx.getLogger().info("SubWorkflow finished with: " + result);
+      ctx.getLogger().info("ChildWorkflow finished with: " + result);
       ctx.complete(result);
     };
   }

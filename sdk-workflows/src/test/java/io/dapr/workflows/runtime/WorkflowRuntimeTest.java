@@ -16,27 +16,17 @@ package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.DurableTaskGrpcWorker;
 import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
-import io.dapr.workflows.Workflow;
-import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class WorkflowRuntimeTest {
-    public static class TestWorkflow extends Workflow {
-      @Override
-      public WorkflowStub create() {
-        return ctx -> { };
-      }
-    }
 
   @Test
   public void startTest() {
     DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
     try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
-      assertDoesNotThrow(() -> {
-        runtime.start(false);
-      });
+      assertDoesNotThrow(() -> runtime.start(false));
     }
   }
 
