@@ -3,6 +3,7 @@ package io.dapr.it.testcontainers;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -25,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     classes = {
-        TestActorsApplication.class
+        TestActorsApplication.class,
+        TestDaprActorsConfiguration.class
     }
 )
 @Testcontainers
@@ -59,7 +61,8 @@ public class DaprActorsIT {
 
   @Test
   public void testActors() throws Exception {
-    ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder(TestActor.class, daprActorClient);
+    ActorRuntime.getInstance().registerActor(TestActorImpl.class);
+    ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder<>(TestActor.class, daprActorClient);
     ActorId actorId = ActorId.createRandom();
     TestActor actor = builder.build(actorId);
 
