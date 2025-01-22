@@ -19,7 +19,7 @@ import io.dapr.workflows.WorkflowActivityContext;
 /**
  * Wrapper for Durable Task Framework {@link TaskActivityContext}.
  */
-class DefaultWorkflowActivityContext implements WorkflowActivityContext {
+public class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   private final TaskActivityContext innerContext;
 
   /**
