@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     classes = {
-        TestDaprActorsConfiguration.class,
         TestActorsApplication.class
     }
 )
@@ -35,7 +34,7 @@ public class DaprActorsIT {
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.1")
       .withAppName("actor-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("kvstore", "state.in-memory", "v1",
@@ -56,11 +55,11 @@ public class DaprActorsIT {
   }
 
   @Autowired
-  private ActorClient actorClient;
+  private ActorClient daprActorClient;
 
   @Test
-  public void testWorkflows() throws Exception {
-    ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder(TestActor.class, actorClient);
+  public void testActors() throws Exception {
+    ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder(TestActor.class, daprActorClient);
     ActorId actorId = ActorId.createRandom();
     TestActor actor = builder.build(actorId);
 
