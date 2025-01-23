@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.spring.boot.autoconfigure.client;
 
+import io.dapr.actors.client.ActorClient;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.config.Properties;
@@ -75,6 +76,13 @@ public class DaprClientAutoConfiguration {
   WorkflowRuntimeBuilder daprWorkflowRuntimeBuilder(DaprConnectionDetails daprConnectionDetails) {
     Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
     return new WorkflowRuntimeBuilder(properties);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  ActorClient daprActorClient(DaprConnectionDetails daprConnectionDetails) {
+    Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+    return new ActorClient(properties);
   }
 
   private Properties createPropertiesFromConnectionDetails(DaprConnectionDetails daprConnectionDetails) {
