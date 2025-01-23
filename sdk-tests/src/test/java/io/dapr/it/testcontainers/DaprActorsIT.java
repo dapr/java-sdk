@@ -7,6 +7,7 @@ import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,12 +57,17 @@ public class DaprActorsIT {
     registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
   }
 
+  @BeforeAll
+  public static void setUp(){
+    ActorRuntime.getInstance().registerActor(TestActorImpl.class);
+  }
+
   @Autowired
   private ActorClient daprActorClient;
 
   @Test
   public void testActors() throws Exception {
-    ActorRuntime.getInstance().registerActor(TestActorImpl.class);
+
     ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder<>(TestActor.class, daprActorClient);
     ActorId actorId = ActorId.createRandom();
     TestActor actor = builder.build(actorId);
