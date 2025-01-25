@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.workflows;
 
 import com.microsoft.durabletask.CompositeTaskFailedException;
-import com.microsoft.durabletask.RetryPolicy;
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
@@ -27,6 +26,7 @@ import io.dapr.workflows.saga.SagaContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -35,9 +35,10 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -86,17 +87,17 @@ public class DefaultWorkflowContextTest {
       }
 
       @Override
-      public <V> Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
+      public Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
         return null;
       }
 
       @Override
-      public <V> Task<Void> waitForExternalEvent(String name) throws TaskCanceledException {
+      public Task<Void> waitForExternalEvent(String name) throws TaskCanceledException {
         return null;
       }
 
       @Override
-      public <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType) {
+      public <V> Task<V> callActivity(String name, Object input, WorkflowExecutionOptions options, Class<V> returnType) {
         return null;
       }
 
@@ -127,7 +128,7 @@ public class DefaultWorkflowContextTest {
 
       @Override
       public <V> Task<V> callChildWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
-                                         @Nullable TaskOptions options, Class<V> returnType) {
+                                           @Nullable WorkflowExecutionOptions options, Class<V> returnType) {
         return null;
       }
 
@@ -190,15 +191,12 @@ public class DefaultWorkflowContextTest {
 
   @Test
   public void DaprWorkflowContextWithEmptyInnerContext() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      context = new DefaultWorkflowContext(mockInnerContext, (Logger)null);
-    });  }
+    assertThrows(IllegalArgumentException.class, () ->
+        context = new DefaultWorkflowContext(mockInnerContext, (Logger)null));  }
 
   @Test
   public void DaprWorkflowContextWithEmptyLogger() {
-    assertThrows(IllegalArgumentException.class, () -> {
-      context = new DefaultWorkflowContext(null, (Logger)null);
-    });
+    assertThrows(IllegalArgumentException.class, () -> context = new DefaultWorkflowContext(null, (Logger)null));
   }
 
   @Test
@@ -291,11 +289,28 @@ public class DefaultWorkflowContextTest {
     String expectedName = "TestActivity";
     String expectedInput = "TestInput";
     String expectedInstanceId = "TestInstanceId";
-    TaskOptions expectedOptions = new TaskOptions(new RetryPolicy(1, Duration.ofSeconds(10)));
+    WorkflowExecutionRetryPolicy retryPolicy = WorkflowExecutionRetryPolicy.newBuilder()
+        .setMaxNumberOfAttempts(1)
+        .setFirstRetryInterval(Duration.ofSeconds(10))
+        .build();
+    WorkflowExecutionOptions executionOptions = new WorkflowExecutionOptions(retryPolicy);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
 
-    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, expectedOptions, String.class);
-    verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, expectedInstanceId,
-        expectedOptions, String.class);
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+        .callSubOrchestrator(
+            eq(expectedName),
+            eq(expectedInput),
+            eq(expectedInstanceId),
+            captor.capture(),
+            eq(String.class)
+        );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    assertEquals(retryPolicy.getMaxNumberOfAttempts(), taskOptions.getRetryPolicy().getMaxNumberOfAttempts());
+    assertEquals(retryPolicy.getFirstRetryInterval(), taskOptions.getRetryPolicy().getFirstRetryInterval());
   }
 
   @Test
@@ -326,14 +341,12 @@ public class DefaultWorkflowContextTest {
     WorkflowContext context = new DefaultWorkflowContext(mockInnerContext, saga);
 
     SagaContext sagaContext = context.getSagaContext();
-    assertNotNull("SagaContext should not be null", sagaContext);
+    assertNotNull(sagaContext, "SagaContext should not be null");
   }
 
   @Test
   public void getSagaContextTest_sagaDisabled() {
     WorkflowContext context = new DefaultWorkflowContext(mockInnerContext);
-    assertThrows(UnsupportedOperationException.class, () -> {
-      context.getSagaContext();
-    });
+    assertThrows(UnsupportedOperationException.class, context::getSagaContext);
   }
 }

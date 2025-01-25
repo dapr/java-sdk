@@ -14,11 +14,14 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import com.microsoft.durabletask.CompositeTaskFailedException;
+import com.microsoft.durabletask.RetryPolicy;
 import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
+import io.dapr.workflows.WorkflowExecutionOptions;
+import io.dapr.workflows.WorkflowExecutionRetryPolicy;
 import io.dapr.workflows.runtime.saga.DefaultSagaContext;
 import io.dapr.workflows.saga.Saga;
 import io.dapr.workflows.saga.SagaContext;
@@ -149,7 +152,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    *                               before the event is received
    */
   @Override
-  public <V> Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
+  public Task<Void> waitForExternalEvent(String name, Duration timeout) throws TaskCanceledException {
     return this.innerContext.waitForExternalEvent(name, timeout, Void.class);
   }
 
@@ -165,7 +168,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * @return a new {@link Task} that completes when the external event is received
    */
   @Override
-  public <V> Task<Void> waitForExternalEvent(String name) throws TaskCanceledException {
+  public Task<Void> waitForExternalEvent(String name) throws TaskCanceledException {
     return this.innerContext.waitForExternalEvent(name, null, Void.class);
   }
 
@@ -177,8 +180,10 @@ public class DefaultWorkflowContext implements WorkflowContext {
   /**
    * {@inheritDoc}
    */
-  public <V> Task<V> callActivity(String name, Object input, TaskOptions options, Class<V> returnType) {
-    return this.innerContext.callActivity(name, input, options, returnType);
+  public <V> Task<V> callActivity(String name, Object input, WorkflowExecutionOptions options, Class<V> returnType) {
+    TaskOptions taskOptions = toTaskOptions(options);
+
+    return this.innerContext.callActivity(name, input, taskOptions, returnType);
   }
 
   /**
@@ -214,9 +219,10 @@ public class DefaultWorkflowContext implements WorkflowContext {
    */
   @Override
   public <V> Task<V> callChildWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
-      @Nullable TaskOptions options, Class<V> returnType) {
+                                       @Nullable WorkflowExecutionOptions options, Class<V> returnType) {
+    TaskOptions taskOptions = toTaskOptions(options);
 
-    return this.innerContext.callSubOrchestrator(name, input, instanceID, options, returnType);
+    return this.innerContext.callSubOrchestrator(name, input, instanceID, taskOptions, returnType);
   }
 
   /**
@@ -250,5 +256,22 @@ public class DefaultWorkflowContext implements WorkflowContext {
     }
 
     return new DefaultSagaContext(this.saga, this);
+  }
+
+  private static TaskOptions toTaskOptions(WorkflowExecutionOptions options) {
+    if (options == null) {
+      return null;
+    }
+
+    WorkflowExecutionRetryPolicy workflowExecutionRetryPolicy = options.getRetryPolicy();
+    RetryPolicy retryPolicy = new RetryPolicy(
+        workflowExecutionRetryPolicy.getMaxNumberOfAttempts(),
+        workflowExecutionRetryPolicy.getFirstRetryInterval()
+    );
+
+    retryPolicy.setBackoffCoefficient(workflowExecutionRetryPolicy.getBackoffCoefficient());
+    retryPolicy.setRetryTimeout(workflowExecutionRetryPolicy.getRetryTimeout());
+
+    return new TaskOptions(retryPolicy);
   }
 }

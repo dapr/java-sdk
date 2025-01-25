@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,10 +13,16 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-public interface WorkflowActivityContext {
+public class WorkflowExecutionOptions {
 
-  String getName();
+  private final WorkflowExecutionRetryPolicy retryPolicy;
 
-  <T> T getInput(Class<T> targetType);
+  public WorkflowExecutionOptions(WorkflowExecutionRetryPolicy retryPolicy) {
+    this.retryPolicy = retryPolicy;
+  }
+
+  public WorkflowExecutionRetryPolicy getRetryPolicy() {
+    return retryPolicy;
+  }
 
 }

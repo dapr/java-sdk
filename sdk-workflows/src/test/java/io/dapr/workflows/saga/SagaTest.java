@@ -33,13 +33,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import io.dapr.workflows.WorkflowActivityContext;
+import io.dapr.workflows.WorkflowExecutionOptions;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskOptions;
 
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowActivity;
@@ -48,7 +48,7 @@ public class SagaTest {
 
   public static WorkflowContext createMockContext() {
     WorkflowContext workflowContext = mock(WorkflowContext.class);
-    when(workflowContext.callActivity(anyString(), any(), eq((TaskOptions) null))).thenAnswer(new ActivityAnswer());
+    when(workflowContext.callActivity(anyString(), any(), eq((WorkflowExecutionOptions) null))).thenAnswer(new ActivityAnswer());
     when(workflowContext.allOf(anyList())).thenAnswer(new AllActivityAnswer());
 
     return workflowContext;
@@ -63,7 +63,7 @@ public class SagaTest {
 
   @Test
   public void testregisterCompensation() {
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true).build();
     Saga saga = new Saga(config);
@@ -73,7 +73,7 @@ public class SagaTest {
 
   @Test
   public void testregisterCompensation_IllegalArgument() {
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true).build();
     Saga saga = new Saga(config);
@@ -90,7 +90,7 @@ public class SagaTest {
   public void testCompensateInParallel() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -112,7 +112,7 @@ public class SagaTest {
   public void testCompensateInParallel_exception_1failed() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -139,7 +139,7 @@ public class SagaTest {
   public void testCompensateInParallel_exception_2failed() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -166,7 +166,7 @@ public class SagaTest {
   public void testCompensateInParallel_exception_3failed() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -194,7 +194,7 @@ public class SagaTest {
   public void testCompensateSequentially() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
@@ -221,7 +221,7 @@ public class SagaTest {
   public void testCompensateSequentially_continueWithError() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true)
         .build();
@@ -254,7 +254,7 @@ public class SagaTest {
   public void testCompensateSequentially_continueWithError_suppressed() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(true)
         .build();
@@ -287,7 +287,7 @@ public class SagaTest {
   public void testCompensateSequentially_notContinueWithError() {
     MockCompentationActivity.compensateOrder.clear();
 
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
         .setContinueWithError(false)
         .build();
