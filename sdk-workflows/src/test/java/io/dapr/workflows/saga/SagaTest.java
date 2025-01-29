@@ -33,7 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import io.dapr.workflows.WorkflowActivityContext;
-import io.dapr.workflows.WorkflowExecutionOptions;
+import io.dapr.workflows.WorkflowTaskOptions;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -48,7 +48,7 @@ public class SagaTest {
 
   public static WorkflowContext createMockContext() {
     WorkflowContext workflowContext = mock(WorkflowContext.class);
-    when(workflowContext.callActivity(anyString(), any(), eq((WorkflowExecutionOptions) null))).thenAnswer(new ActivityAnswer());
+    when(workflowContext.callActivity(anyString(), any(), eq((WorkflowTaskOptions) null))).thenAnswer(new ActivityAnswer());
     when(workflowContext.allOf(anyList())).thenAnswer(new AllActivityAnswer());
 
     return workflowContext;
@@ -88,43 +88,43 @@ public class SagaTest {
 
   @Test
   public void testCompensateInParallel() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     saga.compensate(createMockContext());
 
-    assertEquals(3, MockCompentationActivity.compensateOrder.size());
+    assertEquals(3, MockCompensationActivity.compensateOrder.size());
   }
 
   @Test
   public void testCompensateInParallel_exception_1failed() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(createMockContext());
@@ -132,39 +132,39 @@ public class SagaTest {
     assertNotNull(exception.getCause());
     // 3 compentation activities, 2 succeed, 1 failed
     assertEquals(0, exception.getSuppressed().length);
-    assertEquals(2, MockCompentationActivity.compensateOrder.size());
+    assertEquals(2, MockCompensationActivity.compensateOrder.size());
   }
 
   @Test
   public void testCompensateInParallel_exception_2failed() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
     input3.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(createMockContext());
     });
     assertNotNull(exception.getCause());
     // 3 compentation activities, 1 succeed, 2 failed
-    assertEquals(1, MockCompentationActivity.compensateOrder.size());
+    assertEquals(1, MockCompensationActivity.compensateOrder.size());
   }
 
   @Test
   public void testCompensateInParallel_exception_3failed() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(true).build();
@@ -172,54 +172,54 @@ public class SagaTest {
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
     input1.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
     input3.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(createMockContext());
     });
     assertNotNull(exception.getCause());
     // 3 compentation activities, 0 succeed, 3 failed
-    assertEquals(0, MockCompentationActivity.compensateOrder.size());
+    assertEquals(0, MockCompensationActivity.compensateOrder.size());
   }
 
   @Test
   public void testCompensateSequentially() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false).build();
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     saga.compensate(createMockContext());
 
-    assertEquals(3, MockCompentationActivity.compensateOrder.size());
+    assertEquals(3, MockCompensationActivity.compensateOrder.size());
 
     // the order should be 3 / 2 / 1
-    assertEquals(Integer.valueOf(3), MockCompentationActivity.compensateOrder.get(0));
-    assertEquals(Integer.valueOf(2), MockCompentationActivity.compensateOrder.get(1));
-    assertEquals(Integer.valueOf(1), MockCompentationActivity.compensateOrder.get(2));
+    assertEquals(Integer.valueOf(3), MockCompensationActivity.compensateOrder.get(0));
+    assertEquals(Integer.valueOf(2), MockCompensationActivity.compensateOrder.get(1));
+    assertEquals(Integer.valueOf(1), MockCompensationActivity.compensateOrder.get(2));
   }
 
   @Test
   public void testCompensateSequentially_continueWithError() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
@@ -228,14 +228,14 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(createMockContext());
@@ -244,15 +244,15 @@ public class SagaTest {
     assertEquals(0, exception.getSuppressed().length);
 
     // 3 compentation activities, 2 succeed, 1 failed
-    assertEquals(2, MockCompentationActivity.compensateOrder.size());
+    assertEquals(2, MockCompensationActivity.compensateOrder.size());
     // the order should be 3 / 1
-    assertEquals(Integer.valueOf(3), MockCompentationActivity.compensateOrder.get(0));
-    assertEquals(Integer.valueOf(1), MockCompentationActivity.compensateOrder.get(1));
+    assertEquals(Integer.valueOf(3), MockCompensationActivity.compensateOrder.get(0));
+    assertEquals(Integer.valueOf(1), MockCompensationActivity.compensateOrder.get(1));
   }
 
   @Test
   public void testCompensateSequentially_continueWithError_suppressed() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
@@ -261,15 +261,15 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
     input3.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(createMockContext());
@@ -278,14 +278,14 @@ public class SagaTest {
     assertEquals(1, exception.getSuppressed().length);
 
     // 3 compentation activities, 1 succeed, 2 failed
-    assertEquals(1, MockCompentationActivity.compensateOrder.size());
+    assertEquals(1, MockCompensationActivity.compensateOrder.size());
     // the order should be 3 / 1
-    assertEquals(Integer.valueOf(1), MockCompentationActivity.compensateOrder.get(0));
+    assertEquals(Integer.valueOf(1), MockCompensationActivity.compensateOrder.get(0));
   }
 
   @Test
   public void testCompensateSequentially_notContinueWithError() {
-    MockCompentationActivity.compensateOrder.clear();
+    MockCompensationActivity.compensateOrder.clear();
 
     SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(false)
@@ -294,14 +294,14 @@ public class SagaTest {
     Saga saga = new Saga(config);
     MockActivityInput input1 = new MockActivityInput();
     input1.setOrder(1);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input1);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input1);
     MockActivityInput input2 = new MockActivityInput();
     input2.setOrder(2);
     input2.setThrowException(true);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input2);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input2);
     MockActivityInput input3 = new MockActivityInput();
     input3.setOrder(3);
-    saga.registerCompensation(MockCompentationActivity.class.getName(), input3);
+    saga.registerCompensation(MockCompensationActivity.class.getName(), input3);
 
     SagaCompensationException exception = assertThrows(SagaCompensationException.class, () -> {
       saga.compensate(createMockContext());
@@ -310,9 +310,9 @@ public class SagaTest {
     assertEquals(0, exception.getSuppressed().length);
 
     // 3 compentation activities, 1 succeed, 1 failed and not continue
-    assertEquals(1, MockCompentationActivity.compensateOrder.size());
+    assertEquals(1, MockCompensationActivity.compensateOrder.size());
     // the order should be 3 / 1
-    assertEquals(Integer.valueOf(3), MockCompentationActivity.compensateOrder.get(0));
+    assertEquals(Integer.valueOf(3), MockCompensationActivity.compensateOrder.get(0));
   }
 
   public static class MockActivity implements WorkflowActivity {
@@ -325,9 +325,9 @@ public class SagaTest {
     }
   }
 
-  public static class MockCompentationActivity implements WorkflowActivity {
+  public static class MockCompensationActivity implements WorkflowActivity {
 
-    private static List<Integer> compensateOrder = Collections.synchronizedList(new ArrayList<>());
+    private static final List<Integer> compensateOrder = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public Object run(WorkflowActivityContext ctx) {

@@ -17,7 +17,7 @@ import com.microsoft.durabletask.Task;
 import com.microsoft.durabletask.interruption.ContinueAsNewInterruption;
 import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.WorkflowContext;
-import io.dapr.workflows.WorkflowExecutionOptions;
+import io.dapr.workflows.WorkflowTaskOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +55,7 @@ public final class Saga {
    * @param activityInput     input of the activity to be compensated
    * @param options           task options to set retry strategy
    */
-  public void registerCompensation(String activityClassName, Object activityInput, WorkflowExecutionOptions options) {
+  public void registerCompensation(String activityClassName, Object activityInput, WorkflowTaskOptions options) {
     if (activityClassName == null || activityClassName.isEmpty()) {
       throw new IllegalArgumentException("activityClassName is required and should not be null or empty.");
     }

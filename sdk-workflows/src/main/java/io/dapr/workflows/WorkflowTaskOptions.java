@@ -13,15 +13,15 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-public class WorkflowExecutionOptions {
+public class WorkflowTaskOptions {
 
-  private final WorkflowExecutionRetryPolicy retryPolicy;
+  private final WorkflowTaskRetryPolicy retryPolicy;
 
-  public WorkflowExecutionOptions(WorkflowExecutionRetryPolicy retryPolicy) {
+  public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy) {
     this.retryPolicy = retryPolicy;
   }
 
-  public WorkflowExecutionRetryPolicy getRetryPolicy() {
+  public WorkflowTaskRetryPolicy getRetryPolicy() {
     return retryPolicy;
   }
 

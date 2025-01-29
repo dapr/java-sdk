@@ -152,15 +152,15 @@ public interface WorkflowContext {
    * @param <V>        the expected type of the activity output
    * @return a new {@link Task} that completes when the activity completes or fails
    */
-  <V> Task<V> callActivity(String name, Object input, WorkflowExecutionOptions options, Class<V> returnType);
+  <V> Task<V> callActivity(String name, Object input, WorkflowTaskOptions options, Class<V> returnType);
 
   /**
    * Asynchronously invokes an activity by name and returns a new {@link Task} that completes when the activity
-   * completes. See {@link #callActivity(String, Object, WorkflowExecutionOptions, Class)} for a complete description.
+   * completes. See {@link #callActivity(String, Object, WorkflowTaskOptions, Class)} for a complete description.
    *
    * @param name the name of the activity to call
    * @return a new {@link Task} that completes when the activity completes or fails
-   * @see #callActivity(String, Object, WorkflowExecutionOptions, Class)
+   * @see #callActivity(String, Object, WorkflowTaskOptions, Class)
    */
   default Task<Void> callActivity(String name) {
     return this.callActivity(name, null, null, Void.class);
@@ -169,7 +169,7 @@ public interface WorkflowContext {
   /**
    * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
    * that completes when the activity completes.
-   * See {@link #callActivity(String, Object, WorkflowExecutionOptions, Class)} for a complete description.
+   * See {@link #callActivity(String, Object, WorkflowTaskOptions, Class)} for a complete description.
    *
    * @param name  the name of the activity to call
    * @param input the serializable input to pass to the activity
@@ -182,7 +182,7 @@ public interface WorkflowContext {
   /**
    * Asynchronously invokes an activity by name and returns a new {@link Task} that completes when the activity
    * completes. If the activity completes successfully, the returned {@code Task}'s value will be the activity's
-   * output. See {@link #callActivity(String, Object, WorkflowExecutionOptions, Class)} for a complete description.
+   * output. See {@link #callActivity(String, Object, WorkflowTaskOptions, Class)} for a complete description.
    *
    * @param name       the name of the activity to call
    * @param returnType the expected class type of the activity output
@@ -197,7 +197,7 @@ public interface WorkflowContext {
    * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
    * that completes when the activity completes.If the activity completes successfully, the returned {@code Task}'s
    * value will be the activity's output.
-   * See {@link #callActivity(String, Object, WorkflowExecutionOptions, Class)} for a complete description.
+   * See {@link #callActivity(String, Object, WorkflowTaskOptions, Class)} for a complete description.
    *
    * @param name       the name of the activity to call
    * @param input      the serializable input to pass to the activity
@@ -212,14 +212,14 @@ public interface WorkflowContext {
   /**
    * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
    * that completes when the activity completes.
-   * See {@link #callActivity(String, Object, WorkflowExecutionOptions, Class)} for a complete description.
+   * See {@link #callActivity(String, Object, WorkflowTaskOptions, Class)} for a complete description.
    *
    * @param name    the name of the activity to call
    * @param input   the serializable input to pass to the activity
    * @param options additional options that control the execution and processing of the activity
    * @return a new {@link Task} that completes when the activity completes or fails
    */
-  default Task<Void> callActivity(String name, Object input, WorkflowExecutionOptions options) {
+  default Task<Void> callActivity(String name, Object input, WorkflowTaskOptions options) {
     return this.callActivity(name, input, options, Void.class);
   }
 
@@ -366,11 +366,11 @@ public interface WorkflowContext {
    * Asynchronously invokes another workflow as a child-workflow and returns a {@link Task} that completes
    * when the child-workflow completes.
    *
-   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowExecutionOptions, Class)} for a full description.
+   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowTaskOptions, Class)} for a full description.
    *
    * @param name the name of the workflow to invoke
    * @return a new {@link Task} that completes when the child-workflow completes or fails
-   * @see #callChildWorkflow(String, Object, String, WorkflowExecutionOptions, Class)
+   * @see #callChildWorkflow(String, Object, String, WorkflowTaskOptions, Class)
    */
   default Task<Void> callChildWorkflow(String name) {
     return this.callChildWorkflow(name, null);
@@ -380,7 +380,7 @@ public interface WorkflowContext {
    * Asynchronously invokes another workflow as a child-workflow and returns a {@link Task} that completes
    * when the child-workflow completes.
    *
-   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowExecutionOptions, Class)} for a full description.
+   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowTaskOptions, Class)} for a full description.
    *
    * @param name  the name of the workflow to invoke
    * @param input the serializable input to send to the child-workflow
@@ -394,7 +394,7 @@ public interface WorkflowContext {
    * Asynchronously invokes another workflow as a child-workflow and returns a {@link Task} that completes
    * when the child-workflow completes.
    *
-   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowExecutionOptions, Class)} for a full description.
+   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowTaskOptions, Class)} for a full description.
    *
    * @param name       the name of the workflow to invoke
    * @param input      the serializable input to send to the child-workflow
@@ -410,7 +410,7 @@ public interface WorkflowContext {
    * Asynchronously invokes another workflow as a child-workflow and returns a {@link Task} that completes
    * when the child-workflow completes.
    *
-   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowExecutionOptions, Class)} for a full description.
+   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowTaskOptions, Class)} for a full description.
    *
    * @param name       the name of the workflow to invoke
    * @param input      the serializable input to send to the child-workflow
@@ -427,7 +427,7 @@ public interface WorkflowContext {
    * Asynchronously invokes another workflow as a child-workflow and returns a {@link Task} that completes
    * when the child-workflow completes.
    *
-   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowExecutionOptions, Class)} for a full description.
+   * <p>See {@link #callChildWorkflow(String, Object, String, WorkflowTaskOptions, Class)} for a full description.
    *
    * @param name       the name of the workflow to invoke
    * @param input      the serializable input to send to the child-workflow
@@ -435,7 +435,7 @@ public interface WorkflowContext {
    * @param options    additional options that control the execution and processing of the activity
    * @return a new {@link Task} that completes when the child-workflow completes or fails
    */
-  default Task<Void> callChildWorkflow(String name, Object input, String instanceID, WorkflowExecutionOptions options) {
+  default Task<Void> callChildWorkflow(String name, Object input, String instanceID, WorkflowTaskOptions options) {
     return this.callChildWorkflow(name, input, instanceID, options, Void.class);
   }
 
@@ -477,7 +477,7 @@ public interface WorkflowContext {
   <V> Task<V> callChildWorkflow(String name,
                               @Nullable Object input,
                               @Nullable String instanceID,
-                              @Nullable WorkflowExecutionOptions options,
+                              @Nullable WorkflowTaskOptions options,
                               Class<V> returnType);
 
   /**

@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 
 import java.time.Duration;
 
-public final class WorkflowExecutionRetryPolicy {
+public final class WorkflowTaskRetryPolicy {
 
   private final Integer maxNumberOfAttempts;
   private final Duration firstRetryInterval;
@@ -26,14 +26,14 @@ public final class WorkflowExecutionRetryPolicy {
   private final Duration retryTimeout;
 
   /**
-   * Constructor for WorkflowExecutionRetryPolicy.
+   * Constructor for WorkflowTaskRetryPolicy.
    * @param maxNumberOfAttempts Maximum number of attempts to retry the workflow.
    * @param firstRetryInterval Interval to wait before the first retry.
    * @param backoffCoefficient Coefficient to increase the retry interval.
    * @param maxRetryInterval Maximum interval to wait between retries.
    * @param retryTimeout Timeout for the whole retry process.
    */
-  public WorkflowExecutionRetryPolicy(
+  public WorkflowTaskRetryPolicy(
       Integer maxNumberOfAttempts,
       Duration firstRetryInterval,
       Double backoffCoefficient,
@@ -83,11 +83,11 @@ public final class WorkflowExecutionRetryPolicy {
     }
 
     /**
-     * Build the WorkflowExecutionRetryPolicy.
-     * @return WorkflowExecutionRetryPolicy
+     * Build the WorkflowTaskRetryPolicy.
+     * @return WorkflowTaskRetryPolicy
      */
-    public WorkflowExecutionRetryPolicy build() {
-      return new WorkflowExecutionRetryPolicy(
+    public WorkflowTaskRetryPolicy build() {
+      return new WorkflowTaskRetryPolicy(
           this.maxNumberOfAttempts,
           this.firstRetryInterval,
           this.backoffCoefficient,

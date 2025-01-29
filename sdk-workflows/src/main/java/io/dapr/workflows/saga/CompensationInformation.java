@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.saga;
 
-import io.dapr.workflows.WorkflowExecutionOptions;
+import io.dapr.workflows.WorkflowTaskOptions;
 
 /**
  * Information for a compensation activity.
@@ -21,7 +21,7 @@ import io.dapr.workflows.WorkflowExecutionOptions;
 class CompensationInformation {
   private final String compensationActivityClassName;
   private final Object compensationActivityInput;
-  private final WorkflowExecutionOptions options;
+  private final WorkflowTaskOptions options;
 
   /**
    * Constructor for a compensation information.
@@ -30,13 +30,13 @@ class CompensationInformation {
    *                                        compensation.
    * @param compensationActivityInput     Input of the activity to do
    *                                        compensation.
-   * @param executionOptions              Execution options to set retry strategy
+   * @param options              Task options to set retry strategy
    */
   public CompensationInformation(String compensationActivityClassName,
-                                 Object compensationActivityInput, WorkflowExecutionOptions executionOptions) {
+                                 Object compensationActivityInput, WorkflowTaskOptions options) {
     this.compensationActivityClassName = compensationActivityClassName;
     this.compensationActivityInput = compensationActivityInput;
-    this.options = executionOptions;
+    this.options = options;
   }
 
   /**
@@ -62,7 +62,7 @@ class CompensationInformation {
    * 
    * @return task options, null if not set
    */
-  public WorkflowExecutionOptions getExecutionOptions() {
+  public WorkflowTaskOptions getExecutionOptions() {
     return options;
   }
 }

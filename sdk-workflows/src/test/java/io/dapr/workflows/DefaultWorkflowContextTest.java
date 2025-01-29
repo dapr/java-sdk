@@ -97,7 +97,7 @@ public class DefaultWorkflowContextTest {
       }
 
       @Override
-      public <V> Task<V> callActivity(String name, Object input, WorkflowExecutionOptions options, Class<V> returnType) {
+      public <V> Task<V> callActivity(String name, Object input, WorkflowTaskOptions options, Class<V> returnType) {
         return null;
       }
 
@@ -128,7 +128,7 @@ public class DefaultWorkflowContextTest {
 
       @Override
       public <V> Task<V> callChildWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
-                                           @Nullable WorkflowExecutionOptions options, Class<V> returnType) {
+                                           @Nullable WorkflowTaskOptions options, Class<V> returnType) {
         return null;
       }
 
@@ -289,11 +289,11 @@ public class DefaultWorkflowContextTest {
     String expectedName = "TestActivity";
     String expectedInput = "TestInput";
     String expectedInstanceId = "TestInstanceId";
-    WorkflowExecutionRetryPolicy retryPolicy = WorkflowExecutionRetryPolicy.newBuilder()
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
         .setMaxNumberOfAttempts(1)
         .setFirstRetryInterval(Duration.ofSeconds(10))
         .build();
-    WorkflowExecutionOptions executionOptions = new WorkflowExecutionOptions(retryPolicy);
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryPolicy);
     ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
 
     context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);

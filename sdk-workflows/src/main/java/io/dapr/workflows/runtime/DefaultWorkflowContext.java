@@ -20,8 +20,8 @@ import com.microsoft.durabletask.TaskCanceledException;
 import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
-import io.dapr.workflows.WorkflowExecutionOptions;
-import io.dapr.workflows.WorkflowExecutionRetryPolicy;
+import io.dapr.workflows.WorkflowTaskOptions;
+import io.dapr.workflows.WorkflowTaskRetryPolicy;
 import io.dapr.workflows.runtime.saga.DefaultSagaContext;
 import io.dapr.workflows.saga.Saga;
 import io.dapr.workflows.saga.SagaContext;
@@ -180,7 +180,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
   /**
    * {@inheritDoc}
    */
-  public <V> Task<V> callActivity(String name, Object input, WorkflowExecutionOptions options, Class<V> returnType) {
+  public <V> Task<V> callActivity(String name, Object input, WorkflowTaskOptions options, Class<V> returnType) {
     TaskOptions taskOptions = toTaskOptions(options);
 
     return this.innerContext.callActivity(name, input, taskOptions, returnType);
@@ -219,7 +219,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    */
   @Override
   public <V> Task<V> callChildWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
-                                       @Nullable WorkflowExecutionOptions options, Class<V> returnType) {
+                                       @Nullable WorkflowTaskOptions options, Class<V> returnType) {
     TaskOptions taskOptions = toTaskOptions(options);
 
     return this.innerContext.callSubOrchestrator(name, input, instanceID, taskOptions, returnType);
@@ -258,19 +258,19 @@ public class DefaultWorkflowContext implements WorkflowContext {
     return new DefaultSagaContext(this.saga, this);
   }
 
-  private static TaskOptions toTaskOptions(WorkflowExecutionOptions options) {
+  private static TaskOptions toTaskOptions(WorkflowTaskOptions options) {
     if (options == null) {
       return null;
     }
 
-    WorkflowExecutionRetryPolicy workflowExecutionRetryPolicy = options.getRetryPolicy();
+    WorkflowTaskRetryPolicy workflowTaskRetryPolicy = options.getRetryPolicy();
     RetryPolicy retryPolicy = new RetryPolicy(
-        workflowExecutionRetryPolicy.getMaxNumberOfAttempts(),
-        workflowExecutionRetryPolicy.getFirstRetryInterval()
+        workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
+        workflowTaskRetryPolicy.getFirstRetryInterval()
     );
 
-    retryPolicy.setBackoffCoefficient(workflowExecutionRetryPolicy.getBackoffCoefficient());
-    retryPolicy.setRetryTimeout(workflowExecutionRetryPolicy.getRetryTimeout());
+    retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
+    retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
 
     return new TaskOptions(retryPolicy);
   }
