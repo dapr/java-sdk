@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
-public class WorkflowActivityWrapperTest {
+public class WorkflowActivityClassWrapperTest {
   public static class TestActivity implements WorkflowActivity {
     @Override
     public Object run(WorkflowActivityContext ctx) {
@@ -23,10 +23,10 @@ public class WorkflowActivityWrapperTest {
 
   @Test
   public void getName() throws NoSuchMethodException {
-    WorkflowActivityWrapper<TestActivity> wrapper = new WorkflowActivityWrapper<>(
-        WorkflowActivityWrapperTest.TestActivity.class);
+    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>(
+        WorkflowActivityClassWrapperTest.TestActivity.class);
     Assert.assertEquals(
-        "io.dapr.workflows.runtime.WorkflowActivityWrapperTest.TestActivity",
+        "io.dapr.workflows.runtime.WorkflowActivityClassWrapperTest.TestActivity",
         wrapper.getName()
     );
   }
@@ -34,8 +34,8 @@ public class WorkflowActivityWrapperTest {
   @Test
   public void createWithClass() throws NoSuchMethodException {
     TaskActivityContext mockContext = mock(TaskActivityContext.class);
-    WorkflowActivityWrapper<TestActivity> wrapper = new WorkflowActivityWrapper<>(
-        WorkflowActivityWrapperTest.TestActivity.class);
+    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>(
+        WorkflowActivityClassWrapperTest.TestActivity.class);
     when(mockContext.getInput(String.class)).thenReturn("Hello");
     when(mockContext.getName()).thenReturn("TestActivityContext");
     Object result = wrapper.create().run(mockContext);

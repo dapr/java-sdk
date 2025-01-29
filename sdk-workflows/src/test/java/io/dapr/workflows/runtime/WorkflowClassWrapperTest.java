@@ -26,7 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class WorkflowWrapperTest {
+public class WorkflowClassWrapperTest {
   public static class TestWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
@@ -36,9 +36,9 @@ public class WorkflowWrapperTest {
 
   @Test
   public void getName() {
-    WorkflowWrapper<TestWorkflow> wrapper = new WorkflowWrapper<>(TestWorkflow.class);
+    WorkflowClassWrapper<TestWorkflow> wrapper = new WorkflowClassWrapper<>(TestWorkflow.class);
     Assertions.assertEquals(
-        "io.dapr.workflows.runtime.WorkflowWrapperTest.TestWorkflow",
+        "io.dapr.workflows.runtime.WorkflowClassWrapperTest.TestWorkflow",
         wrapper.getName()
     );
   }
@@ -46,7 +46,7 @@ public class WorkflowWrapperTest {
   @Test
   public void createWithClass() {
     TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
-    WorkflowWrapper<TestWorkflow> wrapper = new WorkflowWrapper<>(TestWorkflow.class);
+    WorkflowClassWrapper<TestWorkflow> wrapper = new WorkflowClassWrapper<>(TestWorkflow.class);
     when(mockContext.getInstanceId()).thenReturn("uuid");
     wrapper.create().run(mockContext);
     verify(mockContext, times(1)).getInstanceId();
