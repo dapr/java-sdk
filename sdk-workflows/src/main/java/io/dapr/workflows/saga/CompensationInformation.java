@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.saga;
 
-import com.microsoft.durabletask.TaskOptions;
+import io.dapr.workflows.WorkflowTaskOptions;
 
 /**
  * Information for a compensation activity.
@@ -21,7 +21,7 @@ import com.microsoft.durabletask.TaskOptions;
 class CompensationInformation {
   private final String compensationActivityClassName;
   private final Object compensationActivityInput;
-  private final TaskOptions taskOptions;
+  private final WorkflowTaskOptions options;
 
   /**
    * Constructor for a compensation information.
@@ -30,13 +30,13 @@ class CompensationInformation {
    *                                        compensation.
    * @param compensationActivityInput     Input of the activity to do
    *                                        compensation.
-   * @param taskOptions                     task options to set retry strategy
+   * @param options              Task options to set retry strategy
    */
   public CompensationInformation(String compensationActivityClassName,
-                                 Object compensationActivityInput, TaskOptions taskOptions) {
+                                 Object compensationActivityInput, WorkflowTaskOptions options) {
     this.compensationActivityClassName = compensationActivityClassName;
     this.compensationActivityInput = compensationActivityInput;
-    this.taskOptions = taskOptions;
+    this.options = options;
   }
 
   /**
@@ -62,7 +62,7 @@ class CompensationInformation {
    * 
    * @return task options, null if not set
    */
-  public TaskOptions getTaskOptions() {
-    return taskOptions;
+  public WorkflowTaskOptions getExecutionOptions() {
+    return options;
   }
 }

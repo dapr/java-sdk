@@ -17,19 +17,12 @@ import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.PurgeResult;
-import io.dapr.client.Headers;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
-import io.grpc.ForwardingClientCall;
 import io.grpc.ManagedChannel;
-import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
 
 import javax.annotation.Nullable;
 
@@ -41,6 +34,8 @@ import java.util.concurrent.TimeoutException;
  * Defines client operations for managing Dapr Workflow instances.
  */
 public class DaprWorkflowClient implements AutoCloseable {
+
+  private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
 
   private DurableTaskClient innerClient;
   private ManagedChannel grpcChannel;
@@ -137,7 +132,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param options the options for the new workflow, including input, instance ID, etc.
    * @return the <code>instanceId</code> parameter value.
    */
-  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOption options) {
+  public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOptions options) {
     return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
         options.getNewOrchestrationInstanceOptions());
   }
@@ -272,6 +267,6 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
   }
 
-  private static ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
+
 }
 

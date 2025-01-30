@@ -16,7 +16,7 @@ package io.dapr.workflows;
 import com.microsoft.durabletask.interruption.ContinueAsNewInterruption;
 import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.saga.SagaCompensationException;
-import io.dapr.workflows.saga.SagaOption;
+import io.dapr.workflows.saga.SagaOptions;
 
 /**
  * Common interface for workflow implementations.
@@ -74,7 +74,7 @@ public interface Workflow {
    * 
    * @return saga configuration
    */
-  default SagaOption getSagaOption() {
+  default SagaOptions getSagaOption() {
     // by default, saga is disabled
     return null;
   }

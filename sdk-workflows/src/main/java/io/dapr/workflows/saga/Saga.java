@@ -14,28 +14,28 @@ limitations under the License.
 package io.dapr.workflows.saga;
 
 import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.interruption.ContinueAsNewInterruption;
 import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.WorkflowContext;
+import io.dapr.workflows.WorkflowTaskOptions;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class Saga {
-  private final SagaOption option;
+  private final SagaOptions options;
   private final List<CompensationInformation> compensationActivities = new ArrayList<>();
 
   /**
    * Build up a Saga with its options.
    * 
-   * @param option Saga option.
+   * @param options Saga option.
    */
-  public Saga(SagaOption option) {
-    if (option == null) {
+  public Saga(SagaOptions options) {
+    if (options == null) {
       throw new IllegalArgumentException("option is required and should not be null.");
     }
-    this.option = option;
+    this.options = options;
   }
 
   /**
@@ -50,16 +50,16 @@ public final class Saga {
 
   /**
    * Register a compensation activity.
-   * 
+   *
    * @param activityClassName name of the activity class
    * @param activityInput     input of the activity to be compensated
-   * @param taskOptions       task options to set retry strategy
+   * @param options           task options to set retry strategy
    */
-  public void registerCompensation(String activityClassName, Object activityInput, TaskOptions taskOptions) {
+  public void registerCompensation(String activityClassName, Object activityInput, WorkflowTaskOptions options) {
     if (activityClassName == null || activityClassName.isEmpty()) {
       throw new IllegalArgumentException("activityClassName is required and should not be null or empty.");
     }
-    this.compensationActivities.add(new CompensationInformation(activityClassName, activityInput, taskOptions));
+    this.compensationActivities.add(new CompensationInformation(activityClassName, activityInput, options));
   }
 
   /**
@@ -72,7 +72,7 @@ public final class Saga {
     // Special case: when parallel compensation is enabled and there is only one
     // compensation, we still
     // compensate sequentially.
-    if (option.isParallelCompensation() && compensationActivities.size() > 1) {
+    if (options.isParallelCompensation() && compensationActivities.size() > 1) {
       compensateInParallel(ctx);
     } else {
       compensateSequentially(ctx);
@@ -109,7 +109,7 @@ public final class Saga {
           sagaException.addSuppressed(e);
         }
 
-        if (!option.isContinueWithError()) {
+        if (!options.isContinueWithError()) {
           throw sagaException;
         }
       }
@@ -124,6 +124,6 @@ public final class Saga {
       throws SagaCompensationException {
     String activityClassName = info.getCompensationActivityClassName();
     return ctx.callActivity(activityClassName, info.getCompensationActivityInput(),
-        info.getTaskOptions());
+        info.getExecutionOptions());
   }
 }

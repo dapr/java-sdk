@@ -5,15 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.Test;
 
-public class SagaOptionTest {
+public class SagaOptionsTest {
 
   @Test
   public void testBuild() {
-    SagaOption.Builder builder = SagaOption.newBuilder();
+    SagaOptions.Builder builder = SagaOptions.newBuilder();
     builder.setParallelCompensation(true);
     builder.setMaxParallelThread(32);
     builder.setContinueWithError(false);
-    SagaOption option = builder.build();
+    SagaOptions option = builder.build();
 
     assertEquals(true, option.isParallelCompensation());
     assertEquals(32, option.getMaxParallelThread());
@@ -22,8 +22,8 @@ public class SagaOptionTest {
 
   @Test
   public void testBuild_default() {
-    SagaOption.Builder builder = SagaOption.newBuilder();
-    SagaOption option = builder.build();
+    SagaOptions.Builder builder = SagaOptions.newBuilder();
+    SagaOptions option = builder.build();
 
     assertEquals(false, option.isParallelCompensation());
     assertEquals(16, option.getMaxParallelThread());
@@ -32,7 +32,7 @@ public class SagaOptionTest {
 
   @Test
   public void testsetMaxParallelThread() {
-    SagaOption.Builder builder = SagaOption.newBuilder();
+    SagaOptions.Builder builder = SagaOptions.newBuilder();
 
     assertThrows(IllegalArgumentException.class, () -> {
       builder.setMaxParallelThread(0);

@@ -20,16 +20,16 @@ import java.time.Instant;
 /**
  * Options for starting a new instance of a workflow.
  */
-public class NewWorkflowOption {
+public class NewWorkflowOptions {
   private final NewOrchestrationInstanceOptions newOrchestrationInstanceOptions = new NewOrchestrationInstanceOptions();
 
   /**
    * Sets the version of the workflow to start.
    *
    * @param version the user-defined version of workflow
-   * @return this {@link NewWorkflowOption} object
+   * @return this {@link NewWorkflowOptions} object
    */
-  public NewWorkflowOption setVersion(String version) {
+  public NewWorkflowOptions setVersion(String version) {
     this.newOrchestrationInstanceOptions.setVersion(version);
     return this;
   }
@@ -40,9 +40,9 @@ public class NewWorkflowOption {
    * <p>If no instance ID is configured, the workflow will be created with a randomly generated instance ID.
    *
    * @param instanceId the ID of the new workflow
-   * @return this {@link NewWorkflowOption} object
+   * @return this {@link NewWorkflowOptions} object
    */
-  public NewWorkflowOption setInstanceId(String instanceId) {
+  public NewWorkflowOptions setInstanceId(String instanceId) {
     this.newOrchestrationInstanceOptions.setInstanceId(instanceId);
     return this;
   }
@@ -51,9 +51,9 @@ public class NewWorkflowOption {
    * Sets the input of the workflow to start.
    *
    * @param input the input of the new workflow
-   * @return this {@link NewWorkflowOption} object
+   * @return this {@link NewWorkflowOptions} object
    */
-  public NewWorkflowOption setInput(Object input) {
+  public NewWorkflowOptions setInput(Object input) {
     this.newOrchestrationInstanceOptions.setInput(input);
     return this;
   }
@@ -65,9 +65,9 @@ public class NewWorkflowOption {
    * to start them at a specific time in the future.
    *
    * @param startTime the start time of the new workflow
-   * @return this {@link NewWorkflowOption} object
+   * @return this {@link NewWorkflowOptions} object
    */
-  public NewWorkflowOption setStartTime(Instant startTime) {
+  public NewWorkflowOptions setStartTime(Instant startTime) {
     this.newOrchestrationInstanceOptions.setStartTime(startTime);
     return this;
   }

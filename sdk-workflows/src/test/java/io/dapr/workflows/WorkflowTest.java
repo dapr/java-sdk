@@ -22,7 +22,7 @@ import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 
 import io.dapr.workflows.saga.SagaCompensationException;
 import io.dapr.workflows.saga.SagaContext;
-import io.dapr.workflows.saga.SagaOption;
+import io.dapr.workflows.saga.SagaOptions;
 
 public class WorkflowTest {
 
@@ -188,8 +188,8 @@ public class WorkflowTest {
     }
 
     @Override
-    public SagaOption getSagaOption() {
-      return SagaOption.newBuilder()
+    public SagaOptions getSagaOption() {
+      return SagaOptions.newBuilder()
           .setParallelCompensation(false)
           .build();
     }

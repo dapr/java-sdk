@@ -111,13 +111,13 @@ public class DaprWorkflowClientTest {
   public void scheduleNewWorkflowWithNewWorkflowOption() {
     String expectedName = TestWorkflow.class.getCanonicalName();
     Object expectedInput = new Object();
-    NewWorkflowOption newWorkflowOption = new NewWorkflowOption();
-    newWorkflowOption.setInput(expectedInput).setStartTime(Instant.now());
+    NewWorkflowOptions newWorkflowOptions = new NewWorkflowOptions();
+    newWorkflowOptions.setInput(expectedInput).setStartTime(Instant.now());
 
-    client.scheduleNewWorkflow(TestWorkflow.class, newWorkflowOption);
+    client.scheduleNewWorkflow(TestWorkflow.class, newWorkflowOptions);
 
     verify(mockInnerClient, times(1))
-        .scheduleNewOrchestrationInstance(expectedName, newWorkflowOption.getNewOrchestrationInstanceOptions());
+        .scheduleNewOrchestrationInstance(expectedName, newWorkflowOptions.getNewOrchestrationInstanceOptions());
   }
 
   @Test

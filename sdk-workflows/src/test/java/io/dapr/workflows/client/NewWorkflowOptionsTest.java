@@ -5,11 +5,11 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-public class NewWorkflowOptionTest {
+public class NewWorkflowOptionsTest {
 
   @Test
   void testNewWorkflowOption() {
-    NewWorkflowOption workflowOption = new NewWorkflowOption();
+    NewWorkflowOptions workflowOption = new NewWorkflowOptions();
     String version = "v1";
     String instanceId = "123";
     Object input = new Object();
