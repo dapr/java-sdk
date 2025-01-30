@@ -50,8 +50,18 @@ public class WorkflowRuntimeBuilderTest {
   }
 
   @Test
+  public void registerValidWorkflowInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(new TestWorkflow()));
+  }
+
+  @Test
   public void registerValidWorkflowActivityClass() {
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(TestActivity.class));
+  }
+
+  @Test
+  public void registerValidWorkflowActivityInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(new TestActivity()));
   }
 
   @Test
