@@ -16,12 +16,12 @@ package io.dapr.workflows.saga;
 /**
  * Saga option.
  */
-public final class SagaOption {
+public final class SagaOptions {
   private final boolean parallelCompensation;
   private final int maxParallelThread;
   private final boolean continueWithError;
 
-  private SagaOption(boolean parallelCompensation, int maxParallelThread, boolean continueWithError) {
+  private SagaOptions(boolean parallelCompensation, int maxParallelThread, boolean continueWithError) {
     this.parallelCompensation = parallelCompensation;
     this.maxParallelThread = maxParallelThread;
     this.continueWithError = continueWithError;
@@ -95,8 +95,8 @@ public final class SagaOption {
      * Build Saga option.
      * @return Saga option
      */
-    public SagaOption build() {
-      return new SagaOption(this.parallelCompensation, this.maxParallelThread, this.continueWithError);
+    public SagaOptions build() {
+      return new SagaOptions(this.parallelCompensation, this.maxParallelThread, this.continueWithError);
     }
   }
 }
