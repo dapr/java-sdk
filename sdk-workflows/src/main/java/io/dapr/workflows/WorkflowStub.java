@@ -15,5 +15,7 @@ package io.dapr.workflows;
 
 @FunctionalInterface
 public interface WorkflowStub {
+
   void run(WorkflowContext ctx);
+
 }
