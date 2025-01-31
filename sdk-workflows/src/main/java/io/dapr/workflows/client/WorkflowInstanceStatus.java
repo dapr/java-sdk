@@ -149,8 +149,7 @@ public class WorkflowInstanceStatus {
    * {@link WorkflowRuntimeStatus#FAILED}, or
    * {@link WorkflowRuntimeStatus#TERMINATED}.
    *
-   * @return {@code true} if the workflow was in a terminal state; otherwise
-   * {@code false}
+   * @return {@code true} if the workflow was in a terminal state; otherwise {@code false}
    */
   public boolean isCompleted() {
     return orchestrationMetadata.isCompleted();

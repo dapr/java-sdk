@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.internal.grpc.interceptors;
 
 import io.dapr.client.Headers;
-import io.dapr.config.Properties;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -24,9 +23,22 @@ import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 
 /**
- * Class to be used as part of your service's client stub interceptor to include Dapr tokens.
+ * Class to be used as part of your service's client stub interceptor to include the Dapr API token.
  */
 public class DaprApiTokenInterceptor implements ClientInterceptor {
+
+  /**
+   * Dapr API Token.
+   */
+  private final String token;
+
+  /**
+   * Instantiates an interceptor to inject the Dapr API Token.
+   * @param token Dapr API Token.
+   */
+  public DaprApiTokenInterceptor(String token) {
+    this.token = token;
+  }
 
   @Override
   public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
@@ -37,9 +49,10 @@ public class DaprApiTokenInterceptor implements ClientInterceptor {
     return new ForwardingClientCall.SimpleForwardingClientCall<>(clientCall) {
       @Override
       public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-        String daprApiToken = Properties.API_TOKEN.get();
-        if (daprApiToken != null) {
-          metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
+        if (DaprApiTokenInterceptor.this.token != null) {
+          metadata.put(
+              Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER),
+              DaprApiTokenInterceptor.this.token);
         }
         super.start(responseListener, metadata);
       }

@@ -1,29 +1,34 @@
 <project
-    xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.dapr</groupId>
   <artifactId>dapr-sdk-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.12.0-SNAPSHOT</version>
+  <version>1.14.0-SNAPSHOT</version>
   <name>dapr-sdk-parent</name>
   <description>SDK for Dapr.</description>
   <url>https://dapr.io</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <grpc.version>1.59.0</grpc.version>
-    <protobuf.version>3.17.3</protobuf.version>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.13.0-rc.5/dapr/proto</dapr.proto.baseurl>
-    <dapr.sdk-workflows.version>0.12.0-SNAPSHOT</dapr.sdk-workflows.version>
-    <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
+    <grpc.version>1.69.0</grpc.version>
+    <protobuf.version>3.25.5</protobuf.version>
+    <protocCommand>protoc</protocCommand>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.14.4/dapr/proto</dapr.proto.baseurl>
+    <dapr.sdk.version>1.14.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.alpha.version>0.14.0-SNAPSHOT</dapr.sdk.alpha.version>
+    <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
     <maven-deploy-plugin.version>2.7</maven-deploy-plugin.version>
+    <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>11</maven.compiler.release>
     <maven.deploy.skip>true</maven.deploy.skip>
     <!--
         manually declare durabletask-client's jackson dependencies for workflows sdk
@@ -38,6 +43,9 @@
     <failsafe.version>3.2.2</failsafe.version>
     <surefire.version>3.2.2</surefire.version>
     <junit-bom.version>5.8.2</junit-bom.version>
+    <snakeyaml.version>2.0</snakeyaml.version>
+    <testcontainers.version>1.20.0</testcontainers.version>
+    <springboot.version>3.2.6</springboot.version>
   </properties>
 
   <distributionManagement>
@@ -46,7 +54,7 @@
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
     <site>
-      <id>localDocsDirecty</id>
+      <id>localDocsDirectory</id>
       <url>file:${maven.multiModuleProjectDirectory}/docs/</url>
     </site>
     <!-- Use default repository -->
@@ -97,21 +105,36 @@
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-testing</artifactId>
-        <version>1.56.1</version>
+        <version>${grpc.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-inprocess</artifactId>
-        <version>1.59.0</version>
+        <version>${grpc.version}</version>
         <scope>test</scope>
       </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib</artifactId>
+      <version>2.1.0</version>
+    </dependency>
     </dependencies>
   </dependencyManagement>
 
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven-compiler-plugin.version}</version>
+          <configuration>
+            <source>${maven.compiler.source}</source>
+            <target>${maven.compiler.target}</target>
+            <release>${maven.compiler.release}</release>
+          </configuration>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -134,6 +157,11 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${maven-resources-plugin.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -146,28 +174,6 @@
           <execution>
             <goals>
               <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.23</version>
-        <configuration>
-          <signature>
-            <groupId>org.codehaus.mojo.signature</groupId>
-            <artifactId>java18</artifactId>
-            <version>1.0</version>
-          </signature>
-          <skip>false</skip>
-        </configuration>
-        <executions>
-          <execution>
-            <id>enforce-java-8-compatibility</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>check</goal>
             </goals>
           </execution>
         </executions>
@@ -207,10 +213,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.3.1</version>
+        <version>3.4.0</version>
         <configuration>
           <configLocation>checkstyle.xml</configLocation>
-          <encoding>UTF-8</encoding>
+          <headerLocation>.java_header</headerLocation>
           <consoleOutput>true</consoleOutput>
           <violationSeverity>warning</violationSeverity>
           <failOnViolation>true</failOnViolation>
@@ -233,7 +239,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.37</version>
+            <version>10.17.0</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -329,11 +335,19 @@
     <module>sdk-actors</module>
     <module>sdk-workflows</module>
     <module>sdk-springboot</module>
+    <module>dapr-spring</module>
     <module>examples</module>
-    <!-- don't add sdk-tests to the build, 
-      it's only used for CI testing by github action
-    <module>sdk-tests</module>
-    -->
+    <!-- We are following test containers artifact convention on purpose, don't rename -->
+    <module>testcontainers-dapr</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>integration-tests</id>
+      <modules>
+        <module>sdk-tests</module>
+      </modules>
+    </profile>
+  </profiles>
 
 </project>

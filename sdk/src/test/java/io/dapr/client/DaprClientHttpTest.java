@@ -66,6 +66,8 @@ public class DaprClientHttpTest {
   
   private String sidecarIp;
 
+  private String daprApiToken;
+
   private DaprClient daprClientHttp;
 
   private DaprHttp daprHttp;
@@ -77,9 +79,10 @@ public class DaprClientHttpTest {
   @BeforeEach
   public void setUp() {
     sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
+    daprApiToken = Properties.API_TOKEN.get();
     mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
     okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
-    daprHttp = new DaprHttp(sidecarIp, 3000, okHttpClient);
+    daprHttp = new DaprHttp(sidecarIp, 3000, daprApiToken, okHttpClient);
     daprClientHttp = buildDaprClient(daprHttp);
   }
 
@@ -97,7 +100,7 @@ public class DaprClientHttpTest {
 
   @Test
   public void waitForSidecarTimeOutHealthCheck() throws Exception {
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, daprApiToken, okHttpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
     mockInterceptor.addRule()
@@ -121,8 +124,7 @@ public class DaprClientHttpTest {
   @Test
   public void waitForSidecarBadHealthCheck() throws Exception {
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, okHttpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
       mockInterceptor.addRule()
@@ -131,23 +133,17 @@ public class DaprClientHttpTest {
               .times(6)
               .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
 
-    // retry the max allowed retries (5 times)
+    // it will timeout.
     StepVerifier.create(daprClientHttp.waitForSidecar(5000))
             .expectSubscription()
-            .expectErrorMatches(throwable -> {
-              if (throwable instanceof RuntimeException) {
-                return "Retries exhausted: 5/5".equals(throwable.getMessage());
-              }
-              return false;
-            })
-            .verify(Duration.ofSeconds(20));
+            .expectError()
+            .verify(Duration.ofMillis(6000));
   }
 
   @Test
   public void waitForSidecarSlowSuccessfulHealthCheck() throws Exception {
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, okHttpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
     // Simulate a slow response
@@ -175,8 +171,7 @@ public class DaprClientHttpTest {
   @Test
   public void waitForSidecarOK() throws Exception {
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(sidecarIp, port, okHttpClient);
+    daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, okHttpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
     mockInterceptor.addRule()
@@ -198,7 +193,6 @@ public class DaprClientHttpTest {
             .respond(204);
     try (ServerSocket serverSocket = new ServerSocket(0)) {
       final int port = serverSocket.getLocalPort();
-      System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
       Thread t = new Thread(() -> {
         try {
             try (Socket socket = serverSocket.accept()) {
@@ -207,7 +201,7 @@ public class DaprClientHttpTest {
         }
       });
       t.start();
-      daprHttp = new DaprHttp(sidecarIp, port, okHttpClient);
+      daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, okHttpClient);
       DaprClient daprClientHttp = buildDaprClient(daprHttp);
       daprClientHttp.waitForSidecar(10000).block();
     }

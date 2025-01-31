@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.Test;
 
-import com.microsoft.durabletask.TaskActivityContext;
-
-import io.dapr.workflows.runtime.WorkflowActivity;
-import io.dapr.workflows.runtime.WorkflowActivityContext;
+import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
 
 public class SagaIntegrationTest {
 
@@ -53,7 +51,7 @@ public class SagaIntegrationTest {
   }
 
   private boolean doExecuteWorkflowWithSaga(boolean parallelCompensation) {
-    SagaOption config = SagaOption.newBuilder()
+    SagaOptions config = SagaOptions.newBuilder()
         .setParallelCompensation(parallelCompensation)
         .setContinueWithError(true).build();
     Saga saga = new Saga(config);
@@ -125,7 +123,7 @@ public class SagaIntegrationTest {
     try {
       Class<?> activityClass = Class.forName(activityClassName);
       WorkflowActivity activity = (WorkflowActivity) activityClass.getDeclaredConstructor().newInstance();
-      WorkflowActivityContext ctx = new WorkflowActivityContext(new TaskActivityContext() {
+      WorkflowActivityContext ctx = new WorkflowActivityContext() {
 
         @Override
         public java.lang.String getName() {
@@ -136,7 +134,7 @@ public class SagaIntegrationTest {
         public <T> T getInput(Class<T> targetType) {
           return (T) input;
         }
-      });
+      };
 
       randomFail();
 

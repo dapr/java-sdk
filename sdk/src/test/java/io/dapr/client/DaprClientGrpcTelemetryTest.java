@@ -238,7 +238,7 @@ null,
             .build();
     return Mono.deferContextual(
         context -> this.<CommonProtos.InvokeResponse>createMono(
-            it -> DaprClientGrpcInterceptors.intercept(daprStub, context).invokeService(req, it)
+            it -> new DaprClientGrpcInterceptors().intercept(daprStub, context).invokeService(req, it)
         )
     ).then();
   }

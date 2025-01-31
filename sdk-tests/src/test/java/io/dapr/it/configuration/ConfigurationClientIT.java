@@ -68,7 +68,8 @@ public class ConfigurationClientIT extends BaseIT {
     @BeforeAll
     public static void init() throws Exception {
         daprRun = startDaprApp(ConfigurationClientIT.class.getSimpleName(), 5000);
-        daprClient = new DaprClientBuilder().build();
+        daprClient = daprRun.newDaprClientBuilder().build();
+        daprClient.waitForSidecar(10000).block();
     }
 
     @AfterAll

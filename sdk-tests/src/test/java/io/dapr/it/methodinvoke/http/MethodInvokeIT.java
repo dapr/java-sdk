@@ -48,7 +48,7 @@ public class MethodInvokeIT extends BaseIT {
 
         // At this point, it is guaranteed that the service above is running and all ports being listened to.
 
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 String message = String.format("This is message #%d", i);
@@ -74,7 +74,7 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeWithObjects() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 Person person = new Person();
@@ -110,22 +110,24 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             long started = System.currentTimeMillis();
             String message = assertThrows(IllegalStateException.class, () -> {
                 client.invokeMethod(daprRun.getAppName(), "sleep", 1, HttpExtension.POST)
                     .block(Duration.ofMillis(10));
             }).getMessage();
+
             long delay = System.currentTimeMillis() - started;
-            assertTrue(delay <= 200);  // 200 ms is a reasonable delay if the request timed out.
+
+            assertTrue(delay <= 200, "Delay: " + delay + " is not less than timeout: 200");
             assertEquals("Timeout on blocking read for 10000000 NANOSECONDS", message);
         }
     }
 
     @Test
     public void testInvokeException() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             MethodInvokeServiceProtos.SleepRequest req = MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->

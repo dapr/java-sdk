@@ -16,11 +16,16 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.it.BaseIT;
+import io.dapr.it.DaprRun;
 import io.dapr.it.actors.app.MyActor;
 import io.dapr.it.actors.app.MyActorService;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static io.dapr.it.TestUtils.assertThrowsDaprExceptionSubstring;
@@ -30,29 +35,46 @@ public class ActorExceptionIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorExceptionIT.class);
 
-  @Test
-  public void exceptionTest() throws Exception {
+  private static DaprRun run;
+
+  @BeforeAll
+  public static void start() throws Exception {
     // The call below will fail if service cannot start successfully.
-    startDaprApp(
+    run = startDaprApp(
         ActorExceptionIT.class.getSimpleName(),
         MyActorService.SUCCESS_MESSAGE,
         MyActorService.class,
         true,
         60000);
+  }
 
-    logger.debug("Creating proxy builder");
+  @Test
+  public void exceptionTest() throws Exception {
     ActorProxyBuilder<MyActor> proxyBuilder =
-        new ActorProxyBuilder("MyActorTest", MyActor.class, newActorClient());
-    logger.debug("Creating actorId");
-    ActorId actorId1 = new ActorId("1");
-    logger.debug("Building proxy");
-    MyActor proxy = proxyBuilder.build(actorId1);
+        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient()));
+    MyActor proxy = proxyBuilder.build(new ActorId("1"));
 
     callWithRetry(() -> {
       assertThrowsDaprExceptionSubstring(
           "INTERNAL",
           "INTERNAL: error invoke actor method: error from actor service",
           () ->  proxy.throwException());
+    }, 10000);
+  }
+
+  @Test
+  public void exceptionDueToMetadataTest() throws Exception {
+    // Setting this HTTP header via actor metadata will cause the Actor HTTP server to error.
+    Map<String, String> metadata = Map.of("Content-Length", "9999");
+    ActorProxyBuilder<MyActor> proxyBuilderMetadataOverride =
+        new ActorProxyBuilder("MyActorTest", MyActor.class, deferClose(run.newActorClient(metadata)));
+
+    MyActor proxyWithMetadata = proxyBuilderMetadataOverride.build(new ActorId("2"));
+    callWithRetry(() -> {
+      assertThrowsDaprExceptionSubstring(
+          "INTERNAL",
+          "ContentLength=9999 with Body length 13",
+          () -> proxyWithMetadata.say("hello world"));
     }, 10000);
   }
 }

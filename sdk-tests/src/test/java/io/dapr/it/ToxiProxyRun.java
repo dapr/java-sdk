@@ -16,10 +16,16 @@ package io.dapr.it;
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import eu.rekawek.toxiproxy.model.ToxicDirection;
+import io.dapr.actors.client.ActorClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.resiliency.ResiliencyOptions;
+import io.dapr.config.Properties;
+import io.dapr.config.Property;
 import io.dapr.utils.NetworkUtils;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 
 
 public class ToxiProxyRun implements Stoppable {
@@ -30,15 +36,15 @@ public class ToxiProxyRun implements Stoppable {
 
   private final Duration jitter;
 
-  private Command toxiProxyServer;
+  private final Command toxiProxyServer;
+
+  private final DaprPorts toxiProxyPorts;
 
   private ToxiproxyClient toxiproxyClient;
 
   private Proxy grpcProxy;
 
   private Proxy httpProxy;
-
-  private DaprPorts toxiProxyPorts;
 
   public ToxiProxyRun(DaprRun run, Duration latency, Duration jitter) {
     this.daprRun = run;
@@ -78,8 +84,20 @@ public class ToxiProxyRun implements Stoppable {
     }
   }
 
-  public void use() {
-    this.toxiProxyPorts.use();
+  public Map<Property<?>, String> getPropertyOverrides() {
+    return this.toxiProxyPorts.getPropertyOverrides();
+  }
+
+  public DaprClientBuilder newDaprClientBuilder() {
+    return this.daprRun.newDaprClientBuilder().withPropertyOverrides(this.getPropertyOverrides());
+  }
+
+  public ActorClient newActorClient() {
+    return this.newActorClient(null);
+  }
+
+  public ActorClient newActorClient(ResiliencyOptions resiliencyOptions) {
+    return new ActorClient(new Properties(this.getPropertyOverrides()), resiliencyOptions);
   }
 
   @Override

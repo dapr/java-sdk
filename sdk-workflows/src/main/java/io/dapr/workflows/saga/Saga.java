@@ -14,28 +14,28 @@ limitations under the License.
 package io.dapr.workflows.saga;
 
 import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.interruption.ContinueAsNewInterruption;
 import com.microsoft.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.WorkflowContext;
+import io.dapr.workflows.WorkflowTaskOptions;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class Saga {
-  private final SagaOption option;
-  private final List<CompensatationInformation> compensationActivities = new ArrayList<>();
+  private final SagaOptions options;
+  private final List<CompensationInformation> compensationActivities = new ArrayList<>();
 
   /**
    * Build up a Saga with its options.
    * 
-   * @param option Saga option.
+   * @param options Saga option.
    */
-  public Saga(SagaOption option) {
-    if (option == null) {
+  public Saga(SagaOptions options) {
+    if (options == null) {
       throw new IllegalArgumentException("option is required and should not be null.");
     }
-    this.option = option;
+    this.options = options;
   }
 
   /**
@@ -50,16 +50,16 @@ public final class Saga {
 
   /**
    * Register a compensation activity.
-   * 
+   *
    * @param activityClassName name of the activity class
    * @param activityInput     input of the activity to be compensated
-   * @param taskOptions       task options to set retry strategy
+   * @param options           task options to set retry strategy
    */
-  public void registerCompensation(String activityClassName, Object activityInput, TaskOptions taskOptions) {
+  public void registerCompensation(String activityClassName, Object activityInput, WorkflowTaskOptions options) {
     if (activityClassName == null || activityClassName.isEmpty()) {
       throw new IllegalArgumentException("activityClassName is required and should not be null or empty.");
     }
-    this.compensationActivities.add(new CompensatationInformation(activityClassName, activityInput, taskOptions));
+    this.compensationActivities.add(new CompensationInformation(activityClassName, activityInput, options));
   }
 
   /**
@@ -69,10 +69,10 @@ public final class Saga {
    */
   public void compensate(WorkflowContext ctx) {
     // Check if parallel compensation is enabled
-    // Specical case: when parallel compensation is enabled and there is only one
+    // Special case: when parallel compensation is enabled and there is only one
     // compensation, we still
     // compensate sequentially.
-    if (option.isParallelCompensation() && compensationActivities.size() > 1) {
+    if (options.isParallelCompensation() && compensationActivities.size() > 1) {
       compensateInParallel(ctx);
     } else {
       compensateSequentially(ctx);
@@ -81,7 +81,7 @@ public final class Saga {
 
   private void compensateInParallel(WorkflowContext ctx) {
     List<Task<Void>> tasks = new ArrayList<>(compensationActivities.size());
-    for (CompensatationInformation compensationActivity : compensationActivities) {
+    for (CompensationInformation compensationActivity : compensationActivities) {
       Task<Void> task = executeCompensateActivity(ctx, compensationActivity);
       tasks.add(task);
     }
@@ -96,7 +96,7 @@ public final class Saga {
   private void compensateSequentially(WorkflowContext ctx) {
     SagaCompensationException sagaException = null;
     for (int i = compensationActivities.size() - 1; i >= 0; i--) {
-      String activityClassName = compensationActivities.get(i).getCompensatationActivityClassName();
+      String activityClassName = compensationActivities.get(i).getCompensationActivityClassName();
       try {
         executeCompensateActivity(ctx, compensationActivities.get(i)).await();
       } catch (OrchestratorBlockedException | ContinueAsNewInterruption e) {
@@ -104,13 +104,12 @@ public final class Saga {
       } catch (Exception e) {
         if (sagaException == null) {
           sagaException = new SagaCompensationException(
-              "Exception in saga compensatation: activity=" + activityClassName, e);
-          ;
+              "Exception in saga compensation: activity=" + activityClassName, e);
         } else {
           sagaException.addSuppressed(e);
         }
 
-        if (!option.isContinueWithError()) {
+        if (!options.isContinueWithError()) {
           throw sagaException;
         }
       }
@@ -121,10 +120,10 @@ public final class Saga {
     }
   }
 
-  private Task<Void> executeCompensateActivity(WorkflowContext ctx, CompensatationInformation info)
+  private Task<Void> executeCompensateActivity(WorkflowContext ctx, CompensationInformation info)
       throws SagaCompensationException {
-    String activityClassName = info.getCompensatationActivityClassName();
-    return ctx.callActivity(activityClassName, info.getCompensatationActivityInput(),
-        info.getTaskOptions());
+    String activityClassName = info.getCompensationActivityClassName();
+    return ctx.callActivity(activityClassName, info.getCompensationActivityInput(),
+        info.getExecutionOptions());
   }
 }

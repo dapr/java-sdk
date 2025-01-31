@@ -1,39 +1,33 @@
 <project
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.12.0-SNAPSHOT</version>
+    <version>1.14.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk</artifactId>
   <packaging>jar</packaging>
-  <version>1.12.0-SNAPSHOT</version>
+  <version>1.14.0-SNAPSHOT</version>
   <name>dapr-sdk</name>
   <description>SDK for Dapr</description>
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
-    <grpc.version>1.59.0</grpc.version>
     <argLine>
       --add-opens java.base/java.util=ALL-UNNAMED
     </argLine>
+          
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-resources-plugin</artifactId>
-      <version>3.3.0</version>
-      <type>maven-plugin</type>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
@@ -51,14 +45,15 @@
       <version>3.5.0</version>
     </dependency>
     <dependency>
-      <groupId>io.projectreactor</groupId>
-      <artifactId>reactor-test</artifactId>
-      <version>3.5.0</version>
-    </dependency>
-    <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
-      <version>4.9.0</version>
+      <version>4.12.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jetbrains.kotlin</groupId>
+          <artifactId>kotlin-stdlib-jdk8</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -78,9 +73,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.github.gmazzo</groupId>
-      <artifactId>okhttp-mock</artifactId>
-      <version>1.4.1</version>
+      <groupId>com.github.gmazzo.okhttp.mock</groupId>
+      <artifactId>mock-client</artifactId>
+      <version>2.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -102,19 +97,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-      <version>2.7.18</version>
+      <version>${springboot.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <version>2.7.18</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-testing</artifactId>
-      <version>${grpc.version}</version>
+      <version>${springboot.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -154,21 +143,25 @@
   <build>
     <resources>
       <resource>
-          <directory>src/main/resources</directory>
-          <filtering>true</filtering>
-          <includes>
-              <include>**/sdk_version.properties</include>
-          </includes>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>**/sdk_version.properties</include>
+        </includes>
       </resource>
       <resource>
-          <directory>src/main/resources</directory>
-          <filtering>false</filtering>
-          <excludes>
-              <exclude>**/sdk_version.properties</exclude>
-          </excludes>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>**/sdk_version.properties</exclude>
+        </excludes>
       </resource>
-  </resources>
+    </resources>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -226,7 +219,7 @@
                 <rule>
                   <element>BUNDLE</element>
                   <limits>
-                   <limit>
+                    <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
                       <minimum>80%</minimum>

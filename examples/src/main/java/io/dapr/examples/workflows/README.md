@@ -9,14 +9,14 @@ This example contains the follow classes:
 * DemoWorkflow: An example of a Dapr Workflow.
 * DemoWorkflowClient: This application will start workflows using Dapr.
 * DemoWorkflowWorker: An application that registers a workflow to the Dapr workflow runtime engine. It also executes the workflow instance.
- 
+
 ## Pre-requisites
 
 * [Dapr CLI](https://docs.dapr.io/getting-started/install-dapr-cli/).
 * Java JDK 11 (or greater):
-    * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
-    * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
-    * [OpenJDK 11](https://jdk.java.net/11/)
+  * [Microsoft JDK 11](https://docs.microsoft.com/en-us/java/openjdk/download#openjdk-11)
+  * [Oracle JDK 11](https://www.oracle.com/technetwork/java/javase/downloads/index.html#JDK11)
+  * [OpenJDK 11](https://jdk.java.net/11/)
 * [Apache Maven](https://maven.apache.org/install.html) version 3.x.
 
 ### Checking out the code
@@ -51,11 +51,11 @@ Those examples contain the following workflow patterns:
 2. [Fan-out/Fan-in Pattern](#fan-outfan-in-pattern)
 3. [Continue As New Pattern](#continue-as-new-pattern)
 4. [External Event Pattern](#external-event-pattern)
-5. [Sub-workflow Pattern](#sub-workflow-pattern)
+5. [child-workflow Pattern](#child-workflow-pattern)
 
 ### Chaining Pattern
-In the chaining pattern, a sequence of activities executes in a specific order. 
-In this pattern, the output of one activity is applied to the input of another activity. 
+In the chaining pattern, a sequence of activities executes in a specific order.
+In this pattern, the output of one activity is applied to the input of another activity.
 The chaining pattern is useful when you need to execute a sequence of activities in a specific order.
 
 The first Java class is `DemoChainWorker`. Its job is to register an implementation of `DemoChainWorkflow` in Dapr's workflow runtime engine. In the `DemoChainWorker.java` file, you will find the `DemoChainWorker` class and the `main` method. See the code snippet below:
@@ -149,6 +149,7 @@ Execute the following script in order to run DemoChainWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker
 ```
+
 Once running, the logs will start displaying the different steps: First, you can see workflow is starting:
 ```text
 == APP == Start workflow runtime
@@ -161,6 +162,8 @@ Then, execute the following script in order to run DemoChainClient:
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient
 ```
 <!-- END_STEP -->
+
+
 
 Now you can see the worker logs showing the acitvity is invoked in sequnce and the status of each activity:
 ```text
@@ -237,7 +240,7 @@ public class CountWordsActivity implements WorkflowActivity {
 }
 ```
 <!-- STEP
-name: Run Fan-in/Fan-out Pattern workflow
+name: Run Chaining Pattern workflow
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
@@ -255,7 +258,9 @@ Execute the following script in order to run DemoFanInOutWorker:
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
 ```
+
 Execute the following script in order to run DemoFanInOutClient:
+
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient
 ```
@@ -343,7 +348,7 @@ public class CleanUpActivity implements WorkflowActivity {
 
 Once you start the workflow and client using the following commands:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewWorker
 ```
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewClient
@@ -406,36 +411,21 @@ public class DemoExternalEventWorkflow extends Workflow {
 }
 ```
 
-In the `DemoExternalEventClient` class we send out Approval event to tell our workflow to run the approved activity. 
+In the `DemoExternalEventClient` class we send out Approval event to tell our workflow to run the approved activity.
 ```java
 client.raiseEvent(instanceId, "Approval", true);
 ```
 
 Start the workflow and client using the following commands:
 
-<!-- STEP
-name: Run Wait External Event Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - 'Starting Workflow: io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow'
-  - 'Waiting for approval...'
-  - 'approval granted - do the approved action'
-  - 'Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity'
-  - 'Running approval activity...'
-  - 'approval-activity finished'
-background: true
-sleep: 60
-timeout_seconds: 60
--->
+ex
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
 ```
 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventClient
 ```
-<!-- END_STEP -->
 
 The worker logs:
 ```text
@@ -453,10 +443,10 @@ Started a new external-event model workflow with instance ID: 23410d96-1afe-4698
 workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
 ```
 
-### Sub-workflow Pattern
-The sub-workflow pattern allows you to call a workflow from another workflow.
+### child-workflow Pattern
+The child-workflow pattern allows you to call a workflow from another workflow.
 
-The `DemoWorkflow` class defines the workflow. It calls a sub-workflow `DemoSubWorkflow` to do the work. See the code snippet below:
+The `DemoWorkflow` class defines the workflow. It calls a child-workflow `DemoChildWorkflow` to do the work. See the code snippet below:
 ```java
 public class DemoWorkflow extends Workflow {
   @Override
@@ -464,40 +454,40 @@ public class DemoWorkflow extends Workflow {
     return ctx -> {
       ctx.getLogger().info("Starting Workflow: " + ctx.getName());
 
-      var subWorkflowInput = "Hello Dapr Workflow!";
-      ctx.getLogger().info("calling subworkflow with input: " + subWorkflowInput);
+      var childWorkflowInput = "Hello Dapr Workflow!";
+      ctx.getLogger().info("calling childworkflow with input: " + childWorkflowInput);
 
-      var subWorkflowOutput =
-              ctx.callSubWorkflow(DemoSubWorkflow.class.getName(), subWorkflowInput, String.class).await();
+      var childWorkflowOutput =
+              ctx.callChildWorkflow(DemoChildWorkflow.class.getName(), childWorkflowInput, String.class).await();
 
-      ctx.getLogger().info("subworkflow finished with: " + subWorkflowOutput);
+      ctx.getLogger().info("childworkflow finished with: " + childWorkflowOutput);
     };
   }
 }
 ```
 
-The `DemoSubWorkflow` class defines the sub-workflow. It call the activity to do the work and returns the result. See the code snippet below:
+The `DemoChildWorkflow` class defines the child-workflow. It call the activity to do the work and returns the result. See the code snippet below:
 ```java
-public class DemoSubWorkflow extends Workflow {
+public class DemoChildWorkflow extends Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
-      ctx.getLogger().info("Starting SubWorkflow: " + ctx.getName());
+      ctx.getLogger().info("Starting ChildWorkflow: " + ctx.getName());
 
-      var subWorkflowInput = ctx.getInput(String.class);
-      ctx.getLogger().info("SubWorkflow received input: " + subWorkflowInput);
+      var childWorkflowInput = ctx.getInput(String.class);
+      ctx.getLogger().info("ChildWorkflow received input: " + childWorkflowInput);
 
-      ctx.getLogger().info("SubWorkflow is calling Activity: " + ReverseActivity.class.getName());
-      String result = ctx.callActivity(ReverseActivity.class.getName(), subWorkflowInput, String.class).await();
+      ctx.getLogger().info("ChildWorkflow is calling Activity: " + ReverseActivity.class.getName());
+      String result = ctx.callActivity(ReverseActivity.class.getName(), childWorkflowInput, String.class).await();
 
-      ctx.getLogger().info("SubWorkflow finished with: " + result);
+      ctx.getLogger().info("ChildWorkflow finished with: " + result);
       ctx.complete(result);
     };
   }
 }
 ```
 
-The `ReverseActivity` class defines the logics for a single acitvity, in this case, it reverses a string. See the code snippet below:
+The `ReverseActivity` class defines the logics for a single activity, in this case, it reverses a string. See the code snippet below:
 ```java
 public class ReverseActivity implements WorkflowActivity {
   @Override
@@ -521,42 +511,31 @@ public class ReverseActivity implements WorkflowActivity {
 
 Start the workflow and client using the following commands:
 
-<!-- STEP
-name: Run Sub-workflow Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - 'calling subworkflow with input: Hello Dapr Workflow!'
-  - 'SubWorkflow finished with: !wolfkroW rpaD olleH'
-background: true
-sleep: 60
-timeout_seconds: 60
--->
+ex
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkflowWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.childworkflow.DemoChildWorkflowWorker
 ```
 
 ```sh
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.subworkflow.DemoSubWorkerflowClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.childworkflow.DemoChildWorkerflowClient
 ```
-<!-- END_STEP -->
 
 The log from worker:
 ```text
-== APP == 2023-11-07 20:08:52,521 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.subworkflow.DemoWorkflow
-== APP == 2023-11-07 20:08:52,523 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling subworkflow with input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,561 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting SubWorkflow: io.dapr.examples.workflows.subworkflow.DemoSubWorkflow
-== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow received input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow is calling Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
-== APP == 2023-11-07 20:08:52,576 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.subworkflow.ReverseActivity
-== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
-== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.subworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
-== APP == 2023-11-07 20:08:52,596 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - SubWorkflow finished with: !wolfkroW rpaD olleH
-== APP == 2023-11-07 20:08:52,611 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - subworkflow finished with: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,521 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.childworkflow.DemoWorkflow
+== APP == 2023-11-07 20:08:52,523 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - calling childworkflow with input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,561 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting ChildWorkflow: io.dapr.examples.workflows.childworkflow.DemoChildWorkflow
+== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow received input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,566 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow is calling Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
+== APP == 2023-11-07 20:08:52,576 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Starting Activity: io.dapr.examples.workflows.childworkflow.ReverseActivity
+== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Message Received from input: Hello Dapr Workflow!
+== APP == 2023-11-07 20:08:52,577 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.childworkflow.ReverseActivity - Sending message to output: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,596 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - ChildWorkflow finished with: !wolfkroW rpaD olleH
+== APP == 2023-11-07 20:08:52,611 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - childworkflow finished with: !wolfkroW rpaD olleH
 ```
 
 The log from client:
 ```text
-Started a new sub-workflow model workflow with instance ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb
+Started a new child-workflow model workflow with instance ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb
 workflow instance with ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb completed with result: !wolfkroW rpaD olleH
 ```

@@ -30,7 +30,6 @@ public class MethodInvokeIT extends BaseIT {
     private static final int TIMEOUT_MS = 100;
     private static final ResiliencyOptions RESILIENCY_OPTIONS = new ResiliencyOptions()
         .setTimeout(Duration.ofMillis(TIMEOUT_MS));
-    private static final String EXCEPTION_MARKER = "DEADLINE_EXCEEDED: deadline exceeded after";
 
     /**
      * Run of a Dapr application.
@@ -50,7 +49,7 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvoke() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
@@ -82,23 +81,25 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvokeTimeout() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().withResiliencyOptions(RESILIENCY_OPTIONS).build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
             MethodInvokeServiceGrpc.MethodInvokeServiceBlockingStub stub = createGrpcStub(client);
             long started = System.currentTimeMillis();
             SleepRequest req = SleepRequest.newBuilder().setSeconds(1).build();
-            String message = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req)).getMessage();
+            StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.sleep(req));
             long delay = System.currentTimeMillis() - started;
+            Status.Code code = exception.getStatus().getCode();
+
             assertTrue(delay >= TIMEOUT_MS, "Delay: " + delay + " is not greater than timeout: " + TIMEOUT_MS);
-            assertTrue(message.startsWith(EXCEPTION_MARKER), "Message: " + message + " does not start with: " + EXCEPTION_MARKER);
+            assertEquals(Status.DEADLINE_EXCEEDED.getCode(), code, "Expected timeout error");
         }
     }
 
     @Test
     public void testInvokeException() throws Exception {
-        try (DaprClient client = new DaprClientBuilder().build()) {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             daprRun.waitForAppHealth(10000);
 
@@ -112,7 +113,8 @@ public class MethodInvokeIT extends BaseIT {
             // If this test fails, there might be a regression in runtime (like we had in 1.10.0).
             // The expectations below are as per 1.9 release and (later on) hotfixed in 1.10.
             assertEquals(Status.UNKNOWN.getCode(), exception.getStatus().getCode());
-            assertEquals("", exception.getStatus().getDescription());
+            // The error message below is added starting in Dapr 1.15.0
+            assertEquals("Application error processing RPC", exception.getStatus().getDescription());
         }
     }
 
