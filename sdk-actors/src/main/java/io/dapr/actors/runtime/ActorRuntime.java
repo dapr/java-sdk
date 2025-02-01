@@ -18,9 +18,8 @@ import io.dapr.actors.ActorTrace;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.utils.Version;
+import io.dapr.utils.NetworkUtils;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
@@ -77,20 +76,30 @@ public class ActorRuntime implements Closeable {
   /**
    * The default constructor. This should not be called directly.
    *
-   * @throws IllegalStateException If cannot instantiate Runtime.
+   * @throws IllegalStateException If you cannot instantiate Runtime.
    */
   private ActorRuntime() throws IllegalStateException {
-    this(buildManagedChannel());
+    this(new Properties());
+  }
+
+  /**
+   * Constructor once channel is available. This should not be called directly.
+   *
+   * @param properties Properties to use.
+   * @throws IllegalStateException If you cannot instantiate Runtime.
+   */
+  private ActorRuntime(Properties properties) throws IllegalStateException {
+    this(NetworkUtils.buildGrpcManagedChannel(properties));
   }
 
   /**
    * Constructor once channel is available. This should not be called directly.
    *
    * @param channel GRPC managed channel to be closed (or null).
-   * @throws IllegalStateException If cannot instantiate Runtime.
+   * @throws IllegalStateException If you cannot instantiate Runtime.
    */
   private ActorRuntime(ManagedChannel channel) throws IllegalStateException {
-    this(channel, buildDaprClient(channel));
+    this(channel, new DaprClientImpl(channel));
   }
 
   /**
@@ -112,7 +121,7 @@ public class ActorRuntime implements Closeable {
   }
 
   /**
-   * Returns an ActorRuntime object.
+   * Creates or returns an existing ActorRuntime object.
    *
    * @return An ActorRuntime object.
    */
@@ -121,6 +130,24 @@ public class ActorRuntime implements Closeable {
       synchronized (ActorRuntime.class) {
         if (instance == null) {
           instance = new ActorRuntime();
+        }
+      }
+    }
+
+    return instance;
+  }
+
+  /**
+   * Creates or returns an existing ActorRuntime object.
+   *
+   * @param properties Properties to use.
+   * @return An ActorRuntime object.
+   */
+  public static ActorRuntime getInstance(Properties properties) {
+    if (instance == null) {
+      synchronized (ActorRuntime.class) {
+        if (instance == null) {
+          instance = new ActorRuntime(properties);
         }
       }
     }
@@ -149,7 +176,6 @@ public class ActorRuntime implements Closeable {
 
   /**
    * Registers an actor with the runtime, using {@link DefaultObjectSerializer} and {@link DefaultActorFactory}.
-   *
    * {@link DefaultObjectSerializer} is not recommended for production scenarios.
    *
    * @param clazz            The type of actor.
@@ -314,25 +340,8 @@ public class ActorRuntime implements Closeable {
    * @return an instance of the setup Client
    * @throws java.lang.IllegalStateException if any required field is missing
    */
-  private static DaprClient buildDaprClient(ManagedChannel channel) {
+  private DaprClient buildDaprClient(ManagedChannel channel) {
     return new DaprClientImpl(channel);
-  }
-
-  /**
-   * Creates a GRPC managed channel (or null, if not applicable).
-   *
-   * @return GRPC managed channel or null.
-   */
-  private static ManagedChannel buildManagedChannel() {
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
-    }
-
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
-      .usePlaintext()
-      .userAgent(Version.getSdkVersion())
-      .build();
   }
 
   /**

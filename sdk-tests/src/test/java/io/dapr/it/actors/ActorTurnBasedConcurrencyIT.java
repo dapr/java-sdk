@@ -20,9 +20,7 @@ import io.dapr.actors.runtime.DaprClientHttpUtils;
 import io.dapr.config.Properties;
 import io.dapr.it.BaseIT;
 import io.dapr.it.actors.app.MyActorService;
-import io.dapr.utils.Version;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.dapr.utils.NetworkUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -36,8 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.it.actors.MyActorTestUtils.fetchMethodCallLogs;
 import static io.dapr.it.actors.MyActorTestUtils.validateMethodCalls;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ActorTurnBasedConcurrencyIT extends BaseIT {
 
@@ -56,7 +54,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   @AfterEach
   public void cleanUpTestCase() {
     // Delete the reminder in case the test failed, otherwise it may interfere with future tests since it is persisted.
-    var channel = buildManagedChannel();
+    var channel = NetworkUtils.buildGrpcManagedChannel(new Properties());
     try {
       System.out.println("Invoking during cleanup");
       DaprClientHttpUtils.unregisterActorReminder(channel, ACTOR_TYPE, ACTOR_ID, REMINDER_NAME);
@@ -120,7 +118,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
       String msg = "message" + i;
       String reversedString = new StringBuilder(msg).reverse().toString();
       String output = proxy.invokeMethod("say", "message" + i, String.class).block();
-      assertTrue(reversedString.equals(output));
+      assertEquals(reversedString, output);
       expectedSayMethodInvocations.incrementAndGet();
     });
 
@@ -166,7 +164,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
    * @param logs logs with info about method entries and exits returned from the app
    */
   void validateTurnBasedConcurrency(List<MethodEntryTracker> logs) {
-    if (logs.size() == 0) {
+    if (logs.isEmpty()) {
       logger.warn("No logs");
       return;
     }
@@ -176,7 +174,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
       if (s.getIsEnter()) {
         currentMethodName = s.getMethodName();
       } else {
-        assertTrue(currentMethodName.equals(s.getMethodName()));
+        assertEquals(currentMethodName, s.getMethodName());
       }
     }
 
@@ -227,17 +225,5 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
         throw new RuntimeException(errorMessage);
       }
     }
-  }
-
-  private static ManagedChannel buildManagedChannel() {
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
-    }
-
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
-        .usePlaintext()
-        .userAgent(Version.getSdkVersion())
-        .build();
   }
 }

@@ -16,7 +16,6 @@ package io.dapr.actors.runtime;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.ActorType;
 import io.dapr.serializer.DefaultObjectSerializer;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,11 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 public class ActorRuntimeTest {
@@ -97,8 +100,6 @@ public class ActorRuntimeTest {
 
   private static Constructor<ActorRuntime> constructor;
 
-  private DaprClient mockDaprClient;
-
   private ActorRuntime runtime;
 
   @BeforeAll
@@ -113,8 +114,7 @@ public class ActorRuntimeTest {
 
   @BeforeEach
   public void setup() throws Exception {
-    this.mockDaprClient = mock(DaprClient.class);
-    this.runtime = constructor.newInstance(null, this.mockDaprClient);
+    this.runtime = constructor.newInstance(null, mock(DaprClient.class));
   }
 
   @Test
@@ -143,21 +143,21 @@ public class ActorRuntimeTest {
   @Test
   public void setActorIdleTimeout() throws Exception {
     this.runtime.getConfig().setActorIdleTimeout(Duration.ofSeconds(123));
-    Assertions.assertEquals("{\"entities\":[],\"actorIdleTimeout\":\"0h2m3s0ms\"}",
+    assertEquals("{\"entities\":[],\"actorIdleTimeout\":\"0h2m3s0ms\"}",
         new String(this.runtime.serializeConfig()));
   }
 
   @Test
   public void setActorScanInterval() throws Exception {
     this.runtime.getConfig().setActorScanInterval(Duration.ofSeconds(123));
-    Assertions.assertEquals("{\"entities\":[],\"actorScanInterval\":\"0h2m3s0ms\"}",
+    assertEquals("{\"entities\":[],\"actorScanInterval\":\"0h2m3s0ms\"}",
         new String(this.runtime.serializeConfig()));
   }
 
   @Test
   public void setDrainBalancedActors() throws Exception {
     this.runtime.getConfig().setDrainBalancedActors(true);
-    Assertions.assertEquals("{\"entities\":[],\"drainBalancedActors\":true}",
+    assertEquals("{\"entities\":[],\"drainBalancedActors\":true}",
         new String(this.runtime.serializeConfig()));
   }
 
@@ -183,7 +183,7 @@ public class ActorRuntimeTest {
     this.runtime.getConfig().addActorTypeConfig(actorTypeConfig2);
     this.runtime.getConfig().addRegisteredActorType("actor2");
 
-    Assertions.assertEquals(
+    assertEquals(
             "{\"entities\":[\"actor1\",\"actor2\"],\"entitiesConfig\":[{\"entities\":[\"actor1\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":true,\"remindersStoragePartitions\":1},{\"entities\":[\"actor2\"],\"actorIdleTimeout\":\"0h2m3s0ms\",\"actorScanInterval\":\"0h2m3s0ms\",\"drainOngoingCallTimeout\":\"0h2m3s0ms\",\"drainBalancedActors\":false,\"remindersStoragePartitions\":2}]}",
             new String(this.runtime.serializeConfig())
     );
@@ -194,28 +194,28 @@ public class ActorRuntimeTest {
     try {
       this.runtime.getConfig().addActorTypeConfig(null);
     } catch (Exception ex) {
-      Assertions.assertTrue(ex instanceof IllegalArgumentException);
-      Assertions.assertTrue(ex.getMessage().contains("Add actor type config failed."));
+      assertInstanceOf(IllegalArgumentException.class, ex);
+      assertTrue(ex.getMessage().contains("Add actor type config failed."));
     }
     try {
       this.runtime.getConfig().addRegisteredActorType(null);
     } catch (Exception ex) {
-      Assertions.assertTrue(ex instanceof IllegalArgumentException);
-      Assertions.assertTrue(ex.getMessage().contains("Registered actor must have a type name."));
+      assertInstanceOf(IllegalArgumentException.class, ex);
+      assertTrue(ex.getMessage().contains("Registered actor must have a type name."));
     }
   }
 
   @Test
   public void setDrainOngoingCallTimeout() throws Exception {
     this.runtime.getConfig().setDrainOngoingCallTimeout(Duration.ofSeconds(123));
-    Assertions.assertEquals("{\"entities\":[],\"drainOngoingCallTimeout\":\"0h2m3s0ms\"}",
+    assertEquals("{\"entities\":[],\"drainOngoingCallTimeout\":\"0h2m3s0ms\"}",
         new String(this.runtime.serializeConfig()));
   }
 
   @Test
   public void setRemindersStoragePartitions() throws Exception {
     this.runtime.getConfig().setRemindersStoragePartitions(12);
-    Assertions.assertEquals("{\"entities\":[],\"remindersStoragePartitions\":12}",
+    assertEquals("{\"entities\":[],\"remindersStoragePartitions\":12}",
         new String(this.runtime.serializeConfig()));
   }
 
@@ -226,7 +226,7 @@ public class ActorRuntimeTest {
 
     byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "say", null).block();
     String message = ACTOR_STATE_SERIALIZER.deserialize(response, String.class);
-    Assertions.assertEquals("Nothing to say.", message);
+    assertEquals("Nothing to say.", message);
   }
 
   @Test
@@ -256,8 +256,8 @@ public class ActorRuntimeTest {
     deactivateCall.block();
 
     this.runtime.invoke(ACTOR_NAME, actorId, "say", null)
-        .doOnError(e -> Assertions.assertTrue(e.getMessage().contains("Could not find actor")))
-        .doOnSuccess(s -> Assertions.fail()).onErrorReturn("".getBytes()).block();
+        .doOnError(e -> assertTrue(e.getMessage().contains("Could not find actor")))
+        .doOnSuccess(s -> fail()).onErrorReturn("".getBytes()).block();
   }
 
   @Test
@@ -269,13 +269,13 @@ public class ActorRuntimeTest {
 
     byte[] response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
     int count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
-    Assertions.assertEquals(0, count);
+    assertEquals(0, count);
 
     invokeCall.block();
 
     response = this.runtime.invoke(ACTOR_NAME, actorId, "count", null).block();
     count = ACTOR_STATE_SERIALIZER.deserialize(response, Integer.class);
-    Assertions.assertEquals(1, count);
+    assertEquals(1, count);
   }
 
 }
