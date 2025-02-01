@@ -14,16 +14,26 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.protobuf.MessageLite;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Serializes and deserializes an internal object.
@@ -35,6 +45,8 @@ public class ObjectSerializer {
    */
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .registerModule(new JavaTimeModule())
+      .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
       .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   /**
@@ -149,7 +161,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be parsed.
    */
   public JsonNode parseNode(byte[] content) throws IOException {
-    return  OBJECT_MAPPER.readTree(content);
+    return OBJECT_MAPPER.readTree(content);
   }
 
   /**
@@ -199,5 +211,21 @@ public class ObjectSerializer {
     }
 
     return OBJECT_MAPPER.readValue(content, javaType);
+  }
+
+  private static class ZonedDateTimeDeserializer extends JsonDeserializer<ZonedDateTime> {
+    @Override
+    public ZonedDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+        throws IOException {
+      return ZonedDateTime.parse(jsonParser.getText());
+    }
+  }
+
+  private static class ZonedDateTimeSerializer extends JsonSerializer<ZonedDateTime> {
+    @Override
+    public void serialize(ZonedDateTime zonedDateTime, JsonGenerator jsonGenerator,
+                          SerializerProvider serializerProvider) throws IOException {
+      jsonGenerator.writeString(zonedDateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
+    }
   }
 }
