@@ -32,8 +32,6 @@ import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Serializes and deserializes an internal object.
