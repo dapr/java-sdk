@@ -212,20 +212,4 @@ public class ObjectSerializer {
 
     return OBJECT_MAPPER.readValue(content, javaType);
   }
-
-  private static class ZonedDateTimeDeserializer extends JsonDeserializer<ZonedDateTime> {
-    @Override
-    public ZonedDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
-        throws IOException {
-      return ZonedDateTime.parse(jsonParser.getText());
-    }
-  }
-
-  private static class ZonedDateTimeSerializer extends JsonSerializer<ZonedDateTime> {
-    @Override
-    public void serialize(ZonedDateTime zonedDateTime, JsonGenerator jsonGenerator,
-                          SerializerProvider serializerProvider) throws IOException {
-      jsonGenerator.writeString(zonedDateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
-    }
-  }
 }
