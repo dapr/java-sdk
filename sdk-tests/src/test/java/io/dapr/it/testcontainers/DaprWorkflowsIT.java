@@ -56,7 +56,7 @@ public class DaprWorkflowsIT {
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.1")
       .withAppName("workflow-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("kvstore", "state.in-memory", "v1",
