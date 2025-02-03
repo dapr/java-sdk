@@ -4,6 +4,8 @@ import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorClient;
 import io.dapr.actors.client.ActorProxyBuilder;
 import io.dapr.actors.runtime.ActorRuntime;
+import io.dapr.springboot.DaprAutoConfiguration;
+import io.dapr.springboot.DaprController;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -25,10 +27,12 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
+    webEnvironment = WebEnvironment.DEFINED_PORT,
     classes = {
         TestActorsApplication.class,
-        TestDaprActorsConfiguration.class
+        TestDaprActorsConfiguration.class,
+        DaprAutoConfiguration.class,
+            DaprController.class
     }
 )
 @Testcontainers
@@ -55,18 +59,12 @@ public class DaprActorsIT {
   static void daprProperties(DynamicPropertyRegistry registry) {
     registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
     registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
   }
 
   @Autowired
   private ActorClient daprActorClient;
 
-  @Autowired
-  private ActorRuntime daprActorRuntime;
-
-  @BeforeEach
-  public void setUp(){
-    daprActorRuntime.registerActor(TestActorImpl.class);
-  }
 
   @Test
   public void testActors() throws Exception {

@@ -38,6 +38,12 @@ public class DaprController {
    */
   private static final DefaultObjectSerializer SERIALIZER = new DefaultObjectSerializer();
 
+  private ActorRuntime daprActorRuntime;
+
+  public DaprController(ActorRuntime daprActorRuntime) {
+    this.daprActorRuntime = daprActorRuntime;
+  }
+
   /**
    * Callback API for health checks from Dapr's sidecar.
    */
@@ -52,7 +58,7 @@ public class DaprController {
    */
   @GetMapping(path = "/dapr/config", produces = MediaType.APPLICATION_JSON_VALUE)
   public byte[] daprConfig() throws IOException {
-    return ActorRuntime.getInstance().serializeConfig();
+    return daprActorRuntime.serializeConfig();
   }
 
   /**
@@ -74,7 +80,7 @@ public class DaprController {
   @DeleteMapping(path = "/actors/{type}/{id}")
   public Mono<Void> deactivateActor(@PathVariable("type") String type,
                                     @PathVariable("id") String id) {
-    return ActorRuntime.getInstance().deactivate(type, id);
+    return daprActorRuntime.deactivate(type, id);
   }
 
   /**
@@ -90,7 +96,7 @@ public class DaprController {
                                         @PathVariable("id") String id,
                                         @PathVariable("method") String method,
                                         @RequestBody(required = false) byte[] body) {
-    return ActorRuntime.getInstance().invoke(type, id, method, body);
+    return daprActorRuntime.invoke(type, id, method, body);
   }
 
   /**
@@ -106,7 +112,7 @@ public class DaprController {
                                      @PathVariable("id") String id,
                                      @PathVariable("timer") String timer,
                                      @RequestBody byte[] body) {
-    return ActorRuntime.getInstance().invokeTimer(type, id, timer, body);
+    return daprActorRuntime.invokeTimer(type, id, timer, body);
   }
 
   /**
@@ -122,7 +128,7 @@ public class DaprController {
                                         @PathVariable("id") String id,
                                         @PathVariable("reminder") String reminder,
                                         @RequestBody(required = false) byte[] body) {
-    return ActorRuntime.getInstance().invokeReminder(type, id, reminder, body);
+    return daprActorRuntime.invokeReminder(type, id, reminder, body);
   }
 
 }

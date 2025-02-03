@@ -25,16 +25,18 @@ public class TestDaprActorsConfiguration {
     return new ActorClient(new Properties(overrides));
   }
 
-  @Bean
-  public ActorRuntime daprActorRuntime(
-      @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
-      @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
-  ){
-    Map<String, String> overrides = Map.of(
-	  "dapr.http.endpoint", daprHttpEndpoint,
-	  "dapr.grpc.endpoint", daprGrpcEndpoint
-    );
+	@Bean
+	public ActorRuntime daprActorRuntime(
+			@Value("${dapr.http.endpoint}") String daprHttpEndpoint,
+			@Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
+	){
+		Map<String, String> overrides = Map.of(
+				"dapr.http.endpoint", daprHttpEndpoint,
+				"dapr.grpc.endpoint", daprGrpcEndpoint
+		);
 
-    return ActorRuntime.getInstance(new Properties(overrides));
-  }
+		ActorRuntime daprActorRuntime = ActorRuntime.getInstance(new Properties(overrides));
+		daprActorRuntime.registerActor(TestActorImpl.class);
+		return daprActorRuntime;
+	}
 }
