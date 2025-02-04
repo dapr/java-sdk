@@ -102,6 +102,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return subscriptions;
   }
 
+  public Set<HttpEndpoint> getHttpEndpoints() {
+    return httpEndpoints;
+  }
+
   public DaprContainer withAppPort(Integer port) {
     this.appPort = port;
     return this;
