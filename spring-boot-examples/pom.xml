@@ -15,6 +15,7 @@
 
     <modules>
         <module>producer-app</module>
+        <module>consumer-app</module>
     </modules>
 
 </project>
