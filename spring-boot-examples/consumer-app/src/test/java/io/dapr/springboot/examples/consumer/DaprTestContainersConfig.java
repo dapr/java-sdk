@@ -52,8 +52,10 @@ public class DaprTestContainersConfig {
   @Bean
   public RabbitMQContainer rabbitMQContainer(Network daprNetwork) {
     return new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.7.25-management-alpine"))
-            .withExposedPorts(5672).withNetworkAliases("rabbitmq").withReuse(true).withNetwork(daprNetwork);
-
+            .withExposedPorts(5672).withNetworkAliases("rabbitmq")
+            //Uncomment to run this app alongside `producer-app`
+            .withReuse(true)
+            .withNetwork(daprNetwork);
   }
 
   @Bean
@@ -65,13 +67,16 @@ public class DaprTestContainersConfig {
     rabbitMqProperties.put("user", "guest");
     rabbitMqProperties.put("password", "guest");
 
-    return new DaprContainer("daprio/daprd:1.14.4").withAppName("consumer-app")
+    return new DaprContainer("daprio/daprd:1.14.4")
+            .withAppName("consumer-app")
             .withNetwork(daprNetwork).withComponent(new Component("pubsub",
                     "pubsub.rabbitmq", "v1", rabbitMqProperties))
             .withDaprLogLevel(DaprLogLevel.DEBUG)
             .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
             .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
-            .withReusablePlacement(true).dependsOn(rabbitMQContainer);
+            //Uncomment to run this app alongside `producer-app`
+            //.withReusablePlacement(true)
+            .dependsOn(rabbitMQContainer);
   }
 
 

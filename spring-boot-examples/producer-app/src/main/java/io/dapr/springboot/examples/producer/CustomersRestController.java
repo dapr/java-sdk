@@ -26,7 +26,7 @@ public class CustomersRestController {
    * Track customer endpoint.
    * @param customer provided customer to track
    */
-  @PostMapping("/customers/")
+  @PostMapping("/customers")
   public void trackCustomer(@RequestBody Customer customer) {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(CustomerWorkflow.class, customer);
     try {

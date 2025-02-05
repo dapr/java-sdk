@@ -10,8 +10,9 @@ public class Order {
 
   /**
    * Creates a new Order.
-   * @param id order id
-   * @param item item reference
+   *
+   * @param id     order id
+   * @param item   item reference
    * @param amount of items in the order
    */
   public Order(String id, String item, Integer amount) {
@@ -42,5 +43,10 @@ public class Order {
 
   public void setAmount(Integer amount) {
     this.amount = amount;
+  }
+
+  @Override
+  public String toString() {
+    return "Order{" + "id='" + id + '\'' + ", item='" + item + '\'' + ", amount=" + amount + '}';
   }
 }
