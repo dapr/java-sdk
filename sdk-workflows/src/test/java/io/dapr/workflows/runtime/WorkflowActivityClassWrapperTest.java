@@ -3,16 +3,15 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.TaskActivityContext;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
-import org.junit.Assert;
 import org.junit.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
-public class WorkflowActivityWrapperTest {
+public class WorkflowActivityClassWrapperTest {
   public static class TestActivity implements WorkflowActivity {
     @Override
     public Object run(WorkflowActivityContext ctx) {
@@ -22,24 +21,26 @@ public class WorkflowActivityWrapperTest {
   }
 
   @Test
-  public void getName() throws NoSuchMethodException {
-    WorkflowActivityWrapper<TestActivity> wrapper = new WorkflowActivityWrapper<>(
-        WorkflowActivityWrapperTest.TestActivity.class);
-    Assert.assertEquals(
-        "io.dapr.workflows.runtime.WorkflowActivityWrapperTest.TestActivity",
+  public void getName() {
+    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>(TestActivity.class);
+
+    assertEquals(
+        "io.dapr.workflows.runtime.WorkflowActivityClassWrapperTest.TestActivity",
         wrapper.getName()
     );
   }
 
   @Test
-  public void createWithClass() throws NoSuchMethodException {
+  public void createWithClass() {
     TaskActivityContext mockContext = mock(TaskActivityContext.class);
-    WorkflowActivityWrapper<TestActivity> wrapper = new WorkflowActivityWrapper<>(
-        WorkflowActivityWrapperTest.TestActivity.class);
+    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>(TestActivity.class);
+
     when(mockContext.getInput(String.class)).thenReturn("Hello");
     when(mockContext.getName()).thenReturn("TestActivityContext");
+
     Object result = wrapper.create().run(mockContext);
+
     verify(mockContext, times(1)).getInput(String.class);
-    Assert.assertEquals("Hello world! from TestActivityContext", result);
+    assertEquals("Hello world! from TestActivityContext", result);
   }
 }
