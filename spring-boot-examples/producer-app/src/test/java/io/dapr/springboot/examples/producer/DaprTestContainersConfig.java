@@ -101,7 +101,6 @@ public class DaprTestContainersConfig {
              .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
              .withAppPort(8080)
              .withAppChannelAddress("host.testcontainers.internal")
-//             .withReusablePlacement(true)
              .dependsOn(rabbitMQContainer)
              .dependsOn(postgreSQLContainer);
    }
