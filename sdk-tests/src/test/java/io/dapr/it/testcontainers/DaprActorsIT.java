@@ -60,15 +60,15 @@ public class DaprActorsIT {
   @Autowired
   private ActorClient daprActorClient;
 
-	@Autowired
-	private ActorRuntime daprActorRuntime;
+  @Autowired
+  private ActorRuntime daprActorRuntime;
 
-	@BeforeEach
-	public void setUp(){
-		daprActorRuntime.registerActor(TestActorImpl.class);
-	}
+  @BeforeEach
+  public void setUp(){
+    daprActorRuntime.registerActor(TestActorImpl.class);
+  }
 
-	@Test
+  @Test
   public void testActors() throws Exception {
     ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder<>(TestActor.class, daprActorClient);
     ActorId actorId = ActorId.createRandom();
