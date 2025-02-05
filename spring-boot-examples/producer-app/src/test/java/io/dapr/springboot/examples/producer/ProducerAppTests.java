@@ -105,7 +105,7 @@ class ProducerAppTests {
 						.contentType(ContentType.JSON)
 						.body("{\"customerName\": \"salaboy\"}")
 						.when()
-						.post("/customers/")
+						.post("/customers")
 						.then()
 						.statusCode(200);
 
