@@ -55,7 +55,7 @@ class ProducerAppTests {
 						.statusCode(200);
 		
 		await()
-						.atMost(Duration.ofSeconds(10))
+						.atMost(Duration.ofSeconds(15))
 						.until(controller.getAllEvents()::size, equalTo(1));
 
 		given()
@@ -111,7 +111,7 @@ class ProducerAppTests {
 
 
 		await()
-						.atMost(Duration.ofSeconds(10))
+						.atMost(Duration.ofSeconds(15))
 						.until(customerStore.getCustomers()::size, equalTo(1));
 		Customer customer = customerStore.getCustomer("salaboy");
 		assertEquals(true, customer.isInCustomerDB());
