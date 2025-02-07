@@ -239,6 +239,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       cmds.add(Integer.toString(appPort));
     }
 
+    cmds.add("--enable-app-health-check");
+    cmds.add("--app-health-check-path");
+    cmds.add("/actuator/health");
+
     if (configuration != null) {
       cmds.add("--config");
       cmds.add("/dapr-resources/" + configuration.getName() + ".yaml");
