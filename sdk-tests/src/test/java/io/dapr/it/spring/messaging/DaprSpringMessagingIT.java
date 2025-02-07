@@ -19,6 +19,7 @@ import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.Subscription;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -45,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     webEnvironment = WebEnvironment.DEFINED_PORT,
     classes = {
         DaprClientAutoConfiguration.class,
-        TestApplication.class
+        TestApplication.class, TestRestController.class
     },
     properties = {"dapr.pubsub.name=pubsub"}
 )
@@ -61,10 +62,11 @@ public class DaprSpringMessagingIT {
 
   @Container
   @ServiceConnection
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
       .withAppName("messaging-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
+          .withSubscription(new Subscription("my-app-subscription", "pubsub", "mockTopic", "subscribe"))
       .withAppPort(8080)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
@@ -81,14 +83,10 @@ public class DaprSpringMessagingIT {
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
   }
 
-  @BeforeEach
-  public void beforeEach() throws InterruptedException {
-    Thread.sleep(1000);
-  }
 
   @Test
-  @Disabled("Test is flaky due to global state in the spring test application.")
   public void testDaprMessagingTemplate() throws InterruptedException {
+    Thread.sleep(10000);
     for (int i = 0; i < 10; i++) {
       var msg = "ProduceAndReadWithPrimitiveMessageType:" + i;
 
@@ -98,7 +96,7 @@ public class DaprSpringMessagingIT {
     }
 
     // Wait for the messages to arrive
-    Thread.sleep(1000);
+    Thread.sleep(10000);
 
     List<CloudEvent<String>> events = testRestController.getEvents();
 

@@ -33,13 +33,17 @@ public class TestRestController {
   private static final Logger LOG = LoggerFactory.getLogger(TestRestController.class);
   private final List<CloudEvent<String>> events = new ArrayList<>();
 
-  @GetMapping("/")
+  public TestRestController() {
+    System.out.println("TestRestController started...");
+  }
+
+  @GetMapping("/actuator/health")
   public String ok() {
     return "OK";
   }
 
   @Topic(name = topicName, pubsubName = pubSubName)
-  @PostMapping("/subscribe")
+  @PostMapping("subscribe")
   public void handleMessages(@RequestBody CloudEvent<String> event) {
     LOG.info("++++++CONSUME {}------", event);
     events.add(event);
