@@ -15,11 +15,20 @@ package io.dapr.it.testcontainers;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
+@RestController
 public class TestActorsApplication {
 
   public static void main(String[] args) {
     SpringApplication.run(TestActorsApplication.class, args);
+  }
+
+  //Mocking the actuator health endpoint for the sidecar health check
+  @GetMapping("/actuator/health")
+  public String health(){
+    return "OK";
   }
 }
