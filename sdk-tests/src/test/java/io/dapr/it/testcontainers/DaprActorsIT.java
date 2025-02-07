@@ -25,7 +25,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
+    webEnvironment = WebEnvironment.DEFINED_PORT,
     classes = {
         TestActorsApplication.class,
         TestDaprActorsConfiguration.class
@@ -44,7 +44,8 @@ public class DaprActorsIT {
           Map.of("actorStateStore", "true")))
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-      .withAppChannelAddress("host.testcontainers.internal");
+      .withAppChannelAddress("host.testcontainers.internal")
+          .withAppPort(8080);
 
   /**
    * Expose the Dapr ports to the host.
@@ -65,11 +66,14 @@ public class DaprActorsIT {
 
   @BeforeEach
   public void setUp(){
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
     daprActorRuntime.registerActor(TestActorImpl.class);
   }
 
   @Test
   public void testActors() throws Exception {
+    Thread.sleep(10000);
+
     ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder<>(TestActor.class, daprActorClient);
     ActorId actorId = ActorId.createRandom();
     TestActor actor = builder.build(actorId);
