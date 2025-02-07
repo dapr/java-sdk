@@ -1,5 +1,6 @@
 package io.dapr.springboot.examples.producer;
 
+import io.dapr.client.DaprClient;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.producer.workflow.CustomerFollowupActivity;
 import io.dapr.springboot.examples.producer.workflow.CustomerWorkflow;
@@ -33,6 +34,9 @@ class ProducerAppTests {
 	@Autowired
 	private CustomerStore customerStore;
 
+	@Autowired
+	private DaprClient daprClient;
+
 	@BeforeAll
 	public static void setup(){
 		org.testcontainers.Testcontainers.exposeHostPorts(8080);
@@ -41,11 +45,14 @@ class ProducerAppTests {
 	@BeforeEach
 	void setUp() {
 		RestAssured.baseURI = "http://localhost:" + 8080;
+
 	}
 
 
 	@Test
 	void testOrdersEndpointAndMessaging() throws InterruptedException, IOException {
+		Thread.sleep(10000);
+
 		given()
 						.contentType(ContentType.JSON)
 						.body("{ \"id\": \"abc-123\",\"item\": \"the mars volta LP\",\"amount\": 1}")
@@ -101,6 +108,9 @@ class ProducerAppTests {
 
 	@Test
 	void testCustomersWorkflows() throws InterruptedException, IOException {
+
+		Thread.sleep(10000);
+
 		given()
 						.contentType(ContentType.JSON)
 						.body("{\"customerName\": \"salaboy\"}")

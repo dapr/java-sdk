@@ -3,6 +3,7 @@ package io.dapr.springboot.examples.producer;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.Subscription;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -96,6 +97,7 @@ public class DaprTestContainersConfig {
              .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))
              .withComponent(new Component("kvbinding", "bindings.postgresql", "v1", BINDING_PROPERTIES))
              .withComponent(new Component("pubsub", "pubsub.rabbitmq", "v1", rabbitMqProperties))
+             .withSubscription(new Subscription("app", "pubsub", "topic", "/subscribe"))
              .withDaprLogLevel(DaprLogLevel.DEBUG)
              .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
              .withAppPort(8080)

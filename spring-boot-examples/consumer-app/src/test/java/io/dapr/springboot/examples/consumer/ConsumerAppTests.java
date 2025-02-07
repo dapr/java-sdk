@@ -1,5 +1,6 @@
 package io.dapr.springboot.examples.consumer;
 
+import io.dapr.client.DaprClient;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.restassured.RestAssured;
@@ -29,6 +30,9 @@ class ConsumerAppTests {
   @Autowired
   private SubscriberRestController subscriberRestController;
 
+  @Autowired
+  private DaprClient daprClient;
+
   @BeforeAll
   public static void setup() {
     org.testcontainers.Testcontainers.exposeHostPorts(8081);
@@ -37,14 +41,18 @@ class ConsumerAppTests {
   @BeforeEach
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8081;
+
   }
 
 
   @Test
   void testMessageConsumer() throws InterruptedException, IOException {
 
-    messagingTemplate.send("topic", new Order("abc-123", "the mars volta LP", 1));
+    Thread.sleep(10000);
+    
+    daprClient.waitForSidecar(10000).block();
 
+    messagingTemplate.send("topic", new Order("abc-123", "the mars volta LP", 1));
 
     given()
             .contentType(ContentType.JSON)
