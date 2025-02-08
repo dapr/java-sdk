@@ -20,19 +20,16 @@ import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -56,8 +53,9 @@ public class DaprSpringMessagingIT {
   private static final Logger logger = LoggerFactory.getLogger(DaprSpringMessagingIT.class);
 
   private static final String TOPIC = "mockTopic";
-
   private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final int APP_PORT = 8080;
+  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
 
   @Container
   @ServiceConnection
@@ -65,7 +63,8 @@ public class DaprSpringMessagingIT {
       .withAppName("messaging-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
-      .withAppPort(8080)
+      .withAppPort(APP_PORT)
+      .withAppHealthCheckPath("/ready")
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal");
@@ -78,17 +77,13 @@ public class DaprSpringMessagingIT {
 
   @BeforeAll
   public static void beforeAll(){
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
-  }
-
-  @BeforeEach
-  public void beforeEach() throws InterruptedException {
-    Thread.sleep(1000);
+    org.testcontainers.Testcontainers.exposeHostPorts(APP_PORT);
   }
 
   @Test
-  @Disabled("Test is flaky due to global state in the spring test application.")
   public void testDaprMessagingTemplate() throws InterruptedException {
+    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
+
     for (int i = 0; i < 10; i++) {
       var msg = "ProduceAndReadWithPrimitiveMessageType:" + i;
 
