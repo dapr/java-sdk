@@ -246,7 +246,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     cmds.add(DAPR_PROTOCOL.getName());
     cmds.add("--placement-host-address");
     cmds.add(placementService + ":50005");
-    cmds.add("--enable-app-health-check");
 
     if (appChannelAddress != null && !appChannelAddress.isEmpty()) {
       cmds.add("--app-channel-address");

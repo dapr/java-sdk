@@ -34,7 +34,7 @@ public class TestRestController {
   private final List<CloudEvent<String>> events = new ArrayList<>();
 
   @GetMapping("/ready")
-  public String ok() throws InterruptedException {
+  public String ok() {
     return "OK";
   }
 
