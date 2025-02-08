@@ -20,6 +20,7 @@ import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -80,10 +81,14 @@ public class DaprSpringMessagingIT {
     org.testcontainers.Testcontainers.exposeHostPorts(APP_PORT);
   }
 
+  @BeforeEach
+  public void beforeEach() {
+    // Ensure the subscriptions are registered
+    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
+  }
+
   @Test
   public void testDaprMessagingTemplate() throws InterruptedException {
-    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
-
     for (int i = 0; i < 10; i++) {
       var msg = "ProduceAndReadWithPrimitiveMessageType:" + i;
 
