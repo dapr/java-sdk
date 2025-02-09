@@ -13,6 +13,7 @@ public class TestProducerApplication {
             .from(ProducerApplication::main)
             .with(DaprTestContainersConfig.class)
             .run(args);
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
   }
 
 }

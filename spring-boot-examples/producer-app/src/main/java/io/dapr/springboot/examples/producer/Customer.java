@@ -43,6 +43,4 @@ public class Customer {
     return "Customer [customerName=" + customerName + ", workflowId=" + workflowId + ", inCustomerDB="
             + inCustomerDB + ", followUp=" + followUp + "]";
   }
-
-
 }
