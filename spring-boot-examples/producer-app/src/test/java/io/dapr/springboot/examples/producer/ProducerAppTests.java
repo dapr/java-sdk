@@ -7,7 +7,6 @@ import io.dapr.springboot.examples.producer.workflow.CustomerWorkflow;
 import io.dapr.springboot.examples.producer.workflow.RegisterCustomerActivity;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,15 +36,9 @@ class ProducerAppTests {
 	@Autowired
 	private DaprClient daprClient;
 
-	@BeforeAll
-	public static void setup(){
-		org.testcontainers.Testcontainers.exposeHostPorts(8080);
-	}
-
 	@BeforeEach
 	void setUp() {
 		RestAssured.baseURI = "http://localhost:" + 8080;
-
 	}
 
 

@@ -76,6 +76,9 @@ public class DaprContainerIT {
   }
 
   private void configStub() {
+    stubFor(any(urlMatching("/actuator/health"))
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
+
     stubFor(any(urlMatching("/dapr/subscribe"))
         .willReturn(aResponse().withBody("[]").withStatus(200)));
 
