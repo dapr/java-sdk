@@ -98,5 +98,5 @@ curl -X POST localhost:8080/customers -H 'Content-Type: application/json' -d @ne
 
 Send an event simulating the customer interaction:
 ```bash
-curl -X POST localhost:8080/customers/followup -H 'Content-Type: application/json' -d @new-customer.json
+curl -X POST localhost:8080/customers/followup -H 'Content-Type: application/json' -d @followup-customer.json
 ```
