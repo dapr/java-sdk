@@ -39,7 +39,7 @@ public class TestRestController {
   }
 
   @Topic(name = topicName, pubsubName = pubSubName)
-  @PostMapping("subscribe")
+  @PostMapping("/subscribe")
   public void handleMessages(@RequestBody CloudEvent<String> event) {
     LOG.info("++++++CONSUME {}------", event);
     events.add(event);
