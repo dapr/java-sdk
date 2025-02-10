@@ -68,6 +68,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private DaprPlacementContainer placementContainer;
   private String appName;
   private Integer appPort;
+  private String appHealthCheckPath;
   private boolean shouldReusePlacement;
 
   /**
@@ -113,6 +114,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withAppChannelAddress(String appChannelAddress) {
     this.appChannelAddress = appChannelAddress;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckPath(String appHealthCheckPath) {
+    this.appHealthCheckPath = appHealthCheckPath;
     return this;
   }
 
@@ -173,7 +179,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
    */
   public DaprContainer withComponent(Path path) {
     try {
-      Map<String, Object> component = this.YAML_MAPPER.loadAs(Files.newInputStream(path), Map.class);
+      Map<String, Object> component = YAML_MAPPER.loadAs(Files.newInputStream(path), Map.class);
 
       String type = (String) component.get("type");
       Map<String, Object> metadata = (Map<String, Object>) component.get("metadata");
@@ -233,12 +239,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
-    cmds.add("-app-id");
+    cmds.add("--app-id");
     cmds.add(appName);
     cmds.add("--dapr-listen-addresses=0.0.0.0");
     cmds.add("--app-protocol");
     cmds.add(DAPR_PROTOCOL.getName());
-    cmds.add("-placement-host-address");
+    cmds.add("--placement-host-address");
     cmds.add(placementService + ":50005");
 
     if (appChannelAddress != null && !appChannelAddress.isEmpty()) {
@@ -251,9 +257,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       cmds.add(Integer.toString(appPort));
     }
 
-    cmds.add("--enable-app-health-check");
-    cmds.add("--app-health-check-path");
-    cmds.add("/actuator/health");
+    if (appHealthCheckPath != null && !appHealthCheckPath.isEmpty()) {
+      cmds.add("--enable-app-health-check");
+      cmds.add("--app-health-check-path");
+      cmds.add(appHealthCheckPath);
+    }
 
     if (configuration != null) {
       cmds.add("--config");
