@@ -33,11 +33,7 @@ public class TestRestController {
   private static final Logger LOG = LoggerFactory.getLogger(TestRestController.class);
   private final List<CloudEvent<String>> events = new ArrayList<>();
 
-  public TestRestController() {
-    System.out.println("TestRestController started...");
-  }
-
-  @GetMapping("/actuator/health")
+  @GetMapping("/ready")
   public String ok() {
     return "OK";
   }
