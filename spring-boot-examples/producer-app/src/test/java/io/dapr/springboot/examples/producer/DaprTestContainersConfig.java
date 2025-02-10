@@ -100,6 +100,7 @@ public class DaprTestContainersConfig {
 //             .withDaprLogLevel(DaprLogLevel.DEBUG)
 //             .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
              .withAppPort(8080)
+             .withAppHealthCheckPath("/actuator/health")
              .withAppChannelAddress("host.testcontainers.internal")
              .dependsOn(rabbitMQContainer)
              .dependsOn(postgreSQLContainer);
