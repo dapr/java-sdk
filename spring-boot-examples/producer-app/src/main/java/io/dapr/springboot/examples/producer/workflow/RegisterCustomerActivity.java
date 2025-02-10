@@ -20,7 +20,7 @@ public class RegisterCustomerActivity implements WorkflowActivity {
   public Object run(WorkflowActivityContext ctx) {
     Customer customer = ctx.getInput(Customer.class);
     customer.setInCustomerDB(true);
-    System.out.println("Customer: " + customer + " registered." + " - hashcode" + this.hashCode());
+    System.out.println("Customer: " + customer + " registered.");
     customerStore.addCustomer(customer);
     return customer;
   }

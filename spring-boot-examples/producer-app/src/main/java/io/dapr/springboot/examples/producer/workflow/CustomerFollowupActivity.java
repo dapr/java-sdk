@@ -22,7 +22,7 @@ public class CustomerFollowupActivity implements WorkflowActivity {
     customer = customerStore.getCustomer(customer.getCustomerName());
     customer.setFollowUp(true);
     customerStore.addCustomer(customer);
-    System.out.println("Customer: " + customer + " follow-up." + " - hashcode" + this.hashCode());
+    System.out.println("Customer: " + customer + " follow-up.");
     return customer;
   }
 

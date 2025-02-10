@@ -39,6 +39,7 @@ class ProducerAppTests {
 	@BeforeEach
 	void setUp() {
 		RestAssured.baseURI = "http://localhost:" + 8080;
+		org.testcontainers.Testcontainers.exposeHostPorts(8080);
 	}
 
 
