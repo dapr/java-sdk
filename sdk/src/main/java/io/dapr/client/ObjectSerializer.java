@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.protobuf.MessageLite;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
@@ -35,6 +37,8 @@ public class ObjectSerializer {
    */
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .registerModule(new JavaTimeModule())
+      .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
       .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
   /**
@@ -149,7 +153,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be parsed.
    */
   public JsonNode parseNode(byte[] content) throws IOException {
-    return  OBJECT_MAPPER.readTree(content);
+    return OBJECT_MAPPER.readTree(content);
   }
 
   /**
