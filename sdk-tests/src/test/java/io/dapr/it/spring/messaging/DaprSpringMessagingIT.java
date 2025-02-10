@@ -19,7 +19,6 @@ import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import io.dapr.testcontainers.Subscription;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -44,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     webEnvironment = WebEnvironment.DEFINED_PORT,
     classes = {
         DaprClientAutoConfiguration.class,
-        TestApplication.class, TestRestController.class
+        TestApplication.class
     },
     properties = {"dapr.pubsub.name=pubsub"}
 )
@@ -61,11 +60,10 @@ public class DaprSpringMessagingIT {
 
   @Container
   @ServiceConnection
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
       .withAppName("messaging-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
-      .withSubscription(new Subscription("my-app-subscription", "pubsub", "mockTopic", "subscribe"))
       .withAppPort(APP_PORT)
       .withAppHealthCheckPath("/ready")
       .withDaprLogLevel(DaprLogLevel.DEBUG)
@@ -82,7 +80,7 @@ public class DaprSpringMessagingIT {
   public static void beforeAll(){
     org.testcontainers.Testcontainers.exposeHostPorts(APP_PORT);
   }
-  
+
   @BeforeEach
   public void beforeEach() {
     // Ensure the subscriptions are registered
@@ -91,7 +89,6 @@ public class DaprSpringMessagingIT {
 
   @Test
   public void testDaprMessagingTemplate() throws InterruptedException {
-    Thread.sleep(10000);
     for (int i = 0; i < 10; i++) {
       var msg = "ProduceAndReadWithPrimitiveMessageType:" + i;
 
