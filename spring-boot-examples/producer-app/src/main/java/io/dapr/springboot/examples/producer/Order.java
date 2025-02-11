@@ -48,4 +48,9 @@ public class Order {
   public void setAmount(Integer amount) {
     this.amount = amount;
   }
+
+  @Override
+  public String toString() {
+    return "Order{" + "id='" + id + '\'' + ", item='" + item + '\'' + ", amount=" + amount + '}';
+  }
 }
