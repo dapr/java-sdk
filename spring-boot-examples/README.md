@@ -78,25 +78,57 @@ The `consumer-app` starts in port `8081` by default.
 Now that both applications are up you can place an order by sending a POST request to `:8080/orders/`
 From the `spring-boot-examples/` directory you can use `curl` to send a POST request: 
 ```
-curl -X POST localhost:8080/orders -H 'Content-Type: application/json' -d @new-order.json
+curl -X POST localhost:8080/orders -H 'Content-Type: application/json' -d '{ "item": "the mars volta EP", "amount": 1 }'
+```
+
+If you check the `producer-app` logs you should see the following lines: 
+
+```bash
+...
+Storing Order: Order{id='null', item='the mars volta EP', amount=1}
+Publishing Order Event: Order{id='d4f8ea15-b774-441e-bcd2-7a4208a80bec', item='the mars volta EP', amount=1}
+
 ```
 
 If you check the `consumer-app` logs you should see the following lines, showing that the message 
 published by the `producer-app` was correctly consumed by the `consumer-app`:
 
-```
-CONSUME +++++ io.dapr.client.domain.CloudEvent@ef5ff503
-ORDER +++++ Order{id='69c1015e-c35f-4a06-bb56-3cca41b87701', item='mars volta EP', amount=1}
+```bash
+Order Event Received: Order{id='d4f8ea15-b774-441e-bcd2-7a4208a80bec', item='the mars volta EP', amount=1}
 ```
 
-
-You can also create a new customer to trigger the customer's workflow: 
+Next, you can  create a new customer to trigger the customer's tracking workflow: 
 
 ```bash
-curl -X POST localhost:8080/customers -H 'Content-Type: application/json' -d @new-customer.json
+curl -X POST localhost:8080/customers -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
+```
+Notice that the request return the workflow instance id that was created for tracking this customer. 
+You need to copy the Workflow Instance Id to execute the follow-up request.
+
+You should see in the `producer-app` logs: 
+
+```bash
+Workflow instance <Workflow Instance Id> started
+Let's register the customer: salaboy
+Customer: salaboy registered.
+Let's wait for the customer: salaboy to request a follow up.
 ```
 
-Send an event simulating the customer interaction:
+Send an event simulating the customer request for a follow-up (copy the workflow instance id from the previous request):
 ```bash
-curl -X POST localhost:8080/customers/followup -H 'Content-Type: application/json' -d @followup-customer.json
+curl -X POST localhost:8080/customers/followup -H 'Content-Type: application/json' \
+          -d '{ "customerName": "salaboy", "workflowId": "<Workflow Instance Id>" }'
 ```
+
+In the `producer-app` logs you should see that the workflow instance id moved forward to the Customer Follow Up activity: 
+
+```bash
+Customer follow-up requested: salaboy
+Let's book a follow up for the customer: salaboy
+Customer: salaboy follow-up done.
+Congratulations the customer: salaboy is happy!
+```
+
+## Running on Kubernetes
+
+You can run the same example on a Kubernetes cluster. [Check the Kubernetes tutorial here](kubernetes/README.md).

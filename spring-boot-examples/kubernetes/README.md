@@ -49,8 +49,16 @@ Next you need to use `kubectl port-forward` to be able to send requests to the a
 ```bash
 kubectl port-forward svc/producer-app 8080:8080
 ```
-and the `consumer-app` in a different terminal: 
+
+In a different terminals you can check the logs of the `producer-app` and `consumer-app`:
+
 ```bash
-kubectl port-forward svc/consumer-app 8081:8081
+kubectl logs -f producer-app-<POD_ID>
 ```
+and
+
+```bash
+kubectl logs -f consumer-app-<POD_ID>
+```
+
 
