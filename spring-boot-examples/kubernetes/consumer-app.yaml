@@ -37,7 +37,7 @@ spec:
         app: consumer-app
     spec:
       containers:
-        - image: salaboy/sb-consumer-app
+        - image: localhost:5001/sb-consumer-app
           name: consumer-app
           imagePullPolicy: Always
           ports:

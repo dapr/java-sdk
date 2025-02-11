@@ -37,7 +37,7 @@ spec:
         app: producer-app
     spec:
       containers:
-        - image: salaboy/sb-producer-app
+        - image: localhost:5001/sb-producer-app
           name: producer-app
           imagePullPolicy: Always
           ports:
