@@ -337,9 +337,9 @@
     <module>sdk-springboot</module>
     <module>dapr-spring</module>
     <module>examples</module>
+    <module>spring-boot-examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
-      <module>spring-boot-examples</module>
   </modules>
 
   <profiles>
