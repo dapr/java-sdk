@@ -7,11 +7,6 @@ This example consist on two applications:
   - Implements a Workflow with Dapr Workflows
 - Consumer App:
   - Subscribe to messages
-  - Expose endpoints for Workflows to call
-
-
-
-
 
 ## Running this examples from source code
 
