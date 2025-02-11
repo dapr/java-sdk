@@ -36,6 +36,10 @@ public class OrdersRestController {
   @Autowired
   private DaprMessagingTemplate<Order> messagingTemplate;
 
+  /**
+   * Store orders from customers.
+   * @param order from the customer
+   */
   @PostMapping("/orders")
   public void storeOrder(@RequestBody Order order) {
     logger.info("Storing Order: " + order);
