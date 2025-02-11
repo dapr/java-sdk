@@ -16,6 +16,7 @@ package io.dapr.springboot.examples.consumer;
 import io.dapr.client.DaprClient;
 import io.dapr.spring.messaging.DaprMessagingTemplate;
 import io.dapr.springboot.DaprAutoConfiguration;
+import io.dapr.testcontainers.DaprContainer;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -37,6 +39,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class ConsumerAppTests {
 
+  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
+
   @Autowired
   private DaprMessagingTemplate<Order> messagingTemplate;
 
@@ -46,6 +50,9 @@ class ConsumerAppTests {
   @Autowired
   private DaprClient daprClient;
 
+  @Autowired
+  private DaprContainer daprContainer;
+
   @BeforeAll
   public static void setup() {
     org.testcontainers.Testcontainers.exposeHostPorts(8081);
@@ -54,16 +61,12 @@ class ConsumerAppTests {
   @BeforeEach
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8081;
-
+    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(daprContainer);
   }
 
 
   @Test
   void testMessageConsumer() throws InterruptedException, IOException {
-
-    Thread.sleep(10000);
-    
-    daprClient.waitForSidecar(10000).block();
 
     messagingTemplate.send("topic", new Order("abc-123", "the mars volta LP", 1));
 
