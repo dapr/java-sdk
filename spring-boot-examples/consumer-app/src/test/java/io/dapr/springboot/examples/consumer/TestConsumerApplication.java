@@ -21,11 +21,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class TestConsumerApplication {
 
   public static void main(String[] args) {
-    org.testcontainers.Testcontainers.exposeHostPorts(8081);
-    SpringApplication
-            .from(ConsumerApplication::main)
+    SpringApplication.from(ConsumerApplication::main)
             .with(DaprTestContainersConfig.class)
             .run(args);
+    org.testcontainers.Testcontainers.exposeHostPorts(8081);
   }
 
 

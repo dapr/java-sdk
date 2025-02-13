@@ -23,126 +23,126 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest(classes= {TestProducerApplication.class, DaprTestContainersConfig.class, 
-					DaprAutoConfiguration.class, CustomerWorkflow.class, CustomerFollowupActivity.class,
-					RegisterCustomerActivity.class, CustomerStore.class},
-				webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(classes = {TestProducerApplication.class, DaprTestContainersConfig.class,
+        DaprAutoConfiguration.class, CustomerWorkflow.class, CustomerFollowupActivity.class,
+        RegisterCustomerActivity.class, CustomerStore.class},
+        webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class ProducerAppTests {
 
-	private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
+  private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
 
-	@Autowired
-	private TestSubscriberRestController controller;
+  @Autowired
+  private TestSubscriberRestController controller;
 
-	@Autowired
-	private CustomerStore customerStore;
+  @Autowired
+  private CustomerStore customerStore;
 
-	@Autowired
-	private DaprClient daprClient;
-
-
-	@Autowired
-	private DaprContainer daprContainer;
+  @Autowired
+  private DaprClient daprClient;
 
 
-	@BeforeEach
-	void setUp() {
-		RestAssured.baseURI = "http://localhost:" + 8080;
-		org.testcontainers.Testcontainers.exposeHostPorts(8080);
-		// Ensure the subscriptions are registered
-		Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(daprContainer);
-
-	}
+  @Autowired
+  private DaprContainer daprContainer;
 
 
-	@Test
-	void testOrdersEndpointAndMessaging() throws InterruptedException, IOException {
+  @BeforeEach
+  void setUp() {
+    RestAssured.baseURI = "http://localhost:" + 8080;
+    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    // Ensure the subscriptions are registered
+    Wait.forLogMessage(SUBSCRIPTION_MESSAGE_PATTERN, 1).waitUntilReady(daprContainer);
 
-		given()
-						.contentType(ContentType.JSON)
-						.body("{ \"id\": \"abc-123\",\"item\": \"the mars volta LP\",\"amount\": 1}")
-						.when()
-						.post("/orders")
-						.then()
-						.statusCode(200);
-		
-		await()
-						.atMost(Duration.ofSeconds(15))
-						.until(controller.getAllEvents()::size, equalTo(1));
-
-		given()
-						.contentType(ContentType.JSON)
-						.when()
-						.get("/orders")
-						.then()
-						.statusCode(200).body("size()", is(1));
-
-		given()
-						.contentType(ContentType.JSON)
-						.when()
-						.queryParam("item", "the mars volta LP")
-						.get("/orders/byItem/")
-						.then()
-						.statusCode(200).body("size()", is(1));
-
-		given()
-						.contentType(ContentType.JSON)
-						.when()
-						.queryParam("item", "other")
-						.get("/orders/byItem/")
-						.then()
-						.statusCode(200).body("size()", is(0));
-
-		given()
-						.contentType(ContentType.JSON)
-						.when()
-						.queryParam("amount", 1)
-						.get("/orders/byAmount/")
-						.then()
-						.statusCode(200).body("size()", is(1));
-
-		given()
-						.contentType(ContentType.JSON)
-						.when()
-						.queryParam("amount", 2)
-						.get("/orders/byAmount/")
-						.then()
-						.statusCode(200).body("size()", is(0));
-
-	}
-
-	@Test
-	void testCustomersWorkflows() throws InterruptedException, IOException {
-
-		given()
-						.contentType(ContentType.JSON)
-						.body("{\"customerName\": \"salaboy\"}")
-						.when()
-						.post("/customers")
-						.then()
-						.statusCode(200);
+  }
 
 
-		await()
-						.atMost(Duration.ofSeconds(15))
-						.until(customerStore.getCustomers()::size, equalTo(1));
-		Customer customer = customerStore.getCustomer("salaboy");
-		assertEquals(true, customer.isInCustomerDB());
-		String workflowId = customer.getWorkflowId();
-		given()
-						.contentType(ContentType.JSON)
-						.body("{ \"workflowId\": \""+workflowId+"\",\"customerName\": \"salaboy\" }")
-						.when()
-						.post("/customers/followup")
-						.then()
-						.statusCode(200);
-		
-		assertEquals(1, customerStore.getCustomers().size());
-		
-		await()
-          .atMost(Duration.ofSeconds(10))
-          .until(customerStore.getCustomer("salaboy")::isFollowUp, equalTo(true));
+  @Test
+  void testOrdersEndpointAndMessaging() throws InterruptedException, IOException {
 
-	}
+    given()
+            .contentType(ContentType.JSON)
+            .body("{ \"id\": \"abc-123\",\"item\": \"the mars volta LP\",\"amount\": 1}")
+            .when()
+            .post("/orders")
+            .then()
+            .statusCode(200);
+
+    await()
+            .atMost(Duration.ofSeconds(15))
+            .until(controller.getAllEvents()::size, equalTo(1));
+
+    given()
+            .contentType(ContentType.JSON)
+            .when()
+            .get("/orders")
+            .then()
+            .statusCode(200).body("size()", is(1));
+
+    given()
+            .contentType(ContentType.JSON)
+            .when()
+            .queryParam("item", "the mars volta LP")
+            .get("/orders/byItem/")
+            .then()
+            .statusCode(200).body("size()", is(1));
+
+    given()
+            .contentType(ContentType.JSON)
+            .when()
+            .queryParam("item", "other")
+            .get("/orders/byItem/")
+            .then()
+            .statusCode(200).body("size()", is(0));
+
+    given()
+            .contentType(ContentType.JSON)
+            .when()
+            .queryParam("amount", 1)
+            .get("/orders/byAmount/")
+            .then()
+            .statusCode(200).body("size()", is(1));
+
+    given()
+            .contentType(ContentType.JSON)
+            .when()
+            .queryParam("amount", 2)
+            .get("/orders/byAmount/")
+            .then()
+            .statusCode(200).body("size()", is(0));
+
+  }
+
+  @Test
+  void testCustomersWorkflows() throws InterruptedException, IOException {
+
+    given()
+            .contentType(ContentType.JSON)
+            .body("{\"customerName\": \"salaboy\"}")
+            .when()
+            .post("/customers")
+            .then()
+            .statusCode(200);
+
+
+    await()
+            .atMost(Duration.ofSeconds(15))
+            .until(customerStore.getCustomers()::size, equalTo(1));
+    Customer customer = customerStore.getCustomer("salaboy");
+    assertEquals(true, customer.isInCustomerDB());
+    String workflowId = customer.getWorkflowId();
+    given()
+            .contentType(ContentType.JSON)
+            .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
+            .when()
+            .post("/customers/followup")
+            .then()
+            .statusCode(200);
+
+    assertEquals(1, customerStore.getCustomers().size());
+
+    await()
+            .atMost(Duration.ofSeconds(10))
+            .until(customerStore.getCustomer("salaboy")::isFollowUp, equalTo(true));
+
+  }
 
 }
