@@ -66,8 +66,8 @@ public class DaprTestContainersConfig {
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
     return new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.7.25-management-alpine"))
             .withExposedPorts(5672)
-            .withReuse(reuse)
             .withNetworkAliases("rabbitmq")
+            .withReuse(true)
             .withNetwork(daprNetwork);
 
   }

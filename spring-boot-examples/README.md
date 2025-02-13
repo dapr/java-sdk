@@ -20,52 +20,21 @@ From the `spring-boot-examples/` directory you can start each service using the 
 
 ```bash
 cd producer-app/
-mvn spring-boot:test-run
+mvn -Dspring-boot.run.arguments="--reuse=true" spring-boot:test-run
 ```
 
 This will start the `producer-app` with Dapr services and the infrastructure needed by the application to run, 
 in this case RabbitMQ and PostgreSQL. The `producer-app` starts in port `8080` by default.
 
-To run the `consumer-app` alongside the `producer-app` you need to change the test configuration slightly so both applications join the same 
-container network. Check the `DaprTestContainersConfig` class inside the 
-`test/java/io/dapr/springboot/examples/consumer` directory you need to uncomment the following line: 
-
-```java
-  @Bean
-  public RabbitMQContainer rabbitMQContainer(Network daprNetwork) {
-    return new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.7.25-management-alpine"))
-            .withExposedPorts(5672).withNetworkAliases("rabbitmq")
-            //Uncomment to run this app alongside `producer-app` 
-            //.withReuse(true)
-            .withNetwork(daprNetwork);
-  }
-```
-
-`.withReuse(true)` needs to be uncommented for the `consumer-app` to connect to the same RabbitMQ broker 
-than the `producer-app`.
-
-You also need to make sure that the Dapr sidecar can connect to the same placement service started by the `producer-app`.
-Uncomment the following line: 
-
-```java
- return new DaprContainer("daprio/daprd:1.14.4")
-            .withAppName("consumer-app")
-            .withNetwork(daprNetwork).withComponent(new Component("pubsub",
-                    "pubsub.rabbitmq", "v1", rabbitMqProperties))
-            .withDaprLogLevel(DaprLogLevel.DEBUG)
-            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-            .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
-            //Uncomment to run this app alongside `producer-app`
-            //.withReusablePlacement(true)
-            .withAppHealthCheckPath("/actuator/health")
-            .dependsOn(rabbitMQContainer);
-```
+The `-Dspring-boot.run.arguments="--reuse=true"` flag helps the application to connect to an existing shared 
+infrastructure if it already exists. For development purposes, and to connect both applications we will set the flag
+in both. For more details check the `DaprTestContainersConfig.java` classes in both, the `producer-app` and the `consumer-app`.
 
 Then run in a different terminal: 
 
 ```
 cd consumer-app/
-mvn spring-boot:test-run
+mvn -Dspring-boot.run.arguments="--reuse=true" spring-boot:test-run
 ```
 The `consumer-app` starts in port `8081` by default.
 

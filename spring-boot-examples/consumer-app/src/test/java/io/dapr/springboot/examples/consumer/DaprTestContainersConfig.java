@@ -67,15 +67,16 @@ public class DaprTestContainersConfig {
   public RabbitMQContainer rabbitMQContainer(Network daprNetwork, Environment env) {
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
     return new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.7.25-management-alpine"))
-            .withExposedPorts(5672).withNetworkAliases("rabbitmq")
+            .withExposedPorts(5672)
+            .withNetworkAliases("rabbitmq")
             .withReuse(true)
             .withNetwork(daprNetwork);
   }
 
   @Bean
   @ServiceConnection
-  public DaprContainer daprContainer(Network daprNetwork, RabbitMQContainer rabbitMQContainer) {
-
+  public DaprContainer daprContainer(Network daprNetwork, RabbitMQContainer rabbitMQContainer, Environment env) {
+    boolean reuse = env.getProperty("reuse", Boolean.class, false);
     Map<String, String> rabbitMqProperties = new HashMap<>();
     rabbitMqProperties.put("connectionString", "amqp://guest:guest@rabbitmq:5672");
     rabbitMqProperties.put("user", "guest");
@@ -88,8 +89,7 @@ public class DaprTestContainersConfig {
             .withDaprLogLevel(DaprLogLevel.INFO)
             .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
             .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
-            //Uncomment to run this app alongside `producer-app`
-            //.withReusablePlacement(true)
+            .withReusablePlacement(reuse)
             .withAppHealthCheckPath("/actuator/health")
             .dependsOn(rabbitMQContainer);
   }
