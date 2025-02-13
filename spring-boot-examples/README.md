@@ -57,6 +57,7 @@ Uncomment the following line:
             .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
             //Uncomment to run this app alongside `producer-app`
             //.withReusablePlacement(true)
+            .withAppHealthCheckPath("/actuator/health")
             .dependsOn(rabbitMQContainer);
 ```
 

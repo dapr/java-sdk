@@ -21,6 +21,7 @@ import org.junit.runners.model.Statement;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.RabbitMQContainer;
@@ -63,11 +64,11 @@ public class DaprTestContainersConfig {
   }
 
   @Bean
-  public RabbitMQContainer rabbitMQContainer(Network daprNetwork) {
+  public RabbitMQContainer rabbitMQContainer(Network daprNetwork, Environment env) {
+    boolean reuse = env.getProperty("reuse", Boolean.class, false);
     return new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.7.25-management-alpine"))
             .withExposedPorts(5672).withNetworkAliases("rabbitmq")
-            //Uncomment to run this app alongside `producer-app`
-            //.withReuse(true)
+            .withReuse(true)
             .withNetwork(daprNetwork);
   }
 
