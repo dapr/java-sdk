@@ -58,51 +58,44 @@ class ProducerAppTests {
   @Test
   void testOrdersEndpointAndMessaging() throws InterruptedException, IOException {
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .body("{ \"id\": \"abc-123\",\"item\": \"the mars volta LP\",\"amount\": 1}")
             .when()
             .post("/orders")
             .then()
             .statusCode(200);
 
-    await()
-            .atMost(Duration.ofSeconds(15))
+    await().atMost(Duration.ofSeconds(15))
             .until(controller.getAllEvents()::size, equalTo(1));
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .when()
             .get("/orders")
             .then()
             .statusCode(200).body("size()", is(1));
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .when()
             .queryParam("item", "the mars volta LP")
             .get("/orders/byItem/")
             .then()
             .statusCode(200).body("size()", is(1));
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .when()
             .queryParam("item", "other")
             .get("/orders/byItem/")
             .then()
             .statusCode(200).body("size()", is(0));
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .when()
             .queryParam("amount", 1)
             .get("/orders/byAmount/")
             .then()
             .statusCode(200).body("size()", is(1));
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .when()
             .queryParam("amount", 2)
             .get("/orders/byAmount/")
@@ -114,8 +107,7 @@ class ProducerAppTests {
   @Test
   void testCustomersWorkflows() throws InterruptedException, IOException {
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .body("{\"customerName\": \"salaboy\"}")
             .when()
             .post("/customers")
@@ -123,14 +115,12 @@ class ProducerAppTests {
             .statusCode(200);
 
 
-    await()
-            .atMost(Duration.ofSeconds(15))
+    await().atMost(Duration.ofSeconds(15))
             .until(customerStore.getCustomers()::size, equalTo(1));
     Customer customer = customerStore.getCustomer("salaboy");
     assertEquals(true, customer.isInCustomerDB());
     String workflowId = customer.getWorkflowId();
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
             .when()
             .post("/customers/followup")
@@ -139,8 +129,7 @@ class ProducerAppTests {
 
     assertEquals(1, customerStore.getCustomers().size());
 
-    await()
-            .atMost(Duration.ofSeconds(10))
+    await().atMost(Duration.ofSeconds(10))
             .until(customerStore.getCustomer("salaboy")::isFollowUp, equalTo(true));
 
   }

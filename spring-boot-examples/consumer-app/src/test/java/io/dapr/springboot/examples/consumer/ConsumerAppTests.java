@@ -70,16 +70,13 @@ class ConsumerAppTests {
 
     messagingTemplate.send("topic", new Order("abc-123", "the mars volta LP", 1));
 
-    given()
-            .contentType(ContentType.JSON)
+    given().contentType(ContentType.JSON)
             .when()
             .get("/events")
             .then()
             .statusCode(200);
 
-
-    await()
-            .atMost(Duration.ofSeconds(10))
+    await().atMost(Duration.ofSeconds(10))
             .until(subscriberRestController.getAllEvents()::size, equalTo(1));
 
 
