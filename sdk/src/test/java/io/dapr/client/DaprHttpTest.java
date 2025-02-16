@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +52,7 @@ public class DaprHttpTest {
   private static final int HTTP_SERVER_ERROR = 500;
   private static final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
+  private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
 
   @SystemStub
   private final EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -81,7 +83,7 @@ public class DaprHttpTest {
     assertEquals("xyz", Properties.API_TOKEN.get());
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, Properties.API_TOKEN.get(), httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, Properties.API_TOKEN.get(), READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -113,7 +115,7 @@ public class DaprHttpTest {
     assertNull(Properties.API_TOKEN.get());
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -148,7 +150,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi,  httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -185,7 +187,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -217,7 +219,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -247,7 +249,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "DELETE",
         "v1.0/state".split("/"),
@@ -276,7 +278,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "HEAD",
         "v1.0/state".split("/"),
@@ -305,7 +307,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "GET",
         "v1.0/state".split("/"),
@@ -341,7 +343,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "GET",
         "v1.0/state/order".split("/"),
@@ -370,7 +372,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -389,7 +391,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -409,7 +411,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/state".split("/"),
@@ -439,7 +441,7 @@ public class DaprHttpTest {
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
-    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, daprTokenApi, httpClient);
+    DaprHttp daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3500, daprTokenApi, READ_TIMEOUT, httpClient);
     Mono<DaprHttp.Response> mono = daprHttp.invokeApi(
         "POST",
         "v1.0/pubsub/publish".split("/"),

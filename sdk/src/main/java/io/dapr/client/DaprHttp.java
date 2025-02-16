@@ -30,6 +30,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,38 +141,47 @@ public class DaprHttp implements AutoCloseable {
   private final URI uri;
 
   /**
-   * Http client used for all API calls.
-   */
-  private final HttpClient httpClient;
-
-  /**
    * Dapr API Token required to interact with DAPR APIs.
    */
   private final String daprApiToken;
+
+  /**
+   * Http client request read timeout.
+   */
+  private final Duration readTimeout;
+
+  /**
+   * Http client used for all API calls.
+   */
+  private final HttpClient httpClient;
 
   /**
    * Creates a new instance of {@link DaprHttp}.
    *
    * @param hostname   Hostname for calling Dapr. (e.g. "127.0.0.1")
    * @param port       Port for calling Dapr. (e.g. 3500)
+   * @param readTimeout HTTP request read timeout
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String hostname, int port, String daprApiToken, HttpClient httpClient) {
+  DaprHttp(String hostname, int port, String daprApiToken, Duration readTimeout, HttpClient httpClient) {
     this.uri = URI.create(DEFAULT_HTTP_SCHEME + "://" + hostname + ":" + port);
-    this.httpClient = httpClient;
     this.daprApiToken = daprApiToken;
+    this.readTimeout = readTimeout;
+    this.httpClient = httpClient;
   }
 
   /**
    * Creates a new instance of {@link DaprHttp}.
    *
    * @param uri        Endpoint for calling Dapr.
+   * @param readTimeout HTTP request read timeout
    * @param httpClient RestClient used for all API calls in this new instance.
    */
-  DaprHttp(String uri, String daprApiToken, HttpClient httpClient) {
+  DaprHttp(String uri, String daprApiToken, Duration readTimeout, HttpClient httpClient) {
     this.uri = URI.create(uri);
-    this.httpClient = httpClient;
     this.daprApiToken = daprApiToken;
+    this.readTimeout = readTimeout;
+    this.httpClient = httpClient;
   }
 
   /**
@@ -299,7 +309,7 @@ public class DaprHttp implements AutoCloseable {
       requestBuilder.method(method, body);
     }
 
-    HttpRequest request = requestBuilder.build();
+    HttpRequest request = requestBuilder.timeout(readTimeout).build();
 
     return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
         .thenApply(this::createResponse);

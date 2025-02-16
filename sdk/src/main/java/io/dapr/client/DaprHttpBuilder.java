@@ -58,11 +58,9 @@ public class DaprHttpBuilder {
     if (HTTP_CLIENT == null) {
       synchronized (LOCK) {
         if (HTTP_CLIENT == null) {
-          Duration readTimeout = Duration.ofSeconds(properties.getValue(HTTP_CLIENT_READ_TIMEOUT_SECONDS));
           int maxRequests = properties.getValue(HTTP_CLIENT_MAX_REQUESTS);
           Executor executor = Executors.newFixedThreadPool(maxRequests);
           HTTP_CLIENT = HttpClient.newBuilder()
-            .connectTimeout(readTimeout)
             .executor(executor)
             .build();
         }
@@ -71,14 +69,15 @@ public class DaprHttpBuilder {
 
     String endpoint = properties.getValue(HTTP_ENDPOINT);
     String apiToken = properties.getValue(API_TOKEN);
+    Duration readTimeout = Duration.ofSeconds(properties.getValue(HTTP_CLIENT_READ_TIMEOUT_SECONDS));
 
     if ((endpoint != null) && !endpoint.isEmpty()) {
-      return new DaprHttp(endpoint, apiToken, HTTP_CLIENT);
+      return new DaprHttp(endpoint, apiToken, readTimeout, HTTP_CLIENT);
     }
 
     String sidecarIp = properties.getValue(SIDECAR_IP);
     int port = properties.getValue(HTTP_PORT);
 
-    return new DaprHttp(sidecarIp, port, apiToken, HTTP_CLIENT);
+    return new DaprHttp(sidecarIp, port, apiToken, readTimeout, HTTP_CLIENT);
   }
 }

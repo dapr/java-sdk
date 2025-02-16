@@ -63,6 +63,7 @@ public class DaprClientHttpTest {
   private static final int HTTP_NOT_FOUND = 404;
   private static final int HTTP_SERVER_ERROR = 500;
   private static final int HTTP_OK = 200;
+  private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
   
   private String sidecarIp;
 
@@ -79,7 +80,7 @@ public class DaprClientHttpTest {
     sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
     daprApiToken = Properties.API_TOKEN.get();
     httpClient = mock(HttpClient.class);
-    daprHttp = new DaprHttp(sidecarIp, 3000, daprApiToken, httpClient);
+    daprHttp = new DaprHttp(sidecarIp, 3000, daprApiToken, READ_TIMEOUT, httpClient);
     daprClientHttp = buildDaprClient(daprHttp);
   }
 
@@ -99,7 +100,7 @@ public class DaprClientHttpTest {
   public void waitForSidecarTimeOutHealthCheck() throws Exception {
     MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NO_CONTENT);
     CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, daprApiToken, httpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
     when(httpClient.sendAsync(any(), any())).thenAnswer(invocation -> {
@@ -125,7 +126,7 @@ public class DaprClientHttpTest {
     MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NOT_FOUND);
     CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
     int port = findFreePort();
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, httpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
     AtomicInteger count = new AtomicInteger(0);
 
@@ -147,7 +148,7 @@ public class DaprClientHttpTest {
   @Test
   public void waitForSidecarSlowSuccessfulHealthCheck() throws Exception {
     int port = findFreePort();
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, httpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
     AtomicInteger count = new AtomicInteger(0);
 
@@ -178,7 +179,7 @@ public class DaprClientHttpTest {
     MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NO_CONTENT);
     CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
     int port = findFreePort();
-    daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, httpClient);
+    daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
     when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
@@ -208,7 +209,7 @@ public class DaprClientHttpTest {
       });
       t.start();
 
-      daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, httpClient);
+      daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, READ_TIMEOUT, httpClient);
       DaprClient daprClientHttp = buildDaprClient(daprHttp);
       daprClientHttp.waitForSidecar(10000).block();
     }
