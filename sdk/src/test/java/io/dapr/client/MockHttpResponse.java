@@ -16,6 +16,11 @@ public class MockHttpResponse implements HttpResponse<Object> {
   private final byte[] body;
   private final int statusCode;
 
+  public MockHttpResponse(int statusCode) {
+    this.body = null;
+    this.statusCode = statusCode;
+  }
+
   public MockHttpResponse(byte[] body, int statusCode) {
     this.body = body;
     this.statusCode = statusCode;

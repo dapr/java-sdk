@@ -130,6 +130,11 @@ public class DaprHttp implements AutoCloseable {
   private static final byte[] EMPTY_BYTES = new byte[0];
 
   /**
+   * Empty Body Publisher
+   */
+  private static final HttpRequest.BodyPublisher EMPTY_BODY_PUBLISHER = HttpRequest.BodyPublishers.noBody();
+
+  /**
    * Endpoint used to communicate to Dapr's HTTP endpoint.
    */
   private final URI uri;
@@ -289,7 +294,7 @@ public class DaprHttp implements AutoCloseable {
       requestBuilder.DELETE();
     } else if (HttpMethods.HEAD.name().equals(method)) {
       // HTTP HEAD is not exposed as a normal method
-      requestBuilder.method(HttpMethods.HEAD.name(), null);
+      requestBuilder.method(HttpMethods.HEAD.name(), EMPTY_BODY_PUBLISHER);
     } else {
       requestBuilder.method(method, body);
     }
