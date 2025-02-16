@@ -130,7 +130,7 @@ public class DaprHttp implements AutoCloseable {
   private static final byte[] EMPTY_BYTES = new byte[0];
 
   /**
-   * Empty Body Publisher
+   * Empty Body Publisher.
    */
   private static final HttpRequest.BodyPublisher EMPTY_BODY_PUBLISHER = HttpRequest.BodyPublishers.noBody();
 
