@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.client;
 
 import io.dapr.config.Properties;
-import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -33,7 +32,6 @@ public class DaprHttpBuilderTest {
 
     assertSame(getHttpClient(daprHttp), getHttpClient(anotherDaprHttp));
   }
-
 
   private static HttpClient getHttpClient(DaprHttp daprHttp) throws Exception {
     Field httpClientField = DaprHttp.class.getDeclaredField("httpClient");
