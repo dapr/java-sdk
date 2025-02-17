@@ -61,8 +61,9 @@ public class DaprHttpBuilder {
           int maxRequests = properties.getValue(HTTP_CLIENT_MAX_REQUESTS);
           Executor executor = Executors.newFixedThreadPool(maxRequests);
           HTTP_CLIENT = HttpClient.newBuilder()
-            .executor(executor)
-            .build();
+              .executor(executor)
+              .version(HttpClient.Version.HTTP_1_1)
+              .build();
         }
       }
     }
