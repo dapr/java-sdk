@@ -10,7 +10,7 @@ This example consist on two applications:
 
 ## Running this examples from source code
 
-To run this examples you will need: 
+To run these examples you will need: 
 - Java SDK
 - Maven
 - Docker or a container runtime such as Podman
