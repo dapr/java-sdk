@@ -8,7 +8,7 @@ This example consist on two applications:
 - Consumer App:
   - Subscribe to messages
 
-## Running this examples from source code
+## Running these examples from source code
 
 To run these examples you will need: 
 - Java SDK
