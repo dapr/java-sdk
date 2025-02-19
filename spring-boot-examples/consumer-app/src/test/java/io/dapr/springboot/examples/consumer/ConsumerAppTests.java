@@ -79,7 +79,6 @@ class ConsumerAppTests {
     await().atMost(Duration.ofSeconds(10))
             .until(subscriberRestController.getAllEvents()::size, equalTo(1));
 
-
   }
 
 }
