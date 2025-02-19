@@ -67,7 +67,7 @@ Next, you can  create a new customer to trigger the customer's tracking workflow
 ```bash
 curl -X POST localhost:8080/customers -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
 ```
-Notice that the request return the workflow instance id that was created for tracking this customer. 
+Notice that the request returns the workflow instance id that was created for tracking this customer. 
 You need to copy the Workflow Instance Id to execute the follow-up request.
 
 You should see in the `producer-app` logs: 
