@@ -1,6 +1,6 @@
 # Dapr Spring Boot and Testcontainers integration Example
 
-This example consist on two applications:
+This example consists of two applications:
 - Producer App: 
   - Publish messages using a Spring Messaging approach 
   - Store and retrieve information using Spring Data CrudRepository 
