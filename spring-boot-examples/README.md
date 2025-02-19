@@ -24,7 +24,7 @@ mvn -Dspring-boot.run.arguments="--reuse=true" spring-boot:test-run
 ```
 
 This will start the `producer-app` with Dapr services and the infrastructure needed by the application to run, 
-in this case RabbitMQ and PostgreSQL. The `producer-app` starts in port `8080` by default.
+in this case RabbitMQ and PostgreSQL. The `producer-app` starts on port `8080` by default.
 
 The `-Dspring-boot.run.arguments="--reuse=true"` flag helps the application to connect to an existing shared 
 infrastructure if it already exists. For development purposes, and to connect both applications we will set the flag
