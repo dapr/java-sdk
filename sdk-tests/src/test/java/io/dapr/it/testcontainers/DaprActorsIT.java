@@ -1,3 +1,16 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.it.testcontainers;
 
 import io.dapr.actors.ActorId;
@@ -16,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -36,8 +50,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DaprActorsIT {
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
+  private static final String ACTORS_MESSAGE_PATTERN = ".*Actor API level in the cluster has been updated to 10.*";
+
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.1")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
       .withAppName("actor-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("kvstore", "state.in-memory", "v1",
@@ -68,11 +84,12 @@ public class DaprActorsIT {
   public void setUp(){
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
     daprActorRuntime.registerActor(TestActorImpl.class);
+    // Ensure the subscriptions are registered
+    Wait.forLogMessage(ACTORS_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
   }
 
   @Test
   public void testActors() throws Exception {
-    Thread.sleep(10000);
 
     ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder<>(TestActor.class, daprActorClient);
     ActorId actorId = ActorId.createRandom();
