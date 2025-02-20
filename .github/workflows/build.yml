@@ -32,6 +32,10 @@ jobs:
             spring-boot-version: 3.3.0
             spring-boot-display-version: 3.3.x
             experimental: false
+          - java: 17
+            spring-boot-version: 3.4.3
+            spring-boot-display-version: 3.4.x
+            experimental: false  
     env:
       GOVER: "1.20"
       GOOS: linux
