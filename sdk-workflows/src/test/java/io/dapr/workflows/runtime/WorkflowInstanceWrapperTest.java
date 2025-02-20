@@ -13,20 +13,19 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-
 import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class WorkflowWrapperTest {
+public class WorkflowInstanceWrapperTest {
   public static class TestWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
@@ -36,17 +35,19 @@ public class WorkflowWrapperTest {
 
   @Test
   public void getName() {
-    WorkflowWrapper<TestWorkflow> wrapper = new WorkflowWrapper<>(TestWorkflow.class);
-    Assertions.assertEquals(
-        "io.dapr.workflows.runtime.WorkflowWrapperTest.TestWorkflow",
+    WorkflowInstanceWrapper<TestWorkflow> wrapper = new WorkflowInstanceWrapper<>(new TestWorkflow());
+
+    assertEquals(
+        "io.dapr.workflows.runtime.WorkflowInstanceWrapperTest.TestWorkflow",
         wrapper.getName()
     );
   }
 
   @Test
-  public void createWithClass() {
+  public void createWithInstance() {
     TaskOrchestrationContext mockContext = mock(TaskOrchestrationContext.class);
-    WorkflowWrapper<TestWorkflow> wrapper = new WorkflowWrapper<>(TestWorkflow.class);
+    WorkflowInstanceWrapper<TestWorkflow> wrapper = new WorkflowInstanceWrapper<>(new TestWorkflow());
+
     when(mockContext.getInstanceId()).thenReturn("uuid");
     wrapper.create().run(mockContext);
     verify(mockContext, times(1)).getInstanceId();

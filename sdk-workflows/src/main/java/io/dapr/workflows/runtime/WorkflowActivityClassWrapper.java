@@ -23,7 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Wrapper for Durable Task Framework task activity factory.
  */
-public class WorkflowActivityWrapper<T extends WorkflowActivity> implements TaskActivityFactory {
+public class WorkflowActivityClassWrapper<T extends WorkflowActivity> implements TaskActivityFactory {
   private final Constructor<T> activityConstructor;
   private final String name;
 
@@ -32,7 +32,7 @@ public class WorkflowActivityWrapper<T extends WorkflowActivity> implements Task
    *
    * @param clazz Class of the activity to wrap.
    */
-  public WorkflowActivityWrapper(Class<T> clazz) {
+  public WorkflowActivityClassWrapper(Class<T> clazz) {
     this.name = clazz.getCanonicalName();
     try {
       this.activityConstructor = clazz.getDeclaredConstructor();
