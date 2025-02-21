@@ -34,40 +34,37 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
-    webEnvironment = WebEnvironment.DEFINED_PORT,
-    classes = {
-        TestActorsApplication.class,
-        TestDaprActorsConfiguration.class
-    },
-    properties = {
-        "server.port=64080",  // must be constant, not a static attribute from class below.
-    }
+        webEnvironment = WebEnvironment.RANDOM_PORT,
+        classes = {
+                TestActorsApplication.class,
+                TestDaprActorsConfiguration.class
+        }
 )
 @Testcontainers
 @Tag("testcontainers")
 public class DaprActorsIT {
-
-  private static final int APP_PORT = 64080;
-
   private static final Network DAPR_NETWORK = Network.newNetwork();
+  private static final Random RANDOM = new Random();
+  private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
   private static final String ACTORS_MESSAGE_PATTERN = ".*Actor API level in the cluster has been updated to 10.*";
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
-      .withAppName("actor-dapr-app")
-      .withNetwork(DAPR_NETWORK)
-      .withComponent(new Component("kvstore", "state.in-memory", "v1",
-          Map.of("actorStateStore", "true")))
-      .withDaprLogLevel(DaprLogLevel.DEBUG)
-      .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-      .withAppChannelAddress("host.testcontainers.internal")
-          .withAppPort(APP_PORT);
+          .withAppName("actor-dapr-app")
+          .withNetwork(DAPR_NETWORK)
+          .withComponent(new Component("kvstore", "state.in-memory", "v1",
+                  Map.of("actorStateStore", "true")))
+          .withDaprLogLevel(DaprLogLevel.DEBUG)
+          .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+          .withAppChannelAddress("host.testcontainers.internal")
+          .withAppPort(PORT);
 
   /**
    * Expose the Dapr ports to the host.
@@ -78,6 +75,7 @@ public class DaprActorsIT {
   static void daprProperties(DynamicPropertyRegistry registry) {
     registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
     registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
+    registry.add("server.port", () -> PORT);
   }
 
   @Autowired
@@ -88,15 +86,14 @@ public class DaprActorsIT {
 
   @BeforeEach
   public void setUp(){
-    org.testcontainers.Testcontainers.exposeHostPorts(APP_PORT);
+    org.testcontainers.Testcontainers.exposeHostPorts(PORT);
     daprActorRuntime.registerActor(TestActorImpl.class);
     // Ensure the subscriptions are registered
     Wait.forLogMessage(ACTORS_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
   }
 
   @Test
-  public void testActors() throws Exception {
-
+  public void testActors() {
     ActorProxyBuilder<TestActor> builder = new ActorProxyBuilder<>(TestActor.class, daprActorClient);
     ActorId actorId = ActorId.createRandom();
     TestActor actor = builder.build(actorId);
