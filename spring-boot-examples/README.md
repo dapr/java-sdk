@@ -25,9 +25,9 @@ output_match_mode: substring
 expected_stdout_lines:
 - 'Started ProducerApplication'
 background: true
-sleep: 10
 return_code: 143
-timeout_seconds: 30
+sleep: 30
+timeout_seconds: 45
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -55,8 +55,8 @@ expected_stdout_lines:
 - 'Started ConsumerApplication'
 background: true
 return_code: 143
-sleep: 10
-timeout_seconds: 30
+sleep: 30
+timeout_seconds: 45
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -151,6 +151,7 @@ output_match_mode: substring
 expected_stdout_lines:
 - 'Customer Follow-up requested'
 background: true
+sleep: 1
 timeout_seconds: 5
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
