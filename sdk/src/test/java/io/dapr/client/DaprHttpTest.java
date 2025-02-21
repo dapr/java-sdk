@@ -40,6 +40,7 @@ import static io.dapr.utils.TestUtils.formatIpAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,6 +51,8 @@ public class DaprHttpTest {
 
   private static final int HTTP_OK = 200;
   private static final int HTTP_SERVER_ERROR = 500;
+  private static final int HTTP_NO_CONTENT = 204;
+  private static final int HTTP_NOT_FOUND = 404;
   private static final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
   private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
@@ -460,5 +463,90 @@ public class DaprHttpTest {
               .get(DaprErrorDetails.ErrorDetailType.ERROR_INFO, "reason", TypeRef.STRING));
       return true;
     }).verify();
+  }
+
+  /**
+   * The purpose of this test is to show that it doesn't matter when the client is called, the actual call to DAPR
+   * will be done when the output Mono response call the Mono.block method.
+   * Like for instance if you call getState, without blocking for the response, and then call delete for the same state
+   * you just retrieved but block for the delete response, when later you block for the response of the getState, you will
+   * not find the state.
+   * <p>This test will execute the following flow:</p>
+   * <ol>
+   *   <li>Execute client getState for Key=key1</li>
+   *   <li>Block for result to the state</li>
+   *   <li>Assert the Returned State is the expected to key1</li>
+   *   <li>Execute client getState for Key=key2</li>
+   *   <li>Execute client deleteState for Key=key2</li>
+   *   <li>Block for deleteState call.</li>
+   *   <li>Block for getState for Key=key2 and Assert they 2 was not found.</li>
+   * </ol>
+   *
+   * @throws IOException - Test will fail if any unexpected exception is being thrown
+   */
+  @Test
+  public void testCallbackCalledAtTheExpectedTimeTest() throws IOException {
+    String existingState = "existingState";
+    String urlExistingState = "v1.0/state/" + existingState;
+    String deletedStateKey = "deletedKey";
+    String urlDeleteState = "v1.0/state/" + deletedStateKey;
+
+    when(httpClient.sendAsync(any(), any())).thenAnswer(invocation -> {
+      HttpRequest request = invocation.getArgument(0);
+      String url = request.uri().toString();
+
+      if (request.method().equals("GET") && url.contains(urlExistingState)) {
+        MockHttpResponse mockHttpResponse = new MockHttpResponse(serializer.serialize(existingState), HTTP_OK);
+
+        return CompletableFuture.completedFuture(mockHttpResponse);
+      }
+
+      if (request.method().equals("DELETE")) {
+        return CompletableFuture.completedFuture(new MockHttpResponse(HTTP_NO_CONTENT));
+      }
+
+      if (request.method().equals("GET")) {
+        byte [] content = "{\"errorCode\":\"404\",\"message\":\"State Not Found\"}".getBytes();
+
+        return CompletableFuture.completedFuture(new MockHttpResponse(content, HTTP_NOT_FOUND));
+      }
+
+      return CompletableFuture.failedFuture(new RuntimeException("Unexpected call"));
+    });
+
+    DaprHttp daprHttp = new DaprHttp(sidecarIp, 3500, daprTokenApi, READ_TIMEOUT, httpClient);
+    Mono<DaprHttp.Response> response = daprHttp.invokeApi(
+        "GET",
+        urlExistingState.split("/"),
+        null,
+        null,
+        Context.empty()
+    );
+
+    assertEquals(existingState, serializer.deserialize(response.block().getBody(), String.class));
+
+    Mono<DaprHttp.Response> responseDeleted = daprHttp.invokeApi(
+        "GET",
+        urlDeleteState.split("/"),
+        null,
+        null,
+        Context.empty()
+    );
+    Mono<DaprHttp.Response> responseDeleteKey = daprHttp.invokeApi(
+        "DELETE",
+        urlDeleteState.split("/"),
+        null,
+        null,
+        Context.empty()
+    );
+
+    assertNull(serializer.deserialize(responseDeleteKey.block().getBody(), String.class));
+
+    try {
+      responseDeleted.block();
+      fail("Expected DaprException");
+    } catch (Exception ex) {
+      assertEquals(DaprException.class, ex.getClass());
+    }
   }
 }
