@@ -39,13 +39,16 @@ public class OrdersRestController {
   /**
    * Store orders from customers.
    * @param order from the customer
+   *
+   * @return confirmation that the order was stored and the event published
    */
   @PostMapping("/orders")
-  public void storeOrder(@RequestBody Order order) {
+  public String storeOrder(@RequestBody Order order) {
     logger.info("Storing Order: " + order);
     repository.save(order);
     logger.info("Publishing Order Event: " + order);
     messagingTemplate.send("topic", order);
+    return "Order Stored and Event Published";
   }
 
   @GetMapping("/orders")

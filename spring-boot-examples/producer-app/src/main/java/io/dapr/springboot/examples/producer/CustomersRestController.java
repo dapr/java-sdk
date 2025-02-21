@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @EnableDaprWorkflows
@@ -44,23 +46,37 @@ public class CustomersRestController {
     return "OK";
   }
 
+  private Map<String, String> customersWorkflows = new HashMap<>();
+
   /**
    * Track customer endpoint.
    *
    * @param customer provided customer to track
-   * @return workflowId
+   * @return confirmation that the workflow instance was created for a given customer
    */
   @PostMapping("/customers")
   public String trackCustomer(@RequestBody Customer customer) {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(CustomerWorkflow.class, customer);
     logger.info("Workflow instance " + instanceId + " started");
-    return instanceId;
+    customersWorkflows.put(customer.getCustomerName(), instanceId);
+    return "New Workflow Instance created for Customer: " + customer.getCustomerName();
   }
 
+  /**
+   *  Request customer follow-up.
+   *  @param customer associated with a workflow instance
+   *  @return confirmation that the follow-up was requested
+   */
   @PostMapping("/customers/followup")
-  public void customerNotification(@RequestBody Customer customer) {
+  public String customerNotification(@RequestBody Customer customer) {
     logger.info("Customer follow-up requested: " + customer.getCustomerName());
-    daprWorkflowClient.raiseEvent(customer.getWorkflowId(), "CustomerReachOut", customer);
+    String workflowIdForCustomer = customersWorkflows.get(customer.getCustomerName());
+    if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
+      return "There is no workflow associated with customer: " + customer.getCustomerName();
+    } else {
+      daprWorkflowClient.raiseEvent(workflowIdForCustomer, "CustomerReachOut", customer);
+      return "Customer Follow-up requested";
+    }
   }
 
 
