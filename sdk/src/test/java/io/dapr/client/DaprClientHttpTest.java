@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -342,6 +343,16 @@ public class DaprClientHttpTest {
         .respond("\"hello world\"");
 
     Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
+    assertEquals("hello world", mono.block());
+  }
+
+  @Test
+  public void invokeServiceWithZonedDateTime() {
+    mockInterceptor.addRule()
+        .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
+        .respond("\"hello world\"");
+
+    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", Map.of("zoned", ZonedDateTime.now()), HttpExtension.GET, null, String.class);
     assertEquals("hello world", mono.block());
   }
 
