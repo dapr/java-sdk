@@ -43,11 +43,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
     classes = {
         TestActorsApplication.class,
         TestDaprActorsConfiguration.class
+    },
+    properties = {
+        "server.port=64080",  // must be constant, not a static attribute from class below.
     }
 )
 @Testcontainers
 @Tag("testcontainers")
 public class DaprActorsIT {
+
+  private static final int APP_PORT = 64080;
+
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
   private static final String ACTORS_MESSAGE_PATTERN = ".*Actor API level in the cluster has been updated to 10.*";
@@ -61,7 +67,7 @@ public class DaprActorsIT {
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal")
-          .withAppPort(8080);
+          .withAppPort(APP_PORT);
 
   /**
    * Expose the Dapr ports to the host.
@@ -82,7 +88,7 @@ public class DaprActorsIT {
 
   @BeforeEach
   public void setUp(){
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    org.testcontainers.Testcontainers.exposeHostPorts(APP_PORT);
     daprActorRuntime.registerActor(TestActorImpl.class);
     // Ensure the subscriptions are registered
     Wait.forLogMessage(ACTORS_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
