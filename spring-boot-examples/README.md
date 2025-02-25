@@ -25,7 +25,7 @@ output_match_mode: substring
 expected_stdout_lines:
 - 'Started ProducerApplication'
 background: true
-return_code: 143
+expected_return_code: 143
 sleep: 30
 timeout_seconds: 45
 -->
@@ -54,7 +54,7 @@ output_match_mode: substring
 expected_stdout_lines:
 - 'Started ConsumerApplication'
 background: true
-return_code: 143
+expected_return_code: 143
 sleep: 30
 timeout_seconds: 45
 -->
