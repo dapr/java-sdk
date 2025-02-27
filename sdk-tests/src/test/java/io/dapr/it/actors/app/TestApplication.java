@@ -26,7 +26,7 @@ public class TestApplication {
    * @param port Port to listen to.
    */
   public static void start(long port) {
-    SpringApplication.run(TestApplication.class, String.format("--server.port=%d", port), "--debug=true");
+    SpringApplication.run(TestApplication.class, String.format("--server.port=%d", port));
   }
 
 }
