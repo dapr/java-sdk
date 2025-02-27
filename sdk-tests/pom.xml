@@ -287,10 +287,6 @@
             <configuration>
               <!--suppress UnresolvedMavenProperty -->
               <skip>${skipITs}</skip>
-              <classpathDependencyExcludes>
-                <classpathDependencyExclude>com.github.os72:protoc-jar-maven-plugin</classpathDependencyExclude>
-                <classpathDependencyExclude>eu.rekawek.toxiproxy:toxiproxy-java</classpathDependencyExclude>
-              </classpathDependencyExcludes>
             </configuration>
           </execution>
         </executions>
