@@ -60,7 +60,7 @@ public class DaprContainerIT {
   private static final String KEY = "my-key";
   private static final String PUBSUB_NAME = "pubsub";
   private static final String PUBSUB_TOPIC_NAME = "topic";
-  private static final String DAPR_INIT_RUNNING_MESSAGE_PATTERN = ".*dapr initialized. Status: Running.*";
+  private static final String DAPR_INIT_RUNNING_MESSAGE_PATTERN = ".*Placement tables updated.*";
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
