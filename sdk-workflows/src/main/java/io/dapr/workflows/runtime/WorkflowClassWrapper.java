@@ -16,7 +16,6 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.TaskOrchestration;
 import com.microsoft.durabletask.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
-import io.dapr.workflows.saga.Saga;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -30,6 +29,7 @@ class WorkflowClassWrapper<T extends Workflow> implements TaskOrchestrationFacto
 
   public WorkflowClassWrapper(Class<T> clazz) {
     this.name = clazz.getCanonicalName();
+
     try {
       this.workflowConstructor = clazz.getDeclaredConstructor();
     } catch (NoSuchMethodException e) {
@@ -48,6 +48,7 @@ class WorkflowClassWrapper<T extends Workflow> implements TaskOrchestrationFacto
   public TaskOrchestration create() {
     return ctx -> {
       T workflow;
+
       try {
         workflow = this.workflowConstructor.newInstance();
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -56,13 +57,7 @@ class WorkflowClassWrapper<T extends Workflow> implements TaskOrchestrationFacto
         );
       }
 
-      if (workflow.getSagaOption() != null) {
-        Saga saga = new Saga(workflow.getSagaOption());
-        workflow.run(new DefaultWorkflowContext(ctx, saga));
-      } else {
-        workflow.run(new DefaultWorkflowContext(ctx));
-      }
+      workflow.run(new DefaultWorkflowContext(ctx));
     };
-
   }
 }
