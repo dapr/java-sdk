@@ -23,11 +23,12 @@ import io.dapr.workflows.runtime.DefaultWorkflowContext;
 import io.dapr.workflows.saga.Saga;
 import io.dapr.workflows.saga.SagaContext;
 
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
+
+import javax.annotation.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
