@@ -37,6 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Collections;
 import java.util.List;
 
+import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
@@ -60,7 +61,7 @@ public class DaprSpringMessagingIT {
 
   @Container
   @ServiceConnection
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
       .withAppName("messaging-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
