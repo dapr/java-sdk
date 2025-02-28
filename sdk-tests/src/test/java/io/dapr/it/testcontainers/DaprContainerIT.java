@@ -68,7 +68,7 @@ public class DaprContainerIT {
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port 8081.*";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
       .withAppName("dapr-app")
       .withAppPort(8081)
       .withAppChannelAddress("host.testcontainers.internal");
