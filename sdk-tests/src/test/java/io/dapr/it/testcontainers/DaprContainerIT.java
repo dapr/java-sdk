@@ -27,6 +27,7 @@ import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -59,6 +60,7 @@ public class DaprContainerIT {
   private static final String KEY = "my-key";
   private static final String PUBSUB_NAME = "pubsub";
   private static final String PUBSUB_TOPIC_NAME = "topic";
+  private static final String DAPR_INIT_RUNNING_MESSAGE_PATTERN = ".*dapr initialized. Status: Running.*";
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
@@ -124,8 +126,8 @@ public class DaprContainerIT {
 
   @Test
   public void testPlacement() throws Exception {
-    // Dapr and Placement need some time to connect
-    Thread.sleep(1000);
+
+    Wait.forLogMessage(DAPR_INIT_RUNNING_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
 
     OkHttpClient okHttpClient = new OkHttpClient.Builder()
         .build();
