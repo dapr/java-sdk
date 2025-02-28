@@ -44,6 +44,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,7 +62,7 @@ public class DaprContainerIT {
   private static final String PUBSUB_TOPIC_NAME = "topic";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
       .withAppName("dapr-app")
       .withAppPort(8081)
       .withAppChannelAddress("host.testcontainers.internal");

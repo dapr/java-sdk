@@ -29,13 +29,13 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
+import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -65,7 +65,7 @@ public class DaprKeyValueRepositoryIT {
 
   @Container
   @ServiceConnection
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
       .withAppName("postgresql-repository-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.postgresql", "v1", STATE_STORE_PROPERTIES))
