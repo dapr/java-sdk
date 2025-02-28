@@ -138,7 +138,6 @@ public class DaprContainerIT {
               .pollInterval(500, TimeUnit.MILLISECONDS)
               .until(() -> {
                 String metadata = checkSidecarMetadata();
-                System.out.println(">>>>>>> Metadata -> \n" + metadata + "\n >>>>>>>>> ");
                 if (metadata.contains("placement: connected")) {
                   return true;
                 } else {
