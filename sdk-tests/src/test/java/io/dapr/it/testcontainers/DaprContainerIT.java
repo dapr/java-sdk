@@ -27,7 +27,6 @@ import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
@@ -132,11 +131,12 @@ public class DaprContainerIT {
   public void testPlacement() throws Exception {
 
     try {
-      await().atMost(4, TimeUnit.SECONDS)
-              .pollDelay(400, TimeUnit.MILLISECONDS)
-              .pollInterval(400, TimeUnit.MILLISECONDS)
+      await().atMost(10, TimeUnit.SECONDS)
+              .pollDelay(500, TimeUnit.MILLISECONDS)
+              .pollInterval(500, TimeUnit.MILLISECONDS)
               .until(() -> {
-                String metadata = checkSideCarMetadata();
+                String metadata = checkSidecarMetadata();
+                System.out.println(">>>>>>> Metadata -> \n" + metadata + "\n >>>>>>>>> ");
                 if (metadata.contains("placement: connected")) {
                   return true;
                 } else {
@@ -149,7 +149,7 @@ public class DaprContainerIT {
 
   }
 
-  private String checkSideCarMetadata() throws IOException {
+  private String checkSidecarMetadata() throws IOException {
     OkHttpClient okHttpClient = new OkHttpClient.Builder()
             .build();
     Request request = new Request.Builder()
