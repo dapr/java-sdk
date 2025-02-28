@@ -19,8 +19,9 @@ import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
 import io.grpc.stub.StreamObserver;
-import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
+
+import javax.annotation.Nonnull;
 
 import java.io.Closeable;
 import java.util.concurrent.BlockingQueue;
@@ -153,7 +154,7 @@ public class Subscription<T> implements Closeable {
     }).onErrorReturn(SubscriptionListener.Status.RETRY);
   }
 
-  @NotNull
+  @Nonnull
   private static DaprProtos.SubscribeTopicEventsRequestAlpha1 buildAckRequest(
       String id, SubscriptionListener.Status status) {
     DaprProtos.SubscribeTopicEventsRequestProcessedAlpha1 eventProcessed =

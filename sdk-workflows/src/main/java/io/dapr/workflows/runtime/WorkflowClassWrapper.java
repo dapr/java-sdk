@@ -24,11 +24,11 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Wrapper for Durable Task Framework orchestration factory.
  */
-class WorkflowWrapper<T extends Workflow> implements TaskOrchestrationFactory {
+class WorkflowClassWrapper<T extends Workflow> implements TaskOrchestrationFactory {
   private final Constructor<T> workflowConstructor;
   private final String name;
 
-  public WorkflowWrapper(Class<T> clazz) {
+  public WorkflowClassWrapper(Class<T> clazz) {
     this.name = clazz.getCanonicalName();
     try {
       this.workflowConstructor = clazz.getDeclaredConstructor();
