@@ -80,7 +80,6 @@ import io.grpc.Channel;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -89,6 +88,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
+
+import javax.annotation.Nonnull;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -441,7 +442,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     return buildSubscription(listener, type, request);
   }
 
-  @NotNull
+  @Nonnull
   private <T> Subscription<T> buildSubscription(
       SubscriptionListener<T> listener,
       TypeRef<T> type,
