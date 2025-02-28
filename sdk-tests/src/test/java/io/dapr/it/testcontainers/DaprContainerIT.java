@@ -27,6 +27,7 @@ import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
@@ -64,6 +65,7 @@ public class DaprContainerIT {
   private static final String KEY = "my-key";
   private static final String PUBSUB_NAME = "pubsub";
   private static final String PUBSUB_TOPIC_NAME = "topic";
+  private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port 8081.*";
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
@@ -129,7 +131,7 @@ public class DaprContainerIT {
 
   @Test
   public void testPlacement() throws Exception {
-
+    Wait.forLogMessage(APP_FOUND_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
     try {
       await().atMost(10, TimeUnit.SECONDS)
               .pollDelay(500, TimeUnit.MILLISECONDS)
