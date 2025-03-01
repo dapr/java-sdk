@@ -25,6 +25,7 @@ import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.Job;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.SaveStateRequest;
 import io.dapr.client.domain.State;
@@ -43,6 +44,8 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import com.google.protobuf.Message;
 
 /**
  * Generic Client Adapter to be used regardless of the GRPC or the HTTP Client implementation required.
@@ -670,6 +673,7 @@ public interface DaprClient extends AutoCloseable {
    * @return Mono of {@link UnsubscribeConfigurationResponse} instance.
    */
   Mono<UnsubscribeConfigurationResponse> unsubscribeConfiguration(UnsubscribeConfigurationRequest request);
+  
 
   /**
    * Returns a newly created gRPC stub with proper interceptors and channel for gRPC proxy invocation.
