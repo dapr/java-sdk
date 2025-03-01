@@ -70,9 +70,10 @@ public class DaprContainerIT {
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
-      .withAppName("dapr-app")
-      .withAppPort(8081)
-      .withAppChannelAddress("host.testcontainers.internal");
+          .withAppName("dapr-app")
+          .withAppPort(8081)
+          .withAppHealthCheckPath("/actuator/health")
+          .withAppChannelAddress("host.testcontainers.internal");
 
   /**
    * Sets the Dapr properties for the test.
@@ -84,18 +85,21 @@ public class DaprContainerIT {
   }
 
   private void configStub() {
+    stubFor(any(urlMatching("/actuator/health"))
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
+
     stubFor(any(urlMatching("/dapr/subscribe"))
-        .willReturn(aResponse().withBody("[]").withStatus(200)));
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
 
     stubFor(get(urlMatching("/dapr/config"))
-        .willReturn(aResponse().withBody("[]").withStatus(200)));
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
 
     stubFor(any(urlMatching("/([a-z1-9]*)"))
-        .willReturn(aResponse().withBody("[]").withStatus(200)));
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
 
     // create a stub
     stubFor(post(urlEqualTo("/events"))
-        .willReturn(aResponse().withBody("event received!").withStatus(200)));
+            .willReturn(aResponse().withBody("event received!").withStatus(200)));
 
     configureFor("localhost", 8081);
   }
@@ -103,13 +107,13 @@ public class DaprContainerIT {
   @Test
   public void testDaprContainerDefaults() {
     assertEquals(2,
-        DAPR_CONTAINER.getComponents().size(),
-        "The pubsub and kvstore component should be configured by default"
+            DAPR_CONTAINER.getComponents().size(),
+            "The pubsub and kvstore component should be configured by default"
     );
     assertEquals(
-        1,
-        DAPR_CONTAINER.getSubscriptions().size(),
-        "A subscription should be configured by default if none is provided"
+            1,
+            DAPR_CONTAINER.getSubscriptions().size(),
+            "A subscription should be configured by default if none is provided"
     );
   }
 
@@ -182,7 +186,7 @@ public class DaprContainerIT {
 
   private DaprClientBuilder createDaprClientBuilder() {
     return new DaprClientBuilder()
-        .withPropertyOverride(Properties.HTTP_ENDPOINT, DAPR_CONTAINER.getHttpEndpoint())
-        .withPropertyOverride(Properties.GRPC_ENDPOINT, DAPR_CONTAINER.getGrpcEndpoint());
+            .withPropertyOverride(Properties.HTTP_ENDPOINT, DAPR_CONTAINER.getHttpEndpoint())
+            .withPropertyOverride(Properties.GRPC_ENDPOINT, DAPR_CONTAINER.getGrpcEndpoint());
   }
 }
