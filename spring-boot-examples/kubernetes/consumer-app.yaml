@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: consumer-app
+  name: consumer-app
+spec:
+  type: NodePort
+  ports:
+    - name: "consumer-app"
+      port: 8081
+      targetPort: 8081
+      nodePort: 31001
+  selector:
+    app: consumer-app
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: consumer-app
+  name: consumer-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer-app
+  template:
+    metadata:
+      annotations:
+        dapr.io/app-id: consumer-app
+        dapr.io/app-port: "8081"
+        dapr.io/enabled: "true"
+      labels:
+        app: consumer-app
+    spec:
+      containers:
+        - image: localhost:5001/sb-consumer-app
+          name: consumer-app
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+              name: consumer-app
