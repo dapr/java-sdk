@@ -18,14 +18,13 @@ from github import Github
 
 g = Github(os.getenv("GITHUB_TOKEN"))
 repo = g.get_repo(os.getenv("GITHUB_REPOSITORY"))
-maintainers = [m.strip() for m in os.getenv("MAINTAINERS").split(',')]
 
 def fetch_pulls(mergeable_state):
     return [pr for pr in repo.get_pulls(state='open', sort='created') \
         if pr.mergeable_state == mergeable_state and 'auto-merge' in [l.name for l in pr.labels]]
 
 def is_approved(pr):
-    approvers = [r.user.login for r in pr.get_reviews() if r.state == 'APPROVED' and r.user.login in maintainers]
+    approvers = [r.user.login for r in pr.get_reviews() if r.state == 'APPROVED']
     return len([a for a in approvers if repo.get_collaborator_permission(a) in ['admin', 'write']]) > 0
 
 # First, find a PR that can be merged
