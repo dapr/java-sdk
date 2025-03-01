@@ -27,11 +27,15 @@ import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+import org.testcontainers.shaded.org.awaitility.core.ConditionTimeoutException;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.any;
@@ -48,6 +52,8 @@ import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 
 @Testcontainers
 @WireMockTest(httpPort = 8081)
@@ -60,6 +66,7 @@ public class DaprContainerIT {
   private static final String KEY = "my-key";
   private static final String PUBSUB_NAME = "pubsub";
   private static final String PUBSUB_TOPIC_NAME = "topic";
+  private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port 8081.*";
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
@@ -129,9 +136,26 @@ public class DaprContainerIT {
 
   @Test
   public void testPlacement() throws Exception {
-    // Dapr and Placement need some time to connect
-    Thread.sleep(1000);
+    Wait.forLogMessage(APP_FOUND_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
+    try {
+      await().atMost(10, TimeUnit.SECONDS)
+              .pollDelay(500, TimeUnit.MILLISECONDS)
+              .pollInterval(500, TimeUnit.MILLISECONDS)
+              .until(() -> {
+                String metadata = checkSidecarMetadata();
+                if (metadata.contains("placement: connected")) {
+                  return true;
+                } else {
+                  return false;
+                }
+              });
+    } catch (ConditionTimeoutException timeoutException) {
+      fail("The placement server is not connected");
+    }
 
+  }
+
+  private String checkSidecarMetadata() throws IOException {
     OkHttpClient okHttpClient = new OkHttpClient.Builder()
             .build();
     Request request = new Request.Builder()
@@ -140,7 +164,7 @@ public class DaprContainerIT {
 
     try (Response response = okHttpClient.newCall(request).execute()) {
       if (response.isSuccessful() && response.body() != null) {
-        assertTrue(response.body().string().contains("placement: connected"));
+        return response.body().string();
       } else {
         throw new IOException("Unexpected response: " + response.code());
       }

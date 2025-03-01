@@ -21,14 +21,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 public class TestApplication {
-
   /**
    * Starts Dapr's callback in a given port.
    * @param port Port to listen to.
    */
   public static void start(long port) {
-    SpringApplication app = new SpringApplication(TestApplication.class);
-    app.run(String.format("--server.port=%d", port));
+    SpringApplication.run(TestApplication.class, String.format("--server.port=%d", port));
   }
 
 }
