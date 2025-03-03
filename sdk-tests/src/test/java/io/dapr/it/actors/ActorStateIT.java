@@ -190,7 +190,7 @@ public class ActorStateIT extends BaseIT {
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     // wating for actor to be activated
@@ -231,7 +231,7 @@ public class ActorStateIT extends BaseIT {
         serviceAppProtocol);
 
     // Need new proxy builder because the proxy builder holds the channel.
-    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run2.newActorClient());
+    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run2.newActorClient()));
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     // waiting for actor to be activated
