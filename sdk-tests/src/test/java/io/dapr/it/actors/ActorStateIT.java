@@ -161,7 +161,7 @@ public class ActorStateIT extends BaseIT {
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     // wating for actor to be activated
-    Thread.sleep(2000);
+    Thread.sleep(5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached ... ");
@@ -214,7 +214,7 @@ public class ActorStateIT extends BaseIT {
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     // wating for actor to be activated
-    Thread.sleep(2000);
+    Thread.sleep(5000);
 
     // Validate conditional read works.
     callWithRetry(() -> {
@@ -255,7 +255,7 @@ public class ActorStateIT extends BaseIT {
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     // waiting for actor to be activated
-    Thread.sleep(2000);
+    Thread.sleep(5000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached and expired ... ");
