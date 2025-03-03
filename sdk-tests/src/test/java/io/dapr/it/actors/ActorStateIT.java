@@ -16,13 +16,18 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
+import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
 import io.dapr.it.actors.services.springboot.StatefulActorService;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.stream.Stream;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -33,16 +38,30 @@ public class ActorStateIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorStateIT.class);
 
-  @Test
-  public void writeReadState() throws Exception {
+  /**
+   * Parameters for this test.
+   * Param #1: useGrpc.
+   * @return Collection of parameter tuples.
+   */
+  public static Stream<Arguments> data() {
+    return Stream.of(
+        Arguments.of(AppRun.AppProtocol.HTTP ),
+        Arguments.of(AppRun.AppProtocol.GRPC )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("data")
+  public void writeReadState(AppRun.AppProtocol serviceAppProtocol) throws Exception {
     logger.debug("Starting actor runtime ...");
     // The call below will fail if service cannot start successfully.
     DaprRun run = startDaprApp(
-      this.getClass().getSimpleName(),
-      StatefulActorService.SUCCESS_MESSAGE,
-      StatefulActorService.class,
-      true,
-      60000);
+        this.getClass().getSimpleName(),
+        StatefulActorService.SUCCESS_MESSAGE,
+        StatefulActorService.class,
+        true,
+        60000,
+        serviceAppProtocol);
 
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
@@ -134,7 +153,8 @@ public class ActorStateIT extends BaseIT {
         StatefulActorService.SUCCESS_MESSAGE,
         StatefulActorService.class,
         true,
-        60000);
+        60000,
+        serviceAppProtocol);
 
     // Need new proxy builder because the proxy builder holds the channel.
     proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run2.newActorClient()));
@@ -219,7 +239,7 @@ public class ActorStateIT extends BaseIT {
     Thread.sleep(10000);
 
     logger.debug("Stopping service ...");
-    runtime.stop();
+    run.stop();
 
     logger.debug("Starting service ...");
     DaprRun run2 = startDaprApp(
