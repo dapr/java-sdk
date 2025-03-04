@@ -13,25 +13,20 @@ limitations under the License.
 
 package io.dapr.it.testcontainers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.config.Properties;
-import io.dapr.workflows.client.DaprWorkflowClient;
-import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+import java.util.Map;
+
+import io.dapr.actors.runtime.ActorRuntime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Map;
+import io.dapr.actors.client.ActorClient;
+import io.dapr.config.Properties;
 
 @Configuration
-public class TestDaprWorkflowsConfiguration {
+public class TestDaprActorsConfiguration {
   @Bean
-  public ObjectMapper mapper() {
-    return new ObjectMapper();
-  }
-
-  @Bean
-  public DaprWorkflowClient daprWorkflowClient(
+  public ActorClient daprActorClient(
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
       @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
   ){
@@ -40,25 +35,19 @@ public class TestDaprWorkflowsConfiguration {
         "dapr.grpc.endpoint", daprGrpcEndpoint
     );
 
-    return new DaprWorkflowClient(new Properties(overrides));
+    return new ActorClient(new Properties(overrides));
   }
 
   @Bean
-  public WorkflowRuntimeBuilder workflowRuntimeBuilder(
+  public ActorRuntime daprActorRuntime(
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
       @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
   ){
     Map<String, String> overrides = Map.of(
-        "dapr.http.endpoint", daprHttpEndpoint,
+	      "dapr.http.endpoint", daprHttpEndpoint,
         "dapr.grpc.endpoint", daprGrpcEndpoint
     );
 
-    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
-
-    builder.registerWorkflow(TestWorkflow.class);
-    builder.registerActivity(FirstActivity.class);
-    builder.registerActivity(SecondActivity.class);
-
-    return builder;
+    return ActorRuntime.getInstance(new Properties(overrides));
   }
 }

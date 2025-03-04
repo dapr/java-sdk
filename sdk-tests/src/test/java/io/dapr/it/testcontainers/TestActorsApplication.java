@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2024 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,22 +11,24 @@
 limitations under the License.
 */
 
-package io.dapr.it.actors.app;
+package io.dapr.it.testcontainers;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Dapr's HTTP callback implementation via SpringBoot.
- */
 @SpringBootApplication
-public class TestApplication {
-  /**
-   * Starts Dapr's callback in a given port.
-   * @param port Port to listen to.
-   */
-  public static void start(long port) {
-    SpringApplication.run(TestApplication.class, String.format("--server.port=%d", port));
+@RestController
+public class TestActorsApplication {
+
+  public static void main(String[] args) {
+    SpringApplication.run(TestActorsApplication.class, args);
   }
 
+  //Mocking the actuator health endpoint for the sidecar health check
+  @GetMapping("/actuator/health")
+  public String health(){
+    return "OK";
+  }
 }

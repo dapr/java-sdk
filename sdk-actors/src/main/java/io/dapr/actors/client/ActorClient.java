@@ -15,6 +15,7 @@ package io.dapr.actors.client;
 
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.config.Properties;
+import io.dapr.utils.NetworkUtils;
 import io.dapr.utils.Version;
 import io.dapr.v1.DaprGrpc;
 import io.grpc.Channel;
@@ -83,7 +84,7 @@ public class ActorClient implements AutoCloseable {
    * @param resiliencyOptions Client resiliency options.
    */
   public ActorClient(Properties overrideProperties, Map<String, String> metadata, ResiliencyOptions resiliencyOptions) {
-    this(buildManagedChannel(overrideProperties),
+    this(NetworkUtils.buildGrpcManagedChannel(overrideProperties),
         metadata,
         resiliencyOptions,
         overrideProperties.getValue(Properties.API_TOKEN));
@@ -129,25 +130,6 @@ public class ActorClient implements AutoCloseable {
     }
   }
 
-  /**
-   * Creates a GRPC managed channel (or null, if not applicable).
-   *
-   * @param overrideProperties Overrides
-   * @return GRPC managed channel or null.
-   */
-  private static ManagedChannel buildManagedChannel(Properties overrideProperties) {
-    int port = overrideProperties.getValue(Properties.GRPC_PORT);
-    if (port <= 0) {
-      throw new IllegalArgumentException("Invalid port.");
-    }
-
-    var sidecarHost = overrideProperties.getValue(Properties.SIDECAR_IP);
-
-    return ManagedChannelBuilder.forAddress(sidecarHost, port)
-      .usePlaintext()
-      .userAgent(Version.getSdkVersion())
-      .build();
-  }
 
   /**
    * Build an instance of the Client based on the provided setup.

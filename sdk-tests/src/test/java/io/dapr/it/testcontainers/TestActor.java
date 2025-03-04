@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,22 +11,12 @@
 limitations under the License.
 */
 
-package io.dapr.it.actors.app;
+package io.dapr.it.testcontainers;
+import io.dapr.actors.ActorMethod;
+import io.dapr.actors.ActorType;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-/**
- * Dapr's HTTP callback implementation via SpringBoot.
- */
-@SpringBootApplication
-public class TestApplication {
-  /**
-   * Starts Dapr's callback in a given port.
-   * @param port Port to listen to.
-   */
-  public static void start(long port) {
-    SpringApplication.run(TestApplication.class, String.format("--server.port=%d", port));
-  }
-
+@ActorType(name = "TestActor")
+public interface TestActor {
+    @ActorMethod(name = "echo_message")
+    String echo(String message);
 }
