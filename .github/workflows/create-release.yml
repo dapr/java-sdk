@@ -68,4 +68,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
         run: |
-          gh workflow run build.yml --repo ${GITHUB_REPOSITORY} --ref v$(echo '${{ env.BUILD_GIT_REF }}' | sed -r 's/^[vV]?([0-9].+)$/\1/')
+          gh workflow run build.yml --repo ${GITHUB_REPOSITORY} --ref '${{ env.BUILD_GIT_REF }}'
