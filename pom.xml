@@ -344,6 +344,19 @@
 
   <profiles>
     <profile>
+      <id>deploy-profile</id>
+      <modules>
+        <!-- Include only the modules to be deployed -->
+        <module>sdk-autogen</module>
+        <module>sdk</module>
+        <module>sdk-actors</module>
+        <module>sdk-springboot</module>
+        <module>sdk-workflows</module>
+        <module>testcontainers-dapr</module>
+        <module>dapr-spring</module>
+      </modules>
+    </profile>
+    <profile>
       <id>integration-tests</id>
       <modules>
         <module>sdk-tests</module>
