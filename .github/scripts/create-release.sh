@@ -38,17 +38,13 @@ if [ "$VARIANT" = "SNAPSHOT" ]; then
     echo "Invalid snapshot version: $REL_VERSION"
     exit 3
   fi
-  branch_name="automation/update_to_next_${current_time}"
-  git checkout -b $branch_name
+
+  # Change is done directly in the master branch.
   ${script_dir}/update_sdk_version.sh $REL_VERSION
-  git clean -xdf
   git commit -s -m "Update master version to ${REL_VERSION}" -a
-  git push origin $branch_name
-  gh pr create --repo ${GITHUB_REPOSITORY} \
-    --base master \
-    --title "Update master version to ${REL_VERSION}" \
-    --body "Update master version to ${REL_VERSION}"
-  echo "Done."
+  git clean -f -d
+  git push origin master
+  echo "Updated master branch with version ${REL_VERSION}."
   exit 0
 elif [ "$VARIANT" = "rc" ]; then
   echo "Release-candidate version detected: $REL_VERSION"
@@ -107,15 +103,12 @@ fi
 
 if [ "$VARIANT" = "" ]; then
   git clean -xdf
-  echo "Creating pull request to update docs ..."
-  branch_name="automation/update_docs_${current_time}"
+  echo "Updating docs in master branch ..."
+  git checkout master
   git reset --hard origin/master
   git cherry-pick --strategy=recursive -X theirs $RELEASE_TAG
-  git push origin $branch_name
-  gh pr create --repo ${GITHUB_REPOSITORY} \
-    --base master \
-    --title "Update master docs for ${REL_VERSION} release" \
-    --body "Update master docs for ${REL_VERSION} release"
+  git push origin master
+  echo "Updated docs in master branch."
 fi
 
 echo "Done."
