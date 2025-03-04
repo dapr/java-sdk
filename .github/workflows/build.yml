@@ -181,4 +181,4 @@ jobs:
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
-          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
+          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -Pdeploy-profile
