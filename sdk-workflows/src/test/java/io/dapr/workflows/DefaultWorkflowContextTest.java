@@ -20,14 +20,13 @@ import com.microsoft.durabletask.TaskOptions;
 import com.microsoft.durabletask.TaskOrchestrationContext;
 
 import io.dapr.workflows.runtime.DefaultWorkflowContext;
-import io.dapr.workflows.saga.Saga;
-import io.dapr.workflows.saga.SagaContext;
 
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
+
+import javax.annotation.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -134,12 +133,6 @@ public class DefaultWorkflowContextTest {
 
       @Override
       public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
-
-      }
-
-      @Override
-      public SagaContext getSagaContext() {
-        return null;
       }
     };
   }
@@ -333,20 +326,5 @@ public class DefaultWorkflowContextTest {
     RuntimeException runtimeException = assertThrows(RuntimeException.class, testWorkflowContext::newUuid);
     String expectedMessage = "No implementation found.";
     assertEquals(expectedMessage, runtimeException.getMessage());
-  }
-
-  @Test
-  public void getSagaContextTest_sagaEnabled() {
-    Saga saga = mock(Saga.class);
-    WorkflowContext context = new DefaultWorkflowContext(mockInnerContext, saga);
-
-    SagaContext sagaContext = context.getSagaContext();
-    assertNotNull(sagaContext, "SagaContext should not be null");
-  }
-
-  @Test
-  public void getSagaContextTest_sagaDisabled() {
-    WorkflowContext context = new DefaultWorkflowContext(mockInnerContext);
-    assertThrows(UnsupportedOperationException.class, context::getSagaContext);
   }
 }
