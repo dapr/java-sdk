@@ -33,6 +33,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.DAPR_BOT_TOKEN }}
+          persist-credentials: false
       - name: Set up OpenJDK ${{ env.JDK_VER }}
         uses: actions/setup-java@v4
         with:
@@ -43,9 +44,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install pcre2-utils
       - name: Create release branch and tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
         run: |
           git config user.email "daprweb@microsoft.com"
           git config user.name "Dapr Bot"
+          # Update origin with token
+          git remote set-url origin https://x-access-token:${{ secrets.DAPR_BOT_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git
           # Copy first to allow automation to use the latest version and not the release branch's version.
           cp -R ./.github/scripts ${RUNNER_TEMP}/
           ${RUNNER_TEMP}/scripts/create-release.sh ${{ inputs.rel_version }}
