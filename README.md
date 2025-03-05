@@ -9,6 +9,7 @@ This is the Dapr SDK for Java, including the following features:
 * Binding
 * State Store
 * Actors
+* Workflows
 
 ## Getting Started
 
@@ -111,6 +112,13 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [Distributed tracing with OpenTelemetry SDK](./examples/src/main/java/io/dapr/examples/tracing)
 * [Exception handling](./examples/src/main/java/io/dapr/examples/exception)
 * [Unit testing](./examples/src/main/java/io/dapr/examples/unittesting)
+
+### Running Spring Boot examples
+
+The Spring Boot integration for Dapr use [Testcontainers](https://testcontainers.com) to set up a local environment development flow that doesn't 
+require the use of the `dapr` CLI and it integrates with the Spring Boot programming model. 
+
+You can find a [step-by-step tutorial showing this integration here](./spring-boot-examples/README.md).
 
 ### API Documentation
 

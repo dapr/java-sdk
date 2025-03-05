@@ -27,11 +27,15 @@ import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+import org.testcontainers.shaded.org.awaitility.core.ConditionTimeoutException;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.any;
@@ -44,9 +48,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 
 @Testcontainers
 @WireMockTest(httpPort = 8081)
@@ -59,12 +66,14 @@ public class DaprContainerIT {
   private static final String KEY = "my-key";
   private static final String PUBSUB_NAME = "pubsub";
   private static final String PUBSUB_TOPIC_NAME = "topic";
+  private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port 8081.*";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd")
-      .withAppName("dapr-app")
-      .withAppPort(8081)
-      .withAppChannelAddress("host.testcontainers.internal");
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
+          .withAppName("dapr-app")
+          .withAppPort(8081)
+          .withAppHealthCheckPath("/actuator/health")
+          .withAppChannelAddress("host.testcontainers.internal");
 
   /**
    * Sets the Dapr properties for the test.
@@ -76,18 +85,21 @@ public class DaprContainerIT {
   }
 
   private void configStub() {
+    stubFor(any(urlMatching("/actuator/health"))
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
+
     stubFor(any(urlMatching("/dapr/subscribe"))
-        .willReturn(aResponse().withBody("[]").withStatus(200)));
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
 
     stubFor(get(urlMatching("/dapr/config"))
-        .willReturn(aResponse().withBody("[]").withStatus(200)));
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
 
     stubFor(any(urlMatching("/([a-z1-9]*)"))
-        .willReturn(aResponse().withBody("[]").withStatus(200)));
+            .willReturn(aResponse().withBody("[]").withStatus(200)));
 
     // create a stub
     stubFor(post(urlEqualTo("/events"))
-        .willReturn(aResponse().withBody("event received!").withStatus(200)));
+            .willReturn(aResponse().withBody("event received!").withStatus(200)));
 
     configureFor("localhost", 8081);
   }
@@ -95,13 +107,13 @@ public class DaprContainerIT {
   @Test
   public void testDaprContainerDefaults() {
     assertEquals(2,
-        DAPR_CONTAINER.getComponents().size(),
-        "The pubsub and kvstore component should be configured by default"
+            DAPR_CONTAINER.getComponents().size(),
+            "The pubsub and kvstore component should be configured by default"
     );
     assertEquals(
-        1,
-        DAPR_CONTAINER.getSubscriptions().size(),
-        "A subscription should be configured by default if none is provided"
+            1,
+            DAPR_CONTAINER.getSubscriptions().size(),
+            "A subscription should be configured by default if none is provided"
     );
   }
 
@@ -124,18 +136,35 @@ public class DaprContainerIT {
 
   @Test
   public void testPlacement() throws Exception {
-    // Dapr and Placement need some time to connect
-    Thread.sleep(1000);
+    Wait.forLogMessage(APP_FOUND_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
+    try {
+      await().atMost(10, TimeUnit.SECONDS)
+              .pollDelay(500, TimeUnit.MILLISECONDS)
+              .pollInterval(500, TimeUnit.MILLISECONDS)
+              .until(() -> {
+                String metadata = checkSidecarMetadata();
+                if (metadata.contains("placement: connected")) {
+                  return true;
+                } else {
+                  return false;
+                }
+              });
+    } catch (ConditionTimeoutException timeoutException) {
+      fail("The placement server is not connected");
+    }
 
+  }
+
+  private String checkSidecarMetadata() throws IOException {
     OkHttpClient okHttpClient = new OkHttpClient.Builder()
-        .build();
+            .build();
     Request request = new Request.Builder()
-        .url(DAPR_CONTAINER.getHttpEndpoint() + "/v1.0/metadata")
-        .build();
+            .url(DAPR_CONTAINER.getHttpEndpoint() + "/v1.0/metadata")
+            .build();
 
     try (Response response = okHttpClient.newCall(request).execute()) {
       if (response.isSuccessful() && response.body() != null) {
-        assertTrue(response.body().string().contains("placement: connected"));
+        return response.body().string();
       } else {
         throw new IOException("Unexpected response: " + response.code());
       }
@@ -157,7 +186,7 @@ public class DaprContainerIT {
 
   private DaprClientBuilder createDaprClientBuilder() {
     return new DaprClientBuilder()
-        .withPropertyOverride(Properties.HTTP_ENDPOINT, DAPR_CONTAINER.getHttpEndpoint())
-        .withPropertyOverride(Properties.GRPC_ENDPOINT, DAPR_CONTAINER.getGrpcEndpoint());
+            .withPropertyOverride(Properties.HTTP_ENDPOINT, DAPR_CONTAINER.getHttpEndpoint())
+            .withPropertyOverride(Properties.GRPC_ENDPOINT, DAPR_CONTAINER.getGrpcEndpoint());
   }
 }
