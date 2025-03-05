@@ -16,34 +16,34 @@ package io.dapr.spring.boot.cloudconfig.configdata.config;
 import org.springframework.boot.context.config.ConfigDataResource;
 
 public class DaprConfigurationConfigDataResource extends ConfigDataResource {
-    private final String storeName;
-    private final String secretName;
+  private final String storeName;
+  private final String secretName;
 
-    /**
-     * Create a new non-optional {@link ConfigDataResource} instance.
-     */
-    public DaprConfigurationConfigDataResource(String storeName, String secretName) {
-        this.storeName = storeName;
-        this.secretName = secretName;
-    }
+  /**
+   * Create a new non-optional {@link ConfigDataResource} instance.
+   */
+  public DaprConfigurationConfigDataResource(String storeName, String secretName) {
+    this.storeName = storeName;
+    this.secretName = secretName;
+  }
 
-    /**
-     * Create a new {@link ConfigDataResource} instance.
-     *
-     * @param optional if the resource is optional
-     * @since 2.4.6
-     */
-    public DaprConfigurationConfigDataResource(boolean optional, String storeName, String secretName) {
-        super(optional);
-        this.storeName = storeName;
-        this.secretName = secretName;
-    }
+  /**
+   * Create a new {@link ConfigDataResource} instance.
+   *
+   * @param optional if the resource is optional
+   * @since 2.4.6
+   */
+  public DaprConfigurationConfigDataResource(boolean optional, String storeName, String secretName) {
+    super(optional);
+    this.storeName = storeName;
+    this.secretName = secretName;
+  }
 
-    public String getStoreName() {
-        return storeName;
-    }
+  public String getStoreName() {
+    return storeName;
+  }
 
-    public String getSecretName() {
-        return secretName;
-    }
+  public String getSecretName() {
+    return secretName;
+  }
 }

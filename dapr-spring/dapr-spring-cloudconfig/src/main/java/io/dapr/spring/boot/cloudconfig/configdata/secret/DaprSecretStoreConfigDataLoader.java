@@ -13,15 +13,7 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.configdata.secret;
 
-import static org.springframework.boot.context.config.ConfigData.Option.*;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
+import io.dapr.client.DaprClient;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
 import io.dapr.spring.boot.cloudconfig.parser.DaprSecretStoreParserHandler;
@@ -32,90 +24,99 @@ import org.springframework.boot.context.config.ConfigDataLoaderContext;
 import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.env.PropertySource;
-
-import io.dapr.client.DaprClient;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static org.springframework.boot.context.config.ConfigData.Option.IGNORE_IMPORTS;
+import static org.springframework.boot.context.config.ConfigData.Option.IGNORE_PROFILES;
+import static org.springframework.boot.context.config.ConfigData.Option.PROFILE_SPECIFIC;
 
 public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSecretStoreConfigDataResource> {
 
-    private final Log log;
+  private final Log log;
 
-    private DaprClient daprClient;
+  private DaprClient daprClient;
 
-    private DaprCloudConfigProperties daprSecretStoreConfig;
+  private DaprCloudConfigProperties daprSecretStoreConfig;
 
-    public DaprSecretStoreConfigDataLoader(DeferredLogFactory logFactory, DaprClient daprClient,
-                                           DaprCloudConfigProperties daprSecretStoreConfig) {
-        this.log = logFactory.getLog(getClass());
-        this.daprClient = daprClient;
-        this.daprSecretStoreConfig = daprSecretStoreConfig;
+  public DaprSecretStoreConfigDataLoader(DeferredLogFactory logFactory, DaprClient daprClient,
+                                         DaprCloudConfigProperties daprSecretStoreConfig) {
+    this.log = logFactory.getLog(getClass());
+    this.daprClient = daprClient;
+    this.daprSecretStoreConfig = daprSecretStoreConfig;
+  }
+
+
+  /**
+   * Load {@link ConfigData} for the given resource.
+   *
+   * @param context  the loader context
+   * @param resource the resource to load
+   * @return the loaded config data or {@code null} if the location should be skipped
+   * @throws IOException                         on IO error
+   * @throws ConfigDataResourceNotFoundException if the resource cannot be found
+   */
+  @Override
+  public ConfigData load(ConfigDataLoaderContext context, DaprSecretStoreConfigDataResource resource)
+      throws IOException, ConfigDataResourceNotFoundException {
+    DaprCloudConfigClientManager daprClientSecretStoreConfigManager =
+        getBean(context, DaprCloudConfigClientManager.class);
+
+    daprClient = DaprCloudConfigClientManager.getDaprClient();
+    daprSecretStoreConfig = daprClientSecretStoreConfigManager.getDaprCloudConfigProperties();
+
+    if (resource.getSecretName() == null) {
+      return fetchConfig(resource.getStoreName());
+    } else {
+      return fetchConfig(resource.getStoreName(), resource.getSecretName());
+    }
+  }
+
+  private ConfigData fetchConfig(String storeName) {
+    Mono<Map<String, Map<String, String>>> secretMapMono = daprClient.getBulkSecret(storeName);
+
+    Map<String, Map<String, String>> secretMap =
+        secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
+
+    if (secretMap == null) {
+      return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
     }
 
+    List<PropertySource<?>> sourceList = new ArrayList<>();
 
-    /**
-     * Load {@link ConfigData} for the given resource.
-     *
-     * @param context the loader context
-     * @param resource the resource to load
-     * @return the loaded config data or {@code null} if the location should be skipped
-     * @throws IOException on IO error
-     * @throws ConfigDataResourceNotFoundException if the resource cannot be found
-     */
-    @Override
-    public ConfigData load(ConfigDataLoaderContext context, DaprSecretStoreConfigDataResource resource)
-            throws IOException, ConfigDataResourceNotFoundException {
-        DaprCloudConfigClientManager daprClientSecretStoreConfigManager =
-                getBean(context, DaprCloudConfigClientManager.class);
-
-        daprClient = DaprCloudConfigClientManager.getDaprClient();
-        daprSecretStoreConfig = daprClientSecretStoreConfigManager.getDaprCloudConfigProperties();
-
-        if (resource.getSecretName() == null) {
-            return fetchConfig(resource.getStoreName());
-        } else {
-            return fetchConfig(resource.getStoreName(), resource.getSecretName());
-        }
+    for (Map.Entry<String, Map<String, String>> entry : secretMap.entrySet()) {
+      sourceList.addAll(DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(entry.getKey(),
+          entry.getValue()));
     }
 
-    private ConfigData fetchConfig(String storeName) {
-        Mono<Map<String, Map<String, String>>> secretMapMono = daprClient.getBulkSecret(storeName);
+    return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+  }
 
-        Map<String, Map<String, String>> secretMap =
-                secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
+  private ConfigData fetchConfig(String storeName, String secretName) {
+    Mono<Map<String, String>> secretMapMono = daprClient.getSecret(storeName, secretName);
 
-        if (secretMap == null) {
-            return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
-        }
+    Map<String, String> secretMap = secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
 
-        List<PropertySource<?>> sourceList = new ArrayList<>();
-
-        for (Map.Entry<String, Map<String, String>> entry : secretMap.entrySet()) {
-            sourceList.addAll(DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(entry.getKey(),
-                    entry.getValue()));
-        }
-
-        return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+    if (secretMap == null) {
+      return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
     }
 
-    private ConfigData fetchConfig(String storeName, String secretName) {
-        Mono<Map<String, String>> secretMapMono = daprClient.getSecret(storeName, secretName);
+    List<PropertySource<?>> sourceList = new ArrayList<>(
+        DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(secretName, secretMap));
 
-        Map<String, String> secretMap = secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
+    return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+  }
 
-        if (secretMap == null) {
-            return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
-        }
-
-        List<PropertySource<?>> sourceList = new ArrayList<>(
-                DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(secretName, secretMap));
-
-        return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+  protected <T> T getBean(ConfigDataLoaderContext context, Class<T> type) {
+    if (context.getBootstrapContext().isRegistered(type)) {
+      return context.getBootstrapContext().get(type);
     }
-
-    protected <T> T getBean(ConfigDataLoaderContext context, Class<T> type) {
-        if (context.getBootstrapContext().isRegistered(type)) {
-            return context.getBootstrapContext().get(type);
-        }
-        return null;
-    }
+    return null;
+  }
 }

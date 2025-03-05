@@ -13,149 +13,154 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.configdata.secret;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import io.dapr.spring.boot.autoconfigure.client.DaprClientProperties;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.BootstrapRegistry;
 import org.springframework.boot.ConfigurableBootstrapContext;
-import org.springframework.boot.context.config.*;
+import org.springframework.boot.context.config.ConfigDataLocation;
+import org.springframework.boot.context.config.ConfigDataLocationNotFoundException;
+import org.springframework.boot.context.config.ConfigDataLocationResolver;
+import org.springframework.boot.context.config.ConfigDataLocationResolverContext;
+import org.springframework.boot.context.config.ConfigDataResource;
+import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
 import org.springframework.boot.context.properties.bind.BindHandler;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DaprSecretStoreConfigDataLocationResolver
-        implements ConfigDataLocationResolver<DaprSecretStoreConfigDataResource>, Ordered {
+    implements ConfigDataLocationResolver<DaprSecretStoreConfigDataResource>, Ordered {
 
-    public static final String PREFIX = "dapr:secret:";
+  public static final String PREFIX = "dapr:secret:";
 
-    private final Log log;
+  private final Log log;
 
-    public DaprSecretStoreConfigDataLocationResolver(DeferredLogFactory logFactory) {
-        this.log = logFactory.getLog(getClass());
+  public DaprSecretStoreConfigDataLocationResolver(DeferredLogFactory logFactory) {
+    this.log = logFactory.getLog(getClass());
+  }
+
+  /**
+   * Returns if the specified location address contains dapr prefix.
+   *
+   * @param context  the location resolver context
+   * @param location the location to check.
+   * @return if the location is supported by this resolver
+   */
+  @Override
+  public boolean isResolvable(ConfigDataLocationResolverContext context, ConfigDataLocation location) {
+    log.debug(String.format("checking if %s suits for dapr secret", location.toString()));
+    return location.hasPrefix(PREFIX);
+  }
+
+  /**
+   * Resolve a {@link ConfigDataLocation} into one or more {@link ConfigDataResource} instances.
+   *
+   * @param context  the location resolver context
+   * @param location the location that should be resolved
+   * @return a list of {@link ConfigDataResource resources} in ascending priority order.
+   * @throws ConfigDataLocationNotFoundException on a non-optional location that cannot be found
+   * @throws ConfigDataResourceNotFoundException if a resolved resource cannot be found
+   */
+  @Override
+  public List<DaprSecretStoreConfigDataResource> resolve(ConfigDataLocationResolverContext context,
+                                                         ConfigDataLocation location)
+      throws ConfigDataLocationNotFoundException, ConfigDataResourceNotFoundException {
+
+    DaprCloudConfigProperties daprSecretStoreConfig = loadProperties(context);
+    DaprClientProperties daprClientConfig = loadClientProperties(context);
+
+    ConfigurableBootstrapContext bootstrapContext = context
+        .getBootstrapContext();
+
+    registerConfigManager(daprSecretStoreConfig, daprClientConfig, bootstrapContext);
+
+    List<DaprSecretStoreConfigDataResource> result = new ArrayList<>();
+
+    String[] secretConfig = location.getNonPrefixedValue(PREFIX).split("/");
+
+    log.info(String.format("there is %d of values in secretConfig", secretConfig.length));
+
+    switch (secretConfig.length) {
+      case 2:
+        log.debug("Dapr Secret Store now gains store name: '" + secretConfig[0] + "' and secret name: '"
+            + secretConfig[1] + "' secret store for config");
+        result.add(
+            new DaprSecretStoreConfigDataResource(location.isOptional(), secretConfig[0], secretConfig[1]));
+        break;
+      case 1:
+        log.debug("Dapr Secret Store now gains store name: '" + secretConfig[0] + "' secret store for config");
+        result.add(new DaprSecretStoreConfigDataResource(location.isOptional(), secretConfig[0], null));
+        break;
+      default:
+        throw new ConfigDataLocationNotFoundException(location);
     }
 
-    /**
-     * Returns if the specified location address contains dapr prefix.
-     *
-     * @param context  the location resolver context
-     * @param location the location to check.
-     * @return if the location is supported by this resolver
-     */
-    @Override
-    public boolean isResolvable(ConfigDataLocationResolverContext context, ConfigDataLocation location) {
-        log.debug(String.format("checking if %s suits for dapr secret", location.toString()));
-        return location.hasPrefix(PREFIX);
+    return result;
+  }
+
+  /**
+   * @return
+   */
+  @Override
+  public int getOrder() {
+    return -1;
+  }
+
+  private void registerConfigManager(DaprCloudConfigProperties properties,
+                                     DaprClientProperties clientConfig,
+                                     ConfigurableBootstrapContext bootstrapContext) {
+    if (!bootstrapContext.isRegistered(DaprCloudConfigClientManager.class)) {
+      bootstrapContext.register(DaprCloudConfigClientManager.class,
+          BootstrapRegistry.InstanceSupplier
+              .of(new DaprCloudConfigClientManager(properties, clientConfig)));
+    }
+  }
+
+  protected DaprCloudConfigProperties loadProperties(
+      ConfigDataLocationResolverContext context) {
+    Binder binder = context.getBinder();
+    BindHandler bindHandler = getBindHandler(context);
+
+    DaprCloudConfigProperties daprCloudConfigProperties;
+    if (context.getBootstrapContext().isRegistered(DaprCloudConfigProperties.class)) {
+      daprCloudConfigProperties = context.getBootstrapContext()
+          .get(DaprCloudConfigProperties.class);
+    } else {
+      daprCloudConfigProperties = binder
+          .bind(DaprCloudConfigProperties.PROPERTY_PREFIX, Bindable.of(DaprCloudConfigProperties.class),
+              bindHandler)
+          .orElseGet(DaprCloudConfigProperties::new);
     }
 
-    /**
-     * Resolve a {@link ConfigDataLocation} into one or more {@link ConfigDataResource} instances.
-     *
-     * @param context  the location resolver context
-     * @param location the location that should be resolved
-     * @return a list of {@link ConfigDataResource resources} in ascending priority order.
-     * @throws ConfigDataLocationNotFoundException on a non-optional location that cannot be found
-     * @throws ConfigDataResourceNotFoundException if a resolved resource cannot be found
-     */
-    @Override
-    public List<DaprSecretStoreConfigDataResource> resolve(ConfigDataLocationResolverContext context,
-                                                           ConfigDataLocation location)
-            throws ConfigDataLocationNotFoundException, ConfigDataResourceNotFoundException {
+    return daprCloudConfigProperties;
+  }
 
-        DaprCloudConfigProperties daprSecretStoreConfig = loadProperties(context);
-        DaprClientProperties daprClientConfig = loadClientProperties(context);
+  protected DaprClientProperties loadClientProperties(
+      ConfigDataLocationResolverContext context) {
+    Binder binder = context.getBinder();
+    BindHandler bindHandler = getBindHandler(context);
 
-        ConfigurableBootstrapContext bootstrapContext = context
-                .getBootstrapContext();
-
-        registerConfigManager(daprSecretStoreConfig, daprClientConfig, bootstrapContext);
-
-        List<DaprSecretStoreConfigDataResource> result = new ArrayList<>();
-
-        String[] secretConfig = location.getNonPrefixedValue(PREFIX).split("/");
-
-        log.info(String.format("there is %d of values in secretConfig", secretConfig.length));
-
-        switch (secretConfig.length) {
-            case 2:
-                log.debug("Dapr Secret Store now gains store name: '" + secretConfig[0] + "' and secret name: '"
-                        + secretConfig[1] + "' secret store for config");
-                result.add(
-                        new DaprSecretStoreConfigDataResource(location.isOptional(), secretConfig[0], secretConfig[1]));
-                break;
-            case 1:
-                log.debug("Dapr Secret Store now gains store name: '" + secretConfig[0] + "' secret store for config");
-                result.add(new DaprSecretStoreConfigDataResource(location.isOptional(), secretConfig[0], null));
-                break;
-            default:
-                throw new ConfigDataLocationNotFoundException(location);
-        }
-
-        return result;
+    DaprClientProperties daprClientConfig;
+    if (context.getBootstrapContext().isRegistered(DaprClientProperties.class)) {
+      daprClientConfig = context.getBootstrapContext()
+          .get(DaprClientProperties.class);
+    } else {
+      daprClientConfig = binder
+          .bind(DaprClientProperties.PROPERTY_PREFIX, Bindable.of(DaprClientProperties.class),
+              bindHandler)
+          .orElseGet(DaprClientProperties::new);
     }
 
-    /**
-     * @return
-     */
-    @Override
-    public int getOrder() {
-        return -1;
-    }
+    return daprClientConfig;
+  }
 
-    private void registerConfigManager(DaprCloudConfigProperties properties,
-                                       DaprClientProperties clientConfig,
-                                       ConfigurableBootstrapContext bootstrapContext) {
-        if (!bootstrapContext.isRegistered(DaprCloudConfigClientManager.class)) {
-            bootstrapContext.register(DaprCloudConfigClientManager.class,
-                    BootstrapRegistry.InstanceSupplier
-                            .of(new DaprCloudConfigClientManager(properties, clientConfig)));
-        }
-    }
-
-    protected DaprCloudConfigProperties loadProperties(
-            ConfigDataLocationResolverContext context) {
-        Binder binder = context.getBinder();
-        BindHandler bindHandler = getBindHandler(context);
-
-        DaprCloudConfigProperties daprCloudConfigProperties;
-        if (context.getBootstrapContext().isRegistered(DaprCloudConfigProperties.class)) {
-            daprCloudConfigProperties = context.getBootstrapContext()
-                    .get(DaprCloudConfigProperties.class);
-        } else {
-            daprCloudConfigProperties = binder
-                    .bind(DaprCloudConfigProperties.PROPERTY_PREFIX, Bindable.of(DaprCloudConfigProperties.class),
-                            bindHandler)
-                    .orElseGet(DaprCloudConfigProperties::new);
-        }
-
-        return daprCloudConfigProperties;
-    }
-
-    protected DaprClientProperties loadClientProperties(
-            ConfigDataLocationResolverContext context) {
-        Binder binder = context.getBinder();
-        BindHandler bindHandler = getBindHandler(context);
-
-        DaprClientProperties daprClientConfig;
-        if (context.getBootstrapContext().isRegistered(DaprClientProperties.class)) {
-            daprClientConfig = context.getBootstrapContext()
-                    .get(DaprClientProperties.class);
-        } else {
-            daprClientConfig = binder
-                    .bind(DaprClientProperties.PROPERTY_PREFIX, Bindable.of(DaprClientProperties.class),
-                            bindHandler)
-                    .orElseGet(DaprClientProperties::new);
-        }
-
-        return daprClientConfig;
-    }
-
-    private BindHandler getBindHandler(ConfigDataLocationResolverContext context) {
-        return context.getBootstrapContext().getOrElse(BindHandler.class, null);
-    }
+  private BindHandler getBindHandler(ConfigDataLocationResolverContext context) {
+    return context.getBootstrapContext().getOrElse(BindHandler.class, null);
+  }
 }

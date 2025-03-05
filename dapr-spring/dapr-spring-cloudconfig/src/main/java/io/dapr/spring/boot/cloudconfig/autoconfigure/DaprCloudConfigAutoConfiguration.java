@@ -13,13 +13,12 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.autoconfigure;
 
+import io.dapr.client.DaprClient;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-
-import io.dapr.client.DaprClient;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(DaprCloudConfigProperties.class)

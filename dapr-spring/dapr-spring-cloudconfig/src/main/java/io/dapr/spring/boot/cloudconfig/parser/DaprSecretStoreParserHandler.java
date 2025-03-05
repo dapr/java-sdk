@@ -13,51 +13,51 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.parser;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.boot.env.PropertySourceLoader;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 public class DaprSecretStoreParserHandler {
 
-    private static List<PropertySourceLoader> propertySourceLoaders;
+  private static List<PropertySourceLoader> propertySourceLoaders;
 
-    private DaprSecretStoreParserHandler() {
-        propertySourceLoaders = SpringFactoriesLoader
-                .loadFactories(PropertySourceLoader.class, getClass().getClassLoader());
+  private DaprSecretStoreParserHandler() {
+    propertySourceLoaders = SpringFactoriesLoader
+        .loadFactories(PropertySourceLoader.class, getClass().getClassLoader());
+  }
+
+  public static DaprSecretStoreParserHandler getInstance() {
+    return ParserHandler.HANDLER;
+  }
+
+  public List<PropertySource<?>> parseDaprSecretStoreData(String configName, Map<String, String> configValue) {
+    List<PropertySource<?>> result = new ArrayList<>();
+
+    List<String> configList = new ArrayList<>();
+    configValue.forEach((key, value) -> configList.add(String.format("%s=%s", key, value)));
+
+    Resource configResult = new ByteArrayResource(String.join("\n", configList).getBytes());
+
+    for (PropertySourceLoader propertySourceLoader : propertySourceLoaders) {
+      try {
+        result.addAll(propertySourceLoader.load(configName, configResult));
+      } catch (IOException ignored) {
+      }
     }
 
-    public List<PropertySource<?>> parseDaprSecretStoreData(String configName, Map<String, String> configValue) {
-        List<PropertySource<?>> result = new ArrayList<>();
+    return result;
+  }
 
-        List<String> configList = new ArrayList<>();
-        configValue.forEach((key, value) -> configList.add(String.format("%s=%s", key, value)));
+  private static class ParserHandler {
 
-        Resource configResult = new ByteArrayResource(String.join("\n", configList).getBytes());
+    private static final DaprSecretStoreParserHandler HANDLER = new DaprSecretStoreParserHandler();
 
-        for (PropertySourceLoader propertySourceLoader : propertySourceLoaders) {
-            try {
-                result.addAll(propertySourceLoader.load(configName, configResult));
-            } catch (IOException ignored) {
-            }
-        }
-
-        return result;
-    }
-
-    public static DaprSecretStoreParserHandler getInstance() {
-        return ParserHandler.HANDLER;
-    }
-
-    private static class ParserHandler {
-
-        private static final DaprSecretStoreParserHandler HANDLER = new DaprSecretStoreParserHandler();
-
-    }
+  }
 }

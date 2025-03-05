@@ -23,62 +23,63 @@ import io.dapr.spring.boot.autoconfigure.client.DaprConnectionDetails;
 
 public class DaprCloudConfigClientManager {
 
-    private static DaprClient daprClient;
-    private static DaprPreviewClient daprPreviewClient;
-    private final DaprCloudConfigProperties daprCloudConfigProperties;
-    private final DaprClientProperties daprClientConfig;
+  private static DaprClient daprClient;
+  private static DaprPreviewClient daprPreviewClient;
+  private final DaprCloudConfigProperties daprCloudConfigProperties;
+  private final DaprClientProperties daprClientConfig;
 
-    public DaprCloudConfigClientManager(DaprCloudConfigProperties daprCloudConfigProperties,
-                                        DaprClientProperties daprClientConfig) {
-        this.daprCloudConfigProperties = daprCloudConfigProperties;
-        this.daprClientConfig = daprClientConfig;
+  public DaprCloudConfigClientManager(DaprCloudConfigProperties daprCloudConfigProperties,
+                                      DaprClientProperties daprClientConfig) {
+    this.daprCloudConfigProperties = daprCloudConfigProperties;
+    this.daprClientConfig = daprClientConfig;
 
-        DaprClientBuilder daprClientBuilder = createDaprClientBuilder(
-                createDaprConnectionDetails(daprClientConfig)
-        );
+    DaprClientBuilder daprClientBuilder = createDaprClientBuilder(
+        createDaprConnectionDetails(daprClientConfig)
+    );
 
-        if (DaprCloudConfigClientManager.daprClient == null) {
-            DaprCloudConfigClientManager.daprClient = daprClientBuilder.build();
-        }
-
-        if (DaprCloudConfigClientManager.daprPreviewClient == null) {
-            DaprCloudConfigClientManager.daprPreviewClient = daprClientBuilder.buildPreviewClient();
-        }
+    if (DaprCloudConfigClientManager.daprClient == null) {
+      DaprCloudConfigClientManager.daprClient = daprClientBuilder.build();
     }
 
-    private DaprConnectionDetails createDaprConnectionDetails(DaprClientProperties properties) {
-        return new CloudConfigPropertiesDaprConnectionDetails(properties);
+    if (DaprCloudConfigClientManager.daprPreviewClient == null) {
+      DaprCloudConfigClientManager.daprPreviewClient = daprClientBuilder.buildPreviewClient();
     }
-    DaprClientBuilder createDaprClientBuilder(DaprConnectionDetails daprConnectionDetails) {
-        DaprClientBuilder builder = new DaprClientBuilder();
-        if (daprConnectionDetails.httpEndpoint() != null) {
-            builder.withPropertyOverride(Properties.HTTP_ENDPOINT, daprConnectionDetails.httpEndpoint());
-        }
-        if (daprConnectionDetails.grpcEndpoint() != null) {
-            builder.withPropertyOverride(Properties.GRPC_ENDPOINT, daprConnectionDetails.grpcEndpoint());
-        }
-        if (daprConnectionDetails.httpPort() != null) {
-            builder.withPropertyOverride(Properties.HTTP_PORT, String.valueOf(daprConnectionDetails.httpPort()));
-        }
-        if (daprConnectionDetails.grpcPort() != null) {
-            builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(daprConnectionDetails.grpcPort()));
-        }
-        return builder;
-    }
+  }
 
-    public static DaprPreviewClient getDaprPreviewClient() {
-        return DaprCloudConfigClientManager.daprPreviewClient;
-    }
+  public static DaprPreviewClient getDaprPreviewClient() {
+    return DaprCloudConfigClientManager.daprPreviewClient;
+  }
 
-    public static DaprClient getDaprClient() {
-        return DaprCloudConfigClientManager.daprClient;
-    }
+  public static DaprClient getDaprClient() {
+    return DaprCloudConfigClientManager.daprClient;
+  }
 
-    public DaprCloudConfigProperties getDaprCloudConfigProperties() {
-        return daprCloudConfigProperties;
-    }
+  private DaprConnectionDetails createDaprConnectionDetails(DaprClientProperties properties) {
+    return new CloudConfigPropertiesDaprConnectionDetails(properties);
+  }
 
-    public DaprClientProperties getDaprClientConfig() {
-        return daprClientConfig;
+  DaprClientBuilder createDaprClientBuilder(DaprConnectionDetails daprConnectionDetails) {
+    DaprClientBuilder builder = new DaprClientBuilder();
+    if (daprConnectionDetails.httpEndpoint() != null) {
+      builder.withPropertyOverride(Properties.HTTP_ENDPOINT, daprConnectionDetails.httpEndpoint());
     }
+    if (daprConnectionDetails.grpcEndpoint() != null) {
+      builder.withPropertyOverride(Properties.GRPC_ENDPOINT, daprConnectionDetails.grpcEndpoint());
+    }
+    if (daprConnectionDetails.httpPort() != null) {
+      builder.withPropertyOverride(Properties.HTTP_PORT, String.valueOf(daprConnectionDetails.httpPort()));
+    }
+    if (daprConnectionDetails.grpcPort() != null) {
+      builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(daprConnectionDetails.grpcPort()));
+    }
+    return builder;
+  }
+
+  public DaprCloudConfigProperties getDaprCloudConfigProperties() {
+    return daprCloudConfigProperties;
+  }
+
+  public DaprClientProperties getDaprClientConfig() {
+    return daprClientConfig;
+  }
 }

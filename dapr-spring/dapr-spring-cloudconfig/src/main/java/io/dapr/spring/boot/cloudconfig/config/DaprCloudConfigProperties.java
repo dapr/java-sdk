@@ -21,31 +21,31 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(DaprCloudConfigProperties.PROPERTY_PREFIX)
 public class DaprCloudConfigProperties {
 
-    public static final String PROPERTY_PREFIX = "dapr.cloudconfig";
+  public static final String PROPERTY_PREFIX = "dapr.cloudconfig";
 
-    /**
-     * whether enable secret store
-     */
-    private Boolean enabled = true;
+  /**
+   * whether enable secret store
+   */
+  private Boolean enabled = true;
 
-    /**
-     * get config timeout
-     */
-    private Integer timeout = 2000;
+  /**
+   * get config timeout
+   */
+  private Integer timeout = 2000;
 
-    public Integer getTimeout() {
-        return timeout;
-    }
+  public Integer getTimeout() {
+    return timeout;
+  }
 
-    public void setTimeout(Integer timeout) {
-        this.timeout = timeout;
-    }
+  public void setTimeout(Integer timeout) {
+    this.timeout = timeout;
+  }
 
-    public Boolean getEnabled() {
-        return enabled;
-    }
+  public Boolean getEnabled() {
+    return enabled;
+  }
 
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-    }
+  public void setEnabled(Boolean enabled) {
+    this.enabled = enabled;
+  }
 }
