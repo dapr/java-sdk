@@ -105,6 +105,7 @@ if [ "$VARIANT" = "" ]; then
   git clean -xdf
   echo "Updating docs in master branch ..."
   git checkout master
+  git fetch origin
   git reset --hard origin/master
   git cherry-pick --strategy=recursive -X theirs $RELEASE_TAG
   git push origin master
