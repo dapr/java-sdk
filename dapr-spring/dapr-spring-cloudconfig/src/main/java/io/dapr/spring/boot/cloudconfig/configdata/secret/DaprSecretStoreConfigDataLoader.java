@@ -16,7 +16,7 @@ package io.dapr.spring.boot.cloudconfig.configdata.secret;
 import io.dapr.client.DaprClient;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
-import io.dapr.spring.boot.cloudconfig.parser.DaprSecretStoreParserHandler;
+import io.dapr.spring.boot.cloudconfig.configdata.DaprSecretStoreConfigParserHandler;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.context.config.ConfigData;
 import org.springframework.boot.context.config.ConfigDataLoader;
@@ -29,7 +29,6 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -43,13 +42,20 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
 
   private DaprClient daprClient;
 
-  private DaprCloudConfigProperties daprSecretStoreConfig;
+  private DaprCloudConfigProperties daprCloudConfigProperties;
 
+  /**
+   * Create a Config Data Loader to load config from Dapr Secret Store api.
+   *
+   * @param logFactory logFactory
+   * @param daprClient Dapr Client created
+   * @param daprCloudConfigProperties Dapr Cloud Config Properties
+   */
   public DaprSecretStoreConfigDataLoader(DeferredLogFactory logFactory, DaprClient daprClient,
-                                         DaprCloudConfigProperties daprSecretStoreConfig) {
+                                         DaprCloudConfigProperties daprCloudConfigProperties) {
     this.log = logFactory.getLog(getClass());
     this.daprClient = daprClient;
-    this.daprSecretStoreConfig = daprSecretStoreConfig;
+    this.daprCloudConfigProperties = daprCloudConfigProperties;
   }
 
 
@@ -65,52 +71,101 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
   @Override
   public ConfigData load(ConfigDataLoaderContext context, DaprSecretStoreConfigDataResource resource)
       throws IOException, ConfigDataResourceNotFoundException {
-    DaprCloudConfigClientManager daprClientSecretStoreConfigManager =
+    DaprCloudConfigClientManager daprCloudConfigClientManager =
         getBean(context, DaprCloudConfigClientManager.class);
 
     daprClient = DaprCloudConfigClientManager.getDaprClient();
-    daprSecretStoreConfig = daprClientSecretStoreConfigManager.getDaprCloudConfigProperties();
+    daprCloudConfigProperties = daprCloudConfigClientManager.getDaprCloudConfigProperties();
+
+    waitForSidecar();
 
     if (resource.getSecretName() == null) {
-      return fetchConfig(resource.getStoreName());
+      return fetchBulkSecret(resource);
     } else {
-      return fetchConfig(resource.getStoreName(), resource.getSecretName());
+      return fetchSecret(resource);
     }
   }
 
-  private ConfigData fetchConfig(String storeName) {
-    Mono<Map<String, Map<String, String>>> secretMapMono = daprClient.getBulkSecret(storeName);
-
-    Map<String, Map<String, String>> secretMap =
-        secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
-
-    if (secretMap == null) {
-      return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+  private void waitForSidecar() throws IOException {
+    try {
+      daprClient.waitForSidecar(daprCloudConfigProperties.getTimeout())
+          .retry(3)
+          .block();
+    } catch (RuntimeException e) {
+      log.info("Failed to get secret from sidecar: " + e.getMessage(), e);
+      throw new IOException("Failed to get secret from sidecar", e);
     }
-
-    List<PropertySource<?>> sourceList = new ArrayList<>();
-
-    for (Map.Entry<String, Map<String, String>> entry : secretMap.entrySet()) {
-      sourceList.addAll(DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(entry.getKey(),
-          entry.getValue()));
-    }
-
-    return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
   }
 
-  private ConfigData fetchConfig(String storeName, String secretName) {
-    Mono<Map<String, String>> secretMapMono = daprClient.getSecret(storeName, secretName);
+  /**
+   * Get Bulk Secret from Store.
+   * @param resource Secret Data Resource to fetch
+   * @return config data
+   * @throws IOException for block returns exception
+   * @throws ConfigDataResourceNotFoundException for secret not found
+   */
+  private ConfigData fetchBulkSecret(DaprSecretStoreConfigDataResource resource)
+      throws IOException, ConfigDataResourceNotFoundException {
 
-    Map<String, String> secretMap = secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
+    Mono<Map<String, Map<String, String>>> secretMapMono = daprClient.getBulkSecret(resource.getStoreName());
 
-    if (secretMap == null) {
-      return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+    try {
+      Map<String, Map<String, String>> secretMap =
+          secretMapMono.block(Duration.ofMillis(daprCloudConfigProperties.getTimeout()));
+
+      if (secretMap == null) {
+        log.info("Secret not found");
+        throw new ConfigDataResourceNotFoundException(resource);
+      }
+
+      List<PropertySource<?>> sourceList = new ArrayList<>();
+
+      for (Map.Entry<String, Map<String, String>> entry : secretMap.entrySet()) {
+        sourceList.addAll(DaprSecretStoreConfigParserHandler.getInstance().parseDaprSecretStoreData(
+            resource.getStoreName() + ":" + entry.getKey(),
+            entry.getValue(),
+            resource.getType()
+        ));
+      }
+
+      return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+    } catch (RuntimeException e) {
+      log.info("Failed to get secret from sidecar: " + e.getMessage(), e);
+      throw new IOException("Failed to get secret from sidecar", e);
     }
+  }
 
-    List<PropertySource<?>> sourceList = new ArrayList<>(
-        DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(secretName, secretMap));
+  /**
+   * Get Secret from Store.
+   * @param resource Secret Data Resource to fetch
+   * @return config data
+   * @throws IOException for block returns exception
+   * @throws ConfigDataResourceNotFoundException for secret not found
+   */
+  private ConfigData fetchSecret(DaprSecretStoreConfigDataResource resource)
+      throws IOException, ConfigDataResourceNotFoundException {
+    Mono<Map<String, String>> secretMapMono = daprClient.getSecret(resource.getStoreName(), resource.getSecretName());
 
-    return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+    try {
+      Map<String, String> secretMap = secretMapMono.block(Duration.ofMillis(daprCloudConfigProperties.getTimeout()));
+
+      if (secretMap == null) {
+        log.info("Secret not found");
+        throw new ConfigDataResourceNotFoundException(resource);
+      }
+
+      List<PropertySource<?>> sourceList = new ArrayList<>(
+          DaprSecretStoreConfigParserHandler.getInstance().parseDaprSecretStoreData(
+              resource.getStoreName() + ":" + resource.getSecretName(),
+              secretMap,
+              resource.getType()
+          ));
+
+      return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+    } catch (RuntimeException e) {
+      log.info(e.getMessage(), e);
+      throw new IOException("Failed to wait for sidecar", e);
+    }
   }
 
   protected <T> T getBean(ConfigDataLoaderContext context, Class<T> type) {

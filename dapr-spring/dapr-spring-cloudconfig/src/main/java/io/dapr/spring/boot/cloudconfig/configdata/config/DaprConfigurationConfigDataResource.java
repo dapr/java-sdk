@@ -13,37 +13,57 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.configdata.config;
 
+import io.dapr.spring.boot.cloudconfig.configdata.DaprCloudConfigType;
 import org.springframework.boot.context.config.ConfigDataResource;
+import org.springframework.lang.Nullable;
 
 public class DaprConfigurationConfigDataResource extends ConfigDataResource {
   private final String storeName;
-  private final String secretName;
+  private final String configName;
+  private final DaprCloudConfigType type;
+  private final Boolean subscribe;
 
   /**
    * Create a new non-optional {@link ConfigDataResource} instance.
+   * @param storeName store name
+   * @param configName config name
+   * @param type value type
+   * @param subscribe subscribe for update
    */
-  public DaprConfigurationConfigDataResource(String storeName, String secretName) {
+  public DaprConfigurationConfigDataResource(String storeName, @Nullable String configName,
+                                             DaprCloudConfigType type, Boolean subscribe) {
     this.storeName = storeName;
-    this.secretName = secretName;
+    this.configName = configName;
+    this.type = type;
+    this.subscribe = subscribe;
   }
 
   /**
    * Create a new {@link ConfigDataResource} instance.
-   *
    * @param optional if the resource is optional
-   * @since 2.4.6
+   * @param storeName store name
+   * @param configName config name
+   * @param type value type
+   * @param subscribe subscribe for update
    */
-  public DaprConfigurationConfigDataResource(boolean optional, String storeName, String secretName) {
+  public DaprConfigurationConfigDataResource(boolean optional, String storeName, @Nullable String configName,
+                                             DaprCloudConfigType type, Boolean subscribe) {
     super(optional);
     this.storeName = storeName;
-    this.secretName = secretName;
+    this.configName = configName;
+    this.type = type;
+    this.subscribe = subscribe;
   }
 
   public String getStoreName() {
     return storeName;
   }
 
-  public String getSecretName() {
-    return secretName;
+  public String getConfigName() {
+    return configName;
+  }
+
+  public DaprCloudConfigType getType() {
+    return type;
   }
 }

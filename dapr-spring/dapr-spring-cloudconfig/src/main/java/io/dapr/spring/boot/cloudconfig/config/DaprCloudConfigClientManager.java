@@ -20,7 +20,6 @@ import io.dapr.config.Properties;
 import io.dapr.spring.boot.autoconfigure.client.DaprClientProperties;
 import io.dapr.spring.boot.autoconfigure.client.DaprConnectionDetails;
 
-
 public class DaprCloudConfigClientManager {
 
   private static DaprClient daprClient;
@@ -28,6 +27,12 @@ public class DaprCloudConfigClientManager {
   private final DaprCloudConfigProperties daprCloudConfigProperties;
   private final DaprClientProperties daprClientConfig;
 
+  /**
+   * Create a DaprCloudConfigClientManager to create Config-Specific Dapr Client.
+   *
+   * @param daprCloudConfigProperties Properties of Dapr Cloud Config
+   * @param daprClientConfig Properties of Dapr Client
+   */
   public DaprCloudConfigClientManager(DaprCloudConfigProperties daprCloudConfigProperties,
                                       DaprClientProperties daprClientConfig) {
     this.daprCloudConfigProperties = daprCloudConfigProperties;

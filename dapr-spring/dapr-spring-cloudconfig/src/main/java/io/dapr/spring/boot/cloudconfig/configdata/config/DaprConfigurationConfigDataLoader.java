@@ -14,9 +14,11 @@ limitations under the License.
 package io.dapr.spring.boot.cloudconfig.configdata.config;
 
 import io.dapr.client.DaprClient;
+import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
-import io.dapr.spring.boot.cloudconfig.parser.DaprSecretStoreParserHandler;
+import io.dapr.spring.boot.cloudconfig.configdata.DaprSecretStoreConfigParserHandler;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.context.config.ConfigData;
 import org.springframework.boot.context.config.ConfigDataLoader;
@@ -24,12 +26,13 @@ import org.springframework.boot.context.config.ConfigDataLoaderContext;
 import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.env.PropertySource;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +48,13 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
 
   private DaprCloudConfigProperties daprSecretStoreConfig;
 
+  /**
+   * Create a Config Data Loader to load config from Dapr Configuration api.
+   *
+   * @param logFactory            logFactory
+   * @param daprClient            Dapr Client created
+   * @param daprSecretStoreConfig Dapr Cloud Config Properties
+   */
   public DaprConfigurationConfigDataLoader(DeferredLogFactory logFactory, DaprClient daprClient,
                                            DaprCloudConfigProperties daprSecretStoreConfig) {
     this.log = logFactory.getLog(getClass());
@@ -71,46 +81,59 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
     daprClient = DaprCloudConfigClientManager.getDaprClient();
     daprSecretStoreConfig = daprClientSecretStoreConfigManager.getDaprCloudConfigProperties();
 
-    if (resource.getSecretName() == null) {
-      return fetchConfig(resource.getStoreName());
-    } else {
-      return fetchConfig(resource.getStoreName(), resource.getSecretName());
+    waitForSidecar();
+
+    return fetchConfig(resource);
+  }
+
+  private void waitForSidecar() throws IOException {
+    try {
+      daprClient.waitForSidecar(daprSecretStoreConfig.getTimeout())
+          .retry(3)
+          .block();
+    } catch (RuntimeException e) {
+      log.info(e.getMessage(), e);
+      throw new IOException("Failed to wait for sidecar", e);
     }
   }
 
-  private ConfigData fetchConfig(String storeName) {
-    Mono<Map<String, Map<String, String>>> secretMapMono = daprClient.getBulkSecret(storeName);
+  private ConfigData fetchConfig(DaprConfigurationConfigDataResource resource)
+      throws IOException, ConfigDataResourceNotFoundException {
+    Mono<Map<String, ConfigurationItem>> secretMapMono = daprClient.getConfiguration(new GetConfigurationRequest(
+        resource.getStoreName(),
+        StringUtils.hasText(resource.getConfigName())
+            ? List.of(resource.getConfigName())
+            : null
+    ));
 
-    Map<String, Map<String, String>> secretMap =
-        secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
+    try {
+      Map<String, ConfigurationItem> secretMap =
+          secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
 
-    if (secretMap == null) {
-      return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+      if (secretMap == null) {
+        log.info("Config not found");
+        throw new ConfigDataResourceNotFoundException(resource);
+      }
+
+      List<PropertySource<?>> sourceList = new ArrayList<>();
+
+      Map<String, String> configMap = new HashMap<>();
+      secretMap.forEach((key, value) -> {
+        configMap.put(value.getKey(), value.getValue());
+      });
+
+      sourceList.addAll(DaprSecretStoreConfigParserHandler.getInstance().parseDaprSecretStoreData(
+          resource.getStoreName(),
+          configMap,
+          resource.getType()
+          ));
+
+      return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
+    } catch (RuntimeException e) {
+      log.info("Failed to get config from sidecar: " + e.getMessage(), e);
+      throw new IOException("Failed to get config from sidecar", e);
     }
 
-    List<PropertySource<?>> sourceList = new ArrayList<>();
-
-    for (Map.Entry<String, Map<String, String>> entry : secretMap.entrySet()) {
-      sourceList.addAll(DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(entry.getKey(),
-          entry.getValue()));
-    }
-
-    return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
-  }
-
-  private ConfigData fetchConfig(String storeName, String secretName) {
-    Mono<Map<String, String>> secretMapMono = daprClient.getSecret(storeName, secretName);
-
-    Map<String, String> secretMap = secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
-
-    if (secretMap == null) {
-      return new ConfigData(Collections.emptyList(), IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
-    }
-
-    List<PropertySource<?>> sourceList = new ArrayList<>(
-        DaprSecretStoreParserHandler.getInstance().parseDaprSecretStoreData(secretName, secretMap));
-
-    return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
   }
 
   protected <T> T getBean(ConfigDataLoaderContext context, Class<T> type) {

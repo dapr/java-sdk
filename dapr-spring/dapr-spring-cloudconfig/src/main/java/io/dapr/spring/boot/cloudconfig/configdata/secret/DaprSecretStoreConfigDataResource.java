@@ -13,30 +13,42 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.configdata.secret;
 
+import io.dapr.spring.boot.cloudconfig.configdata.DaprCloudConfigType;
 import org.springframework.boot.context.config.ConfigDataResource;
+import org.springframework.lang.Nullable;
 
 public class DaprSecretStoreConfigDataResource extends ConfigDataResource {
   private final String storeName;
   private final String secretName;
+  private final DaprCloudConfigType type;
 
   /**
    * Create a new non-optional {@link ConfigDataResource} instance.
+   *
+   * @param storeName store name
+   * @param secretName secret name
+   * @param type secret type
    */
-  public DaprSecretStoreConfigDataResource(String storeName, String secretName) {
+  public DaprSecretStoreConfigDataResource(String storeName, @Nullable String secretName, DaprCloudConfigType type) {
     this.storeName = storeName;
     this.secretName = secretName;
+    this.type = type;
   }
 
   /**
    * Create a new {@link ConfigDataResource} instance.
    *
    * @param optional if the resource is optional
-   * @since 2.4.6
+   * @param storeName store name
+   * @param secretName secret name
+   * @param type secret type
    */
-  public DaprSecretStoreConfigDataResource(boolean optional, String storeName, String secretName) {
+  public DaprSecretStoreConfigDataResource(boolean optional, String storeName,
+                                           @Nullable String secretName, DaprCloudConfigType type) {
     super(optional);
     this.storeName = storeName;
     this.secretName = secretName;
+    this.type = type;
   }
 
   public String getStoreName() {
@@ -45,5 +57,18 @@ public class DaprSecretStoreConfigDataResource extends ConfigDataResource {
 
   public String getSecretName() {
     return secretName;
+  }
+
+  public DaprCloudConfigType getType() {
+    return type;
+  }
+
+  @Override
+  public String toString() {
+    return "DaprSecretStoreConfigDataResource{"
+        + "storeName='" + storeName + '\''
+        + ", secretName='" + secretName + '\''
+        + ", type=" + type
+        + '}';
   }
 }

@@ -16,6 +16,7 @@ package io.dapr.spring.boot.cloudconfig.configdata.config;
 import io.dapr.spring.boot.autoconfigure.client.DaprClientProperties;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
+import io.dapr.spring.boot.cloudconfig.configdata.DaprCloudConfigType;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.BootstrapRegistry;
 import org.springframework.boot.ConfigurableBootstrapContext;
@@ -30,6 +31,10 @@ import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,31 +87,42 @@ public class DaprConfigurationConfigDataLocationResolver
 
     List<DaprConfigurationConfigDataResource> result = new ArrayList<>();
 
-    String[] secretConfig = location.getNonPrefixedValue(PREFIX).split("/");
+    // To avoid UriComponentsBuilder to decode a wrong host.
+    String fullConfig = "config://" + location.getNonPrefixedValue(PREFIX);
 
-    log.info(String.format("there is %d of values in secretConfig", secretConfig.length));
+    UriComponents configUri = UriComponentsBuilder.fromUriString(fullConfig).build();
 
-    switch (secretConfig.length) {
-      case 2:
-        log.debug("Dapr Secret Store now gains store name: '" + secretConfig[0] + "' and secret name: '"
-            + secretConfig[1] + "' secret store for config");
-        result.add(
-            new DaprConfigurationConfigDataResource(location.isOptional(), secretConfig[0], secretConfig[1]));
-        break;
-      case 1:
-        log.debug("Dapr Secret Store now gains store name: '" + secretConfig[0] + "' secret store for config");
-        result.add(new DaprConfigurationConfigDataResource(location.isOptional(), secretConfig[0], null));
-        break;
-      default:
-        throw new ConfigDataLocationNotFoundException(location);
+    String storeName = configUri.getHost();
+    String configName = StringUtils.hasText(configUri.getPath())
+        ? StringUtils.trimLeadingCharacter(configUri.getPath(), '/')
+        : null;
+
+    MultiValueMap<String, String> configQuery = configUri.getQueryParams();
+    DaprCloudConfigType configType = DaprCloudConfigType.fromString(configQuery.getFirst("type"));
+    Boolean subscribe = StringUtils.hasText(configQuery.getFirst("subscribe"))
+        && Boolean.parseBoolean(configQuery.getFirst("subscribe"));
+
+
+    if (configName == null) {
+      log.debug("Dapr Cloud Config now gains store name: '" + storeName + "' configuration for config");
+      result.add(new DaprConfigurationConfigDataResource(location.isOptional(), storeName,
+          null, configType, subscribe));
+
+    } else if (configName.contains("/")) {
+      throw new ConfigDataLocationNotFoundException(location);
+
+    } else {
+      log.debug("Dapr Cloud Config now gains store name: '" + storeName + "' and config name: '"
+          + configName + "' configuration for config");
+      result.add(
+          new DaprConfigurationConfigDataResource(location.isOptional(), storeName, configName,
+              configType, subscribe));
+
     }
 
     return result;
   }
 
-  /**
-   * @return
-   */
   @Override
   public int getOrder() {
     return -1;
@@ -115,10 +131,12 @@ public class DaprConfigurationConfigDataLocationResolver
   private void registerConfigManager(DaprCloudConfigProperties properties,
                                      DaprClientProperties clientConfig,
                                      ConfigurableBootstrapContext bootstrapContext) {
-    if (!bootstrapContext.isRegistered(DaprCloudConfigClientManager.class)) {
-      bootstrapContext.register(DaprCloudConfigClientManager.class,
-          BootstrapRegistry.InstanceSupplier
-              .of(new DaprCloudConfigClientManager(properties, clientConfig)));
+    synchronized (DaprCloudConfigClientManager.class) {
+      if (!bootstrapContext.isRegistered(DaprCloudConfigClientManager.class)) {
+        bootstrapContext.register(DaprCloudConfigClientManager.class,
+            BootstrapRegistry.InstanceSupplier
+                .of(new DaprCloudConfigClientManager(properties, clientConfig)));
+      }
     }
   }
 

@@ -24,12 +24,12 @@ public class DaprCloudConfigProperties {
   public static final String PROPERTY_PREFIX = "dapr.cloudconfig";
 
   /**
-   * whether enable secret store
+   * whether enable cloud config.
    */
   private Boolean enabled = true;
 
   /**
-   * get config timeout
+   * get config timeout (include wait for dapr sidecar).
    */
   private Integer timeout = 2000;
 

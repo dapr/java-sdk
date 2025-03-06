@@ -5,14 +5,14 @@
       "type": "java.lang.Boolean",
       "defaultValue": true,
       "sourceType": "io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties",
-      "description": "enable dapr secret store or not."
+      "description": "enable dapr cloud config or not."
     },
     {
       "name": "dapr.cloudconfig.timeout",
       "type": "java.lang.Integer",
       "defaultValue": 2000,
       "sourceType": "io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties",
-      "description": "timeout for getting dapr secret store."
+      "description": "timeout for getting dapr config (include wait for dapr sidecar)."
     }
   ]
 }
