@@ -65,6 +65,7 @@ jobs:
             echo "BUILD_GIT_REF=v${{ inputs.rel_version }}" >> $GITHUB_ENV
           fi
       - name: Triggers the build and release.
+        if: env.BUILD_GIT_REF != 'master'
         env:
           GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
         run: |
