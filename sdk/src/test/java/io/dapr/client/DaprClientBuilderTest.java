@@ -18,6 +18,7 @@ import io.dapr.exceptions.DaprErrorDetails;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DaprObjectSerializer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,6 +28,16 @@ import static org.mockito.Mockito.when;
 
 public class DaprClientBuilderTest {
 
+  private DaprClient client;
+
+  @AfterEach
+  public void cleanup() throws Exception {
+    if (client != null) {
+      client.close();
+      client = null;
+    }
+  }
+
   @Test
   public void build() {
     DaprObjectSerializer objectSerializer = mock(DaprObjectSerializer.class);
@@ -35,17 +46,17 @@ public class DaprClientBuilderTest {
     DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
     daprClientBuilder.withObjectSerializer(objectSerializer);
     daprClientBuilder.withStateSerializer(stateSerializer);
-    DaprClient daprClient = daprClientBuilder.build();
-    assertNotNull(daprClient);
+    client = daprClientBuilder.build();
+    assertNotNull(client);
   }
 
   @Test
   public void buildWithOverrideSidecarIP() {
     DaprClientBuilder daprClientBuilder = new DaprClientBuilder();
     daprClientBuilder.withPropertyOverride(Properties.SIDECAR_IP, "unknownhost");
-    DaprClient daprClient = daprClientBuilder.build();
-    assertNotNull(daprClient);
-    DaprException thrown = assertThrows(DaprException.class, () -> { daprClient.getMetadata().block(); });
+    client = daprClientBuilder.build();
+    assertNotNull(client);
+    DaprException thrown = assertThrows(DaprException.class, () -> { client.getMetadata().block(); });
     assertTrue(thrown.toString().contains("UNAVAILABLE"), thrown.toString());
 
   }
