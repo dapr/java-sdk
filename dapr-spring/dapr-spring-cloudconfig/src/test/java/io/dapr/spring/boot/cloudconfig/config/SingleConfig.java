@@ -7,15 +7,11 @@ import org.springframework.stereotype.Component;
 public class SingleConfig {
 
   // should be testvalue
-  @Value("dapr.spring.demo-config-secret.singlevalue")
+  @Value("${dapr.spring.democonfigsecret.singlevalue}")
   private String singleValueSecret;
 
-  // should be config
-  @Value("dapr.spring.demo-config-secret.multivalue.v4")
-  private String multiValuedSecret;
-
   // should be testvalue
-  @Value("dapr.spring.demo-config-config.singlevalue")
+  @Value("${dapr.spring.democonfigconfig.singlevalue}")
   private String singleValueConfig;
 
   public String getSingleValueSecret() {
@@ -24,14 +20,6 @@ public class SingleConfig {
 
   public void setSingleValueSecret(String singleValueSecret) {
     this.singleValueSecret = singleValueSecret;
-  }
-
-  public String getMultiValuedSecret() {
-    return multiValuedSecret;
-  }
-
-  public void setMultiValuedSecret(String multiValuedSecret) {
-    this.multiValuedSecret = multiValuedSecret;
   }
 
   public String getSingleValueConfig() {

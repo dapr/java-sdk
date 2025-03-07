@@ -14,4 +14,8 @@
     <Class name="~io.dapr.spring.boot.cloudconfig.configdata.*"/>
     <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
   </Match>
+  <Match>
+    <Class name="~io.dapr.spring.boot.cloudconfig.*"/>
+    <Bug pattern="MS_EXPOSE_REP"/>
+  </Match>
 </FindBugsFilter>

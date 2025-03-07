@@ -100,7 +100,8 @@ public class DaprConfigurationConfigDataLocationResolver
         : null;
 
     MultiValueMap<String, String> configQuery = configUri.getQueryParams();
-    DaprCloudConfigType configType = DaprCloudConfigType.fromString(configQuery.getFirst("type"));
+    DaprCloudConfigType configType = DaprCloudConfigType.fromString(configQuery.getFirst("type"),
+        configQuery.getFirst("doc-type"));
     Boolean subscribe = StringUtils.hasText(configQuery.getFirst("subscribe"))
         && Boolean.parseBoolean(configQuery.getFirst("subscribe"));
 

@@ -74,7 +74,7 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
     DaprCloudConfigClientManager daprCloudConfigClientManager =
         getBean(context, DaprCloudConfigClientManager.class);
 
-    daprClient = daprCloudConfigClientManager.getDaprClient();
+    daprClient = DaprCloudConfigClientManager.getDaprClient();
     daprCloudConfigProperties = daprCloudConfigClientManager.getDaprCloudConfigProperties();
 
     if (!daprCloudConfigProperties.getEnabled()) {
@@ -127,13 +127,15 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
       List<PropertySource<?>> sourceList = new ArrayList<>();
 
       for (Map.Entry<String, Map<String, String>> entry : secretMap.entrySet()) {
-        sourceList.addAll(DaprCloudConfigParserHandler.getInstance().parseDaprSecretStoreData(
+        sourceList.addAll(DaprCloudConfigParserHandler.getInstance().parseDaprCloudConfigData(
             resource.getStoreName() + ":" + entry.getKey(),
             entry.getValue(),
             resource.getType()
         ));
       }
 
+      log.debug(String.format("now gain %d data source in secret, storename = %s",
+          sourceList.size(), resource.getStoreName()));
       return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
     } catch (RuntimeException e) {
       log.info("Failed to get secret from sidecar: " + e.getMessage(), e);
@@ -160,13 +162,18 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
         throw new ConfigDataResourceNotFoundException(resource);
       }
 
+      log.debug(String.format("now gain %d secretMap in secret, storename = %s, secretname = %s",
+          secretMap.size(), resource.getStoreName(), resource.getSecretName()));
+
       List<PropertySource<?>> sourceList = new ArrayList<>(
-          DaprCloudConfigParserHandler.getInstance().parseDaprSecretStoreData(
+          DaprCloudConfigParserHandler.getInstance().parseDaprCloudConfigData(
               resource.getStoreName() + ":" + resource.getSecretName(),
               secretMap,
               resource.getType()
           ));
 
+      log.debug(String.format("now gain %d data source in secret, storename = %s, secretname = %s",
+          sourceList.size(), resource.getStoreName(), resource.getSecretName()));
       return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
     } catch (RuntimeException e) {
       log.info("Failed to get secret from sidecar: " + e.getMessage(), e);

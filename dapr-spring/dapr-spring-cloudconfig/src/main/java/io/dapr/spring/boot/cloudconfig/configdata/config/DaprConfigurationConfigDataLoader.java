@@ -78,7 +78,7 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
     DaprCloudConfigClientManager daprClientSecretStoreConfigManager =
         getBean(context, DaprCloudConfigClientManager.class);
 
-    daprClient = daprClientSecretStoreConfigManager.getDaprClient();
+    daprClient = DaprCloudConfigClientManager.getDaprClient();
     daprCloudConfigProperties = daprClientSecretStoreConfigManager.getDaprCloudConfigProperties();
 
     if (!daprCloudConfigProperties.getEnabled()) {
@@ -121,17 +121,16 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
         throw new ConfigDataResourceNotFoundException(resource);
       }
 
-      List<PropertySource<?>> sourceList = new ArrayList<>();
-
       Map<String, String> configMap = new HashMap<>();
       secretMap.forEach((key, value) -> {
         configMap.put(value.getKey(), value.getValue());
       });
 
-      sourceList.addAll(DaprCloudConfigParserHandler.getInstance().parseDaprSecretStoreData(
-          resource.getStoreName(),
-          configMap,
-          resource.getType()
+      List<PropertySource<?>> sourceList =
+          new ArrayList<>(DaprCloudConfigParserHandler.getInstance().parseDaprCloudConfigData(
+              resource.getStoreName(),
+              configMap,
+              resource.getType()
           ));
 
       return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);

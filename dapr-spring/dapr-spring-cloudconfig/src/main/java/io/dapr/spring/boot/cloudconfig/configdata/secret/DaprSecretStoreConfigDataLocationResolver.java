@@ -31,6 +31,7 @@ import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -97,8 +98,10 @@ public class DaprSecretStoreConfigDataLocationResolver
         ? StringUtils.trimLeadingCharacter(secretPath, '/')
         : null;
 
-    String typeQuery = configUri.getQueryParams().getFirst("type");
-    DaprCloudConfigType secretType = DaprCloudConfigType.fromString(typeQuery);
+
+    MultiValueMap<String, String> typeQuery = configUri.getQueryParams();
+    DaprCloudConfigType secretType = DaprCloudConfigType.fromString(typeQuery.getFirst("type"),
+        typeQuery.getFirst("doc-type"));
 
     if (secretName == null) {
       log.debug("Dapr Secret Store now gains store name: '" + storeName + "' secret store for config");

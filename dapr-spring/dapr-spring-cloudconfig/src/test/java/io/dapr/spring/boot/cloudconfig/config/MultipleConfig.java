@@ -7,14 +7,14 @@ import org.springframework.stereotype.Component;
 public class MultipleConfig {
 
   //should be spring
-  @Value("dapr.spring.demo-config-secret.multivalue.v1")
+  @Value("${dapr.spring.democonfigsecret.multivalue.v1}")
   private String multipleSecretConfigV1;
   //should be dapr
-  @Value("dapr.spring.demo-config-secret.multivalue.v2")
+  @Value("${dapr.spring.democonfigsecret.multivalue.v2}")
   private String multipleSecretConfigV2;
 
   //should be cloud
-  @Value("dapr.spring.demo-config-config.multivalue.v3")
+  @Value("${dapr.spring.democonfigconfig.multivalue.v3}")
   private String multipleConfigurationConfigV3;
 
   public String getMultipleSecretConfigV1() {

@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.spring.boot.cloudconfig.configdata;
 
 import org.springframework.boot.env.PropertySourceLoader;
+import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -23,6 +24,7 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +34,25 @@ public class DaprCloudConfigParserHandler {
   private static List<PropertySourceLoader> propertySourceLoaders;
 
   private DaprCloudConfigParserHandler() {
-    propertySourceLoaders = SpringFactoriesLoader
+    List<PropertySourceLoader> loaders = SpringFactoriesLoader
         .loadFactories(PropertySourceLoader.class, getClass().getClassLoader());
+
+    //Range loaders (Yaml as the first)
+    int yamlIndex = -1;
+    for (int i = 0; i < loaders.size(); i++) {
+      if (loaders.get(i) instanceof YamlPropertySourceLoader) {
+        yamlIndex = i;
+        break;
+      }
+    }
+
+    // found yaml loader then move to the front
+    if (yamlIndex != -1) {
+      PropertySourceLoader yamlSourceLoader = loaders.remove(yamlIndex);
+      loaders.add(0, yamlSourceLoader);
+    }
+
+    propertySourceLoaders = loaders;
   }
 
   public static DaprCloudConfigParserHandler getInstance() {
@@ -56,7 +75,7 @@ public class DaprCloudConfigParserHandler {
    * @param type value type
    * @return property source list
    */
-  public List<PropertySource<?>> parseDaprSecretStoreData(
+  public List<PropertySource<?>> parseDaprCloudConfigData(
       String configName,
       Map<String, String> configValue,
       DaprCloudConfigType type
@@ -64,15 +83,20 @@ public class DaprCloudConfigParserHandler {
     List<PropertySource<?>> result = new ArrayList<>();
 
     Map<String, Resource> configResults = getConfigResult(configValue, type);
+    String extension = DaprCloudConfigType.DocYaml.equals(type) ? ".yaml" : ".properties";
 
     configResults.forEach((key, configResult) -> {
       for (PropertySourceLoader propertySourceLoader : propertySourceLoaders) {
+        if (!canLoadFileExtension(propertySourceLoader, extension)) {
+          continue;
+        }
         String fullConfigName = StringUtils.hasText(key) ? configName + "." + key : configName;
         try {
           result.addAll(propertySourceLoader.load(fullConfigName, configResult));
         } catch (IOException ignored) {
           continue;
         }
+        return;
       }
     });
 
@@ -84,7 +108,7 @@ public class DaprCloudConfigParserHandler {
       DaprCloudConfigType type
   ) {
     Map<String, Resource> result = new HashMap<>();
-    if (DaprCloudConfigType.Doc.equals(type)) {
+    if (DaprCloudConfigType.DocYaml.equals(type) || DaprCloudConfigType.DocProperties.equals(type)) {
       configValue.forEach((key, value) -> result.put(key,
           new ByteArrayResource(value.getBytes(StandardCharsets.UTF_8))));
     } else {
@@ -93,6 +117,18 @@ public class DaprCloudConfigParserHandler {
       result.put("", new ByteArrayResource(String.join("\n", configList).getBytes(StandardCharsets.UTF_8)));
     }
     return result;
+  }
+
+  /**
+   * check the current extension can be processed.
+   * @param loader the propertySourceLoader
+   * @param extension file extension
+   * @return if can match extension
+   */
+  private boolean canLoadFileExtension(PropertySourceLoader loader, String extension) {
+    return Arrays.stream(loader.getFileExtensions())
+        .anyMatch((fileExtension) -> StringUtils.endsWithIgnoreCase(extension,
+            fileExtension));
   }
 
   private static class ParserHandler {
