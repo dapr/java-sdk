@@ -141,7 +141,7 @@ public class ActorStateIT extends BaseIT {
     proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run2.newActorClient()));
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
-    // wating for actor to be activated
+    // waiting for actor to be activated
     Thread.sleep(2000);  
 
     callWithRetry(() -> {

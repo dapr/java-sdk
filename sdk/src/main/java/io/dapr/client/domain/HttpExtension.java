@@ -14,12 +14,12 @@ limitations under the License.
 package io.dapr.client.domain;
 
 import io.dapr.client.DaprHttp;
-import okhttp3.HttpUrl;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * HTTP Extension class.
@@ -67,17 +67,17 @@ public final class HttpExtension {
   /**
    * HTTP verb.
    */
-  private DaprHttp.HttpMethods method;
+  private final DaprHttp.HttpMethods method;
 
   /**
    * HTTP query params.
    */
-  private Map<String, List<String>> queryParams;
+  private final Map<String, List<String>> queryParams;
 
   /**
    * HTTP headers.
    */
-  private Map<String, String> headers;
+  private final Map<String, String> headers;
 
   /**
    * Construct a HttpExtension object.
@@ -126,18 +126,29 @@ public final class HttpExtension {
    * @return Encoded HTTP query string.
    */
   public String encodeQueryString() {
-    if ((this.queryParams == null) || (this.queryParams.isEmpty())) {
+    if (queryParams == null || queryParams.isEmpty()) {
       return "";
     }
 
-    HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-    // Setting required values but we only need query params in the end.
-    urlBuilder.scheme("http").host("localhost");
-    Optional.ofNullable(this.queryParams).orElse(Collections.emptyMap()).entrySet().stream()
-        .forEach(urlParameter ->
-            Optional.ofNullable(urlParameter.getValue()).orElse(Collections.emptyList()).stream()
-                .forEach(urlParameterValue ->
-                    urlBuilder.addQueryParameter(urlParameter.getKey(), urlParameterValue)));
-    return urlBuilder.build().encodedQuery();
+    StringBuilder queryBuilder = new StringBuilder();
+
+    for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+      String key = entry.getKey();
+      List<String> values = entry.getValue();
+
+      for (String value : values) {
+        if (queryBuilder.length() > 0) {
+          queryBuilder.append("&");
+        }
+
+        queryBuilder.append(encodeQueryParam(key, value)); // Encode key and value
+      }
+    }
+
+    return queryBuilder.toString();
+  }
+
+  private static String encodeQueryParam(String key, String value) {
+    return URLEncoder.encode(key, StandardCharsets.UTF_8) + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8);
   }
 }

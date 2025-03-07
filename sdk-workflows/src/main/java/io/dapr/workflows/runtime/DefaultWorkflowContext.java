@@ -22,9 +22,6 @@ import com.microsoft.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowTaskOptions;
 import io.dapr.workflows.WorkflowTaskRetryPolicy;
-import io.dapr.workflows.runtime.saga.DefaultSagaContext;
-import io.dapr.workflows.saga.Saga;
-import io.dapr.workflows.saga.SagaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
@@ -39,7 +36,6 @@ import java.util.UUID;
 public class DefaultWorkflowContext implements WorkflowContext {
   private final TaskOrchestrationContext innerContext;
   private final Logger logger;
-  private final Saga saga;
 
   /**
    * Constructor for DaprWorkflowContextImpl.
@@ -58,23 +54,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * @param logger  Logger
    * @throws IllegalArgumentException if context or logger is null
    */
-  public DefaultWorkflowContext(TaskOrchestrationContext context, Logger logger) throws IllegalArgumentException {
-    this(context, logger, null);
-  }
-
-  public DefaultWorkflowContext(TaskOrchestrationContext context, Saga saga) throws IllegalArgumentException {
-    this(context, LoggerFactory.getLogger(WorkflowContext.class), saga);
-  }
-
-  /**
-   * Constructor for DaprWorkflowContextImpl.
-   *
-   * @param context TaskOrchestrationContext
-   * @param logger  Logger
-   * @param saga    saga object, if null, saga is disabled
-   * @throws IllegalArgumentException if context or logger is null
-   */
-  public DefaultWorkflowContext(TaskOrchestrationContext context, Logger logger, Saga saga)
+  public DefaultWorkflowContext(TaskOrchestrationContext context, Logger logger)
       throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
@@ -85,7 +65,6 @@ public class DefaultWorkflowContext implements WorkflowContext {
 
     this.innerContext = context;
     this.logger = logger;
-    this.saga = saga;
   }
 
   /**
@@ -247,15 +226,6 @@ public class DefaultWorkflowContext implements WorkflowContext {
   @Override
   public UUID newUuid() {
     return this.innerContext.newUUID();
-  }
-
-  @Override
-  public SagaContext getSagaContext() {
-    if (this.saga == null) {
-      throw new UnsupportedOperationException("Saga is not enabled");
-    }
-
-    return new DefaultSagaContext(this.saga, this);
   }
 
   private static TaskOptions toTaskOptions(WorkflowTaskOptions options) {

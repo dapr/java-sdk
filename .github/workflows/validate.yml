@@ -164,3 +164,7 @@ jobs:
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
+      - name: Validate Spring Boot examples
+        working-directory: ./spring-boot-examples
+        run: |
+          mm.py README.md    

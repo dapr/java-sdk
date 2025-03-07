@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test SDK resiliency.
@@ -43,7 +43,7 @@ public class WaitForSidecarIT extends BaseIT {
   @BeforeAll
   public static void init() throws Exception {
     daprRun = startDaprApp(WaitForSidecarIT.class.getSimpleName(), 5000);
-    daprNotRunning = startDaprApp(WaitForSidecarIT.class.getSimpleName()+"NotRunning", 5000);
+    daprNotRunning = startDaprApp(WaitForSidecarIT.class.getSimpleName() + "NotRunning", 5000);
     daprNotRunning.stop();
 
     toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
@@ -61,24 +61,30 @@ public class WaitForSidecarIT extends BaseIT {
   public void waitTimeout() {
     int timeoutInMillis = (int)LATENCY.minusMillis(100).toMillis();
     long started = System.currentTimeMillis();
+
     assertThrows(RuntimeException.class, () -> {
       try(var client = toxiProxyRun.newDaprClientBuilder().build()) {
         client.waitForSidecar(timeoutInMillis).block();
       }
     });
+
     long duration = System.currentTimeMillis() - started;
-    assertTrue(duration >= timeoutInMillis);
+
+    assertThat(duration).isGreaterThanOrEqualTo(timeoutInMillis);
   }
 
   @Test
   public void waitSlow() throws Exception {
     int timeoutInMillis = (int)LATENCY.plusMillis(100).toMillis();
     long started = System.currentTimeMillis();
+
     try(var client = toxiProxyRun.newDaprClientBuilder().build()) {
         client.waitForSidecar(timeoutInMillis).block();
     }
+
     long duration = System.currentTimeMillis() - started;
-    assertTrue(duration >= LATENCY.toMillis());
+
+    assertThat(duration).isGreaterThanOrEqualTo(LATENCY.toMillis());
   }
 
   @Test
@@ -87,12 +93,15 @@ public class WaitForSidecarIT extends BaseIT {
     // This has to do with a previous bug in the implementation.
     int timeoutMilliseconds = 5000;
     long started = System.currentTimeMillis();
+
     assertThrows(RuntimeException.class, () -> {
       try(var client = daprNotRunning.newDaprClientBuilder().build()) {
         client.waitForSidecar(timeoutMilliseconds).block();
       }
     });
+
     long duration = System.currentTimeMillis() - started;
-    assertTrue(duration >= timeoutMilliseconds);
+
+    assertThat(duration).isGreaterThanOrEqualTo(timeoutMilliseconds);
   }
 }

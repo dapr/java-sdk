@@ -16,7 +16,6 @@ package io.dapr.workflows.runtime;
 import com.microsoft.durabletask.TaskOrchestration;
 import com.microsoft.durabletask.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
-import io.dapr.workflows.saga.Saga;
 
 /**
  * Wrapper for Durable Task Framework orchestration factory.
@@ -37,13 +36,6 @@ class WorkflowInstanceWrapper<T extends Workflow> implements TaskOrchestrationFa
 
   @Override
   public TaskOrchestration create() {
-    return ctx -> {
-      if (workflow.getSagaOption() != null) {
-        Saga saga = new Saga(workflow.getSagaOption());
-        workflow.run(new DefaultWorkflowContext(ctx, saga));
-      } else {
-        workflow.run(new DefaultWorkflowContext(ctx));
-      }
-    };
+    return ctx -> workflow.run(new DefaultWorkflowContext(ctx));
   }
 }

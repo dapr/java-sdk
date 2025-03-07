@@ -24,12 +24,12 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17 ]
-        spring-boot-version: [ 3.2.6 ]
-        spring-boot-display-version: [ 3.2.x ]
+        spring-boot-version: [  3.4.3 ]
+        spring-boot-display-version: [ 3.4.x ]
         experimental: [ false ]
         include:
           - java: 17
-            spring-boot-version: 3.3.0
+            spring-boot-version: 3.3.9
             spring-boot-display-version: 3.3.x
             experimental: false
     env:
@@ -181,4 +181,4 @@ jobs:
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
-          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
+          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -Pdeploy-profile

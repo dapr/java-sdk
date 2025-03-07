@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: producer-app
+  name: producer-app
+spec:
+  type: NodePort
+  ports:
+    - name: "producer-app"
+      port: 8080
+      targetPort: 8080
+      nodePort: 31000
+  selector:
+    app: producer-app
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: producer-app
+  name: producer-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: producer-app
+  template:
+    metadata:
+      annotations:
+        dapr.io/app-id: producer-app
+        dapr.io/app-port: "8080"
+        dapr.io/enabled: "true"
+      labels:
+        app: producer-app
+    spec:
+      containers:
+        - image: localhost:5001/sb-producer-app
+          name: producer-app
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: producer-app

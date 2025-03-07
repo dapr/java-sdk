@@ -26,8 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.keyvalue.core.query.KeyValueQuery;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
@@ -39,7 +37,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +44,7 @@ import java.util.Optional;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
+import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -82,7 +80,7 @@ public class MySQLDaprKeyValueTemplateIT {
 
   @Container
   @ServiceConnection
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.13.2")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
       .withAppName("mysql-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.mysql", "v1", STATE_STORE_PROPERTIES))
