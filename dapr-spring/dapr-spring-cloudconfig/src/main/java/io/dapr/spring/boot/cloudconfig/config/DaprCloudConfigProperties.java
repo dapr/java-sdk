@@ -29,6 +29,16 @@ public class DaprCloudConfigProperties {
   private Boolean enabled = true;
 
   /**
+   * whether enable dapr client wait for sidecar, if no response, will throw IOException.
+   */
+  private Boolean waitSidecarEnabled = false;
+
+  /**
+   * retries of dapr client wait for sidecar.
+   */
+  private Integer waitSidecarRetries = 3;
+
+  /**
    * get config timeout (include wait for dapr sidecar).
    */
   private Integer timeout = 2000;
@@ -47,5 +57,21 @@ public class DaprCloudConfigProperties {
 
   public void setEnabled(Boolean enabled) {
     this.enabled = enabled;
+  }
+
+  public Boolean getWaitSidecarEnabled() {
+    return waitSidecarEnabled;
+  }
+
+  public void setWaitSidecarEnabled(Boolean waitSidecarEnabled) {
+    this.waitSidecarEnabled = waitSidecarEnabled;
+  }
+
+  public Integer getWaitSidecarRetries() {
+    return waitSidecarRetries;
+  }
+
+  public void setWaitSidecarRetries(Integer waitSidecarRetries) {
+    this.waitSidecarRetries = waitSidecarRetries;
   }
 }

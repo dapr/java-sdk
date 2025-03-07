@@ -16,7 +16,7 @@ package io.dapr.spring.boot.cloudconfig.configdata.secret;
 import io.dapr.client.DaprClient;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
-import io.dapr.spring.boot.cloudconfig.configdata.DaprSecretStoreConfigParserHandler;
+import io.dapr.spring.boot.cloudconfig.configdata.DaprCloudConfigParserHandler;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.context.config.ConfigData;
 import org.springframework.boot.context.config.ConfigDataLoader;
@@ -74,10 +74,16 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
     DaprCloudConfigClientManager daprCloudConfigClientManager =
         getBean(context, DaprCloudConfigClientManager.class);
 
-    daprClient = DaprCloudConfigClientManager.getDaprClient();
+    daprClient = daprCloudConfigClientManager.getDaprClient();
     daprCloudConfigProperties = daprCloudConfigClientManager.getDaprCloudConfigProperties();
 
-    waitForSidecar();
+    if (!daprCloudConfigProperties.getEnabled()) {
+      return ConfigData.EMPTY;
+    }
+
+    if (daprCloudConfigProperties.getWaitSidecarEnabled()) {
+      waitForSidecar();
+    }
 
     if (resource.getSecretName() == null) {
       return fetchBulkSecret(resource);
@@ -89,11 +95,11 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
   private void waitForSidecar() throws IOException {
     try {
       daprClient.waitForSidecar(daprCloudConfigProperties.getTimeout())
-          .retry(3)
+          .retry(daprCloudConfigProperties.getWaitSidecarRetries())
           .block();
     } catch (RuntimeException e) {
-      log.info("Failed to get secret from sidecar: " + e.getMessage(), e);
-      throw new IOException("Failed to get secret from sidecar", e);
+      log.info("Failed to wait for sidecar: " + e.getMessage(), e);
+      throw new IOException("Failed to wait for sidecar", e);
     }
   }
 
@@ -121,7 +127,7 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
       List<PropertySource<?>> sourceList = new ArrayList<>();
 
       for (Map.Entry<String, Map<String, String>> entry : secretMap.entrySet()) {
-        sourceList.addAll(DaprSecretStoreConfigParserHandler.getInstance().parseDaprSecretStoreData(
+        sourceList.addAll(DaprCloudConfigParserHandler.getInstance().parseDaprSecretStoreData(
             resource.getStoreName() + ":" + entry.getKey(),
             entry.getValue(),
             resource.getType()
@@ -155,7 +161,7 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
       }
 
       List<PropertySource<?>> sourceList = new ArrayList<>(
-          DaprSecretStoreConfigParserHandler.getInstance().parseDaprSecretStoreData(
+          DaprCloudConfigParserHandler.getInstance().parseDaprSecretStoreData(
               resource.getStoreName() + ":" + resource.getSecretName(),
               secretMap,
               resource.getType()
@@ -163,8 +169,8 @@ public class DaprSecretStoreConfigDataLoader implements ConfigDataLoader<DaprSec
 
       return new ConfigData(sourceList, IGNORE_IMPORTS, IGNORE_PROFILES, PROFILE_SPECIFIC);
     } catch (RuntimeException e) {
-      log.info(e.getMessage(), e);
-      throw new IOException("Failed to wait for sidecar", e);
+      log.info("Failed to get secret from sidecar: " + e.getMessage(), e);
+      throw new IOException("Failed to get secret from sidecar", e);
     }
   }
 

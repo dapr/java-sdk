@@ -93,8 +93,10 @@ public class DaprConfigurationConfigDataLocationResolver
     UriComponents configUri = UriComponentsBuilder.fromUriString(fullConfig).build();
 
     String storeName = configUri.getHost();
-    String configName = StringUtils.hasText(configUri.getPath())
-        ? StringUtils.trimLeadingCharacter(configUri.getPath(), '/')
+
+    String configPath = configUri.getPath();
+    String configName = StringUtils.hasText(configPath)
+        ? StringUtils.trimLeadingCharacter(configPath, '/')
         : null;
 
     MultiValueMap<String, String> configQuery = configUri.getQueryParams();

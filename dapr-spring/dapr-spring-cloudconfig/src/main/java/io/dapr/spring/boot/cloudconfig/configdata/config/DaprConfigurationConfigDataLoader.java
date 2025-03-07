@@ -18,7 +18,7 @@ import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.GetConfigurationRequest;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
-import io.dapr.spring.boot.cloudconfig.configdata.DaprSecretStoreConfigParserHandler;
+import io.dapr.spring.boot.cloudconfig.configdata.DaprCloudConfigParserHandler;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.context.config.ConfigData;
 import org.springframework.boot.context.config.ConfigDataLoader;
@@ -46,20 +46,20 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
 
   private DaprClient daprClient;
 
-  private DaprCloudConfigProperties daprSecretStoreConfig;
+  private DaprCloudConfigProperties daprCloudConfigProperties;
 
   /**
    * Create a Config Data Loader to load config from Dapr Configuration api.
    *
    * @param logFactory            logFactory
    * @param daprClient            Dapr Client created
-   * @param daprSecretStoreConfig Dapr Cloud Config Properties
+   * @param daprCloudConfigProperties Dapr Cloud Config Properties
    */
   public DaprConfigurationConfigDataLoader(DeferredLogFactory logFactory, DaprClient daprClient,
-                                           DaprCloudConfigProperties daprSecretStoreConfig) {
+                                           DaprCloudConfigProperties daprCloudConfigProperties) {
     this.log = logFactory.getLog(getClass());
     this.daprClient = daprClient;
-    this.daprSecretStoreConfig = daprSecretStoreConfig;
+    this.daprCloudConfigProperties = daprCloudConfigProperties;
   }
 
 
@@ -78,18 +78,24 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
     DaprCloudConfigClientManager daprClientSecretStoreConfigManager =
         getBean(context, DaprCloudConfigClientManager.class);
 
-    daprClient = DaprCloudConfigClientManager.getDaprClient();
-    daprSecretStoreConfig = daprClientSecretStoreConfigManager.getDaprCloudConfigProperties();
+    daprClient = daprClientSecretStoreConfigManager.getDaprClient();
+    daprCloudConfigProperties = daprClientSecretStoreConfigManager.getDaprCloudConfigProperties();
 
-    waitForSidecar();
+    if (!daprCloudConfigProperties.getEnabled()) {
+      return ConfigData.EMPTY;
+    }
+
+    if (daprCloudConfigProperties.getWaitSidecarEnabled()) {
+      waitForSidecar();
+    }
 
     return fetchConfig(resource);
   }
 
   private void waitForSidecar() throws IOException {
     try {
-      daprClient.waitForSidecar(daprSecretStoreConfig.getTimeout())
-          .retry(3)
+      daprClient.waitForSidecar(daprCloudConfigProperties.getTimeout())
+          .retry(daprCloudConfigProperties.getWaitSidecarRetries())
           .block();
     } catch (RuntimeException e) {
       log.info(e.getMessage(), e);
@@ -108,7 +114,7 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
 
     try {
       Map<String, ConfigurationItem> secretMap =
-          secretMapMono.block(Duration.ofMillis(daprSecretStoreConfig.getTimeout()));
+          secretMapMono.block(Duration.ofMillis(daprCloudConfigProperties.getTimeout()));
 
       if (secretMap == null) {
         log.info("Config not found");
@@ -122,7 +128,7 @@ public class DaprConfigurationConfigDataLoader implements ConfigDataLoader<DaprC
         configMap.put(value.getKey(), value.getValue());
       });
 
-      sourceList.addAll(DaprSecretStoreConfigParserHandler.getInstance().parseDaprSecretStoreData(
+      sourceList.addAll(DaprCloudConfigParserHandler.getInstance().parseDaprSecretStoreData(
           resource.getStoreName(),
           configMap,
           resource.getType()

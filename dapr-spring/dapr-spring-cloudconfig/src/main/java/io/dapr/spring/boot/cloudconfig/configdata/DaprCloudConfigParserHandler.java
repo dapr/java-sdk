@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.configdata;
 
-import io.dapr.spring.boot.cloudconfig.configdata.secret.DaprSecretStoreConfigDataResource;
 import org.springframework.boot.env.PropertySourceLoader;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ByteArrayResource;
@@ -22,21 +21,22 @@ import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DaprSecretStoreConfigParserHandler {
+public class DaprCloudConfigParserHandler {
 
   private static List<PropertySourceLoader> propertySourceLoaders;
 
-  private DaprSecretStoreConfigParserHandler() {
+  private DaprCloudConfigParserHandler() {
     propertySourceLoaders = SpringFactoriesLoader
         .loadFactories(PropertySourceLoader.class, getClass().getClassLoader());
   }
 
-  public static DaprSecretStoreConfigParserHandler getInstance() {
+  public static DaprCloudConfigParserHandler getInstance() {
     return ParserHandler.HANDLER;
   }
 
@@ -85,18 +85,19 @@ public class DaprSecretStoreConfigParserHandler {
   ) {
     Map<String, Resource> result = new HashMap<>();
     if (DaprCloudConfigType.Doc.equals(type)) {
-      configValue.forEach((key, value) -> result.put(key, new ByteArrayResource(value.getBytes())));
+      configValue.forEach((key, value) -> result.put(key,
+          new ByteArrayResource(value.getBytes(StandardCharsets.UTF_8))));
     } else {
       List<String> configList = new ArrayList<>();
       configValue.forEach((key, value) -> configList.add(String.format("%s=%s", key, value)));
-      result.put("", new ByteArrayResource(String.join("\n", configList).getBytes()));
+      result.put("", new ByteArrayResource(String.join("\n", configList).getBytes(StandardCharsets.UTF_8)));
     }
     return result;
   }
 
   private static class ParserHandler {
 
-    private static final DaprSecretStoreConfigParserHandler HANDLER = new DaprSecretStoreConfigParserHandler();
+    private static final DaprCloudConfigParserHandler HANDLER = new DaprCloudConfigParserHandler();
 
   }
 }

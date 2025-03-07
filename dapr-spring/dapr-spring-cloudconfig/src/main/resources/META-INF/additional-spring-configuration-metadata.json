@@ -13,6 +13,20 @@
       "defaultValue": 2000,
       "sourceType": "io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties",
       "description": "timeout for getting dapr config (include wait for dapr sidecar)."
+    },
+    {
+      "name": "dapr.cloudconfig.wait-sidecar-enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "sourceType": "io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties",
+      "description": "whether enable dapr client wait for sidecar, if no response, will throw IOException."
+    },
+    {
+      "name": "dapr.cloudconfig.wait-sidecar-retries",
+      "type": "java.lang.Integer",
+      "defaultValue": 3,
+      "sourceType": "io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties",
+      "description": "retries of dapr client wait for sidecar."
     }
   ]
 }

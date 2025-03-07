@@ -92,8 +92,9 @@ public class DaprSecretStoreConfigDataLocationResolver
     UriComponents configUri = UriComponentsBuilder.fromUriString(fullConfig).build();
 
     String storeName = configUri.getHost();
-    String secretName = StringUtils.hasText(configUri.getPath())
-        ? StringUtils.trimLeadingCharacter(configUri.getPath(), '/')
+    String secretPath = configUri.getPath();
+    String secretName = StringUtils.hasText(secretPath)
+        ? StringUtils.trimLeadingCharacter(secretPath, '/')
         : null;
 
     String typeQuery = configUri.getQueryParams().getFirst("type");

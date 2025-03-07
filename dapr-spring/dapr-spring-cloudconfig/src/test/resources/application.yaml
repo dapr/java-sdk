@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: producer-app
+  config:
+    import:
+      - dapr:secret:democonfig/multivalue-properties?type=doc
+      - dapr:secret:democonfig/dapr.spring.demo-config.singlevalue?type=value
+      - dapr:secret:democonfigmulti/value1?type=value
+      - dapr:config:democonfigconf/dapr.spring.demo-config-config.singlevalue?type=value
+      - dapr:config:democonfigconf/multivalue-yaml?type=doc
+
+dapr:
+  cloudconfig:
+    enabled: true
+    # in case some connection issue
+    wait-sidecar-enabled: true

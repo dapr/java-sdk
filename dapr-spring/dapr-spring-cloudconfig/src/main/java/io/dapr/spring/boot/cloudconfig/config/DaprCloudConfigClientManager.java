@@ -22,8 +22,8 @@ import io.dapr.spring.boot.autoconfigure.client.DaprConnectionDetails;
 
 public class DaprCloudConfigClientManager {
 
-  private static DaprClient daprClient;
-  private static DaprPreviewClient daprPreviewClient;
+  private DaprClient daprClient;
+  private DaprPreviewClient daprPreviewClient;
   private final DaprCloudConfigProperties daprCloudConfigProperties;
   private final DaprClientProperties daprClientConfig;
 
@@ -31,7 +31,7 @@ public class DaprCloudConfigClientManager {
    * Create a DaprCloudConfigClientManager to create Config-Specific Dapr Client.
    *
    * @param daprCloudConfigProperties Properties of Dapr Cloud Config
-   * @param daprClientConfig Properties of Dapr Client
+   * @param daprClientConfig          Properties of Dapr Client
    */
   public DaprCloudConfigClientManager(DaprCloudConfigProperties daprCloudConfigProperties,
                                       DaprClientProperties daprClientConfig) {
@@ -42,21 +42,17 @@ public class DaprCloudConfigClientManager {
         createDaprConnectionDetails(daprClientConfig)
     );
 
-    if (DaprCloudConfigClientManager.daprClient == null) {
-      DaprCloudConfigClientManager.daprClient = daprClientBuilder.build();
-    }
+    this.daprClient = daprClientBuilder.build();
 
-    if (DaprCloudConfigClientManager.daprPreviewClient == null) {
-      DaprCloudConfigClientManager.daprPreviewClient = daprClientBuilder.buildPreviewClient();
-    }
+    this.daprPreviewClient = daprClientBuilder.buildPreviewClient();
   }
 
-  public static DaprPreviewClient getDaprPreviewClient() {
-    return DaprCloudConfigClientManager.daprPreviewClient;
+  public DaprPreviewClient getDaprPreviewClient() {
+    return this.daprPreviewClient;
   }
 
-  public static DaprClient getDaprClient() {
-    return DaprCloudConfigClientManager.daprClient;
+  public DaprClient getDaprClient() {
+    return this.daprClient;
   }
 
   private DaprConnectionDetails createDaprConnectionDetails(DaprClientProperties properties) {
