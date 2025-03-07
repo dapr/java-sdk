@@ -15,15 +15,6 @@ public class DaprConversationResponse {
   /**
    * Constructor.
    *
-   * @param daprConversationOutputs outputs from the LLM.
-   */
-  public DaprConversationResponse(List<DaprConversationOutput> daprConversationOutputs) {
-    this.daprConversationOutputs = daprConversationOutputs;
-  }
-
-  /**
-   * Constructor.
-   *
    * @param contextId context id supplied to LLM.
    * @param daprConversationOutputs outputs from the LLM.
    */

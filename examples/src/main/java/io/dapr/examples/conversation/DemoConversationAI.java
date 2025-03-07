@@ -16,7 +16,7 @@ public class DemoConversationAI {
      * @param args Input arguments (unused).
      */
     public static void main(String[] args) {
-        try (DaprConversationClient client = new DaprConversationClient(null)) {
+        try (DaprConversationClient client = new DaprConversationClient()) {
             DaprConversationInput daprConversationInput = new DaprConversationInput("11");
 
             // Component name is the name provided in the metadata block of the conversation.yaml file.

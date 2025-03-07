@@ -23,7 +23,18 @@ interface DaprAiClient {
   Mono<DaprConversationResponse> converse(
       String conversationComponentName,
       List<DaprConversationInput> daprConversationInputs,
-      @Nullable String contextId,
+      String contextId,
       boolean scrubPii,
       double temperature);
+
+  /**
+   * Method to call the Dapr Converse API.
+   *
+   * @param conversationComponentName name for the conversation component.
+   * @param daprConversationInputs prompts that are part of the conversation.
+   * @return @ConversationResponse.
+   */
+  Mono<DaprConversationResponse> converse(
+      String conversationComponentName,
+      List<DaprConversationInput> daprConversationInputs);
 }

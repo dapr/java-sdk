@@ -12,9 +12,9 @@ import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
+import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
-import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.ContextView;
@@ -33,11 +33,6 @@ public class DaprConversationClient implements AutoCloseable, DaprAiClient {
   private final DaprGrpc.DaprStub asyncStub;
 
   /**
-   * The GRPC managed channel to be used.
-   */
-  private final ManagedChannel channel;
-
-  /**
    * The retry policy.
    */
   private final RetryPolicy retryPolicy;
@@ -48,14 +43,33 @@ public class DaprConversationClient implements AutoCloseable, DaprAiClient {
   private final TimeoutPolicy timeoutPolicy;
 
   /**
+   * Constructor to create conversation client.
+   */
+  public DaprConversationClient() {
+    this(DaprGrpc.newStub(NetworkUtils.buildGrpcManagedChannel(new Properties())), null);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param properties with client configuration options.
+   * @param resiliencyOptions retry options.
+   */
+  public DaprConversationClient(
+      Properties properties,
+      ResiliencyOptions resiliencyOptions) {
+    this(DaprGrpc.newStub(NetworkUtils.buildGrpcManagedChannel(properties)), resiliencyOptions);
+  }
+
+  /**
    * ConversationClient constructor.
    *
    * @param resiliencyOptions timeout and retry policies.
    */
-  public DaprConversationClient(
-      @Nullable ResiliencyOptions resiliencyOptions) {
-    this.channel = NetworkUtils.buildGrpcManagedChannel(new Properties());
-    this.asyncStub = DaprGrpc.newStub(this.channel);
+  protected DaprConversationClient(
+      DaprGrpc.DaprStub asyncStub,
+      ResiliencyOptions resiliencyOptions) {
+    this.asyncStub = asyncStub;
     this.retryPolicy = new RetryPolicy(resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
     this.timeoutPolicy = new TimeoutPolicy(resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
   }
@@ -63,8 +77,15 @@ public class DaprConversationClient implements AutoCloseable, DaprAiClient {
   @Override
   public Mono<DaprConversationResponse> converse(
       String conversationComponentName,
+      List<DaprConversationInput> daprConversationInputs) {
+    return converse(conversationComponentName, daprConversationInputs, null, false, 0.0d);
+  }
+
+  @Override
+  public Mono<DaprConversationResponse> converse(
+      String conversationComponentName,
       List<DaprConversationInput> daprConversationInputs,
-      @Nullable String contextId,
+      String contextId,
       boolean scrubPii,
       double temperature) {
 
@@ -87,8 +108,19 @@ public class DaprConversationClient implements AutoCloseable, DaprAiClient {
       }
 
       for (DaprConversationInput input : daprConversationInputs) {
-        conversationRequest.addInputs(DaprProtos.ConversationInput.newBuilder()
-            .setContent(input.getContent()).build());
+        if (input.getContent() == null || input.getContent().isEmpty()) {
+          throw new IllegalArgumentException("Conversation input content cannot be null or empty.");
+        }
+
+        DaprProtos.ConversationInput.Builder conversationInputOrBuilder = DaprProtos.ConversationInput.newBuilder()
+            .setContent(input.getContent())
+            .setScrubPII(input.isScrubPii());
+
+        if (input.getRole() != null) {
+          conversationInputOrBuilder.setRole(input.getRole().toString());
+        }
+
+        conversationRequest.addInputs(conversationInputOrBuilder.build());
       }
 
       Mono<DaprProtos.ConversationResponse> conversationResponseMono = Mono.deferContextual(
@@ -121,6 +153,8 @@ public class DaprConversationClient implements AutoCloseable, DaprAiClient {
 
   @Override
   public void close() throws Exception {
+    ManagedChannel channel = (ManagedChannel) this.asyncStub.getChannel();
+
     DaprException.wrap(() -> {
       if (channel != null && !channel.isShutdown()) {
         channel.shutdown();
