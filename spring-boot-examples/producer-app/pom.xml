@@ -13,9 +13,6 @@
   <name>producer-app</name>
   <description>Spring Boot, Testcontainers and Dapr Integration Examples :: Producer App</description>
 
-  <properties>
-    <springboot.version>3.2.6</springboot.version>
-  </properties>
 
   <dependencyManagement>
     <dependencies>
