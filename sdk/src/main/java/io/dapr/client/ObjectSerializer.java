@@ -18,12 +18,15 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.protobuf.MessageLite;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 /**
  * Serializes and deserializes an internal object.
@@ -35,16 +38,29 @@ public class ObjectSerializer {
    */
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .registerModule(new JavaTimeModule())
+      .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
       .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+  protected ObjectMapper objectMapper;
 
   /**
    * Default constructor to avoid class from being instantiated outside package but still inherited.
    */
   protected ObjectSerializer() {
+    this(OBJECT_MAPPER);
+  }
+
+  protected ObjectSerializer(final ObjectMapper objectMapper) {
+    this.objectMapper = Objects.requireNonNullElse(objectMapper, OBJECT_MAPPER);
+  }
+
+  public static ObjectSerializer withObjectMapper(final ObjectMapper objectMapper) {
+    return new ObjectSerializer(objectMapper);
   }
 
   /**
-   * Serializes a given state object into byte array.
+   * Serializes a given state object into a byte array.
    *
    * @param state State object to be serialized.
    * @return Array of bytes[] with the serialized content.
@@ -70,7 +86,7 @@ public class ObjectSerializer {
     }
 
     // Not string, not primitive, so it is a complex type: we use JSON for that.
-    return OBJECT_MAPPER.writeValueAsBytes(state);
+    return objectMapper.writeValueAsBytes(state);
   }
 
   /**
@@ -83,7 +99,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be deserialized.
    */
   public <T> T deserialize(byte[] content, TypeRef<T> type) throws IOException {
-    return deserialize(content, OBJECT_MAPPER.constructType(type.getType()));
+    return deserialize(content, objectMapper.constructType(type.getType()));
   }
 
   /**
@@ -96,7 +112,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be deserialized.
    */
   public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
-    return deserialize(content, OBJECT_MAPPER.constructType(clazz));
+    return deserialize(content, objectMapper.constructType(clazz));
   }
 
   private <T> T deserialize(byte[] content, JavaType javaType) throws IOException {
@@ -138,7 +154,7 @@ public class ObjectSerializer {
       }
     }
 
-    return OBJECT_MAPPER.readValue(content, javaType);
+    return objectMapper.readValue(content, javaType);
   }
 
   /**
@@ -149,7 +165,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be parsed.
    */
   public JsonNode parseNode(byte[] content) throws IOException {
-    return  OBJECT_MAPPER.readTree(content);
+    return OBJECT_MAPPER.readTree(content);
   }
 
   /**
@@ -161,7 +177,7 @@ public class ObjectSerializer {
    * @return Result as corresponding type.
    * @throws IOException if cannot deserialize primitive time.
    */
-  private static <T> T deserializePrimitives(byte[] content, JavaType javaType) throws IOException {
+  public <T> T deserializePrimitives(byte[] content, JavaType javaType) throws IOException {
     if ((content == null) || (content.length == 0)) {
       if (javaType.hasRawClass(boolean.class)) {
         return (T) Boolean.FALSE;
@@ -198,6 +214,6 @@ public class ObjectSerializer {
       return null;
     }
 
-    return OBJECT_MAPPER.readValue(content, javaType);
+    return objectMapper.readValue(content, javaType);
   }
 }
