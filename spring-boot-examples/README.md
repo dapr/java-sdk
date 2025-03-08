@@ -1,12 +1,15 @@
 # Dapr Spring Boot and Testcontainers integration Example
 
-This example consists of two applications:
+This example consists of three applications:
 - Producer App: 
   - Publish messages using a Spring Messaging approach 
   - Store and retrieve information using Spring Data CrudRepository 
   - Implements a Workflow with Dapr Workflows
 - Consumer App:
   - Subscribe to messages
+- Cloud Config Demo:
+  - Import and use configs
+  - Can not run in Kubernetes currently, as lack of redis pre-fill data supported
 
 ## Running these examples from source code
 
