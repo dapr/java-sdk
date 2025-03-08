@@ -1,10 +1,8 @@
-package io.dapr.spring.boot.cloudconfig.configdata;
+package io.dapr.spring.boot.cloudconfig.configdata.types;
 
-public enum DaprCloudConfigType {
-  DocProperties,
-  DocYaml,
-  Value;
+import org.springframework.util.StringUtils;
 
+public class DaprCloudConfigType {
   /**
    * Get Type from String.
    * @param value type specified in schema
@@ -13,7 +11,7 @@ public enum DaprCloudConfigType {
    */
   public static DaprCloudConfigType fromString(String value, String docType) {
     return "doc".equals(value)
-        ? ("yaml".equals(docType) ? DaprCloudConfigType.DocYaml : DaprCloudConfigType.DocProperties)
-        : DaprCloudConfigType.Value;
+        ? new DocType(StringUtils.hasText(docType) ? docType : "properties")
+        : new ValueType();
   }
 }

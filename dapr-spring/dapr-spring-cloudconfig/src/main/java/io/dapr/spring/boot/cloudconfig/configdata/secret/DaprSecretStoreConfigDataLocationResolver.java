@@ -16,7 +16,7 @@ package io.dapr.spring.boot.cloudconfig.configdata.secret;
 import io.dapr.spring.boot.autoconfigure.client.DaprClientProperties;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigClientManager;
 import io.dapr.spring.boot.cloudconfig.config.DaprCloudConfigProperties;
-import io.dapr.spring.boot.cloudconfig.configdata.DaprCloudConfigType;
+import io.dapr.spring.boot.cloudconfig.configdata.types.DaprCloudConfigType;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.BootstrapRegistry;
 import org.springframework.boot.ConfigurableBootstrapContext;

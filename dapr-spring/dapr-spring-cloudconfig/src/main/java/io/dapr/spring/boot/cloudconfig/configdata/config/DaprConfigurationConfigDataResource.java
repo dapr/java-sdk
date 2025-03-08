@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.configdata.config;
 
-import io.dapr.spring.boot.cloudconfig.configdata.DaprCloudConfigType;
+import io.dapr.spring.boot.cloudconfig.configdata.types.DaprCloudConfigType;
 import org.springframework.boot.context.config.ConfigDataResource;
 import org.springframework.lang.Nullable;
 

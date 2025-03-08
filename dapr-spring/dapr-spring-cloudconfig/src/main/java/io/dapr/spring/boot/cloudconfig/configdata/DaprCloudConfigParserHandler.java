@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.spring.boot.cloudconfig.configdata;
 
+import io.dapr.spring.boot.cloudconfig.configdata.types.DaprCloudConfigType;
+import io.dapr.spring.boot.cloudconfig.configdata.types.DocType;
 import org.springframework.boot.env.PropertySourceLoader;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.env.PropertySource;
@@ -83,7 +85,7 @@ public class DaprCloudConfigParserHandler {
     List<PropertySource<?>> result = new ArrayList<>();
 
     Map<String, Resource> configResults = getConfigResult(configValue, type);
-    String extension = DaprCloudConfigType.DocYaml.equals(type) ? ".yaml" : ".properties";
+    String extension = type instanceof DocType ? ((DocType) type).getDocExtension() : ".properties";
 
     configResults.forEach((key, configResult) -> {
       for (PropertySourceLoader propertySourceLoader : propertySourceLoaders) {
@@ -108,7 +110,7 @@ public class DaprCloudConfigParserHandler {
       DaprCloudConfigType type
   ) {
     Map<String, Resource> result = new HashMap<>();
-    if (DaprCloudConfigType.DocYaml.equals(type) || DaprCloudConfigType.DocProperties.equals(type)) {
+    if (type instanceof DocType) {
       configValue.forEach((key, value) -> result.put(key,
           new ByteArrayResource(value.getBytes(StandardCharsets.UTF_8))));
     } else {
