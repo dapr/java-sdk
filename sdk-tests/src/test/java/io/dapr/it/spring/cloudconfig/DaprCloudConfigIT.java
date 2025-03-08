@@ -5,6 +5,7 @@ import com.redis.testcontainers.RedisContainer;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,12 +15,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.Jedis;
 
+import java.util.List;
 import java.util.Map;
 
 import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
@@ -30,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         + "/" + DaprCloudConfigIT.CONFIG_MULTI_NAME + "?type=doc&doc-type=yaml",
     "spring.config.import[1]=dapr:config:" + DaprCloudConfigIT.CONFIG_STORE_NAME
         + "/" + DaprCloudConfigIT.CONFIG_SINGLE_NAME + "?type=value",
+    "dapr.cloudconfig.wait-sidecar-enabled=true",
+    "dapr.cloudconfig.wait-sidecar-retries=5",
 })
 @ContextConfiguration(classes = TestDaprCloudConfigConfiguration.class)
 @ExtendWith(SpringExtension.class)
@@ -69,12 +75,16 @@ public class DaprCloudConfigIT {
   @Container
   @ServiceConnection
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
-      .withAppName("secret-store-dapr-app")
+      .withAppName("configuration-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(CONFIG_STORE_NAME, "configuration.redis", "v1", STORE_PROPERTY))
       .withDaprLogLevel(DaprLogLevel.DEBUG)
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .dependsOn(REDIS_CONTAINER);
+
+  static {
+    DAPR_CONTAINER.setPortBindings(List.of("3500:3500", "50001:50001"));
+  }
 
   private static Map<String, String> generateStoreProperty() {
     return Map.of("redisHost", "redis:6379",

@@ -3,19 +3,25 @@ package io.dapr.it.spring.cloudconfig;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
 import java.util.Map;
 
 import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
@@ -28,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         + "/" + DaprSecretStoreIT.SECRET_SINGLE_NAME + "?type=value",
     "spring.config.import[2]=dapr:secret:" + DaprSecretStoreIT.SECRET_STORE_NAME_MULTI
         + "?type=value",
+    "dapr.cloudconfig.wait-sidecar-enabled=true",
+    "dapr.cloudconfig.wait-sidecar-retries=5",
 })
 @ContextConfiguration(classes = TestDaprCloudConfigConfiguration.class)
 @ExtendWith(SpringExtension.class)
@@ -56,6 +64,10 @@ public class DaprSecretStoreIT {
       .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
       .withCopyToContainer(Transferable.of(DaprSecretStores.SINGLE_VALUED_SECRET), "/dapr-secrets/singlevalued.json")
       .withCopyToContainer(Transferable.of(DaprSecretStores.MULTI_VALUED_SECRET), "/dapr-secrets/multivalued.json");
+
+  static {
+    DAPR_CONTAINER.setPortBindings(List.of("3500:3500", "50001:50001"));
+  }
 
   private static Map<String, String> generateSingleValueProperty() {
     return Map.of("secretsFile", "/dapr-secrets/singlevalued.json",

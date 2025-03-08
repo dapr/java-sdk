@@ -2,7 +2,7 @@ package io.dapr.it.spring.cloudconfig;
 
 public class DaprSecretStores {
   public static final String SINGLE_VALUED_SECRET = "{\n" +
-      "  \"dapr.spring.democonfigsecret.singlevalue\": \"testvalue\",\n" +
+      "  \"dapr.spring.demo-config-secret.singlevalue\": \"testvalue\",\n" +
       "  \"multivalue-properties\": \"dapr.spring.demo-config-secret.multivalue.v1=spring\\ndapr.spring.demo-config-secret.multivalue.v2=dapr\",\n" +
       "  \"multivalue-yaml\": \"dapr:\\n  spring:\\n    demo-config-secret:\\n      multivalue:\\n        v3: cloud\"\n" +
       "}";
