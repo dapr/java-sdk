@@ -4,10 +4,8 @@ import java.time.Duration;
 
 /**
  * Represents a job schedule using cron expressions or fixed intervals.
- * <p>
  * This class provides various static methods to create schedules based on predefined periods
  * (e.g., daily, weekly, monthly) or using custom cron expressions.
- * <p>
  * Example usage:
  * <pre>
  * JobsSchedule schedule = JobsSchedule.daily();
@@ -29,10 +27,8 @@ public class JobsSchedule {
 
   /**
    * Creates a job schedule from a fixed period using a {@link Duration}.
-   * <p>
    * The resulting expression follows the format: "@every XhYmZsWms"
    * where X, Y, Z, and W represent hours, minutes, seconds, and milliseconds respectively.
-   * <p>
    * Example:
    * <pre>
    * JobsSchedule schedule = JobsSchedule.fromPeriod(Duration.ofMinutes(30));
