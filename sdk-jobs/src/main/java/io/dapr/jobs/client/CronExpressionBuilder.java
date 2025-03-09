@@ -100,29 +100,29 @@ public class CronExpressionBuilder {
     return this;
   }
 
-  public CronExpressionBuilder addStepRange(CronPeriod period, int from, int to, int denominator) {
+  public CronExpressionBuilder addStepRange(CronPeriod period, int from, int to, int interval) {
     throwIfNull(period);
     validateRange(from, to);
-    validatePeriod(period, denominator);
+    validatePeriod(period, interval);
 
-    addToPeriod(period, from + "-" + to + "/" + denominator);
+    addToPeriod(period, from + "-" + to + "/" + interval);
     return this;
   }
 
-  public CronExpressionBuilder addStep(CronPeriod period, int numerator, int denominator) {
+  public CronExpressionBuilder addStep(CronPeriod period, int numerator, int interval) {
     throwIfNull(period);
     validatePeriod(period, numerator);
-    validatePeriod(period, denominator);
+    validatePeriod(period, interval);
 
-    addToPeriod(period, numerator + "/" + denominator);
+    addToPeriod(period, numerator + "/" + interval);
     return this;
   }
 
-  public CronExpressionBuilder addStep(CronPeriod period, int denominator) {
+  public CronExpressionBuilder addStep(CronPeriod period, int interval) {
     throwIfNull(period);
-    validatePeriod(period, denominator);
+    validatePeriod(period, interval);
 
-    addToPeriod(period, "*/" + denominator);
+    addToPeriod(period, "*/" + interval);
     return this;
   }
 
@@ -197,7 +197,7 @@ public class CronExpressionBuilder {
 
   private void validateRange(int from, int to) {
     if (from > to || from == to) {
-      throw new IllegalArgumentException("from must be before to (from < to)");
+      throw new IllegalArgumentException("from must be less than to (from < to)");
     }
   }
 
@@ -228,7 +228,7 @@ public class CronExpressionBuilder {
 
   private void throwIfNull(Object obj) {
     if (obj == null) {
-      throw new IllegalArgumentException("None of the parameters can be null");
+      throw new IllegalArgumentException("None of the input parameters can be null");
     }
   }
 }
