@@ -2,9 +2,7 @@ package io.dapr.jobs.client;
 
 /**
  * Represents the months of the year, each associated with its ordinal position (1-12).
- * <p>
  * This enum implements {@link OrdinalEnum}, allowing retrieval of the numerical rank of each month.
- * <p>
  * Example usage:
  * <pre>
  * MonthOfYear month = MonthOfYear.JAN;

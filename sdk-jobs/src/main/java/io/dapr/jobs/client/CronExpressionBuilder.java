@@ -8,7 +8,6 @@ import java.util.List;
  * A builder class for constructing cron expressions. This class provides an easy way to construct cron expressions
  * by adding individual values or ranges for each of the cron fields: seconds, minutes, hours, day of month,
  * day of week, and month of year. It supports adding steps and ranges for fields where appropriate.
- * <p>
  * Example usage:
  * <pre>
  * CronExpressionBuilder builder = new CronExpressionBuilder();
@@ -182,12 +181,12 @@ public class CronExpressionBuilder {
       this.dayOfMonth.add("*");
     }
 
-    return String.join(",", this.seconds) + " " +
-        String.join(",", this.minutes) + " " +
-        String.join(",", this.hours) + " " +
-        String.join(",", this.dayOfMonth) + " " +
-        String.join(",", this.monthOfYear) + " " +
-        String.join(",", this.dayOfWeek);
+    return String.join(",", this.seconds) + " "
+        + String.join(",", this.minutes) + " "
+        + String.join(",", this.hours) + " "
+        + String.join(",", this.dayOfMonth) + " "
+        + String.join(",", this.monthOfYear) + " "
+        + String.join(",", this.dayOfWeek);
   }
 
   /**

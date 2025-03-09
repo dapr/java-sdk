@@ -153,6 +153,12 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-jobs</artifactId>
+      <version>${dapr.sdk.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
       <version>${dapr.sdk.version}</version>
       <scope>test</scope>
