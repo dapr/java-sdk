@@ -1,10 +1,5 @@
-package io.dapr.jobs;
+package io.dapr.jobs.client;
 
-import io.dapr.jobs.client.CronExpressionBuilder;
-import io.dapr.jobs.client.CronPeriod;
-import io.dapr.jobs.client.DayOfWeek;
-import io.dapr.jobs.client.MonthOfYear;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;

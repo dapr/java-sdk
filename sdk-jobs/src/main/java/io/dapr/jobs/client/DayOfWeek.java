@@ -2,12 +2,9 @@ package io.dapr.jobs.client;
 
 /**
  * Represents the days of the week in a cron expression.
- * <p>
  * This enum maps each day of the week to its corresponding integer value
  * as used in cron expressions (0 for Sunday through 6 for Saturday).
- * <p>
  * Implements {@link OrdinalEnum} to provide an ordinal ranking for each day.
- * <p>
  * Example usage:
  * <pre>
  * DayOfWeek day = DayOfWeek.MON;
@@ -15,7 +12,6 @@ package io.dapr.jobs.client;
  * </pre>
  */
 public enum DayOfWeek implements OrdinalEnum {
-
 
   SUN(0),
   MON(1),

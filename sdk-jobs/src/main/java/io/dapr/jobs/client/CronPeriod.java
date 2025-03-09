@@ -3,9 +3,7 @@ package io.dapr.jobs.client;
 /**
  * Represents the different fields of a cron expression that can be modified
  * using the {@link CronExpressionBuilder}.
- * <p>
  * Each enum value corresponds to a specific component of a cron schedule.
- * <p>
  * Example usage:
  * <pre>
  * CronPeriod period = CronPeriod.MINUTES;
