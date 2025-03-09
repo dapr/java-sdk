@@ -507,6 +507,7 @@
     <module>spring-boot-examples</module>
     <!-- We are following test containers artifact convention on purpose, don't rename -->
     <module>testcontainers-dapr</module>
+    <module>sdk-jobs</module>
   </modules>
 
   <profiles>
