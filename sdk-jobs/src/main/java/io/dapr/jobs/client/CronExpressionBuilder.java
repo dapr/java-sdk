@@ -1,8 +1,24 @@
 package io.dapr.jobs.client;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+/**
+ * A builder class for constructing cron expressions. This class provides an easy way to construct cron expressions
+ * by adding individual values or ranges for each of the cron fields: seconds, minutes, hours, day of month,
+ * day of week, and month of year. It supports adding steps and ranges for fields where appropriate.
+ * <p>
+ * Example usage:
+ * <pre>
+ * CronExpressionBuilder builder = new CronExpressionBuilder();
+ * builder.add(CronPeriod.MINUTES, 0, 15, 30); // Every 15 minutes starting at 0
+ * builder.add(CronPeriod.HOURS, 12); // At noon
+ * builder.addRange(CronPeriod.DAYOFMONTH, 1, 31); // On the 1st through the 31st day of the month
+ * builder.addStep(CronPeriod.MINUTES, 5); // Every 5 minutes
+ * System.out.println(builder.build()); // Outputs the cron expression
+ * </pre>
+ */
 public class CronExpressionBuilder {
 
   private final List<String> seconds;
@@ -12,6 +28,9 @@ public class CronExpressionBuilder {
   private final List<String> dayOfWeek;
   private final List<String> monthOfYear;
 
+  /**
+   * Constructs a new {@link CronExpressionBuilder} instance with empty cron fields.
+   */
   public CronExpressionBuilder() {
     this.seconds = new ArrayList<>();
     this.minutes = new ArrayList<>();
@@ -22,110 +41,121 @@ public class CronExpressionBuilder {
   }
 
   /**
-   * Convert to cron expression depending on period and values.
+   * Adds values to the specified cron period (e.g., minutes, hours, etc.).
+   * example:
+   * builder.add(CronPeriod.MINUTES, 0, 15, 30);  // Adds 0, 15, and 30 minutes to the cron expression
    *
-   * @param cronPeriod {@link CronPeriod}.
-   * @param values for the cronPeriod.
-   * @return this.
+   * @param cronPeriod The cron period to modify (e.g., {CronPeriod.MINUTES}).
+   * @param values The values to be added to the cron period.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   * @throws IllegalArgumentException if values are invalid or empty.
+   *
    */
-  public CronExpressionBuilder add(CronPeriod cronPeriod, Integer... values) {
-    throwIfNull(cronPeriod);
-    throwIfNull(values);
-
-    StringBuilder builder = new StringBuilder();
-    for (Integer value: values) {
-      throwIfNull(value);
-      validatePeriod(cronPeriod, value);
-      builder.append(value).append(",");
-    }
-
-    addToPeriod(cronPeriod, builder.deleteCharAt(builder.length() - 1).toString());
-
-    return this;
+  public CronExpressionBuilder add(CronPeriod cronPeriod, int... values) {
+    return addInternal(cronPeriod, Arrays.stream(values).boxed().toArray());
   }
 
+  /**
+   * Adds values for the {@link MonthOfYear} cron period.
+   *
+   * @param values The {@link MonthOfYear} values to be added.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
   public CronExpressionBuilder add(MonthOfYear... values) {
-    throwIfNull(values);
-
-    StringBuilder builder = new StringBuilder();
-    for (MonthOfYear value: values) {
-      throwIfNull(value);
-      builder.append(value).append(",");
-    }
-
-    addToPeriod(CronPeriod.MonthOfYear, builder.deleteCharAt(builder.length() - 1).toString());
-
-    return this;
+    return addInternal(CronPeriod.MonthOfYear, values);
   }
 
+  /**
+   * Adds values for the {@link DayOfWeek} cron period.
+   *
+   * @param values The {@link DayOfWeek} values to be added.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
   public CronExpressionBuilder add(DayOfWeek... values) {
-    throwIfNull(values);
-
-    StringBuilder builder = new StringBuilder();
-    for (DayOfWeek value: values) {
-      throwIfNull(value);
-      builder.append(value).append(",");
-    }
-
-    addToPeriod(CronPeriod.DayOfWeek, builder.deleteCharAt(builder.length() - 1).toString());
-
-    return this;
+    return addInternal(CronPeriod.DayOfWeek, values);
   }
-  
+
+  /**
+   * Adds a range of values to a cron period.
+   *
+   * @param period The cron period to modify (e.g., {CronPeriod.MONTHOFYEAR}).
+   * @param from The starting value of the range (inclusive).
+   * @param to The ending value of the range (inclusive).
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   * @throws IllegalArgumentException if the range is invalid.
+   */
   public CronExpressionBuilder addRange(CronPeriod period, int from, int to) {
-    throwIfNull(period);
-    validateRange(from, to);
-    validatePeriod(period, from);
-    validatePeriod(period, to);
-
-    addToPeriod(period, from + "-" + to);
-
-    return this;
+    return addRangeInternal(period, from, to);
   }
 
+  /**
+   * Adds a range of {@link DayOfWeek} values to the cron expression.
+   *
+   * @param from The starting {@link DayOfWeek} value.
+   * @param to The ending {@link DayOfWeek} value.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
   public CronExpressionBuilder addRange(DayOfWeek from, DayOfWeek to) {
-    throwIfNull(from);
-    throwIfNull(to);
-    validateRange(from.getValue(), to.getValue());
-
-    addToPeriod(CronPeriod.DayOfWeek, from + "-" + to);
-    return this;
+    return addRangeInternal(CronPeriod.DayOfWeek, from, to);
   }
 
+  /**
+   * Adds a range of {@link MonthOfYear} values to the cron expression.
+   *
+   * @param from The starting {@link MonthOfYear} value.
+   * @param to The ending {@link MonthOfYear} value.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
   public CronExpressionBuilder addRange(MonthOfYear from, MonthOfYear to) {
-    throwIfNull(from);
-    throwIfNull(to);
-
-    addToPeriod(CronPeriod.MonthOfYear, from + "-" + to);
-    return this;
+    return addRangeInternal(CronPeriod.MonthOfYear, from, to);
   }
 
+  /**
+   * Adds a step range for a cron period.
+   *
+   * @param period The cron period to modify.
+   * @param from The starting value for the step range (inclusive).
+   * @param to The ending value for the step range (inclusive).
+   * @param interval The interval for the step range.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
   public CronExpressionBuilder addStepRange(CronPeriod period, int from, int to, int interval) {
-    throwIfNull(period);
-    validateRange(from, to);
-    validatePeriod(period, interval);
-
-    addToPeriod(period, from + "-" + to + "/" + interval);
-    return this;
+    return addStepInternal(period, from, to, interval);
   }
 
-  public CronExpressionBuilder addStep(CronPeriod period, int numerator, int interval) {
-    throwIfNull(period);
-    validatePeriod(period, numerator);
-    validatePeriod(period, interval);
-
-    addToPeriod(period, numerator + "/" + interval);
-    return this;
-  }
-
+  /**
+   * Adds a step for a cron period.
+   *
+   * @param period The cron period to modify.
+   * @param interval The interval for the step.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
   public CronExpressionBuilder addStep(CronPeriod period, int interval) {
+    return addStepInternal(period, null, null, interval);
+  }
+
+  /**
+   * Adds a specific value with a step interval for the cron period.
+   *
+   * @param period The cron period to modify.
+   * @param value The starting value for the step.
+   * @param interval The interval for the step.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
+  public CronExpressionBuilder addStep(CronPeriod period, int value, int interval) {
     throwIfNull(period);
+    validatePeriod(period, value);
     validatePeriod(period, interval);
 
-    addToPeriod(period, "*/" + interval);
+    addToPeriod(period, value + "/" + interval);
     return this;
   }
 
+  /**
+   * Builds the cron expression by combining all the specified cron periods and their values.
+   *
+   * @return A string representation of the cron expression.
+   */
   public String build() {
 
     if (this.monthOfYear.isEmpty()) {
@@ -152,17 +182,110 @@ public class CronExpressionBuilder {
       this.dayOfMonth.add("*");
     }
 
-    StringBuilder cronExpression = new StringBuilder();
-    cronExpression.append(String.join(",", this.seconds)).append(" ");
-    cronExpression.append(String.join(",", this.minutes)).append(" ");
-    cronExpression.append(String.join(",", this.hours)).append(" ");
-    cronExpression.append(String.join(",", this.dayOfMonth)).append(" ");
-    cronExpression.append(String.join(",", this.monthOfYear)).append(" ");
-    cronExpression.append(String.join(",", this.dayOfWeek));
-
-    return cronExpression.toString();
+    return String.join(",", this.seconds) + " " +
+        String.join(",", this.minutes) + " " +
+        String.join(",", this.hours) + " " +
+        String.join(",", this.dayOfMonth) + " " +
+        String.join(",", this.monthOfYear) + " " +
+        String.join(",", this.dayOfWeek);
   }
 
+  /**
+   * Internal method to add values to a cron period.
+   *
+   * @param period The cron period to modify.
+   * @param values The values to add.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
+  private <T> CronExpressionBuilder addInternal(CronPeriod period, T[] values) {
+    throwIfNull(period);
+    throwIfNull(values);
+
+    if (values.length == 0) {
+      throw new IllegalArgumentException(period + " values cannot be empty");
+    }
+
+    List<String> valueStrings = new ArrayList<>(values.length);
+    for (T value : values) {
+      throwIfNull(value);
+      if (value instanceof OrdinalEnum) {
+        validatePeriod(period, ((OrdinalEnum) value).getRank());
+        valueStrings.add(value.toString());
+      } else {
+        validatePeriod(period, (int)value);
+        valueStrings.add(String.valueOf(value));
+      }
+    }
+
+    addToPeriod(period, String.join(",", valueStrings));
+
+    return this;
+  }
+
+  /**
+   * Internal method to add a range of values to a cron period.
+   *
+   * @param period The cron period to modify.
+   * @param from The starting value for the range (inclusive).
+   * @param to The ending value for the range (inclusive).
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
+  private <T> CronExpressionBuilder addRangeInternal(CronPeriod period, T from, T to) {
+    throwIfNull(period);
+    throwIfNull(from);
+    throwIfNull(to);
+
+    if (from instanceof OrdinalEnum && to instanceof OrdinalEnum) {
+      int fromInterval = ((OrdinalEnum) from).getRank();
+      int toInterval = ((OrdinalEnum) to).getRank();
+      validateRange(fromInterval, toInterval);
+      validatePeriod(period, fromInterval);
+      validatePeriod(period, toInterval);
+    } else {
+      validateRange((int)from, (int)to);
+      validatePeriod(period, (int)from);
+      validatePeriod(period, (int)to);
+    }
+
+    addToPeriod(period, from + "-" + to);
+    return this;
+  }
+
+  /**
+   * Internal method to add a step range to a cron period.
+   *
+   * @param period The cron period to modify.
+   * @param from The starting value for the step range (inclusive).
+   * @param to The ending value for the step range (inclusive).
+   * @param interval The interval for the step.
+   * @return The {@link CronExpressionBuilder} instance for method chaining.
+   */
+  private CronExpressionBuilder addStepInternal(CronPeriod period, Integer from, Integer to, Integer interval) {
+    throwIfNull(period);
+    throwIfNull(interval);
+
+    if (from != null || to != null) {
+      throwIfNull(from);
+      throwIfNull(to);
+      validatePeriod(period, from);
+      validatePeriod(period, to);
+      validateRange(from, to);
+
+      addToPeriod(period, from + "-" + to + "/" + interval);
+      return this;
+    }
+
+    addToPeriod(period, "*/" + interval);
+    return this;
+  }
+
+  /**
+   * Validates the value for a specific cron period.
+   *
+   * @param cronPeriod The cron period to validate (e.g., {@link CronPeriod.HOURS}).
+   * @param value The value to validate.
+   * @throws IllegalArgumentException if the value is invalid for the cron period.
+   */
   private void validatePeriod(CronPeriod cronPeriod, int value) {
     switch (cronPeriod) {
       case SECONDS:
@@ -201,6 +324,12 @@ public class CronExpressionBuilder {
     }
   }
 
+  /**
+   * Helper method to add values to the period.
+   *
+   * @param period The cron period to modify.
+   * @param value The value to add to the period.
+   */
   private void addToPeriod(CronPeriod cronPeriod, String value) {
     switch (cronPeriod) {
       case SECONDS:
