@@ -4,6 +4,7 @@ import io.dapr.jobs.client.CronExpressionBuilder;
 import io.dapr.jobs.client.CronPeriod;
 import io.dapr.jobs.client.DayOfWeek;
 import io.dapr.jobs.client.MonthOfYear;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +42,14 @@ public class CronExpressionBuilderTest {
         () -> new CronExpressionBuilder()
             .add(CronPeriod.MINUTES, -1).build());
     Assert.assertTrue(exception.getMessage().contains("MINUTES must be between [0, 59]"));
+  }
+
+  @Test
+  public void builderWithEmptyParametersShouldThrowIllegalArgumentException() {
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
+        () -> new CronExpressionBuilder()
+            .add(CronPeriod.MINUTES).build());
+    Assert.assertTrue(exception.getMessage().contains("MINUTES values cannot be empty"));
   }
 
   @Test
@@ -321,5 +330,19 @@ public class CronExpressionBuilderTest {
         .addStep(CronPeriod.HOURS, 20, 2)
         .build();
     assertEquals("* * 20/2 * JAN,FEB MON,THU", cronExpression);
+  }
+
+  @Test
+  public void builderWithCallToAddAllFieldsShouldReturnCorrectValues() {
+    String cronExpression = new CronExpressionBuilder()
+        .add(MonthOfYear.JAN, MonthOfYear.FEB)
+        .add(DayOfWeek.MON, DayOfWeek.THU)
+        .addStep(CronPeriod.HOURS, 20, 2)
+        .add(CronPeriod.SECONDS, 1)
+        .add(CronPeriod.MINUTES, 1)
+        .add(CronPeriod.HOURS, 1)
+        .add(CronPeriod.DayOfMonth, 1)
+        .build();
+    assertEquals("1 1 20/2,1 1 JAN,FEB MON,THU", cronExpression);
   }
 }
