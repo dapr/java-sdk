@@ -4,17 +4,15 @@ import java.time.Duration;
 
 /**
  * Represents a job schedule using cron expressions or fixed intervals.
- * <p>
  * This class provides various static methods to create schedules based on predefined periods
  * (e.g., daily, weekly, monthly) or using custom cron expressions.
- * <p>
  * Example usage:
  * <pre>
  * JobsSchedule schedule = JobsSchedule.daily();
  * System.out.println(schedule.getExpression()); // Outputs: "0 0 0 * * *"
  * </pre>
  */
-public class JobsSchedule {
+public class JobSchedule {
 
   private final String expression;
 
@@ -23,16 +21,14 @@ public class JobsSchedule {
    *
    * @param expression the cron expression defining the schedule.
    */
-  private JobsSchedule(String expression) {
+  private JobSchedule(String expression) {
     this.expression = expression;
   }
 
   /**
    * Creates a job schedule from a fixed period using a {@link Duration}.
-   * <p>
    * The resulting expression follows the format: "@every XhYmZsWms"
    * where X, Y, Z, and W represent hours, minutes, seconds, and milliseconds respectively.
-   * <p>
    * Example:
    * <pre>
    * JobsSchedule schedule = JobsSchedule.fromPeriod(Duration.ofMinutes(30));
@@ -43,14 +39,14 @@ public class JobsSchedule {
    * @return a {@code JobsSchedule} with the corresponding interval.
    * @throws IllegalArgumentException if the duration is null.
    */
-  public static JobsSchedule fromPeriod(Duration duration) {
+  public static JobSchedule fromPeriod(Duration duration) {
     if (duration == null) {
       throw new IllegalArgumentException("duration cannot be null");
     }
 
     String formattedDuration = String.format("%dh%dm%ds%dms",
         duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), duration.toMillisPart());
-    return new JobsSchedule("@every " + formattedDuration);
+    return new JobSchedule("@every " + formattedDuration);
   }
 
   /**
@@ -59,8 +55,12 @@ public class JobsSchedule {
    * @param cronExpression the cron expression.
    * @return a {@code JobsSchedule} representing the given cron expression.
    */
-  public static JobsSchedule fromString(String cronExpression) {
-    return new JobsSchedule(cronExpression);
+  public static JobSchedule fromString(String cronExpression) {
+    if (cronExpression == null) {
+      throw new IllegalArgumentException("cronExpression cannot be null");
+    }
+
+    return new JobSchedule(cronExpression);
   }
 
   /**
@@ -68,8 +68,8 @@ public class JobsSchedule {
    *
    * @return a {@code JobsSchedule} for yearly execution.
    */
-  public static JobsSchedule yearly() {
-    return new JobsSchedule(new CronExpressionBuilder()
+  public static JobSchedule yearly() {
+    return new JobSchedule(new CronExpressionBuilder()
         .add(CronPeriod.SECONDS, 0)
         .add(CronPeriod.MINUTES, 0)
         .add(CronPeriod.HOURS, 0)
@@ -83,8 +83,8 @@ public class JobsSchedule {
    *
    * @return a {@code JobsSchedule} for monthly execution.
    */
-  public static JobsSchedule monthly() {
-    return new JobsSchedule(new CronExpressionBuilder()
+  public static JobSchedule monthly() {
+    return new JobSchedule(new CronExpressionBuilder()
         .add(CronPeriod.SECONDS, 0)
         .add(CronPeriod.MINUTES, 0)
         .add(CronPeriod.HOURS, 0)
@@ -97,8 +97,8 @@ public class JobsSchedule {
    *
    * @return a {@code JobsSchedule} for weekly execution.
    */
-  public static JobsSchedule weekly() {
-    return new JobsSchedule(new CronExpressionBuilder()
+  public static JobSchedule weekly() {
+    return new JobSchedule(new CronExpressionBuilder()
         .add(CronPeriod.SECONDS, 0)
         .add(CronPeriod.MINUTES, 0)
         .add(CronPeriod.HOURS, 0)
@@ -111,8 +111,8 @@ public class JobsSchedule {
    *
    * @return a {@code JobsSchedule} for daily execution.
    */
-  public static JobsSchedule daily() {
-    return new JobsSchedule(new CronExpressionBuilder()
+  public static JobSchedule daily() {
+    return new JobSchedule(new CronExpressionBuilder()
         .add(CronPeriod.SECONDS, 0)
         .add(CronPeriod.MINUTES, 0)
         .add(CronPeriod.HOURS, 0)
@@ -124,8 +124,8 @@ public class JobsSchedule {
    *
    * @return a {@code JobsSchedule} for hourly execution.
    */
-  public static JobsSchedule hourly() {
-    return new JobsSchedule(new CronExpressionBuilder()
+  public static JobSchedule hourly() {
+    return new JobSchedule(new CronExpressionBuilder()
         .add(CronPeriod.SECONDS, 0)
         .add(CronPeriod.MINUTES, 0)
         .build());
