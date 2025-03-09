@@ -6,13 +6,17 @@ import io.dapr.jobs.client.DayOfWeek;
 import io.dapr.jobs.client.MonthOfYear;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import static org.junit.Assert.assertEquals;
 
 public class CronExpressionBuilderTest {
 
   @Test
   public void builderWithoutParametersShouldReturnDefaultValues() {
     String cronExpression = new CronExpressionBuilder().build();
-    Assert.assertEquals("* * * * * *", cronExpression);
+    assertEquals("* * * * * *", cronExpression);
   }
 
   @Test
@@ -52,14 +56,18 @@ public class CronExpressionBuilderTest {
   }
 
   @Test
+  public void builderWithInvalidDayOfMonthShouldThrowIllegalArgumentException1() {
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
+        () -> new CronExpressionBuilder()
+            .add(CronPeriod.DayOfMonth, 0).build());
+    Assert.assertTrue(exception.getMessage().contains("DayOfMonth must be between [1, 31]"));
+  }
+
+  @Test
   public void builderWithInvalidDayOfMonthShouldThrowIllegalArgumentException() {
     IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
         () -> new CronExpressionBuilder()
             .add(CronPeriod.DayOfMonth, 32).build());
-    Assert.assertTrue(exception.getMessage().contains("DayOfMonth must be between [1, 31]"));
-    exception = Assert.assertThrows(IllegalArgumentException.class,
-        () -> new CronExpressionBuilder()
-            .add(CronPeriod.DayOfMonth, 0).build());
     Assert.assertTrue(exception.getMessage().contains("DayOfMonth must be between [1, 31]"));
   }
 
@@ -88,11 +96,65 @@ public class CronExpressionBuilderTest {
   }
 
   @Test
+  public void builderWithInvalidRangeShouldThrowIllegalArgumentException() {
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
+        () -> new CronExpressionBuilder()
+            .addRange(CronPeriod.HOURS, 20, 19).build());
+    Assert.assertTrue(exception.getMessage().contains("from must be less than to"));
+  }
+
+  @Test
+  public void builderWithInvalidMinuteRangeSpecifiedShouldThrowIllegalArgumentException() {
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
+        () -> new CronExpressionBuilder()
+            .addRange(CronPeriod.MINUTES, 1, 1).build());
+    Assert.assertTrue(exception.getMessage().contains("from must be less than to (from < to)"));
+  }
+
+  @Test
+  public void builderWithInvalidParametersShouldThrowIllegalArgumentException() {
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
+        () -> new CronExpressionBuilder()
+            .addRange(null, 1, 2).build());
+    Assert.assertTrue(exception.getMessage().contains("None of the input parameters can be null"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+      "SECONDS, 0, '0 * * * * *'",
+      "MINUTES, 30, '* 30 * * * *'",
+      "HOURS, 12, '* * 12 * * *'",
+      "DayOfMonth, 15, '* * * 15 * *'",
+      "MonthOfYear, 6, '* * * * 6 *'",
+      "DayOfWeek, 3, '* * * * * 3'"
+  })
+  void testAddSingleValue(CronPeriod period, int value, String expected) {
+    CronExpressionBuilder builder = new CronExpressionBuilder().add(period, value);
+    assertEquals(expected, builder.build());
+  }
+
+  @Test
+  public void builderWithInvalidParameterInValuesShouldThrowIllegalArgumentException() {
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
+        () -> new CronExpressionBuilder()
+            .add(null, MonthOfYear.JAN, null, MonthOfYear.FEB).build());
+    Assert.assertTrue(exception.getMessage().contains("None of the input parameters can be null"));
+  }
+
+  @Test
+  public void builderWithInvalidParameterInDayOfWeekValuesShouldThrowIllegalArgumentException() {
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class,
+        () -> new CronExpressionBuilder()
+            .add(null, DayOfWeek.MON, null, DayOfWeek.THU).build());
+    Assert.assertTrue(exception.getMessage().contains("None of the input parameters can be null"));
+  }
+
+  @Test
   public void builderWithSecondsShouldReturnWithOnlySecondsSet() {
     String cronExpression = new CronExpressionBuilder()
         .add(CronPeriod.SECONDS, 5)
         .build();
-    Assert.assertEquals("5 * * * * *", cronExpression);
+    assertEquals("5 * * * * *", cronExpression);
   }
 
   @Test
@@ -102,7 +164,7 @@ public class CronExpressionBuilderTest {
         .add(CronPeriod.SECONDS, 10)
         .add(CronPeriod.SECONDS, 20)
         .build();
-    Assert.assertEquals("5,10,20 * * * * *", cronExpression);
+    assertEquals("5,10,20 * * * * *", cronExpression);
   }
 
   @Test
@@ -112,7 +174,7 @@ public class CronExpressionBuilderTest {
         .add(CronPeriod.SECONDS, 10)
         .addRange(CronPeriod.SECONDS, 40, 50)
         .build();
-    Assert.assertEquals("5,10,40-50 * * * * *", cronExpression);
+    assertEquals("5,10,40-50 * * * * *", cronExpression);
   }
 
   @Test
@@ -122,7 +184,7 @@ public class CronExpressionBuilderTest {
         .addStep(CronPeriod.SECONDS, 10)
         .addRange(CronPeriod.SECONDS, 40, 50)
         .build();
-    Assert.assertEquals("5,*/10,40-50 * * * * *", cronExpression);
+    assertEquals("5,*/10,40-50 * * * * *", cronExpression);
   }
 
   @Test
@@ -130,7 +192,7 @@ public class CronExpressionBuilderTest {
     String cronExpression = new CronExpressionBuilder()
         .add(CronPeriod.MINUTES, 5)
         .build();
-    Assert.assertEquals("* 5 * * * *", cronExpression);
+    assertEquals("* 5 * * * *", cronExpression);
   }
 
   @Test
@@ -140,7 +202,7 @@ public class CronExpressionBuilderTest {
         .add(CronPeriod.MINUTES, 10)
         .add(CronPeriod.MINUTES, 20)
         .build();
-    Assert.assertEquals("* 5,10,20 * * * *", cronExpression);
+    assertEquals("* 5,10,20 * * * *", cronExpression);
   }
 
   @Test
@@ -150,7 +212,7 @@ public class CronExpressionBuilderTest {
         .add(CronPeriod.MINUTES, 10)
         .addRange(CronPeriod.MINUTES, 40, 50)
         .build();
-    Assert.assertEquals("* 5,10,40-50 * * * *", cronExpression);
+    assertEquals("* 5,10,40-50 * * * *", cronExpression);
   }
 
   @Test
@@ -160,7 +222,7 @@ public class CronExpressionBuilderTest {
         .addStep(CronPeriod.MINUTES, 10)
         .addRange(CronPeriod.MINUTES, 40, 50)
         .build();
-    Assert.assertEquals("* 5,*/10,40-50 * * * *", cronExpression);
+    assertEquals("* 5,*/10,40-50 * * * *", cronExpression);
   }
 
   @Test
@@ -171,7 +233,7 @@ public class CronExpressionBuilderTest {
         .addStep(CronPeriod.MINUTES, 10)
         .addRange(CronPeriod.MINUTES, 40, 50)
         .build();
-    Assert.assertEquals("2 5,*/10,40-50 * * * *", cronExpression);
+    assertEquals("2 5,*/10,40-50 * * * *", cronExpression);
   }
 
   @Test
@@ -179,7 +241,7 @@ public class CronExpressionBuilderTest {
     String cronExpression = new CronExpressionBuilder()
         .add(CronPeriod.HOURS, 5)
         .build();
-    Assert.assertEquals("* * 5 * * *", cronExpression);
+    assertEquals("* * 5 * * *", cronExpression);
   }
 
   @Test
@@ -189,7 +251,7 @@ public class CronExpressionBuilderTest {
         .add(CronPeriod.HOURS, 10)
         .add(CronPeriod.HOURS, 20)
         .build();
-    Assert.assertEquals("* * 5,10,20 * * *", cronExpression);
+    assertEquals("* * 5,10,20 * * *", cronExpression);
   }
 
   @Test
@@ -199,7 +261,7 @@ public class CronExpressionBuilderTest {
         .add(CronPeriod.HOURS, 10)
         .addRange(CronPeriod.HOURS,  11, 12)
         .build();
-    Assert.assertEquals("* * 5,10,11-12 * * *", cronExpression);
+    assertEquals("* * 5,10,11-12 * * *", cronExpression);
   }
 
   @Test
@@ -209,7 +271,7 @@ public class CronExpressionBuilderTest {
         .addStep(CronPeriod.HOURS, 10)
         .addRange(CronPeriod.HOURS, 13, 14)
         .build();
-    Assert.assertEquals("* * 5,*/10,13-14 * * *", cronExpression);
+    assertEquals("* * 5,*/10,13-14 * * *", cronExpression);
   }
 
   @Test
@@ -224,7 +286,7 @@ public class CronExpressionBuilderTest {
         .addStep(CronPeriod.HOURS, 4)
         .addStepRange(CronPeriod.HOURS, 5, 6, 3)
         .build();
-    Assert.assertEquals("2 5,*/10,40-50 20,1-2,*/4,5-6/3 * * *", cronExpression);
+    assertEquals("2 5,*/10,40-50 20,1-2,*/4,5-6/3 * * *", cronExpression);
   }
 
   @Test
@@ -235,7 +297,7 @@ public class CronExpressionBuilderTest {
         .add(CronPeriod.SECONDS, 1,2,3)
         .add(CronPeriod.MINUTES, 20,30)
         .build();
-    Assert.assertEquals("1,2,3 20,30 * * JAN,FEB MON,THU", cronExpression);
+    assertEquals("1,2,3 20,30 * * JAN,FEB MON,THU", cronExpression);
   }
 
   @Test
@@ -248,6 +310,16 @@ public class CronExpressionBuilderTest {
         .addRange(MonthOfYear.MAR, MonthOfYear.APR)
         .addRange(DayOfWeek.SUN, DayOfWeek.MON)
         .build();
-    Assert.assertEquals("1,2,3 20,30 * * JAN,FEB,MAR-APR MON,THU,SUN-MON", cronExpression);
+    assertEquals("1,2,3 20,30 * * JAN,FEB,MAR-APR MON,THU,SUN-MON", cronExpression);
+  }
+
+  @Test
+  public void builderWithCallToAddForStepShouldReturnCorrectValues() {
+    String cronExpression = new CronExpressionBuilder()
+        .add(MonthOfYear.JAN, MonthOfYear.FEB)
+        .add(DayOfWeek.MON, DayOfWeek.THU)
+        .addStep(CronPeriod.HOURS, 20, 2)
+        .build();
+    assertEquals("* * 20/2 * JAN,FEB MON,THU", cronExpression);
   }
 }
