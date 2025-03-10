@@ -5,7 +5,6 @@ spring:
     import:
       - dapr:secret:democonfig/multivalue-properties?type=doc
       - dapr:secret:democonfig/dapr.spring.democonfigsecret.singlevalue?type=value
-      #- dapr:secret:democonfigmulti/value1?type=value
       - dapr:config:democonfigconf/dapr.spring.democonfigconfig.singlevalue?type=value
       - dapr:config:democonfigconf/multivalue-yaml?type=doc&doc-type=yaml
 

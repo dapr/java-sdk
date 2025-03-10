@@ -22,18 +22,6 @@
             <scope>compile</scope>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>io.dapr.spring</groupId>-->
-<!--            <artifactId>dapr-spring-boot-starter</artifactId>-->
-<!--            <version>${project.parent.version}</version>-->
-<!--            <scope>test</scope>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>io.dapr.spring</groupId>-->
-<!--                    <artifactId>dapr-spring-cloudconfig</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>io.dapr.spring</groupId>
             <artifactId>dapr-spring-data</artifactId>
