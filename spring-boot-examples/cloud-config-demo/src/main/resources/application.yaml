@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: cloud-config-demo
+  config:
+    import:
+      - dapr:secret:democonfig/multivalue-properties?type=doc
+      - dapr:secret:democonfig/dapr.spring.demo-config-secret.singlevalue?type=value
+      #- dapr:secret:democonfigmulti/value1?type=value
+      - dapr:config:democonfigconf/dapr.spring.demo-config-config.singlevalue?type=value
+      - dapr:config:democonfigconf/multivalue-yaml?type=doc&doc-type=yaml
+
+

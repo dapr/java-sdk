@@ -20,6 +20,7 @@
   <modules>
     <module>producer-app</module>
     <module>consumer-app</module>
+    <module>cloud-config-demo</module>
   </modules>
 
   <build>
