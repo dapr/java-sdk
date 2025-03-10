@@ -349,7 +349,7 @@ dapr.cloudconfig.wait-sidecar-enabled=false
 dapr.cloudconfig.wait-sidecar-retries=3
 ```
 
-In Dapr Cloud Config component, we support two ways to imprt config: Secret Store API and Configuration API.
+In Dapr Cloud Config component, we support two ways to import config: Secret Store API and Configuration API.
 
 Both of them have their schemas, listed below.
 
