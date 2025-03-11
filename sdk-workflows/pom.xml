@@ -16,10 +16,6 @@
   <name>dapr-sdk-workflows</name>
   <description>SDK for Workflows on Dapr</description>
 
-  <properties>
-    <maven.deploy.skip>false</maven.deploy.skip>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.dapr</groupId>
@@ -82,6 +78,10 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
