@@ -573,6 +573,10 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
+      if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
+        builder.putMetadata(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
+      }
+
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
       Metadata responseMetadata = new Metadata();
