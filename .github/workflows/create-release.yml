@@ -54,20 +54,3 @@ jobs:
           # Copy first to allow automation to use the latest version and not the release branch's version.
           cp -R ./.github/scripts ${RUNNER_TEMP}/
           ${RUNNER_TEMP}/scripts/create-release.sh ${{ inputs.rel_version }}
-  trigger:
-    name: Triggers the Dapr SDK build
-    runs-on: ubuntu-latest
-    needs: create-release
-    steps:
-      - name: Identify build ref to trigger build and release.
-        run: |
-          if [[ "${{ inputs.rel_version }}" == *"SNAPSHOT"* ]]; then
-            echo "BUILD_GIT_REF=master" >> $GITHUB_ENV
-          else
-            echo "BUILD_GIT_REF=v${{ inputs.rel_version }}" >> $GITHUB_ENV
-          fi
-      - name: Triggers the build and release.
-        env:
-          GITHUB_TOKEN: ${{ secrets.DAPR_BOT_TOKEN }}
-        run: |
-          gh workflow run build.yml --repo ${GITHUB_REPOSITORY} --ref '${{ env.BUILD_GIT_REF }}'
