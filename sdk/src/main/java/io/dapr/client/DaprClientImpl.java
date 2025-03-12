@@ -574,7 +574,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         builder.putAllMetadata(metadata);
       }
       if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
-        builder.putMetadata(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
+        builder.putMetadata("contentType", objectSerializer.getContentType());
       }
 
       DaprProtos.InvokeBindingRequest envelope = builder.build();
@@ -826,7 +826,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       stateBuilder.putAllMetadata(state.getMetadata());
     }
     if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
-      stateBuilder.putMetadata(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
+      stateBuilder.putMetadata("contentType", objectSerializer.getContentType());
     }
     if (bytes != null) {
       stateBuilder.setValue(ByteString.copyFrom(bytes));
