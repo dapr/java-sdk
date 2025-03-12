@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 1. Build and install jars:
@@ -80,9 +81,9 @@ public class StateClient {
       // execute transaction
       List<TransactionalStateOperation<?>> operationList = new ArrayList<>();
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
-              new State<>(FIRST_KEY_NAME, myClass, "")));
+              new State<>(FIRST_KEY_NAME, myClass, "", Map.of("contentType", "undefined"), null)));
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.UPSERT,
-              new State<>(SECOND_KEY_NAME, secondState, "")));
+              new State<>(SECOND_KEY_NAME, secondState, "", Map.of("contentType", "undefined"), null)));
 
       client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
 
@@ -114,7 +115,7 @@ public class StateClient {
       // Delete operation using transaction API
       operationList.clear();
       operationList.add(new TransactionalStateOperation<>(TransactionalStateOperation.OperationType.DELETE,
-          new State<>(SECOND_KEY_NAME)));
+          new State<>(SECOND_KEY_NAME, null, null, Map.of("contentType", "undefined"), null)));
       client.executeStateTransaction(STATE_STORE_NAME, operationList).block();
 
       Mono<List<State<MyClass>>> retrievedDeletedMessageMono = client.getBulkState(STATE_STORE_NAME,

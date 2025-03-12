@@ -573,8 +573,10 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
-      if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
-        builder.putMetadata("contentType", objectSerializer.getContentType());
+      if (builder.getMetadataMap() == null || builder.getMetadataMap().get("contentType") == null) {
+        if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
+          builder.putMetadata("contentType", objectSerializer.getContentType());
+        }
       }
 
       DaprProtos.InvokeBindingRequest envelope = builder.build();
@@ -828,8 +830,10 @@ public class DaprClientImpl extends AbstractDaprClient {
     if (bytes != null) {
       stateBuilder.setValue(ByteString.copyFrom(bytes));
     }
-    if (stateSerializer.getContentType() != null && !stateSerializer.getContentType().isEmpty()) {
-      stateBuilder.putMetadata("contentType", stateSerializer.getContentType());
+    if (stateBuilder.getMetadataMap() == null || stateBuilder.getMetadataMap().get("contentType") == null) {
+      if (stateSerializer.getContentType() != null && !stateSerializer.getContentType().isEmpty()) {
+        stateBuilder.putMetadata("contentType", stateSerializer.getContentType());
+      }
     }
     stateBuilder.setKey(state.getKey());
     CommonProtos.StateOptions.Builder optionBuilder = null;
