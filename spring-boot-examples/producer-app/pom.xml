@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>spring-boot-examples</artifactId>
-    <version>0.14.0-rc-7</version>
+    <version>0.14.0-rc-8</version>
   </parent>
 
   <artifactId>producer-app</artifactId>
