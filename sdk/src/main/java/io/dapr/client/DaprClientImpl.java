@@ -825,11 +825,11 @@ public class DaprClientImpl extends AbstractDaprClient {
     if (state.getMetadata() != null) {
       stateBuilder.putAllMetadata(state.getMetadata());
     }
-    if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
-      stateBuilder.putMetadata("contentType", objectSerializer.getContentType());
-    }
     if (bytes != null) {
       stateBuilder.setValue(ByteString.copyFrom(bytes));
+    }
+    if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
+      stateBuilder.putMetadata("contentType", objectSerializer.getContentType());
     }
     stateBuilder.setKey(state.getKey());
     CommonProtos.StateOptions.Builder optionBuilder = null;
