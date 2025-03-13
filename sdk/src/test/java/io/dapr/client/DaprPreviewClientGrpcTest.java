@@ -169,7 +169,7 @@ public class DaprPreviewClientGrpcTest {
 				"application/json", null);
 		BulkPublishRequest<Map<String, String>> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
 				Collections.singletonList(entry));
-		when(mockSerializer.serialize(any())).thenThrow(IOException.class);
+		when(mockSerializer.serializeWithContentType(any())).thenThrow(IOException.class);
 		Mono<BulkPublishResponse<Map<String, String>>> result = previewClient.publishEvents(req);
 
 		assertThrowsDaprException(

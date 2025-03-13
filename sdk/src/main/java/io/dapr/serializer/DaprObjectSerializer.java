@@ -15,6 +15,7 @@ package io.dapr.serializer;
 
 import io.dapr.utils.TypeRef;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 /**
@@ -29,14 +30,26 @@ public interface DaprObjectSerializer {
    * @return Serialized object.
    * @throws IOException If cannot serialize.
    */
-  byte[] serialize(Object o) throws IOException;
+  default byte[] serialize(Object o) throws IOException {
+    return serializeWithContentType(o).getData();
+  }
+
+  /**
+   * Serializes the given object as byte[] and returns it as a {@link SerializedData} with contentType.
+   *
+   * @param obj Object to be serialized.
+   * @return Serialized object.
+   * @throws IOException If cannot serialize.
+   */
+  @Nonnull
+  SerializedData serializeWithContentType(Object obj) throws IOException;
 
   /**
    * Deserializes the given byte[] into a object.
    *
    * @param data Data to be deserialized.
    * @param type Type of object to be deserialized.
-   * @param <T> Type of object to be deserialized.
+   * @param <T>  Type of object to be deserialized.
    * @return Deserialized object.
    * @throws IOException If cannot deserialize object.
    */
@@ -44,7 +57,7 @@ public interface DaprObjectSerializer {
 
   /**
    * Returns the content type of the request.
-   * 
+   *
    * @return content type of the request
    */
   String getContentType();

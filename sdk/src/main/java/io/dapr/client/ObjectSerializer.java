@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.MessageLite;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.serializer.SerializedData;
 import io.dapr.utils.TypeRef;
 
 import java.io.IOException;
@@ -51,26 +52,37 @@ public class ObjectSerializer {
    * @throws IOException In case state cannot be serialized.
    */
   public byte[] serialize(Object state) throws IOException {
+    return serializeWithContentType(state).getData();
+  }
+
+  /**
+   * Serializes a given state object into byte array and contentType.
+   *
+   * @param state State object to be serialized.
+   * @return Array of bytes[] with the serialized content.
+   * @throws IOException In case state cannot be serialized.
+   */
+  public SerializedData serializeWithContentType(Object state) throws IOException {
     if (state == null) {
-      return null;
+      return SerializedData.NULL;
     }
 
     if (state.getClass() == Void.class) {
-      return null;
+      return SerializedData.NULL;
     }
 
     // Have this check here to be consistent with deserialization (see deserialize() method below).
     if (state instanceof byte[]) {
-      return (byte[]) state;
+      return new SerializedData((byte[]) state, "application/octet-stream");
     }
 
     // Proto buffer class is serialized directly.
     if (state instanceof MessageLite) {
-      return ((MessageLite) state).toByteArray();
+      return new SerializedData(((MessageLite) state).toByteArray(), "application/protobuf");
     }
 
     // Not string, not primitive, so it is a complex type: we use JSON for that.
-    return OBJECT_MAPPER.writeValueAsBytes(state);
+    return new SerializedData(OBJECT_MAPPER.writeValueAsBytes(state), "application/json");
   }
 
   /**

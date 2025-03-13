@@ -63,6 +63,7 @@ import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.serializer.SerializedData;
 import io.dapr.utils.DefaultContentTypeConverter;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
@@ -309,16 +310,17 @@ public class DaprClientImpl extends AbstractDaprClient {
       String pubsubName = request.getPubsubName();
       String topic = request.getTopic();
       Object data = request.getData();
+      SerializedData serialized = objectSerializer.serializeWithContentType(data);
       DaprProtos.PublishEventRequest.Builder envelopeBuilder = DaprProtos.PublishEventRequest.newBuilder()
           .setTopic(topic)
           .setPubsubName(pubsubName)
-          .setData(ByteString.copyFrom(objectSerializer.serialize(data)));
+          .setData(ByteString.copyFrom(serialized.getData()));
 
       // Content-type can be overwritten on a per-request basis.
       // It allows CloudEvents to be handled differently, for example.
       String contentType = request.getContentType();
       if (contentType == null || contentType.isEmpty()) {
-        contentType = objectSerializer.getContentType();
+        contentType = serialized.getContentType();
       }
       envelopeBuilder.setDataContentType(contentType);
 
@@ -367,11 +369,12 @@ public class DaprClientImpl extends AbstractDaprClient {
             // perform the serialization as per user given input of serializer
             // this is also the case when content type is empty
 
-            data = objectSerializer.serialize(event);
+            SerializedData serialized = objectSerializer.serializeWithContentType(event);
+            data = serialized.getData();
 
             if (Strings.isNullOrEmpty(contentType)) {
               // Only override content type if not given in input by user
-              contentType = objectSerializer.getContentType();
+              contentType = serialized.getContentType();
             }
           }
         } catch (IOException ex) {
@@ -513,15 +516,15 @@ public class DaprClientImpl extends AbstractDaprClient {
       if (metadata != null) {
         headers.putAll(metadata);
       }
-      byte[] serializedRequestBody = objectSerializer.serialize(request);
+      SerializedData serialized = objectSerializer.serializeWithContentType(request);
       if (contentType != null && !contentType.isEmpty()) {
         headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, contentType);
       } else {
-        headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, objectSerializer.getContentType());
+        headers.put(io.dapr.client.domain.Metadata.CONTENT_TYPE, serialized.getContentType());
       }
       Mono<DaprHttp.Response> response = Mono.deferContextual(
           context -> this.httpClient.invokeApi(httpMethod, pathSegments.toArray(new String[0]),
-              httpExtension.getQueryParams(), serializedRequestBody, headers, context)
+              httpExtension.getQueryParams(), serialized.getData(), headers, context)
       );
       return response.flatMap(r -> getMonoForHttpResponse(type, r));
     } catch (Exception ex) {
@@ -564,18 +567,18 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("Binding operation cannot be null or empty.");
       }
 
-      byte[] byteData = objectSerializer.serialize(data);
+      SerializedData serialized = objectSerializer.serializeWithContentType(data);
       DaprProtos.InvokeBindingRequest.Builder builder = DaprProtos.InvokeBindingRequest.newBuilder()
           .setName(name).setOperation(operation);
-      if (byteData != null) {
-        builder.setData(ByteString.copyFrom(byteData));
+      if (serialized.getData() != null) {
+        builder.setData(ByteString.copyFrom(serialized.getData()));
       }
       if (metadata != null) {
         builder.putAllMetadata(metadata);
       }
       if (builder.getMetadataMap() == null || builder.getMetadataMap().get("contentType") == null) {
-        if (objectSerializer.getContentType() != null && !objectSerializer.getContentType().isEmpty()) {
-          builder.putMetadata("contentType", objectSerializer.getContentType());
+        if (serialized.getContentType() != null && !serialized.getContentType().isEmpty()) {
+          builder.putMetadata("contentType", serialized.getContentType());
         }
       }
 
@@ -818,7 +821,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private <T> CommonProtos.StateItem.Builder buildStateRequest(State<T> state) throws IOException {
-    byte[] bytes = stateSerializer.serialize(state.getValue());
+    SerializedData serialized = stateSerializer.serializeWithContentType(state.getValue());
 
     CommonProtos.StateItem.Builder stateBuilder = CommonProtos.StateItem.newBuilder();
     if (state.getEtag() != null) {
@@ -827,12 +830,12 @@ public class DaprClientImpl extends AbstractDaprClient {
     if (state.getMetadata() != null) {
       stateBuilder.putAllMetadata(state.getMetadata());
     }
-    if (bytes != null) {
-      stateBuilder.setValue(ByteString.copyFrom(bytes));
+    if (serialized.getData() != null) {
+      stateBuilder.setValue(ByteString.copyFrom(serialized.getData()));
     }
     if (stateBuilder.getMetadataMap() == null || stateBuilder.getMetadataMap().get("contentType") == null) {
-      if (stateSerializer.getContentType() != null && !stateSerializer.getContentType().isEmpty()) {
-        stateBuilder.putMetadata("contentType", stateSerializer.getContentType());
+      if (serialized.getContentType() != null && !serialized.getContentType().isEmpty()) {
+        stateBuilder.putMetadata("contentType", serialized.getContentType());
       }
     }
     stateBuilder.setKey(state.getKey());
