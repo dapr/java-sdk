@@ -146,7 +146,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 10
+    timeout-minutes: 30
     env:
       JDK_VER: 17
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
