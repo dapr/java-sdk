@@ -10,11 +10,11 @@
         <version>1.15.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dapr-sdk-ai</artifactId>
+    <artifactId>dapr-sdk-conversation</artifactId>
     <packaging>jar</packaging>
     <version>1.15.0-SNAPSHOT</version>
-    <name>dapr-sdk-ai</name>
-    <description>SDK for AI on Dapr</description>
+    <name>dapr-sdk-conversation</name>
+    <description>SDK for Conversation</description>
 
     <properties>
         <maven.deploy.skip>false</maven.deploy.skip>
@@ -88,6 +88,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
