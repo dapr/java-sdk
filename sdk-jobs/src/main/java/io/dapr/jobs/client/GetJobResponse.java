@@ -7,117 +7,94 @@ import java.time.OffsetDateTime;
  */
 public class GetJobResponse {
   private final String name;
-  private final byte[] data;
-  private final JobSchedule schedule;
-  private final OffsetDateTime dueTime;
-  private final Integer repeat;
-  private final OffsetDateTime ttl;
+  private byte[] data;
+  private JobSchedule schedule;
+  private OffsetDateTime dueTime;
+  private Integer repeats;
+  private OffsetDateTime ttl;
 
-  private GetJobResponse(Builder builder) {
-    this.name = builder.name;
-    this.data = builder.data;
-    this.schedule = builder.schedule;
-    this.dueTime = builder.dueTime;
-    this.repeat = builder.repeat;
-    this.ttl = builder.ttl;
+  /**
+   * Constructor to create GetJobResponse.
+   *
+   * @param name of the job.
+   * @param schedule job has to run.
+   */
+  public GetJobResponse(String name, JobSchedule schedule) {
+    this.name = name;
+    this.schedule = schedule;
   }
 
   /**
-   * Creates a new builder instance for {@link GetJobResponse}.
+   * Constructor to create GetJobResponse.
    *
-   * @return A new {@link Builder} instance.
+   * @param name of the job.
+   * @param dueTime An optional time at which the job should be active, or the “one shot” time, if other scheduling
+   *                type fields are not provided. Accepts a “point in time” string in the format of RFC3339,
+   *                Go duration string (calculated from creation time), or non-repeating ISO8601
    */
-  public static Builder builder() {
-    return new Builder();
+  public GetJobResponse(String name, OffsetDateTime dueTime) {
+    this.name = name;
+    this.dueTime = dueTime;
   }
 
-  public static class Builder {
-    private String name;
-    private byte[] data;
-    private JobSchedule schedule;
-    private OffsetDateTime dueTime;
-    private Integer repeat;
-    private OffsetDateTime ttl;
+  /**
+   * Sets the data payload for the job.
+   * This should be a JSON serialized value or object.
+   *
+   * @param data The job data in byte array format.
+   * @return This builder instance.
+   */
+  public GetJobResponse setData(byte[] data) {
+    this.data = data;
+    return this;
+  }
 
-    /**
-     * Sets the name of the job.
-     *
-     * @param name The job name.
-     * @return This builder instance.
-     */
-    public Builder setName(String name) {
-      this.name = name;
-      return this;
-    }
+  /**
+   * Sets the schedule for the job.
+   * The format should follow cron expressions or other supported scheduling formats.
+   *
+   * @param schedule The job schedule.
+   * @return This builder instance.
+   */
+  public GetJobResponse setSchedule(JobSchedule schedule) {
+    this.schedule = schedule;
+    return this;
+  }
 
-    /**
-     * Sets the data payload for the job.
-     * This should be a JSON serialized value or object.
-     *
-     * @param data The job data in byte array format.
-     * @return This builder instance.
-     */
-    public Builder setData(byte[] data) {
-      this.data = data;
-      return this;
-    }
+  /**
+   * Sets the due time when the job should become active or execute once.
+   * This can be in RFC3339, Go duration string, or non-repeating ISO8601 format.
+   *
+   * @param dueTime The due time of the job.
+   * @return This builder instance.
+   */
+  public GetJobResponse setDueTime(OffsetDateTime dueTime) {
+    this.dueTime = dueTime;
+    return this;
+  }
 
-    /**
-     * Sets the schedule for the job.
-     * The format should follow cron expressions or other supported scheduling formats.
-     *
-     * @param schedule The job schedule.
-     * @return This builder instance.
-     */
-    public Builder setSchedule(JobSchedule schedule) {
-      this.schedule = schedule;
-      return this;
-    }
+  /**
+   * Sets the number of times the job should be triggered.
+   * If not set, the job runs indefinitely or until expiration.
+   *
+   * @param repeats The number of times the job should repeat.
+   * @return This builder instance.
+   */
+  public GetJobResponse setRepeat(Integer repeats) {
+    this.repeats = repeats;
+    return this;
+  }
 
-    /**
-     * Sets the due time when the job should become active or execute once.
-     * This can be in RFC3339, Go duration string, or non-repeating ISO8601 format.
-     *
-     * @param dueTime The due time of the job.
-     * @return This builder instance.
-     */
-    public Builder setDueTime(OffsetDateTime dueTime) {
-      this.dueTime = dueTime;
-      return this;
-    }
-
-    /**
-     * Sets the number of times the job should be triggered.
-     * If not set, the job runs indefinitely or until expiration.
-     *
-     * @param repeat The number of times the job should repeat.
-     * @return This builder instance.
-     */
-    public Builder setRepeat(Integer repeat) {
-      this.repeat = repeat;
-      return this;
-    }
-
-    /**
-     * Sets the time-to-live (TTL) or expiration for the job.
-     * This can be in RFC3339, Go duration string, or non-repeating ISO8601 format.
-     *
-     * @param ttl The time-to-live for the job.
-     * @return This builder instance.
-     */
-    public Builder setTtl(OffsetDateTime ttl) {
-      this.ttl = ttl;
-      return this;
-    }
-
-    /**
-     * Builds a {@link GetJobResponse} instance.
-     *
-     * @return A new {@link GetJobResponse} instance.
-     */
-    public GetJobResponse build() {
-      return new GetJobResponse(this);
-    }
+  /**
+   * Sets the time-to-live (TTL) or expiration for the job.
+   * This can be in RFC3339, Go duration string, or non-repeating ISO8601 format.
+   *
+   * @param ttl The time-to-live for the job.
+   * @return This builder instance.
+   */
+  public GetJobResponse setTtl(OffsetDateTime ttl) {
+    this.ttl = ttl;
+    return this;
   }
 
   // Getters
@@ -163,8 +140,8 @@ public class GetJobResponse {
    *
    * @return The repeat count, or null if not set.
    */
-  public Integer getRepeat() {
-    return repeat;
+  public Integer getRepeats() {
+    return repeats;
   }
 
   /**

@@ -6,44 +6,14 @@ package io.dapr.jobs.client;
 public class DeleteJobRequest {
   private final String name;
 
-  private DeleteJobRequest(Builder builder) {
-    this.name = builder.name;
-  }
-
   /**
-   * Creates a new builder instance for {@link DeleteJobRequest}.
+   * Constructor to create Delete Job Request.
    *
-   * @return A new {@link Builder} instance.
+   * @param name of the job to delete.
    */
-  public static Builder builder() {
-    return new Builder();
+  public DeleteJobRequest(String name) {
+    this.name = name;
   }
-
-  public static class Builder {
-    private String name;
-
-    /**
-     * Sets the name of the job.
-     *
-     * @param name The job name.
-     * @return This builder instance.
-     */
-    public Builder setName(String name) {
-      this.name = name;
-      return this;
-    }
-
-    /**
-     * Builds a {@link DeleteJobRequest} instance.
-     *
-     * @return A new {@link DeleteJobRequest} instance.
-     */
-    public DeleteJobRequest build() {
-      return new DeleteJobRequest(this);
-    }
-  }
-
-  // Getters
 
   /**
    * Gets the name of the job.

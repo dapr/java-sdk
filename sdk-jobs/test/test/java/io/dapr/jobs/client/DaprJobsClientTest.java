@@ -39,14 +39,12 @@ class DaprJobsClientTest {
 
   @Test
   void scheduleJobShouldSucceedWhenAllFieldsArePresentInRequest() {
-    ScheduleJobRequest expectedScheduleJobRequest = ScheduleJobRequest.builder()
-            .setName("testJob")
+    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("*/5 * * * *"))
             .setData("testData".getBytes())
-            .setSchedule(JobSchedule.fromString("*/5 * * * *"))
             .setTtl(OffsetDateTime.now().plusDays(1))
             .setRepeat(5)
-            .setDueTime(OffsetDateTime.now().plusMinutes(10))
-            .build();
+            .setDueTime(OffsetDateTime.now().plusMinutes(10));
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
@@ -80,10 +78,8 @@ class DaprJobsClientTest {
       return null;
     }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
 
-    ScheduleJobRequest expectedScheduleJobRequest = ScheduleJobRequest.builder()
-        .setName("testJob")
-        .setDueTime(OffsetDateTime.now().plusMinutes(10))
-        .build();
+    ScheduleJobRequest expectedScheduleJobRequest =
+        new ScheduleJobRequest("testJob", OffsetDateTime.now().plusMinutes(10));
     assertDoesNotThrow(() -> daprJobsClient.scheduleJob(expectedScheduleJobRequest).block());
 
     ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
@@ -109,10 +105,8 @@ class DaprJobsClientTest {
       return null;
     }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
 
-    ScheduleJobRequest expectedScheduleJobRequest = ScheduleJobRequest.builder()
-        .setName("testJob")
-        .setSchedule(JobSchedule.fromString("* * * * * *"))
-        .build();
+    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("* * * * * *"));
     assertDoesNotThrow(() -> daprJobsClient.scheduleJob(expectedScheduleJobRequest).block());
 
     ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
@@ -130,14 +124,6 @@ class DaprJobsClientTest {
   }
 
   @Test
-  void scheduleJobShouldThrowIllegalArgumentWhenBothScheduleAndDueTimeAreNotPresent() {
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-      daprJobsClient.scheduleJob(ScheduleJobRequest.builder().setName("abcd").build()).block();
-    });
-    assertEquals("At least one of schedule or dueTime must be provided", exception.getMessage());
-  }
-
-  @Test
   void scheduleJobShouldThrowWhenRequestIsNull() {
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       daprJobsClient.scheduleJob(null).block();
@@ -147,10 +133,7 @@ class DaprJobsClientTest {
 
   @Test
   void scheduleJobShouldThrowWhenInvalidRequest() {
-    ScheduleJobRequest scheduleJobRequest = ScheduleJobRequest.builder()
-            .setData("testData".getBytes())
-            .build();
-
+    ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest(null, OffsetDateTime.now());
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       daprJobsClient.scheduleJob(scheduleJobRequest).block();
     });
@@ -159,7 +142,7 @@ class DaprJobsClientTest {
 
   @Test
   void scheduleJobShouldThrowWhenNameInRequestIsEmpty() {
-    ScheduleJobRequest scheduleJobRequest = ScheduleJobRequest.builder().setName("").build();
+    ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("", OffsetDateTime.now());
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       daprJobsClient.scheduleJob(scheduleJobRequest).block();
@@ -169,7 +152,7 @@ class DaprJobsClientTest {
 
   @Test
   void getJobShouldReturnResponseWhenAllFieldsArePresentInRequest() {
-    GetJobRequest getJobRequest = GetJobRequest.builder().setName("testJob").build();
+    GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     DaprProtos.Job job = DaprProtos.Job.newBuilder()
             .setName("testJob")
@@ -196,14 +179,14 @@ class DaprJobsClientTest {
     assertEquals("testJob", response.getName());
     assertEquals("testData", new String(response.getData(), StandardCharsets.UTF_8));
     assertEquals("*/5 * * * *", response.getSchedule().getExpression());
-    assertEquals(5, response.getRepeat());
+    assertEquals(5, response.getRepeats());
     assertEquals(job.getTtl(), response.getTtl().toString());
     assertEquals(job.getDueTime(), response.getDueTime().toString());
   }
 
   @Test
   void getJobShouldReturnResponseWhenRequiredFieldsArePresentInRequest() {
-    GetJobRequest getJobRequest = GetJobRequest.builder().setName("testJob").build();
+    GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     DaprProtos.Job job = DaprProtos.Job.newBuilder()
             .setName("testJob")
@@ -225,7 +208,7 @@ class DaprJobsClientTest {
     assertEquals("testJob", response.getName());
     assertNull(response.getData());
     assertNull(response.getSchedule());
-    assertNull(response.getRepeat());
+    assertNull(response.getRepeats());
     assertNull(response.getTtl());
     assertNull(response.getDueTime());
   }
@@ -240,7 +223,7 @@ class DaprJobsClientTest {
 
   @Test
   void getJobShouldThrowWhenNameIsNullRequest() {
-    GetJobRequest getJobRequest = GetJobRequest.builder().build();
+    GetJobRequest getJobRequest = new GetJobRequest(null);
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       daprJobsClient.getJob(getJobRequest).block();
@@ -250,7 +233,7 @@ class DaprJobsClientTest {
 
   @Test
   void getJobShouldThrowWhenNameIsEmptyRequest() {
-    GetJobRequest getJobRequest = GetJobRequest.builder().setName("").build();
+    GetJobRequest getJobRequest =new GetJobRequest("");;
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       daprJobsClient.getJob(getJobRequest).block();
@@ -260,7 +243,7 @@ class DaprJobsClientTest {
 
   @Test
   void deleteJobShouldSucceedWhenValidRequest() {
-    DeleteJobRequest deleteJobRequest = DeleteJobRequest.builder().setName("testJob").build();
+    DeleteJobRequest deleteJobRequest = new DeleteJobRequest("testJob");
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.DeleteJobResponse> observer = invocation.getArgument(1);
@@ -283,7 +266,7 @@ class DaprJobsClientTest {
 
   @Test
   void deleteJobShouldThrowWhenNameIsNullRequest() {
-    DeleteJobRequest deleteJobRequest = DeleteJobRequest.builder().build();
+    DeleteJobRequest deleteJobRequest = new DeleteJobRequest(null);
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       daprJobsClient.deleteJob(deleteJobRequest).block();
     });
@@ -292,7 +275,7 @@ class DaprJobsClientTest {
 
   @Test
   void deleteJobShouldThrowWhenNameIsEmptyRequest() {
-    DeleteJobRequest deleteJobRequest = DeleteJobRequest.builder().setName("").build();
+    DeleteJobRequest deleteJobRequest = new DeleteJobRequest("");
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       daprJobsClient.deleteJob(deleteJobRequest).block();
     });
