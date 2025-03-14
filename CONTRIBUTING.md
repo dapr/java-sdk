@@ -120,6 +120,10 @@ A non-exclusive list of code that must be places in `vendor/`:
 
 **Thank You!** - Your contributions to open source, large or small, make projects like this possible. Thank you for taking the time to contribute.
 
+## Github Dapr Bot Commands
+
+Checkout the [daprbot documentation](https://docs.dapr.io/contributing/daprbot/) for Github commands you can run in this repo for common tasks. For example, you can run the `/assign` (as a comment on an issue) to assign issues to a user or group of users.
+
 ## Code of Conduct
 
 This project has adopted the [Contributor Covenant Code of Conduct](https://github.com/dapr/community/blob/master/CODE-OF-CONDUCT.md)
