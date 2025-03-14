@@ -16,10 +16,6 @@
   <name>dapr-sdk-springboot</name>
   <description>SDK extension for Springboot</description>
 
-  <properties>
-    <maven.deploy.skip>false</maven.deploy.skip>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -85,6 +81,10 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
