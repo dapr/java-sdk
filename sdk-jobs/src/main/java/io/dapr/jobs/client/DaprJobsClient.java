@@ -161,16 +161,19 @@ public class DaprJobsClient implements AutoCloseable {
               )
           );
 
-      return getJobResponseMono.map(getJobResponse -> {
-        DaprProtos.Job job = getJobResponse.getJob();
-        return GetJobResponse.builder()
-                .setName(job.getName())
-                .setTtl(job.hasTtl() ? OffsetDateTime.parse(job.getTtl()) : null)
-                .setData(job.hasData() ? job.getData().getValue().toByteArray() : null)
-                .setRepeat(job.hasRepeats() ? job.getRepeats() : null)
-                .setSchedule(job.hasSchedule() ? JobSchedule.fromString(job.getSchedule()) : null)
-                .setDueTime(job.hasDueTime() ? OffsetDateTime.parse(job.getDueTime()) : null)
-                .build();
+      return getJobResponseMono.map(response -> {
+        DaprProtos.Job job = response.getJob();
+        GetJobResponse getJobResponse = null;
+        if (job.hasSchedule()) {
+          getJobResponse = new GetJobResponse(job.getName(), JobSchedule.fromString(job.getSchedule()));
+        } else {
+          getJobResponse = new GetJobResponse(job.getName(), OffsetDateTime.parse(job.getDueTime()));
+        }
+
+        return getJobResponse
+            .setTtl(job.hasTtl() ? OffsetDateTime.parse(job.getTtl()) : null)
+            .setData(job.hasData() ? job.getData().getValue().toByteArray() : null)
+            .setRepeat(job.hasRepeats() ? job.getRepeats() : null);
       });
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
