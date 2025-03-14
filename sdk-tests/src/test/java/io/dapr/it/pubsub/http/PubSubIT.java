@@ -31,11 +31,13 @@ import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.SerializedData;
 import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -138,8 +140,9 @@ public class PubSubIT extends BaseIT {
         60000));
     DaprObjectSerializer serializer = new DaprObjectSerializer() {
       @Override
-      public byte[] serialize(Object o) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsBytes(o);
+      @Nonnull
+      public SerializedData serializeWithContentType(Object o) throws JsonProcessingException {
+        return new SerializedData(OBJECT_MAPPER.writeValueAsBytes(o), getContentType());
       }
 
       @Override
@@ -266,9 +269,9 @@ public class PubSubIT extends BaseIT {
         60000));
 
     DaprObjectSerializer serializer = new DaprObjectSerializer() {
-      @Override
-      public byte[] serialize(Object o) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsBytes(o);
+      @Nonnull
+      public SerializedData serializeWithContentType(Object o) throws JsonProcessingException {
+        return new SerializedData(OBJECT_MAPPER.writeValueAsBytes(o), getContentType());
       }
 
       @Override
@@ -480,9 +483,9 @@ public class PubSubIT extends BaseIT {
         60000));
 
     DaprObjectSerializer serializer = new DaprObjectSerializer() {
-      @Override
-      public byte[] serialize(Object o) {
-        return (byte[])o;
+      @Nonnull
+      public SerializedData serializeWithContentType(Object o) throws JsonProcessingException {
+        return new SerializedData((byte[])o, getContentType());
       }
 
       @Override

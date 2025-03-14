@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.client.ObjectSerializer;
+import io.dapr.serializer.SerializedData;
 import io.dapr.utils.DurationUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -37,28 +38,28 @@ public class ActorObjectSerializer extends ObjectSerializer {
    * {@inheritDoc}
    */
   @Override
-  public byte[] serialize(Object state) throws IOException {
+  public SerializedData serializeWithContentType(Object state) throws IOException {
     if (state == null) {
       return null;
     }
 
     if (state.getClass() == ActorTimerParams.class) {
       // Special serializer for this internal classes.
-      return serialize((ActorTimerParams) state);
+      return new SerializedData(serialize((ActorTimerParams) state), "application/json");
     }
 
     if (state.getClass() == ActorReminderParams.class) {
       // Special serializer for this internal classes.
-      return serialize((ActorReminderParams) state);
+      return new SerializedData(serialize((ActorReminderParams) state), "application/json");
     }
 
     if (state.getClass() == ActorRuntimeConfig.class) {
       // Special serializer for this internal classes.
-      return serialize((ActorRuntimeConfig) state);
+      return new SerializedData(serialize((ActorRuntimeConfig) state), "application/json");
     }
 
     // Is not an special case.
-    return super.serialize(state);
+    return super.serializeWithContentType(state);
   }
 
   /**

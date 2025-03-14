@@ -18,6 +18,7 @@ import io.dapr.actors.ActorTrace;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.serializer.SerializedData;
 import io.dapr.utils.NetworkUtils;
 import io.grpc.ManagedChannel;
 import reactor.core.publisher.Mono;
@@ -170,7 +171,7 @@ public class ActorRuntime implements Closeable {
    * @throws IOException If cannot serialize config.
    */
   public byte[] serializeConfig() throws IOException {
-    return INTERNAL_SERIALIZER.serialize(this.config);
+    return INTERNAL_SERIALIZER.serializeWithContentType(this.config).getData();
   }
 
   /**

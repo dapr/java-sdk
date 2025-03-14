@@ -14,8 +14,10 @@ limitations under the License.
 package io.dapr.actors.runtime;
 
 import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.SerializedData;
 import io.dapr.utils.TypeRef;
 
+import javax.annotation.Nonnull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,12 +33,13 @@ public class JavaSerializer implements DaprObjectSerializer {
    * {@inheritDoc}
    */
   @Override
-  public byte[] serialize(Object o) throws IOException {
+  @Nonnull
+  public SerializedData serializeWithContentType(Object o) throws IOException {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
       try (ObjectOutputStream oos = new ObjectOutputStream(bos)) {
         oos.writeObject(o);
         oos.flush();
-        return bos.toByteArray();
+        return new SerializedData(bos.toByteArray(), "application/java");
       }
     }
   }

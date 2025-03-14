@@ -37,6 +37,7 @@ import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.serializer.SerializedData;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprGrpc;
@@ -164,7 +165,7 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
 
-    when(mockSerializer.serialize(any())).thenThrow(IOException.class);
+    when(mockSerializer.serializeWithContentType(any())).thenThrow(IOException.class);
     Mono<Void> result = client.publishEvent("pubsubname","topic", "{invalid-json");
 
     assertThrowsDaprException(
@@ -282,7 +283,7 @@ public class DaprClientGrpcTest {
       return null;
     }).when(daprStub).invokeBinding(any(DaprProtos.InvokeBindingRequest.class), any());
 
-    when(mockSerializer.serialize(any())).thenThrow(IOException.class);
+    when(mockSerializer.serializeWithContentType(any())).thenThrow(IOException.class);
     Mono<Void> result = client.invokeBinding("BindingName", "MyOperation", "request".getBytes(), Collections.EMPTY_MAP);
 
     assertThrowsDaprException(
@@ -1031,7 +1032,7 @@ public class DaprClientGrpcTest {
     }).when(daprStub).executeStateTransaction(any(DaprProtos.ExecuteStateTransactionRequest.class), any());
 
 
-    when(mockSerializer.serialize(any())).thenThrow(IOException.class);
+    when(mockSerializer.serializeWithContentType(any())).thenThrow(IOException.class);
     State<String> stateKey = buildStateKey(data, key, etag, options);
     TransactionalStateOperation<String> upsertOperation = new TransactionalStateOperation<>(
         TransactionalStateOperation.OperationType.UPSERT,
