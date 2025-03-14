@@ -64,7 +64,7 @@ public class DaprClientHttpTest {
   private static final int HTTP_SERVER_ERROR = 500;
   private static final int HTTP_OK = 200;
   private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
-  
+
   private String sidecarIp;
 
   private String daprApiToken;
