@@ -120,7 +120,7 @@
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-ai</artifactId>
+      <artifactId>dapr-sdk-conversation</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
