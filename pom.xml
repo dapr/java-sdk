@@ -46,6 +46,7 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <testcontainers.version>1.20.0</testcontainers.version>
     <springboot.version>3.4.3</springboot.version>
+    <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
   </properties>
 
   <distributionManagement>
@@ -162,10 +163,25 @@
           <artifactId>maven-resources-plugin</artifactId>
           <version>${maven-resources-plugin.version}</version>
         </plugin>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>${nexus-staging-maven-plugin.version}</version>
+          <extensions>true</extensions>
+          <configuration>
+            <serverId>ossrh</serverId>
+            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
-
     <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <inherited>false</inherited>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -198,17 +214,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.13</version>
-        <extensions>true</extensions>
-        <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>true</autoReleaseAfterClose>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -343,19 +348,6 @@
   </modules>
 
   <profiles>
-    <profile>
-      <id>deploy-profile</id>
-      <modules>
-        <!-- Include only the modules to be deployed -->
-        <module>sdk-autogen</module>
-        <module>sdk</module>
-        <module>sdk-actors</module>
-        <module>sdk-springboot</module>
-        <module>sdk-workflows</module>
-        <module>testcontainers-dapr</module>
-        <module>dapr-spring</module>
-      </modules>
-    </profile>
     <profile>
       <id>integration-tests</id>
       <modules>
