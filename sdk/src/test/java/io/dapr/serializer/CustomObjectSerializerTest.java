@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class CustomObjectSerializerTest {
 
   private static final DaprObjectSerializer SERIALIZER =
-      ObjectSerializerFactory.createJacksonSerializer(new ObjectMapper()
+      new CustomizableObjectSerializer(new ObjectMapper()
           .registerModule(new JavaTimeModule())
           .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
           .setSerializationInclusion(JsonInclude.Include.NON_NULL)
