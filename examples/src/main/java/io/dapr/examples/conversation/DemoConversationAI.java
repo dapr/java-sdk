@@ -1,9 +1,10 @@
 package io.dapr.examples.conversation;
 
-import io.dapr.ai.client.DaprConversationClient;
-import io.dapr.ai.client.DaprConversationInput;
-import io.dapr.ai.client.DaprConversationResponse;
-import io.dapr.v1.DaprProtos;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -16,13 +17,15 @@ public class DemoConversationAI {
      * @param args Input arguments (unused).
      */
     public static void main(String[] args) {
-        try (DaprConversationClient client = new DaprConversationClient()) {
-            DaprConversationInput daprConversationInput = new DaprConversationInput("11");
+        try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
+            ConversationInput daprConversationInput = new ConversationInput("11");
 
             // Component name is the name provided in the metadata block of the conversation.yaml file.
-            Mono<DaprConversationResponse> instanceId = client.converse("openai", new ArrayList<>(Collections.singleton(daprConversationInput)), "1234", false, 0.0d);
+            Mono<ConversationResponse> instanceId = client.converse(new ConversationRequest("openai", new ArrayList<>(Collections.singleton(daprConversationInput)))
+                .setContextId("contextId")
+                .setScrubPii(true).setTemperature(1.1d));
             System.out.printf("Started a new chaining model workflow with instance ID: %s%n", instanceId);
-            DaprConversationResponse response = instanceId.block();
+            ConversationResponse response = instanceId.block();
 
             System.out.println(response);
         } catch (Exception e) {
