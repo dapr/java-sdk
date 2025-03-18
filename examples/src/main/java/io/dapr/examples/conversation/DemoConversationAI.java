@@ -18,7 +18,7 @@ public class DemoConversationAI {
      */
     public static void main(String[] args) {
         try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
-            ConversationInput daprConversationInput = new ConversationInput("11");
+            ConversationInput daprConversationInput = new ConversationInput("Hello How are you ?");
 
             // Component name is the name provided in the metadata block of the conversation.yaml file.
             Mono<ConversationResponse> instanceId = client.converse(new ConversationRequest("openai", new ArrayList<>(Collections.singleton(daprConversationInput)))
