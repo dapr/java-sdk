@@ -119,11 +119,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.dapr</groupId>
-      <artifactId>dapr-sdk-conversation</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.evanlennick</groupId>
       <artifactId>retry4j</artifactId>
       <version>0.15.0</version>
