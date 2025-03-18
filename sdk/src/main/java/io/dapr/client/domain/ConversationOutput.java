@@ -1,4 +1,4 @@
-package io.dapr.ai.client;
+package io.dapr.client.domain;
 
 import java.util.Collections;
 import java.util.Map;
@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * Returns the conversation output.
  */
-public class DaprConversationOutput {
+public class ConversationOutput {
 
   private final String result;
 
@@ -18,7 +18,7 @@ public class DaprConversationOutput {
    * @param result result for one of the conversation input.
    * @param parameters all custom fields.
    */
-  public DaprConversationOutput(String result, Map<String, byte[]> parameters) {
+  public ConversationOutput(String result, Map<String, byte[]> parameters) {
     this.result = result;
     this.parameters = parameters;
   }

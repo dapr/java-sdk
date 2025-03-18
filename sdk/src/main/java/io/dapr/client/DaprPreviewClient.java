@@ -17,6 +17,9 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -268,4 +271,12 @@ public interface DaprPreviewClient extends AutoCloseable {
    */
   <T> Subscription subscribeToEvents(
       String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type);
+
+  /**
+   * Converse with an LLM.
+   *
+   * @param conversationRequest request to be passed to the LLM.
+   * @return {@link ConversationResponse}.
+   */
+  Mono<ConversationResponse> converse(ConversationRequest conversationRequest);
 }

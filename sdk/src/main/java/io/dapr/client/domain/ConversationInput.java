@@ -1,22 +1,27 @@
-package io.dapr.ai.client;
+package io.dapr.client.domain;
 
 /**
  * Represents an input message for a conversation with an LLM.
  */
-public class DaprConversationInput {
+public class ConversationInput {
 
   private final String content;
 
-  private DaprConversationRole role;
+  private ConversationRole role;
 
   private boolean scrubPii;
 
-  public DaprConversationInput(String content) {
+  /**
+   * Constructor.
+   *
+   * @param content for the llm.
+   */
+  public ConversationInput(String content) {
     this.content = content;
   }
 
   /**
-   * Retrieves the content of the conversation input.
+   * The message content to send to the LLM. Required
    *
    * @return The content to be sent to the LLM.
    */
@@ -25,21 +30,21 @@ public class DaprConversationInput {
   }
 
   /**
-   * Retrieves the role associated with the conversation input.
+   * The role for the LLM to assume.
    *
    * @return this.
    */
-  public DaprConversationRole getRole() {
+  public ConversationRole getRole() {
     return role;
   }
 
   /**
-   * Sets the role associated with the conversation input.
+   * Sets the role for LLM to assume.
    *
    * @param role The role to assign to the message.
    * @return this.
    */
-  public DaprConversationInput setRole(DaprConversationRole role) {
+  public ConversationInput setRole(ConversationRole role) {
     this.role = role;
     return this;
   }
@@ -54,12 +59,12 @@ public class DaprConversationInput {
   }
 
   /**
-   * Sets whether to scrub Personally Identifiable Information (PII) before sending to the LLM.
+   * Enable obfuscation of sensitive information present in the content field. Optional
    *
    * @param scrubPii A boolean indicating whether to remove PII.
    * @return this.
    */
-  public DaprConversationInput setScrubPii(boolean scrubPii) {
+  public ConversationInput setScrubPii(boolean scrubPii) {
     this.scrubPii = scrubPii;
     return this;
   }

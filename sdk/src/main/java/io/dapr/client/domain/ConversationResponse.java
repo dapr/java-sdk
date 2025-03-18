@@ -1,4 +1,4 @@
-package io.dapr.ai.client;
+package io.dapr.client.domain;
 
 import java.util.Collections;
 import java.util.List;
@@ -6,11 +6,11 @@ import java.util.List;
 /**
  * Response from the Dapr Conversation API.
  */
-public class DaprConversationResponse {
+public class ConversationResponse {
 
   private String contextId;
 
-  private final List<DaprConversationOutput> daprConversationOutputs;
+  private final List<ConversationOutput> daprConversationOutputs;
 
   /**
    * Constructor.
@@ -18,7 +18,7 @@ public class DaprConversationResponse {
    * @param contextId context id supplied to LLM.
    * @param daprConversationOutputs outputs from the LLM.
    */
-  public DaprConversationResponse(String contextId, List<DaprConversationOutput> daprConversationOutputs) {
+  public ConversationResponse(String contextId, List<ConversationOutput> daprConversationOutputs) {
     this.contextId = contextId;
     this.daprConversationOutputs = daprConversationOutputs;
   }
@@ -35,9 +35,9 @@ public class DaprConversationResponse {
   /**
    * Get list of conversation outputs.
    *
-   * @return List{@link DaprConversationOutput}.
+   * @return List{@link ConversationOutput}.
    */
-  public List<DaprConversationOutput> getDaprConversationOutputs() {
+  public List<ConversationOutput> getConversationOutpus() {
     return Collections.unmodifiableList(this.daprConversationOutputs);
   }
 }
