@@ -13,8 +13,10 @@ limitations under the License.
 
 package io.dapr.it.testcontainers;
 
-import io.dapr.config.Properties;
-import io.dapr.jobs.client.DaprJobsClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprClientImpl;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +26,7 @@ import java.util.Map;
 @Configuration
 public class TestDaprJobsConfiguration {
   @Bean
-  public DaprJobsClient daprJobsClient(
+  public DaprPreviewClient daprJobsClient(
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
       @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
   ){
@@ -33,6 +35,6 @@ public class TestDaprJobsConfiguration {
         "dapr.grpc.endpoint", daprGrpcEndpoint
     );
 
-    return new DaprJobsClient(new Properties(overrides), null);
+    return new DaprClientBuilder().buildPreviewClient();
   }
 }

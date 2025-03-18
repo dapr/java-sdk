@@ -1,11 +1,11 @@
-package io.dapr.jobs.client;
+package io.dapr.client.domain;
 
 import java.time.OffsetDateTime;
 
 /**
  * Represents a request to schedule a job in Dapr.
  */
-public class GetJobResponse {
+public class ScheduleJobRequest {
   private final String name;
   private byte[] data;
   private JobSchedule schedule;
@@ -14,25 +14,25 @@ public class GetJobResponse {
   private OffsetDateTime ttl;
 
   /**
-   * Constructor to create GetJobResponse.
+   * Constructor to create ScheduleJobRequest.
    *
    * @param name of the job.
    * @param schedule job has to run.
    */
-  public GetJobResponse(String name, JobSchedule schedule) {
+  public ScheduleJobRequest(String name, JobSchedule schedule) {
     this.name = name;
     this.schedule = schedule;
   }
 
   /**
-   * Constructor to create GetJobResponse.
+   * Constructor to create ScheduleJobRequest.
    *
    * @param name of the job.
    * @param dueTime An optional time at which the job should be active, or the “one shot” time, if other scheduling
    *                type fields are not provided. Accepts a “point in time” string in the format of RFC3339,
    *                Go duration string (calculated from creation time), or non-repeating ISO8601
    */
-  public GetJobResponse(String name, OffsetDateTime dueTime) {
+  public ScheduleJobRequest(String name, OffsetDateTime dueTime) {
     this.name = name;
     this.dueTime = dueTime;
   }
@@ -44,7 +44,7 @@ public class GetJobResponse {
    * @param data The job data in byte array format.
    * @return This builder instance.
    */
-  public GetJobResponse setData(byte[] data) {
+  public ScheduleJobRequest setData(byte[] data) {
     this.data = data;
     return this;
   }
@@ -56,7 +56,7 @@ public class GetJobResponse {
    * @param schedule The job schedule.
    * @return This builder instance.
    */
-  public GetJobResponse setSchedule(JobSchedule schedule) {
+  public ScheduleJobRequest setSchedule(JobSchedule schedule) {
     this.schedule = schedule;
     return this;
   }
@@ -68,7 +68,7 @@ public class GetJobResponse {
    * @param dueTime The due time of the job.
    * @return This builder instance.
    */
-  public GetJobResponse setDueTime(OffsetDateTime dueTime) {
+  public ScheduleJobRequest setDueTime(OffsetDateTime dueTime) {
     this.dueTime = dueTime;
     return this;
   }
@@ -80,7 +80,7 @@ public class GetJobResponse {
    * @param repeats The number of times the job should repeat.
    * @return This builder instance.
    */
-  public GetJobResponse setRepeat(Integer repeats) {
+  public ScheduleJobRequest setRepeat(Integer repeats) {
     this.repeats = repeats;
     return this;
   }
@@ -92,7 +92,7 @@ public class GetJobResponse {
    * @param ttl The time-to-live for the job.
    * @return This builder instance.
    */
-  public GetJobResponse setTtl(OffsetDateTime ttl) {
+  public ScheduleJobRequest setTtl(OffsetDateTime ttl) {
     this.ttl = ttl;
     return this;
   }

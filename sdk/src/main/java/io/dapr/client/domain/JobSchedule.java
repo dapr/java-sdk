@@ -1,4 +1,4 @@
-package io.dapr.jobs.client;
+package io.dapr.client.domain;
 
 import java.time.Duration;
 
@@ -69,13 +69,7 @@ public class JobSchedule {
    * @return a {@code JobsSchedule} for yearly execution.
    */
   public static JobSchedule yearly() {
-    return new JobSchedule(new CronExpressionBuilder()
-        .add(CronPeriod.SECONDS, 0)
-        .add(CronPeriod.MINUTES, 0)
-        .add(CronPeriod.HOURS, 0)
-        .add(CronPeriod.DayOfMonth, 1)
-        .add(CronPeriod.MonthOfYear, 1)
-        .build());
+    return new JobSchedule("0 0 0 1 1 *");
   }
 
   /**
@@ -84,12 +78,7 @@ public class JobSchedule {
    * @return a {@code JobsSchedule} for monthly execution.
    */
   public static JobSchedule monthly() {
-    return new JobSchedule(new CronExpressionBuilder()
-        .add(CronPeriod.SECONDS, 0)
-        .add(CronPeriod.MINUTES, 0)
-        .add(CronPeriod.HOURS, 0)
-        .add(CronPeriod.DayOfMonth, 1)
-        .build());
+    return new JobSchedule("0 0 0 1 * *");
   }
 
   /**
@@ -98,12 +87,7 @@ public class JobSchedule {
    * @return a {@code JobsSchedule} for weekly execution.
    */
   public static JobSchedule weekly() {
-    return new JobSchedule(new CronExpressionBuilder()
-        .add(CronPeriod.SECONDS, 0)
-        .add(CronPeriod.MINUTES, 0)
-        .add(CronPeriod.HOURS, 0)
-        .add(CronPeriod.DayOfWeek, 0)
-        .build());
+    return new JobSchedule("0 0 0 * * 0");
   }
 
   /**
@@ -112,11 +96,7 @@ public class JobSchedule {
    * @return a {@code JobsSchedule} for daily execution.
    */
   public static JobSchedule daily() {
-    return new JobSchedule(new CronExpressionBuilder()
-        .add(CronPeriod.SECONDS, 0)
-        .add(CronPeriod.MINUTES, 0)
-        .add(CronPeriod.HOURS, 0)
-        .build());
+    return new JobSchedule("0 0 0 * * *");
   }
 
   /**
@@ -125,10 +105,7 @@ public class JobSchedule {
    * @return a {@code JobsSchedule} for hourly execution.
    */
   public static JobSchedule hourly() {
-    return new JobSchedule(new CronExpressionBuilder()
-        .add(CronPeriod.SECONDS, 0)
-        .add(CronPeriod.MINUTES, 0)
-        .build());
+    return new JobSchedule("0 0 * * * *");
   }
 
   /**
