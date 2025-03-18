@@ -1,9 +1,13 @@
 package io.dapr.it.testcontainers;
 
-import io.dapr.jobs.client.*;
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
+import io.dapr.client.domain.JobSchedule;
+import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -57,7 +61,7 @@ public class DaprJobsIT {
   }
 
   @Autowired
-  private DaprJobsClient daprJobsClient;
+  private DaprPreviewClient daprPreviewClient;
 
   @BeforeEach
   public void setUp(){
@@ -68,51 +72,45 @@ public class DaprJobsIT {
   @Test
   public void testJobScheduleCreationWithDueTime() {
     OffsetDateTime currentTime = OffsetDateTime.now();
-    daprJobsClient.scheduleJob(ScheduleJobRequest.builder().setName("Job").setDueTime(currentTime).build()).block();
+    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)).block();
 
     GetJobResponse getJobResponse =
-        daprJobsClient.getJob(GetJobRequest.builder().setName("Job").build()).block();
-    Assert.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
-    Assert.assertEquals("Job", getJobResponse.getName());
+        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+    Assertions.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    Assertions.assertEquals("Job", getJobResponse.getName());
   }
 
   @Test
   public void testJobScheduleCreationWithSchedule() {
     OffsetDateTime currentTime = OffsetDateTime.now();
-    daprJobsClient.scheduleJob(ScheduleJobRequest.builder().setName("Job")
-        .setSchedule(JobSchedule.hourly())
-        .setDueTime(currentTime).build()).block();
+    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", JobSchedule.hourly())
+        .setDueTime(currentTime)).block();
 
     GetJobResponse getJobResponse =
-        daprJobsClient.getJob(GetJobRequest.builder().setName("Job").build()).block();
-    Assert.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
-    Assert.assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
-    Assert.assertEquals("Job", getJobResponse.getName());
+        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+    Assertions.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    Assertions.assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
+    Assertions.assertEquals("Job", getJobResponse.getName());
   }
 
   @Test
   public void testJobScheduleCreationWithAllParameters() {
     OffsetDateTime currentTime = OffsetDateTime.now();
 
-    String cronExpression = new CronExpressionBuilder()
-        .add(CronPeriod.SECONDS, 2)
-        .add(CronPeriod.HOURS, 3)
-        .add(DayOfWeek.FRI)
-        .build();
+    String cronExpression = "2 * 3 * * FRI";
 
-    daprJobsClient.scheduleJob(ScheduleJobRequest.builder().setName("Job")
+    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
         .setTtl(currentTime.plusHours(2))
         .setData("Job data".getBytes())
         .setRepeat(3)
-        .setSchedule(JobSchedule.fromString(cronExpression))
-        .setDueTime(currentTime).build()).block();
+        .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
-        daprJobsClient.getJob(GetJobRequest.builder().setName("Job").build()).block();
+        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
     Assertions.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
     Assertions.assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
     Assertions.assertEquals("Job", getJobResponse.getName());
-    Assertions.assertEquals(3, getJobResponse.getRepeat());
+    Assertions.assertEquals(3, getJobResponse.getRepeats());
     Assertions.assertEquals("Job data", new String(getJobResponse.getData()));
     Assertions.assertEquals(currentTime.plusHours(2), getJobResponse.getTtl());
   }
@@ -121,19 +119,14 @@ public class DaprJobsIT {
   public void testDeleteJobRequest() {
     OffsetDateTime currentTime = OffsetDateTime.now();
 
-    String cronExpression = new CronExpressionBuilder()
-        .add(CronPeriod.SECONDS, 2)
-        .add(CronPeriod.HOURS, 3)
-        .add(DayOfWeek.FRI)
-        .build();
+    String cronExpression = "2 * 3 * * FRI";
 
-    daprJobsClient.scheduleJob(ScheduleJobRequest.builder().setName("Job")
+    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
         .setTtl(currentTime.plusHours(2))
         .setData("Job data".getBytes())
         .setRepeat(3)
-        .setSchedule(JobSchedule.fromString(cronExpression))
-        .setDueTime(currentTime).build()).block();
+        .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
-    daprJobsClient.deleteJob(DeleteJobRequest.builder().setName("Job").build()).block();
+    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
   }
 }

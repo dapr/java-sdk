@@ -1,4 +1,4 @@
-package io.dapr.jobs.client;
+package io.dapr.client.domain;
 
 import org.junit.jupiter.api.Test;
 
