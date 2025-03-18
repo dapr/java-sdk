@@ -69,7 +69,7 @@ public class DaprTestContainersConfig {
     return new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.7.25-management-alpine"))
             .withExposedPorts(5672)
             .withNetworkAliases("rabbitmq")
-            .withReuse(true)
+            .withReuse(reuse)
             .withNetwork(daprNetwork);
   }
 
