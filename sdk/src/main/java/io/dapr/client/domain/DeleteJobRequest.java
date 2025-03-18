@@ -1,4 +1,4 @@
-package io.dapr.jobs.client;
+package io.dapr.client.domain;
 
 /**
  * Represents a request to schedule a job in Dapr.
