@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-parent</artifactId>
-        <version>0.14.0-SNAPSHOT</version>
+        <version>0.15.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -40,5 +40,12 @@
             <optional>true</optional>
         </dependency>
     </dependencies>
-
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+        </plugin>
+      </plugins>
+    </build>
 </project>

@@ -92,11 +92,30 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(Class<T> clazz) {
-    this.builder.addOrchestration(new WorkflowWrapper<>(clazz));
+    this.builder.addOrchestration(new WorkflowClassWrapper<>(clazz));
     this.workflowSet.add(clazz.getCanonicalName());
     this.workflows.add(clazz.getSimpleName());
 
-    this.logger.info("Registered Workflow: " +  clazz.getSimpleName());
+    this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
+
+    return this;
+  }
+
+  /**
+   * Registers a Workflow object.
+   *
+   * @param <T>   any Workflow type
+   * @param instance the workflow instance being registered
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends Workflow> WorkflowRuntimeBuilder registerWorkflow(T instance) {
+    Class<T> clazz = (Class<T>) instance.getClass();
+
+    this.builder.addOrchestration(new WorkflowInstanceWrapper<>(instance));
+    this.workflowSet.add(clazz.getCanonicalName());
+    this.workflows.add(clazz.getSimpleName());
+
+    this.logger.info("Registered Workflow: {}", clazz.getSimpleName());
 
     return this;
   }
@@ -109,11 +128,30 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(Class<T> clazz) {
-    this.builder.addActivity(new WorkflowActivityWrapper<>(clazz));
+    this.builder.addActivity(new WorkflowActivityClassWrapper<>(clazz));
     this.activitySet.add(clazz.getCanonicalName());
     this.activities.add(clazz.getSimpleName());
 
-    this.logger.info("Registered Activity: " +  clazz.getSimpleName());
+    this.logger.info("Registered Activity: {}", clazz.getSimpleName());
+
+    return this;
+  }
+
+  /**
+   * Registers an Activity object.
+   *
+   * @param <T>   any WorkflowActivity type
+   * @param instance the class instance being registered
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(T instance) {
+    Class<T> clazz = (Class<T>) instance.getClass();
+
+    this.builder.addActivity(new WorkflowActivityInstanceWrapper<>(instance));
+    this.activitySet.add(clazz.getCanonicalName());
+    this.activities.add(clazz.getSimpleName());
+
+    this.logger.info("Registered Activity: {}", clazz.getSimpleName());
 
     return this;
   }

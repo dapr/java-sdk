@@ -24,12 +24,12 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17 ]
-        spring-boot-version: [ 3.2.6 ]
-        spring-boot-display-version: [ 3.2.x ]
+        spring-boot-version: [  3.4.3 ]
+        spring-boot-display-version: [ 3.4.x ]
         experimental: [ false ]
         include:
           - java: 17
-            spring-boot-version: 3.3.0
+            spring-boot-version: 3.3.9
             spring-boot-display-version: 3.3.x
             experimental: false
     env:
@@ -38,9 +38,9 @@ jobs:
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.14.0
-      DAPR_RUNTIME_VER: 1.14.4
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.14.0/install/install.sh
+      DAPR_CLI_VER: 1.15.0
+      DAPR_RUNTIME_VER: 1.15.3
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
       TOXIPROXY_URL: https://github.com/Shopify/toxiproxy/releases/download/v2.5.0/toxiproxy-server-linux-amd64
@@ -146,7 +146,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 10
+    timeout-minutes: 30
     env:
       JDK_VER: 17
       OSSRH_USER_TOKEN: ${{ secrets.OSSRH_USER_TOKEN }}
@@ -174,11 +174,11 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: ./mvnw install -B -q
+        run: ./mvnw install -DskipTests -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
-          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy -pl \!examples
+          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy

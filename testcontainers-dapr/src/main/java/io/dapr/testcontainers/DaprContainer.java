@@ -15,6 +15,7 @@ package io.dapr.testcontainers;
 
 import io.dapr.testcontainers.converter.ComponentYamlConverter;
 import io.dapr.testcontainers.converter.ConfigurationYamlConverter;
+import io.dapr.testcontainers.converter.HttpEndpointYamlConverter;
 import io.dapr.testcontainers.converter.SubscriptionYamlConverter;
 import io.dapr.testcontainers.converter.YamlConverter;
 import io.dapr.testcontainers.converter.YamlMapperFactory;
@@ -48,6 +49,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
   private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
   private static final YamlConverter<Subscription> SUBSCRIPTION_CONVERTER = new SubscriptionYamlConverter(YAML_MAPPER);
+  private static final YamlConverter<HttpEndpoint> HTTPENDPOINT_CONVERTER = new HttpEndpointYamlConverter(YAML_MAPPER);
   private static final YamlConverter<Configuration> CONFIGURATION_CONVERTER = new ConfigurationYamlConverter(
       YAML_MAPPER);
   private static final WaitStrategy WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz/outbound")
@@ -56,6 +58,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   private final Set<Component> components = new HashSet<>();
   private final Set<Subscription> subscriptions = new HashSet<>();
+  private final Set<HttpEndpoint> httpEndpoints = new HashSet<>();
   private DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
@@ -65,6 +68,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private DaprPlacementContainer placementContainer;
   private String appName;
   private Integer appPort;
+  private String appHealthCheckPath;
   private boolean shouldReusePlacement;
 
   /**
@@ -99,6 +103,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return subscriptions;
   }
 
+  public Set<HttpEndpoint> getHttpEndpoints() {
+    return httpEndpoints;
+  }
+
   public DaprContainer withAppPort(Integer port) {
     this.appPort = port;
     return this;
@@ -106,6 +114,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withAppChannelAddress(String appChannelAddress) {
     this.appChannelAddress = appChannelAddress;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckPath(String appHealthCheckPath) {
+    this.appHealthCheckPath = appHealthCheckPath;
     return this;
   }
 
@@ -131,6 +144,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withSubscription(Subscription subscription) {
     subscriptions.add(subscription);
+    return this;
+  }
+
+  public DaprContainer withHttpEndpoint(HttpEndpoint httpEndpoint) {
+    httpEndpoints.add(httpEndpoint);
     return this;
   }
 
@@ -161,7 +179,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
    */
   public DaprContainer withComponent(Path path) {
     try {
-      Map<String, Object> component = this.YAML_MAPPER.loadAs(Files.newInputStream(path), Map.class);
+      Map<String, Object> component = YAML_MAPPER.loadAs(Files.newInputStream(path), Map.class);
 
       String type = (String) component.get("type");
       Map<String, Object> metadata = (Map<String, Object>) component.get("metadata");
@@ -221,12 +239,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
-    cmds.add("-app-id");
+    cmds.add("--app-id");
     cmds.add(appName);
     cmds.add("--dapr-listen-addresses=0.0.0.0");
     cmds.add("--app-protocol");
     cmds.add(DAPR_PROTOCOL.getName());
-    cmds.add("-placement-host-address");
+    cmds.add("--placement-host-address");
     cmds.add(placementService + ":50005");
 
     if (appChannelAddress != null && !appChannelAddress.isEmpty()) {
@@ -237,6 +255,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     if (appPort != null) {
       cmds.add("--app-port");
       cmds.add(Integer.toString(appPort));
+    }
+
+    if (appHealthCheckPath != null && !appHealthCheckPath.isEmpty()) {
+      cmds.add("--enable-app-health-check");
+      cmds.add("--app-health-check-path");
+      cmds.add(appHealthCheckPath);
     }
 
     if (configuration != null) {
@@ -289,6 +313,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       LOGGER.info("\t\n" + subscriptionYaml + "\n");
 
       withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
+    }
+
+    for (HttpEndpoint endpoint : httpEndpoints) {
+      String endpointYaml = HTTPENDPOINT_CONVERTER.convert(endpoint);
+
+      LOGGER.info("> HTTPEndpoint YAML: \n");
+      LOGGER.info("\t\n" + endpointYaml + "\n");
+
+      withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
     }
 
     dependsOn(placementContainer);

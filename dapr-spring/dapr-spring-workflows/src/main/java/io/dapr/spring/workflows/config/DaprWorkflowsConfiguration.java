@@ -17,7 +17,7 @@ import java.util.Map;
 public class DaprWorkflowsConfiguration implements ApplicationContextAware {
   private static final Logger LOGGER = LoggerFactory.getLogger(DaprWorkflowsConfiguration.class);
 
-  private WorkflowRuntimeBuilder workflowRuntimeBuilder;
+  private final WorkflowRuntimeBuilder workflowRuntimeBuilder;
 
   public DaprWorkflowsConfiguration(WorkflowRuntimeBuilder workflowRuntimeBuilder) {
     this.workflowRuntimeBuilder = workflowRuntimeBuilder;
@@ -29,16 +29,21 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
    */
   private void registerWorkflowsAndActivities(ApplicationContext applicationContext) {
     LOGGER.info("Registering Dapr Workflows and Activities");
+
     Map<String, Workflow> workflowBeans = applicationContext.getBeansOfType(Workflow.class);
-    for (Workflow w :  workflowBeans.values()) {
-      LOGGER.info("Dapr Workflow: '{}' registered", w.getClass().getName());
-      workflowRuntimeBuilder.registerWorkflow(w.getClass());
+
+    for (Workflow workflow :  workflowBeans.values()) {
+      LOGGER.info("Dapr Workflow: '{}' registered", workflow.getClass().getName());
+
+      workflowRuntimeBuilder.registerWorkflow(workflow);
     }
 
     Map<String, WorkflowActivity> workflowActivitiesBeans = applicationContext.getBeansOfType(WorkflowActivity.class);
-    for (WorkflowActivity a :  workflowActivitiesBeans.values()) {
-      LOGGER.info("Dapr Workflow Activity: '{}' registered", a.getClass().getName());
-      workflowRuntimeBuilder.registerActivity(a.getClass());
+
+    for (WorkflowActivity activity :  workflowActivitiesBeans.values()) {
+      LOGGER.info("Dapr Workflow Activity: '{}' registered", activity.getClass().getName());
+
+      workflowRuntimeBuilder.registerActivity(activity);
     }
 
     try (WorkflowRuntime runtime = workflowRuntimeBuilder.build()) {
