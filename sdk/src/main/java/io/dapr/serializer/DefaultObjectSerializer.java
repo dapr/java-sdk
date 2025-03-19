@@ -16,6 +16,7 @@ package io.dapr.serializer;
 import io.dapr.client.ObjectSerializer;
 import io.dapr.utils.TypeRef;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 /**
@@ -27,8 +28,9 @@ public class DefaultObjectSerializer extends ObjectSerializer implements DaprObj
    * {@inheritDoc}
    */
   @Override
-  public byte[] serialize(Object o) throws IOException {
-    return super.serialize(o);
+  @Nonnull
+  public SerializedData serializeWithContentType(Object o) throws IOException {
+    return super.serializeWithContentType(o);
   }
 
   /**
