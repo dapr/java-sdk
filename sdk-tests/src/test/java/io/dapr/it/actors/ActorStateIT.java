@@ -16,18 +16,13 @@ package io.dapr.it.actors;
 import io.dapr.actors.ActorId;
 import io.dapr.actors.client.ActorProxy;
 import io.dapr.actors.client.ActorProxyBuilder;
-import io.dapr.it.AppRun;
 import io.dapr.it.BaseIT;
 import io.dapr.it.DaprRun;
 import io.dapr.it.actors.services.springboot.StatefulActor;
 import io.dapr.it.actors.services.springboot.StatefulActorService;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.stream.Stream;
 
 import static io.dapr.it.Retry.callWithRetry;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -38,51 +33,37 @@ public class ActorStateIT extends BaseIT {
 
   private static Logger logger = LoggerFactory.getLogger(ActorStateIT.class);
 
-  /**
-   * Parameters for this test.
-   * Param #1: useGrpc.
-   * @return Collection of parameter tuples.
-   */
-  public static Stream<Arguments> data() {
-    return Stream.of(
-                    Arguments.of(AppRun.AppProtocol.HTTP ),
-                    Arguments.of(AppRun.AppProtocol.GRPC )
-    );
-  }
-
-  @ParameterizedTest
-  @MethodSource("data")
-  public void writeReadState(AppRun.AppProtocol serviceAppProtocol) throws Exception {
+  @Test
+  public void writeReadState() throws Exception {
     logger.debug("Starting actor runtime ...");
     // The call below will fail if service cannot start successfully.
-    DaprRun runtime = startDaprApp(
+    DaprRun run = startDaprApp(
       this.getClass().getSimpleName(),
       StatefulActorService.SUCCESS_MESSAGE,
       StatefulActorService.class,
       true,
-      60000,
-      serviceAppProtocol);
+      60000);
 
     String message = "This is a message to be saved and retrieved.";
     String name = "Jon Doe";
     byte[] bytes = new byte[] { 0x1 };
     ActorId actorId = new ActorId(
-        String.format("%d-%b", System.currentTimeMillis(), serviceAppProtocol));
+        String.format("%d", System.currentTimeMillis()));
     String actorType = "StatefulActorTest";
     logger.debug("Building proxy ...");
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
     ActorProxy proxy = proxyBuilder.build(actorId);
 
     // wating for actor to be activated
-    Thread.sleep(2000);  
+    Thread.sleep(5000);
     
     // Validate conditional read works.
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not present yet ... ");
       String result = proxy.invokeMethod("readMessage", String.class).block();
       assertNull(result);
-    }, 5000);
+    }, 10000);
 
     callWithRetry(() -> {
       logger.debug("Invoking writeMessage ... ");
@@ -146,7 +127,7 @@ public class ActorStateIT extends BaseIT {
     Thread.sleep(10000);
 
     logger.debug("Stopping service ...");
-    runtime.stop();
+    run.stop();
 
     logger.debug("Starting service ...");
     DaprRun run2 = startDaprApp(
@@ -154,14 +135,13 @@ public class ActorStateIT extends BaseIT {
         StatefulActorService.SUCCESS_MESSAGE,
         StatefulActorService.class,
         true,
-        60000,
-        serviceAppProtocol);
+        60000);
 
     // Need new proxy builder because the proxy builder holds the channel.
-    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run2.newActorClient()));
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
-    // wating for actor to be activated
+    // waiting for actor to be activated
     Thread.sleep(2000);  
 
     callWithRetry(() -> {

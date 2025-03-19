@@ -13,24 +13,16 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
-import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
 import io.dapr.v1.DaprGrpc;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.ResponseBody;
-import okhttp3.mock.Behavior;
-import okhttp3.mock.MediaTypes;
-import okhttp3.mock.MockInterceptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -40,13 +32,15 @@ import reactor.util.context.ContextView;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
@@ -57,29 +51,36 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DaprClientHttpTest {
 
   private final String EXPECTED_RESULT =
       "{\"data\":\"ewoJCSJwcm9wZXJ0eUEiOiAidmFsdWVBIiwKCQkicHJvcGVydHlCIjogInZhbHVlQiIKCX0=\"}";
+
+  private static final int HTTP_NO_CONTENT = 204;
+  private static final int HTTP_NOT_FOUND = 404;
+  private static final int HTTP_SERVER_ERROR = 500;
+  private static final int HTTP_OK = 200;
+  private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
   
   private String sidecarIp;
+
+  private String daprApiToken;
 
   private DaprClient daprClientHttp;
 
   private DaprHttp daprHttp;
 
-  private OkHttpClient okHttpClient;
-
-  private MockInterceptor mockInterceptor;
+  private HttpClient httpClient;
 
   @BeforeEach
   public void setUp() {
     sidecarIp = formatIpAddress(Properties.SIDECAR_IP.get());
-    mockInterceptor = new MockInterceptor(Behavior.UNORDERED);
-    okHttpClient = new OkHttpClient.Builder().addInterceptor(mockInterceptor).build();
-    daprHttp = new DaprHttp(sidecarIp, 3000, okHttpClient);
+    daprApiToken = Properties.API_TOKEN.get();
+    httpClient = mock(HttpClient.class);
+    daprHttp = new DaprHttp(sidecarIp, 3000, daprApiToken, READ_TIMEOUT, httpClient);
     daprClientHttp = buildDaprClient(daprHttp);
   }
 
@@ -97,14 +98,16 @@ public class DaprClientHttpTest {
 
   @Test
   public void waitForSidecarTimeOutHealthCheck() throws Exception {
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, okHttpClient);
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NO_CONTENT);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), 3000, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .delay(200)
-            .respond(204, ResponseBody.create("No Content", MediaType.get("application/json")));
+    when(httpClient.sendAsync(any(), any())).thenAnswer(invocation -> {
+      Thread.sleep(200);
+
+      return mockResponse;
+    });
 
     StepVerifier.create(daprClientHttp.waitForSidecar(100))
             .expectSubscription()
@@ -120,51 +123,50 @@ public class DaprClientHttpTest {
 
   @Test
   public void waitForSidecarBadHealthCheck() throws Exception {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NOT_FOUND);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
+    AtomicInteger count = new AtomicInteger(0);
 
-      mockInterceptor.addRule()
-              .get()
-              .path("/v1.0/healthz/outbound")
-              .times(6)
-              .respond(404, ResponseBody.create("Not Found", MediaType.get("application/json")));
+    when(httpClient.sendAsync(any(), any())).thenAnswer(invocation -> {
+      if (count.getAndIncrement() < 6) {
+        return mockResponse;
+      }
 
-    // retry the max allowed retries (5 times)
+      return CompletableFuture.failedFuture(new TimeoutException());
+    });
+
+    // it will timeout.
     StepVerifier.create(daprClientHttp.waitForSidecar(5000))
             .expectSubscription()
-            .expectErrorMatches(throwable -> {
-              if (throwable instanceof RuntimeException) {
-                return "Retries exhausted: 5/5".equals(throwable.getMessage());
-              }
-              return false;
-            })
-            .verify(Duration.ofSeconds(20));
+            .expectError()
+            .verify(Duration.ofMillis(6000));
   }
 
   @Test
   public void waitForSidecarSlowSuccessfulHealthCheck() throws Exception {
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, okHttpClient);
+    daprHttp = new DaprHttp(Properties.SIDECAR_IP.get(), port, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
+    AtomicInteger count = new AtomicInteger(0);
+
+    when(httpClient.sendAsync(any(), any())).thenAnswer(invocation -> {
+      if (count.getAndIncrement() < 2) {
+        Thread.sleep(1000);
+
+        MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_SERVER_ERROR);
+        return CompletableFuture.<HttpResponse<Object>>completedFuture(mockHttpResponse);
+      }
+
+      Thread.sleep(1000);
+
+      MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NO_CONTENT);
+      return CompletableFuture.<HttpResponse<Object>>completedFuture(mockHttpResponse);
+    });
 
     // Simulate a slow response
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .delay(1000)
-            .times(2)
-            .respond(500, ResponseBody.create("Internal Server Error", MediaType.get("application/json")));
-
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .delay(1000)
-            .times(1)
-            .respond(204, ResponseBody.create("No Content", MediaType.get("application/json")));
-
     StepVerifier.create(daprClientHttp.waitForSidecar(5000))
             .expectSubscription()
             .expectNext()
@@ -174,15 +176,13 @@ public class DaprClientHttpTest {
 
   @Test
   public void waitForSidecarOK() throws Exception {
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NO_CONTENT);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
     int port = findFreePort();
-    System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
-    daprHttp = new DaprHttp(sidecarIp, port, okHttpClient);
+    daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, READ_TIMEOUT, httpClient);
     DaprClient daprClientHttp = buildDaprClient(daprHttp);
 
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .respond(204);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     StepVerifier.create(daprClientHttp.waitForSidecar(10000))
             .expectSubscription()
@@ -192,13 +192,14 @@ public class DaprClientHttpTest {
 
   @Test
   public void waitForSidecarTimeoutOK() throws Exception {
-    mockInterceptor.addRule()
-            .get()
-            .path("/v1.0/healthz/outbound")
-            .respond(204);
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_NO_CONTENT);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
     try (ServerSocket serverSocket = new ServerSocket(0)) {
-      final int port = serverSocket.getLocalPort();
-      System.setProperty(Properties.HTTP_PORT.getName(), Integer.toString(port));
+      int port = serverSocket.getLocalPort();
+
       Thread t = new Thread(() -> {
         try {
             try (Socket socket = serverSocket.accept()) {
@@ -207,7 +208,8 @@ public class DaprClientHttpTest {
         }
       });
       t.start();
-      daprHttp = new DaprHttp(sidecarIp, port, okHttpClient);
+
+      daprHttp = new DaprHttp(sidecarIp, port, daprApiToken, READ_TIMEOUT, httpClient);
       DaprClient daprClientHttp = buildDaprClient(daprHttp);
       daprClientHttp.waitForSidecar(10000).block();
     }
@@ -215,80 +217,146 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeServiceVerbNull() {
-    mockInterceptor.addRule()
-          .post("http://" + sidecarIp + ":3000/v1.0/publish/A")
-          .respond(EXPECTED_RESULT);
-    String event = "{ \"message\": \"This is a test\" }";
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(EXPECTED_RESULT.getBytes(), HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeMethod(null, "", "", null, null, (Class)null).block());
+        daprClientHttp.invokeMethod(
+            null,
+            "",
+            "",
+            null,
+            null,
+            (Class)null
+        ).block());
   }
 
   @Test
   public void invokeServiceIllegalArgumentException() {
-    mockInterceptor.addRule()
-        .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/badorder")
-        .respond("INVALID JSON");
+    byte[] content = "INVALID JSON".getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     assertThrows(IllegalArgumentException.class, () -> {
       // null HttpMethod
-      daprClientHttp.invokeMethod("1", "2", "3", new HttpExtension(null), null, (Class)null).block();
+      daprClientHttp.invokeMethod(
+          "1",
+          "2",
+          "3",
+          new HttpExtension(null),
+          null,
+          (Class)null
+      ).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null HttpExtension
-      daprClientHttp.invokeMethod("1", "2", "3", null, null, (Class)null).block();
+      daprClientHttp.invokeMethod(
+          "1",
+          "2",
+          "3",
+          null,
+          null,
+          (Class)null
+      ).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty appId
-      daprClientHttp.invokeMethod("", "1", null, HttpExtension.GET, null, (Class)null).block();
+      daprClientHttp.invokeMethod(
+          "",
+          "1",
+          null,
+          HttpExtension.GET,
+          null,
+          (Class)null
+      ).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null appId, empty method
-      daprClientHttp.invokeMethod(null, "", null, HttpExtension.POST, null, (Class)null).block();
+      daprClientHttp.invokeMethod(
+          null,
+          "",
+          null,
+          HttpExtension.POST,
+          null,
+          (Class)null
+      ).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // empty method
-      daprClientHttp.invokeMethod("1", "", null, HttpExtension.PUT, null, (Class)null).block();
+      daprClientHttp.invokeMethod(
+          "1",
+          "",
+          null,
+          HttpExtension.PUT,
+          null,
+          (Class)null
+      ).block();
     });
     assertThrows(IllegalArgumentException.class, () -> {
       // null method
-      daprClientHttp.invokeMethod("1", null, null, HttpExtension.DELETE, null, (Class)null).block();
+      daprClientHttp.invokeMethod(
+          "1",
+          null,
+          null,
+          HttpExtension.DELETE,
+          null,
+          (Class)null
+      ).block();
     });
     assertThrowsDaprException(JsonParseException.class, () -> {
       // invalid JSON response
-      daprClientHttp.invokeMethod("41", "badorder", null, HttpExtension.GET, null, String.class).block();
+      daprClientHttp.invokeMethod(
+          "41",
+          "badorder",
+          null,
+          HttpExtension.GET,
+          null,
+          String.class
+      ).block();
     });
   }
 
   @Test
   public void invokeServiceDaprError() {
-    mockInterceptor.addRule()
-        .post("http://" + sidecarIp + ":3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "{ \"errorCode\": \"MYCODE\", \"message\": \"My Message\"}",
-                MediaTypes.MEDIATYPE_JSON));
+    byte[] content = "{ \"errorCode\": \"MYCODE\", \"message\": \"My Message\"}".getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_SERVER_ERROR);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     DaprException exception = assertThrows(DaprException.class, () -> {
-      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+      daprClientHttp.invokeMethod(
+          "myapp",
+          "mymethod",
+          "anything",
+          HttpExtension.POST
+      ).block();
     });
 
     assertEquals("MYCODE", exception.getErrorCode());
     assertEquals("MYCODE: My Message (HTTP status code: 500)", exception.getMessage());
-    assertEquals(500, exception.getHttpStatusCode());
+    assertEquals(HTTP_SERVER_ERROR, exception.getHttpStatusCode());
   }
 
   @Test
   public void invokeServiceDaprErrorFromGRPC() {
-    mockInterceptor.addRule()
-        .post("http://" + sidecarIp + ":3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "{ \"code\": 7 }",
-                MediaTypes.MEDIATYPE_JSON));
+    byte[] content = "{ \"code\": 7 }".getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_SERVER_ERROR);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     DaprException exception = assertThrows(DaprException.class, () -> {
-      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+      daprClientHttp.invokeMethod(
+          "myapp",
+          "mymethod",
+          "anything",
+          HttpExtension.POST
+      ).block();
     });
 
     assertEquals("PERMISSION_DENIED", exception.getErrorCode());
@@ -297,12 +365,11 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeServiceDaprErrorUnknownJSON() {
-    mockInterceptor.addRule()
-        .post("http://" + sidecarIp + ":3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "{ \"anything\": 7 }",
-                MediaTypes.MEDIATYPE_JSON));
+    byte[] content = "{ \"anything\": 7 }".getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_SERVER_ERROR);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     DaprException exception = assertThrows(DaprException.class, () -> {
       daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
@@ -315,119 +382,203 @@ public class DaprClientHttpTest {
 
   @Test
   public void invokeServiceDaprErrorEmptyString() {
-    mockInterceptor.addRule()
-        .post("http://" + sidecarIp + ":3000/v1.0/invoke/myapp/method/mymethod")
-        .respond(500,
-            ResponseBody.create(
-                "",
-                MediaTypes.MEDIATYPE_JSON));
+    byte[] content = "".getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_SERVER_ERROR);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     DaprException exception = assertThrows(DaprException.class, () -> {
-      daprClientHttp.invokeMethod("myapp", "mymethod", "anything", HttpExtension.POST).block();
+      daprClientHttp.invokeMethod(
+          "myapp",
+          "mymethod",
+          "anything",
+          HttpExtension.POST
+      ).block();
     });
 
     assertEquals("UNKNOWN", exception.getErrorCode());
     assertEquals("UNKNOWN: HTTP status code: 500", exception.getMessage());
   }
 
-
   @Test
   public void invokeServiceMethodNull() {
-    mockInterceptor.addRule()
-          .post("http://" + sidecarIp + ":3000/v1.0/publish/A")
-          .respond(EXPECTED_RESULT);
+    byte[] content = EXPECTED_RESULT.getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     assertThrows(IllegalArgumentException.class, () ->
-        daprClientHttp.invokeMethod("1", "", null, HttpExtension.POST, null, (Class)null).block());
+        daprClientHttp.invokeMethod(
+            "1",
+            "",
+            null,
+            HttpExtension.POST,
+            null,
+            (Class)null
+        ).block());
   }
 
   @Test
   public void invokeService() {
-    mockInterceptor.addRule()
-        .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-        .respond("\"hello world\"");
+    byte[] content = "\"hello world\"".getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    Mono<String> mono = daprClientHttp.invokeMethod(
+       "41",
+       "neworder",
+       null,
+       HttpExtension.GET,
+       null,
+       String.class
+   );
+
     assertEquals("hello world", mono.block());
   }
 
   @Test
   public void invokeServiceNullResponse() {
-    mockInterceptor.addRule()
-        .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-        .respond(new byte[0]);
+    byte[] content = new byte[0];
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    Mono<String> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, null, String.class);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    Mono<String> mono = daprClientHttp.invokeMethod(
+        "41",
+        "neworder",
+        null,
+        HttpExtension.GET,
+        null,
+        String.class
+    );
+
     assertNull(mono.block());
   }
 
   @Test
   public void simpleInvokeService() {
-    mockInterceptor.addRule()
-          .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-          .respond(EXPECTED_RESULT);
+    byte[] content = EXPECTED_RESULT.getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", null, HttpExtension.GET, byte[].class);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    Mono<byte[]> mono = daprClientHttp.invokeMethod(
+        "41",
+        "neworder",
+        null,
+        HttpExtension.GET,
+        byte[].class
+    );
+
     assertEquals(new String(mono.block()), EXPECTED_RESULT);
   }
 
   @Test
   public void invokeServiceWithMetadataMap() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-          .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-          .respond(EXPECTED_RESULT);
+    Map<String, String> map = Map.of();
+    byte[] content = EXPECTED_RESULT.getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    Mono<byte[]> mono = daprClientHttp.invokeMethod("41", "neworder", (byte[]) null, HttpExtension.GET, map);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    Mono<byte[]> mono = daprClientHttp.invokeMethod(
+        "41",
+        "neworder",
+        (byte[]) null,
+        HttpExtension.GET,
+        map
+    );
     String monoString = new String(mono.block());
+
     assertEquals(monoString, EXPECTED_RESULT);
   }
 
   @Test
   public void invokeServiceWithOutRequest() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-          .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-          .respond(EXPECTED_RESULT);
+    Map<String, String> map = Map.of();
+    byte[] content = EXPECTED_RESULT.getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", HttpExtension.GET, map);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    Mono<Void> mono = daprClientHttp.invokeMethod(
+        "41",
+        "neworder",
+        HttpExtension.GET,
+        map
+    );
+
     assertNull(mono.block());
   }
 
   @Test
   public void invokeServiceWithRequest() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-          .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-          .respond(EXPECTED_RESULT);
+    Map<String, String> map = Map.of();
+    byte[] content = EXPECTED_RESULT.getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    Mono<Void> mono = daprClientHttp.invokeMethod(
+        "41",
+        "neworder",
+        "",
+        HttpExtension.GET,
+        map
+    );
+
     assertNull(mono.block());
   }
 
   @Test
   public void invokeServiceWithRequestAndQueryString() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-        .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder?param1=1&param2=a&param2=b%2Fc")
-        .respond(EXPECTED_RESULT);
+    Map<String, String> map = Map.of();
+    Map<String, List<String>> queryString = Map.of(
+        "param1", List.of("1"),
+        "param2", List.of("a", "b/c")
+    );
+    byte[] content = EXPECTED_RESULT.getBytes();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    Map<String, List<String>> queryString = new HashMap<>();
-    queryString.put("param1", Collections.singletonList("1"));
-    queryString.put("param2", Arrays.asList("a", "b/c"));
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
     HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryString, null);
-    Mono<Void> mono = daprClientHttp.invokeMethod("41", "neworder", "", httpExtension, map);
+    Mono<Void> mono = daprClientHttp.invokeMethod(
+        "41",
+        "neworder",
+        "",
+        httpExtension,
+        map
+    );
+
     assertNull(mono.block());
   }
 
   @Test
   public void invokeServiceNoHotMono() {
-    Map<String, String> map = new HashMap<>();
-    mockInterceptor.addRule()
-        .get("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-        .respond(500);
+    Map<String, String> map = Map.of();
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(HTTP_SERVER_ERROR);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
 
-    daprClientHttp.invokeMethod("41", "neworder", "", HttpExtension.GET, map);
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
+
+    daprClientHttp.invokeMethod(
+        "41",
+        "neworder",
+        "",
+        HttpExtension.GET,
+        map
+    );
     // No exception should be thrown because did not call block() on mono above.
   }
 
@@ -439,18 +590,27 @@ public class DaprClientHttpTest {
         .put("traceparent", traceparent)
         .put("tracestate", tracestate)
         .put("not_added", "xyz");
-    mockInterceptor.addRule()
-        .post("http://" + sidecarIp + ":3000/v1.0/invoke/41/method/neworder")
-        .header("traceparent", traceparent)
-        .header("tracestate", tracestate)
-        .respond(new byte[0]);
+    byte[] content = new byte[0];
+    MockHttpResponse mockHttpResponse = new MockHttpResponse(content, HTTP_OK);
+    CompletableFuture<HttpResponse<Object>> mockResponse = CompletableFuture.completedFuture(mockHttpResponse);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+    when(httpClient.sendAsync(any(), any())).thenReturn(mockResponse);
 
     InvokeMethodRequest req = new InvokeMethodRequest("41", "neworder")
         .setBody("request")
         .setHttpExtension(HttpExtension.POST);
     Mono<Void> result = daprClientHttp.invokeMethod(req, TypeRef.get(Void.class))
         .contextWrite(it -> it.putAll((ContextView) context));
+
     result.block();
+
+    verify(httpClient).sendAsync(requestCaptor.capture(), any());
+
+    HttpRequest request = requestCaptor.getValue();
+
+    assertEquals(traceparent, request.headers().firstValue("traceparent").get());
+    assertEquals(tracestate, request.headers().firstValue("tracestate").get());
   }
 
   @Test
@@ -473,23 +633,4 @@ public class DaprClientHttpTest {
     daprClientHttp.close();
   }
 
-  private static class XmlSerializer implements DaprObjectSerializer {
-
-    private static final XmlMapper XML_MAPPER = new XmlMapper();
-
-    @Override
-    public byte[] serialize(Object o) throws IOException {
-      return XML_MAPPER.writeValueAsBytes(o);
-    }
-
-    @Override
-    public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
-      return XML_MAPPER.readValue(data, new TypeReference<T>() {});
-    }
-
-    @Override
-    public String getContentType() {
-      return "application/xml";
-    }
-  }
 }

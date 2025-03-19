@@ -23,6 +23,7 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.DaprMetadata;
@@ -56,6 +57,7 @@ import io.dapr.client.domain.UnsubscribeConfigurationRequest;
 import io.dapr.client.domain.UnsubscribeConfigurationResponse;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.exceptions.DaprException;
+import io.dapr.internal.exceptions.DaprHttpException;
 import io.dapr.internal.grpc.DaprClientGrpcInterceptors;
 import io.dapr.internal.resiliency.RetryPolicy;
 import io.dapr.internal.resiliency.TimeoutPolicy;
@@ -74,16 +76,20 @@ import io.dapr.v1.DaprProtos.MetadataHTTPEndpoint;
 import io.dapr.v1.DaprProtos.PubsubSubscription;
 import io.dapr.v1.DaprProtos.PubsubSubscriptionRule;
 import io.dapr.v1.DaprProtos.RegisteredComponents;
-import io.grpc.CallOptions;
 import io.grpc.Channel;
+import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
+
+import javax.annotation.Nonnull;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -94,10 +100,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static io.dapr.internal.exceptions.DaprHttpException.isSuccessfulHttpStatusCode;
+import static io.dapr.internal.exceptions.DaprHttpException.isValidHttpStatusCode;
+import static io.dapr.internal.exceptions.DaprHttpException.parseHttpStatusCode;
 
 /**
  * Implementation of the Dapr client combining gRPC and HTTP (when applicable).
@@ -107,15 +116,12 @@ import java.util.stream.Collectors;
  */
 public class DaprClientImpl extends AbstractDaprClient {
 
+  private final Logger logger;
+
   /**
    * The GRPC managed channel to be used.
    */
   private final GrpcChannelFacade channel;
-
-  /**
-   * The timeout policy.
-   */
-  private final TimeoutPolicy timeoutPolicy;
 
   /**
    * The retry policy.
@@ -134,9 +140,10 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   private final DaprHttp httpClient;
 
+  private final DaprClientGrpcInterceptors grpcInterceptors;
+
   /**
-   * Default access level constructor, in order to create an instance of this 
-   * class use io.dapr.client.DaprClientBuilder
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
    *
    * @param channel           Facade for the managed GRPC channel
    * @param asyncStub         async gRPC stub
@@ -150,7 +157,27 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprHttp httpClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer) {
-    this(channel, asyncStub, httpClient, objectSerializer, stateSerializer, null);
+    this(channel, asyncStub, httpClient, objectSerializer, stateSerializer, null, null);
+  }
+
+  /**
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
+   * @param daprApiToken      Dapr API Token.
+   * @see DaprClientBuilder
+   */
+  DaprClientImpl(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprHttp httpClient,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer,
+      String daprApiToken) {
+    this(channel, asyncStub, httpClient, objectSerializer, stateSerializer, null, daprApiToken);
   }
 
   /**
@@ -162,6 +189,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    * @param objectSerializer  Serializer for transient request/response objects.
    * @param stateSerializer   Serializer for state objects.
    * @param resiliencyOptions Client-level override for resiliency options.
+   * @param daprApiToken      Dapr API Token.
    * @see DaprClientBuilder
    */
   DaprClientImpl(
@@ -170,15 +198,48 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprHttp httpClient,
       DaprObjectSerializer objectSerializer,
       DaprObjectSerializer stateSerializer,
-      ResiliencyOptions resiliencyOptions) {
+      ResiliencyOptions resiliencyOptions,
+      String daprApiToken) {
+    this(
+        channel,
+        asyncStub,
+        httpClient,
+        objectSerializer,
+        stateSerializer,
+        new TimeoutPolicy(resiliencyOptions == null ? null : resiliencyOptions.getTimeout()),
+        new RetryPolicy(resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries()),
+        daprApiToken);
+  }
+
+  /**
+   * Instantiates a new DaprClient.
+   *
+   * @param channel           Facade for the managed GRPC channel
+   * @param asyncStub         async gRPC stub
+   * @param httpClient        client for http service invocation
+   * @param objectSerializer  Serializer for transient request/response objects.
+   * @param stateSerializer   Serializer for state objects.
+   * @param timeoutPolicy     Client-level timeout policy.
+   * @param retryPolicy       Client-level retry policy.
+   * @param daprApiToken      Dapr API Token.
+   * @see DaprClientBuilder
+   */
+  private DaprClientImpl(
+      GrpcChannelFacade channel,
+      DaprGrpc.DaprStub asyncStub,
+      DaprHttp httpClient,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer,
+      TimeoutPolicy timeoutPolicy,
+      RetryPolicy retryPolicy,
+      String daprApiToken) {
     super(objectSerializer, stateSerializer);
     this.channel = channel;
     this.asyncStub = asyncStub;
     this.httpClient = httpClient;
-    this.timeoutPolicy = new TimeoutPolicy(
-        resiliencyOptions == null ? null : resiliencyOptions.getTimeout());
-    this.retryPolicy = new RetryPolicy(
-        resiliencyOptions == null ? null : resiliencyOptions.getMaxRetries());
+    this.retryPolicy = retryPolicy;
+    this.grpcInterceptors = new DaprClientGrpcInterceptors(daprApiToken, timeoutPolicy);
+    this.logger = LoggerFactory.getLogger(DaprClientImpl.class);
   }
 
   private CommonProtos.StateOptions.StateConsistency getGrpcStateConsistency(StateOptions options) {
@@ -208,7 +269,7 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   public <T extends AbstractStub<T>> T newGrpcStub(String appId, Function<Channel, T> stubBuilder) {
     // Adds Dapr interceptors to populate gRPC metadata automatically.
-    return DaprClientGrpcInterceptors.intercept(appId, stubBuilder.apply(this.channel.getGrpcChannel()), timeoutPolicy);
+    return this.grpcInterceptors.intercept(appId, stubBuilder.apply(this.channel.getGrpcChannel()));
   }
 
   /**
@@ -217,53 +278,21 @@ public class DaprClientImpl extends AbstractDaprClient {
   @Override
   public Mono<Void> waitForSidecar(int timeoutInMilliseconds) {
     String[] pathSegments = new String[] { DaprHttp.API_VERSION, "healthz", "outbound"};
-    int maxRetries = 5;
-
-    Retry retrySpec = Retry
-        .fixedDelay(maxRetries, Duration.ofMillis(500))
-        .doBeforeRetry(retrySignal -> {
-          System.out.println("Retrying component health check...");
-        });
-
-    /*
-    NOTE: (Cassie) Uncomment this once it actually gets implemented:
-    https://github.com/grpc/grpc-java/issues/4359
-
-    int maxChannelStateRetries = 5;
-
-    // Retry logic for checking the channel state
-    Retry channelStateRetrySpec = Retry
-            .fixedDelay(maxChannelStateRetries, Duration.ofMillis(500))
-            .doBeforeRetry(retrySignal -> {
-              System.out.println("Retrying channel state check...");
-            });
-    */
 
     // Do the Dapr Http endpoint check to have parity with Dotnet
     Mono<DaprHttp.Response> responseMono = this.httpClient.invokeApi(DaprHttp.HttpMethods.GET.name(), pathSegments,
         null, "", null, null);
 
     return responseMono
-        .retryWhen(retrySpec)
-        /*
-        NOTE: (Cassie) Uncomment this once it actually gets implemented:
-        https://github.com/grpc/grpc-java/issues/4359
-        .flatMap(response -> {
-          // Check the status code
-          int statusCode = response.getStatusCode();
-
-          // Check if the channel's state is READY
-          return Mono.defer(() -> {
-            if (this.channel.getState(true) == ConnectivityState.READY) {
-              // Return true if the status code is in the 2xx range
-              if (statusCode >= 200 && statusCode < 300) {
-                return Mono.empty(); // Continue with the flow
-              }
-            }
-            return Mono.error(new RuntimeException("Health check failed"));
-          }).retryWhen(channelStateRetrySpec);
-        })
-        */
+        // No method to "retry forever every 500ms", so we make it practically forever.
+        // 9223372036854775807 * 500 ms = 1.46235604 x 10^11 years
+        // If anyone needs to wait for the sidecar for longer than that, sorry.
+        .retryWhen(
+            Retry
+                .fixedDelay(Long.MAX_VALUE, Duration.ofMillis(500))
+                .doBeforeRetry(s -> {
+                  this.logger.info("Retrying sidecar health check ...");
+                }))
         .timeout(Duration.ofMillis(timeoutInMilliseconds))
         .onErrorResume(DaprException.class, e ->
             Mono.error(new RuntimeException(e)))
@@ -395,6 +424,62 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public <T> Subscription subscribeToEvents(
+      String pubsubName, String topic, SubscriptionListener<T> listener, TypeRef<T> type) {
+    DaprProtos.SubscribeTopicEventsRequestInitialAlpha1 initialRequest =
+        DaprProtos.SubscribeTopicEventsRequestInitialAlpha1.newBuilder()
+            .setTopic(topic)
+            .setPubsubName(pubsubName)
+            .build();
+    DaprProtos.SubscribeTopicEventsRequestAlpha1 request =
+        DaprProtos.SubscribeTopicEventsRequestAlpha1.newBuilder()
+            .setInitialRequest(initialRequest)
+            .build();
+    return buildSubscription(listener, type, request);
+  }
+
+  @Nonnull
+  private <T> Subscription<T> buildSubscription(
+      SubscriptionListener<T> listener,
+      TypeRef<T> type,
+      DaprProtos.SubscribeTopicEventsRequestAlpha1 request) {
+    var interceptedStub = this.grpcInterceptors.intercept(this.asyncStub);
+    Subscription<T> subscription = new Subscription<>(interceptedStub, request, listener, response -> {
+      if (response.getEventMessage() == null) {
+        return null;
+      }
+
+      var message = response.getEventMessage();
+      if ((message.getPubsubName() == null) || message.getPubsubName().isEmpty()) {
+        return null;
+      }
+
+      try {
+        CloudEvent<T> cloudEvent = new CloudEvent<>();
+        T object = null;
+        if (type != null) {
+          object = DaprClientImpl.this.objectSerializer.deserialize(message.getData().toByteArray(), type);
+        }
+        cloudEvent.setData(object);
+        cloudEvent.setDatacontenttype(message.getDataContentType());
+        cloudEvent.setId(message.getId());
+        cloudEvent.setTopic(message.getTopic());
+        cloudEvent.setSpecversion(message.getSpecVersion());
+        cloudEvent.setType(message.getType());
+        cloudEvent.setPubsubName(message.getPubsubName());
+        return cloudEvent;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
+    subscription.start();
+    return subscription;
+  }
+
   @Override
   public <T> Mono<T> invokeMethod(InvokeMethodRequest invokeMethodRequest, TypeRef<T> type) {
     try {
@@ -446,6 +531,10 @@ public class DaprClientImpl extends AbstractDaprClient {
 
   private <T> Mono<T> getMonoForHttpResponse(TypeRef<T> type, DaprHttp.Response r) {
     try {
+      if (type == null) {
+        return Mono.empty();
+      }
+
       T object = objectSerializer.deserialize(r.getBody(), type);
       if (object == null) {
         return Mono.empty();
@@ -486,13 +575,26 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
       DaprProtos.InvokeBindingRequest envelope = builder.build();
 
+      Metadata responseMetadata = new Metadata();
       return Mono.deferContextual(
           context -> this.<DaprProtos.InvokeBindingResponse>createMono(
-              it -> intercept(context, asyncStub).invokeBinding(envelope, it)
+              responseMetadata,
+              it -> intercept(context, asyncStub, m -> responseMetadata.merge(m)).invokeBinding(envelope, it)
           )
       ).flatMap(
           it -> {
+            int httpStatusCode =
+                parseHttpStatusCode(it.getMetadataMap().getOrDefault("statusCode", ""));
+            if (isValidHttpStatusCode(httpStatusCode) && !isSuccessfulHttpStatusCode(httpStatusCode)) {
+              // Exception condition in a successful request.
+              // This is useful to send an exception due to an error from the HTTP binding component.
+              throw DaprException.propagate(new DaprHttpException(httpStatusCode, it.getData().toByteArray()));
+            }
+
             try {
+              if (type == null) {
+                return Mono.empty();
+              }
               return Mono.justOrEmpty(objectSerializer.deserialize(it.getData().toByteArray(), type));
             } catch (IOException e) {
               throw DaprException.propagate(e);
@@ -614,13 +716,18 @@ public class DaprClientImpl extends AbstractDaprClient {
       return new State<>(key, error);
     }
 
-    ByteString payload = item.getData();
-    byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
     String etag = item.getEtag();
     if (etag.equals("")) {
       etag = null;
     }
+
+    T value = null;
+    if (type != null) {
+      ByteString payload = item.getData();
+      byte[] data = payload == null ? null : payload.toByteArray();
+      value = stateSerializer.deserialize(data, type);
+    }
+
     return new State<>(key, value, etag, item.getMetadataMap(), null);
   }
 
@@ -631,7 +738,11 @@ public class DaprClientImpl extends AbstractDaprClient {
       TypeRef<T> type) throws IOException {
     ByteString payload = response.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
+    T value = null;
+    if (type != null) {
+      value = stateSerializer.deserialize(data, type);
+    }
+
     String etag = response.getEtag();
     if (etag.equals("")) {
       etag = null;
@@ -1016,7 +1127,11 @@ public class DaprClientImpl extends AbstractDaprClient {
     }
     ByteString payload = item.getData();
     byte[] data = payload == null ? null : payload.toByteArray();
-    T value = stateSerializer.deserialize(data, type);
+    T value = null;
+    if (type != null) {
+      value = stateSerializer.deserialize(data, type);
+    }
+
     String etag = item.getEtag();
     if (etag.equals("")) {
       etag = null;
@@ -1198,20 +1313,42 @@ public class DaprClientImpl extends AbstractDaprClient {
    * @return Client after adding interceptors.
    */
   private DaprGrpc.DaprStub intercept(ContextView context, DaprGrpc.DaprStub client) {
-    return DaprClientGrpcInterceptors.intercept(client, this.timeoutPolicy, context);
+    return this.grpcInterceptors.intercept(client, context);
+  }
+
+  /**
+   * Populates GRPC client with interceptors for telemetry.
+   *
+   * @param context Reactor's context.
+   * @param client  GRPC client for Dapr.
+   * @param metadataConsumer Consumer of gRPC metadata.
+   * @return Client after adding interceptors.
+   */
+  private DaprGrpc.DaprStub intercept(
+      ContextView context, DaprGrpc.DaprStub client, Consumer<Metadata> metadataConsumer) {
+    return this.grpcInterceptors.intercept(client, context, metadataConsumer);
   }
 
   private <T> Mono<T> createMono(Consumer<StreamObserver<T>> consumer) {
+    return this.createMono(null, consumer);
+  }
+
+  private <T> Mono<T> createMono(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
     return retryPolicy.apply(
-        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
+        Mono.create(sink -> DaprException.wrap(() -> consumer.accept(
+            createStreamObserver(sink, metadata))).run()));
   }
 
   private <T> Flux<T> createFlux(Consumer<StreamObserver<T>> consumer) {
-    return retryPolicy.apply(
-        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink))).run()));
+    return this.createFlux(null, consumer);
   }
 
-  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink) {
+  private <T> Flux<T> createFlux(Metadata metadata, Consumer<StreamObserver<T>> consumer) {
+    return retryPolicy.apply(
+        Flux.create(sink -> DaprException.wrap(() -> consumer.accept(createStreamObserver(sink, metadata))).run()));
+  }
+
+  private <T> StreamObserver<T> createStreamObserver(MonoSink<T> sink, Metadata grpcMetadata) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T value) {
@@ -1220,7 +1357,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       @Override
       public void onError(Throwable t) {
-        sink.error(DaprException.propagate(new ExecutionException(t)));
+        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
       }
 
       @Override
@@ -1230,7 +1367,7 @@ public class DaprClientImpl extends AbstractDaprClient {
     };
   }
 
-  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink) {
+  private <T> StreamObserver<T> createStreamObserver(FluxSink<T> sink, final Metadata grpcMetadata) {
     return new StreamObserver<T>() {
       @Override
       public void onNext(T value) {
@@ -1239,7 +1376,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
       @Override
       public void onError(Throwable t) {
-        sink.error(DaprException.propagate(new ExecutionException(t)));
+        sink.error(DaprException.propagate(DaprHttpException.fromGrpcExecutionException(grpcMetadata, t)));
       }
 
       @Override

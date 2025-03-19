@@ -1,0 +1,11 @@
+<FindBugsFilter>
+    <Match>
+        <Package name="~io\.dapr\.spring.*"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+
+    <Match>
+        <Package name="~io\.dapr\.spring.*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

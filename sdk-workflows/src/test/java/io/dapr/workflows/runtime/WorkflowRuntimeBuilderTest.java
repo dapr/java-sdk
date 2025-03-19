@@ -12,20 +12,24 @@ limitations under the License.
 */
 package io.dapr.workflows.runtime;
 
-
 import io.dapr.workflows.Workflow;
+import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 public class WorkflowRuntimeBuilderTest {
-  public static class TestWorkflow extends Workflow {
+  public static class TestWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
       return ctx -> {
@@ -46,13 +50,29 @@ public class WorkflowRuntimeBuilderTest {
   }
 
   @Test
+  public void registerValidWorkflowInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(new TestWorkflow()));
+  }
+
+  @Test
   public void registerValidWorkflowActivityClass() {
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(TestActivity.class));
   }
 
   @Test
+  public void registerValidWorkflowActivityInstance() {
+    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerActivity(new TestActivity()));
+  }
+
+  @Test
   public void buildTest() {
-    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().build());
+    assertDoesNotThrow(() -> {
+      try (WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build()) {
+        System.out.println("WorkflowRuntime created");
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   @Test
@@ -61,19 +81,20 @@ public class WorkflowRuntimeBuilderTest {
     ByteArrayOutputStream outStreamCapture = new ByteArrayOutputStream();
     System.setOut(new PrintStream(outStreamCapture));
 
-    Logger testLogger = Mockito.mock(Logger.class);
+    Logger testLogger = mock(Logger.class);
 
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder(testLogger).registerWorkflow(TestWorkflow.class));
     assertDoesNotThrow(() -> new WorkflowRuntimeBuilder(testLogger).registerActivity(TestActivity.class));
 
-    WorkflowRuntimeBuilder wfRuntime = new WorkflowRuntimeBuilder();
+    WorkflowRuntimeBuilder workflowRuntimeBuilder = new WorkflowRuntimeBuilder();
 
-    wfRuntime.build();
+    try (WorkflowRuntime runtime = workflowRuntimeBuilder.build()) {
+      verify(testLogger, times(1))
+          .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
 
-    Mockito.verify(testLogger, Mockito.times(1))
-        .info(Mockito.eq("Registered Workflow: TestWorkflow"));
-    Mockito.verify(testLogger, Mockito.times(1))
-        .info(Mockito.eq("Registered Activity: TestActivity"));
+      verify(testLogger, times(1))
+          .info(eq("Registered Activity: {}"), eq("TestActivity"));
+    }
   }
 
 }

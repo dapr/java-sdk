@@ -13,10 +13,11 @@ limitations under the License.
 
 package io.dapr.client;
 
-import okhttp3.OkHttpClient;
+import io.dapr.config.Properties;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.net.http.HttpClient;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -25,17 +26,17 @@ public class DaprHttpBuilderTest {
 
   @Test
   public void singletonOkHttpClient() throws Exception {
-    DaprHttp daprHttp = new DaprHttpBuilder().build();
-    DaprHttp anotherDaprHttp = new DaprHttpBuilder().build();
+    Properties properties = new Properties();
+    DaprHttp daprHttp = new DaprHttpBuilder().build(properties);
+    DaprHttp anotherDaprHttp = new DaprHttpBuilder().build(properties);
 
-    assertSame(getOkHttpClient(daprHttp), getOkHttpClient(anotherDaprHttp));
+    assertSame(getHttpClient(daprHttp), getHttpClient(anotherDaprHttp));
   }
 
-
-  private static OkHttpClient getOkHttpClient(DaprHttp daprHttp) throws Exception {
+  private static HttpClient getHttpClient(DaprHttp daprHttp) throws Exception {
     Field httpClientField = DaprHttp.class.getDeclaredField("httpClient");
     httpClientField.setAccessible(true);
-    OkHttpClient okHttpClient = (OkHttpClient) httpClientField.get(daprHttp);
+    HttpClient okHttpClient = (HttpClient) httpClientField.get(daprHttp);
     assertNotNull(okHttpClient);
     return okHttpClient;
   }

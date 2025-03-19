@@ -16,6 +16,7 @@ package io.dapr.client;
 import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,8 @@ import java.util.Map;
  * Useful to mock as well since it provides a default constructor.
  */
 public class DaprHttpStub extends DaprHttp {
+
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
 
     public static class ResponseStub extends DaprHttp.Response {
         public ResponseStub(byte[] body, Map<String, String> headers, int statusCode) {
@@ -34,7 +37,7 @@ public class DaprHttpStub extends DaprHttp {
      * Instantiates a stub for DaprHttp
      */
     public DaprHttpStub() {
-        super(null, 3000, null);
+        super(null, 3000, "stubToken", READ_TIMEOUT, null);
     }
 
     /**

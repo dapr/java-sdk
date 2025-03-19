@@ -13,43 +13,62 @@ limitations under the License.
 
 package io.dapr.testcontainers;
 
+import io.dapr.testcontainers.converter.ComponentYamlConverter;
+import io.dapr.testcontainers.converter.ConfigurationYamlConverter;
+import io.dapr.testcontainers.converter.HttpEndpointYamlConverter;
+import io.dapr.testcontainers.converter.SubscriptionYamlConverter;
+import io.dapr.testcontainers.converter.YamlConverter;
+import io.dapr.testcontainers.converter.YamlMapperFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
-import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.nodes.Tag;
-import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(DaprContainer.class);
   private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
+  private static final DaprProtocol DAPR_PROTOCOL = DaprProtocol.HTTP;
+  private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("daprio/daprd");
+  private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
+  private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
+  private static final YamlConverter<Subscription> SUBSCRIPTION_CONVERTER = new SubscriptionYamlConverter(YAML_MAPPER);
+  private static final YamlConverter<HttpEndpoint> HTTPENDPOINT_CONVERTER = new HttpEndpointYamlConverter(YAML_MAPPER);
+  private static final YamlConverter<Configuration> CONFIGURATION_CONVERTER = new ConfigurationYamlConverter(
+      YAML_MAPPER);
+  private static final WaitStrategy WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz/outbound")
+      .forPort(DAPRD_DEFAULT_HTTP_PORT)
+      .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
+
   private final Set<Component> components = new HashSet<>();
   private final Set<Subscription> subscriptions = new HashSet<>();
-  private DaprProtocol protocol = DaprProtocol.HTTP;
-  private String appName;
-  private Integer appPort = null;
+  private final Set<HttpEndpoint> httpEndpoints = new HashSet<>();
   private DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
-  private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("daprio/daprd");
-  private static final Yaml yaml = getYamlMapper();
-  private DaprPlacementContainer placementContainer;
   private String placementDockerImageName = "daprio/placement";
+
+  private Configuration configuration;
+  private DaprPlacementContainer placementContainer;
+  private String appName;
+  private Integer appPort;
+  private String appHealthCheckPath;
   private boolean shouldReusePlacement;
 
   /**
@@ -59,23 +78,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public DaprContainer(DockerImageName dockerImageName) {
     super(dockerImageName);
     dockerImageName.assertCompatibleWith(DEFAULT_IMAGE_NAME);
-    // For susbcriptions the container needs to access the app channel
     withAccessToHost(true);
-    // Here we don't want to wait for the Dapr sidecar to be ready, as the sidecar
-    // needs to
-    // connect with the application for susbcriptions
-
     withExposedPorts(DAPRD_DEFAULT_HTTP_PORT, DAPRD_DEFAULT_GRPC_PORT);
-
-  }
-
-  private static Yaml getYamlMapper() {
-    DumperOptions options = new DumperOptions();
-    options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-    options.setPrettyFlow(true);
-    Representer representer = new Representer(options);
-    representer.addClassTag(MetadataEntry.class, Tag.MAP);
-    return new Yaml(representer);
+    setWaitStrategy(WAIT_STRATEGY);
   }
 
   /**
@@ -86,6 +91,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     this(DockerImageName.parse(image));
   }
 
+  public Configuration getConfiguration() {
+    return configuration;
+  }
+
   public Set<Component> getComponents() {
     return components;
   }
@@ -94,8 +103,27 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return subscriptions;
   }
 
+  public Set<HttpEndpoint> getHttpEndpoints() {
+    return httpEndpoints;
+  }
+
   public DaprContainer withAppPort(Integer port) {
     this.appPort = port;
+    return this;
+  }
+
+  public DaprContainer withAppChannelAddress(String appChannelAddress) {
+    this.appChannelAddress = appChannelAddress;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckPath(String appHealthCheckPath) {
+    this.appHealthCheckPath = appHealthCheckPath;
+    return this;
+  }
+
+  public DaprContainer withConfiguration(Configuration configuration) {
+    this.configuration = configuration;
     return this;
   }
 
@@ -119,12 +147,30 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  public DaprContainer withHttpEndpoint(HttpEndpoint httpEndpoint) {
+    httpEndpoints.add(httpEndpoint);
+    return this;
+  }
+
+  public DaprContainer withPlacementImage(String placementDockerImageName) {
+    this.placementDockerImageName = placementDockerImageName;
+    return this;
+  }
+
+  public DaprContainer withReusablePlacement(boolean reuse) {
+    this.shouldReusePlacement = reuse;
+    return this;
+  }
+
+  public DaprContainer withPlacementContainer(DaprPlacementContainer placementContainer) {
+    this.placementContainer = placementContainer;
+    return this;
+  }
+
   public DaprContainer withComponent(Component component) {
     components.add(component);
     return this;
   }
-
-
 
   /**
    * Adds a Dapr component from a YAML file.
@@ -133,7 +179,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
    */
   public DaprContainer withComponent(Path path) {
     try {
-      Map<String, Object> component = this.yaml.loadAs(Files.newInputStream(path), Map.class);
+      Map<String, Object> component = YAML_MAPPER.loadAs(Files.newInputStream(path), Map.class);
 
       String type = (String) component.get("type");
       Map<String, Object> metadata = (Map<String, Object>) component.get("metadata");
@@ -171,57 +217,8 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return getMappedPort(DAPRD_DEFAULT_GRPC_PORT);
   }
 
-  public DaprContainer withAppChannelAddress(String appChannelAddress) {
-    this.appChannelAddress = appChannelAddress;
-    return this;
-  }
-
-  /**
-   * Get a map of Dapr component details.
-   * @param component A Dapr Component.
-   * @return Map of component details.
-   */
-  public Map<String, Object> componentToMap(Component component) {
-    Map<String, Object> componentProps = new HashMap<>();
-    componentProps.put("apiVersion", "dapr.io/v1alpha1");
-    componentProps.put("kind", "Component");
-
-    Map<String, String> componentMetadata = new LinkedHashMap<>();
-    componentMetadata.put("name", component.getName());
-    componentProps.put("metadata", componentMetadata);
-
-    Map<String, Object> componentSpec = new HashMap<>();
-    componentSpec.put("type", component.getType());
-    componentSpec.put("version", component.getVersion());
-
-    if (!component.getMetadata().isEmpty()) {
-      componentSpec.put("metadata", component.getMetadata());
-    }
-    componentProps.put("spec", componentSpec);
-    return Collections.unmodifiableMap(componentProps);
-  }
-
-  /**
-   * Get a map of Dapr subscription details.
-   * @param subscription A Dapr Subscription.
-   * @return Map of subscription details.
-   */
-  public Map<String, Object> subscriptionToMap(Subscription subscription) {
-    Map<String, Object> subscriptionProps = new HashMap<>();
-    subscriptionProps.put("apiVersion", "dapr.io/v1alpha1");
-    subscriptionProps.put("kind", "Subscription");
-
-    Map<String, String> subscriptionMetadata = new LinkedHashMap<>();
-    subscriptionMetadata.put("name", subscription.getName());
-    subscriptionProps.put("metadata", subscriptionMetadata);
-
-    Map<String, Object> subscriptionSpec = new HashMap<>();
-    subscriptionSpec.put("pubsubname", subscription.getPubsubName());
-    subscriptionSpec.put("topic", subscription.getTopic());
-    subscriptionSpec.put("route", subscription.getRoute());
-
-    subscriptionProps.put("spec", subscriptionSpec);
-    return Collections.unmodifiableMap(subscriptionProps);
+  public String getGrpcEndpoint() {
+    return ":" + getMappedPort(DAPRD_DEFAULT_GRPC_PORT);
   }
 
   @Override
@@ -231,6 +228,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     if (getNetwork() == null) {
       withNetwork(Network.newNetwork());
     }
+
     if (this.placementContainer == null) {
       this.placementContainer = new DaprPlacementContainer(this.placementDockerImageName)
           .withNetwork(getNetwork())
@@ -241,27 +239,54 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
-    cmds.add("-app-id");
+    cmds.add("--app-id");
     cmds.add(appName);
     cmds.add("--dapr-listen-addresses=0.0.0.0");
     cmds.add("--app-protocol");
-    cmds.add(protocol.getName());
-    cmds.add("-placement-host-address");
+    cmds.add(DAPR_PROTOCOL.getName());
+    cmds.add("--placement-host-address");
     cmds.add(placementService + ":50005");
 
     if (appChannelAddress != null && !appChannelAddress.isEmpty()) {
       cmds.add("--app-channel-address");
       cmds.add(appChannelAddress);
     }
+
     if (appPort != null) {
       cmds.add("--app-port");
       cmds.add(Integer.toString(appPort));
     }
+
+    if (appHealthCheckPath != null && !appHealthCheckPath.isEmpty()) {
+      cmds.add("--enable-app-health-check");
+      cmds.add("--app-health-check-path");
+      cmds.add(appHealthCheckPath);
+    }
+
+    if (configuration != null) {
+      cmds.add("--config");
+      cmds.add("/dapr-resources/" + configuration.getName() + ".yaml");
+    }
+
     cmds.add("--log-level");
     cmds.add(daprLogLevel.toString());
-    cmds.add("-components-path");
+    cmds.add("--resources-path");
     cmds.add("/dapr-resources");
-    withCommand(cmds.toArray(new String[]{}));
+
+    String[] cmdArray = cmds.toArray(new String[]{});
+    LOGGER.info("> `daprd` Command: \n");
+    LOGGER.info("\t" + Arrays.toString(cmdArray) + "\n");
+
+    withCommand(cmdArray);
+
+    if (configuration != null) {
+      String configurationYaml = CONFIGURATION_CONVERTER.convert(configuration);
+
+      LOGGER.info("> Configuration YAML: \n");
+      LOGGER.info("\t\n" + configurationYaml + "\n");
+
+      withCopyToContainer(Transferable.of(configurationYaml), "/dapr-resources/" + configuration.getName() + ".yaml");
+    }
 
     if (components.isEmpty()) {
       components.add(new Component("kvstore", "state.in-memory", "v1", Collections.emptyMap()));
@@ -273,24 +298,33 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     }
 
     for (Component component : components) {
-      String componentYaml = componentToYaml(component);
+      String componentYaml = COMPONENT_CONVERTER.convert(component);
+
+      LOGGER.info("> Component YAML: \n");
+      LOGGER.info("\t\n" + componentYaml + "\n");
+
       withCopyToContainer(Transferable.of(componentYaml), "/dapr-resources/" + component.getName() + ".yaml");
     }
 
     for (Subscription subscription : subscriptions) {
-      String subscriptionYaml = subscriptionToYaml(subscription);
+      String subscriptionYaml = SUBSCRIPTION_CONVERTER.convert(subscription);
+
+      LOGGER.info("> Subscription YAML: \n");
+      LOGGER.info("\t\n" + subscriptionYaml + "\n");
+
       withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
     }
-  }
 
-  public String subscriptionToYaml(Subscription subscription) {
-    Map<String, Object> subscriptionMap = subscriptionToMap(subscription);
-    return yaml.dumpAsMap(subscriptionMap);
-  }
+    for (HttpEndpoint endpoint : httpEndpoints) {
+      String endpointYaml = HTTPENDPOINT_CONVERTER.convert(endpoint);
 
-  public String componentToYaml(Component component) {
-    Map<String, Object> componentMap = componentToMap(component);
-    return yaml.dumpAsMap(componentMap);
+      LOGGER.info("> HTTPEndpoint YAML: \n");
+      LOGGER.info("\t\n" + endpointYaml + "\n");
+
+      withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
+    }
+
+    dependsOn(placementContainer);
   }
 
   public String getAppName() {
@@ -311,21 +345,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public static DockerImageName getDefaultImageName() {
     return DEFAULT_IMAGE_NAME;
-  }
-
-  public DaprContainer withPlacementImage(String placementDockerImageName) {
-    this.placementDockerImageName = placementDockerImageName;
-    return this;
-  }
-
-  public DaprContainer withReusablePlacement(boolean reuse) {
-    this.shouldReusePlacement = reuse;
-    return this;
-  }
-
-  public DaprContainer withPlacementContainer(DaprPlacementContainer placementContainer) {
-    this.placementContainer = placementContainer;
-    return this;
   }
 
   // Required by spotbugs plugin

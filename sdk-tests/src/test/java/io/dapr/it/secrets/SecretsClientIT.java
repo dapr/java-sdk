@@ -75,7 +75,7 @@ public class SecretsClientIT extends BaseIT {
 
   @BeforeEach
   public void setup() {
-    this.daprClient = new DaprClientBuilder().build();
+    this.daprClient = daprRun.newDaprClientBuilder().build();
   }
 
   @AfterEach

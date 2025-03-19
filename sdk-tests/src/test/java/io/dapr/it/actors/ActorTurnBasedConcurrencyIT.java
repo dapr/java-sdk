@@ -80,7 +80,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
   public void invokeOneActorMethodReminderAndTimer() throws Exception {
     System.out.println("Starting test 'actorTest1'");
 
-    startDaprApp(
+    var run = startDaprApp(
       ActorTurnBasedConcurrencyIT.class.getSimpleName(),
       MyActorService.SUCCESS_MESSAGE,
       MyActorService.class,
@@ -92,7 +92,7 @@ public class ActorTurnBasedConcurrencyIT extends BaseIT {
     logger.debug("Creating proxy builder");
 
     ActorProxyBuilder<ActorProxy> proxyBuilder =
-        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+        new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
     logger.debug("Creating actorId");
     ActorId actorId1 = new ActorId(ACTOR_ID);
     logger.debug("Building proxy");

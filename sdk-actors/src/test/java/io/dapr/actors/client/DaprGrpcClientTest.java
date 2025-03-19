@@ -106,7 +106,7 @@ public class DaprGrpcClientTest {
         InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
     // Create a HelloWorldClient using the in-process channel;
-    client = new DaprClientImpl(DaprGrpc.newStub(channel), null);
+    client = new DaprClientImpl(DaprGrpc.newStub(channel), null, null, null);
   }
 
   @Test
@@ -129,7 +129,7 @@ public class DaprGrpcClientTest {
         ExecutionException.class,
         "UNKNOWN",
         "UNKNOWN: ",
-        () -> result.block());
+        result::block);
   }
 
   @Test

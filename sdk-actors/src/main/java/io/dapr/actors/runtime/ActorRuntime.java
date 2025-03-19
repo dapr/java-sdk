@@ -18,9 +18,8 @@ import io.dapr.actors.ActorTrace;
 import io.dapr.config.Properties;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
-import io.dapr.utils.Version;
+import io.dapr.utils.NetworkUtils;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import reactor.core.publisher.Mono;
 
 import java.io.Closeable;
@@ -80,23 +79,32 @@ public class ActorRuntime implements Closeable {
    * @throws IllegalStateException If cannot instantiate Runtime.
    */
   private ActorRuntime() throws IllegalStateException {
-    this(buildManagedChannel());
+    this(new Properties());
+  }
+
+  /**
+   * The default constructor. This should not be called directly.
+   *
+   * @throws IllegalStateException If cannot instantiate Runtime.
+   */
+  private ActorRuntime(Properties properties) throws IllegalStateException {
+    this(NetworkUtils.buildGrpcManagedChannel(properties));
   }
 
   /**
    * Constructor once channel is available. This should not be called directly.
    *
    * @param channel GRPC managed channel to be closed (or null).
-   * @throws IllegalStateException If cannot instantiate Runtime.
+   * @throws IllegalStateException If you cannot instantiate Runtime.
    */
   private ActorRuntime(ManagedChannel channel) throws IllegalStateException {
-    this(channel, buildDaprClient(channel));
+    this(channel, new DaprClientImpl(channel));
   }
 
   /**
    * Constructor with dependency injection, useful for testing. This should not be called directly.
    *
-   * @param channel GRPC managed channel to be closed (or null).
+   * @param channel    GRPC managed channel to be closed (or null).
    * @param daprClient Client to communicate with Dapr.
    * @throws IllegalStateException If class has one instance already.
    */
@@ -129,6 +137,24 @@ public class ActorRuntime implements Closeable {
   }
 
   /**
+   * Returns an ActorRuntime object.
+   *
+   * @param properties Properties to be used for the runtime.
+   * @return An ActorRuntime object.
+   */
+  public static ActorRuntime getInstance(Properties properties) {
+    if (instance == null) {
+      synchronized (ActorRuntime.class) {
+        if (instance == null) {
+          instance = new ActorRuntime(properties);
+        }
+      }
+    }
+
+    return instance;
+  }
+
+  /**
    * Gets the Actor configuration for this runtime.
    *
    * @return Actor configuration.
@@ -149,11 +175,10 @@ public class ActorRuntime implements Closeable {
 
   /**
    * Registers an actor with the runtime, using {@link DefaultObjectSerializer} and {@link DefaultActorFactory}.
-   *
    * {@link DefaultObjectSerializer} is not recommended for production scenarios.
    *
-   * @param clazz            The type of actor.
-   * @param <T>              Actor class type.
+   * @param clazz The type of actor.
+   * @param <T>   Actor class type.
    */
   public <T extends AbstractActor> void registerActor(Class<T> clazz) {
     registerActor(clazz, new DefaultObjectSerializer(), new DefaultObjectSerializer());
@@ -161,12 +186,11 @@ public class ActorRuntime implements Closeable {
 
   /**
    * Registers an actor with the runtime, using {@link DefaultObjectSerializer}.
-   *
    * {@link DefaultObjectSerializer} is not recommended for production scenarios.
    *
-   * @param clazz            The type of actor.
-   * @param actorFactory     An optional factory to create actors. This can be used for dependency injection.
-   * @param <T>              Actor class type.
+   * @param clazz        The type of actor.
+   * @param actorFactory An optional factory to create actors. This can be used for dependency injection.
+   * @param <T>          Actor class type.
    */
   public <T extends AbstractActor> void registerActor(Class<T> clazz, ActorFactory<T> actorFactory) {
     registerActor(clazz, actorFactory, new DefaultObjectSerializer(), new DefaultObjectSerializer());
@@ -181,8 +205,8 @@ public class ActorRuntime implements Closeable {
    * @param <T>              Actor class type.
    */
   public <T extends AbstractActor> void registerActor(
-        Class<T> clazz, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
-    registerActor(clazz,  new DefaultActorFactory<T>(), objectSerializer, stateSerializer);
+      Class<T> clazz, DaprObjectSerializer objectSerializer, DaprObjectSerializer stateSerializer) {
+    registerActor(clazz, new DefaultActorFactory<T>(), objectSerializer, stateSerializer);
   }
 
   /**
@@ -195,9 +219,9 @@ public class ActorRuntime implements Closeable {
    * @param <T>              Actor class type.
    */
   public <T extends AbstractActor> void registerActor(
-        Class<T> clazz, ActorFactory<T> actorFactory,
-        DaprObjectSerializer objectSerializer,
-        DaprObjectSerializer stateSerializer) {
+      Class<T> clazz, ActorFactory<T> actorFactory,
+      DaprObjectSerializer objectSerializer,
+      DaprObjectSerializer stateSerializer) {
     if (clazz == null) {
       throw new IllegalArgumentException("Class is required.");
     }
@@ -216,12 +240,12 @@ public class ActorRuntime implements Closeable {
     // Create ActorManager, if not yet registered.
     this.actorManagers.computeIfAbsent(actorTypeInfo.getName(), (k) -> {
       ActorRuntimeContext<T> context = new ActorRuntimeContext<>(
-              this,
-              objectSerializer,
-              actorFactory,
-              actorTypeInfo,
-              this.daprClient,
-              new DaprStateAsyncProvider(this.daprClient, stateSerializer));
+          this,
+          objectSerializer,
+          actorFactory,
+          actorTypeInfo,
+          this.daprClient,
+          new DaprStateAsyncProvider(this.daprClient, stateSerializer));
       this.config.addRegisteredActorType(actorTypeInfo.getName());
       return new ActorManager<T>(context);
     });
@@ -236,7 +260,7 @@ public class ActorRuntime implements Closeable {
    */
   public Mono<Void> deactivate(String actorTypeName, String actorId) {
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.deactivateActor(new ActorId(actorId)));
+        .flatMap(m -> m.deactivateActor(new ActorId(actorId)));
   }
 
   /**
@@ -252,8 +276,8 @@ public class ActorRuntime implements Closeable {
   public Mono<byte[]> invoke(String actorTypeName, String actorId, String actorMethodName, byte[] payload) {
     ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.activateActor(id).thenReturn(m))
-          .flatMap(m -> ((ActorManager)m).invokeMethod(id, actorMethodName, payload));
+        .flatMap(m -> m.activateActor(id).thenReturn(m))
+        .flatMap(m -> ((ActorManager) m).invokeMethod(id, actorMethodName, payload));
   }
 
   /**
@@ -268,8 +292,8 @@ public class ActorRuntime implements Closeable {
   public Mono<Void> invokeReminder(String actorTypeName, String actorId, String reminderName, byte[] params) {
     ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.activateActor(id).thenReturn(m))
-          .flatMap(m -> ((ActorManager)m).invokeReminder(new ActorId(actorId), reminderName, params));
+        .flatMap(m -> m.activateActor(id).thenReturn(m))
+        .flatMap(m -> ((ActorManager) m).invokeReminder(new ActorId(actorId), reminderName, params));
   }
 
   /**
@@ -284,8 +308,8 @@ public class ActorRuntime implements Closeable {
   public Mono<Void> invokeTimer(String actorTypeName, String actorId, String timerName, byte[] params) {
     ActorId id = new ActorId(actorId);
     return Mono.fromSupplier(() -> this.getActorManager(actorTypeName))
-          .flatMap(m -> m.activateActor(id).thenReturn(m))
-          .flatMap(m -> ((ActorManager)m).invokeTimer(new ActorId(actorId), timerName, params));
+        .flatMap(m -> m.activateActor(id).thenReturn(m))
+        .flatMap(m -> ((ActorManager) m).invokeTimer(new ActorId(actorId), timerName, params));
   }
 
   /**
@@ -316,23 +340,6 @@ public class ActorRuntime implements Closeable {
    */
   private static DaprClient buildDaprClient(ManagedChannel channel) {
     return new DaprClientImpl(channel);
-  }
-
-  /**
-   * Creates a GRPC managed channel (or null, if not applicable).
-   *
-   * @return GRPC managed channel or null.
-   */
-  private static ManagedChannel buildManagedChannel() {
-    int port = Properties.GRPC_PORT.get();
-    if (port <= 0) {
-      throw new IllegalStateException("Invalid port.");
-    }
-
-    return ManagedChannelBuilder.forAddress(Properties.SIDECAR_IP.get(), port)
-      .usePlaintext()
-      .userAgent(Version.getSdkVersion())
-      .build();
   }
 
   /**

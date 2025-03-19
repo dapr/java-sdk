@@ -96,7 +96,7 @@ public class DaprGrpcClientTest {
         assertThrowsDaprException(
                 ExecutionException.class,
                 "UNKNOWN",
-                "UNKNOWN: ",
+                "UNKNOWN: Application error processing RPC",
                 result::block);
     }
 
@@ -112,7 +112,7 @@ public class DaprGrpcClientTest {
         assertThrowsDaprException(
                 ExecutionException.class,
                 "UNKNOWN",
-                "UNKNOWN: ",
+                "UNKNOWN: Application error processing RPC",
                 result::block);
     }
     @Test
@@ -301,8 +301,8 @@ public class DaprGrpcClientTest {
             responseObserver.onError(se);
         }
 
-        private <T extends GeneratedMessageV3> void populateObserver(StreamObserver<T> responseObserver, GeneratedMessageV3 generatedMessageV3) {
-            responseObserver.onNext((T) generatedMessageV3);
+        private <T extends com.google.protobuf.Message> void populateObserver(StreamObserver<T> responseObserver, T message) {
+            responseObserver.onNext(message);
             responseObserver.onCompleted();
         }
     }

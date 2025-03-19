@@ -9,6 +9,7 @@ This is the Dapr SDK for Java, including the following features:
 * Binding
 * State Store
 * Actors
+* Workflows
 
 ## Getting Started
 
@@ -49,19 +50,19 @@ For a Maven project, add the following to your `pom.xml` file:
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
-      <version>1.11.0</version>
+      <version>1.13.1</version>
     </dependency>
     <!-- Dapr's SDK for Actors (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
-      <version>1.11.0</version>
+      <version>1.13.1</version>
     </dependency>
     <!-- Dapr's SDK integration with SpringBoot (optional). -->
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>1.11.0</version>
+      <version>1.13.1</version>
     </dependency>
     ...
   </dependencies>
@@ -75,11 +76,11 @@ For a Gradle project, add the following to your `build.gradle` file:
 dependencies {
 ...
     // Dapr's core SDK with all features, except Actors.
-    compile('io.dapr:dapr-sdk:1.11.0')
+    compile('io.dapr:dapr-sdk:1.13.1')
     // Dapr's SDK for Actors (optional).
-    compile('io.dapr:dapr-sdk-actors:1.11.0')
+    compile('io.dapr:dapr-sdk-actors:1.13.1')
     // Dapr's SDK integration with SpringBoot (optional).
-    compile('io.dapr:dapr-sdk-springboot:1.11.0')
+    compile('io.dapr:dapr-sdk-springboot:1.13.1')
 }
 ```
 
@@ -102,13 +103,22 @@ Try the following examples to learn more about Dapr's Java SDK:
 * [Invoking a Grpc service](./examples/src/main/java/io/dapr/examples/invoke/grpc)
 * [State management](./examples/src/main/java/io/dapr/examples/state)
 * [PubSub with subscriber](./examples/src/main/java/io/dapr/examples/pubsub/)
+* [PubSub with streaming subscription](./examples/src/main/java/io/dapr/examples/pubsub/stream/)
 * [Binding with input over Http](./examples/src/main/java/io/dapr/examples/bindings/http)
 * [Actors](./examples/src/main/java/io/dapr/examples/actors/)
+* [Workflows](./examples/src/main/java/io/dapr/examples/workflows/)
 * [Secrets management](./examples/src/main/java/io/dapr/examples/secrets)
 * [Configuration](./examples/src/main/java/io/dapr/examples/configuration)
 * [Distributed tracing with OpenTelemetry SDK](./examples/src/main/java/io/dapr/examples/tracing)
 * [Exception handling](./examples/src/main/java/io/dapr/examples/exception)
 * [Unit testing](./examples/src/main/java/io/dapr/examples/unittesting)
+
+### Running Spring Boot examples
+
+The Spring Boot integration for Dapr use [Testcontainers](https://testcontainers.com) to set up a local environment development flow that doesn't 
+require the use of the `dapr` CLI and it integrates with the Spring Boot programming model. 
+
+You can find a [step-by-step tutorial showing this integration here](./spring-boot-examples/README.md).
 
 ### API Documentation
 

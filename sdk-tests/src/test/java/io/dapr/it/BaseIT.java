@@ -15,6 +15,7 @@ package io.dapr.it;
 
 import io.dapr.actors.client.ActorClient;
 import io.dapr.client.resiliency.ResiliencyOptions;
+import io.dapr.config.Properties;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.AfterAll;
 
@@ -46,7 +47,7 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds) throws Exception {
-    return startDaprApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, GRPC);
+    return startDaprApp(testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, HTTP);
   }
 
   protected static DaprRun startDaprApp(
@@ -55,7 +56,7 @@ public abstract class BaseIT {
       Class serviceClass,
       AppRun.AppProtocol appProtocol,
       int maxWaitMilliseconds) throws Exception {
-    return startDaprApp(testName, successMessage, serviceClass, true, maxWaitMilliseconds, GRPC, appProtocol);
+    return startDaprApp(testName, successMessage, serviceClass, true, maxWaitMilliseconds, appProtocol);
   }
 
   protected static DaprRun startDaprApp(
@@ -64,25 +65,6 @@ public abstract class BaseIT {
       Class serviceClass,
       Boolean useAppPort,
       int maxWaitMilliseconds,
-      AppRun.AppProtocol protocol) throws Exception {
-    return startDaprApp(
-        testName,
-        successMessage,
-        serviceClass,
-        useAppPort,
-        true,
-        maxWaitMilliseconds,
-        protocol,
-        HTTP);
-  }
-
-  protected static DaprRun startDaprApp(
-      String testName,
-      String successMessage,
-      Class serviceClass,
-      Boolean useAppPort,
-      int maxWaitMilliseconds,
-      AppRun.AppProtocol protocol,
       AppRun.AppProtocol appProtocol) throws Exception {
     return startDaprApp(
         testName,
@@ -91,7 +73,6 @@ public abstract class BaseIT {
         useAppPort,
         true,
         maxWaitMilliseconds,
-        protocol,
         appProtocol);
   }
 
@@ -105,7 +86,6 @@ public abstract class BaseIT {
         false,
         true,
         maxWaitMilliseconds,
-        GRPC,
         HTTP);
   }
 
@@ -116,7 +96,6 @@ public abstract class BaseIT {
           Boolean useAppPort,
           Boolean useDaprPorts,
           int maxWaitMilliseconds,
-          AppRun.AppProtocol protocol,
           AppRun.AppProtocol appProtocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
@@ -128,7 +107,6 @@ public abstract class BaseIT {
     TO_BE_STOPPED.add(run);
     DAPR_RUN_BUILDERS.put(run.getAppName(), builder);
     run.start();
-    run.use();
     return run;
   }
 
@@ -139,23 +117,11 @@ public abstract class BaseIT {
       Boolean useAppPort,
       int maxWaitMilliseconds) throws Exception {
     return startSplitDaprAndApp(
-        testName, successMessage, serviceClass, useAppPort, maxWaitMilliseconds, AppRun.AppProtocol.GRPC);
-  }
-
-  protected static ImmutablePair<AppRun, DaprRun> startSplitDaprAndApp(
-      String testName,
-      String successMessage,
-      Class serviceClass,
-      Boolean useAppPort,
-      int maxWaitMilliseconds,
-      AppRun.AppProtocol protocol) throws Exception {
-    return startSplitDaprAndApp(
         testName,
         successMessage,
         serviceClass,
         useAppPort,
         maxWaitMilliseconds,
-        protocol,
         HTTP);
   }
 
@@ -165,7 +131,6 @@ public abstract class BaseIT {
           Class serviceClass,
           Boolean useAppPort,
           int maxWaitMilliseconds,
-          AppRun.AppProtocol protocol,
           AppRun.AppProtocol appProtocol) throws Exception {
     DaprRun.Builder builder = new DaprRun.Builder(
             testName,
@@ -179,8 +144,12 @@ public abstract class BaseIT {
     DAPR_RUN_BUILDERS.put(runs.right.getAppName(), builder);
     runs.left.start();
     runs.right.start();
-    runs.right.use();
     return runs;
+  }
+
+  protected static <T extends AutoCloseable> T deferClose(T object) {
+    TO_BE_CLOSED.add(object);
+    return object;
   }
 
   @AfterAll
@@ -194,8 +163,8 @@ public abstract class BaseIT {
     }
   }
 
-  protected static ActorClient newActorClient() {
-    return newActorClient(null);
+  protected static ActorClient newActorClient(Properties properties) {
+    return new ActorClient(properties, null);
   }
 
   protected static ActorClient newActorClient(ResiliencyOptions resiliencyOptions) throws RuntimeException {
