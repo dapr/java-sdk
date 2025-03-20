@@ -1,5 +1,6 @@
 package io.dapr.testcontainers.converter;
 
+import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.MetadataEntry;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -21,6 +22,7 @@ public class YamlMapperFactory {
     options.setPrettyFlow(true);
     Representer representer = new Representer(options);
     representer.addClassTag(MetadataEntry.class, Tag.MAP);
+    representer.addClassTag(ListEntry.class, Tag.MAP);
     return new Yaml(representer);
   }
 }
