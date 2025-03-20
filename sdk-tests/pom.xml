@@ -131,6 +131,12 @@
       <version>3.4.0</version>
     </dependency>
     <dependency>
+      <groupId>redis.clients</groupId>
+      <artifactId>jedis</artifactId>
+      <version>5.2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk</artifactId>
       <version>${dapr.sdk.version}</version>
@@ -211,6 +217,12 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>mysql</artifactId>
       <version>${testcontainers-test.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.redis</groupId>
+      <artifactId>testcontainers-redis</artifactId>
+      <version>2.2.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
