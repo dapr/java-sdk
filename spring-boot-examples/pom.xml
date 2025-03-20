@@ -15,12 +15,25 @@
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <springboot.version>3.4.3</springboot.version>
   </properties>
 
   <modules>
     <module>producer-app</module>
     <module>consumer-app</module>
   </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+</dependencyManagement>
 
   <build>
     <plugins>

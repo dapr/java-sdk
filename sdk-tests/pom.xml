@@ -34,6 +34,7 @@
     <wiremock.version>3.9.1</wiremock.version>
     <testcontainers-test.version>1.20.0</testcontainers-test.version>
     <jacoco-maven-plugin.coverage-ratio>0%</jacoco-maven-plugin.coverage-ratio>
+    <junit-platform.version>1.11.4</junit-platform.version>
   </properties>
 
   <dependencyManagement>
@@ -49,12 +50,12 @@
       <dependency>
         <groupId>org.junit.platform</groupId>
         <artifactId>junit-platform-commons</artifactId>
-        <version>1.11.4</version>
+        <version>${junit-platform.version}</version>
       </dependency>
       <dependency>
         <groupId>org.junit.platform</groupId>
         <artifactId>junit-platform-engine</artifactId>
-        <version>1.11.4</version>
+        <version>${junit-platform.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
