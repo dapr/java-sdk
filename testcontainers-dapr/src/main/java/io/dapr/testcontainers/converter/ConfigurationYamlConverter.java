@@ -65,7 +65,8 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
     }
 
     AppHttpPipeline appHttpPipeline = configuration.getAppHttpPipeline();
-    if( appHttpPipeline != null ){
+    if (appHttpPipeline != null) {
+
       Map<String, Object> appHttpPipelineMap = new LinkedHashMap<>();
       List<ListEntry> handlers = appHttpPipeline.getHandlers();
       appHttpPipelineMap.put("handlers", handlers);

@@ -21,14 +21,17 @@ public class Configuration {
   private final TracingConfigurationSettings tracing;
   private final AppHttpPipeline appHttpPipeline;
 
-  //@TODO: add secrets
-  //@TODO: add components
-  //@TODO: add accessControl
+  // @TODO: add secrets
+  // @TODO: add components
+  // @TODO: add accessControl
 
   /**
    * Creates a new configuration.
-   * @param name     Configuration name.
-   * @param tracing     TracingConfigParameters tracing configuration parameters.
+   * 
+   * @param name            Configuration name.
+   * @param tracing         TracingConfigParameters tracing configuration
+   *                        parameters.
+   * @param appHttpPipeline AppHttpPipeline middleware configuration.
    */
   public Configuration(String name, TracingConfigurationSettings tracing, AppHttpPipeline appHttpPipeline) {
     this.name = name;
@@ -44,7 +47,7 @@ public class Configuration {
     return tracing;
   }
 
-  public AppHttpPipeline getAppHttpPipeline(){
+  public AppHttpPipeline getAppHttpPipeline() {
     return appHttpPipeline;
   }
 }

@@ -4,16 +4,17 @@ import java.util.Collections;
 import java.util.List;
 
 public class AppHttpPipeline implements ConfigurationSettings {
-    private List<ListEntry> handlers;
-    
-    public AppHttpPipeline(){}
+  private List<ListEntry> handlers;
 
-    public AppHttpPipeline(List<ListEntry> handlers){
-        this.handlers = Collections.unmodifiableList(handlers);
-    }
+  public AppHttpPipeline() {
+  }
 
-    public List<ListEntry> getHandlers(){
-        return handlers;
-    }
+  public AppHttpPipeline(List<ListEntry> handlers) {
+    this.handlers = Collections.unmodifiableList(handlers);
+  }
+
+  public List<ListEntry> getHandlers() {
+    return handlers;
+  }
 
 }
