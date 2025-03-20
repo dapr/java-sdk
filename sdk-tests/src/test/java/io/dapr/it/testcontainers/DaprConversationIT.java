@@ -1,0 +1,119 @@
+package io.dapr.it.testcontainers;
+
+import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
+import io.dapr.testcontainers.Component;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Random;
+
+@SpringBootTest(
+        webEnvironment = WebEnvironment.RANDOM_PORT,
+        classes = {
+                TestDaprConversationConfiguration.class,
+                TestConversationApplication.class
+        }
+)
+@Testcontainers
+@Tag("testcontainers")
+public class DaprConversationIT {
+
+    private static final Network DAPR_NETWORK = Network.newNetwork();
+    private static final Random RANDOM = new Random();
+    private static final int PORT = RANDOM.nextInt(1000) + 8000;
+
+    @Container
+    private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.15.2")
+            .withAppName("conversation-dapr-app")
+            .withComponent(new Component("echo", "conversation.echo", "v1", new HashMap<>()))
+            .withNetwork(DAPR_NETWORK)
+            .withDaprLogLevel(DaprLogLevel.DEBUG)
+            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+            .withAppChannelAddress("host.testcontainers.internal")
+            .withAppPort(PORT);
+
+    /**
+     * Expose the Dapr ports to the host.
+     *
+     * @param registry the dynamic property registry
+     */
+    @DynamicPropertySource
+    static void daprProperties(DynamicPropertyRegistry registry) {
+        registry.add("dapr.http.endpoint", DAPR_CONTAINER::getHttpEndpoint);
+        registry.add("dapr.grpc.endpoint", DAPR_CONTAINER::getGrpcEndpoint);
+        registry.add("server.port", () -> PORT);
+    }
+
+    @Autowired
+    private DaprPreviewClient daprPreviewClient;
+
+    @BeforeEach
+    public void setUp(){
+        org.testcontainers.Testcontainers.exposeHostPorts(PORT);
+        // Ensure the subscriptions are registered
+    }
+
+    @Test
+    public void testConversationSDKShouldHaveSameOutputAndInput() {
+        ConversationInput conversationInput = new ConversationInput("input this");
+        List<ConversationInput> conversationInputList = new ArrayList<>();
+        conversationInputList.add(conversationInput);
+
+        ConversationResponse response =
+                this.daprPreviewClient.converse(new ConversationRequest("echo", conversationInputList)).block();
+
+        Assertions.assertEquals("", response.getContextId());
+        Assertions.assertEquals("input this", response.getConversationOutpus().get(0).getResult());
+    }
+
+    @Test
+    public void testConversationSDKShouldScrubPIIEntirelyWhenScrubPIIIsSetInRequestBody() {
+        List<ConversationInput> conversationInputList = new ArrayList<>();
+        conversationInputList.add(new ConversationInput("input this abcd@gmail.com"));
+        conversationInputList.add(new ConversationInput("input this +12341567890"));
+
+        ConversationResponse response =
+                this.daprPreviewClient.converse(new ConversationRequest("echo", conversationInputList)
+                        .setScrubPii(true)).block();
+
+        Assertions.assertEquals("", response.getContextId());
+        Assertions.assertEquals("input this <EMAIL_ADDRESS>",
+                response.getConversationOutpus().get(0).getResult());
+        Assertions.assertEquals("input this <PHONE_NUMBER>",
+                response.getConversationOutpus().get(1).getResult());
+    }
+
+    @Test
+    public void testConversationSDKShouldScrubPIIOnlyForTheInputWhereScrubPIIIsSet() {
+        List<ConversationInput> conversationInputList = new ArrayList<>();
+        conversationInputList.add(new ConversationInput("input this abcd@gmail.com"));
+        conversationInputList.add(new ConversationInput("input this +12341567890").setScrubPii(true));
+
+        ConversationResponse response =
+                this.daprPreviewClient.converse(new ConversationRequest("echo", conversationInputList)).block();
+
+        Assertions.assertEquals("", response.getContextId());
+        Assertions.assertEquals("input this abcd@gmail.com",
+                response.getConversationOutpus().get(0).getResult());
+        Assertions.assertEquals("input this <PHONE_NUMBER>",
+                response.getConversationOutpus().get(1).getResult());
+    }
+}
