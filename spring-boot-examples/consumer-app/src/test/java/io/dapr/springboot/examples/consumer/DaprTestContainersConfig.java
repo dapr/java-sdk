@@ -35,7 +35,7 @@ import java.util.Map;
 public class DaprTestContainersConfig {
 
   @Bean
-  public Network getDaprNetwork() {
+  public Network getNetwork() {
     Network defaultDaprNetwork = new Network() {
       @Override
       public String getId() {
