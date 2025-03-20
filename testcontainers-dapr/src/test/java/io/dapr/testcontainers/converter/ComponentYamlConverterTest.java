@@ -34,8 +34,7 @@ class ComponentYamlConverterTest {
     assertFalse(kvstore.getMetadata().isEmpty());
 
     String componentYaml = converter.convert(kvstore);
-    String expectedComponentYaml =
-          "apiVersion: dapr.io/v1alpha1\n"
+    String expectedComponentYaml = "apiVersion: dapr.io/v1alpha1\n"
         + "kind: Component\n"
         + "metadata:\n"
         + "  name: statestore\n"
@@ -45,6 +44,48 @@ class ComponentYamlConverterTest {
         + "  metadata:\n"
         + "  - name: actorStateStore\n"
         + "    value: 'true'\n";
+
+    assertEquals(expectedComponentYaml, componentYaml);
+  }
+
+  @Test
+  public void testComponentWithInLineStringToYaml() {
+    DaprContainer dapr = new DaprContainer("daprio/daprd")
+        .withAppName("dapr-app")
+        .withAppPort(8081)
+        .withComponent(new Component(
+            "alias",
+            "middleware.http.routeralias",
+            "v1",
+            Map.of("routes", "{\n" +
+                "  \"/mall/activity/info\": \"/v1.0/invoke/srv.default/method/mall/activity/info\",\n" +
+                "  \"/hello/activity/{id}/info\": \"/v1.0/invoke/srv.default/method/hello/activity/info\",\n" + //
+                "  \"/hello/activity/{id}/user\": \"/v1.0/invoke/srv.default/method/hello/activity/user\"\n" + //
+                "}")))
+        .withAppChannelAddress("host.testcontainers.internal");
+
+    Set<Component> components = dapr.getComponents();
+    assertEquals(1, components.size());
+
+    Component kvstore = components.iterator().next();
+    assertFalse(kvstore.getMetadata().isEmpty());
+
+    String componentYaml = converter.convert(kvstore);
+    String expectedComponentYaml = "apiVersion: dapr.io/v1alpha1\n"
+        + "kind: Component\n"
+        + "metadata:\n"
+        + "  name: alias\n"
+        + "spec:\n"
+        + "  type: middleware.http.routeralias\n"
+        + "  version: v1\n"
+        + "  metadata:\n"
+        + "  - name: routes\n"
+        + "    value: |-\n"
+        + "      {\n"
+        + "        \"/mall/activity/info\": \"/v1.0/invoke/srv.default/method/mall/activity/info\",\n"
+        + "        \"/hello/activity/{id}/info\": \"/v1.0/invoke/srv.default/method/hello/activity/info\",\n"
+        + "        \"/hello/activity/{id}/user\": \"/v1.0/invoke/srv.default/method/hello/activity/user\"\n"
+        + "      }\n";
 
     assertEquals(expectedComponentYaml, componentYaml);
   }

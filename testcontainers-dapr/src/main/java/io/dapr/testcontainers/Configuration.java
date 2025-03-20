@@ -19,20 +19,24 @@ package io.dapr.testcontainers;
 public class Configuration {
   private final String name;
   private final TracingConfigurationSettings tracing;
+  private final AppHttpPipeline appHttpPipeline;
 
-  //@TODO: add httpPipeline
-  //@TODO: add secrets
-  //@TODO: add components
-  //@TODO: add accessControl
+  // @TODO: add secrets
+  // @TODO: add components
+  // @TODO: add accessControl
 
   /**
    * Creates a new configuration.
-   * @param name     Configuration name.
-   * @param tracing     TracingConfigParameters tracing configuration parameters.
+   * 
+   * @param name            Configuration name.
+   * @param tracing         TracingConfigParameters tracing configuration
+   *                        parameters.
+   * @param appHttpPipeline AppHttpPipeline middleware configuration.
    */
-  public Configuration(String name, TracingConfigurationSettings tracing) {
+  public Configuration(String name, TracingConfigurationSettings tracing, AppHttpPipeline appHttpPipeline) {
     this.name = name;
     this.tracing = tracing;
+    this.appHttpPipeline = appHttpPipeline;
   }
 
   public String getName() {
@@ -41,5 +45,9 @@ public class Configuration {
 
   public TracingConfigurationSettings getTracing() {
     return tracing;
+  }
+
+  public AppHttpPipeline getAppHttpPipeline() {
+    return appHttpPipeline;
   }
 }
