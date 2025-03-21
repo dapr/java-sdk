@@ -114,7 +114,7 @@ jobs:
     - name: Unit tests
       run: ./mvnw test # making it temporarily verbose.
     - name: Codecov
-      uses: codecov/codecov-action@v4.1.0
+      uses: codecov/codecov-action@v4.4.1
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
@@ -174,7 +174,7 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: ./mvnw install -B -q
+        run: ./mvnw install -DskipTests -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |
