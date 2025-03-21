@@ -45,32 +45,7 @@ public class DaprTestContainersConfig {
 
   @Bean
   public Network getNetwork() {
-    Network defaultDaprNetwork = new Network() {
-      @Override
-      public String getId() {
-        return "dapr-network";
-      }
-
-      @Override
-      public void close() {
-
-      }
-
-      @Override
-      public Statement apply(Statement base, Description description) {
-        return null;
-      }
-    };
-
-    List<com.github.dockerjava.api.model.Network> networks = DockerClientFactory.instance().client().listNetworksCmd().withNameFilter("dapr-network").exec();
-    if (networks.isEmpty()) {
-      Network.builder()
-              .createNetworkCmdModifier(cmd -> cmd.withName("dapr-network"))
-              .build().getId();
-      return defaultDaprNetwork;
-    } else {
-      return defaultDaprNetwork;
-    }
+    return Network.newNetwork();
   }
 
 
