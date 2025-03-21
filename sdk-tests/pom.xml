@@ -33,6 +33,9 @@
     <logback-core.version>1.5.16</logback-core.version>
     <wiremock.version>3.9.1</wiremock.version>
     <testcontainers-test.version>1.20.0</testcontainers-test.version>
+
+    <!-- The JaCoCo plugin was expecting coverage for this module, but since it's a test module
+    and code coverage typically doesn't apply to tests, I set the coverage to 0. -->
     <jacoco-maven-plugin.coverage-ratio>0%</jacoco-maven-plugin.coverage-ratio>
     <junit-platform.version>1.11.4</junit-platform.version>
   </properties>
