@@ -35,31 +35,36 @@ import java.util.Map;
 public class DaprTestContainersConfig {
 
   @Bean
-  public Network getDaprNetwork() {
-    Network defaultDaprNetwork = new Network() {
-      @Override
-      public String getId() {
-        return "dapr-network";
+  public Network getDaprNetwork(Environment env) {
+    boolean reuse = env.getProperty("reuse", Boolean.class, false);
+    if (reuse) {
+      Network defaultDaprNetwork = new Network() {
+        @Override
+        public String getId() {
+          return "dapr-network";
+        }
+
+        @Override
+        public void close() {
+
+        }
+
+        @Override
+        public Statement apply(Statement base, Description description) {
+          return null;
+        }
+      };
+
+      List<com.github.dockerjava.api.model.Network> networks = DockerClientFactory.instance().client().listNetworksCmd()
+          .withNameFilter("dapr-network").exec();
+      if (networks.isEmpty()) {
+        Network.builder().createNetworkCmdModifier(cmd -> cmd.withName("dapr-network")).build().getId();
+        return defaultDaprNetwork;
+      } else {
+        return defaultDaprNetwork;
       }
-
-      @Override
-      public void close() {
-
-      }
-
-      @Override
-      public Statement apply(Statement base, Description description) {
-        return null;
-      }
-    };
-
-    List<com.github.dockerjava.api.model.Network> networks = DockerClientFactory.instance().client().listNetworksCmd()
-            .withNameFilter("dapr-network").exec();
-    if (networks.isEmpty()) {
-      Network.builder().createNetworkCmdModifier(cmd -> cmd.withName("dapr-network")).build().getId();
-      return defaultDaprNetwork;
     } else {
-      return defaultDaprNetwork;
+      return Network.newNetwork();
     }
   }
 
@@ -67,10 +72,10 @@ public class DaprTestContainersConfig {
   public RabbitMQContainer rabbitMQContainer(Network daprNetwork, Environment env) {
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
     return new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.7.25-management-alpine"))
-            .withExposedPorts(5672)
-            .withNetworkAliases("rabbitmq")
-            .withReuse(reuse)
-            .withNetwork(daprNetwork);
+        .withExposedPorts(5672)
+        .withNetworkAliases("rabbitmq")
+        .withReuse(reuse)
+        .withNetwork(daprNetwork);
   }
 
   @Bean
@@ -83,16 +88,15 @@ public class DaprTestContainersConfig {
     rabbitMqProperties.put("password", "guest");
 
     return new DaprContainer("daprio/daprd:1.14.4")
-            .withAppName("consumer-app")
-            .withNetwork(daprNetwork).withComponent(new Component("pubsub",
-                    "pubsub.rabbitmq", "v1", rabbitMqProperties))
-            .withDaprLogLevel(DaprLogLevel.INFO)
-            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-            .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
-            .withReusablePlacement(reuse)
-            .withAppHealthCheckPath("/actuator/health")
-            .dependsOn(rabbitMQContainer);
+        .withAppName("consumer-app")
+        .withNetwork(daprNetwork).withComponent(new Component("pubsub",
+            "pubsub.rabbitmq", "v1", rabbitMqProperties))
+        .withDaprLogLevel(DaprLogLevel.INFO)
+        .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+        .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
+        .withReusablePlacement(reuse)
+        .withAppHealthCheckPath("/actuator/health")
+        .dependsOn(rabbitMQContainer);
   }
-
 
 }

@@ -43,6 +43,10 @@ public class ObjectSerializer {
   protected ObjectSerializer() {
   }
 
+  protected ObjectMapper getObjectMapper() {
+    return OBJECT_MAPPER;
+  }
+
   /**
    * Serializes a given state object into byte array.
    *
@@ -70,7 +74,7 @@ public class ObjectSerializer {
     }
 
     // Not string, not primitive, so it is a complex type: we use JSON for that.
-    return OBJECT_MAPPER.writeValueAsBytes(state);
+    return getObjectMapper().writeValueAsBytes(state);
   }
 
   /**
@@ -83,7 +87,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be deserialized.
    */
   public <T> T deserialize(byte[] content, TypeRef<T> type) throws IOException {
-    return deserialize(content, OBJECT_MAPPER.constructType(type.getType()));
+    return deserialize(content, getObjectMapper().constructType(type.getType()));
   }
 
   /**
@@ -96,7 +100,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be deserialized.
    */
   public <T> T deserialize(byte[] content, Class<T> clazz) throws IOException {
-    return deserialize(content, OBJECT_MAPPER.constructType(clazz));
+    return deserialize(content, getObjectMapper().constructType(clazz));
   }
 
   private <T> T deserialize(byte[] content, JavaType javaType) throws IOException {
@@ -138,7 +142,7 @@ public class ObjectSerializer {
       }
     }
 
-    return OBJECT_MAPPER.readValue(content, javaType);
+    return getObjectMapper().readValue(content, javaType);
   }
 
   /**
@@ -149,7 +153,7 @@ public class ObjectSerializer {
    * @throws IOException In case content cannot be parsed.
    */
   public JsonNode parseNode(byte[] content) throws IOException {
-    return  OBJECT_MAPPER.readTree(content);
+    return  getObjectMapper().readTree(content);
   }
 
   /**
