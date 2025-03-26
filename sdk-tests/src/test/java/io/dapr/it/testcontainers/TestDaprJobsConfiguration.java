@@ -26,7 +26,7 @@ import java.util.Map;
 @Configuration
 public class TestDaprJobsConfiguration {
   @Bean
-  public DaprPreviewClient daprJobsClient(
+  public DaprPreviewClient daprPreviewClient(
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
       @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
   ){
