@@ -35,6 +35,10 @@ public class CloudConfigTests {
       singleValueProperties.put("dapr.spring.democonfigsecret.singlevalue", "testvalue");
       Mockito.when(daprClient.getSecret(Mockito.eq("democonfig"), Mockito.eq("dapr.spring.democonfigsecret.singlevalue"))).thenReturn(Mono.just(singleValueProperties));
 
+      Map<String, Map<String, String>> bulkProperties = new HashMap<>();
+      bulkProperties.put("dapr.spring.democonfigsecret.singlevalue", singleValueProperties);
+      Mockito.when(daprClient.getBulkSecret(Mockito.eq("democonfig"))).thenReturn(Mono.just(bulkProperties));
+
       Map<String, ConfigurationItem> singleValueConfigurationItems = new HashMap<>();
       singleValueConfigurationItems.put("dapr.spring.democonfigconfig.singlevalue", new ConfigurationItem("dapr.spring.democonfigconfig.singlevalue", "testvalue", ""));
       Mockito.when(daprClient.getConfiguration(Mockito.refEq(new GetConfigurationRequest("democonfigconf", List.of("dapr.spring.democonfigconfig.singlevalue")), "metadata"))).thenReturn(Mono.just(singleValueConfigurationItems));
@@ -49,7 +53,6 @@ public class CloudConfigTests {
     }
     catch (Exception ignore) {
       ignore.printStackTrace();
-
     }
   }
 
