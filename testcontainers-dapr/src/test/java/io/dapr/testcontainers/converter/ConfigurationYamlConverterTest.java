@@ -1,7 +1,22 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.testcontainers.converter;
 
+import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import org.junit.jupiter.api.Test;
@@ -9,6 +24,9 @@ import org.yaml.snakeyaml.Yaml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 class ConfigurationYamlConverterTest {
   private final Yaml MAPPER = YamlMapperFactory.create();
@@ -28,10 +46,16 @@ class ConfigurationYamlConverterTest {
         null
     );
 
+    
+    List<ListEntry> handlers = new ArrayList<>();
+    handlers.add(new ListEntry("alias", "middleware.http.routeralias"));
+
+    AppHttpPipeline appHttpPipeline = new AppHttpPipeline(handlers);
+
     DaprContainer dapr = new DaprContainer("daprio/daprd")
         .withAppName("dapr-app")
         .withAppPort(8081)
-        .withConfiguration(new Configuration("my-config", tracing))
+        .withConfiguration(new Configuration("my-config", tracing, appHttpPipeline))
         .withAppChannelAddress("host.testcontainers.internal");
 
     Configuration configuration = dapr.getConfiguration();
@@ -50,7 +74,11 @@ class ConfigurationYamlConverterTest {
         + "    otel:\n"
         + "      endpointAddress: localhost:4317\n"
         + "      isSecure: false\n"
-        + "      protocol: grpc\n";
+        + "      protocol: grpc\n"
+        + "  appHttpPipeline:\n"
+        + "    handlers:\n"
+        + "    - name: alias\n"
+        + "      type: middleware.http.routeralias\n";
 
     assertEquals(expectedConfigurationYaml, configurationYaml);
   }
