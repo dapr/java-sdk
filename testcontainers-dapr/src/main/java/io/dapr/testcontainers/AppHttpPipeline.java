@@ -19,8 +19,13 @@ import java.util.List;
 public class AppHttpPipeline implements ConfigurationSettings {
   private List<ListEntry> handlers;
 
+  /**
+   * Creates an AppHttpPipeline.
+   * 
+   * @param handlers List of handlers for the AppHttpPipeline
+   */
   public AppHttpPipeline(List<ListEntry> handlers) {
-    if (handlers != null ){
+    if (handlers != null) {
       this.handlers = Collections.unmodifiableList(handlers);
     }
   }
