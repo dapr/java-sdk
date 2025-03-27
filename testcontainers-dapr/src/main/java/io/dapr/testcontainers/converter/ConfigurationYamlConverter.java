@@ -1,12 +1,15 @@
 package io.dapr.testcontainers.converter;
 
+import io.dapr.testcontainers.AppHttpPipeline;
 import io.dapr.testcontainers.Configuration;
+import io.dapr.testcontainers.ListEntry;
 import io.dapr.testcontainers.OtelTracingConfigurationSettings;
 import io.dapr.testcontainers.TracingConfigurationSettings;
 import io.dapr.testcontainers.ZipkinTracingConfigurationSettings;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConfigurationYamlConverter implements YamlConverter<Configuration> {
@@ -58,6 +61,17 @@ public class ConfigurationYamlConverter implements YamlConverter<Configuration> 
       }
 
       configurationSpec.put("tracing", tracingMap);
+
+    }
+
+    AppHttpPipeline appHttpPipeline = configuration.getAppHttpPipeline();
+    if (appHttpPipeline != null) {
+
+      Map<String, Object> appHttpPipelineMap = new LinkedHashMap<>();
+      List<ListEntry> handlers = appHttpPipeline.getHandlers();
+      appHttpPipelineMap.put("handlers", handlers);
+      configurationSpec.put("appHttpPipeline", appHttpPipelineMap);
+
     }
 
     configurationProps.put("spec", configurationSpec);
