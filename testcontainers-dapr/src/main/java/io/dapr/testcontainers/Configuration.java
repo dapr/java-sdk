@@ -21,9 +21,13 @@ public class Configuration {
   private final TracingConfigurationSettings tracing;
   private final AppHttpPipeline appHttpPipeline;
 
-  // @TODO: add secrets
-  // @TODO: add components
-  // @TODO: add accessControl
+  // @TODO: add secrets https://github.com/dapr/java-sdk/issues/1280
+  // @TODO: add metrics https://github.com/dapr/java-sdk/issues/1281
+  // @TODO: add logging https://github.com/dapr/java-sdk/issues/1282
+  // @TODO: add middleware httpPipeline https://github.com/dapr/java-sdk/issues/1283
+  // @TODO: add nameResolution https://github.com/dapr/java-sdk/issues/1284
+  // @TODO: add disallow components https://github.com/dapr/java-sdk/issues/1285 
+  // @TODO: add mtls https://github.com/dapr/java-sdk/issues/1286
 
   /**
    * Creates a new configuration.
