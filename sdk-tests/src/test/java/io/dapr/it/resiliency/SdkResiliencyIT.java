@@ -13,153 +13,213 @@ limitations under the License.
 
 package io.dapr.it.resiliency;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import eu.rekawek.toxiproxy.Proxy;
+import eu.rekawek.toxiproxy.ToxiproxyClient;
+import eu.rekawek.toxiproxy.model.ToxicDirection;
+import eu.rekawek.toxiproxy.model.toxic.Latency;
+import eu.rekawek.toxiproxy.model.toxic.Timeout;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import io.dapr.client.DaprClientImpl;
 import io.dapr.client.resiliency.ResiliencyOptions;
-import io.dapr.it.BaseIT;
-import io.dapr.it.DaprRun;
-import io.dapr.it.ToxiProxyRun;
-import org.junit.jupiter.api.AfterAll;
+import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprException;
+import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.ToxiproxyContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
+import org.testcontainers.shaded.org.awaitility.core.ConditionTimeoutException;
 
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.any;
+import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static io.dapr.it.resiliency.SdkResiliencyIT.WIREMOCK_PORT;
+import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Test SDK resiliency.
- */
-public class SdkResiliencyIT extends BaseIT {
+@Testcontainers
+@WireMockTest(httpPort = WIREMOCK_PORT)
+@Tags({@Tag("testcontainers"), @Tag("resiliency")})
+public class SdkResiliencyIT {
 
-  private static final int NUM_ITERATIONS = 35;
+  public static final int WIREMOCK_PORT = 8888;
+  private static final Network NETWORK = Network.newNetwork();
+  private static final String STATE_STORE_NAME = "kvstore";
+  private static final int INFINITE_RETRY = -1;
 
-  private static final Duration TIMEOUT = Duration.ofMillis(100);
+  @Container
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
+      .withAppName("dapr-app")
+      .withAppPort(WIREMOCK_PORT)
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dapr-logs")))
+      .withAppHealthCheckPath("/actuator/health")
+      .withAppChannelAddress("host.testcontainers.internal")
+      .withNetworkAliases(List.of("dapr"))
+      .withNetwork(NETWORK);
 
-  private static final Duration LATENCY = TIMEOUT.dividedBy(3);
+  @Container
+  private static final ToxiproxyContainer TOXIPROXY = new ToxiproxyContainer("ghcr.io/shopify/toxiproxy:2.5.0")
+      .withNetwork(NETWORK);
 
-  private static final Duration JITTER = TIMEOUT.multipliedBy(3);
+  private static Proxy proxy;
 
-  private static final int MAX_RETRIES = -1;  // Infinity
+  private void configStub() {
+    stubFor(any(urlMatching("/actuator/health"))
+        .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-  private static DaprClient daprClient;
+    stubFor(any(urlMatching("/dapr/subscribe"))
+        .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-  private static ToxiProxyRun toxiProxyRun;
+    stubFor(get(urlMatching("/dapr/config"))
+        .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-  private static DaprClient daprToxiClient;
+    // create a stub for simulating dapr sidecar with timeout of 1000 ms
+    var ms1000 = 1000;
+    stubFor(post(urlEqualTo("/dapr.proto.runtime.v1.Dapr/SaveState"))
+        .willReturn(aResponse().withStatus(204).withFixedDelay(ms1000)));
 
-  private static DaprClient daprResilientClient;
+    stubFor(any(urlMatching("/([a-z1-9]*)"))
+        .willReturn(aResponse().withBody("[]").withStatus(200)));
 
-  private static DaprClient daprRetriesOnceClient;
-
-  private final String randomStateKeyPrefix = UUID.randomUUID().toString();
-
-  @BeforeAll
-  public static void init() throws Exception {
-    DaprRun daprRun = startDaprApp(SdkResiliencyIT.class.getSimpleName(), 5000);
-    daprClient = daprRun.newDaprClientBuilder().build();
-    daprClient.waitForSidecar(8000).block();
-
-    toxiProxyRun = new ToxiProxyRun(daprRun, LATENCY, JITTER);
-    toxiProxyRun.start();
-
-    daprToxiClient = toxiProxyRun.newDaprClientBuilder()
-            .withResiliencyOptions(
-                    new ResiliencyOptions().setTimeout(TIMEOUT))
-            .build();
-    daprResilientClient = toxiProxyRun.newDaprClientBuilder()
-            .withResiliencyOptions(
-                    new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(MAX_RETRIES))
-            .build();
-    daprRetriesOnceClient = toxiProxyRun.newDaprClientBuilder()
-            .withResiliencyOptions(
-                    new ResiliencyOptions().setTimeout(TIMEOUT).setMaxRetries(1))
-            .build();
-
-    assertTrue(daprClient instanceof DaprClientImpl);
-    assertTrue(daprToxiClient instanceof DaprClientImpl);
-    assertTrue(daprResilientClient instanceof DaprClientImpl);
-    assertTrue(daprRetriesOnceClient instanceof DaprClientImpl);
+    configureFor("localhost", WIREMOCK_PORT);
   }
 
-  @AfterAll
-  public static void tearDown() throws Exception {
-    if (daprClient != null) {
-      daprClient.close();
-    }
-    if (daprToxiClient != null) {
-      daprToxiClient.close();
-    }
-    if (daprResilientClient != null) {
-      daprResilientClient.close();
-    }
-    if (daprRetriesOnceClient != null) {
-      daprRetriesOnceClient.close();
-    }
-    if (toxiProxyRun != null) {
-      toxiProxyRun.stop();
-    }
+  @BeforeAll
+  static void configure() throws IOException {
+    ToxiproxyClient toxiproxyClient = new ToxiproxyClient(TOXIPROXY.getHost(), TOXIPROXY.getControlPort());
+    proxy =
+        toxiproxyClient.createProxy("dapr", "0.0.0.0:8666", "dapr:3500");
+  }
+
+  @BeforeEach
+  public void setDaprProperties() {
+    configStub();
+    org.testcontainers.Testcontainers.exposeHostPorts(WIREMOCK_PORT);
   }
 
   @Test
-  public void retryAndTimeout() {
-    AtomicInteger toxiClientErrorCount = new AtomicInteger();
-    AtomicInteger retryOnceClientErrorCount = new AtomicInteger();
+  @DisplayName("should throw exception when the configured timeout exceeding waitForSidecar's timeout")
+  public void testSidecarWithoutTimeout() {
+    // arrange
+    var ms3000 = 3000;
+    var ms2000 = 2000;
 
-    while (true){
-      for (int i = 0; i < NUM_ITERATIONS; i++) {
-        String key = randomStateKeyPrefix + "_" + i;
-        String value = Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8));
-        try {
-          daprToxiClient.saveState(STATE_STORE_NAME, key, value).block();
-        } catch (Exception e) {
-          // This call should fail sometimes. So, we count.
-          toxiClientErrorCount.incrementAndGet();
-        }
-        try {
-          daprRetriesOnceClient.saveState(STATE_STORE_NAME, key, value).block();
-        } catch (Exception e) {
-          // This call should fail sometimes. So, we count.
-          retryOnceClientErrorCount.incrementAndGet();
-        }
-
-        // We retry forever so that the call below should always work.
-        daprResilientClient.saveState(STATE_STORE_NAME, key, value).block();
-        // Makes sure the value was actually saved.
-        String savedValue = daprClient.getState(STATE_STORE_NAME, key, String.class).block().getValue();
-        assertEquals(value, savedValue);
+    // act
+    Assertions.assertThrows(RuntimeException.class, () -> {
+      try (DaprClient client = createDaprClientBuilder().build()) {
+        Timeout timeout = proxy.toxics().timeout("timeout", ToxicDirection.DOWNSTREAM, ms3000);
+        client.waitForSidecar(ms2000).block();
+        timeout.remove();
       }
+    });
+  }
 
-      // We should have at least one success per client, otherwise retry.
-      if(toxiClientErrorCount.get() < NUM_ITERATIONS && retryOnceClientErrorCount.get() < NUM_ITERATIONS){
-        // This assertion makes sure that toxicity is on
-        assertTrue(toxiClientErrorCount.get() > 0, "Toxi client error count is 0");
-        assertTrue(retryOnceClientErrorCount.get() > 0, "Retry once client error count is 0");
-        // A client without retries should have more errors than a client with one retry.
+  @Test
+  @DisplayName("should fail when resiliency options has 900ms and the latency is 950ms")
+  public void shouldFailDueToLatencyExceedingConfiguration() throws Exception {
+    // arrange
+    Duration ms900 = Duration.ofMillis(900);
+    Duration ms950 = Duration.ofMillis(950);
+    Latency latency = proxy.toxics().latency("latency", ToxicDirection.DOWNSTREAM, ms950.toMillis());
 
-        String failureMessage = formatFailureMessage(toxiClientErrorCount, retryOnceClientErrorCount);
-        assertTrue(toxiClientErrorCount.get() > retryOnceClientErrorCount.get(), failureMessage);
-        break;
-      }
-      toxiClientErrorCount.set(0);
-      retryOnceClientErrorCount.set(0);
+    DaprClient client =
+        createDaprClientBuilder().withResiliencyOptions(new ResiliencyOptions().setTimeout(ms900))
+            .build();
+
+    // act
+    String errorMessage = assertThrows(DaprException.class, () -> {
+      client.saveState(STATE_STORE_NAME, "users", "[]").block();
+    }).getMessage();
+
+    // assert
+    assertThat(errorMessage).contains("DEADLINE_EXCEEDED");
+
+    // clean up
+    latency.remove();
+    client.close();
+  }
+
+  @Test
+  @DisplayName("should fail when resiliency's options has infinite retry with time 900ms and the latency is 950ms")
+  public void shouldFailDueToLatencyExceedingConfigurationWithInfiniteRetry() throws Exception {
+    Duration ms900 = Duration.ofMillis(900);
+    Duration ms950 = Duration.ofMillis(950);
+
+    Latency latency = proxy.toxics().latency("latency-infinite-retry", ToxicDirection.DOWNSTREAM, ms950.toMillis());
+
+    DaprClient client =
+        createDaprClientBuilder().withResiliencyOptions(new ResiliencyOptions().setTimeout(ms900).setMaxRetries(
+                INFINITE_RETRY))
+            .build();
+
+    Assertions.assertThrows(ConditionTimeoutException.class, () -> {
+      Awaitility.await("10 seconds because the retry should be infinite")
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> {
+            boolean finished = true;
+            client.saveState(STATE_STORE_NAME, "users", "[]").block();
+            return finished;
+          });
+    });
+
+    // clean up
+    latency.remove();
+    client.close();
+  }
+
+  @Test
+  public void shouldFailDueToLatencyExceedingConfigurationWithOnceRetry() throws Exception {
+
+    // arrange
+    Duration ms900 = Duration.ofMillis(900);
+    DaprClient client =
+        new DaprClientBuilder().withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + WIREMOCK_PORT)
+            .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + WIREMOCK_PORT)
+            .withResiliencyOptions(new ResiliencyOptions().setTimeout(ms900)
+                .setMaxRetries(1))
+            .build();
+
+    try {
+      client.saveState(STATE_STORE_NAME, "users", "[]").block();
+    } catch (Exception ignored) {
     }
+
+    // assert
+    verify(2, postRequestedFor(urlEqualTo("/dapr.proto.runtime.v1.Dapr/SaveState")));
+
+    // clean up
+    client.close();
   }
 
-  private static String formatFailureMessage(
-      AtomicInteger toxiClientErrorCount,
-      AtomicInteger retryOnceClientErrorCount
-  ) {
-    return String.format(
-        "Toxi client error count: %d, Retry once client error count: %d",
-        toxiClientErrorCount.get(),
-        retryOnceClientErrorCount.get()
-    );
+  private static DaprClientBuilder createDaprClientBuilder() {
+    return new DaprClientBuilder()
+        .withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + TOXIPROXY.getMappedPort(8666))
+        .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + TOXIPROXY.getMappedPort(8666));
   }
+
 }

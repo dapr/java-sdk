@@ -32,12 +32,14 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
@@ -70,9 +72,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private Integer appPort;
   private String appHealthCheckPath;
   private boolean shouldReusePlacement;
+  private List<String> networkAliases = new ArrayList<>();
 
   /**
    * Creates a new Dapr container.
+   *
    * @param dockerImageName Docker image name.
    */
   public DaprContainer(DockerImageName dockerImageName) {
@@ -85,6 +89,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   /**
    * Creates a new Dapr container.
+   *
    * @param image Docker image name.
    */
   public DaprContainer(String image) {
@@ -174,6 +179,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   /**
    * Adds a Dapr component from a YAML file.
+   *
    * @param path Path to the YAML file.
    * @return This container.
    */
@@ -202,6 +208,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     } catch (IOException e) {
       logger().warn("Error while reading component from {}", path.toAbsolutePath());
     }
+    return this;
+  }
+
+  public DaprContainer withNetworkAliases(List<String> aliases) {
+    this.networkAliases = Objects.requireNonNullElse(aliases, List.of());
     return this;
   }
 
@@ -273,7 +284,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     cmds.add("--resources-path");
     cmds.add("/dapr-resources");
 
-    String[] cmdArray = cmds.toArray(new String[]{});
+    String[] cmdArray = cmds.toArray(new String[] {});
     LOGGER.info("> `daprd` Command: \n");
     LOGGER.info("\t" + Arrays.toString(cmdArray) + "\n");
 
@@ -324,6 +335,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
     }
 
+    setNetworkAliases(networkAliases);
     dependsOn(placementContainer);
   }
 
