@@ -260,6 +260,12 @@
       <artifactId>junit-platform-engine</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>toxiproxy</artifactId>
+      <version>1.20.6</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
