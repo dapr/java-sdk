@@ -12,6 +12,8 @@ This project has adopted the [Contributor Covenant Code of Conduct](https://gith
 
 Contributions come in many forms: submitting issues, writing code, participating in discussions and community calls.
 
+To learn more about becoming a contributor and the different roles within the Dapr community (Contributor, Approver, Maintainer), please refer to our [Community Membership](https://github.com/dapr/community/blob/master/community-membership.md) documentation.
+
 This document provides the guidelines for how to contribute to the Dapr project.
 
 ## Issues

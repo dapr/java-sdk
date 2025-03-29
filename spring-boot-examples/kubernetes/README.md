@@ -17,6 +17,17 @@ with a local container registry, so we can push our container images to it. This
 ./kind-with-registry.sh
 ```
 
+**Note**: If you are using Podman Desktop, instead of Docker you need to run the following command to enable insecure registries:
+
+```
+read -r -d '' registry_conf <<EOF
+[[registry]]
+location = "localhost:5001"
+insecure = true
+EOF
+podman machine ssh --username=root sh -c 'cat > /etc/containers/registries.conf.d/local.conf' <<<$registry_conf
+```
+
 Once you have the cluster up and running you can install Dapr: 
 
 ```bash
@@ -69,8 +80,13 @@ Once we have the container image created, we need to tag and push to the local r
 Alternatively, you can push the images to a public registry and update the Kubernetes manifests accordingly. 
 
 ```bash
-docker tag producer-app:0.14.0-SNAPSHOT localhost:5001/sb-producer-app
+docker tag producer-app:0.15.0-SNAPSHOT localhost:5001/sb-producer-app
 docker push localhost:5001/sb-producer-app
+```
+
+**Note**: for Podman you need to run: 
+```
+podman push localhost:5001/sb-producer-app --tls-verify=false
 ```
 
 From inside the `spring-boot-examples/consumer-app` directory you can run the following command to create a container:
@@ -82,8 +98,13 @@ Once we have the container image created, we need to tag and push to the local r
 Alternatively, you can push the images to a public registry and update the Kubernetes manifests accordingly.
 
 ```bash
-docker tag consumer-app:0.14.0-SNAPSHOT localhost:5001/sb-consumer-app
+docker tag consumer-app:0.15.0-SNAPSHOT localhost:5001/sb-consumer-app
 docker push localhost:5001/sb-consumer-app
+
+```
+**Note**: for Podman you need to run: 
+```
+podman push localhost:5001/sb-consumer-app --tls-verify=false
 ```
 
 __Optional: deploy `cloud-config-demo`__
@@ -99,6 +120,11 @@ Alternatively, you can push the images to a public registry and update the Kuber
 ```bash
 docker tag cloud-config-demo:0.15.0-SNAPSHOT localhost:5001/sb-cloud-config-demo
 docker push localhost:5001/sb-cloud-config-demo
+```
+
+**Note**: for Podman you need to run: 
+```
+podman push localhost:5001/sb-cloud-config-demo --tls-verify=false
 ```
 
 Now we are ready to install our application into the cluster.
