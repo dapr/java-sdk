@@ -96,9 +96,13 @@ public class DaprClientAutoConfiguration {
   private Properties createPropertiesFromConnectionDetails(DaprConnectionDetails daprConnectionDetails) {
     final Map<String, String> propertyOverrides = new HashMap<>();
     propertyOverrides.put(Properties.HTTP_ENDPOINT.getName(), daprConnectionDetails.httpEndpoint());
-    propertyOverrides.put(Properties.HTTP_PORT.getName(), String.valueOf(daprConnectionDetails.httpPort()));
+    if(daprConnectionDetails.httpPort() != null) {
+      propertyOverrides.put(Properties.HTTP_PORT.getName(), String.valueOf(daprConnectionDetails.httpPort()));
+    }
     propertyOverrides.put(Properties.GRPC_ENDPOINT.getName(), daprConnectionDetails.grpcEndpoint());
-    propertyOverrides.put(Properties.GRPC_PORT.getName(), String.valueOf(daprConnectionDetails.grpcPort()));
+    if(daprConnectionDetails.grpcPort() != null) {
+      propertyOverrides.put(Properties.GRPC_PORT.getName(), String.valueOf(daprConnectionDetails.grpcPort()));
+    }
     return new Properties(propertyOverrides);
   }
 
