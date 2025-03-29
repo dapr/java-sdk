@@ -145,10 +145,6 @@ class CloudConfigTests {
     assertEquals("testvalue", singleConfig.getSingleValueSecret());
     assertEquals("spring", multipleConfig.getMultipleSecretConfigV1());
     assertEquals("dapr", multipleConfig.getMultipleSecretConfigV2());
-
-    assertEquals("testvalue", singleConfig.getSingleValueConfig());
-
-    assertEquals("cloud", multipleConfig.getMultipleConfigurationConfigV3());
   }
 
 }

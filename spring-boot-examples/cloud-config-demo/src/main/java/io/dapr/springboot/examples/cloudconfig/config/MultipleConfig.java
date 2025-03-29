@@ -13,9 +13,6 @@ public class MultipleConfig {
   @Value("${dapr.spring.demo-config-secret.multivalue.v2}")
   private String multipleSecretConfigV2;
 
-  //should be cloud
-  @Value("${dapr.spring.demo-config-config.multivalue.v3}")
-  private String multipleConfigurationConfigV3;
 
   public String getMultipleSecretConfigV1() {
     return multipleSecretConfigV1;
@@ -31,13 +28,5 @@ public class MultipleConfig {
 
   public void setMultipleSecretConfigV2(String multipleSecretConfigV2) {
     this.multipleSecretConfigV2 = multipleSecretConfigV2;
-  }
-
-  public String getMultipleConfigurationConfigV3() {
-    return multipleConfigurationConfigV3;
-  }
-
-  public void setMultipleConfigurationConfigV3(String multipleConfigurationConfigV3) {
-    this.multipleConfigurationConfigV3 = multipleConfigurationConfigV3;
   }
 }
