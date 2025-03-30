@@ -62,7 +62,7 @@ metadata:
   name: dapr.spring.demo-config-secret.singlevalue
 type: Opaque
 stringData:
-  value: "dapr.spring.demo-config-secret.singlevalue=testvalue"
+  dapr.spring.demo-config-secret.singlevalue: "testvalue"
 EOF
 ```
 
