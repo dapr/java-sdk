@@ -80,12 +80,39 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class DaprInvokeFeignClient implements Client {
 
+  private static final Map<String, HttpExtension> httpExtensionMap = generateHttpExtensionMap();
+
   private static final String DOT = "\\.";
 
   private final int retry;
   private final int timeout;
 
   private final DaprClient daprClient;
+
+  private static Map<String, HttpExtension> generateHttpExtensionMap() {
+    Map<String, HttpExtension> tempHttpExtensionMap = new HashMap<>();
+
+    tempHttpExtensionMap.put("none",
+        HttpExtension.NONE);
+    tempHttpExtensionMap.put("put",
+        HttpExtension.PUT);
+    tempHttpExtensionMap.put("post",
+        HttpExtension.POST);
+    tempHttpExtensionMap.put("delete",
+        HttpExtension.DELETE);
+    tempHttpExtensionMap.put("head",
+        HttpExtension.HEAD);
+    tempHttpExtensionMap.put("connect",
+        HttpExtension.CONNECT);
+    tempHttpExtensionMap.put("options",
+        HttpExtension.OPTIONS);
+    tempHttpExtensionMap.put("trace",
+        HttpExtension.TRACE);
+    tempHttpExtensionMap.put("get",
+        HttpExtension.GET);
+
+    return tempHttpExtensionMap;
+  }
 
   /**
    * Default Client creation with no arguments.
@@ -119,8 +146,8 @@ public class DaprInvokeFeignClient implements Client {
    * Client creation with DaprClient, wait time, retry time Specified.
    *
    * @param daprClient client sepcified
-   * @param timeout   wait time (ms)
-   * @param retry  retry times
+   * @param timeout    wait time (ms)
+   * @param retry      retry times
    */
   public DaprInvokeFeignClient(DaprClient daprClient, int timeout, int retry) {
     this.daprClient = daprClient;
@@ -250,28 +277,10 @@ public class DaprInvokeFeignClient implements Client {
   }
 
   private HttpExtension toHttpExtension(String method) throws IOException {
-    switch (method) {
-      case "none":
-        return HttpExtension.NONE;
-      case "put":
-        return HttpExtension.PUT;
-      case "post":
-        return HttpExtension.POST;
-      case "delete":
-        return HttpExtension.DELETE;
-      case "head":
-        return HttpExtension.HEAD;
-      case "connect":
-        return HttpExtension.CONNECT;
-      case "options":
-        return HttpExtension.OPTIONS;
-      case "trace":
-        return HttpExtension.TRACE;
-      case "get":
-        return HttpExtension.GET;
-      default:
-        throw new IOException("Method '" + method + "' is not supported");
+    if (!httpExtensionMap.containsKey(method)) {
+      throw new IOException("Method '" + method + "' is not supported");
     }
+    return httpExtensionMap.get(method);
   }
 
   private String getContentType(Request request) {

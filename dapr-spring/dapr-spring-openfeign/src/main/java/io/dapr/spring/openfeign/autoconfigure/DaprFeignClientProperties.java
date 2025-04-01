@@ -7,9 +7,9 @@ public class DaprFeignClientProperties {
 
   public static final String PROPERTY_PREFIX = "dapr.feign";
 
-  private boolean enabled;
-  private Integer timeout;
-  private Integer retries;
+  private boolean enabled = true;
+  private Integer timeout = 2000;
+  private Integer retries = 3;
 
   public boolean isEnabled() {
     return enabled;

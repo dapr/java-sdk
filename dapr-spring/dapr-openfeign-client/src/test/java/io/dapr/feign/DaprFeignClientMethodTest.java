@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.charset.StandardCharsets;
 
+import feign.Body;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -45,6 +46,7 @@ public class DaprFeignClientMethodTest {
                 newBuilder().target(DaprFeignClientTestInterface.class, "http://method.myApp/");
 
         assertEquals(12, repository.getWithContentType().body().length());
+        assertEquals(200, repository.post().status());
     }
 
     public Feign.Builder newBuilder() {
@@ -60,7 +62,8 @@ public class DaprFeignClientMethodTest {
         @Headers({"Accept: text/plain", "Content-Type: text/plain"})
         Response getWithContentType();
 
-        @RequestLine("GET /abc")
-        Response get();
+        @RequestLine("POST /abc/")
+        @Body("test")
+        Response post();
     }
 }

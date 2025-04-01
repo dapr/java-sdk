@@ -36,9 +36,15 @@ public class DaprFeignClientAutoConfiguration {
     return new DaprClientTargeter(daprInvokeFeignClient);
   }
 
+  @SuppressWarnings("checkstyle:MissingJavadocMethod")
   @Bean
   @ConditionalOnMissingBean
-  public DaprInvokeFeignClient daprInvokeFeignClient(DaprClient daprClient) {
-    return new DaprInvokeFeignClient(daprClient);
+  public DaprInvokeFeignClient daprInvokeFeignClient(DaprClient daprClient,
+                                                     DaprFeignClientProperties daprFeignClientProperties) {
+    return new DaprInvokeFeignClient(
+        daprClient,
+        daprFeignClientProperties.getTimeout(),
+        daprFeignClientProperties.getRetries()
+    );
   }
 }

@@ -16,6 +16,7 @@ package io.dapr.feign;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import feign.Body;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -43,7 +44,7 @@ public class DaprFeignClientBindingTest {
                 newBuilder().target(DaprFeignClientTestInterface.class, "http://binding.myBinding");
 
         assertEquals(200, repository.getWithContentType().status());
-        assertEquals(0, repository.get().body().length());
+        assertEquals(0, repository.post().body().length());
     }
 
     public Feign.Builder newBuilder() {
@@ -59,7 +60,8 @@ public class DaprFeignClientBindingTest {
         @Headers({"Accept: text/plain", "Content-Type: text/plain"})
         Response getWithContentType();
 
-        @RequestLine("GET /get")
-        Response get();
+        @RequestLine("POST /get")
+        @Body("test")
+        Response post();
     }
 }
