@@ -332,18 +332,23 @@ public class DaprInvokeFeignClient implements Client {
   }
 
   private Response.Body toResponseBody(Mono<byte[]> response, Request.Options options) throws IOException {
-    byte[] result;
+    byte[] result = new byte[0];
 
-    try {
-      result = response.retry(retry).block(Duration.of(timeout,
-          TimeUnit.MILLISECONDS.toChronoUnit()));
+    for (int count = 0; count < retry; count++) {
+      try {
+        result = response.block(Duration.of(timeout,
+            TimeUnit.MILLISECONDS.toChronoUnit()));
 
-      if (result == null) {
-        result = new byte[0];
+        if (result == null) {
+          result = new byte[0];
+        }
+
+        break;
+      } catch (RuntimeException e) {
+        if (retry == count + 1) {
+          throw new IOException("Can not get Response", e);
+        }
       }
-
-    } catch (RuntimeException e) {
-      throw new IOException("Can not get Response", e);
     }
 
 
