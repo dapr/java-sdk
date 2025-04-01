@@ -30,6 +30,7 @@
     <protobuf.version>3.25.5</protobuf.version>
     <opentelemetry.version>1.41.0</opentelemetry.version>
     <springboot.version>3.4.3</springboot.version>
+    <springcloud.version>2024.0.0</springcloud.version>
     <logback-core.version>1.5.16</logback-core.version>
     <wiremock.version>3.9.1</wiremock.version>
     <testcontainers-test.version>1.20.0</testcontainers-test.version>
@@ -47,6 +48,13 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${springboot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${springcloud.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -259,6 +267,16 @@
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-engine</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-openfeign</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-openfeign</artifactId>
+      <version>0.15.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
