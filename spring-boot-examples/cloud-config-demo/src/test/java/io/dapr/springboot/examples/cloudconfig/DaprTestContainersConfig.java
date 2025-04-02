@@ -54,7 +54,7 @@ public class DaprTestContainersConfig {
 
   private static final Map<String, String> STORE_PROPERTY = generateStoreProperty();
 
-  private static final Network DAPR_NETWORK = getDaprNetwork();
+  private static final Network DAPR_NETWORK = Network.newNetwork();
 
   private static Map<String, String> generateStoreProperty() {
     return Map.of("redisHost", "redis:6379",
@@ -72,35 +72,6 @@ public class DaprTestContainersConfig {
         "multiValued", "true");
   }
 
-  public static Network getDaprNetwork() {
-      Network defaultDaprNetwork = new Network() {
-        @Override
-        public String getId() {
-          return "dapr-network";
-        }
-
-        @Override
-        public void close() {
-
-        }
-
-        @Override
-        public Statement apply(Statement base, Description description) {
-          return null;
-        }
-      };
-
-      List<com.github.dockerjava.api.model.Network> networks = DockerClientFactory.instance().client().listNetworksCmd()
-          .withNameFilter("dapr-network").exec();
-      if (networks.isEmpty()) {
-        Network.builder().createNetworkCmdModifier(cmd -> cmd.withName("dapr-network")).build().getId();
-        return defaultDaprNetwork;
-      } else {
-        return defaultDaprNetwork;
-      }
-
-  }
-
   @Container
   private static final RedisContainer REDIS_CONTAINER = new RedisContainer(
       RedisContainer.DEFAULT_IMAGE_NAME.withTag(RedisContainer.DEFAULT_TAG)) {
@@ -115,8 +86,8 @@ public class DaprTestContainersConfig {
       // Put values using Jedis
       try (Jedis jedis = new Jedis(address, port)) {
         logger.info("Putting Dapr Cloud config to {}:{}", address, port);
-        jedis.set(CloudConfigTests.CONFIG_MULTI_NAME, DaprConfigurationStores.YAML_CONFIG);
-        jedis.set(CloudConfigTests.CONFIG_SINGLE_NAME, "testvalue");
+        jedis.set(DaprTestContainersConfig.CONFIG_MULTI_NAME, DaprConfigurationStores.YAML_CONFIG);
+        jedis.set(DaprTestContainersConfig.CONFIG_SINGLE_NAME, "testvalue");
       }
     }
   }
