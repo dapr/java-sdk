@@ -40,6 +40,47 @@ By adding these dependencies you can:
 - Use the Spring Data and Messaging abstractions and programming model that uses the Dapr APIs under the hood
 - Improve your inner-development loop by relying on [Testcontainers](https://testcontainers.com/) to bootstrap Dapr Control plane services and default components
 
+___(Optional)___ And if you want to enable openfeign support, you will also need to add the dependencies to your project:
+
+```
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-openfeign</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-openfeign</artifactId>
+        <version>0.15.0-SNAPSHOT</version>
+    </dependency>
+```
+
+By adding these dependencies you can:
+- Invoke Method and Bindings with OpenFeign, just like other HTTP endpoints.
+
+___Note that Spring Cloud dependencies will require a different dependencyManagement setup from normal SpringBoot Application, 
+please check the [Official Documentation](https://spring.io/projects/spring-cloud) for more information.___
+
+___(Optional)___ If you want to use OpenFeign with Dapr from a non-SpringBoot project, you can add this dependency to your project:
+
+```
+    <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-openfeign-client</artifactId>
+        <version>0.15.0-SNAPSHOT</version>
+    </dependency>
+```
+
+It mainly provides a Client for OpenFeign to receive OpenFeign requests and send them using Dapr.
+
+You can use the client like this:
+
+```java
+MyAppData response = Feign.builder().client(new DaprFeignClient()).target(MyAppData.class, 
+    "http://binding.myBinding/create");
+```
+
+___Note that you don't have to add this dependency to your SpringBoot project directly, `dapr-spring-openfeign` has already included it.___
+
 Once these dependencies are in your application, you can rely on Spring Boot autoconfiguration to autowire a `DaprClient` instance:
 
 ```java
@@ -323,6 +364,55 @@ daprWorkflowClient.raiseEvent(instanceId, "MyEvenet", event);
 
 Check the [Dapr Workflow documentation](https://docs.dapr.io/developing-applications/building-blocks/workflow/workflow-overview/) for more information about how to work with Dapr Workflows.
 
+## Invoke Methods and Bindings registered in Dapr with Spring Cloud OpenFeign
+
+First you should follow the official Spring Cloud OpenFeign steps to enable FeignClient features, 
+mainly by adding a `@UseFeignClient` annotation in your SpringBoot Application of Configurations.
+
+Define a FeignClient using DaprClient is very easy, you can just define a regular FeignClient, and add a `@UseFeignClient` to the interface, just like that:
+
+```java
+@FeignClient(value = "producer-client", url = "http://method.producer-app/")
+@UseDaprClient
+public interface ProducerClient {
+
+  @PostMapping("/orders")
+  String storeOrder(@RequestBody Order order);
+
+  @GetMapping(value = "/orders", produces = "application/json")
+  Iterable<Order> getAll();
+
+  @GetMapping(value = "/orders/byItem/", produces = "application/json")
+  Iterable<Order> getAllByItem(@RequestParam("item") String item);
+}
+```
+
+There you go! now when you call the ProducerClient methods, it will call the DaprClient to handle that.
+
+>___Note: because of the design of DaprClient, you won't get any headers from Dapr.___
+>
+>___So you need to add `produces = "application/json"` 
+to your RequestMapping in order to parse the response body which return type is other than `String`.___
+> 
+> ___The `produces` field will generate an `Accept` header to the request, 
+the client will read it and create a fake `Content-Type` header to the response,
+and Spring Cloud Openfeign will read the `Content-Type` header of the response to parse values.___
+
+You may have noticed that the `url` field of `@FeignClient` is strange, here is the schema of it:
+
+The following content is from the Java Doc of DaprInvokeFeignClient.
+
+> Dapr currently supports two methods of invocation: invokeBinding (output binding) and invokeMethod. This client supports two modes: http://binding.xxx or http://method.xxx. The http scheme at the beginning is just to make Spring Boot Openfeign work properly.
+> 
+> For invokeMethod, the URL contains two types of information, similar to the format of an HTTP URL. The difference lies in the conversion of the host in the HTTP URL to appId, and the path (excluding “/”) to methodName. For example, if you have a method with the appId “myApp” and the methodName “getAll/demo”, then the URL for this request would be http://method.myApp/getAll/demo. You can also set HTTP headers if you wish, and the client will handle them. Currently, only HTTP calls are supported, but grpc calls may be supported in the future, with possible URLs like http://method_grpc.myApp/getAll or similar.
+> 
+> For invokeBinding, the URL also contains two types of information: the host is the bindingName, and the path is the operation. Note that different bindings support different operations, so you must consult the Dapr documentation. For example, if you have a binding with the bindingName “myBinding” and the supported operation is “create”, then the URL for this request would be http://binding.myBinding/create. You can put some metadata in the headers of the Feign request, and the client will handle them.
+> 
+> As for the response, the result code is always 200 OK. If the client encounters any errors, it will throw an IOException.
+> 
+> Currently, we have no method to gain metadata from server as Dapr Client doesn’t have methods to do that, so headers will be blank. If Accept header has set in request, a fake Content-Type header will be created in response, and it will be the first value of Accept header.
+
+___Note that not all bindings are recommended to use FeignClient to query directly, you can try `dapr-spring-data` for databases, or `dapr-spring-messaging` for pubsubs___
 
 ## Next steps
 
