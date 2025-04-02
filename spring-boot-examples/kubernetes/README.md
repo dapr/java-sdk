@@ -1,7 +1,7 @@
 # Running this example on Kubernetes
 
 To run this example on Kubernetes, you can use any Kubernetes distribution. 
-We install Dapr on a Kubernetes cluster and then we will deploy both the `producer-app` and `consumer-app`.
+We install Dapr on a Kubernetes cluster and then we will deploy the `producer-app`, `consumer-app` and `openfeign-app`.
 
 ## Creating a cluster and installing Dapr
 
@@ -77,6 +77,24 @@ docker push localhost:5001/sb-consumer-app
 podman push localhost:5001/sb-consumer-app --tls-verify=false
 ```
 
+From inside the `spring-boot-examples/openfeign-app` directory you can run the following command to create a container:
+```bash
+mvn spring-boot:build-image
+```
+
+Once we have the container image created, we need to tag and push to the local registry, so the image can be used from our local cluster.
+Alternatively, you can push the images to a public registry and update the Kubernetes manifests accordingly.
+
+```bash
+docker tag openfeign-app:0.15.0-SNAPSHOT localhost:5001/sb-openfeign-app
+docker push localhost:5001/sb-openfeign-app
+```
+
+**Note**: for Podman you need to run:
+```
+podman push localhost:5001/sb-openfeign-app --tls-verify=false
+```
+
 Now we are ready to install our application into the cluster.
 
 ## Installing and interacting with the application
@@ -107,7 +125,7 @@ Next you need to use `kubectl port-forward` to be able to send requests to the a
 kubectl port-forward svc/producer-app 8080:8080
 ```
 
-In a different terminals you can check the logs of the `producer-app` and `consumer-app`:
+In a different terminals you can check the logs of the `producer-app`, `consumer-app` and `openfeign-app`:
 
 ```bash
 kubectl logs -f producer-app-<POD_ID>
@@ -117,5 +135,8 @@ and
 ```bash
 kubectl logs -f consumer-app-<POD_ID>
 ```
+and
 
-
+```bash
+kubectl logs -f openfeign-app-<POD_ID>
+```

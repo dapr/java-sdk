@@ -16,11 +16,13 @@
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
     <springboot.version>3.4.3</springboot.version>
+    <springcloud.version>2024.0.0</springcloud.version>
   </properties>
 
   <modules>
     <module>producer-app</module>
     <module>consumer-app</module>
+    <module>openfgien-app</module>
   </modules>
 
   <dependencyManagement>
@@ -29,6 +31,13 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${springboot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${springcloud.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
