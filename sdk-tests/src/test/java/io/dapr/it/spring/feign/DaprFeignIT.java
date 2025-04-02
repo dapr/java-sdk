@@ -2,6 +2,7 @@ package io.dapr.it.spring.feign;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.it.spring.data.TestDaprSpringDataConfiguration;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -24,6 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
@@ -96,7 +99,15 @@ public class DaprFeignIT {
 
   @Test
   public void invokeBindingTest() {
+    postgreBindingClient.exec("CREATE TABLE \"demodata\" (\n" +
+        "\t\"id\" serial NOT NULL UNIQUE,\n" +
+        "\t\"name\" varchar(255) NOT NULL,\n" +
+        "\tPRIMARY KEY(\"id\")\n" +
+        ");", List.of());
 
+    postgreBindingClient.exec("INSERT INTO demodata (id, name) VALUES ($1, $2)", "[1, \"hello\"]");
+
+    assertEquals("[[1,\"hello\"]]", postgreBindingClient.query("SELECT * FROM demodata", List.of()));
   }
 
   @Test
