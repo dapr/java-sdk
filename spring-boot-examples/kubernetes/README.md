@@ -1,10 +1,10 @@
 # Running this example on Kubernetes
 
 To run this example on Kubernetes, you can use any Kubernetes distribution. 
-We install Dapr on a Kubernetes cluster and then we will deploy both the `producer-app` and `consumer-app`.
+We install Dapr on a Kubernetes cluster and then we will deploy the `producer-app`, `consumer-app` and `cloud-config-demo`.
 
-You can also deploy `cloud-config-demo` if you like, but actually it doesn't have any feature.
-
+> ___A Note for `cloud-config-demo`:___
+> 
 > Remind that only Kubernetes Secret works on dapr secret, Kubernetes ConfigMap doesn't support in dapr runtime, and there is no easy way to fill data to redis running in cluster before container started automatically, so configuration schema are commented by default.
 
 ## Creating a cluster and installing Dapr
@@ -152,7 +152,7 @@ Next you need to use `kubectl port-forward` to be able to send requests to the a
 kubectl port-forward svc/producer-app 8080:8080
 ```
 
-In a different terminals you can check the logs of the `producer-app` and `consumer-app`:
+In a different terminals you can check the logs of the `producer-app`, `consumer-app` and `cloud-config-demo`:
 
 ```bash
 kubectl logs -f producer-app-<POD_ID>
@@ -162,5 +162,9 @@ and
 ```bash
 kubectl logs -f consumer-app-<POD_ID>
 ```
+and
 
+```bash
+kubectl logs -f cloud-config-demo-<POD_ID>
+```
 

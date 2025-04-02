@@ -17,3 +17,6 @@ spring:
 # so to maintain the compatibility of Kubernetes, following lines are commented.
 #      - dapr:config:democonfigconf/dapr.spring.demo-config-config.singlevalue?type=value
 #      - dapr:config:democonfigconf/multivalue-yaml?type=doc&doc-type=yaml
+server:
+  port: 8082
+

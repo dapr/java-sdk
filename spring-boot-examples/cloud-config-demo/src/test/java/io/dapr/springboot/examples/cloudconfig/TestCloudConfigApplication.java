@@ -20,12 +20,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class TestCloudConfigApplication {
 
+  static {
+    DaprTestContainersConfig.DAPR_CONTAINER.start();
+  }
+
   public static void main(String[] args) {
 
     SpringApplication.from(CloudConfigApplication::main)
             .with(DaprTestContainersConfig.class)
             .run(args);
-    org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    org.testcontainers.Testcontainers.exposeHostPorts(8082);
   }
 
 }

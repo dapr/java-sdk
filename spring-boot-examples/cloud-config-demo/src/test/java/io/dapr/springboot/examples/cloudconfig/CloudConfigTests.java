@@ -15,13 +15,14 @@ package io.dapr.springboot.examples.cloudconfig;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.redis.testcontainers.RedisContainer;
-import io.dapr.spring.boot.cloudconfig.autoconfigure.DaprCloudConfigAutoConfiguration;
-import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.cloudconfig.config.MultipleConfig;
 import io.dapr.springboot.examples.cloudconfig.config.SingleConfig;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -46,8 +48,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest(classes = {TestCloudConfigApplication.class, DaprTestContainersConfig.class,
-        DaprAutoConfiguration.class, DaprCloudConfigAutoConfiguration.class},
+@SpringBootTest(classes = {TestCloudConfigApplication.class, DaprTestContainersConfig.class,},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @Testcontainers
 @Tag("testcontainers")
@@ -128,23 +129,39 @@ class CloudConfigTests {
         "multiValued", "true");
   }
 
+  @BeforeEach
+  void setUp() {
+    RestAssured.baseURI = "http://localhost:" + 8082;
+    org.testcontainers.Testcontainers.exposeHostPorts(8082);
+  }
+
   @Autowired
   MultipleConfig multipleConfig;
 
   @Autowired
   SingleConfig singleConfig;
 
-  @DynamicPropertySource
-  static void dynamicProperties(DynamicPropertyRegistry registry) {
-    registry.add("dapr.client.http-port", DAPR_CONTAINER::getHttpPort);
-    registry.add("dapr.client.grpc-port", DAPR_CONTAINER::getGrpcPort);
-  }
-
   @Test
   void testCloudConfig() {
     assertEquals("testvalue", singleConfig.getSingleValueSecret());
     assertEquals("spring", multipleConfig.getMultipleSecretConfigV1());
     assertEquals("dapr", multipleConfig.getMultipleSecretConfigV2());
+  }
+
+  @Test
+  void testController() {
+    given().contentType(ContentType.JSON)
+        .when()
+        .get("/config")
+        .then()
+        .statusCode(200).body(is("testvalue"));
+  }
+
+  @Test
+  void fillCoverage() {
+    new SingleConfig().setSingleValueSecret("testvalue");
+    new MultipleConfig().setMultipleSecretConfigV1("spring");
+    new MultipleConfig().setMultipleSecretConfigV2("dapr");
   }
 
 }

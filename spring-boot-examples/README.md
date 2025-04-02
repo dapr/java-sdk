@@ -76,7 +76,7 @@ name: Run Demo Producer Service
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
-- 'Started ProducerApplication'
+- 'Started CloudConfigApplication'
 background: true
 expected_return_code: 143
 sleep: 30
@@ -90,6 +90,8 @@ cd cloud-config-demo/
 ```
 
 <!-- END_STEP -->
+
+The `cloud-config-demo` starts in port `8082` by default.
 
 It will work and gain secrets from secret store. you can also uncomment the lines in application.yaml to enable more configuration imports.
 
@@ -195,6 +197,28 @@ Let's book a follow up for the customer: salaboy
 Customer: salaboy follow-up done.
 Congratulations the customer: salaboy is happy!
 ```
+
+You can check the config in CloudConfig app, just run:
+
+<!-- STEP
+name: Send GET request to CloudConfig App
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- 'testvalue'
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+```sh
+curl -X GET localhost:8082/config
+```
+
+<!-- END_STEP -->
+
+You will get `testvalue` in terminal stdout.
 
 ## Running on Kubernetes
 
