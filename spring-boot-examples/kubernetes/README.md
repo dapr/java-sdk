@@ -122,6 +122,11 @@ docker tag cloud-config-demo:0.15.0-SNAPSHOT localhost:5001/sb-cloud-config-demo
 docker push localhost:5001/sb-cloud-config-demo
 ```
 
+**Note**: for Podman you need to run:
+```
+podman push localhost:5001/sb-cloud-config-demo --tls-verify=false
+```
+
 Now we are ready to install our application into the cluster.
 
 ## Installing and interacting with the application

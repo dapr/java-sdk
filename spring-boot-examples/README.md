@@ -29,7 +29,7 @@ expected_stdout_lines:
 background: true
 expected_return_code: 143
 sleep: 30
-timeout_seconds: 45
+timeout_seconds: 75
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -72,7 +72,7 @@ The `consumer-app` starts in port `8081` by default.
 
 To run `cloud-config-demo`, you should run in a terminal (`cloud-config-demo` doesn't depends on two applications above):
 <!-- STEP
-name: Run Demo Producer Service
+name: Run Cloud Config Demo Service
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
