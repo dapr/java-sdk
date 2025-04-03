@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openfeign-app
+  name: openfeign-app
+spec:
+  type: NodePort
+  ports:
+    - name: "openfeign-app"
+      port: 8083
+      targetPort: 8083
+      nodePort: 31003
+  selector:
+    app: openfeign-app
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openfeign-app
+  name: openfeign-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openfeign-app
+  template:
+    metadata:
+      annotations:
+        dapr.io/app-id: openfeign-app
+        dapr.io/app-port: "8083"
+        dapr.io/enabled: "true"
+      labels:
+        app: openfeign-app
+    spec:
+      containers:
+        - image: localhost:5001/sb-openfeign-app
+          name: openfeign-app
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+              name: openfeign-app
