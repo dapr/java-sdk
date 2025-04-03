@@ -9,7 +9,7 @@
         <version>0.15.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>openfgien-app</artifactId>
+    <artifactId>openfeign-app</artifactId>
     <name>openfgien-app</name>
     <description>Spring Boot, Testcontainers and Dapr Integration Examples :: OpenFeign App</description>
 

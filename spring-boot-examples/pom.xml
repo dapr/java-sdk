@@ -22,7 +22,7 @@
   <modules>
     <module>producer-app</module>
     <module>consumer-app</module>
-    <module>openfgien-app</module>
+    <module>openfeign-app</module>
   </modules>
 
   <dependencyManagement>
