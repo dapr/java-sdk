@@ -1,6 +1,6 @@
 package io.dapr.client.domain;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 /**
  * Represents a request to schedule a job in Dapr.
@@ -9,9 +9,9 @@ public class GetJobResponse {
   private final String name;
   private byte[] data;
   private JobSchedule schedule;
-  private OffsetDateTime dueTime;
+  private Instant dueTime;
   private Integer repeats;
-  private OffsetDateTime ttl;
+  private Instant ttl;
 
   /**
    * Constructor to create GetJobResponse.
@@ -32,7 +32,7 @@ public class GetJobResponse {
    *                type fields are not provided. Accepts a “point in time” string in the format of RFC3339,
    *                Go duration string (calculated from creation time), or non-repeating ISO8601
    */
-  public GetJobResponse(String name, OffsetDateTime dueTime) {
+  public GetJobResponse(String name, Instant dueTime) {
     this.name = name;
     this.dueTime = dueTime;
   }
@@ -68,7 +68,7 @@ public class GetJobResponse {
    * @param dueTime The due time of the job.
    * @return This builder instance.
    */
-  public GetJobResponse setDueTime(OffsetDateTime dueTime) {
+  public GetJobResponse setDueTime(Instant dueTime) {
     this.dueTime = dueTime;
     return this;
   }
@@ -92,7 +92,7 @@ public class GetJobResponse {
    * @param ttl The time-to-live for the job.
    * @return This builder instance.
    */
-  public GetJobResponse setTtl(OffsetDateTime ttl) {
+  public GetJobResponse setTtl(Instant ttl) {
     this.ttl = ttl;
     return this;
   }
@@ -131,7 +131,7 @@ public class GetJobResponse {
    *
    * @return The due time.
    */
-  public OffsetDateTime getDueTime() {
+  public Instant getDueTime() {
     return dueTime;
   }
 
@@ -149,7 +149,7 @@ public class GetJobResponse {
    *
    * @return The TTL value.
    */
-  public OffsetDateTime getTtl() {
+  public Instant getTtl() {
     return ttl;
   }
 }

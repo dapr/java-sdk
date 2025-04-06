@@ -8,7 +8,6 @@ import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -20,9 +19,12 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.yaml.snakeyaml.scanner.Constant;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -74,58 +76,67 @@ public class DaprJobsIT {
 
   @Test
   public void testJobScheduleCreationWithDueTime() {
-    OffsetDateTime currentTime = OffsetDateTime.now();
+    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .withZone(ZoneOffset.UTC);
+
+    Instant currentTime = Instant.now();
     daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)).block();
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals("Job", getJobResponse.getName());
   }
 
   @Test
   public void testJobScheduleCreationWithSchedule() {
-    OffsetDateTime currentTime = OffsetDateTime.now();
+    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .withZone(ZoneOffset.UTC);
+
+    Instant currentTime = Instant.now();
     daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", JobSchedule.hourly())
         .setDueTime(currentTime)).block();
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
     assertEquals("Job", getJobResponse.getName());
   }
 
   @Test
   public void testJobScheduleCreationWithAllParameters() {
-    OffsetDateTime currentTime = OffsetDateTime.now();
+    Instant currentTime = Instant.now();
+    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .withZone(ZoneOffset.UTC);
 
     String cronExpression = "2 * 3 * * FRI";
 
     daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
-        .setTtl(currentTime.plusHours(2))
+        .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
     assertEquals("Job", getJobResponse.getName());
     assertEquals(Integer.valueOf(3), getJobResponse.getRepeats());
     assertEquals("Job data", new String(getJobResponse.getData()));
-    assertEquals(currentTime.plusHours(2), getJobResponse.getTtl());
+    assertEquals(iso8601Formatter.format(currentTime.plus(2, ChronoUnit.HOURS)),
+            getJobResponse.getTtl().toString());
   }
 
   @Test
   public void testDeleteJobRequest() {
-    OffsetDateTime currentTime = OffsetDateTime.now();
+    Instant currentTime = Instant.now();
 
     String cronExpression = "2 * 3 * * FRI";
 
     daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
-        .setTtl(currentTime.plusHours(2))
+        .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
         .setSchedule(JobSchedule.fromString(cronExpression))).block();

@@ -42,9 +42,11 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -544,9 +546,9 @@ public class DaprPreviewClientGrpcTest {
 		ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
 				JobSchedule.fromString("*/5 * * * *"))
 				.setData("testData".getBytes())
-				.setTtl(OffsetDateTime.now().plusDays(1))
+				.setTtl(Instant.now().plus(1, ChronoUnit.DAYS))
 				.setRepeat(5)
-				.setDueTime(OffsetDateTime.now().plusMinutes(10));
+				.setDueTime(Instant.now().plus(10, ChronoUnit.MINUTES));
 
 		doAnswer(invocation -> {
 			StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
@@ -566,13 +568,15 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals("testData",
 				new String(actualScheduleJobReq.getJob().getData().getValue().toByteArray(), StandardCharsets.UTF_8));
 		assertEquals("*/5 * * * *", actualScheduleJobReq.getJob().getSchedule());
-		assertEquals(expectedScheduleJobRequest.getTtl().format(iso8601Formatter), actualScheduleJobReq.getJob().getTtl());
+		assertEquals(iso8601Formatter.format(expectedScheduleJobRequest.getTtl()), actualScheduleJobReq.getJob().getTtl());
 		assertEquals(expectedScheduleJobRequest.getRepeats(), actualScheduleJobReq.getJob().getRepeats());
-		assertEquals(expectedScheduleJobRequest.getDueTime().format(iso8601Formatter), actualScheduleJobReq.getJob().getDueTime());
+		assertEquals(iso8601Formatter.format(expectedScheduleJobRequest.getDueTime()), actualScheduleJobReq.getJob().getDueTime());
 	}
 
 	@Test
 	void scheduleJobShouldSucceedWhenRequiredFieldsNameAndDueTimeArePresentInRequest() {
+		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+				.withZone(ZoneOffset.UTC);
 
 		doAnswer(invocation -> {
 			StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
@@ -581,7 +585,7 @@ public class DaprPreviewClientGrpcTest {
 		}).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
 
 		ScheduleJobRequest expectedScheduleJobRequest =
-				new ScheduleJobRequest("testJob", OffsetDateTime.now().plusMinutes(10));
+				new ScheduleJobRequest("testJob", Instant.now().plus(10, ChronoUnit.MINUTES));
 		assertDoesNotThrow(() -> previewClient.scheduleJob(expectedScheduleJobRequest).block());
 
 		ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
@@ -595,11 +599,14 @@ public class DaprPreviewClientGrpcTest {
 		assertFalse(job.hasSchedule());
 		assertEquals(0, job.getRepeats());
 		assertFalse(job.hasTtl());
-		assertEquals(job.getDueTime(), actualScheduleJobRequest.getJob().getDueTime());
+		assertEquals(iso8601Formatter.format(expectedScheduleJobRequest.getDueTime()),
+				actualScheduleJobRequest.getJob().getDueTime());
 	}
 
 	@Test
 	void scheduleJobShouldSucceedWhenRequiredFieldsNameAndScheduleArePresentInRequest() {
+		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+				.withZone(ZoneOffset.UTC);
 
 		doAnswer(invocation -> {
 			StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
@@ -622,7 +629,6 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals( "* * * * * *", job.getSchedule());
 		assertEquals(0, job.getRepeats());
 		assertFalse(job.hasTtl());
-		assertEquals(job.getDueTime(), actualScheduleJobRequest.getJob().getDueTime());
 	}
 
 	@Test
@@ -635,7 +641,7 @@ public class DaprPreviewClientGrpcTest {
 
 	@Test
 	void scheduleJobShouldThrowWhenInvalidRequest() {
-		ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest(null, OffsetDateTime.now());
+		ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest(null, Instant.now());
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.scheduleJob(scheduleJobRequest).block();
 		});
@@ -644,7 +650,7 @@ public class DaprPreviewClientGrpcTest {
 
 	@Test
 	void scheduleJobShouldThrowWhenNameInRequestIsEmpty() {
-		ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("", OffsetDateTime.now());
+		ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("", Instant.now());
 
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.scheduleJob(scheduleJobRequest).block();
@@ -665,7 +671,7 @@ public class DaprPreviewClientGrpcTest {
 				.setData(Any.newBuilder().setValue(ByteString.copyFrom("testData".getBytes())).build())
 				.setSchedule("*/5 * * * *")
 				.setRepeats(5)
-				.setDueTime(OffsetDateTime.now().plusMinutes(10).format(iso8601Formatter))
+				.setDueTime(iso8601Formatter.format(Instant.now().plus(10, ChronoUnit.MINUTES)))
 				.build();
 
 		doAnswer(invocation -> {
@@ -685,8 +691,8 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals("testData", new String(response.getData(), StandardCharsets.UTF_8));
 		assertEquals("*/5 * * * *", response.getSchedule().getExpression());
 		assertEquals(5, response.getRepeats());
-		assertEquals(job.getTtl(), response.getTtl().toString());
-		assertEquals(job.getDueTime(), response.getDueTime().toString());
+		assertEquals(job.getTtl(), iso8601Formatter.format(response.getTtl()));
+		assertEquals(job.getDueTime(), iso8601Formatter.format(response.getDueTime()));
 	}
 
 	@Test
