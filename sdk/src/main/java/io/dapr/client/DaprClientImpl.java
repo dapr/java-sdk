@@ -99,6 +99,8 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1303,6 +1305,9 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateScheduleJobRequest(scheduleJobRequest);
 
+      DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+              .withZone(ZoneOffset.UTC);
+
       DaprProtos.Job.Builder scheduleJobRequestBuilder = DaprProtos.Job.newBuilder();
       scheduleJobRequestBuilder.setName(scheduleJobRequest.getName());
 
@@ -1316,7 +1321,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       if (scheduleJobRequest.getTtl() != null) {
-        scheduleJobRequestBuilder.setTtl(scheduleJobRequest.getTtl().toString());
+        scheduleJobRequestBuilder.setTtl(scheduleJobRequest.getTtl().format(iso8601Formatter));
       }
 
       if (scheduleJobRequest.getRepeats() != null) {
@@ -1324,7 +1329,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       if (scheduleJobRequest.getDueTime() != null) {
-        scheduleJobRequestBuilder.setDueTime(scheduleJobRequest.getDueTime().toString());
+        scheduleJobRequestBuilder.setDueTime(scheduleJobRequest.getDueTime()
+                .format(iso8601Formatter));
       }
 
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
@@ -1348,6 +1354,9 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateGetJobRequest(getJobRequest);
 
+      DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+              .withZone(ZoneOffset.UTC);
+
       Mono<DaprProtos.GetJobResponse> getJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
@@ -1362,7 +1371,7 @@ public class DaprClientImpl extends AbstractDaprClient {
 
         if (job.hasSchedule() && job.hasDueTime()) {
           getJobResponse = new GetJobResponse(job.getName(), JobSchedule.fromString(job.getSchedule()));
-          getJobResponse.setDueTime(OffsetDateTime.parse(job.getDueTime()));
+          getJobResponse.setDueTime(OffsetDateTime.parse(job.getDueTime(), iso8601Formatter));
         } else if (job.hasSchedule()) {
           getJobResponse = new GetJobResponse(job.getName(), JobSchedule.fromString(job.getSchedule()));
         } else {
@@ -1370,7 +1379,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         }
 
         return getJobResponse
-            .setTtl(job.hasTtl() ? OffsetDateTime.parse(job.getTtl()) : null)
+            .setTtl(job.hasTtl() ? OffsetDateTime.parse(job.getTtl(), iso8601Formatter) : null)
             .setData(job.hasData() ? job.getData().getValue().toByteArray() : null)
             .setRepeat(job.hasRepeats() ? job.getRepeats() : null);
       });

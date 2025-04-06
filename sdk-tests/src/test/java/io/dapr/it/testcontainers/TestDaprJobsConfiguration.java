@@ -16,6 +16,8 @@ package io.dapr.it.testcontainers;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprClientImpl;
 import io.dapr.client.DaprPreviewClient;
+import io.dapr.config.Properties;
+import io.dapr.config.Property;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,11 +32,11 @@ public class TestDaprJobsConfiguration {
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
       @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
   ){
-    Map<String, String> overrides = Map.of(
-        "dapr.http.endpoint", daprHttpEndpoint,
-        "dapr.grpc.endpoint", daprGrpcEndpoint
+    Map<Property<?>, String> overrides = Map.of(
+            Properties.HTTP_ENDPOINT, daprHttpEndpoint,
+            Properties.GRPC_ENDPOINT, daprGrpcEndpoint
     );
 
-    return new DaprClientBuilder().buildPreviewClient();
+    return new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient();
   }
 }

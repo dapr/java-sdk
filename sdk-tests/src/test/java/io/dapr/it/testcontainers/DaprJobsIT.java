@@ -20,9 +20,12 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.org.yaml.snakeyaml.scanner.Constant;
 
 import java.time.OffsetDateTime;
 import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
 
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -40,7 +43,7 @@ public class DaprJobsIT {
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.15.2")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DaprContainerConstants.IMAGE_TAG)
       .withAppName("jobs-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
@@ -76,8 +79,8 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    Assertions.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
-    Assertions.assertEquals("Job", getJobResponse.getName());
+    assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    assertEquals("Job", getJobResponse.getName());
   }
 
   @Test
@@ -88,9 +91,9 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    Assertions.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
-    Assertions.assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
-    Assertions.assertEquals("Job", getJobResponse.getName());
+    assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
+    assertEquals("Job", getJobResponse.getName());
   }
 
   @Test
@@ -107,12 +110,12 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    Assertions.assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
-    Assertions.assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
-    Assertions.assertEquals("Job", getJobResponse.getName());
-    Assertions.assertEquals(3, getJobResponse.getRepeats());
-    Assertions.assertEquals("Job data", new String(getJobResponse.getData()));
-    Assertions.assertEquals(currentTime.plusHours(2), getJobResponse.getTtl());
+    assertEquals(currentTime.toString(), getJobResponse.getDueTime().toString());
+    assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
+    assertEquals("Job", getJobResponse.getName());
+    assertEquals(Integer.valueOf(3), getJobResponse.getRepeats());
+    assertEquals("Job data", new String(getJobResponse.getData()));
+    assertEquals(currentTime.plusHours(2), getJobResponse.getTtl());
   }
 
   @Test

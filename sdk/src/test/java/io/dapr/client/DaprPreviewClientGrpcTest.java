@@ -43,6 +43,8 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -536,6 +538,9 @@ public class DaprPreviewClientGrpcTest {
 
 	@Test
 	void scheduleJobShouldSucceedWhenAllFieldsArePresentInRequest() {
+		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+				.withZone(ZoneOffset.UTC);
+
 		ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
 				JobSchedule.fromString("*/5 * * * *"))
 				.setData("testData".getBytes())
@@ -561,9 +566,9 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals("testData",
 				new String(actualScheduleJobReq.getJob().getData().getValue().toByteArray(), StandardCharsets.UTF_8));
 		assertEquals("*/5 * * * *", actualScheduleJobReq.getJob().getSchedule());
-		assertEquals(expectedScheduleJobRequest.getTtl().toString(), actualScheduleJobReq.getJob().getTtl());
+		assertEquals(expectedScheduleJobRequest.getTtl().format(iso8601Formatter), actualScheduleJobReq.getJob().getTtl());
 		assertEquals(expectedScheduleJobRequest.getRepeats(), actualScheduleJobReq.getJob().getRepeats());
-		assertEquals(expectedScheduleJobRequest.getDueTime().toString(), actualScheduleJobReq.getJob().getDueTime());
+		assertEquals(expectedScheduleJobRequest.getDueTime().format(iso8601Formatter), actualScheduleJobReq.getJob().getDueTime());
 	}
 
 	@Test
@@ -649,15 +654,18 @@ public class DaprPreviewClientGrpcTest {
 
 	@Test
 	void getJobShouldReturnResponseWhenAllFieldsArePresentInRequest() {
+		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+				.withZone(ZoneOffset.UTC);
+
 		GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
 		DaprProtos.Job job = DaprProtos.Job.newBuilder()
 				.setName("testJob")
-				.setTtl(OffsetDateTime.now().toString())
+				.setTtl(OffsetDateTime.now().format(iso8601Formatter))
 				.setData(Any.newBuilder().setValue(ByteString.copyFrom("testData".getBytes())).build())
 				.setSchedule("*/5 * * * *")
 				.setRepeats(5)
-				.setDueTime(OffsetDateTime.now().plusMinutes(10).toString())
+				.setDueTime(OffsetDateTime.now().plusMinutes(10).format(iso8601Formatter))
 				.build();
 
 		doAnswer(invocation -> {
