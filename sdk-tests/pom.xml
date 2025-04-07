@@ -241,11 +241,6 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>eu.rekawek.toxiproxy</groupId>
-      <artifactId>toxiproxy-java</artifactId>
-      <version>2.1.7</version>
-    </dependency>
-    <dependency>
         <groupId>jakarta.servlet</groupId>
         <artifactId>jakarta.servlet-api</artifactId>
         <scope>compile</scope>
@@ -258,6 +253,12 @@
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>toxiproxy</artifactId>
+      <version>${testcontainers-test.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -48,7 +48,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,7 +69,7 @@ public class DaprContainerIT {
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port 8081.*";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_IMAGE_TAG)
           .withAppName("dapr-app")
           .withAppPort(8081)
           .withAppHealthCheckPath("/actuator/health")
