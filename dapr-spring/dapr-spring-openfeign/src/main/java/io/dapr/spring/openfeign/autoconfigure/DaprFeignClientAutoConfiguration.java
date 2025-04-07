@@ -15,26 +15,22 @@ package io.dapr.spring.openfeign.autoconfigure;
 
 import io.dapr.client.DaprClient;
 import io.dapr.feign.DaprInvokeFeignClient;
-import io.dapr.spring.openfeign.targeter.DaprClientTargeter;
+import io.dapr.spring.openfeign.targeter.DaprClientTargeterBeanPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.openfeign.FeignAutoConfiguration;
-import org.springframework.cloud.openfeign.Targeter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(DaprFeignClientProperties.class)
 @ConditionalOnProperty(name = "dapr.feign.enabled", matchIfMissing = true)
 @ConditionalOnClass(FeignAutoConfiguration.class)
+@Import(DaprClientTargeterBeanPostProcessor.class)
 public class DaprFeignClientAutoConfiguration {
-
-  @Bean
-  public Targeter targeter(DaprInvokeFeignClient daprInvokeFeignClient) {
-    return new DaprClientTargeter(daprInvokeFeignClient);
-  }
 
   @SuppressWarnings("checkstyle:MissingJavadocMethod")
   @Bean

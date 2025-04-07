@@ -27,14 +27,28 @@ import java.lang.reflect.Field;
 public class DaprClientTargeter implements Targeter {
 
   private final DaprInvokeFeignClient daprInvokeFeignClient;
+  private final Targeter targeter;
 
-  public DaprClientTargeter(DaprInvokeFeignClient daprInvokeFeignClient) {
+  public DaprClientTargeter(DaprInvokeFeignClient daprInvokeFeignClient, Targeter targeter) {
     this.daprInvokeFeignClient = daprInvokeFeignClient;
+    this.targeter = targeter;
   }
 
   @Override
   public <T> T target(FeignClientFactoryBean factory, Feign.Builder feign, FeignClientFactory context,
                       Target.HardCodedTarget<T> target) {
+    Class<T> classOfT = target.type();
+    UseDaprClient useDaprClient = classOfT.getAnnotation(UseDaprClient.class);
+
+    if (useDaprClient == null) {
+      return targeter.target(
+          factory,
+          feign,
+          context,
+          target
+      );
+    }
+
     Class<Feign.Builder> builderClass = Feign.Builder.class;
 
     Client defaultClient = null;
@@ -49,12 +63,7 @@ public class DaprClientTargeter implements Targeter {
       throw new RuntimeException(e);
     }
 
-    Class<T> classOfT = target.type();
-    UseDaprClient useDaprClient = classOfT.getAnnotation(UseDaprClient.class);
-
-    if (useDaprClient != null) {
-      feign.client(daprInvokeFeignClient);
-    }
+    feign.client(daprInvokeFeignClient);
 
     T targetInstance = feign.target(target);
 
