@@ -226,13 +226,13 @@ public class CountWordsActivity implements WorkflowActivity {
   @Override
   public Object run(WorkflowActivityContext ctx) {
     Logger logger = LoggerFactory.getLogger(ToUpperCaseActivity.class);
-    logger.info("Starting Activity: " + ctx.getName());
+    logger.info("Starting Activity: {}", ctx.getName());
 
     String input = ctx.getInput(String.class);
     StringTokenizer tokenizer = new StringTokenizer(input);
     int result = tokenizer.countTokens();
 
-    logger.info("Activity returned: " + result);
+    logger.info("Activity returned: {}.", result);
     logger.info("Activity finished");
 
     return result;
@@ -244,10 +244,11 @@ name: Run Chaining Pattern workflow
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
-  - 'Activity returned: 2'
-  - 'Activity returned: 9'
-  - 'Activity returned: 21'
-  - 'Activity returned: 17'
+  - 'Activity returned: 2.'
+  - 'Activity returned: 9.'
+  - 'Activity returned: 21.'
+  - 'Activity returned: 17.'
+  - 'Activity returned: 11.'
   - 'Workflow finished with result: 60'
 background: true
 sleep: 60
@@ -270,19 +271,19 @@ Now you can see the logs from worker:
 ```text
 == APP == 2023-11-07 14:52:03,075 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.faninout.DemoFanInOutWorkflow
 == APP == 2023-11-07 14:52:03,144 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,147 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 2
+== APP == 2023-11-07 14:52:03,147 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 2.
 == APP == 2023-11-07 14:52:03,148 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
 == APP == 2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 9
+== APP == 2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 9.
 == APP == 2023-11-07 14:52:03,152 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
 == APP == 2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 21
+== APP == 2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 21.
 == APP == 2023-11-07 14:52:03,167 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
 == APP == 2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 17
+== APP == 2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 17.
 == APP == 2023-11-07 14:52:03,170 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
 == APP == 2023-11-07 14:52:03,173 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Starting Activity: io.dapr.examples.workflows.faninout.CountWordsActivity
-== APP == 2023-11-07 14:52:03,173 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 11
+== APP == 2023-11-07 14:52:03,173 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity returned: 11.
 == APP == 2023-11-07 14:52:03,174 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.faninout.CountWordsActivity - Activity finished
 == APP == 2023-11-07 14:52:03,212 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Workflow finished with result: 60
 ```

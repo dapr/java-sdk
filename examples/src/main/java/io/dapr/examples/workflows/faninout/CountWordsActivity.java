@@ -24,13 +24,13 @@ public class CountWordsActivity implements WorkflowActivity {
   @Override
   public Object run(WorkflowActivityContext ctx) {
     Logger logger = LoggerFactory.getLogger(CountWordsActivity.class);
-    logger.info("Starting Activity: " + ctx.getName());
+    logger.info("Starting Activity: {}", ctx.getName());
 
     String input = ctx.getInput(String.class);
     StringTokenizer tokenizer = new StringTokenizer(input);
     int result = tokenizer.countTokens();
 
-    logger.info("Activity returned: " + result);
+    logger.info("Activity returned: {}.", result);
     logger.info("Activity finished");
 
     return result;
