@@ -25,11 +25,13 @@ jobs:
       matrix:
         java: [ 17 ]
         spring-boot-version: [  3.4.3 ]
+        spring-cloud-version: [ 2024.0.1 ]
         spring-boot-display-version: [ 3.4.x ]
         experimental: [ false ]
         include:
           - java: 17
             spring-boot-version: 3.3.9
+            spring-cloud-version: 2023.0.5
             spring-boot-display-version: 3.3.x
             experimental: false
     env:
@@ -126,7 +128,7 @@ jobs:
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests verify
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} PRODUCT_SPRING_CLOUD_VERSION=${{ matrix.spring-cloud-version }} ./mvnw -B -Pintegration-tests verify
       env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Upload test report for sdk

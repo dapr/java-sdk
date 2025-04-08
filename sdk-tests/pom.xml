@@ -400,6 +400,7 @@
       </activation>
       <properties>
         <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
+        <springcloud.version>${env.PRODUCT_SPRING_CLOUD_VERSION}</springcloud.version>
       </properties>
     </profile>
   </profiles>
