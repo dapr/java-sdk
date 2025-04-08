@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.springboot.examples.openfeign;
 
-import io.dapr.springboot.examples.openfeign.DaprTestContainersConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -23,8 +22,8 @@ public class TestConsumerApplication {
 
   public static void main(String[] args) {
     SpringApplication.from(OpenFeignApplication::main)
-            .with(DaprTestContainersConfig.class)
-            .run(args);
+        .with(DaprTestContainersConfig.class)
+        .run(args);
     org.testcontainers.Testcontainers.exposeHostPorts(8083);
   }
 

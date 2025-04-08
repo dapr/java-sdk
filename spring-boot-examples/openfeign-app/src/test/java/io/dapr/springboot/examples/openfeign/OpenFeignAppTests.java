@@ -16,8 +16,6 @@ package io.dapr.springboot.examples.openfeign;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.springboot.DaprAutoConfiguration;
-import io.dapr.springboot.examples.openfeign.client.ProducerClient;
-import io.dapr.testcontainers.DaprContainer;
 import io.dapr.utils.TypeRef;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -25,23 +23,19 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.wait.strategy.Wait;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 
 import static io.restassured.RestAssured.given;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @SpringBootTest(classes = {TestConsumerApplication.class, DaprTestContainersConfig.class,
     DaprAutoConfiguration.class},
-        webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+    webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class OpenFeignAppTests {
 
   @MockitoBean
@@ -57,7 +51,7 @@ class OpenFeignAppTests {
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8083;
     Mockito.when(daprClient.invokeMethod(Mockito.any(InvokeMethodRequest.class), Mockito.eq(TypeRef.BYTE_ARRAY)))
-            .thenReturn(Mono.just("[]".getBytes(StandardCharsets.UTF_8)));
+        .thenReturn(Mono.just("[]".getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test

@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.springboot.examples.openfeign;
 
-import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.runner.Description;
@@ -24,11 +23,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
-import org.testcontainers.utility.DockerImageName;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @TestConfiguration(proxyBeanMethods = false)
 public class DaprTestContainersConfig {

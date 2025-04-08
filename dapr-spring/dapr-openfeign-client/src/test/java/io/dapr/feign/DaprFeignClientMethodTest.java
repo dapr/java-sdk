@@ -14,17 +14,7 @@ limitations under the License.
 package io.dapr.feign;
 
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.nio.charset.StandardCharsets;
-
 import feign.Body;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import feign.Feign;
 import feign.Headers;
 import feign.RequestLine;
@@ -32,38 +22,47 @@ import feign.Response;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.utils.TypeRef;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
+
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 public class DaprFeignClientMethodTest {
 
-    @Mock
-    DaprClient daprClient;
+  @Mock
+  DaprClient daprClient;
 
-    @Test
-    void DaprFeignClient_testMockMethodInvoke() {
-        DaprFeignClientTestInterface repository =
-                newBuilder().target(DaprFeignClientTestInterface.class, "http://method.myApp/");
+  @Test
+  void DaprFeignClient_testMockMethodInvoke() {
+    DaprFeignClientTestInterface repository =
+        newBuilder().target(DaprFeignClientTestInterface.class, "http://method.myApp/");
 
-        assertEquals(12, repository.getWithContentType().body().length());
-        assertEquals(200, repository.post().status());
-    }
+    assertEquals(12, repository.getWithContentType().body().length());
+    assertEquals(200, repository.post().status());
+  }
 
-    public Feign.Builder newBuilder() {
-        Mockito.when(daprClient.invokeMethod(Mockito.any(InvokeMethodRequest.class), Mockito.eq(TypeRef.BYTE_ARRAY)))
-                .thenReturn(Mono.just("hello world!".getBytes(StandardCharsets.UTF_8)));
+  public Feign.Builder newBuilder() {
+    Mockito.when(daprClient.invokeMethod(Mockito.any(InvokeMethodRequest.class), Mockito.eq(TypeRef.BYTE_ARRAY)))
+        .thenReturn(Mono.just("hello world!".getBytes(StandardCharsets.UTF_8)));
 
-        return Feign.builder().client(new DaprInvokeFeignClient(daprClient));
-    }
+    return Feign.builder().client(new DaprInvokeFeignClient(daprClient));
+  }
 
-    public interface DaprFeignClientTestInterface {
+  public interface DaprFeignClientTestInterface {
 
-        @RequestLine("GET /getAll")
-        @Headers({"Accept: text/plain", "Content-Type: text/plain"})
-        Response getWithContentType();
+    @RequestLine("GET /getAll")
+    @Headers({"Accept: text/plain", "Content-Type: text/plain"})
+    Response getWithContentType();
 
-        @RequestLine("POST /abc/")
-        @Body("test")
-        Response post();
-    }
+    @RequestLine("POST /abc/")
+    @Body("test")
+    Response post();
+  }
 }

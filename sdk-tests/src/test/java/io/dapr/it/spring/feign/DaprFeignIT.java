@@ -1,42 +1,44 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.it.spring.feign;
 
-import io.dapr.client.DaprClient;
-import io.dapr.client.domain.HttpExtension;
-import io.dapr.it.spring.data.TestDaprSpringDataConfiguration;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import io.dapr.utils.TypeRef;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     classes = {
-      DaprFeignTestApplication.class
+        DaprFeignTestApplication.class
     },
     properties = {
         "dapr.feign.enabled=true",
@@ -81,7 +83,7 @@ public class DaprFeignIT {
       .dependsOn(POSTGRE_SQL_CONTAINER);
 
   @BeforeAll
-  public static void beforeAll(){
+  public static void beforeAll() {
     org.testcontainers.Testcontainers.exposeHostPorts(APP_PORT);
   }
 

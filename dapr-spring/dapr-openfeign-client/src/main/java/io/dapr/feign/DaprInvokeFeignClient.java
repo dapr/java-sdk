@@ -89,31 +89,6 @@ public class DaprInvokeFeignClient implements Client {
 
   private final DaprClient daprClient;
 
-  private static Map<String, HttpExtension> generateHttpExtensionMap() {
-    Map<String, HttpExtension> tempHttpExtensionMap = new HashMap<>();
-
-    tempHttpExtensionMap.put("none",
-        HttpExtension.NONE);
-    tempHttpExtensionMap.put("put",
-        HttpExtension.PUT);
-    tempHttpExtensionMap.put("post",
-        HttpExtension.POST);
-    tempHttpExtensionMap.put("delete",
-        HttpExtension.DELETE);
-    tempHttpExtensionMap.put("head",
-        HttpExtension.HEAD);
-    tempHttpExtensionMap.put("connect",
-        HttpExtension.CONNECT);
-    tempHttpExtensionMap.put("options",
-        HttpExtension.OPTIONS);
-    tempHttpExtensionMap.put("trace",
-        HttpExtension.TRACE);
-    tempHttpExtensionMap.put("get",
-        HttpExtension.GET);
-
-    return tempHttpExtensionMap;
-  }
-
   /**
    * Default Client creation with no arguments.
    *
@@ -153,6 +128,31 @@ public class DaprInvokeFeignClient implements Client {
     this.daprClient = daprClient;
     this.timeout = timeout;
     this.retry = retry;
+  }
+
+  private static Map<String, HttpExtension> generateHttpExtensionMap() {
+    Map<String, HttpExtension> tempHttpExtensionMap = new HashMap<>();
+
+    tempHttpExtensionMap.put("none",
+        HttpExtension.NONE);
+    tempHttpExtensionMap.put("put",
+        HttpExtension.PUT);
+    tempHttpExtensionMap.put("post",
+        HttpExtension.POST);
+    tempHttpExtensionMap.put("delete",
+        HttpExtension.DELETE);
+    tempHttpExtensionMap.put("head",
+        HttpExtension.HEAD);
+    tempHttpExtensionMap.put("connect",
+        HttpExtension.CONNECT);
+    tempHttpExtensionMap.put("options",
+        HttpExtension.OPTIONS);
+    tempHttpExtensionMap.put("trace",
+        HttpExtension.TRACE);
+    tempHttpExtensionMap.put("get",
+        HttpExtension.GET);
+
+    return tempHttpExtensionMap;
   }
 
   @Override

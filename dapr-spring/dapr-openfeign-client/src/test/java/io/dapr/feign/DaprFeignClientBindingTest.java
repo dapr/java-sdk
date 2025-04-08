@@ -14,15 +14,7 @@ limitations under the License.
 package io.dapr.feign;
 
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import feign.Body;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import feign.Feign;
 import feign.Headers;
 import feign.RequestLine;
@@ -30,38 +22,45 @@ import feign.Response;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.utils.TypeRef;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 public class DaprFeignClientBindingTest {
 
-    @Mock
-    DaprClient daprClient;
+  @Mock
+  DaprClient daprClient;
 
-    @Test
-    void DaprFeignClient_testMockBindingInvoke() {
-        DaprFeignClientTestInterface repository =
-                newBuilder().target(DaprFeignClientTestInterface.class, "http://binding.myBinding");
+  @Test
+  void DaprFeignClient_testMockBindingInvoke() {
+    DaprFeignClientTestInterface repository =
+        newBuilder().target(DaprFeignClientTestInterface.class, "http://binding.myBinding");
 
-        assertEquals(200, repository.getWithContentType().status());
-        assertEquals(0, repository.post().body().length());
-    }
+    assertEquals(200, repository.getWithContentType().status());
+    assertEquals(0, repository.post().body().length());
+  }
 
-    public Feign.Builder newBuilder() {
-        Mockito.when(daprClient.invokeBinding(Mockito.any(InvokeBindingRequest.class), Mockito.eq(TypeRef.BYTE_ARRAY)))
-                .thenReturn(Mono.just(new byte[0]));
+  public Feign.Builder newBuilder() {
+    Mockito.when(daprClient.invokeBinding(Mockito.any(InvokeBindingRequest.class), Mockito.eq(TypeRef.BYTE_ARRAY)))
+        .thenReturn(Mono.just(new byte[0]));
 
-        return Feign.builder().client(new DaprInvokeFeignClient(daprClient));
-    }
+    return Feign.builder().client(new DaprInvokeFeignClient(daprClient));
+  }
 
-    public interface DaprFeignClientTestInterface {
+  public interface DaprFeignClientTestInterface {
 
-        @RequestLine("GET /create")
-        @Headers({"Accept: text/plain", "Content-Type: text/plain"})
-        Response getWithContentType();
+    @RequestLine("GET /create")
+    @Headers({"Accept: text/plain", "Content-Type: text/plain"})
+    Response getWithContentType();
 
-        @RequestLine("POST /get")
-        @Body("test")
-        Response post();
-    }
+    @RequestLine("POST /get")
+    @Body("test")
+    Response post();
+  }
 }
