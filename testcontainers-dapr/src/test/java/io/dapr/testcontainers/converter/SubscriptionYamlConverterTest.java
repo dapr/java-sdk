@@ -7,6 +7,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.util.Set;
 
+import static io.dapr.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SubscriptionYamlConverterTest {
@@ -15,7 +16,7 @@ class SubscriptionYamlConverterTest {
 
   @Test
   public void testSubscriptionToYaml() {
-    DaprContainer dapr = new DaprContainer("daprio/daprd")
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("dapr-app")
         .withAppPort(8081)
         .withSubscription(new Subscription("my-subscription", "pubsub", "topic", "/events"))

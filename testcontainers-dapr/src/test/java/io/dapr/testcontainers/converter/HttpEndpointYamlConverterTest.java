@@ -7,6 +7,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.util.Set;
 
+import static io.dapr.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HttpEndpointYamlConverterTest {
@@ -16,7 +17,7 @@ class HttpEndpointYamlConverterTest {
 
   @Test
   void testHttpEndpointToYaml() {
-     DaprContainer dapr = new DaprContainer("daprio/daprd")
+     DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
          .withAppName("dapr-app")
          .withAppPort(8081)
          .withHttpEndpoint(new HttpEndpoint("my-endpoint", "http://localhost:8080"))

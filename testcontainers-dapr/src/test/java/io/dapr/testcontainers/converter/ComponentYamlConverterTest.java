@@ -8,6 +8,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.util.Map;
 import java.util.Set;
 
+import static io.dapr.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -17,7 +18,7 @@ class ComponentYamlConverterTest {
 
   @Test
   public void testComponentToYaml() {
-    DaprContainer dapr = new DaprContainer("daprio/daprd")
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("dapr-app")
         .withAppPort(8081)
         .withComponent(new Component(
@@ -50,7 +51,7 @@ class ComponentYamlConverterTest {
 
   @Test
   public void testComponentWithInLineStringToYaml() {
-    DaprContainer dapr = new DaprContainer("daprio/daprd")
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("dapr-app")
         .withAppPort(8081)
         .withComponent(new Component(

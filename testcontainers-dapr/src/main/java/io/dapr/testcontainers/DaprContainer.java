@@ -41,14 +41,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.dapr.testcontainers.ContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
+import static io.dapr.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+
 public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DaprContainer.class);
   private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
   private static final DaprProtocol DAPR_PROTOCOL = DaprProtocol.HTTP;
-  private static final String DAPR_VERSION = "1.15.3";
   private static final DockerImageName DEFAULT_IMAGE_NAME =
-          DockerImageName.parse("daprio/daprd:" + DAPR_VERSION);
+          DockerImageName.parse(DAPR_RUNTIME_IMAGE_TAG);
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
   private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
   private static final YamlConverter<Subscription> SUBSCRIPTION_CONVERTER = new SubscriptionYamlConverter(YAML_MAPPER);
@@ -66,7 +68,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private final String appChannelAddress = "localhost";
   private final String placementService = "placement";
   private final String schedulerService = "scheduler";
-  private final String placementDockerImageName = "daprio/placement";
+  private final String placementDockerImageName = DAPR_PLACEMENT_IMAGE_TAG;
   private final String schedulerDockerImageName = "daprio/scheduler";
 
   private Configuration configuration;
