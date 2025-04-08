@@ -13,7 +13,8 @@ limitations under the License.
 package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import io.dapr.client.domain.*;
+import io.dapr.client.domain.HttpExtension;
+import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -44,9 +45,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
 import static io.dapr.utils.TestUtils.findFreePort;
 import static io.dapr.utils.TestUtils.formatIpAddress;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DaprClientHttpTest {
 
