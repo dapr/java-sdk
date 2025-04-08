@@ -34,7 +34,6 @@ public class TestRestController {
     return "hello";
   }
 
-  @Topic(name = topicName, pubsubName = pubSubName)
   @PostMapping("/echo")
   public String echo(@RequestBody String input) {
     return input;
