@@ -45,7 +45,7 @@ public class DaprJobsIT {
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DaprContainerConstants.IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(ContainerConstants.DAPR_IMAGE_TAG)
       .withAppName("jobs-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withDaprLogLevel(DaprLogLevel.DEBUG)

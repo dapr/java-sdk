@@ -27,7 +27,7 @@ public class DaprPlacementContainerIT {
 
   @Container
   private static final DaprPlacementContainer PLACEMENT_CONTAINER =
-          new DaprPlacementContainer(DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG);
+          new DaprPlacementContainer(ContainerConstants.DAPR_PLACEMENT_IMAGE_TAG);
 
   @Test
   public void testDaprPlacementContainerDefaults() {
