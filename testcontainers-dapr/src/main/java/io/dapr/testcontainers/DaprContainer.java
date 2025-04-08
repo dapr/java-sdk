@@ -50,7 +50,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
   private static final DaprProtocol DAPR_PROTOCOL = DaprProtocol.HTTP;
   private static final DockerImageName DEFAULT_IMAGE_NAME =
-          DockerImageName.parse(DAPR_RUNTIME_IMAGE_TAG);
+          DockerImageName.parse("daprio/daprd");
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
   private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
   private static final YamlConverter<Subscription> SUBSCRIPTION_CONVERTER = new SubscriptionYamlConverter(YAML_MAPPER);
