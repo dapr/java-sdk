@@ -20,6 +20,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 
 @Testcontainers
 @Tag("testcontainers")
