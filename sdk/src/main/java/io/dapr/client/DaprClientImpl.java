@@ -1644,5 +1644,4 @@ public class DaprClientImpl extends AbstractDaprClient {
     return new AppConnectionPropertiesHealthMetadata(healthCheckPath, healthProbeInterval, healthProbeTimeout,
         healthThreshold);
   }
-
 }
