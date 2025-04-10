@@ -1,92 +1,92 @@
-	/*
-	* Copyright 2021 The Dapr Authors
-	* Licensed under the Apache License, Version 2.0 (the "License");
-	* you may not use this file except in compliance with the License.
-	* You may obtain a copy of the License at
-	*     http://www.apache.org/licenses/LICENSE-2.0
-	* Unless required by applicable law or agreed to in writing, software
-	* distributed under the License is distributed on an "AS IS" BASIS,
-	* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	* See the License for the specific language governing permissions and
-	limitations under the License.
-	*/
+/*
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
-	package io.dapr.client;
+package io.dapr.client;
 
 
-	import com.fasterxml.jackson.core.JsonProcessingException;
-	import com.fasterxml.jackson.databind.ObjectMapper;
-	import com.google.protobuf.Any;
-	import com.google.protobuf.ByteString;
-	import io.dapr.client.domain.BulkPublishEntry;
-	import io.dapr.client.domain.BulkPublishRequest;
-	import io.dapr.client.domain.BulkPublishResponse;
-	import io.dapr.client.domain.CloudEvent;
-	import io.dapr.client.domain.DeleteJobRequest;
-	import io.dapr.client.domain.GetJobRequest;
-	import io.dapr.client.domain.GetJobResponse;
-	import io.dapr.client.domain.JobSchedule;
-	import io.dapr.client.domain.QueryStateItem;
-	import io.dapr.client.domain.QueryStateRequest;
-	import io.dapr.client.domain.QueryStateResponse;
-	import io.dapr.client.domain.ScheduleJobRequest;
-	import io.dapr.client.domain.UnlockResponseStatus;
-	import io.dapr.client.domain.query.Query;
-	import io.dapr.serializer.DaprObjectSerializer;
-	import io.dapr.serializer.DefaultObjectSerializer;
-	import io.dapr.utils.TypeRef;
-	import io.dapr.v1.DaprAppCallbackProtos;
-	import io.dapr.v1.DaprGrpc;
-	import io.dapr.v1.DaprProtos;
-	import io.grpc.Status;
-	import io.grpc.StatusRuntimeException;
-	import io.grpc.stub.StreamObserver;
-	import org.junit.jupiter.api.AfterEach;
-	import org.junit.jupiter.api.Assertions;
-	import org.junit.jupiter.api.BeforeEach;
-	import org.junit.jupiter.api.Test;
-	import org.mockito.ArgumentCaptor;
-	import org.mockito.ArgumentMatchers;
-	import org.mockito.Mockito;
-	import org.mockito.stubbing.Answer;
-	import reactor.core.publisher.Mono;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
+import io.dapr.client.domain.BulkPublishEntry;
+import io.dapr.client.domain.BulkPublishRequest;
+import io.dapr.client.domain.BulkPublishResponse;
+import io.dapr.client.domain.CloudEvent;
+import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
+import io.dapr.client.domain.JobSchedule;
+import io.dapr.client.domain.QueryStateItem;
+import io.dapr.client.domain.QueryStateRequest;
+import io.dapr.client.domain.QueryStateResponse;
+import io.dapr.client.domain.ScheduleJobRequest;
+import io.dapr.client.domain.UnlockResponseStatus;
+import io.dapr.client.domain.query.Query;
+import io.dapr.serializer.DaprObjectSerializer;
+import io.dapr.serializer.DefaultObjectSerializer;
+import io.dapr.utils.TypeRef;
+import io.dapr.v1.DaprAppCallbackProtos;
+import io.dapr.v1.DaprGrpc;
+import io.dapr.v1.DaprProtos;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
+import reactor.core.publisher.Mono;
 
-	import java.io.IOException;
-	import java.nio.charset.StandardCharsets;
-	import java.time.Instant;
-	import java.time.OffsetDateTime;
-	import java.time.ZoneOffset;
-	import java.time.format.DateTimeFormatter;
-	import java.time.temporal.ChronoUnit;
-	import java.util.ArrayList;
-	import java.util.Collections;
-	import java.util.HashMap;
-	import java.util.HashSet;
-	import java.util.List;
-	import java.util.Map;
-	import java.util.Set;
-	import java.util.UUID;
-	import java.util.concurrent.ExecutionException;
-	import java.util.concurrent.Semaphore;
-	import java.util.concurrent.atomic.AtomicInteger;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
-	import static io.dapr.utils.TestUtils.assertThrowsDaprException;
-	import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-	import static org.junit.jupiter.api.Assertions.assertEquals;
-	import static org.junit.jupiter.api.Assertions.assertFalse;
-	import static org.junit.jupiter.api.Assertions.assertNotNull;
-	import static org.junit.jupiter.api.Assertions.assertNull;
-	import static org.junit.jupiter.api.Assertions.assertThrows;
-	import static org.mockito.ArgumentMatchers.any;
-	import static org.mockito.Mockito.doAnswer;
-	import static org.mockito.Mockito.doNothing;
-	import static org.mockito.Mockito.mock;
-	import static org.mockito.Mockito.times;
-	import static org.mockito.Mockito.verify;
-	import static org.mockito.Mockito.verifyNoMoreInteractions;
-	import static org.mockito.Mockito.when;
+import static io.dapr.utils.TestUtils.assertThrowsDaprException;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
-	public class DaprPreviewClientGrpcTest {
+public class DaprPreviewClientGrpcTest {
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -169,7 +169,7 @@
 		BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
 				Collections.singletonList(entry));
 
-	assertThrows(IllegalArgumentException.class, () -> previewClient.publishEvents(wrongReq).block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.publishEvents(wrongReq).block());
 	}
 
 	@Test
@@ -459,12 +459,12 @@
 			StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1> observer =
 					(StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
 			var emitterThread = new Thread(() -> {
-		try {
-		  started.acquire();
-		} catch (InterruptedException e) {
-		  throw new RuntimeException(e);
-		}
-		observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
+        try {
+          started.acquire();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
 				for (int i = 0; i < numEvents; i++) {
 					observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
 							.setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
@@ -874,4 +874,4 @@
 	private static StatusRuntimeException newStatusRuntimeException(String status, String message) {
 		return new StatusRuntimeException(Status.fromCode(Status.Code.valueOf(status)).withDescription(message));
 	}
-	}
+}
