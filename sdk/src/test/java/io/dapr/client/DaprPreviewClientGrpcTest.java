@@ -558,9 +558,8 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals(numErrors, errors.size());
 	}
 
-
 	@Test
-	void scheduleJobShouldSucceedWhenAllFieldsArePresentInRequest() {
+	public void scheduleJobShouldSucceedWhenAllFieldsArePresentInRequest() {
 		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 				.withZone(ZoneOffset.UTC);
 
@@ -595,7 +594,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void scheduleJobShouldSucceedWhenRequiredFieldsNameAndDueTimeArePresentInRequest() {
+	public void scheduleJobShouldSucceedWhenRequiredFieldsNameAndDueTimeArePresentInRequest() {
 		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 				.withZone(ZoneOffset.UTC);
 
@@ -625,7 +624,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void scheduleJobShouldSucceedWhenRequiredFieldsNameAndScheduleArePresentInRequest() {
+	public void scheduleJobShouldSucceedWhenRequiredFieldsNameAndScheduleArePresentInRequest() {
 		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 				.withZone(ZoneOffset.UTC);
 
@@ -653,7 +652,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void scheduleJobShouldThrowWhenRequestIsNull() {
+	public void scheduleJobShouldThrowWhenRequestIsNull() {
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.scheduleJob(null).block();
 		});
@@ -661,7 +660,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void scheduleJobShouldThrowWhenInvalidRequest() {
+	public void scheduleJobShouldThrowWhenInvalidRequest() {
 		ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest(null, Instant.now());
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.scheduleJob(scheduleJobRequest).block();
@@ -670,7 +669,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void scheduleJobShouldThrowWhenNameInRequestIsEmpty() {
+	public void scheduleJobShouldThrowWhenNameInRequestIsEmpty() {
 		ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("", Instant.now());
 
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -680,7 +679,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void getJobShouldReturnResponseWhenAllFieldsArePresentInRequest() {
+	public void getJobShouldReturnResponseWhenAllFieldsArePresentInRequest() {
 		DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 				.withZone(ZoneOffset.UTC);
 
@@ -717,7 +716,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void getJobShouldReturnResponseWithScheduleSetWhenResponseHasSchedule() {
+	public void getJobShouldReturnResponseWithScheduleSetWhenResponseHasSchedule() {
 		GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
 		DaprProtos.Job job = DaprProtos.Job.newBuilder()
@@ -747,7 +746,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void getJobShouldReturnResponseWithDueTimeSetWhenResponseHasDueTime() {
+	public void getJobShouldReturnResponseWithDueTimeSetWhenResponseHasDueTime() {
 		GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
 		String datetime = OffsetDateTime.now().toString();
@@ -778,7 +777,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void getJobShouldThrowWhenRequestIsNull() {
+	public void getJobShouldThrowWhenRequestIsNull() {
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.getJob(null).block();
 		});
@@ -786,7 +785,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void getJobShouldThrowWhenNameIsNullRequest() {
+	public void getJobShouldThrowWhenNameIsNullRequest() {
 		GetJobRequest getJobRequest = new GetJobRequest(null);
 
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -796,7 +795,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void getJobShouldThrowWhenNameIsEmptyRequest() {
+	public void getJobShouldThrowWhenNameIsEmptyRequest() {
 		GetJobRequest getJobRequest =new GetJobRequest("");;
 
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -806,7 +805,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void deleteJobShouldSucceedWhenValidRequest() {
+	public void deleteJobShouldSucceedWhenValidRequest() {
 		DeleteJobRequest deleteJobRequest = new DeleteJobRequest("testJob");
 
 		doAnswer(invocation -> {
@@ -821,7 +820,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void deleteJobShouldThrowRequestIsNull() {
+	public void deleteJobShouldThrowRequestIsNull() {
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.deleteJob(null).block();
 		});
@@ -829,7 +828,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void deleteJobShouldThrowWhenNameIsNullRequest() {
+	public void deleteJobShouldThrowWhenNameIsNullRequest() {
 		DeleteJobRequest deleteJobRequest = new DeleteJobRequest(null);
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.deleteJob(deleteJobRequest).block();
@@ -838,7 +837,7 @@ public class DaprPreviewClientGrpcTest {
 	}
 
 	@Test
-	void deleteJobShouldThrowWhenNameIsEmptyRequest() {
+	public void deleteJobShouldThrowWhenNameIsEmptyRequest() {
 		DeleteJobRequest deleteJobRequest = new DeleteJobRequest("");
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			previewClient.deleteJob(deleteJobRequest).block();
