@@ -167,7 +167,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withResueScheduler(boolean shouldReuseScheduler) {
+  public DaprContainer withReuseScheduler(boolean shouldReuseScheduler) {
     this.shouldReuseScheduler = shouldReuseScheduler;
     return this;
   }
