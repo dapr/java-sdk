@@ -35,7 +35,7 @@ class ConfigurationItemTest {
     assertThat(item.getVersion()).isEqualTo("0.0.1");
     assertThat(item.getMetadata()).hasSize(1);
     assertThat(item.getMetadata()).hasEntrySatisfying("creator", value -> {
-      assertThat(value).isEqualTo("dev");
+      assertThat(value).isEqualTo("devs");
     });
   }
 
