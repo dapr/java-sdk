@@ -53,7 +53,7 @@ public class DaprActorsIT {
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
-  private static final String ACTORS_MESSAGE_PATTERN = ".*Actor API level in the cluster has been updated to 10.*";
+  private static final String ACTORS_MESSAGE_PATTERN = ".*Found Subscription.*";
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
