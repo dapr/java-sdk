@@ -1,8 +1,8 @@
-## Mange Dapr Jobs via the Jobs API
+## Manage Dapr Jobs via the Jobs API
 
 This example provides the different capabilities provided by Dapr Java SDK for Jobs. For further information about Job APIs please refer to [this link](https://docs.dapr.io/developing-applications/building-blocks/jobs/jobs-overview/)
 
-### Using the JobsAPI
+### Using the Jobs API
 
 The Java SDK exposes several methods for this -
 * `client.scheduleJob(...)` for scheduling a job.
