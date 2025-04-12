@@ -115,6 +115,12 @@ jobs:
         run: ./mvnw install -q
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate conversation ai example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/conversation/README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate invoke http example
         working-directory: ./examples
         run: |
