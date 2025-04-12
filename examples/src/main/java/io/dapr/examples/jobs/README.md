@@ -93,7 +93,7 @@ sleep: 10
 -->
 
 ```bash
-dapr run --resources-path ./components/configuration --app-id myapp --app-port 8080 --dapr-http-port 3500 --dapr-grpc-port 51439  --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.configuration.DemoJobsSpringApplication
+dapr run --resources-path ./components/configuration --app-id myapp --app-port 8080 --dapr-http-port 3500 --dapr-grpc-port 51439  --log-level debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.jobs.DemoJobsSpringApplication
 ```
 
 ```bash
