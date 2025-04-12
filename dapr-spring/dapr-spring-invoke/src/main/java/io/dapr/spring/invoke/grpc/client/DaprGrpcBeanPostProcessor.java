@@ -32,7 +32,6 @@ import static java.util.Objects.requireNonNull;
  * Handlers Dapr gRPC client in spring boot.
  * Searches for fields and methods in beans that are annotated with {@link DaprGrpcClient} and sets them.
  *
- * @author seal90 (578935869@qq.com)
  */
 public class DaprGrpcBeanPostProcessor implements BeanPostProcessor {
 
