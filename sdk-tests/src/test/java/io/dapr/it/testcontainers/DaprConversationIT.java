@@ -68,7 +68,6 @@ public class DaprConversationIT {
     @BeforeEach
     public void setUp(){
         org.testcontainers.Testcontainers.exposeHostPorts(PORT);
-        // Ensure the subscriptions are registered
     }
 
     @Test
