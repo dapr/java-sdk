@@ -1,7 +1,7 @@
 package io.dapr.springboot.examples.consumer.invoke.grpc;
 
-import io.dapr.examples.DaprExamplesProtos;
-import io.dapr.examples.HelloWorldGrpc;
+import io.dapr.springboot.examples.DaprExamplesProtos;
+import io.dapr.springboot.examples.HelloWorldGrpc;
 import io.dapr.spring.invoke.grpc.client.DaprGrpcClient;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
