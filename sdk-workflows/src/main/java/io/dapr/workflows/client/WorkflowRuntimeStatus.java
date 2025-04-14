@@ -14,29 +14,47 @@ limitations under the License.
 package io.dapr.workflows.client;
 
 /**
- * Represents a workflow failure details.
+ * Enum describing the runtime status of a workflow.
  */
-public interface WorkflowFailureDetails {
+public enum WorkflowRuntimeStatus {
+  /**
+   * The workflow started running.
+   */
+  RUNNING,
 
   /**
-   * Gets the error type, which is the namespace-qualified exception type name.
-   *
-   * @return the error type, which is the namespace-qualified exception type name
+   * The workflow completed normally.
    */
-  String getErrorType();
+  COMPLETED,
 
   /**
-   * Gets the error message.
-   *
-   * @return the error message
+   * The workflow is continued as new.
    */
-  String getErrorMessage();
+  CONTINUED_AS_NEW,
 
   /**
-   * Gets the stack trace.
-   *
-   * @return the stack trace
+   * The workflow completed with an unhandled exception.
    */
-  String getStackTrace();
+  FAILED,
+
+  /**
+   * The workflow was abruptly cancelled via a management API call.
+   */
+  CANCELED,
+
+  /**
+   * The workflow was abruptly terminated via a management API call.
+   */
+  TERMINATED,
+
+  /**
+   * The workflow was scheduled but hasn't started running.
+   */
+  PENDING,
+
+  /**
+   * The workflow was suspended.
+   */
+  SUSPENDED
 
 }
