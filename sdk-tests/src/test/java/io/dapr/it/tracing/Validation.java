@@ -16,13 +16,14 @@ package io.dapr.it.tracing;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class used to verify that traces are present as expected.
@@ -31,7 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public final class Validation {
 
-  private static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
+  private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+      .version(HttpClient.Version.HTTP_1_1)
+      .build();
+
+  private static final String TRACES_URL = "http://localhost:9411/api/v2/traces?limit=100";
 
   /**
    * JSON Path for main span Id.
@@ -47,31 +52,28 @@ public final class Validation {
   public static void validate(String spanName, String sleepSpanName) throws Exception {
     // Must wait for some time to make sure Zipkin receives all spans.
     Thread.sleep(10000);
-    HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-    urlBuilder.scheme("http")
-        .host("localhost")
-        .port(9411)
-        .addPathSegments("api/v2/traces")
-        .addQueryParameter("limit", "100");
-    Request.Builder requestBuilder = new Request.Builder()
-        .url(urlBuilder.build());
-    requestBuilder.method("GET", null);
 
-    Request request = requestBuilder.build();
+    HttpRequest request = HttpRequest.newBuilder()
+        .GET()
+        .uri(URI.create(TRACES_URL))
+        .build();
 
-    Response response = HTTP_CLIENT.newCall(request).execute();
-    DocumentContext documentContext = JsonPath.parse(response.body().string());
+    HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    DocumentContext documentContext = JsonPath.parse(response.body());
     String mainSpanId = readOne(documentContext, String.format(JSONPATH_MAIN_SPAN_ID, spanName)).toString();
+
     assertNotNull(mainSpanId);
 
     String sleepSpanId = readOne(documentContext, String.format(JSONPATH_SLEEP_SPAN_ID, mainSpanId,  sleepSpanName))
         .toString();
+
     assertNotNull(sleepSpanId);
   }
 
   private static Object readOne(DocumentContext documentContext, String path) {
     JSONArray arr = documentContext.read(path);
-    assertTrue(arr.size() > 0);
+
+    assertFalse(arr.isEmpty());
 
     return arr.get(0);
   }
