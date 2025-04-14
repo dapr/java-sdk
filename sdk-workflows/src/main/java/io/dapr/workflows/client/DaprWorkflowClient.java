@@ -15,12 +15,14 @@ package io.dapr.workflows.client;
 
 import com.microsoft.durabletask.DurableTaskClient;
 import com.microsoft.durabletask.DurableTaskGrpcClientBuilder;
+import com.microsoft.durabletask.NewOrchestrationInstanceOptions;
 import com.microsoft.durabletask.OrchestrationMetadata;
 import com.microsoft.durabletask.PurgeResult;
 import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
+import io.dapr.workflows.runtime.DefaultWorkflowInstanceStatus;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 
@@ -77,18 +79,6 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
-   * Static method to create the DurableTaskClient.
-   *
-   * @param grpcChannel ManagedChannel for GRPC.
-   * @return a new instance of a DurableTaskClient with a GRPC channel.
-   */
-  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel) {
-    return new DurableTaskGrpcClientBuilder()
-        .grpcChannel(grpcChannel)
-        .build();
-  }
-
-  /**
    * Schedules a new workflow using DurableTask client.
    *
    * @param <T>   any Workflow type
@@ -133,8 +123,10 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @return the <code>instanceId</code> parameter value.
    */
   public <T extends Workflow> String scheduleNewWorkflow(Class<T> clazz, NewWorkflowOptions options) {
+    NewOrchestrationInstanceOptions orchestrationInstanceOptions = fromNewWorkflowOptions(options);
+
     return this.innerClient.scheduleNewOrchestrationInstance(clazz.getCanonicalName(),
-        options.getNewOrchestrationInstanceOptions());
+        orchestrationInstanceOptions);
   }
 
   /**
@@ -158,10 +150,8 @@ public class DaprWorkflowClient implements AutoCloseable {
   @Nullable
   public WorkflowInstanceStatus getInstanceState(String instanceId, boolean getInputsAndOutputs) {
     OrchestrationMetadata metadata = this.innerClient.getInstanceMetadata(instanceId, getInputsAndOutputs);
-    if (metadata == null) {
-      return null;
-    }
-    return new WorkflowInstanceStatus(metadata);
+
+    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
   }
 
   /**
@@ -186,7 +176,8 @@ public class DaprWorkflowClient implements AutoCloseable {
       throws TimeoutException {
 
     OrchestrationMetadata metadata = this.innerClient.waitForInstanceStart(instanceId, timeout, getInputsAndOutputs);
-    return metadata == null ? null : new WorkflowInstanceStatus(metadata);
+
+    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
   }
 
   /**
@@ -210,11 +201,11 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   @Nullable
   public WorkflowInstanceStatus waitForInstanceCompletion(String instanceId, Duration timeout,
-                                                          boolean getInputsAndOutputs) throws TimeoutException {
+      boolean getInputsAndOutputs) throws TimeoutException {
 
-    OrchestrationMetadata metadata =
-        this.innerClient.waitForInstanceCompletion(instanceId, timeout, getInputsAndOutputs);
-    return metadata == null ? null : new WorkflowInstanceStatus(metadata);
+    OrchestrationMetadata metadata = this.innerClient.waitForInstanceCompletion(instanceId, timeout,
+        getInputsAndOutputs);
+    return metadata == null ? null : new DefaultWorkflowInstanceStatus(metadata);
   }
 
   /**
@@ -236,18 +227,12 @@ public class DaprWorkflowClient implements AutoCloseable {
    */
   public boolean purgeInstance(String workflowInstanceId) {
     PurgeResult result = this.innerClient.purgeInstance(workflowInstanceId);
+
     if (result != null) {
       return result.getDeletedInstanceCount() > 0;
     }
+
     return false;
-  }
-
-  public void createTaskHub(boolean recreateIfExists) {
-    this.innerClient.createTaskHub(recreateIfExists);
-  }
-
-  public void deleteTaskHub() {
-    this.innerClient.deleteTaskHub();
   }
 
   /**
@@ -267,6 +252,38 @@ public class DaprWorkflowClient implements AutoCloseable {
     }
   }
 
+  /**
+   * Static method to create the DurableTaskClient.
+   *
+   * @param grpcChannel ManagedChannel for GRPC.
+   * @return a new instance of a DurableTaskClient with a GRPC channel.
+   */
+  private static DurableTaskClient createDurableTaskClient(ManagedChannel grpcChannel) {
+    return new DurableTaskGrpcClientBuilder()
+        .grpcChannel(grpcChannel)
+        .build();
+  }
+
+  private static NewOrchestrationInstanceOptions fromNewWorkflowOptions(NewWorkflowOptions options) {
+    NewOrchestrationInstanceOptions instanceOptions = new NewOrchestrationInstanceOptions();
+
+    if (options.getVersion() != null) {
+      instanceOptions.setVersion(options.getVersion());
+    }
+
+    if (options.getInstanceId() != null) {
+      instanceOptions.setInstanceId(options.getInstanceId());
+    }
+
+    if (options.getInput() != null) {
+      instanceOptions.setInput(options.getInput());
+    }
+
+    if (options.getStartTime() != null) {
+      instanceOptions.setStartTime(options.getStartTime());
+    }
+
+    return instanceOptions;
+  }
 
 }
-
