@@ -142,7 +142,7 @@
     </dependency>
     <dependency>
       <groupId>io.zipkin.reporter2</groupId>
-      <artifactId>zipkin-sender-okhttp3</artifactId>
+      <artifactId>zipkin-sender-urlconnection</artifactId>
       <version>3.4.0</version>
     </dependency>
     <dependency>
