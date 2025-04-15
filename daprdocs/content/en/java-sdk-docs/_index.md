@@ -88,18 +88,6 @@ dependencies {
 
 {{< /tabs >}}
 
-If you are also using Spring Boot, you may run into a common issue where the `OkHttp` version that the Dapr SDK uses conflicts with the one specified in the Spring Boot _Bill of Materials_.
-
-You can fix this by specifying a compatible `OkHttp` version in your project to match the version that the Dapr SDK uses:
-
-```xml
-<dependency>
-  <groupId>com.squareup.okhttp3</groupId>
-  <artifactId>okhttp</artifactId>
-  <version>1.14.0</version>
-</dependency>
-```
-
 ## Try it out
 
 Put the Dapr Java SDK to the test. Walk through the Java quickstarts and tutorials to see Dapr in action:
