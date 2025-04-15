@@ -21,6 +21,10 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
+import io.dapr.client.domain.ConversationRole;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -39,7 +43,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import reactor.core.publisher.Mono;
 
@@ -64,6 +70,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -539,6 +546,142 @@ public class DaprPreviewClientGrpcTest {
 		assertEquals(numDrops, dropCounter.get());
 		assertEquals(numErrors, errors.size());
 	}
+
+	@Test
+	public void converseShouldThrowIllegalArgumentExceptionWhenComponentNameIsNull() throws Exception {
+		List<ConversationInput> daprConversationInputs = new ArrayList<>();
+		daprConversationInputs.add(new ConversationInput("Hello there !"));
+
+		IllegalArgumentException exception =
+				Assertions.assertThrows(IllegalArgumentException.class, () ->
+						previewClient.converse(new ConversationRequest(null, daprConversationInputs)).block());
+		Assertions.assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+	}
+
+	@Test
+	public void converseShouldThrowIllegalArgumentExceptionWhenConversationComponentIsEmpty() throws Exception {
+		List<ConversationInput> daprConversationInputs = new ArrayList<>();
+		daprConversationInputs.add(new ConversationInput("Hello there !"));
+
+		IllegalArgumentException exception =
+				Assertions.assertThrows(IllegalArgumentException.class, () ->
+						previewClient.converse(new ConversationRequest("", daprConversationInputs)).block());
+		Assertions.assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+	}
+
+	@Test
+	public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputIsEmpty() throws Exception {
+		List<ConversationInput> daprConversationInputs = new ArrayList<>();
+
+		IllegalArgumentException exception =
+				Assertions.assertThrows(IllegalArgumentException.class, () ->
+						previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block());
+		Assertions.assertEquals("Conversation inputs cannot be null or empty.", exception.getMessage());
+	}
+
+	@Test
+	public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputIsNull() throws Exception {
+		IllegalArgumentException exception =
+				Assertions.assertThrows(IllegalArgumentException.class, () ->
+						previewClient.converse(new ConversationRequest("openai", null)).block());
+		Assertions.assertEquals("Conversation inputs cannot be null or empty.", exception.getMessage());
+	}
+
+	@Test
+	public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputContentIsNull() throws Exception {
+		List<ConversationInput> daprConversationInputs = new ArrayList<>();
+		daprConversationInputs.add(new ConversationInput(null));
+
+		IllegalArgumentException exception =
+				Assertions.assertThrows(IllegalArgumentException.class, () ->
+						previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block());
+		Assertions.assertEquals("Conversation input content cannot be null or empty.", exception.getMessage());
+	}
+
+	@Test
+	public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputContentIsEmpty() throws Exception {
+		List<ConversationInput> daprConversationInputs = new ArrayList<>();
+		daprConversationInputs.add(new ConversationInput(""));
+
+		IllegalArgumentException exception =
+				Assertions.assertThrows(IllegalArgumentException.class, () ->
+						previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block());
+		Assertions.assertEquals("Conversation input content cannot be null or empty.", exception.getMessage());
+	}
+
+	@Test
+	public void converseShouldReturnConversationResponseWhenRequiredInputsAreValid() throws Exception {
+		DaprProtos.ConversationResponse conversationResponse = DaprProtos.ConversationResponse.newBuilder()
+				.addOutputs(DaprProtos.ConversationResult.newBuilder().setResult("Hello How are you").build()).build();
+
+		doAnswer(invocation -> {
+			StreamObserver<DaprProtos.ConversationResponse> observer = invocation.getArgument(1);
+			observer.onNext(conversationResponse);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).converseAlpha1(any(DaprProtos.ConversationRequest.class), any());
+
+		List<ConversationInput> daprConversationInputs = new ArrayList<>();
+		daprConversationInputs.add(new ConversationInput("Hello there"));
+		ConversationResponse daprConversationResponse =
+				previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block();
+
+		ArgumentCaptor<DaprProtos.ConversationRequest> captor =
+				ArgumentCaptor.forClass(DaprProtos.ConversationRequest.class);
+		verify(daprStub, times(1)).converseAlpha1(captor.capture(), Mockito.any());
+
+		DaprProtos.ConversationRequest conversationRequest = captor.getValue();
+
+		Assertions.assertEquals("openai", conversationRequest.getName());
+		Assertions.assertEquals("Hello there", conversationRequest.getInputs(0).getContent());
+		Assertions.assertEquals("Hello How are you",
+				daprConversationResponse.getConversationOutpus().get(0).getResult());
+	}
+
+	@Test
+	public void converseShouldReturnConversationResponseWhenRequiredAndOptionalInputsAreValid() throws Exception {
+		DaprProtos.ConversationResponse conversationResponse = DaprProtos.ConversationResponse.newBuilder()
+				.setContextID("contextId")
+				.addOutputs(DaprProtos.ConversationResult.newBuilder().setResult("Hello How are you").build()).build();
+
+		doAnswer(invocation -> {
+			StreamObserver<DaprProtos.ConversationResponse> observer = invocation.getArgument(1);
+			observer.onNext(conversationResponse);
+			observer.onCompleted();
+			return null;
+		}).when(daprStub).converseAlpha1(any(DaprProtos.ConversationRequest.class), any());
+
+		ConversationInput daprConversationInput = new ConversationInput("Hello there")
+				.setRole(ConversationRole.ASSISTANT)
+				.setScrubPii(true);
+
+		List<ConversationInput> daprConversationInputs = new ArrayList<>();
+		daprConversationInputs.add(daprConversationInput);
+
+		ConversationResponse daprConversationResponse =
+				previewClient.converse(new ConversationRequest("openai", daprConversationInputs)
+						.setContextId("contextId")
+						.setScrubPii(true)
+						.setTemperature(1.1d)).block();
+
+		ArgumentCaptor<DaprProtos.ConversationRequest> captor =
+				ArgumentCaptor.forClass(DaprProtos.ConversationRequest.class);
+		verify(daprStub, times(1)).converseAlpha1(captor.capture(), Mockito.any());
+
+		DaprProtos.ConversationRequest conversationRequest = captor.getValue();
+
+		Assertions.assertEquals("openai", conversationRequest.getName());
+		Assertions.assertEquals("contextId", conversationRequest.getContextID());
+		Assertions.assertTrue(conversationRequest.getScrubPII());
+		Assertions.assertEquals(1.1d, conversationRequest.getTemperature(), 0d);
+		Assertions.assertEquals("Hello there", conversationRequest.getInputs(0).getContent());
+		Assertions.assertTrue(conversationRequest.getInputs(0).getScrubPII());
+		Assertions.assertEquals(ConversationRole.ASSISTANT.toString(), conversationRequest.getInputs(0).getRole());
+		Assertions.assertEquals("contextId", daprConversationResponse.getContextId());
+		Assertions.assertEquals("Hello How are you",
+				daprConversationResponse.getConversationOutpus().get(0).getResult());
+	}
+
 	private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)
 			throws JsonProcessingException {
 		List<DaprProtos.QueryStateItem> items = new ArrayList<>();
