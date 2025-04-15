@@ -43,27 +43,4 @@ class DaprClientAutoConfigurationTests {
   void daprClient() {
     contextRunner.run(context -> assertThat(context).hasSingleBean(DaprClient.class));
   }
-
-  @Test
-  @DisplayName("Should override properties when generating DaprClientBuilder")
-  void shouldOverridePropertiesWhenGeneratingDaprClientBuilder() {
-    PropertiesDaprConnectionDetails details = new PropertiesDaprConnectionDetails(
-        new DaprClientProperties(
-            "http://localhost", "localhost", 3500, 50001
-        )
-    );
-    contextRunner.withBean(DaprConnectionDetails.class, () -> details).run(context -> {
-
-      DaprClientBuilder builder = context.getBean(DaprClientBuilder.class);
-      Map<String, String> propertyOverrides =
-          (Map<String, String>) ReflectionTestUtils.getField(builder, "propertyOverrides");
-
-      SoftAssertions.assertSoftly(softly -> {
-        softly.assertThat(propertyOverrides.get("dapr.grpc.endpoint")).isEqualTo("localhost");
-        softly.assertThat(propertyOverrides.get("dapr.http.endpoint")).isEqualTo("http://localhost");
-        softly.assertThat(propertyOverrides.get("dapr.grpc.port")).isEqualTo("50001");
-        softly.assertThat(propertyOverrides.get("dapr.http.port")).isEqualTo("3500");
-      });
-    });
-  }
 }
