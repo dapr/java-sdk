@@ -632,5 +632,4 @@ public class DaprClientHttpTest {
     daprClientHttp = buildDaprClient(daprHttp);
     daprClientHttp.close();
   }
-
 }
