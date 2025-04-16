@@ -10,16 +10,17 @@
  * See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package io.dapr.client.domain;
 
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class BulkPublishRequestTest {
@@ -36,6 +37,15 @@ public class BulkPublishRequestTest {
     request.setMetadata(metadata);
     Map<String, String> initial = request.getMetadata();
     request.setMetadata(metadata);
-    Assertions.assertNotSame( request.getMetadata(), initial, "Should not be same map");
+
+    assertThat(request.getMetadata()).isNotSameAs(initial);
+  }
+
+  @Test
+  @DisplayName("Should create a BulkPublishRequest with empty list when entries is null")
+  public void shouldCreateWithEmptyListWhenEntriesIsNull() {
+    BulkPublishRequest<String> request = new BulkPublishRequest<>("testPubsub", "testTopic", null);
+    List<BulkPublishEntry<String>> entries = request.getEntries();
+    assertThat(entries).isNotNull();
   }
 }
