@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,32 +11,29 @@
 limitations under the License.
 */
 
-package io.dapr.workflows.client;
+package io.dapr.client.domain;
 
 /**
- * Represents a workflow failure details.
+ * Represents a request to schedule a job in Dapr.
  */
-public interface WorkflowFailureDetails {
+public class DeleteJobRequest {
+  private final String name;
 
   /**
-   * Gets the error type, which is the namespace-qualified exception type name.
+   * Constructor to create Delete Job Request.
    *
-   * @return the error type, which is the namespace-qualified exception type name
+   * @param name of the job to delete.
    */
-  String getErrorType();
+  public DeleteJobRequest(String name) {
+    this.name = name;
+  }
 
   /**
-   * Gets the error message.
+   * Gets the name of the job.
    *
-   * @return the error message
+   * @return The job name.
    */
-  String getErrorMessage();
-
-  /**
-   * Gets the stack trace.
-   *
-   * @return the stack trace
-   */
-  String getStackTrace();
-
+  public String getName() {
+    return name;
+  }
 }

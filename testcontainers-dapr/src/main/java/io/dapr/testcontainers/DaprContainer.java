@@ -27,6 +27,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -62,14 +63,18 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
+  private String schedulerService = "scheduler";
   private String placementDockerImageName = "daprio/placement";
+  private String schedulerDockerImageName = "daprio/scheduler";
 
   private Configuration configuration;
   private DaprPlacementContainer placementContainer;
+  private DaprSchedulerContainer schedulerContainer;
   private String appName;
   private Integer appPort;
   private String appHealthCheckPath;
   private boolean shouldReusePlacement;
+  private boolean shouldReuseScheduler;
 
   /**
    * Creates a new Dapr container.
@@ -157,13 +162,23 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withReusablePlacement(boolean reuse) {
-    this.shouldReusePlacement = reuse;
+  public DaprContainer withReusablePlacement(boolean shouldReusePlacement) {
+    this.shouldReusePlacement = shouldReusePlacement;
+    return this;
+  }
+
+  public DaprContainer withReuseScheduler(boolean shouldReuseScheduler) {
+    this.shouldReuseScheduler = shouldReuseScheduler;
     return this;
   }
 
   public DaprContainer withPlacementContainer(DaprPlacementContainer placementContainer) {
     this.placementContainer = placementContainer;
+    return this;
+  }
+
+  public DaprContainer withSchedulerContainer(DaprSchedulerContainer schedulerContainer) {
+    this.schedulerContainer = schedulerContainer;
     return this;
   }
 
@@ -237,6 +252,14 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       this.placementContainer.start();
     }
 
+    if (this.schedulerContainer == null) {
+      this.schedulerContainer = new DaprSchedulerContainer(this.schedulerDockerImageName)
+          .withNetwork(getNetwork())
+          .withNetworkAliases(schedulerService)
+          .withReuse(this.shouldReuseScheduler);
+      this.schedulerContainer.start();
+    }
+
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
     cmds.add("--app-id");
@@ -246,6 +269,8 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     cmds.add(DAPR_PROTOCOL.getName());
     cmds.add("--placement-host-address");
     cmds.add(placementService + ":50005");
+    cmds.add("--scheduler-host-address");
+    cmds.add(schedulerService + ":51005");
 
     if (appChannelAddress != null && !appChannelAddress.isEmpty()) {
       cmds.add("--app-channel-address");
@@ -324,7 +349,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
     }
 
-    dependsOn(placementContainer);
+    dependsOn(placementContainer, schedulerContainer);
   }
 
   public String getAppName() {
