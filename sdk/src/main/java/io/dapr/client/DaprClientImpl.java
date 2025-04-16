@@ -170,7 +170,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   /**
-   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder
+   * Default access level constructor, in order to create an instance of this class use io.dapr.client.DaprClientBuilder.
    *
    * @param channel           Facade for the managed GRPC channel
    * @param asyncStub         async gRPC stub
