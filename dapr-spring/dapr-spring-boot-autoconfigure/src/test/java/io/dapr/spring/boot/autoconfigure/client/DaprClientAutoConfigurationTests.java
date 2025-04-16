@@ -38,4 +38,5 @@ class DaprClientAutoConfigurationTests {
   void daprClient() {
     contextRunner.run(context -> assertThat(context).hasSingleBean(DaprClient.class));
   }
+
 }
