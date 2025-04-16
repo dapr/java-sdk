@@ -38,11 +38,15 @@ public class DemoJobsClient {
     try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {
 
       // Schedule a job.
+      System.out.println("**** Scheduling a Job with name dapr-jobs-1 *****");
       ScheduleJobRequest scheduleJobRequest = new ScheduleJobRequest("dapr-job-1",
           JobSchedule.fromString("* * * * * *")).setData("Hello World!".getBytes());
       client.scheduleJob(scheduleJobRequest).block();
 
+      System.out.println("**** Scheduling job dapr-jobs-1 completed *****");
+
       // Get a job.
+      System.out.println("**** Retrieving a Job with name dapr-jobs-1 *****");
       GetJobResponse getJobResponse = client.getJob(new GetJobRequest("dapr-job-1")).block();
     }
   }
