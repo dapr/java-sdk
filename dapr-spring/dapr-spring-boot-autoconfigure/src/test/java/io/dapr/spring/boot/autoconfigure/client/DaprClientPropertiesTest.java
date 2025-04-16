@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,8 +14,9 @@ limitations under the License.
 package io.dapr.spring.boot.autoconfigure.client;
 
 import org.assertj.core.api.SoftAssertions;
-import org.junit.Test;
+
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -33,11 +34,11 @@ public class DaprClientPropertiesTest {
         "http://localhost", "localhost", 3500, 50001
     );
 
-    SoftAssertions.assertSoftly(softAssertions -> {
-      softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
-      softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
-      softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
-      softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+    SoftAssertions.assertSoftly(softly -> {
+      softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
+      softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+      softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
+      softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
     });
   }
 
@@ -71,11 +72,11 @@ public class DaprClientPropertiesTest {
         "dapr.client.grpc-port=50001"
     ).run(context -> {
       DaprClientProperties properties = context.getBean(DaprClientProperties.class);
-      SoftAssertions.assertSoftly(softAssertions -> {
-        softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
-        softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
-        softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
-        softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      SoftAssertions.assertSoftly(softly -> {
+        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
+        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+        softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
+        softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
       });
 
     });
