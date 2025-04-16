@@ -15,14 +15,9 @@ package io.dapr.spring.boot.autoconfigure.client;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
-import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
