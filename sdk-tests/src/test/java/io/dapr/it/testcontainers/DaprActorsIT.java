@@ -89,7 +89,8 @@ public class DaprActorsIT {
   public void setUp(){
     org.testcontainers.Testcontainers.exposeHostPorts(PORT);
     daprActorRuntime.registerActor(TestActorImpl.class);
-    // Ensure the subscriptions are registered
+
+    // Wait for actor runtime to start.
     Wait.forLogMessage(ACTORS_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
   }
 
