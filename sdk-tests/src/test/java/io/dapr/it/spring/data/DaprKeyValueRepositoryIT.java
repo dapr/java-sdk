@@ -35,8 +35,10 @@ import java.util.Map;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
-import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
-import static org.junit.jupiter.api.Assertions.*;
+import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration tests for {@link DaprKeyValueRepositoryIT}.

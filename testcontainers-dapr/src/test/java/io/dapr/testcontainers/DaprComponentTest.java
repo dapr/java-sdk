@@ -26,7 +26,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static io.dapr.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
 public class DaprComponentTest {
   private final Yaml MAPPER = YamlMapperFactory.create();

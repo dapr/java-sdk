@@ -23,14 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers
 @Tag("testcontainers")
-public class DaprPlacementContainerIT {
+public class DaprSchedulerContainerIT {
 
   @Container
-  private static final DaprPlacementContainer PLACEMENT_CONTAINER =
-          new DaprPlacementContainer(DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG);
+  private static final DaprSchedulerContainer SCHEDULER_CONTAINER =
+          new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG);
 
   @Test
   public void testDaprPlacementContainerDefaults() {
-    assertEquals(50005, PLACEMENT_CONTAINER.getPort(), "The default port is not set");
+    assertEquals(51005, SCHEDULER_CONTAINER.getPort(), "The default port is not set");
   }
 }

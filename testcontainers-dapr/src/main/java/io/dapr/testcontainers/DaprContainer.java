@@ -27,7 +27,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -41,8 +40,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static io.dapr.testcontainers.ContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
-import static io.dapr.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
 
 public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DaprContainer.class);
@@ -50,7 +50,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
   private static final DaprProtocol DAPR_PROTOCOL = DaprProtocol.HTTP;
   private static final DockerImageName DEFAULT_IMAGE_NAME =
-          DockerImageName.parse("daprio/daprd");
+          DockerImageName.parse(DAPR_RUNTIME_IMAGE_TAG);
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
   private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
   private static final YamlConverter<Subscription> SUBSCRIPTION_CONVERTER = new SubscriptionYamlConverter(YAML_MAPPER);
@@ -64,12 +64,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private final Set<Component> components = new HashSet<>();
   private final Set<Subscription> subscriptions = new HashSet<>();
   private final Set<HttpEndpoint> httpEndpoints = new HashSet<>();
-  private final DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
-  private final String appChannelAddress = "localhost";
-  private final String placementService = "placement";
-  private final String schedulerService = "scheduler";
-  private final String placementDockerImageName = DAPR_PLACEMENT_IMAGE_TAG;
-  private final String schedulerDockerImageName = "daprio/scheduler";
+  private DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
+  private String appChannelAddress = "localhost";
+  private String placementService = "placement";
+  private String schedulerService = "scheduler";
+  private String placementDockerImageName = DAPR_PLACEMENT_IMAGE_TAG;
+  private String schedulerDockerImageName = DAPR_SCHEDULER_IMAGE_TAG;
 
   private Configuration configuration;
   private DaprPlacementContainer placementContainer;
@@ -141,6 +141,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  public DaprContainer withSchedulerService(String schedulerService) {
+    this.schedulerService = schedulerService;
+    return this;
+  }
+
   public DaprContainer withAppName(String appName) {
     this.appName = appName;
     return this;
@@ -163,6 +168,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withPlacementImage(String placementDockerImageName) {
     this.placementDockerImageName = placementDockerImageName;
+    return this;
+  }
+
+  public DaprContainer withSchedulerImage(String schedulerDockerImageName) {
+    this.schedulerDockerImageName = schedulerDockerImageName;
     return this;
   }
 

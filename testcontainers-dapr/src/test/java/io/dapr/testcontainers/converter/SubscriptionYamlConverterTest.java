@@ -7,8 +7,8 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.util.Set;
 
-import static io.dapr.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
-import static org.junit.jupiter.api.Assertions.*;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SubscriptionYamlConverterTest {
   private final Yaml MAPPER = YamlMapperFactory.create();
