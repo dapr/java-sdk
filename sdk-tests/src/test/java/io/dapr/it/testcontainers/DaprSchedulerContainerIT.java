@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.it.testcontainers;
 
 import io.dapr.testcontainers.DaprPlacementContainer;
+import io.dapr.testcontainers.DaprSchedulerContainer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -30,7 +31,7 @@ public class DaprSchedulerContainerIT {
           new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG);
 
   @Test
-  public void testDaprPlacementContainerDefaults() {
+  public void testDaprSchedulerContainerDefaults() {
     assertEquals(51005, SCHEDULER_CONTAINER.getPort(), "The default port is not set");
   }
 }
