@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+
 @TestConfiguration(proxyBeanMethods = false)
 public class DaprTestContainersConfig {
 
@@ -87,7 +89,7 @@ public class DaprTestContainersConfig {
     rabbitMqProperties.put("user", "guest");
     rabbitMqProperties.put("password", "guest");
 
-    return new DaprContainer("daprio/daprd:1.14.4")
+    return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("consumer-app")
         .withNetwork(daprNetwork).withComponent(new Component("pubsub",
             "pubsub.rabbitmq", "v1", rabbitMqProperties))

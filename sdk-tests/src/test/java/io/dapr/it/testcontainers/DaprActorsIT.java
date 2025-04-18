@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
@@ -53,10 +54,10 @@ public class DaprActorsIT {
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
-  private static final String ACTORS_MESSAGE_PATTERN = ".*Actor API level in the cluster has been updated to 10.*";
+  private static final String ACTORS_MESSAGE_PATTERN = ".*Actor runtime started.*";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
           .withAppName("actor-dapr-app")
           .withNetwork(DAPR_NETWORK)
           .withComponent(new Component("kvstore", "state.in-memory", "v1",
@@ -88,7 +89,8 @@ public class DaprActorsIT {
   public void setUp(){
     org.testcontainers.Testcontainers.exposeHostPorts(PORT);
     daprActorRuntime.registerActor(TestActorImpl.class);
-    // Ensure the subscriptions are registered
+
+    // Wait for actor runtime to start.
     Wait.forLogMessage(ACTORS_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
   }
 

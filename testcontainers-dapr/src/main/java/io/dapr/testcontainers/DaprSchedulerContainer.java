@@ -40,7 +40,7 @@ public class DaprSchedulerContainer extends GenericContainer<DaprSchedulerContai
   }
 
   /**
-   * Creates a new Dapr scheduler container.
+   * Creates a new Dapr schedulers container.
    * @param image Docker image name.
    */
   public DaprSchedulerContainer(String image) {

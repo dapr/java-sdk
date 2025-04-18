@@ -18,7 +18,6 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.State;
-
 import io.dapr.config.Properties;
 import io.dapr.testcontainers.DaprContainer;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 import org.testcontainers.shaded.org.awaitility.core.ConditionTimeoutException;
 
 import java.io.IOException;
@@ -49,10 +47,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static io.dapr.it.testcontainers.ContainerConstants.DAPR_IMAGE_TAG;
+import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 
 @Testcontainers
@@ -69,7 +68,7 @@ public class DaprContainerIT {
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port 8081.*";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
           .withAppName("dapr-app")
           .withAppPort(8081)
           .withAppHealthCheckPath("/actuator/health")

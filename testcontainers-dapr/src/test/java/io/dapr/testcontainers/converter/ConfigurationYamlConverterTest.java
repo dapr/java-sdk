@@ -22,6 +22,7 @@ import io.dapr.testcontainers.TracingConfigurationSettings;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -52,7 +53,7 @@ class ConfigurationYamlConverterTest {
 
     AppHttpPipeline appHttpPipeline = new AppHttpPipeline(handlers);
 
-    DaprContainer dapr = new DaprContainer("daprio/daprd")
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("dapr-app")
         .withAppPort(8081)
         .withConfiguration(new Configuration("my-config", tracing, appHttpPipeline))
