@@ -16,8 +16,10 @@ package io.dapr.spring.boot.autoconfigure.client;
 import io.dapr.spring.data.DaprKeyValueAdapterResolver;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "dapr.client")
+@ConfigurationProperties(prefix = DaprClientProperties.PROPERTY_PREFIX)
 public class DaprClientProperties {
+  public static final String PROPERTY_PREFIX = "dapr.client";
+
   private String httpEndpoint;
   private String grpcEndpoint;
   private Integer httpPort;
