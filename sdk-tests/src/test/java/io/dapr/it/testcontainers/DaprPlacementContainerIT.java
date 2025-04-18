@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers
@@ -27,7 +28,7 @@ public class DaprPlacementContainerIT {
 
   @Container
   private static final DaprPlacementContainer PLACEMENT_CONTAINER =
-          new DaprPlacementContainer(DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG);
+          new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG);
 
   @Test
   public void testDaprPlacementContainerDefaults() {
