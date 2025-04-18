@@ -34,7 +34,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -58,7 +57,7 @@ public class DaprJobsIT {
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(ContainerConstants.DAPR_IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG)
       .withAppName("jobs-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
