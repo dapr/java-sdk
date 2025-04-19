@@ -67,9 +67,6 @@ class DaprClientAutoConfigurationTest {
     String httpEndpoint = "http://localhost:3500";
 
     when(connectionDetails.getHttpEndpoint()).thenReturn(httpEndpoint);
-    when(connectionDetails.getGrpcEndpoint()).thenReturn(null);
-    when(connectionDetails.getHttpPort()).thenReturn(null);
-    when(connectionDetails.getGrpcPort()).thenReturn(null);
 
     configuration.daprClientBuilder(connectionDetails);
 
@@ -81,10 +78,7 @@ class DaprClientAutoConfigurationTest {
   void shouldOverrideGrpcEndpointIfExists() {
     String grpcEndpoint = "grpc://localhost:5001";
 
-    when(connectionDetails.getHttpEndpoint()).thenReturn(null);
     when(connectionDetails.getGrpcEndpoint()).thenReturn(grpcEndpoint);
-    when(connectionDetails.getHttpPort()).thenReturn(null);
-    when(connectionDetails.getGrpcPort()).thenReturn(null);
 
     configuration.daprClientBuilder(connectionDetails);
 
@@ -96,10 +90,7 @@ class DaprClientAutoConfigurationTest {
   void shouldOverrideHttpPortIfExists() {
     Integer httpPort = 3600;
 
-    when(connectionDetails.getHttpEndpoint()).thenReturn(null);
-    when(connectionDetails.getGrpcEndpoint()).thenReturn(null);
     when(connectionDetails.getHttpPort()).thenReturn(httpPort);
-    when(connectionDetails.getGrpcPort()).thenReturn(null);
 
     configuration.daprClientBuilder(connectionDetails);
 
@@ -111,9 +102,6 @@ class DaprClientAutoConfigurationTest {
   void shouldOverrideGrpcPortIfExists() {
     Integer grpcPort = 6001;
 
-    when(connectionDetails.getHttpEndpoint()).thenReturn(null);
-    when(connectionDetails.getGrpcEndpoint()).thenReturn(null);
-    when(connectionDetails.getHttpPort()).thenReturn(null);
     when(connectionDetails.getGrpcPort()).thenReturn(grpcPort);
 
     configuration.daprClientBuilder(connectionDetails);
