@@ -162,11 +162,12 @@ public class DaprClientBuilder {
    * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
    */
   private DaprClientImpl buildDaprClient() {
-    final Properties properties = new Properties(this.propertyOverrides);
-    final ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel(properties);
-    final DaprHttp daprHttp = this.daprHttpBuilder.build(properties);
-    final GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
+    Properties properties = new Properties(this.propertyOverrides);
+    ManagedChannel channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    DaprHttp daprHttp = this.daprHttpBuilder.build(properties);
+    GrpcChannelFacade channelFacade = new GrpcChannelFacade(channel);
     DaprGrpc.DaprStub asyncStub = DaprGrpc.newStub(channel);
+
     return new DaprClientImpl(
         channelFacade,
         asyncStub,

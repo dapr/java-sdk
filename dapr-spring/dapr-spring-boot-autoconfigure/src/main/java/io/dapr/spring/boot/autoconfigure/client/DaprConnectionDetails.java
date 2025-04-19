@@ -16,11 +16,11 @@ package io.dapr.spring.boot.autoconfigure.client;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 public interface DaprConnectionDetails extends ConnectionDetails {
-  String httpEndpoint();
+  String getHttpEndpoint();
 
-  String grpcEndpoint();
+  String getGrpcEndpoint();
 
-  Integer httpPort();
+  Integer getHttpPort();
 
-  Integer grpcPort();
+  Integer getGrpcPort();
 }
