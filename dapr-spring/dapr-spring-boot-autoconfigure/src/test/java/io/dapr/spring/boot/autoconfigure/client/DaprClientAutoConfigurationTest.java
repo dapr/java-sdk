@@ -25,6 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -107,6 +109,54 @@ class DaprClientAutoConfigurationTest {
     configuration.daprClientBuilder(connectionDetails);
 
     verify(builder).withPropertyOverride(Properties.GRPC_PORT, String.valueOf(grpcPort));
+  }
+
+  @Test
+  @DisplayName("Should override HTTP endpoint in properties if it exists")
+  void shouldOverrideHttpEndpointInPropertiesIfExists() {
+    String httpEndpoint = "http://localhost:3500";
+
+    when(connectionDetails.getHttpEndpoint()).thenReturn(httpEndpoint);
+
+    Properties reuslt = configuration.createPropertiesFromConnectionDetails(connectionDetails);
+
+    assertThat(reuslt.getValue(Properties.HTTP_ENDPOINT)).isEqualTo(httpEndpoint);
+  }
+
+  @Test
+  @DisplayName("Should override GRPC endpoint in properties if it exists")
+  void shouldOverrideGrpcEndpointPropertiesIfExists() {
+    String grpcEndpoint = "grpc://localhost:3500";
+
+    when(connectionDetails.getGrpcEndpoint()).thenReturn(grpcEndpoint);
+
+    Properties result = configuration.createPropertiesFromConnectionDetails(connectionDetails);
+
+    assertThat(result.getValue(Properties.GRPC_ENDPOINT)).isEqualTo(grpcEndpoint);
+  }
+
+  @Test
+  @DisplayName("Should override HTTP port in properties if it exists")
+  void shouldOverrideHttpPortPropertiesIfExists() {
+    Integer httpPort = 3600;
+
+    when(connectionDetails.getHttpPort()).thenReturn(httpPort);
+
+    Properties result = configuration.createPropertiesFromConnectionDetails(connectionDetails);
+
+    assertThat(result.getValue(Properties.HTTP_PORT)).isEqualTo(httpPort);
+  }
+
+  @Test
+  @DisplayName("Should override GRPC port in properties if it exists")
+  void shouldOverrideGrpcPortPropertiesIfExists() {
+    Integer grpcPort = 6001;
+
+    when(connectionDetails.getGrpcPort()).thenReturn(grpcPort);
+
+    Properties result = configuration.createPropertiesFromConnectionDetails(connectionDetails);
+
+    assertThat(result.getValue(Properties.GRPC_PORT)).isEqualTo(grpcPort);
   }
 
   private static class TestDaprClientAutoConfiguration extends DaprClientAutoConfiguration {
