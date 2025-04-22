@@ -44,7 +44,7 @@ import java.util.Optional;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
 import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
-import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
