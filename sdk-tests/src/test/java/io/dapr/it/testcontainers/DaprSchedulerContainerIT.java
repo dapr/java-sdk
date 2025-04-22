@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers
@@ -27,7 +28,7 @@ public class DaprSchedulerContainerIT {
 
   @Container
   private static final DaprSchedulerContainer SCHEDULER_CONTAINER =
-          new DaprSchedulerContainer(DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG);
+          new DaprSchedulerContainer(DAPR_SCHEDULER_IMAGE_TAG);
 
   @Test
   public void testDaprSchedulerContainerDefaults() {
