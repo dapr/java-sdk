@@ -43,19 +43,31 @@ public class DaprClientAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   DaprClientBuilder daprClientBuilder(DaprConnectionDetails daprConnectionDetails) {
-    DaprClientBuilder builder = new DaprClientBuilder();
-    if (daprConnectionDetails.httpEndpoint() != null) {
-      builder.withPropertyOverride(Properties.HTTP_ENDPOINT, daprConnectionDetails.httpEndpoint());
+    DaprClientBuilder builder = createDaprClientBuilder();
+    String httpEndpoint = daprConnectionDetails.getHttpEndpoint();
+
+    if (httpEndpoint != null) {
+      builder.withPropertyOverride(Properties.HTTP_ENDPOINT, httpEndpoint);
     }
-    if (daprConnectionDetails.grpcEndpoint() != null) {
-      builder.withPropertyOverride(Properties.GRPC_ENDPOINT, daprConnectionDetails.grpcEndpoint());
+
+    String grpcEndpoint = daprConnectionDetails.getGrpcEndpoint();
+
+    if (grpcEndpoint != null) {
+      builder.withPropertyOverride(Properties.GRPC_ENDPOINT, grpcEndpoint);
     }
-    if (daprConnectionDetails.httpPort() != null) {
-      builder.withPropertyOverride(Properties.HTTP_PORT, String.valueOf(daprConnectionDetails.httpPort()));
+
+    Integer httpPort = daprConnectionDetails.getHttpPort();
+
+    if (httpPort != null) {
+      builder.withPropertyOverride(Properties.HTTP_PORT, String.valueOf(httpPort));
     }
-    if (daprConnectionDetails.grpcPort() != null) {
-      builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(daprConnectionDetails.grpcPort()));
+
+    Integer grpcPort = daprConnectionDetails.getGrpcPort();
+
+    if (grpcPort != null) {
+      builder.withPropertyOverride(Properties.GRPC_PORT, String.valueOf(grpcPort));
     }
+
     return builder;
   }
 
@@ -90,22 +102,50 @@ public class DaprClientAutoConfiguration {
   @ConditionalOnMissingBean
   WorkflowRuntimeBuilder daprWorkflowRuntimeBuilder(DaprConnectionDetails daprConnectionDetails) {
     Properties properties = createPropertiesFromConnectionDetails(daprConnectionDetails);
+
     return new WorkflowRuntimeBuilder(properties);
   }
 
-  private Properties createPropertiesFromConnectionDetails(DaprConnectionDetails daprConnectionDetails) {
-    final Map<String, String> propertyOverrides = new HashMap<>();
-    propertyOverrides.put(Properties.HTTP_ENDPOINT.getName(), daprConnectionDetails.httpEndpoint());
-    if (daprConnectionDetails.httpPort() != null) {
-      propertyOverrides.put(Properties.HTTP_PORT.getName(), String.valueOf(daprConnectionDetails.httpPort()));
-    }
-    propertyOverrides.put(Properties.GRPC_ENDPOINT.getName(), daprConnectionDetails.grpcEndpoint());
-    if (daprConnectionDetails.grpcPort() != null) {
-      propertyOverrides.put(Properties.GRPC_PORT.getName(), String.valueOf(daprConnectionDetails.grpcPort()));
-    }
-    return new Properties(propertyOverrides);
+  /**
+   * We use this method in tests to override the default DaprClientBuilder.
+   */
+  protected DaprClientBuilder createDaprClientBuilder() {
+    return new DaprClientBuilder();
   }
 
+  /**
+   * Creates a Properties object from the DaprConnectionDetails.
+   *
+   * @param daprConnectionDetails the DaprConnectionDetails
+   * @return the Properties object
+   */
+  protected Properties createPropertiesFromConnectionDetails(DaprConnectionDetails daprConnectionDetails) {
+    Map<String, String> propertyOverrides = new HashMap<>();
+    String httpEndpoint = daprConnectionDetails.getHttpEndpoint();
 
+    if (httpEndpoint != null) {
+      propertyOverrides.put(Properties.HTTP_ENDPOINT.getName(), httpEndpoint);
+    }
+
+    Integer httpPort = daprConnectionDetails.getHttpPort();
+
+    if (httpPort != null) {
+      propertyOverrides.put(Properties.HTTP_PORT.getName(), String.valueOf(httpPort));
+    }
+
+    String grpcEndpoint = daprConnectionDetails.getGrpcEndpoint();
+
+    if (grpcEndpoint != null) {
+      propertyOverrides.put(Properties.GRPC_ENDPOINT.getName(), grpcEndpoint);
+    }
+
+    Integer grpcPort = daprConnectionDetails.getGrpcPort();
+
+    if (grpcPort != null) {
+      propertyOverrides.put(Properties.GRPC_PORT.getName(), String.valueOf(grpcPort));
+    }
+
+    return new Properties(propertyOverrides);
+  }
 
 }
