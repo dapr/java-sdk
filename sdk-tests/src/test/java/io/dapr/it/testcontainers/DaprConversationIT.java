@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
-import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
 @SpringBootTest(
         webEnvironment = WebEnvironment.RANDOM_PORT,
