@@ -23,22 +23,22 @@ public class DaprContainerConnectionDetailsFactory
     }
 
     @Override
-    public String httpEndpoint() {
+    public String getHttpEndpoint() {
       return getContainer().getHttpEndpoint();
     }
 
     @Override
-    public String grpcEndpoint() {
+    public String getGrpcEndpoint() {
       return getContainer().getGrpcEndpoint();
     }
 
     @Override
-    public Integer httpPort() {
+    public Integer getHttpPort() {
       return getContainer().getHttpPort();
     }
 
     @Override
-    public Integer grpcPort() {
+    public Integer getGrpcPort() {
       return getContainer().getGrpcPort();
     }
   }
