@@ -23,17 +23,17 @@ public class ConversationResponse {
 
   private String contextId;
 
-  private final List<ConversationOutput> daprConversationOutputs;
+  private final List<ConversationOutput> outputs;
 
   /**
    * Constructor.
    *
    * @param contextId context id supplied to LLM.
-   * @param daprConversationOutputs outputs from the LLM.
+   * @param outputs outputs from the LLM.
    */
-  public ConversationResponse(String contextId, List<ConversationOutput> daprConversationOutputs) {
+  public ConversationResponse(String contextId, List<ConversationOutput> outputs) {
     this.contextId = contextId;
-    this.daprConversationOutputs = daprConversationOutputs;
+    this.outputs = outputs;
   }
 
   /**
@@ -51,6 +51,6 @@ public class ConversationResponse {
    * @return List{@link ConversationOutput}.
    */
   public List<ConversationOutput> getConversationOutpus() {
-    return Collections.unmodifiableList(this.daprConversationOutputs);
+    return Collections.unmodifiableList(this.outputs);
   }
 }

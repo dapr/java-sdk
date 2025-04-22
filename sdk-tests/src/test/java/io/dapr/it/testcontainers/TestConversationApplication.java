@@ -22,5 +22,4 @@ public class TestConversationApplication {
     public static void main(String[] args) {
         SpringApplication.run(TestConversationApplication.class, args);
     }
-
 }

@@ -1,6 +1,6 @@
-## Manage Dapr Jobs via the Conversation API
+## Manage Dapr via the Conversation API
 
-This example provides the different capabilities provided by Dapr Java SDK for Conversation. For further information about Job APIs please refer to [this link](https://docs.dapr.io/developing-applications/building-blocks/conversation/conversation-overview/)
+This example provides the different capabilities provided by Dapr Java SDK for Conversation. For further information about Conversation APIs please refer to [this link](https://docs.dapr.io/developing-applications/building-blocks/conversation/conversation-overview/)
 
 ### Using the Conversation API
 
@@ -57,14 +57,16 @@ public class DemoConversationAI {
    */
   public static void main(String[] args) {
     try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
+      System.out.println("Sending the following input to LLM: Hello How are you? This is the my number 672-123-4567");
+
       ConversationInput daprConversationInput = new ConversationInput("Hello How are you? "
-          + "This is the my number 672-123-4567");
+              + "This is the my number 672-123-4567");
 
       // Component name is the name provided in the metadata block of the conversation.yaml file.
       Mono<ConversationResponse> responseMono = client.converse(new ConversationRequest("echo",
-          new ArrayList<>(Collections.singleton(daprConversationInput)))
-            .setContextId("contextId")
-            .setScrubPii(true).setTemperature(1.1d));
+              List.of(daprConversationInput))
+              .setContextId("contextId")
+              .setScrubPii(true).setTemperature(1.1d));
       ConversationResponse response = responseMono.block();
       System.out.printf("Conversation output: %s", response.getConversationOutpus().get(0).getResult());
     } catch (Exception e) {

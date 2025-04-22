@@ -29,7 +29,6 @@ import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationResponse;
-import io.dapr.client.domain.ConversationRole;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -565,38 +564,38 @@ public class DaprPreviewClientGrpcTest {
 
   @Test
   public void converseShouldThrowIllegalArgumentExceptionWhenComponentNameIsNull() throws Exception {
-    List<ConversationInput> daprConversationInputs = new ArrayList<>();
-    daprConversationInputs.add(new ConversationInput("Hello there !"));
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput("Hello there !"));
 
     IllegalArgumentException exception =
             assertThrows(IllegalArgumentException.class, () ->
-                    previewClient.converse(new ConversationRequest(null, daprConversationInputs)).block());
+                    previewClient.converse(new ConversationRequest(null, inputs)).block());
     assertEquals("LLM name cannot be null or empty.", exception.getMessage());
   }
 
   @Test
   public void converseShouldThrowIllegalArgumentExceptionWhenConversationComponentIsEmpty() throws Exception {
-    List<ConversationInput> daprConversationInputs = new ArrayList<>();
-    daprConversationInputs.add(new ConversationInput("Hello there !"));
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput("Hello there !"));
 
     IllegalArgumentException exception =
             assertThrows(IllegalArgumentException.class, () ->
-                    previewClient.converse(new ConversationRequest("", daprConversationInputs)).block());
+                    previewClient.converse(new ConversationRequest("", inputs)).block());
     assertEquals("LLM name cannot be null or empty.", exception.getMessage());
   }
 
   @Test
-  public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputIsEmpty() throws Exception {
-    List<ConversationInput> daprConversationInputs = new ArrayList<>();
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputsIsEmpty() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
 
     IllegalArgumentException exception =
             assertThrows(IllegalArgumentException.class, () ->
-                    previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block());
+                    previewClient.converse(new ConversationRequest("openai", inputs)).block());
     assertEquals("Conversation inputs cannot be null or empty.", exception.getMessage());
   }
 
   @Test
-  public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputIsNull() throws Exception {
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputsIsNull() throws Exception {
     IllegalArgumentException exception =
             assertThrows(IllegalArgumentException.class, () ->
                     previewClient.converse(new ConversationRequest("openai", null)).block());
@@ -604,24 +603,24 @@ public class DaprPreviewClientGrpcTest {
   }
 
   @Test
-  public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputContentIsNull() throws Exception {
-    List<ConversationInput> daprConversationInputs = new ArrayList<>();
-    daprConversationInputs.add(new ConversationInput(null));
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputContentIsNull() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput(null));
 
     IllegalArgumentException exception =
             assertThrows(IllegalArgumentException.class, () ->
-                    previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block());
+                    previewClient.converse(new ConversationRequest("openai", inputs)).block());
     assertEquals("Conversation input content cannot be null or empty.", exception.getMessage());
   }
 
   @Test
-  public void converseShouldThrowIllegalArgumentExceptionWhenConversationInputContentIsEmpty() throws Exception {
-    List<ConversationInput> daprConversationInputs = new ArrayList<>();
-    daprConversationInputs.add(new ConversationInput(""));
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputContentIsEmpty() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput(""));
 
     IllegalArgumentException exception =
             assertThrows(IllegalArgumentException.class, () ->
-                    previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block());
+                    previewClient.converse(new ConversationRequest("openai", inputs)).block());
     assertEquals("Conversation input content cannot be null or empty.", exception.getMessage());
   }
 
@@ -637,10 +636,10 @@ public class DaprPreviewClientGrpcTest {
       return null;
     }).when(daprStub).converseAlpha1(any(DaprProtos.ConversationRequest.class), any());
 
-    List<ConversationInput> daprConversationInputs = new ArrayList<>();
-    daprConversationInputs.add(new ConversationInput("Hello there"));
-    ConversationResponse daprConversationResponse =
-            previewClient.converse(new ConversationRequest("openai", daprConversationInputs)).block();
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput("Hello there"));
+    ConversationResponse response =
+            previewClient.converse(new ConversationRequest("openai", inputs)).block();
 
     ArgumentCaptor<DaprProtos.ConversationRequest> captor =
             ArgumentCaptor.forClass(DaprProtos.ConversationRequest.class);
@@ -651,7 +650,7 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("openai", conversationRequest.getName());
     assertEquals("Hello there", conversationRequest.getInputs(0).getContent());
     assertEquals("Hello How are you",
-            daprConversationResponse.getConversationOutpus().get(0).getResult());
+            response.getConversationOutpus().get(0).getResult());
   }
 
   @Test
@@ -668,14 +667,14 @@ public class DaprPreviewClientGrpcTest {
     }).when(daprStub).converseAlpha1(any(DaprProtos.ConversationRequest.class), any());
 
     ConversationInput daprConversationInput = new ConversationInput("Hello there")
-            .setRole(ConversationRole.ASSISTANT)
+            .setRole("Assistant")
             .setScrubPii(true);
 
-    List<ConversationInput> daprConversationInputs = new ArrayList<>();
-    daprConversationInputs.add(daprConversationInput);
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(daprConversationInput);
 
-    ConversationResponse daprConversationResponse =
-            previewClient.converse(new ConversationRequest("openai", daprConversationInputs)
+    ConversationResponse response =
+            previewClient.converse(new ConversationRequest("openai", inputs)
                     .setContextId("contextId")
                     .setScrubPii(true)
                     .setTemperature(1.1d)).block();
@@ -692,10 +691,10 @@ public class DaprPreviewClientGrpcTest {
     assertEquals(1.1d, conversationRequest.getTemperature(), 0d);
     assertEquals("Hello there", conversationRequest.getInputs(0).getContent());
     assertTrue(conversationRequest.getInputs(0).getScrubPII());
-    assertEquals(ConversationRole.ASSISTANT.toString(), conversationRequest.getInputs(0).getRole());
-    assertEquals("contextId", daprConversationResponse.getContextId());
+    assertEquals("Assistant", conversationRequest.getInputs(0).getRole());
+    assertEquals("contextId", response.getContextId());
     assertEquals("Hello How are you",
-            daprConversationResponse.getConversationOutpus().get(0).getResult());
+            response.getConversationOutpus().get(0).getResult());
   }
 
   @Test

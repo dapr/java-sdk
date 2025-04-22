@@ -103,7 +103,6 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -1568,13 +1567,13 @@ public class DaprClientImpl extends AbstractDaprClient {
       DaprProtos.ConversationRequest.Builder protosConversationRequestBuilder = DaprProtos.ConversationRequest
           .newBuilder().setTemperature(conversationRequest.getTemperature())
           .setScrubPII(conversationRequest.isScrubPii())
-          .setName(conversationRequest.getLlmName());
+          .setName(conversationRequest.getName());
 
       if (conversationRequest.getContextId() != null) {
         protosConversationRequestBuilder.setContextID(conversationRequest.getContextId());
       }
 
-      for (ConversationInput input : conversationRequest.getConversationInputs()) {
+      for (ConversationInput input : conversationRequest.getInputs()) {
         if (input.getContent() == null || input.getContent().isEmpty()) {
           throw new IllegalArgumentException("Conversation input content cannot be null or empty.");
         }
@@ -1619,12 +1618,12 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private void validateConversationRequest(ConversationRequest conversationRequest) {
-    if ((conversationRequest.getLlmName() == null) || (conversationRequest.getLlmName().trim().isEmpty())) {
+    if ((conversationRequest.getName() == null) || (conversationRequest.getName().trim().isEmpty())) {
       throw new IllegalArgumentException("LLM name cannot be null or empty.");
     }
 
-    if ((conversationRequest.getConversationInputs() == null) || (conversationRequest
-        .getConversationInputs().isEmpty())) {
+    if ((conversationRequest.getInputs() == null) || (conversationRequest
+        .getInputs().isEmpty())) {
       throw new IllegalArgumentException("Conversation inputs cannot be null or empty.");
     }
   }

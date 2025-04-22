@@ -21,8 +21,8 @@ import java.util.List;
  */
 public class ConversationRequest {
 
-  private final String llmName;
-  private final List<ConversationInput> daprConversationInputs;
+  private final String name;
+  private final List<ConversationInput> inputs;
   private String contextId;
   private boolean scrubPii;
   private double temperature;
@@ -30,13 +30,13 @@ public class ConversationRequest {
   /**
    * Constructs a DaprConversation with a component name and conversation inputs.
    *
-   * @param llmName The name of the LLM component. See a list of all available conversation components
+   * @param name The name of the Dapr conversation component. See a list of all available conversation components
    *                @see <a href="https://docs.dapr.io/reference/components-reference/supported-conversation/"></a>
-   * @param conversationInputs    the list of Dapr conversation inputs
+   * @param inputs    the list of Dapr conversation inputs
    */
-  public ConversationRequest(String llmName, List<ConversationInput> conversationInputs) {
-    this.llmName = llmName;
-    this.daprConversationInputs = conversationInputs;
+  public ConversationRequest(String name, List<ConversationInput> inputs) {
+    this.name = name;
+    this.inputs = inputs;
   }
 
   /**
@@ -44,17 +44,17 @@ public class ConversationRequest {
    *
    * @return the conversation component name
    */
-  public String getLlmName() {
-    return llmName;
+  public String getName() {
+    return name;
   }
 
   /**
-   * Gets the list of Dapr conversation inputs.
+   * Gets the list of Dapr conversation input.
    *
-   * @return the list of conversation inputs
+   * @return the list of conversation input
    */
-  public List<ConversationInput> getConversationInputs() {
-    return daprConversationInputs;
+  public List<ConversationInput> getInputs() {
+    return inputs;
   }
 
   /**

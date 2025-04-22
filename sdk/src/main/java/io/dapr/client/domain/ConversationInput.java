@@ -20,7 +20,7 @@ public class ConversationInput {
 
   private final String content;
 
-  private ConversationRole role;
+  private String role;
 
   private boolean scrubPii;
 
@@ -47,7 +47,7 @@ public class ConversationInput {
    *
    * @return this.
    */
-  public ConversationRole getRole() {
+  public String getRole() {
     return role;
   }
 
@@ -57,7 +57,7 @@ public class ConversationInput {
    * @param role The role to assign to the message.
    * @return this.
    */
-  public ConversationInput setRole(ConversationRole role) {
+  public ConversationInput setRole(String role) {
     this.role = role;
     return this;
   }
