@@ -37,7 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Collections;
 import java.util.List;
 
-import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(

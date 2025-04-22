@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(

@@ -39,6 +39,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.Assert.assertEquals;
 
 @SpringBootTest(
@@ -57,7 +58,7 @@ public class DaprJobsIT {
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName("jobs-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
