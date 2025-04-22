@@ -38,6 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
+import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+
 @SpringBootTest(
         webEnvironment = WebEnvironment.RANDOM_PORT,
         classes = {
@@ -54,7 +56,7 @@ public class DaprConversationIT {
     private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
     @Container
-    private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.15.2")
+    private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("conversation-dapr-app")
             .withComponent(new Component("echo", "conversation.echo", "v1", new HashMap<>()))
             .withNetwork(DAPR_NETWORK)
