@@ -43,7 +43,7 @@ import static io.dapr.it.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAG
 @SpringBootTest(
         webEnvironment = WebEnvironment.RANDOM_PORT,
         classes = {
-                TestDaprConversationConfiguration.class,
+                DaprPreviewClientConfiguration.class,
                 TestConversationApplication.class
         }
 )
