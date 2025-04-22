@@ -698,18 +698,6 @@ public class DaprPreviewClientGrpcTest {
             daprConversationResponse.getConversationOutpus().get(0).getResult());
   }
 
-  private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)
-          throws JsonProcessingException {
-    List<DaprProtos.QueryStateItem> items = new ArrayList<>();
-    for (QueryStateItem<?> item: resp) {
-      items.add(buildQueryStateItem(item));
-    }
-    return DaprProtos.QueryStateResponse.newBuilder()
-            .addAllResults(items)
-            .setToken(token)
-            .build();
-  }
-
   @Test
   public void scheduleJobShouldSucceedWhenAllFieldsArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
