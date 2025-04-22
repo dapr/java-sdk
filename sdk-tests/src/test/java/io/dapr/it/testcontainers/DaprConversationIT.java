@@ -99,7 +99,7 @@ public class DaprConversationIT {
     }
 
     @Test
-    public void testConversationSDKShouldScrubPIIEntirelyWhenScrubPIIIsSetInRequestBody() {
+    public void testConversationSDKShouldScrubPIIWhenScrubPIIIsSetInRequestBody() {
         List<ConversationInput> conversationInputList = new ArrayList<>();
         conversationInputList.add(new ConversationInput("input this abcd@gmail.com"));
         conversationInputList.add(new ConversationInput("input this +12341567890"));
