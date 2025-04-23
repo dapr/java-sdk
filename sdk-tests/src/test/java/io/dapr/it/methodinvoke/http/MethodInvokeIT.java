@@ -1,6 +1,7 @@
 package io.dapr.it.methodinvoke.http;
 
 import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
