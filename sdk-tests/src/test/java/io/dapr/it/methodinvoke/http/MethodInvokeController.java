@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -78,6 +79,11 @@ public class MethodInvokeController {
     @GetMapping(path = "/persons")
     public List<Person> getPersons() {
         return persons;
+    }
+
+    @GetMapping(path = "/query-params")
+    public String getQueryParams(@RequestParam String uri) {
+        return uri;
     }
 
     @PostMapping(path = "/sleep")
