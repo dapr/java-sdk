@@ -81,7 +81,7 @@ public class MethodInvokeController {
         return persons;
     }
 
-    @GetMapping(path = "/query-params")
+    @GetMapping(path = "/query")
     public String getQueryParams(@RequestParam String uri) {
         return uri;
     }

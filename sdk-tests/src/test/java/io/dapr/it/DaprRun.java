@@ -312,6 +312,7 @@ public class DaprRun implements Stoppable {
             .append(ports.getAppPort() != null ? " --app-port " + ports.getAppPort() : "")
             .append(ports.getHttpPort() != null ? " --dapr-http-port " + ports.getHttpPort() : "")
             .append(ports.getGrpcPort() != null ? " --dapr-grpc-port " + ports.getGrpcPort() : "")
+            .append(" --log-level debug")
             .append(isAppHealthCheckEnabled(serviceClass) ?
                     " --enable-app-health-check --app-health-probe-interval=1" : "")
             .append(serviceClass == null ? "" :
