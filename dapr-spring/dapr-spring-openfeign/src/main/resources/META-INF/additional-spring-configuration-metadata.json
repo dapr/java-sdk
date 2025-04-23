@@ -1,13 +1,6 @@
 {
   "properties": [
     {
-      "name": "dapr.feign.enabled",
-      "type": "java.lang.Boolean",
-      "defaultValue": true,
-      "sourceType": "io.dapr.spring.openfeign.autoconfigure.DaprFeignClientProperties",
-      "description": "enable dapr openfeign or not."
-    },
-    {
       "name": "dapr.feign.timeout",
       "type": "java.lang.Integer",
       "defaultValue": 2000,

@@ -22,12 +22,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.openfeign.FeignAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(DaprFeignClientProperties.class)
-@ConditionalOnProperty(name = "dapr.feign.enabled", matchIfMissing = true)
+@Conditional(FeignClientAnnoationEnabledCondition.class)
 @ConditionalOnClass(FeignAutoConfiguration.class)
 @Import(DaprClientTargeterBeanPostProcessor.class)
 public class DaprFeignClientAutoConfiguration {

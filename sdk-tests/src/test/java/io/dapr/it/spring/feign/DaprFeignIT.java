@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         DaprFeignTestApplication.class
     },
     properties = {
-        "dapr.feign.enabled=true",
         "dapr.feign.retries=1",
         "server.port=" + DaprFeignIT.APP_PORT
     }
