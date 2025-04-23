@@ -53,7 +53,7 @@ public class DaprFeignIT {
       "host=postgres-repository user=postgres password=password port=5432 connect_timeout=10 database=dapr_db_repository";
   private static final Map<String, String> BINDING_PROPERTIES = Map.of("connectionString", CONNECTION_STRING);
   private static final Network DAPR_NETWORK = Network.newNetwork();
-  protected static final int APP_PORT = 8081;
+  protected static final int APP_PORT = 8082;
   private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*App entered healthy status.*";
 
   @Container
