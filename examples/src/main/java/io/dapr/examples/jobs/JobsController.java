@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
  * SpringBoot Controller to handle jobs callback.
  */
 @RestController
-public class JobsController {
+public class  JobsController {
 
   /**
    * Handles jobs callback from Dapr.
