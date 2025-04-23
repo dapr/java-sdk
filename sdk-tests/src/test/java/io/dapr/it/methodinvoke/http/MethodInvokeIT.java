@@ -1,7 +1,6 @@
 package io.dapr.it.methodinvoke.http;
 
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
@@ -15,7 +14,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -148,7 +146,7 @@ public class MethodInvokeIT extends BaseIT {
         try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
 
-            String uri = "abc/abc/pqr";
+            String uri = "abc/pqr";
             Map<String, List<String>> queryParams = Map.of("uri", List.of(uri));
             HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryParams, Map.of());
             String result = client.invokeMethod(daprRun.getAppName(), "query-params", null,
