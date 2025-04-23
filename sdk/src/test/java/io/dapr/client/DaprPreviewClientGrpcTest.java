@@ -650,7 +650,7 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("openai", conversationRequest.getName());
     assertEquals("Hello there", conversationRequest.getInputs(0).getContent());
     assertEquals("Hello How are you",
-            response.getConversationOutpus().get(0).getResult());
+            response.getConversationOutputs().get(0).getResult());
   }
 
   @Test
@@ -694,7 +694,7 @@ public class DaprPreviewClientGrpcTest {
     assertEquals("Assistant", conversationRequest.getInputs(0).getRole());
     assertEquals("contextId", response.getContextId());
     assertEquals("Hello How are you",
-            response.getConversationOutpus().get(0).getResult());
+            response.getConversationOutputs().get(0).getResult());
   }
 
   @Test

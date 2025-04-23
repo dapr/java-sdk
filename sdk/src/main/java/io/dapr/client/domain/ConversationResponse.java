@@ -33,7 +33,7 @@ public class ConversationResponse {
    */
   public ConversationResponse(String contextId, List<ConversationOutput> outputs) {
     this.contextId = contextId;
-    this.outputs = outputs;
+    this.outputs = List.copyOf(outputs);
   }
 
   /**
@@ -50,7 +50,7 @@ public class ConversationResponse {
    *
    * @return List{@link ConversationOutput}.
    */
-  public List<ConversationOutput> getConversationOutpus() {
-    return Collections.unmodifiableList(this.outputs);
+  public List<ConversationOutput> getConversationOutputs() {
+    return this.outputs;
   }
 }

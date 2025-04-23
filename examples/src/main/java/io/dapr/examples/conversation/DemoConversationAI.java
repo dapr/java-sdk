@@ -41,7 +41,7 @@ public class DemoConversationAI {
               .setContextId("contextId")
               .setScrubPii(true).setTemperature(1.1d));
       ConversationResponse response = responseMono.block();
-      System.out.printf("Conversation output: %s", response.getConversationOutpus().get(0).getResult());
+      System.out.printf("Conversation output: %s", response.getConversationOutputs().get(0).getResult());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

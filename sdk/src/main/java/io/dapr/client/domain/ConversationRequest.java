@@ -36,7 +36,7 @@ public class ConversationRequest {
    */
   public ConversationRequest(String name, List<ConversationInput> inputs) {
     this.name = name;
-    this.inputs = inputs;
+    this.inputs = List.copyOf(inputs);
   }
 
   /**

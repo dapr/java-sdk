@@ -33,7 +33,7 @@ public class ConversationOutput {
    */
   public ConversationOutput(String result, Map<String, byte[]> parameters) {
     this.result = result;
-    this.parameters = parameters;
+    this.parameters = Map.copyOf(parameters);
   }
 
   /**
@@ -51,6 +51,6 @@ public class ConversationOutput {
    * @return parameters.
    */
   public Map<String, byte[]> getParameters() {
-    return Collections.unmodifiableMap(this.parameters);
+    return this.parameters;
   }
 }
