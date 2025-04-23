@@ -139,5 +139,4 @@ public class MethodInvokeIT extends BaseIT {
             assertTrue(new String(exception.getPayload()).contains("Internal Server Error"));
         }
     }
-
 }
