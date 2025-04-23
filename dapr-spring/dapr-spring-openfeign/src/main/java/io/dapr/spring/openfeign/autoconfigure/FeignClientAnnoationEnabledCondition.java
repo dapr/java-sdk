@@ -7,14 +7,18 @@ import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
+import java.util.Objects;
+
 public class FeignClientAnnoationEnabledCondition implements Condition {
   @Override
+  @SuppressWarnings("null")
   public boolean matches(@NotNull ConditionContext context, @NotNull AnnotatedTypeMetadata metadata) {
-    if (context.getBeanFactory() == null) {
-      return false; // Return false if context or BeanFactory is null
+    try {
+      ConfigurableListableBeanFactory factory = Objects.requireNonNull(context.getBeanFactory());
+      String[] beanNames = factory.getBeanNamesForAnnotation(EnableFeignClients.class);
+      return beanNames != null && beanNames.length > 0;
+    } catch (Exception e) {
+      return false;
     }
-
-    String[] beanNames = context.getBeanFactory().getBeanNamesForAnnotation(EnableFeignClients.class);
-    return beanNames != null && beanNames.length > 0; // Check for null and non-empty array
   }
 }
