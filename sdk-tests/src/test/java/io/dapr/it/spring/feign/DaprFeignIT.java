@@ -32,7 +32,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.List;
 import java.util.Map;
 
-import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
@@ -67,7 +67,7 @@ public class DaprFeignIT {
 
   @Container
   @ServiceConnection
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName("dapr-feign-test")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(BINDING_NAME, "bindings.postgresql", "v1", BINDING_PROPERTIES))

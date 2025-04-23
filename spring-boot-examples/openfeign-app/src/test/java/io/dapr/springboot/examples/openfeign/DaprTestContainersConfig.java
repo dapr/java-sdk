@@ -26,6 +26,8 @@ import org.testcontainers.containers.Network;
 
 import java.util.List;
 
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+
 @TestConfiguration(proxyBeanMethods = false)
 public class DaprTestContainersConfig {
 
@@ -69,7 +71,7 @@ public class DaprTestContainersConfig {
   public DaprContainer daprContainer(Network daprNetwork, Environment env) {
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
 
-    return new DaprContainer("daprio/daprd:1.14.4")
+    return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("openfeign-app")
         .withNetwork(daprNetwork)
         .withDaprLogLevel(DaprLogLevel.INFO)
