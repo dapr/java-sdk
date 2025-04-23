@@ -66,7 +66,7 @@ public class DaprConversationIT {
             .withAppPort(PORT);
 
     /**
-     * Expose the Dapr port to the host.
+     * Expose the Dapr ports to the host.
      *
      * @param registry the dynamic property registry
      */
