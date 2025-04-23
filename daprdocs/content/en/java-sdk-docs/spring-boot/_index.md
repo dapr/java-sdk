@@ -108,10 +108,10 @@ public class DemoRestController {
 record Order(String orderId, Integer amount){}
 ```
 
-If you want to avoid managing Dapr outside of your Spring Boot application, you can rely on [Testcontainers](https://testcontainers.com/) to bootstrap Dapr besides your application for development purposes. 
+If you want to avoid managing Dapr outside of your Spring Boot application, you can rely on [Testcontainers](https://testcontainers.com/) to bootstrap Dapr beside your application for development purposes. 
 To do this we can create a test configuration that uses `Testcontainers` to bootstrap all we need to develop our applications using the Dapr APIs. 
 
-Using [Testcontaniners](https://testcontainers.com/) and Dapr integrations, we let the `@TestConfiguration` to bootstrap Dapr for our applications. 
+Using [Testcontainers](https://testcontainers.com/) and Dapr integrations, we let the `@TestConfiguration` bootstrap Dapr for our applications. 
 Notice that for this example, we are configuring Dapr with a Statestore component called `kvstore` that connects to an instance of `PostgreSQL` also bootstrapped by Testcontainers.
 
 ```java
@@ -121,7 +121,7 @@ public class DaprTestContainersConfig {
   @ServiceConnection
   public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer){
     
-    return new DaprContainer("daprio/daprd:1.14.1")
+    return new DaprContainer("daprio/daprd:1.15.4")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))
@@ -211,7 +211,7 @@ Where `OrderRepository` is defined in an interface that extends the Spring Data 
 public interface OrderRepository extends CrudRepository<Order, String> {}
 ```
 
-Notice that the `@EnableDaprRepositories` annotation, does all the magic of wiring the Dapr APIs under the `CrudRespository` interface.
+Notice that the `@EnableDaprRepositories` annotation does all the magic of wiring the Dapr APIs under the `CrudRespository` interface.
 Because Dapr allow users to interact with different StateStores from the same application, as a user you need to provide the following beans as a Spring Boot `@Configuration`: 
 
 ```java
@@ -276,7 +276,7 @@ Finally, because Dapr PubSub requires a bidirectional connection between your ap
 @ServiceConnection
 public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer, RabbitMQContainer rabbitMQContainer){
     
-    return new DaprContainer("daprio/daprd:1.14.1")
+    return new DaprContainer("daprio/daprd:1.15.4")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))

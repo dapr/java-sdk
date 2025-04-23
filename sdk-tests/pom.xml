@@ -150,7 +150,7 @@
     </dependency>
     <dependency>
       <groupId>io.zipkin.reporter2</groupId>
-      <artifactId>zipkin-sender-okhttp3</artifactId>
+      <artifactId>zipkin-sender-urlconnection</artifactId>
       <version>3.4.0</version>
     </dependency>
     <dependency>
@@ -249,11 +249,6 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>eu.rekawek.toxiproxy</groupId>
-      <artifactId>toxiproxy-java</artifactId>
-      <version>2.1.7</version>
-    </dependency>
-    <dependency>
         <groupId>jakarta.servlet</groupId>
         <artifactId>jakarta.servlet-api</artifactId>
         <scope>compile</scope>
@@ -276,7 +271,13 @@
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-openfeign</artifactId>
-      <version>0.15.0-SNAPSHOT</version>
+      <version>${dapr.sdk.alpha.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>toxiproxy</artifactId>
+      <version>${testcontainers-test.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

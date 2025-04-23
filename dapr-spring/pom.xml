@@ -113,12 +113,6 @@
       <version>${springboot.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.github.gmazzo.okhttp.mock</groupId>
-      <artifactId>mock-client</artifactId>
-      <version>2.0.0</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

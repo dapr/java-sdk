@@ -18,22 +18,21 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.State;
-
 import io.dapr.config.Properties;
 import io.dapr.testcontainers.DaprContainer;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 import org.testcontainers.shaded.org.awaitility.core.ConditionTimeoutException;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -48,11 +47,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 
 @Testcontainers
@@ -69,7 +68,7 @@ public class DaprContainerIT {
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port 8081.*";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
           .withAppName("dapr-app")
           .withAppPort(8081)
           .withAppHealthCheckPath("/actuator/health")
@@ -155,20 +154,21 @@ public class DaprContainerIT {
 
   }
 
-  private String checkSidecarMetadata() throws IOException {
-    OkHttpClient okHttpClient = new OkHttpClient.Builder()
+  private String checkSidecarMetadata() throws IOException, InterruptedException {
+    String url = DAPR_CONTAINER.getHttpEndpoint() + "/v1.0/metadata";
+    HttpClient client = HttpClient.newBuilder()
+        .version(HttpClient.Version.HTTP_1_1)
+        .build();
+    HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
             .build();
-    Request request = new Request.Builder()
-            .url(DAPR_CONTAINER.getHttpEndpoint() + "/v1.0/metadata")
-            .build();
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-    try (Response response = okHttpClient.newCall(request).execute()) {
-      if (response.isSuccessful() && response.body() != null) {
-        return response.body().string();
-      } else {
-        throw new IOException("Unexpected response: " + response.code());
-      }
+    if (response.statusCode() != 200) {
+      throw new IOException("Unexpected response: " + response.statusCode());
     }
+
+    return response.body();
   }
 
   @Test

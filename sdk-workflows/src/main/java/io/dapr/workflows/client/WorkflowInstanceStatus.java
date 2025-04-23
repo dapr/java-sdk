@@ -13,11 +13,6 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
-import com.microsoft.durabletask.FailureDetails;
-import com.microsoft.durabletask.OrchestrationMetadata;
-import com.microsoft.durabletask.OrchestrationRuntimeStatus;
-import io.dapr.workflows.runtime.WorkflowRuntimeStatus;
-
 import javax.annotation.Nullable;
 
 import java.time.Instant;
@@ -26,48 +21,21 @@ import java.time.Instant;
  * Represents a snapshot of a workflow instance's current state, including
  * metadata.
  */
-public class WorkflowInstanceStatus {
-
-  private final OrchestrationMetadata orchestrationMetadata;
-
-  @Nullable
-  private final WorkflowFailureDetails failureDetails;
-
-  /**
-   * Class constructor.
-   *
-   * @param orchestrationMetadata Durable task orchestration metadata
-   */
-  public WorkflowInstanceStatus(OrchestrationMetadata orchestrationMetadata) {
-    if (orchestrationMetadata == null) {
-      throw new IllegalArgumentException("OrchestrationMetadata cannot be null");
-    }
-    this.orchestrationMetadata = orchestrationMetadata;
-    FailureDetails details = orchestrationMetadata.getFailureDetails();
-    if (details != null) {
-      this.failureDetails = new WorkflowFailureDetails(details);
-    } else {
-      this.failureDetails = null;
-    }
-  }
+public interface WorkflowInstanceStatus {
 
   /**
    * Gets the name of the workflow.
    *
    * @return the name of the workflow
    */
-  public String getName() {
-    return orchestrationMetadata.getName();
-  }
+  String getName();
 
   /**
    * Gets the unique ID of the workflow instance.
    *
    * @return the unique ID of the workflow instance
    */
-  public String getInstanceId() {
-    return orchestrationMetadata.getInstanceId();
-  }
+  String getInstanceId();
 
   /**
    * Gets the current runtime status of the workflow instance at the time this
@@ -75,60 +43,48 @@ public class WorkflowInstanceStatus {
    *
    * @return the current runtime status of the workflow instance at the time this object was fetched
    */
-  public WorkflowRuntimeStatus getRuntimeStatus() {
-    return WorkflowRuntimeStatus.fromOrchestrationRuntimeStatus(orchestrationMetadata.getRuntimeStatus());
-  }
+  WorkflowRuntimeStatus getRuntimeStatus();
 
   /**
    * Gets the workflow instance's creation time in UTC.
    *
    * @return the workflow instance's creation time in UTC
    */
-  public Instant getCreatedAt() {
-    return orchestrationMetadata.getCreatedAt();
-  }
+  Instant getCreatedAt();
 
   /**
    * Gets the workflow instance's last updated time in UTC.
    *
    * @return the workflow instance's last updated time in UTC
    */
-  public Instant getLastUpdatedAt() {
-    return orchestrationMetadata.getLastUpdatedAt();
-  }
+  Instant getLastUpdatedAt();
 
   /**
    * Gets the workflow instance's serialized input, if any, as a string value.
    *
    * @return the workflow instance's serialized input or {@code null}
    */
-  public String getSerializedInput() {
-    return orchestrationMetadata.getSerializedInput();
-  }
+  String getSerializedInput();
 
   /**
    * Gets the workflow instance's serialized output, if any, as a string value.
    *
    * @return the workflow instance's serialized output or {@code null}
    */
-  public String getSerializedOutput() {
-    return orchestrationMetadata.getSerializedOutput();
-  }
+  String getSerializedOutput();
 
   /**
    * Gets the failure details, if any, for the failed workflow instance.
    *
    * <p>This method returns data only if the workflow is in the
-   * {@link OrchestrationRuntimeStatus#FAILED} state,
+   * {@link WorkflowFailureDetails} failureDetails,
    * and only if this instance metadata was fetched with the option to include
    * output data.
    *
    * @return the failure details of the failed workflow instance or {@code null}
    */
   @Nullable
-  public WorkflowFailureDetails getFailureDetails() {
-    return this.failureDetails;
-  }
+  WorkflowFailureDetails getFailureDetails();
 
   /**
    * Gets a value indicating whether the workflow instance was running at the time
@@ -136,9 +92,7 @@ public class WorkflowInstanceStatus {
    *
    * @return {@code true} if the workflow existed and was in a running state otherwise {@code false}
    */
-  public boolean isRunning() {
-    return orchestrationMetadata.isRunning();
-  }
+  boolean isRunning();
 
   /**
    * Gets a value indicating whether the workflow instance was completed at the
@@ -151,9 +105,7 @@ public class WorkflowInstanceStatus {
    *
    * @return {@code true} if the workflow was in a terminal state; otherwise {@code false}
    */
-  public boolean isCompleted() {
-    return orchestrationMetadata.isCompleted();
-  }
+  boolean isCompleted();
 
   /**
    * Deserializes the workflow's input into an object of the specified type.
@@ -169,9 +121,7 @@ public class WorkflowInstanceStatus {
    * @throws IllegalStateException if the metadata was fetched without the option
    *                               to read inputs and outputs
    */
-  public <T> T readInputAs(Class<T> type) {
-    return orchestrationMetadata.readInputAs(type);
-  }
+  <T> T readInputAs(Class<T> type);
 
   /**
    * Deserializes the workflow's output into an object of the specified type.
@@ -187,17 +137,6 @@ public class WorkflowInstanceStatus {
    * @throws IllegalStateException if the metadata was fetched without the option
    *                               to read inputs and outputs
    */
-  public <T> T readOutputAs(Class<T> type) {
-    return orchestrationMetadata.readOutputAs(type);
-  }
+  <T> T readOutputAs(Class<T> type);
 
-  /**
-   * Generates a user-friendly string representation of the current metadata
-   * object.
-   *
-   * @return a user-friendly string representation of the current metadata object
-   */
-  public String toString() {
-    return orchestrationMetadata.toString();
-  }
 }

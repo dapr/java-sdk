@@ -39,7 +39,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
-import static io.dapr.it.testcontainers.DaprContainerConstants.IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -57,7 +57,7 @@ public class DaprWorkflowsIT {
   private static final Network DAPR_NETWORK = Network.newNetwork();
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName("workflow-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component("kvstore", "state.in-memory", "v1",
