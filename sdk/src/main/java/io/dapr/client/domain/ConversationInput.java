@@ -52,7 +52,7 @@ public class ConversationInput {
   }
 
   /**
-   * Sets the role for LLM to assume.
+   * Set the role for LLM to assume.
    *
    * @param role The role to assign to the message.
    * @return this.
