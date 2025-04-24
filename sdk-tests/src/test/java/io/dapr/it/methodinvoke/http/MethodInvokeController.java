@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.function.ServerRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,12 +77,12 @@ public class MethodInvokeController {
     }
 
     @GetMapping(path = "/persons")
-    public List<Person> getPersons(@RequestParam(required = false) String uri) {
-        if (uri != null) {
-            System.out.println("MethodInvokeController->get persons with uri: " + uri);
-        }
+    public List<Person> getPersons(ServerRequest request) {
+      Optional<String> uri = request.param("uri");
 
-        return persons;
+      uri.ifPresent(value -> System.out.println("MethodInvokeController->get persons with uri: " + value));
+
+      return persons;
     }
 
     @PostMapping(path = "/sleep")
