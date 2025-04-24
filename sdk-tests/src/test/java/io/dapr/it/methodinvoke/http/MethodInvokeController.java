@@ -77,13 +77,12 @@ public class MethodInvokeController {
     }
 
     @GetMapping(path = "/persons")
-    public List<Person> getPersons() {
-        return persons;
-    }
+    public List<Person> getPersons(@RequestParam(required = false) String uri) {
+        if (uri != null) {
+            System.out.println("MethodInvokeController->get persons with uri: " + uri);
+        }
 
-    @GetMapping(path = "/query")
-    public String getQueryParams(@RequestParam String uri) {
-        return uri;
+        return persons;
     }
 
     @PostMapping(path = "/sleep")

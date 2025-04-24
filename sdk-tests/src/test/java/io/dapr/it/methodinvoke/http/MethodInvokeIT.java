@@ -2,6 +2,7 @@ package io.dapr.it.methodinvoke.http;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprHttp;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
@@ -91,7 +92,9 @@ public class MethodInvokeIT extends BaseIT {
 
             client.invokeMethod(daprRun.getAppName(), "persons/1", null, HttpExtension.DELETE).block();
 
-            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            Map<String, List<String>> queryParams = Map.of("uri", List.of("abc/pqr"));
+            HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryParams, Map.of());
+            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, httpExtension, Person[].class).block());
             assertEquals(9, persons.size());
 
             Person person = new Person();
