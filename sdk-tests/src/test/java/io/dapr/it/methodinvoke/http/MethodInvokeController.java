@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.function.ServerRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,11 +76,7 @@ public class MethodInvokeController {
     }
 
     @GetMapping(path = "/persons")
-    public List<Person> getPersons(ServerRequest request) {
-      Optional<String> uri = request.param("uri");
-
-      uri.ifPresent(value -> System.out.println("MethodInvokeController->get persons with uri: " + value));
-
+    public List<Person> getPersons() {
       return persons;
     }
 
