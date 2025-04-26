@@ -1,7 +1,7 @@
 package io.dapr.it.methodinvoke.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprHttp;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
@@ -36,19 +36,16 @@ public class MethodInvokeIT extends BaseIT {
     @BeforeEach
     public void init() throws Exception {
         daprRun = startDaprApp(
-          MethodInvokeIT.class.getSimpleName() + "http",
-          MethodInvokeService.SUCCESS_MESSAGE,
-          MethodInvokeService.class,
-          true,
-          30000);
+            MethodInvokeIT.class.getSimpleName() + "http",
+            MethodInvokeService.SUCCESS_MESSAGE,
+            MethodInvokeService.class,
+            true,
+            30000);
         daprRun.waitForAppHealth(20000);
     }
 
     @Test
     public void testInvoke() throws Exception {
-
-        // At this point, it is guaranteed that the service above is running and all ports being listened to.
-
         try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
@@ -64,11 +61,14 @@ public class MethodInvokeIT extends BaseIT {
 
             client.invokeMethod(daprRun.getAppName(), "messages/1", null, HttpExtension.DELETE).block();
 
-            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            messages =
+                client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals(9, messages.size());
 
-            client.invokeMethod(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
-            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            client.invokeMethod(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT)
+                .block();
+            messages =
+                client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals("updated message", messages.get("2"));
         }
     }
@@ -87,14 +87,14 @@ public class MethodInvokeIT extends BaseIT {
                 System.out.println("Invoke method persons with parameter : " + person);
             }
 
-            List<Person> persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            List<Person> persons = Arrays.asList(
+                client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(10, persons.size());
 
             client.invokeMethod(daprRun.getAppName(), "persons/1", null, HttpExtension.DELETE).block();
 
-            Map<String, List<String>> queryParams = Map.of("uri", List.of("abc/pqr"));
-            HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryParams, Map.of());
-            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, httpExtension, Person[].class).block());
+            persons = Arrays.asList(
+                client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(9, persons.size());
 
             Person person = new Person();
@@ -104,7 +104,8 @@ public class MethodInvokeIT extends BaseIT {
 
             client.invokeMethod(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
 
-            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(
+                client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             Person resultPerson = persons.get(1);
             assertEquals("John", resultPerson.getName());
             assertEquals("Smith", resultPerson.getLastName());
@@ -132,7 +133,8 @@ public class MethodInvokeIT extends BaseIT {
     public void testInvokeException() throws Exception {
         try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
-            MethodInvokeServiceProtos.SleepRequest req = MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
+            MethodInvokeServiceProtos.SleepRequest req =
+                MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", -9, HttpExtension.POST).block());
 
@@ -141,6 +143,26 @@ public class MethodInvokeIT extends BaseIT {
             assertNotNull(exception.getMessage());
             assertTrue(exception.getMessage().contains("HTTP status code: 500"));
             assertTrue(new String(exception.getPayload()).contains("Internal Server Error"));
+        }
+    }
+
+    @Test
+    public void testInvokeQueryParamEncoding() throws Exception {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
+
+            String uri = "abc/pqr";
+            Map<String, List<String>> queryParams = Map.of("uri", List.of(uri));
+            HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryParams, Map.of());
+            JsonNode result = client.invokeMethod(
+                daprRun.getAppName(),
+                "/query",
+                null,
+                httpExtension,
+                JsonNode.class
+            ).block();
+
+            assertEquals(uri, result.get("uri").asText());
         }
     }
 }
