@@ -36,11 +36,11 @@ public class MethodInvokeIT extends BaseIT {
     @BeforeEach
     public void init() throws Exception {
         daprRun = startDaprApp(
-            MethodInvokeIT.class.getSimpleName() + "http",
-            MethodInvokeService.SUCCESS_MESSAGE,
-            MethodInvokeService.class,
-            true,
-            30000);
+          MethodInvokeIT.class.getSimpleName() + "http",
+          MethodInvokeService.SUCCESS_MESSAGE,
+          MethodInvokeService.class,
+          true,
+          30000);
         daprRun.waitForAppHealth(20000);
     }
 
