@@ -46,6 +46,9 @@ public class MethodInvokeIT extends BaseIT {
 
     @Test
     public void testInvoke() throws Exception {
+
+        // At this point, it is guaranteed that the service above is running and all ports being listened to.
+
         try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
             for (int i = 0; i < NUM_MESSAGES; i++) {
@@ -61,14 +64,11 @@ public class MethodInvokeIT extends BaseIT {
 
             client.invokeMethod(daprRun.getAppName(), "messages/1", null, HttpExtension.DELETE).block();
 
-            messages =
-                client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals(9, messages.size());
 
-            client.invokeMethod(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT)
-                .block();
-            messages =
-                client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
+            client.invokeMethod(daprRun.getAppName(), "messages/2", "updated message".getBytes(), HttpExtension.PUT).block();
+            messages = client.invokeMethod(daprRun.getAppName(), "messages", null, HttpExtension.GET, Map.class).block();
             assertEquals("updated message", messages.get("2"));
         }
     }
@@ -87,14 +87,12 @@ public class MethodInvokeIT extends BaseIT {
                 System.out.println("Invoke method persons with parameter : " + person);
             }
 
-            List<Person> persons = Arrays.asList(
-                client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            List<Person> persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(10, persons.size());
 
             client.invokeMethod(daprRun.getAppName(), "persons/1", null, HttpExtension.DELETE).block();
 
-            persons = Arrays.asList(
-                client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             assertEquals(9, persons.size());
 
             Person person = new Person();
@@ -104,8 +102,7 @@ public class MethodInvokeIT extends BaseIT {
 
             client.invokeMethod(daprRun.getAppName(), "persons/2", person, HttpExtension.PUT).block();
 
-            persons = Arrays.asList(
-                client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
+            persons = Arrays.asList(client.invokeMethod(daprRun.getAppName(), "persons", null, HttpExtension.GET, Person[].class).block());
             Person resultPerson = persons.get(1);
             assertEquals("John", resultPerson.getName());
             assertEquals("Smith", resultPerson.getLastName());
@@ -133,8 +130,7 @@ public class MethodInvokeIT extends BaseIT {
     public void testInvokeException() throws Exception {
         try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
             client.waitForSidecar(10000).block();
-            MethodInvokeServiceProtos.SleepRequest req =
-                MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
+            MethodInvokeServiceProtos.SleepRequest req = MethodInvokeServiceProtos.SleepRequest.newBuilder().setSeconds(-9).build();
             DaprException exception = assertThrows(DaprException.class, () ->
                 client.invokeMethod(daprRun.getAppName(), "sleep", -9, HttpExtension.POST).block());
 

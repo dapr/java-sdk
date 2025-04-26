@@ -78,7 +78,7 @@ public class MethodInvokeController {
 
     @GetMapping(path = "/persons")
     public List<Person> getPersons() {
-      return persons;
+        return persons;
     }
 
     @PostMapping(path = "/sleep")
