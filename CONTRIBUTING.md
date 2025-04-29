@@ -51,6 +51,11 @@ Before you file an issue, make sure you've checked the following:
 
 This section describes the guidelines for contributing code / docs to Dapr.
 
+### Things to consider when adding new API to SDK
+
+1. All the new API's go under [dapr-sdk maven package](https://github.com/dapr/java-sdk/tree/master/sdk)
+2. Make sure there is an example talking about how to use the API along with a README. [Example](https://github.com/dapr/java-sdk/pull/1235/files#diff-69ed756c4c01fd5fa884aac030dccb8f3f4d4fefa0dc330862d55a6f87b34a14)
+
 ### Pull Requests
 
 All contributions come through pull requests. To submit a proposed change, we recommend following this workflow:
@@ -64,6 +69,7 @@ All contributions come through pull requests. To submit a proposed change, we re
 6. Commit and open a PR
 7. Wait for the CI process to finish and make sure all checks are green
 8. A maintainer of the project will be assigned, and you can expect a review within a few days
+9. All the files have the Copyright header.
 
 ### Configure the code style with checkstyle
 
