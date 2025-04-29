@@ -24,7 +24,6 @@ import reactor.util.context.ContextView;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -324,10 +323,17 @@ public class DaprHttp implements AutoCloseable {
   private static URI createUri(URI uri, String[] pathSegments, Map<String, List<String>> urlParameters) {
     String path = createPath(uri, pathSegments);
     String query = createQuery(urlParameters);
+    StringBuilder result = new StringBuilder();
+
+    result.append(uri.getScheme()).append("://").append(uri.getAuthority()).append(path);
+
+    if (query != null) {
+      result.append("?").append(query);
+    }
 
     try {
-      return new URI(uri.getScheme(), uri.getAuthority(), path, query, null);
-    } catch (URISyntaxException exception) {
+      return URI.create(result.toString());
+    } catch (IllegalArgumentException exception) {
       throw new DaprException(exception);
     }
   }
@@ -346,6 +352,10 @@ public class DaprHttp implements AutoCloseable {
     }
 
     for (String segment : pathSegments) {
+      if (segment == null || segment.isEmpty()) {
+        continue; // Skip empty segments
+      }
+
       pathBuilder.append(encodePathSegment(segment)).append("/"); // Encode each segment
     }
 
@@ -363,6 +373,11 @@ public class DaprHttp implements AutoCloseable {
 
     for (Map.Entry<String, List<String>> entry : urlParameters.entrySet()) {
       String key = entry.getKey();
+
+      if (key == null || key.isEmpty()) {
+        continue; // Skip empty keys
+      }
+
       List<String> values = entry.getValue();
 
       for (String value : values) {
