@@ -76,11 +76,6 @@ public class DemoConversationAI {
 }
 ```
 
-Get into the examples' directory:
-```sh
-cd examples
-```
-
 Use the following command to run this example-
 
 <!-- STEP
