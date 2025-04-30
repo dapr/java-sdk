@@ -28,7 +28,7 @@ cd java-sdk
 Then build the Maven project:
 
 ```sh
-# make sure you are in the `java-sdk` directory.
+# make sure you are in the `java-sdk` directory
 mvn install
 ```
 
