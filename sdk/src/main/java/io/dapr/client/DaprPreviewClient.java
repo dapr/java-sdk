@@ -17,6 +17,8 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
@@ -304,4 +306,12 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @throws IllegalArgumentException If the request or its required fields like name are null or empty.
    */
   public Mono<Void> deleteJob(DeleteJobRequest deleteJobRequest);
+
+  /*
+   * Converse with an LLM.
+   *
+   * @param conversationRequest request to be passed to the LLM.
+   * @return {@link ConversationResponse}.
+   */
+  public Mono<ConversationResponse> converse(ConversationRequest conversationRequest);
 }

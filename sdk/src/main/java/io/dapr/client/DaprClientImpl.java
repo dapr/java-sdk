@@ -27,6 +27,10 @@ import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationOutput;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
@@ -99,7 +103,6 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -1550,6 +1553,79 @@ public class DaprClientImpl extends AbstractDaprClient {
                 throw DaprException.propagate(ex);
               }
             });
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConversationResponse> converse(ConversationRequest conversationRequest) {
+
+    try {
+      validateConversationRequest(conversationRequest);
+
+      DaprProtos.ConversationRequest.Builder protosConversationRequestBuilder = DaprProtos.ConversationRequest
+          .newBuilder().setTemperature(conversationRequest.getTemperature())
+          .setScrubPII(conversationRequest.isScrubPii())
+          .setName(conversationRequest.getName());
+
+      if (conversationRequest.getContextId() != null) {
+        protosConversationRequestBuilder.setContextID(conversationRequest.getContextId());
+      }
+
+      for (ConversationInput input : conversationRequest.getInputs()) {
+        if (input.getContent() == null || input.getContent().isEmpty()) {
+          throw new IllegalArgumentException("Conversation input content cannot be null or empty.");
+        }
+
+        DaprProtos.ConversationInput.Builder conversationInputOrBuilder = DaprProtos.ConversationInput.newBuilder()
+            .setContent(input.getContent())
+            .setScrubPII(input.isScrubPii());
+
+        if (input.getRole() != null) {
+          conversationInputOrBuilder.setRole(input.getRole().toString());
+        }
+
+        protosConversationRequestBuilder.addInputs(conversationInputOrBuilder.build());
+      }
+
+      Mono<DaprProtos.ConversationResponse> conversationResponseMono = Mono.deferContextual(
+          context -> this.createMono(
+              it -> intercept(context, asyncStub)
+                  .converseAlpha1(protosConversationRequestBuilder.build(), it)
+          )
+      );
+
+      return conversationResponseMono.map(conversationResponse -> {
+
+        List<ConversationOutput> conversationOutputs = new ArrayList<>();
+        for (DaprProtos.ConversationResult conversationResult : conversationResponse.getOutputsList()) {
+          Map<String, byte[]> parameters = new HashMap<>();
+          for (Map.Entry<String, Any> entrySet : conversationResult.getParametersMap().entrySet()) {
+            parameters.put(entrySet.getKey(), entrySet.getValue().toByteArray());
+          }
+
+          ConversationOutput conversationOutput =
+              new ConversationOutput(conversationResult.getResult(), parameters);
+          conversationOutputs.add(conversationOutput);
+        }
+
+        return new ConversationResponse(conversationResponse.getContextID(), conversationOutputs);
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private void validateConversationRequest(ConversationRequest conversationRequest) {
+    if ((conversationRequest.getName() == null) || (conversationRequest.getName().trim().isEmpty())) {
+      throw new IllegalArgumentException("LLM name cannot be null or empty.");
+    }
+
+    if ((conversationRequest.getInputs() == null) || (conversationRequest
+        .getInputs().isEmpty())) {
+      throw new IllegalArgumentException("Conversation inputs cannot be null or empty.");
+    }
   }
 
   private DaprMetadata buildDaprMetadata(DaprProtos.GetMetadataResponse response) throws IOException {

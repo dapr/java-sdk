@@ -45,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     classes = {
-        TestDaprJobsConfiguration.class,
+        DaprPreviewClientConfiguration.class,
         TestJobsApplication.class
     }
 )
