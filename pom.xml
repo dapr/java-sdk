@@ -356,6 +356,11 @@
         <artifactId>dapr-sdk-workflows</artifactId>
         <version>${dapr.sdk.alpha.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${wiremock.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
