@@ -26,6 +26,9 @@ import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.JobSchedule;
+import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -71,6 +74,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dapr.utils.TestUtils.assertThrowsDaprException;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -110,7 +114,7 @@ public class DaprPreviewClientGrpcTest {
     daprHttp = mock(DaprHttp.class);
     when(daprStub.withInterceptors(any())).thenReturn(daprStub);
     previewClient = new DaprClientImpl(
-        channel, daprStub, daprHttp, new DefaultObjectSerializer(), new DefaultObjectSerializer());
+            channel, daprStub, daprHttp, new DefaultObjectSerializer(), new DefaultObjectSerializer());
     doNothing().when(channel).close();
   }
 
@@ -128,28 +132,28 @@ public class DaprPreviewClientGrpcTest {
     }).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
     assertThrowsDaprException(
-        StatusRuntimeException.class,
-        "INVALID_ARGUMENT",
-        "INVALID_ARGUMENT: bad bad argument",
-        () -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
-            Collections.EMPTY_LIST)).block());
+            StatusRuntimeException.class,
+            "INVALID_ARGUMENT",
+            "INVALID_ARGUMENT: bad bad argument",
+            () -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+                    Collections.EMPTY_LIST)).block());
   }
 
   @Test
   public void publishEventsCallbackExceptionThrownTest() {
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad bad argument"));
       return null;
     }).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
     assertThrowsDaprException(
-        ExecutionException.class,
-        "INVALID_ARGUMENT",
-        "INVALID_ARGUMENT: bad bad argument",
-        () -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
-            Collections.EMPTY_LIST)).block());
+            ExecutionException.class,
+            "INVALID_ARGUMENT",
+            "INVALID_ARGUMENT: bad bad argument",
+            () -> previewClient.publishEvents(new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
+                    Collections.EMPTY_LIST)).block());
   }
 
   @Test
@@ -157,7 +161,7 @@ public class DaprPreviewClientGrpcTest {
     DaprObjectSerializer mockSerializer = mock(DaprObjectSerializer.class);
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
       observer.onCompleted();
       return null;
@@ -165,9 +169,9 @@ public class DaprPreviewClientGrpcTest {
 
 
     BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "testEntry"
-        , "application/octet-stream", null);
+            , "application/octet-stream", null);
     BulkPublishRequest<String> wrongReq = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
-        Collections.singletonList(entry));
+            Collections.singletonList(entry));
 
     assertThrows(IllegalArgumentException.class, () -> previewClient.publishEvents(wrongReq).block());
   }
@@ -178,30 +182,30 @@ public class DaprPreviewClientGrpcTest {
     previewClient = new DaprClientImpl(channel, daprStub, daprHttp, mockSerializer, new DefaultObjectSerializer());
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
       observer.onCompleted();
       return null;
     }).when(daprStub).publishEvent(any(DaprProtos.PublishEventRequest.class), any());
     BulkPublishEntry<Map<String, String>> entry = new BulkPublishEntry<>("1", new HashMap<>(),
-        "application/json", null);
+            "application/json", null);
     BulkPublishRequest<Map<String, String>> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
-        Collections.singletonList(entry));
+            Collections.singletonList(entry));
     when(mockSerializer.serialize(any())).thenThrow(IOException.class);
     Mono<BulkPublishResponse<Map<String, String>>> result = previewClient.publishEvents(req);
 
     assertThrowsDaprException(
-        IOException.class,
-        "UNKNOWN",
-        "UNKNOWN: ",
-        () -> result.block());
+            IOException.class,
+            "UNKNOWN",
+            "UNKNOWN: ",
+            () -> result.block());
   }
 
   @Test
   public void publishEventsTest() {
     doAnswer((Answer<BulkPublishResponse>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
       observer.onNext(builder.build());
       observer.onCompleted();
@@ -209,9 +213,9 @@ public class DaprPreviewClientGrpcTest {
     }).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
     BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "test",
-        "text/plain", null);
+            "text/plain", null);
     BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
-        Collections.singletonList(entry));
+            Collections.singletonList(entry));
     Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(req);
     BulkPublishResponse res = result.block();
     Assertions.assertNotNull(res);
@@ -222,7 +226,7 @@ public class DaprPreviewClientGrpcTest {
   public void publishEventsWithoutMetaTest() {
     doAnswer((Answer<BulkPublishResponse>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
       observer.onNext(builder.build());
       observer.onCompleted();
@@ -230,7 +234,7 @@ public class DaprPreviewClientGrpcTest {
     }).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
     Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
-        "text/plain", Collections.singletonList("test"));
+            "text/plain", Collections.singletonList("test"));
     BulkPublishResponse<String> res = result.block();
     Assertions.assertNotNull(res);
     assertEquals( 0, res.getFailedEntries().size(), "expected no entries in failed entries list");
@@ -240,7 +244,7 @@ public class DaprPreviewClientGrpcTest {
   public void publishEventsWithRequestMetaTest() {
     doAnswer((Answer<BulkPublishResponse>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       DaprProtos.BulkPublishResponse.Builder builder = DaprProtos.BulkPublishResponse.newBuilder();
       observer.onNext(builder.build());
       observer.onCompleted();
@@ -248,9 +252,9 @@ public class DaprPreviewClientGrpcTest {
     }).when(daprStub).bulkPublishEventAlpha1(any(DaprProtos.BulkPublishRequest.class), any());
 
     Mono<BulkPublishResponse<String>> result = previewClient.publishEvents(PUBSUB_NAME, TOPIC_NAME,
-         "text/plain", new HashMap<String, String>(){{
-          put("ttlInSeconds", "123");
-        }}, Collections.singletonList("test"));
+            "text/plain", new HashMap<String, String>(){{
+              put("ttlInSeconds", "123");
+            }}, Collections.singletonList("test"));
     BulkPublishResponse<String> res = result.block();
     Assertions.assertNotNull(res);
     assertEquals( 0, res.getFailedEntries().size(), "expected no entry in failed entries list");
@@ -260,7 +264,7 @@ public class DaprPreviewClientGrpcTest {
   public void publishEventsObjectTest() {
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
       observer.onCompleted();
       return null;
@@ -271,7 +275,7 @@ public class DaprPreviewClientGrpcTest {
       }
 
       if (!"{\"id\":1,\"value\":\"Event\"}".equals(new String(entry.getEvent().toByteArray())) &&
-          !"{\"value\":\"Event\",\"id\":1}".equals(new String(entry.getEvent().toByteArray()))) {
+              !"{\"value\":\"Event\",\"id\":1}".equals(new String(entry.getEvent().toByteArray()))) {
         return false;
       }
       return true;
@@ -280,9 +284,9 @@ public class DaprPreviewClientGrpcTest {
 
     DaprClientGrpcTest.MyObject event = new DaprClientGrpcTest.MyObject(1, "Event");
     BulkPublishEntry<DaprClientGrpcTest.MyObject> entry = new BulkPublishEntry<>("1", event,
-        "application/json", null);
+            "application/json", null);
     BulkPublishRequest<DaprClientGrpcTest.MyObject> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
-        Collections.singletonList(entry));
+            Collections.singletonList(entry));
     BulkPublishResponse<DaprClientGrpcTest.MyObject> result = previewClient.publishEvents(req).block();
     Assertions.assertNotNull(result);
     Assertions.assertEquals(0, result.getFailedEntries().size(), "expected no entries to be failed");
@@ -292,7 +296,7 @@ public class DaprPreviewClientGrpcTest {
   public void publishEventsContentTypeOverrideTest() {
     doAnswer((Answer<Void>) invocation -> {
       StreamObserver<DaprProtos.BulkPublishResponse> observer =
-          (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.BulkPublishResponse>) invocation.getArguments()[1];
       observer.onNext(DaprProtos.BulkPublishResponse.getDefaultInstance());
       observer.onCompleted();
       return null;
@@ -309,9 +313,9 @@ public class DaprPreviewClientGrpcTest {
     }), any());
 
     BulkPublishEntry<String> entry = new BulkPublishEntry<>("1", "hello",
-        "", null);
+            "", null);
     BulkPublishRequest<String> req = new BulkPublishRequest<>(PUBSUB_NAME, TOPIC_NAME,
-        Collections.singletonList(entry));
+            Collections.singletonList(entry));
     BulkPublishResponse<String> result = previewClient.publishEvents(req).block();
     Assertions.assertNotNull(result);
     Assertions.assertEquals( 0, result.getFailedEntries().size(), "expected no entries to be failed");
@@ -351,7 +355,7 @@ public class DaprPreviewClientGrpcTest {
       assertEquals(0, req.getMetadataCount());
 
       StreamObserver<DaprProtos.QueryStateResponse> observer = (StreamObserver<DaprProtos.QueryStateResponse>)
-          invocation.getArguments()[1];
+              invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
@@ -378,14 +382,14 @@ public class DaprPreviewClientGrpcTest {
       assertEquals(1, req.getMetadataCount());
 
       StreamObserver<DaprProtos.QueryStateResponse> observer = (StreamObserver<DaprProtos.QueryStateResponse>)
-          invocation.getArguments()[1];
+              invocation.getArguments()[1];
       observer.onNext(responseEnvelope);
       observer.onCompleted();
       return null;
     }).when(daprStub).queryStateAlpha1(any(DaprProtos.QueryStateRequest.class), any());
 
     QueryStateResponse<String> response = previewClient.queryState(QUERY_STORE_NAME, "query",
-        new HashMap<String, String>(){{ put("key", "error"); }}, String.class).block();
+            new HashMap<String, String>(){{ put("key", "error"); }}, String.class).block();
     assertNotNull(response);
     assertEquals(1, response.getResults().size(), "result size must be 1");
     assertEquals( "1", response.getResults().get(0).getKey(), "result must be same");
@@ -396,7 +400,7 @@ public class DaprPreviewClientGrpcTest {
   public void tryLock() {
 
     DaprProtos.TryLockResponse.Builder builder = DaprProtos.TryLockResponse.newBuilder()
-        .setSuccess(true);
+            .setSuccess(true);
 
     DaprProtos.TryLockResponse response = builder.build();
 
@@ -408,7 +412,7 @@ public class DaprPreviewClientGrpcTest {
       assertEquals(10, req.getExpiryInSeconds());
 
       StreamObserver<DaprProtos.TryLockResponse> observer =
-          (StreamObserver<DaprProtos.TryLockResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.TryLockResponse>) invocation.getArguments()[1];
       observer.onNext(response);
       observer.onCompleted();
       return null;
@@ -422,7 +426,7 @@ public class DaprPreviewClientGrpcTest {
   public void unLock() {
 
     DaprProtos.UnlockResponse.Builder builder = DaprProtos.UnlockResponse.newBuilder()
-        .setStatus(DaprProtos.UnlockResponse.Status.SUCCESS);
+            .setStatus(DaprProtos.UnlockResponse.Status.SUCCESS);
 
     DaprProtos.UnlockResponse response = builder.build();
 
@@ -433,7 +437,7 @@ public class DaprPreviewClientGrpcTest {
       assertEquals("owner", req.getLockOwner());
 
       StreamObserver<DaprProtos.UnlockResponse> observer =
-          (StreamObserver<DaprProtos.UnlockResponse>) invocation.getArguments()[1];
+              (StreamObserver<DaprProtos.UnlockResponse>) invocation.getArguments()[1];
       observer.onNext(response);
       observer.onCompleted();
       return null;
@@ -457,7 +461,7 @@ public class DaprPreviewClientGrpcTest {
 
     doAnswer((Answer<StreamObserver<DaprProtos.SubscribeTopicEventsRequestAlpha1>>) invocation -> {
       StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1> observer =
-          (StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
+              (StreamObserver<DaprProtos.SubscribeTopicEventsResponseAlpha1>) invocation.getArguments()[0];
       var emitterThread = new Thread(() -> {
         try {
           started.acquire();
@@ -467,27 +471,27 @@ public class DaprPreviewClientGrpcTest {
         observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.getDefaultInstance());
         for (int i = 0; i < numEvents; i++) {
           observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
-              .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
-                  .setId(Integer.toString(i))
-                  .setPubsubName(pubsubName)
-                  .setTopic(topicName)
-                  .setData(ByteString.copyFromUtf8("\"" + data + "\""))
-                  .setDataContentType("application/json")
-                  .build())
-              .build());
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                          .setId(Integer.toString(i))
+                          .setPubsubName(pubsubName)
+                          .setTopic(topicName)
+                          .setData(ByteString.copyFromUtf8("\"" + data + "\""))
+                          .setDataContentType("application/json")
+                          .build())
+                  .build());
         }
 
         for (int i = 0; i < numDrops; i++) {
           // Bad messages
           observer.onNext(DaprProtos.SubscribeTopicEventsResponseAlpha1.newBuilder()
-              .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
-                  .setId(UUID.randomUUID().toString())
-                  .setPubsubName("bad pubsub")
-                  .setTopic("bad topic")
-                  .setData(ByteString.copyFromUtf8("\"\""))
-                  .setDataContentType("application/json")
-                  .build())
-              .build());
+                  .setEventMessage(DaprAppCallbackProtos.TopicEventRequest.newBuilder()
+                          .setId(UUID.randomUUID().toString())
+                          .setPubsubName("bad pubsub")
+                          .setTopic("bad topic")
+                          .setData(ByteString.copyFromUtf8("\"\""))
+                          .setDataContentType("application/json")
+                          .build())
+                  .build());
         }
         observer.onCompleted();
       });
@@ -517,38 +521,38 @@ public class DaprPreviewClientGrpcTest {
     final AtomicInteger errorsToBeEmitted = new AtomicInteger(numErrors);
 
     var subscription = previewClient.subscribeToEvents(
-        "pubsubname",
-        "topic",
-        new SubscriptionListener<>() {
-          @Override
-          public Mono<Status> onEvent(CloudEvent<String> event) {
-            if (event.getPubsubName().equals(pubsubName) &&
-            event.getTopic().equals(topicName) &&
-            event.getData().equals(data)) {
+            "pubsubname",
+            "topic",
+            new SubscriptionListener<>() {
+              @Override
+              public Mono<Status> onEvent(CloudEvent<String> event) {
+                if (event.getPubsubName().equals(pubsubName) &&
+                        event.getTopic().equals(topicName) &&
+                        event.getData().equals(data)) {
 
-              // Simulate an error
-              if ((success.size() == 4 /* some random entry */) && errorsToBeEmitted.decrementAndGet() >= 0) {
-                throw new RuntimeException("simulated exception on event " + event.getId());
+                  // Simulate an error
+                  if ((success.size() == 4 /* some random entry */) && errorsToBeEmitted.decrementAndGet() >= 0) {
+                    throw new RuntimeException("simulated exception on event " + event.getId());
+                  }
+
+                  success.add(event.getId());
+                  if (success.size() >= numEvents) {
+                    gotAll.release();
+                  }
+                  return Mono.just(Status.SUCCESS);
+                }
+
+                dropCounter.incrementAndGet();
+                return Mono.just(Status.DROP);
               }
 
-              success.add(event.getId());
-              if (success.size() >= numEvents) {
-                gotAll.release();
+              @Override
+              public void onError(RuntimeException exception) {
+                errors.add(exception.getMessage());
               }
-              return Mono.just(Status.SUCCESS);
-            }
 
-            dropCounter.incrementAndGet();
-            return Mono.just(Status.DROP);
-          }
-
-          @Override
-          public void onError(RuntimeException exception) {
-            errors.add(exception.getMessage());
-          }
-
-        },
-        TypeRef.STRING);
+            },
+            TypeRef.STRING);
 
     gotAll.acquire();
     subscription.close();
@@ -559,16 +563,151 @@ public class DaprPreviewClientGrpcTest {
   }
 
   @Test
+  public void converseShouldThrowIllegalArgumentExceptionWhenComponentNameIsNull() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput("Hello there !"));
+
+    IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () ->
+                    previewClient.converse(new ConversationRequest(null, inputs)).block());
+    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseShouldThrowIllegalArgumentExceptionWhenConversationComponentIsEmpty() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput("Hello there !"));
+
+    IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () ->
+                    previewClient.converse(new ConversationRequest("", inputs)).block());
+    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputsIsEmpty() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
+
+    IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () ->
+                    previewClient.converse(new ConversationRequest("openai", inputs)).block());
+    assertEquals("Conversation inputs cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputsIsNull() throws Exception {
+    IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () ->
+                    previewClient.converse(new ConversationRequest("openai", null)).block());
+    assertEquals("Conversation inputs cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputContentIsNull() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput(null));
+
+    IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () ->
+                    previewClient.converse(new ConversationRequest("openai", inputs)).block());
+    assertEquals("Conversation input content cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseShouldThrowIllegalArgumentExceptionWhenInputContentIsEmpty() throws Exception {
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput(""));
+
+    IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () ->
+                    previewClient.converse(new ConversationRequest("openai", inputs)).block());
+    assertEquals("Conversation input content cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseShouldReturnConversationResponseWhenRequiredInputsAreValid() throws Exception {
+    DaprProtos.ConversationResponse conversationResponse = DaprProtos.ConversationResponse.newBuilder()
+            .addOutputs(DaprProtos.ConversationResult.newBuilder().setResult("Hello How are you").build()).build();
+
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ConversationResponse> observer = invocation.getArgument(1);
+      observer.onNext(conversationResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha1(any(DaprProtos.ConversationRequest.class), any());
+
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(new ConversationInput("Hello there"));
+    ConversationResponse response =
+            previewClient.converse(new ConversationRequest("openai", inputs)).block();
+
+    ArgumentCaptor<DaprProtos.ConversationRequest> captor =
+            ArgumentCaptor.forClass(DaprProtos.ConversationRequest.class);
+    verify(daprStub, times(1)).converseAlpha1(captor.capture(), Mockito.any());
+
+    DaprProtos.ConversationRequest conversationRequest = captor.getValue();
+
+    assertEquals("openai", conversationRequest.getName());
+    assertEquals("Hello there", conversationRequest.getInputs(0).getContent());
+    assertEquals("Hello How are you",
+            response.getConversationOutputs().get(0).getResult());
+  }
+
+  @Test
+  public void converseShouldReturnConversationResponseWhenRequiredAndOptionalInputsAreValid() throws Exception {
+    DaprProtos.ConversationResponse conversationResponse = DaprProtos.ConversationResponse.newBuilder()
+            .setContextID("contextId")
+            .addOutputs(DaprProtos.ConversationResult.newBuilder().setResult("Hello How are you").build()).build();
+
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ConversationResponse> observer = invocation.getArgument(1);
+      observer.onNext(conversationResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha1(any(DaprProtos.ConversationRequest.class), any());
+
+    ConversationInput daprConversationInput = new ConversationInput("Hello there")
+            .setRole("Assistant")
+            .setScrubPii(true);
+
+    List<ConversationInput> inputs = new ArrayList<>();
+    inputs.add(daprConversationInput);
+
+    ConversationResponse response =
+            previewClient.converse(new ConversationRequest("openai", inputs)
+                    .setContextId("contextId")
+                    .setScrubPii(true)
+                    .setTemperature(1.1d)).block();
+
+    ArgumentCaptor<DaprProtos.ConversationRequest> captor =
+            ArgumentCaptor.forClass(DaprProtos.ConversationRequest.class);
+    verify(daprStub, times(1)).converseAlpha1(captor.capture(), Mockito.any());
+
+    DaprProtos.ConversationRequest conversationRequest = captor.getValue();
+
+    assertEquals("openai", conversationRequest.getName());
+    assertEquals("contextId", conversationRequest.getContextID());
+    assertTrue(conversationRequest.getScrubPII());
+    assertEquals(1.1d, conversationRequest.getTemperature(), 0d);
+    assertEquals("Hello there", conversationRequest.getInputs(0).getContent());
+    assertTrue(conversationRequest.getInputs(0).getScrubPII());
+    assertEquals("Assistant", conversationRequest.getInputs(0).getRole());
+    assertEquals("contextId", response.getContextId());
+    assertEquals("Hello How are you",
+            response.getConversationOutputs().get(0).getResult());
+  }
+
+  @Test
   public void scheduleJobShouldSucceedWhenAllFieldsArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-      .withZone(ZoneOffset.UTC);
+            .withZone(ZoneOffset.UTC);
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
-      JobSchedule.fromString("*/5 * * * *"))
-      .setData("testData".getBytes())
-      .setTtl(Instant.now().plus(1, ChronoUnit.DAYS))
-      .setRepeat(5)
-      .setDueTime(Instant.now().plus(10, ChronoUnit.MINUTES));
+            JobSchedule.fromString("*/5 * * * *"))
+            .setData("testData".getBytes())
+            .setTtl(Instant.now().plus(1, ChronoUnit.DAYS))
+            .setRepeat(5)
+            .setDueTime(Instant.now().plus(10, ChronoUnit.MINUTES));
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
@@ -579,14 +718,14 @@ public class DaprPreviewClientGrpcTest {
     assertDoesNotThrow(() -> previewClient.scheduleJob(expectedScheduleJobRequest).block());
 
     ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-      ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+            ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
     DaprProtos.ScheduleJobRequest actualScheduleJobReq = captor.getValue();
 
     assertEquals("testJob", actualScheduleJobReq.getJob().getName());
     assertEquals("testData",
-      new String(actualScheduleJobReq.getJob().getData().getValue().toByteArray(), StandardCharsets.UTF_8));
+            new String(actualScheduleJobReq.getJob().getData().getValue().toByteArray(), StandardCharsets.UTF_8));
     assertEquals("*/5 * * * *", actualScheduleJobReq.getJob().getSchedule());
     assertEquals(iso8601Formatter.format(expectedScheduleJobRequest.getTtl()), actualScheduleJobReq.getJob().getTtl());
     assertEquals(expectedScheduleJobRequest.getRepeats(), actualScheduleJobReq.getJob().getRepeats());
@@ -596,7 +735,7 @@ public class DaprPreviewClientGrpcTest {
   @Test
   public void scheduleJobShouldSucceedWhenRequiredFieldsNameAndDueTimeArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-      .withZone(ZoneOffset.UTC);
+            .withZone(ZoneOffset.UTC);
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
@@ -605,11 +744,11 @@ public class DaprPreviewClientGrpcTest {
     }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest =
-      new ScheduleJobRequest("testJob", Instant.now().plus(10, ChronoUnit.MINUTES));
+            new ScheduleJobRequest("testJob", Instant.now().plus(10, ChronoUnit.MINUTES));
     assertDoesNotThrow(() -> previewClient.scheduleJob(expectedScheduleJobRequest).block());
 
     ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-      ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+            ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
     DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
@@ -620,13 +759,13 @@ public class DaprPreviewClientGrpcTest {
     assertEquals(0, job.getRepeats());
     assertFalse(job.hasTtl());
     assertEquals(iso8601Formatter.format(expectedScheduleJobRequest.getDueTime()),
-      actualScheduleJobRequest.getJob().getDueTime());
+            actualScheduleJobRequest.getJob().getDueTime());
   }
 
   @Test
   public void scheduleJobShouldSucceedWhenRequiredFieldsNameAndScheduleArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-      .withZone(ZoneOffset.UTC);
+            .withZone(ZoneOffset.UTC);
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
@@ -635,11 +774,11 @@ public class DaprPreviewClientGrpcTest {
     }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
-      JobSchedule.fromString("* * * * * *"));
+            JobSchedule.fromString("* * * * * *"));
     assertDoesNotThrow(() -> previewClient.scheduleJob(expectedScheduleJobRequest).block());
 
     ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
-      ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+            ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
 
     verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
     DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
@@ -681,24 +820,24 @@ public class DaprPreviewClientGrpcTest {
   @Test
   public void getJobShouldReturnResponseWhenAllFieldsArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-      .withZone(ZoneOffset.UTC);
+            .withZone(ZoneOffset.UTC);
 
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     DaprProtos.Job job = DaprProtos.Job.newBuilder()
-      .setName("testJob")
-      .setTtl(OffsetDateTime.now().format(iso8601Formatter))
-      .setData(Any.newBuilder().setValue(ByteString.copyFrom("testData".getBytes())).build())
-      .setSchedule("*/5 * * * *")
-      .setRepeats(5)
-      .setDueTime(iso8601Formatter.format(Instant.now().plus(10, ChronoUnit.MINUTES)))
-      .build();
+            .setName("testJob")
+            .setTtl(OffsetDateTime.now().format(iso8601Formatter))
+            .setData(Any.newBuilder().setValue(ByteString.copyFrom("testData".getBytes())).build())
+            .setSchedule("*/5 * * * *")
+            .setRepeats(5)
+            .setDueTime(iso8601Formatter.format(Instant.now().plus(10, ChronoUnit.MINUTES)))
+            .build();
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
       observer.onNext(DaprProtos.GetJobResponse.newBuilder()
-        .setJob(job)
-        .build());
+              .setJob(job)
+              .build());
       observer.onCompleted();
       return null;
     }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
@@ -720,15 +859,15 @@ public class DaprPreviewClientGrpcTest {
     GetJobRequest getJobRequest = new GetJobRequest("testJob");
 
     DaprProtos.Job job = DaprProtos.Job.newBuilder()
-      .setName("testJob")
-      .setSchedule("0 0 0 1 1 *")
-      .build();
+            .setName("testJob")
+            .setSchedule("0 0 0 1 1 *")
+            .build();
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
       observer.onNext(DaprProtos.GetJobResponse.newBuilder()
-        .setJob(job)
-        .build());
+              .setJob(job)
+              .build());
       observer.onCompleted();
       return null;
     }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
@@ -751,15 +890,15 @@ public class DaprPreviewClientGrpcTest {
 
     String datetime = OffsetDateTime.now().toString();
     DaprProtos.Job job = DaprProtos.Job.newBuilder()
-      .setName("testJob")
-      .setDueTime(datetime)
-      .build();
+            .setName("testJob")
+            .setDueTime(datetime)
+            .build();
 
     doAnswer(invocation -> {
       StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
       observer.onNext(DaprProtos.GetJobResponse.newBuilder()
-        .setJob(job)
-        .build());
+              .setJob(job)
+              .build());
       observer.onCompleted();
       return null;
     }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
@@ -846,15 +985,15 @@ public class DaprPreviewClientGrpcTest {
   }
 
   private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)
-      throws JsonProcessingException {
+          throws JsonProcessingException {
     List<DaprProtos.QueryStateItem> items = new ArrayList<>();
     for (QueryStateItem<?> item: resp) {
       items.add(buildQueryStateItem(item));
     }
     return DaprProtos.QueryStateResponse.newBuilder()
-        .addAllResults(items)
-        .setToken(token)
-        .build();
+            .addAllResults(items)
+            .setToken(token)
+            .build();
   }
 
   private DaprProtos.QueryStateItem buildQueryStateItem(QueryStateItem<?> item) throws JsonProcessingException {
