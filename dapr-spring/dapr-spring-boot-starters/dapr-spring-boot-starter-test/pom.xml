@@ -23,12 +23,10 @@
         <dependency>
             <groupId>io.dapr.spring</groupId>
             <artifactId>dapr-spring-boot-tests</artifactId>
-            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dapr</groupId>
             <artifactId>testcontainers-dapr</artifactId>
-            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
