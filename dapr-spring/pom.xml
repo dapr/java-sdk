@@ -70,6 +70,11 @@
         <artifactId>junit-jupiter</artifactId>
         <version>${testcontainers.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>testcontainers-dapr</artifactId>
+        <version>${dapr.sdk.alpha.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -83,6 +88,16 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-actors</artifactId>
+      <version>${dapr.sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-workflows</artifactId>
+      <version>${dapr.sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-springboot</artifactId>
       <version>${dapr.sdk.version}</version>
     </dependency>
 
