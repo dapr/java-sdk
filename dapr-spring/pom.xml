@@ -35,6 +35,7 @@
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.10.2</junit.version>
     <dapr.spring.version>0.15.0-SNAPSHOT</dapr.spring.version>
+    <springframework.version>6.1.8</springframework.version>
   </properties>
 
   <dependencyManagement>
@@ -120,12 +121,22 @@
         <artifactId>dapr-sdk-springboot</artifactId>
         <version>${dapr.sdk.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>${springframework.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-beans</artifactId>
+        <version>${springframework.version}</version>
+      </dependency>
 
       <!-- Spring dependencies -->
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-web</artifactId>
-        <version>${springboot.version}</version>
+        <version>${springframework.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>

@@ -21,6 +21,10 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-messaging</artifactId>
       <optional>true</optional>
@@ -68,8 +72,19 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>testcontainers-dapr</artifactId>
-      <version>${dapr.sdk.alpha.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
     </dependency>
   </dependencies>
   <build>
