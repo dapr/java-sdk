@@ -83,6 +83,11 @@
       <version>${opentelemetry.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.zipkin.reporter2</groupId>
+      <artifactId>zipkin-reporter</artifactId>
+      <version>2.16.3</version>
+    </dependency>
+    <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-sdk-metrics</artifactId>
       <version>1.41.0</version>

@@ -2,9 +2,9 @@
 
 Thank you for your interest in Dapr!
 
-This project welcomes contributions and suggestions. Most contributions require you to signoff on your commits via 
-the Developer Certificate of Origin (DCO). When you submit a pull request, a DCO-bot will automatically determine 
-whether you need to provide signoff for your commit. Please follow the instructions provided by DCO-bot, as pull 
+This project welcomes contributions and suggestions. Most contributions require you to signoff on your commits via
+the Developer Certificate of Origin (DCO). When you submit a pull request, a DCO-bot will automatically determine
+whether you need to provide signoff for your commit. Please follow the instructions provided by DCO-bot, as pull
 requests cannot be merged until the author(s) have provided signoff to fulfill the DCO requirement.
 You may find more information on the DCO requirements [below](#developer-certificate-of-origin-signing-your-work).
 
@@ -34,27 +34,22 @@ There are 4 types of issues:
 Before you file an issue, make sure you've checked the following:
 
 1. Is it the right repository?
-    - The Dapr project is distributed across multiple repositories. Check the list of [repositories](https://github.com/dapr) if you aren't sure which repo is the correct one.
+   - The Dapr project is distributed across multiple repositories. Check the list of [repositories](https://github.com/dapr) if you aren't sure which repo is the correct one.
 1. Check for existing issues
-    - Before you create a new issue, please do a search in [open issues](https://github.com/dapr/java-sdk/issues) to see if the issue or feature request has already been filed.
-    - If you find your issue already exists, make relevant comments and add your [reaction](https://github.com/blog/2119-add-reaction-to-pull-requests-issues-and-comments). Use a reaction:
-        - 👍 up-vote
-        - 👎 down-vote
+   - Before you create a new issue, please do a search in [open issues](https://github.com/dapr/java-sdk/issues) to see if the issue or feature request has already been filed.
+   - If you find your issue already exists, make relevant comments and add your [reaction](https://github.com/blog/2119-add-reaction-to-pull-requests-issues-and-comments). Use a reaction:
+      - 👍 up-vote
+      - 👎 down-vote
 1. For bugs
-    - Check it's not an environment issue. For example, if running on Kubernetes, make sure prerequisites are in place. (state stores, bindings, etc.)
-    - You have as much data as possible. This usually comes in the form of logs and/or stacktrace. If running on Kubernetes or other environment, look at the logs of the Dapr services (runtime, operator, placement service). More details on how to get logs can be found [here](https://docs.dapr.io/operations/troubleshooting/logs-troubleshooting/).
+   - Check it's not an environment issue. For example, if running on Kubernetes, make sure prerequisites are in place. (state stores, bindings, etc.)
+   - You have as much data as possible. This usually comes in the form of logs and/or stacktrace. If running on Kubernetes or other environment, look at the logs of the Dapr services (runtime, operator, placement service). More details on how to get logs can be found [here](https://docs.dapr.io/operations/troubleshooting/logs-troubleshooting/).
 1. For proposals
-    - Many changes to the Dapr runtime may require changes to the API. In that case, the best place to discuss the potential feature is the main [Dapr repo](https://github.com/dapr/dapr).
-    - Other examples could include bindings, state stores or entirely new components.
+   - Many changes to the Dapr runtime may require changes to the API. In that case, the best place to discuss the potential feature is the main [Dapr repo](https://github.com/dapr/dapr).
+   - Other examples could include bindings, state stores or entirely new components.
 
 ## Contributing to Dapr
 
 This section describes the guidelines for contributing code / docs to Dapr.
-
-### Things to consider when adding new API to SDK
-
-1. All the new API's go under [dapr-sdk maven package](https://github.com/dapr/java-sdk/tree/master/sdk)
-2. Make sure there is an example talking about how to use the API along with a README. [Example](https://github.com/dapr/java-sdk/pull/1235/files#diff-69ed756c4c01fd5fa884aac030dccb8f3f4d4fefa0dc330862d55a6f87b34a14)
 
 ### Pull Requests
 
@@ -63,22 +58,21 @@ All contributions come through pull requests. To submit a proposed change, we re
 1. Make sure there's an issue (bug or proposal) raised, which sets the expectations for the contribution you are about to make.
 2. Fork the relevant repo and create a new branch
 3. Create your change
-    - Code changes require tests
+   - Code changes require tests
 4. Update relevant documentation for the change
 5. Check the code style
 6. Commit and open a PR
 7. Wait for the CI process to finish and make sure all checks are green
 8. A maintainer of the project will be assigned, and you can expect a review within a few days
-9. All the files have the Copyright header.
 
 ### Configure the code style with checkstyle
 
 The project contains a checkstyle file (`checkstyle.xml`) that must be used for formatting the code.
 
 * IntelliJ IDEA
-   You can use [CheckStyle-IDEA plugin](https://plugins.jetbrains.com/plugin/1065-checkstyle-idea).
+  You can use [CheckStyle-IDEA plugin](https://plugins.jetbrains.com/plugin/1065-checkstyle-idea).
 * VSCode
-   You can use [Checkstyle for Java](https://marketplace.visualstudio.com/items?itemName=shengchen.vscode-checkstyle).
+  You can use [Checkstyle for Java](https://marketplace.visualstudio.com/items?itemName=shengchen.vscode-checkstyle).
 * Eclipse
   You can use [Eclipse Checkstyle Plugin](https://checkstyle.org/eclipse-cs/#!/)
 
