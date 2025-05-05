@@ -17,31 +17,25 @@ import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import org.slf4j.Logger;
 
-import java.time.Duration;
-
-public class TestWorkflow implements Workflow {
+public class TestSenderWorkflow implements Workflow {
 
   @Override
   public WorkflowStub create() {
     return ctx -> {
       Logger logger = ctx.getLogger();
       String instanceId = ctx.getInstanceId();
-      logger.info("Starting Workflow: " + ctx.getName());
+      logger.info("Starting Sender Workflow: " + ctx.getName());
       logger.info("Instance ID: " + instanceId);
       logger.info("Current Orchestration Time: " + ctx.getCurrentInstant());
 
-      TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
+      TestSenderWorkflowPayload workflowPayload = ctx.getInput(TestSenderWorkflowPayload.class);
       workflowPayload.setWorkflowId(instanceId);
 
-      TestWorkflowPayload payloadAfterFirst =
-          ctx.callActivity(FirstActivity.class.getName(), workflowPayload, TestWorkflowPayload.class).await();
+      ctx.sendEvent(workflowPayload.getSendToworkflowId(), "MoveForward");
 
-      ctx.waitForExternalEvent("MoveForward").await();
+      workflowPayload.getPayloads().add("MoveForward event sent");
 
-      TestWorkflowPayload payloadAfterSecond =
-          ctx.callActivity(SecondActivity.class.getName(), payloadAfterFirst, TestWorkflowPayload.class).await();
-
-      ctx.complete(payloadAfterSecond);
+      ctx.complete(workflowPayload);
     };
   }
 

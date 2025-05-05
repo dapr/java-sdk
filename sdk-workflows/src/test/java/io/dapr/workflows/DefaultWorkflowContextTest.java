@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -53,6 +52,7 @@ public class DefaultWorkflowContextTest {
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
     context = new DefaultWorkflowContext(mockInnerContext);
+    
     testWorkflowContext = new WorkflowContext() {
       @Override
       public Logger getLogger() {
@@ -133,6 +133,10 @@ public class DefaultWorkflowContextTest {
 
       @Override
       public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
+      }
+
+      @Override
+      public void sendEvent(String instanceID, String eventName, Object data) {
       }
     };
   }
@@ -326,5 +330,23 @@ public class DefaultWorkflowContextTest {
     RuntimeException runtimeException = assertThrows(RuntimeException.class, testWorkflowContext::newUuid);
     String expectedMessage = "No implementation found.";
     assertEquals(expectedMessage, runtimeException.getMessage());
+  }
+
+  @Test
+  public void sendEmptyEventTest() {
+    String expectedInstanceId = "TestInstanceId";
+    String expectedEventName = "TestEventName";
+    context.sendEvent(expectedInstanceId, expectedEventName);
+    verify(mockInnerContext, times(1)).sendEvent(expectedInstanceId, expectedEventName, null);
+  }
+
+  @Test
+  public void sendEventTest() {
+    String expectedInstanceId = "TestInstanceId";
+    String expectedEventName = "TestEventName";
+    Object expectedData = "TestData";
+
+    context.sendEvent(expectedInstanceId, expectedEventName, expectedData);
+    verify(mockInnerContext, times(1)).sendEvent(expectedInstanceId, expectedEventName, expectedData);
   }
 }

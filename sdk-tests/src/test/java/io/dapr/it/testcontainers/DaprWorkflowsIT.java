@@ -103,7 +103,7 @@ public class DaprWorkflowsIT {
     String instanceId = workflowClient.scheduleNewWorkflow(TestWorkflow.class, payload);
 
     workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(10), false);
-    workflowClient.raiseEvent(instanceId, "MoveForward", payload);
+    workflowClient.raiseEvent(instanceId, "MoveForward", null);
 
     Duration timeout = Duration.ofSeconds(10);
     WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
@@ -118,8 +118,41 @@ public class DaprWorkflowsIT {
     assertEquals(instanceId, workflowOutput.getWorkflowId());
   }
 
+  @Test
+  public void testSendEventWorflowToWorkflow() throws Exception {
+    TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
+    String instanceId = workflowClient.scheduleNewWorkflow(TestWorkflow.class, payload);
+    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(10), false);
+    
+    TestSenderWorkflowPayload senderPayload = new TestSenderWorkflowPayload(instanceId, new ArrayList<>());
+    String senderInstanceId = workflowClient.scheduleNewWorkflow(TestSenderWorkflow.class, senderPayload);
+    workflowClient.waitForInstanceStart(senderInstanceId, Duration.ofSeconds(10), false);
+      
+    Duration timeout = Duration.ofSeconds(10);
+
+    WorkflowInstanceStatus senderWorkflowStatus = workflowClient.waitForInstanceCompletion(senderInstanceId, timeout, true);
+    assertNotNull(senderWorkflowStatus);
+
+    TestSenderWorkflowPayload senderWorkflowPayload = deserialize(senderWorkflowStatus.getSerializedOutput(), TestSenderWorkflowPayload.class);
+    assertEquals(1, senderWorkflowPayload.getPayloads().size());
+    assertEquals("MoveForward event sent", senderWorkflowPayload.getPayloads().get(0));
+
+
+    WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+    TestWorkflowPayload workflowOutput = deserialize(workflowStatus.getSerializedOutput());
+    assertEquals(2, workflowOutput.getPayloads().size());
+    assertEquals("First Activity", workflowOutput.getPayloads().get(0));
+    assertEquals("Second Activity", workflowOutput.getPayloads().get(1));
+    assertEquals(instanceId, workflowOutput.getWorkflowId());
+  }
+
+
   private TestWorkflowPayload deserialize(String value) throws JsonProcessingException {
-    return OBJECT_MAPPER.readValue(value, TestWorkflowPayload.class);
+    return deserialize(value, TestWorkflowPayload.class);    
+  }
+
+  private <T> T deserialize(String value,  Class<T> clazz) throws JsonProcessingException {
+    return OBJECT_MAPPER.readValue(value, clazz);
   }
 
 }
