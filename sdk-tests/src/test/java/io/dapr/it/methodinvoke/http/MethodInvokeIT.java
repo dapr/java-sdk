@@ -1,7 +1,8 @@
 package io.dapr.it.methodinvoke.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
+import io.dapr.client.DaprHttp;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.exceptions.DaprException;
 import io.dapr.it.BaseIT;
@@ -138,6 +139,26 @@ public class MethodInvokeIT extends BaseIT {
             assertNotNull(exception.getMessage());
             assertTrue(exception.getMessage().contains("HTTP status code: 500"));
             assertTrue(new String(exception.getPayload()).contains("Internal Server Error"));
+        }
+    }
+
+    @Test
+    public void testInvokeQueryParamEncoding() throws Exception {
+        try (DaprClient client = daprRun.newDaprClientBuilder().build()) {
+            client.waitForSidecar(10000).block();
+
+            String uri = "abc/pqr";
+            Map<String, List<String>> queryParams = Map.of("uri", List.of(uri));
+            HttpExtension httpExtension = new HttpExtension(DaprHttp.HttpMethods.GET, queryParams, Map.of());
+            JsonNode result = client.invokeMethod(
+                daprRun.getAppName(),
+                "/query",
+                null,
+                httpExtension,
+                JsonNode.class
+            ).block();
+
+            assertEquals(uri, result.get("uri").asText());
         }
     }
 }

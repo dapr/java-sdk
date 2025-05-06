@@ -13,7 +13,9 @@
 
 package io.dapr.springboot;
 
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 @RequestMapping(value = {"v1", "v2"})
 public class MockController {

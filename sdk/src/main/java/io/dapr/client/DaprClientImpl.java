@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.client;
 
 import com.google.common.base.Strings;
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.dapr.client.domain.ActorMetadata;
@@ -26,18 +27,26 @@ import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationOutput;
+import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.DaprMetadata;
+import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.GetSecretRequest;
 import io.dapr.client.domain.GetStateRequest;
 import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
 import io.dapr.client.domain.QueryStateItem;
@@ -45,6 +54,7 @@ import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.RuleMetadata;
 import io.dapr.client.domain.SaveStateRequest;
+import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.client.domain.State;
 import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
@@ -90,9 +100,11 @@ import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
 
 import javax.annotation.Nonnull;
-
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1291,6 +1303,147 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  public Mono<Void> scheduleJob(ScheduleJobRequest scheduleJobRequest) {
+    try {
+      validateScheduleJobRequest(scheduleJobRequest);
+
+      DaprProtos.Job.Builder scheduleJobRequestBuilder = DaprProtos.Job.newBuilder();
+      scheduleJobRequestBuilder.setName(scheduleJobRequest.getName());
+
+      DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+              .withZone(ZoneOffset.UTC);
+
+      if (scheduleJobRequest.getData() != null) {
+        scheduleJobRequestBuilder.setData(Any.newBuilder()
+            .setValue(ByteString.copyFrom(scheduleJobRequest.getData())).build());
+      }
+
+      if (scheduleJobRequest.getSchedule() != null) {
+        scheduleJobRequestBuilder.setSchedule(scheduleJobRequest.getSchedule().getExpression());
+      }
+
+      if (scheduleJobRequest.getTtl() != null) {
+        scheduleJobRequestBuilder.setTtl(iso8601Formatter.format(scheduleJobRequest.getTtl()));
+      }
+
+      if (scheduleJobRequest.getRepeats() != null) {
+        scheduleJobRequestBuilder.setRepeats(scheduleJobRequest.getRepeats());
+      }
+
+      if (scheduleJobRequest.getDueTime() != null) {
+        scheduleJobRequestBuilder.setDueTime(iso8601Formatter.format(scheduleJobRequest.getDueTime()));
+      }
+
+      Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
+          Mono.deferContextual(context -> this.createMono(
+                  it -> intercept(context, asyncStub)
+                      .scheduleJobAlpha1(DaprProtos.ScheduleJobRequest.newBuilder()
+                          .setJob(scheduleJobRequestBuilder.build()).build(), it)
+              )
+          );
+
+      return scheduleJobResponseMono.then();
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Mono<GetJobResponse> getJob(GetJobRequest getJobRequest) {
+    try {
+      validateGetJobRequest(getJobRequest);
+
+      Mono<DaprProtos.GetJobResponse> getJobResponseMono =
+          Mono.deferContextual(context -> this.createMono(
+                  it -> intercept(context, asyncStub)
+                      .getJobAlpha1(DaprProtos.GetJobRequest.newBuilder()
+                          .setName(getJobRequest.getName()).build(), it)
+              )
+          );
+
+      return getJobResponseMono.map(response -> {
+        DaprProtos.Job job = response.getJob();
+        GetJobResponse getJobResponse = null;
+
+        if (job.hasSchedule() && job.hasDueTime()) {
+          getJobResponse = new GetJobResponse(job.getName(), JobSchedule.fromString(job.getSchedule()));
+          getJobResponse.setDueTime(Instant.parse(job.getDueTime()));
+        } else if (job.hasSchedule()) {
+          getJobResponse = new GetJobResponse(job.getName(), JobSchedule.fromString(job.getSchedule()));
+        } else {
+          getJobResponse = new GetJobResponse(job.getName(), Instant.parse(job.getDueTime()));
+        }
+
+        return getJobResponse
+            .setTtl(job.hasTtl() ? Instant.parse(job.getTtl()) : null)
+            .setData(job.hasData() ? job.getData().getValue().toByteArray() : null)
+            .setRepeat(job.hasRepeats() ? job.getRepeats() : null);
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Mono<Void> deleteJob(DeleteJobRequest deleteJobRequest) {
+    try {
+      validateDeleteJobRequest(deleteJobRequest);
+
+      Mono<DaprProtos.DeleteJobResponse> deleteJobResponseMono =
+          Mono.deferContextual(context -> this.createMono(
+                  it -> intercept(context, asyncStub)
+                      .deleteJobAlpha1(DaprProtos.DeleteJobRequest.newBuilder()
+                          .setName(deleteJobRequest.getName()).build(), it)
+              )
+          );
+
+      return deleteJobResponseMono.then();
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private void validateScheduleJobRequest(ScheduleJobRequest scheduleJobRequest) {
+    if (scheduleJobRequest == null) {
+      throw new IllegalArgumentException("scheduleJobRequest cannot be null");
+    }
+
+    if (scheduleJobRequest.getName() == null || scheduleJobRequest.getName().isEmpty()) {
+      throw new IllegalArgumentException("Name in the request cannot be null or empty");
+    }
+
+    if (scheduleJobRequest.getSchedule() == null && scheduleJobRequest.getDueTime() == null) {
+      throw new IllegalArgumentException("At least one of schedule or dueTime must be provided");
+    }
+  }
+
+  private void validateGetJobRequest(GetJobRequest getJobRequest) {
+    if (getJobRequest == null) {
+      throw new IllegalArgumentException("getJobRequest cannot be null");
+    }
+
+    if (getJobRequest.getName() == null || getJobRequest.getName().isEmpty()) {
+      throw new IllegalArgumentException("Name in the request cannot be null or empty");
+    }
+  }
+
+  private void validateDeleteJobRequest(DeleteJobRequest deleteJobRequest) {
+    if (deleteJobRequest == null) {
+      throw new IllegalArgumentException("deleteJobRequest cannot be null");
+    }
+
+    if (deleteJobRequest.getName() == null || deleteJobRequest.getName().isEmpty()) {
+      throw new IllegalArgumentException("Name in the request cannot be null or empty");
+    }
+  }
+
+  /**
    * Build a new Configuration Item from provided parameter.
    *
    * @param configurationItem CommonProtos.ConfigurationItem
@@ -1402,6 +1555,79 @@ public class DaprClientImpl extends AbstractDaprClient {
             });
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConversationResponse> converse(ConversationRequest conversationRequest) {
+
+    try {
+      validateConversationRequest(conversationRequest);
+
+      DaprProtos.ConversationRequest.Builder protosConversationRequestBuilder = DaprProtos.ConversationRequest
+          .newBuilder().setTemperature(conversationRequest.getTemperature())
+          .setScrubPII(conversationRequest.isScrubPii())
+          .setName(conversationRequest.getName());
+
+      if (conversationRequest.getContextId() != null) {
+        protosConversationRequestBuilder.setContextID(conversationRequest.getContextId());
+      }
+
+      for (ConversationInput input : conversationRequest.getInputs()) {
+        if (input.getContent() == null || input.getContent().isEmpty()) {
+          throw new IllegalArgumentException("Conversation input content cannot be null or empty.");
+        }
+
+        DaprProtos.ConversationInput.Builder conversationInputOrBuilder = DaprProtos.ConversationInput.newBuilder()
+            .setContent(input.getContent())
+            .setScrubPII(input.isScrubPii());
+
+        if (input.getRole() != null) {
+          conversationInputOrBuilder.setRole(input.getRole().toString());
+        }
+
+        protosConversationRequestBuilder.addInputs(conversationInputOrBuilder.build());
+      }
+
+      Mono<DaprProtos.ConversationResponse> conversationResponseMono = Mono.deferContextual(
+          context -> this.createMono(
+              it -> intercept(context, asyncStub)
+                  .converseAlpha1(protosConversationRequestBuilder.build(), it)
+          )
+      );
+
+      return conversationResponseMono.map(conversationResponse -> {
+
+        List<ConversationOutput> conversationOutputs = new ArrayList<>();
+        for (DaprProtos.ConversationResult conversationResult : conversationResponse.getOutputsList()) {
+          Map<String, byte[]> parameters = new HashMap<>();
+          for (Map.Entry<String, Any> entrySet : conversationResult.getParametersMap().entrySet()) {
+            parameters.put(entrySet.getKey(), entrySet.getValue().toByteArray());
+          }
+
+          ConversationOutput conversationOutput =
+              new ConversationOutput(conversationResult.getResult(), parameters);
+          conversationOutputs.add(conversationOutput);
+        }
+
+        return new ConversationResponse(conversationResponse.getContextID(), conversationOutputs);
+      });
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private void validateConversationRequest(ConversationRequest conversationRequest) {
+    if ((conversationRequest.getName() == null) || (conversationRequest.getName().trim().isEmpty())) {
+      throw new IllegalArgumentException("LLM name cannot be null or empty.");
+    }
+
+    if ((conversationRequest.getInputs() == null) || (conversationRequest
+        .getInputs().isEmpty())) {
+      throw new IllegalArgumentException("Conversation inputs cannot be null or empty.");
+    }
+  }
+
   private DaprMetadata buildDaprMetadata(DaprProtos.GetMetadataResponse response) throws IOException {
     String id = response.getId();
     String runtimeVersion = response.getRuntimeVersion();
@@ -1494,5 +1720,4 @@ public class DaprClientImpl extends AbstractDaprClient {
     return new AppConnectionPropertiesHealthMetadata(healthCheckPath, healthProbeInterval, healthProbeTimeout,
         healthThreshold);
   }
-
 }

@@ -22,22 +22,22 @@ class PropertiesDaprConnectionDetails implements DaprConnectionDetails {
   }
 
   @Override
-  public String httpEndpoint() {
+  public String getHttpEndpoint() {
     return this.daprClientProperties.getHttpEndpoint();
   }
 
   @Override
-  public String grpcEndpoint() {
+  public String getGrpcEndpoint() {
     return this.daprClientProperties.getGrpcEndpoint();
   }
 
   @Override
-  public Integer httpPort() {
+  public Integer getHttpPort() {
     return this.daprClientProperties.getHttpPort();
   }
 
   @Override
-  public Integer grpcPort() {
+  public Integer getGrpcPort() {
     return this.daprClientProperties.getGrpcPort();
   }
 }
