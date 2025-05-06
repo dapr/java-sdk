@@ -13,53 +13,30 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
-import com.microsoft.durabletask.FailureDetails;
-
 /**
  * Represents a workflow failure details.
  */
-public class WorkflowFailureDetails {
-
-  private final FailureDetails workflowFailureDetails;
-
-  /**
-   * Class constructor.
-   *
-   * @param failureDetails failure Details
-   */
-  public WorkflowFailureDetails(FailureDetails failureDetails) {
-    this.workflowFailureDetails = failureDetails;
-  }
+public interface WorkflowFailureDetails {
 
   /**
    * Gets the error type, which is the namespace-qualified exception type name.
    *
    * @return the error type, which is the namespace-qualified exception type name
    */
-  public String getErrorType() {
-    return workflowFailureDetails.getErrorType();
-  }
+  String getErrorType();
 
   /**
    * Gets the error message.
    *
    * @return the error message
    */
-  public String getErrorMessage() {
-    return workflowFailureDetails.getErrorMessage();
-  }
+  String getErrorMessage();
 
   /**
    * Gets the stack trace.
    *
    * @return the stack trace
    */
-  public String getStackTrace() {
-    return workflowFailureDetails.getStackTrace();
-  }
+  String getStackTrace();
 
-  @Override
-  public String toString() {
-    return workflowFailureDetails.toString();
-  }
 }

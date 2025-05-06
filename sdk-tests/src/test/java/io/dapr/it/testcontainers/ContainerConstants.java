@@ -1,6 +1,10 @@
 package io.dapr.it.testcontainers;
 
+import io.dapr.testcontainers.DaprContainerConstants;
+
 public interface ContainerConstants {
-  String DAPR_IMAGE_TAG = "daprio/daprd:1.14.1";
-  String TOXIPROXY_IMAGE_TAG = "ghcr.io/shopify/toxiproxy:2.5.0";
+  String DAPR_RUNTIME_IMAGE_TAG = DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+  String DAPR_PLACEMENT_IMAGE_TAG = DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
+  String DAPR_SCHEDULER_IMAGE_TAG = DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
+  String TOXI_PROXY_IMAGE_TAG = "ghcr.io/shopify/toxiproxy:2.5.0";
 }

@@ -35,8 +35,10 @@ import java.util.Map;
 
 import static io.dapr.it.spring.data.DaprSpringDataConstants.BINDING_NAME;
 import static io.dapr.it.spring.data.DaprSpringDataConstants.STATE_STORE_NAME;
-import static io.dapr.it.testcontainers.ContainerConstants.DAPR_IMAGE_TAG;
-import static org.junit.jupiter.api.Assertions.*;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration tests for {@link DaprKeyValueRepositoryIT}.
@@ -65,7 +67,7 @@ public class DaprKeyValueRepositoryIT {
 
   @Container
   @ServiceConnection
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName("postgresql-repository-dapr-app")
       .withNetwork(DAPR_NETWORK)
       .withComponent(new Component(STATE_STORE_NAME, "state.postgresql", "v1", STATE_STORE_PROPERTIES))

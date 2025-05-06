@@ -58,8 +58,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.dapr.it.resiliency.SdkResiliencyIT.WIREMOCK_PORT;
-import static io.dapr.it.testcontainers.ContainerConstants.DAPR_IMAGE_TAG;
-import static io.dapr.it.testcontainers.ContainerConstants.TOXIPROXY_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.it.testcontainers.ContainerConstants.TOXI_PROXY_IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -74,7 +74,7 @@ public class SdkResiliencyIT {
   private static final int INFINITE_RETRY = -1;
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_IMAGE_TAG)
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
       .withAppName("dapr-app")
       .withAppPort(WIREMOCK_PORT)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
@@ -85,7 +85,7 @@ public class SdkResiliencyIT {
       .withNetwork(NETWORK);
 
   @Container
-  private static final ToxiproxyContainer TOXIPROXY = new ToxiproxyContainer(TOXIPROXY_IMAGE_TAG)
+  private static final ToxiproxyContainer TOXIPROXY = new ToxiproxyContainer(TOXI_PROXY_IMAGE_TAG)
       .withNetwork(NETWORK);
 
   private static Proxy proxy;

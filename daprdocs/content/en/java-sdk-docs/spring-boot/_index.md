@@ -25,12 +25,12 @@ If you already have a Spring Boot application (Spring Boot 3.x+), you can direct
 	<dependency>
         <groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter</artifactId>
-		<version>0.14.0</version>
+		<version>0.14.1</version>
 	</dependency>
 	<dependency>
 		<groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter-test</artifactId>
-		<version>0.14.0</version>
+		<version>0.14.1</version>
 		<scope>test</scope>
 	</dependency>
 ```
@@ -80,7 +80,7 @@ public class DaprTestContainersConfig {
   @ServiceConnection
   public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer){
     
-    return new DaprContainer("daprio/daprd:1.14.1")
+    return new DaprContainer("daprio/daprd:1.15.4")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))
@@ -235,7 +235,7 @@ Finally, because Dapr PubSub requires a bidirectional connection between your ap
 @ServiceConnection
 public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer, RabbitMQContainer rabbitMQContainer){
     
-    return new DaprContainer("daprio/daprd:1.14.1")
+    return new DaprContainer("daprio/daprd:1.15.4")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))

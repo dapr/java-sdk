@@ -1,10 +1,12 @@
 package io.dapr.client.domain;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -106,4 +108,16 @@ public class StateTest {
     assertNotEquals(state1.hashCode(), state4.hashCode());
     assertNotEquals(state1, state4);
   }
+
+  @Test
+  @DisplayName("Should hashCode and equals method work with null metadata")
+  public void testEqualsAndHashcodeWithNullValues() {
+    State<String> state1 = new State<>(KEY, "value", ETAG, null, OPTIONS);
+    State<String> state2 = new State<>(KEY, "value", ETAG, null, OPTIONS);
+
+    assertThat(state1.toString()).isEqualTo(state2.toString());
+    assertThat(state1.hashCode()).isEqualTo(state1.hashCode());
+    assertThat(state1).isEqualTo(state2);
+  }
+
 }

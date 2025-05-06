@@ -24,17 +24,18 @@ import io.dapr.config.Property;
 import io.dapr.v1.AppCallbackHealthCheckGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -231,23 +232,21 @@ public class DaprRun implements Stoppable {
         channel.shutdown();
       }
     } else {
-      // Create an OkHttpClient instance with a custom timeout
-      OkHttpClient client = new OkHttpClient.Builder()
-              .connectTimeout(maxWaitMilliseconds, TimeUnit.MILLISECONDS)
-              .readTimeout(maxWaitMilliseconds, TimeUnit.MILLISECONDS)
-              .build();
+      Duration waitDuration = Duration.ofMillis(maxWaitMilliseconds);
+      HttpClient client = HttpClient.newBuilder()
+          .version(HttpClient.Version.HTTP_1_1)
+          .connectTimeout(waitDuration)
+          .build();
+      String url = "http://127.0.0.1:" + this.getAppPort() + "/health";
+      HttpRequest request = HttpRequest.newBuilder()
+          .GET()
+          .uri(URI.create(url))
+          .build();
 
-      // Define the URL to probe
-      String url = "http://127.0.0.1:" + this.getAppPort() + "/health"; // Change to your specific URL
+      try {
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-      // Create a request to the URL
-      Request request = new Request.Builder()
-              .url(url)
-              .build();
-
-      // Execute the request
-      try (Response response = client.newCall(request).execute()) {
-        if (!response.isSuccessful()) {
+        if (response.statusCode() != 200) {
           throw new RuntimeException("error: HTTP service is not healthy.");
         }
       } catch (IOException e) {

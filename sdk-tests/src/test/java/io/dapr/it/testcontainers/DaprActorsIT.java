@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(
@@ -56,7 +57,7 @@ public class DaprActorsIT {
   private static final String ACTORS_MESSAGE_PATTERN = ".*Found Subscription.*";
 
   @Container
-  private static final DaprContainer DAPR_CONTAINER = new DaprContainer("daprio/daprd:1.14.4")
+  private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
           .withAppName("actor-dapr-app")
           .withNetwork(DAPR_NETWORK)
           .withComponent(new Component("kvstore", "state.in-memory", "v1",
@@ -88,7 +89,8 @@ public class DaprActorsIT {
   public void setUp(){
     org.testcontainers.Testcontainers.exposeHostPorts(PORT);
     daprActorRuntime.registerActor(TestActorImpl.class);
-    // Ensure the subscriptions are registered
+
+    // Wait for actor runtime to start.
     Wait.forLogMessage(ACTORS_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
   }
 
