@@ -28,13 +28,13 @@
   </modules>
 
   <properties>
-    <springboot.version>3.2.6</springboot.version>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.11.2</junit.version>
     <dapr.spring.version>0.15.0-SNAPSHOT</dapr.spring.version>
+    <springboot.version>3.2.6</springboot.version>
     <springframework.version>6.1.8</springframework.version>
   </properties>
 
