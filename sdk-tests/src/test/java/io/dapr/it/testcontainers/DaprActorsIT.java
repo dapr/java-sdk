@@ -54,7 +54,7 @@ public class DaprActorsIT {
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
 
-  private static final String ACTORS_MESSAGE_PATTERN = ".*Found Subscription.*";
+  private static final String ACTORS_MESSAGE_PATTERN = ".*Actor runtime started.*";
 
   @Container
   private static final DaprContainer DAPR_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
