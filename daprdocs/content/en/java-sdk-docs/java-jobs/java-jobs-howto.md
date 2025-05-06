@@ -7,10 +7,10 @@ description: How to get up and running with Jobs using the Dapr Java SDK
 ---
 
 As part of this demonstration we will schedule a Dapr Job. The scheduled job will trigger an endpoint registered in the
-same app.  With the [provided jobs example](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/jobs), you will:
+same app. With the [provided jobs example](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/jobs), you will:
 
 - Schedule a Job [Job scheduling example](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/jobs/DemoJobsClient.java)
-- Register an endpoint for the Jobs runtime to invoke as part of the schedule [Endpoint Registration](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/jobs/DemoJobsSpringApplication.java)
+- Register an endpoint for the dapr sidecar to invoke at trigger time [Endpoint Registration](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/jobs/DemoJobsSpringApplication.java)
 
 This example uses the default configuration from `dapr init` in [self-hosted mode](https://github.com/dapr/cli#install-dapr-on-your-local-machine-self-hosted).
 
@@ -25,26 +25,26 @@ This example uses the default configuration from `dapr init` in [self-hosted mod
 
 ## Set up the environment
 
-Clone the [Java SDK repo](https://github.com/dapr/java-sdk)     and navigate into it.
+Clone the [Java SDK repo](https://github.com/dapr/java-sdk) and navigate into it.
 
 ```bash
 git clone https://github.com/dapr/java-sdk.git
 cd java-sdk
 ```
 
-Run the following command to install the requirements for running this jobs sample with the Dapr Java SDK.
+Run the following command to install the requirements for running the jobs example with the Dapr Java SDK.
 
 ```bash
 mvn clean install -DskipTests
 ```
 
-From the Java SDK root directory, navigate to the Dapr Workflow example.
+From the Java SDK root directory, navigate to the Dapr Jobs example.
 
 ```bash
 cd examples
 ```
 
-We'll run a command that starts the Dapr sidecar.
+Run the Dapr sidecar.
 
 ```sh
 dapr run --app-id jobsapp --dapr-grpc-port 51439 --dapr-http-port 3500 --app-port 8080
@@ -52,16 +52,16 @@ dapr run --app-id jobsapp --dapr-grpc-port 51439 --dapr-http-port 3500 --app-por
 
 > Now, Dapr is listening for HTTP requests at `http://localhost:3500` and internal Jobs gRPC requests at `http://localhost:51439`.
 
-## Register a job and Get its details
+## Schedule and Get a job
 
-In the `DemoJobsClient` there are steps to Register a Job. Calling the `scheduleJob` on the `DaprPreviewClient`
+In the `DemoJobsClient` there are steps to schedule a job. Calling `scheduleJob` using the `DaprPreviewClient`
 will schedule a job with the Dapr Runtime. 
 
 ```java
 public class DemoJobsClient {
 
   /**
-   * The main method of this app to register and fetch jobs.
+   * The main method of this app to schedule and get jobs.
    */
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {
@@ -78,12 +78,12 @@ public class DemoJobsClient {
 }
 ```
 
-and calling a getJob retrieves the created job details
+Call `getJob` to retrieve the job details that were previously created and scheduled.
 ```
 client.getJob(new GetJobRequest("dapr-job-1")).block()
 ```
 
-Command to run the `DemoJobsClient`
+Run the `DemoJobsClient` with the following command.
 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.jobs.DemoJobsClient
@@ -125,10 +125,10 @@ public class JobsController {
 
 Parameters:
 
-* `jobName`: The name of the job that triggered the callback.
+* `jobName`: The name of the triggered job.
 * `payload`: Optional payload data associated with the job (as a byte array).
 
-Command to run the Spring boot app:
+Run the Spring Boot application with the following command.
 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.jobs.DemoJobsSpringApplication
@@ -146,12 +146,12 @@ Job Payload: Hello World!
 public class DemoJobsClient {
 
   /**
-   * The main method of this app to register and fetch jobs.
+   * The main method of this app deletes a job that was previously scheduled.
    */
   public static void main(String[] args) throws Exception {
     try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
 
-      // Get a job.
+      // Delete a job.
       System.out.println("**** Delete a Job with name dapr-jobs-1 *****");
       client.deleteJob(new DeleteJobRequest("dapr-job-1")).block();
     }
