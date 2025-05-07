@@ -16,6 +16,9 @@ package io.dapr.examples.workflows.continueasnew;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class DemoContinueAsNewWorker {
   /**
    * The main method of this app.
@@ -25,13 +28,14 @@ public class DemoContinueAsNewWorker {
    */
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the builder.
-    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(DemoContinueAsNewWorkflow.class);
+    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().
+            registerWorkflow(DemoContinueAsNewWorkflow.class)
+            .withExecutorService(Executors.newFixedThreadPool(3));
     builder.registerActivity(CleanUpActivity.class);
 
     // Build and then start the workflow runtime pulling and executing tasks
-    try (WorkflowRuntime runtime = builder.build()) {
-      System.out.println("Start workflow runtime");
-      runtime.start();
-    }
+    WorkflowRuntime runtime = builder.build()
+    System.out.println("Start workflow runtime");
+    runtime.start();
   }
 }

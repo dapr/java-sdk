@@ -25,16 +25,7 @@ public class WorkflowRuntimeTest {
   @Test
   public void startTest() {
     DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
-    try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
-      assertDoesNotThrow(() -> runtime.start(false));
-    }
-  }
-
-  @Test
-  public void closeWithoutStarting() {
-    DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
-    try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
-      assertDoesNotThrow(runtime::close);
-    }
+    WorkflowRuntime runtime = new WorkflowRuntime(worker);
+    assertDoesNotThrow(() -> runtime.start(false));
   }
 }

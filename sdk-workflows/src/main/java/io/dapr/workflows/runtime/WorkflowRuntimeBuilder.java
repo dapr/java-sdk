@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WorkflowRuntimeBuilder {
   private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
@@ -59,7 +61,9 @@ public class WorkflowRuntimeBuilder {
 
   private WorkflowRuntimeBuilder(Properties properties, Logger logger) {
     ManagedChannel managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR);
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(managedChannel);
+    this.builder = new DurableTaskGrpcWorkerBuilder()
+            .withExecutorService(Executors.newCachedThreadPool())
+            .grpcChannel(managedChannel);
     this.logger = logger;
   }
 
@@ -82,6 +86,17 @@ public class WorkflowRuntimeBuilder {
     this.logger.info("Successfully built dapr workflow runtime");
 
     return instance;
+  }
+
+  /**
+   * Register Executor Service to use with workflow.
+   *
+   * @param executorService to be used.
+   * @return {@link WorkflowRuntimeBuilder}.
+   */
+  public WorkflowRuntimeBuilder withExecutorService(ExecutorService executorService) {
+    this.builder.withExecutorService(executorService);
+    return this;
   }
 
   /**

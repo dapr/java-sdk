@@ -18,7 +18,7 @@ import io.dapr.durabletask.DurableTaskGrpcWorker;
 /**
  * Contains methods to register workflows and activities.
  */
-public class WorkflowRuntime implements AutoCloseable {
+public class WorkflowRuntime {
 
   private DurableTaskGrpcWorker worker;
 
@@ -44,17 +44,6 @@ public class WorkflowRuntime implements AutoCloseable {
       this.worker.startAndBlock();
     } else {
       this.worker.start();
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void close() {
-    if (this.worker != null) {
-      this.worker.close();
-      this.worker = null;
     }
   }
 }
