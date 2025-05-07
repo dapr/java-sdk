@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.DurableTaskGrpcWorker;
+import io.dapr.durabletask.DurableTaskGrpcWorker;
 
 /**
  * Contains methods to register workflows and activities.

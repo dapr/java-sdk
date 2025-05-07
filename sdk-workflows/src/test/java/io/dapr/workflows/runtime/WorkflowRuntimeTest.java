@@ -14,8 +14,8 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 
-import com.microsoft.durabletask.DurableTaskGrpcWorker;
-import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.durabletask.DurableTaskGrpcWorker;
+import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
