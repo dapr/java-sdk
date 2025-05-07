@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Contains methods to register workflows and activities.
  */
-public class WorkflowRuntime {
+public class WorkflowRuntime implements AutoCloseable {
 
   private final DurableTaskGrpcWorker worker;
   private final ManagedChannel managedChannel;

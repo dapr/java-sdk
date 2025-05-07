@@ -37,13 +37,8 @@ public class DemoFanInOutWorkflow implements Workflow {
           .map(input -> ctx.callActivity(CountWordsActivity.class.getName(), input.toString(), Integer.class))
           .collect(Collectors.toList());
 
-      List<Task<Integer>> tasks2 = inputs.stream()
-              .map(input -> ctx.callActivity(CountWordsActivity2.class.getName(), input.toString(), Integer.class))
-              .collect(Collectors.toList());
-
       // Fan-in to get the total word count from all the individual activity results.
       List<Integer> allWordCountResults = ctx.allOf(tasks).await();
-      List<Integer> allWordCountResults2 = ctx.allOf(tasks2).await();
       int totalWordCount = allWordCountResults.stream().mapToInt(Integer::intValue).sum();
 
       ctx.getLogger().info("Workflow finished with result: " + totalWordCount);
