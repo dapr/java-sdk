@@ -14,16 +14,33 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.DurableTaskGrpcWorker;
+import io.grpc.ManagedChannel;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Contains methods to register workflows and activities.
  */
-public class WorkflowRuntime {
+public class WorkflowRuntime implements AutoCloseable {
 
-  private DurableTaskGrpcWorker worker;
+  private final DurableTaskGrpcWorker worker;
+  private final ManagedChannel managedChannel;
+  private final ExecutorService executorService;
 
-  public WorkflowRuntime(DurableTaskGrpcWorker worker) {
+  /**
+   * Constructor.
+   *
+   * @param worker grpcWorker processing activities.
+   * @param managedChannel grpc channel.
+   * @param executorService executor service responsible for running the threads.
+   */
+  public WorkflowRuntime(DurableTaskGrpcWorker worker,
+                         ManagedChannel managedChannel,
+                         ExecutorService executorService) {
     this.worker = worker;
+    this.managedChannel = managedChannel;
+    this.executorService = executorService;
   }
 
   /**
@@ -44,6 +61,37 @@ public class WorkflowRuntime {
       this.worker.startAndBlock();
     } else {
       this.worker.start();
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void close() {
+    this.shutDownWorkerPool();
+    this.closeSideCarChannel();
+  }
+
+  private void closeSideCarChannel() {
+    this.managedChannel.shutdown();
+
+    try {
+      if (!this.managedChannel.awaitTermination(60, TimeUnit.SECONDS)) {
+        this.managedChannel.shutdownNow();
+      }
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  private void shutDownWorkerPool() {
+    this.executorService.shutdown();
+    try {
+      if (!this.executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+        this.executorService.shutdownNow();
+      }
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
     }
   }
 }
