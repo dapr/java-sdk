@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.faninout;
 
-import com.microsoft.durabletask.Task;
+import io.dapr.durabletask.Task;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 
