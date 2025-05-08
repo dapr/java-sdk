@@ -13,12 +13,12 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
+import io.dapr.config.Properties;
 import io.dapr.durabletask.DurableTaskClient;
 import io.dapr.durabletask.DurableTaskGrpcClientBuilder;
 import io.dapr.durabletask.NewOrchestrationInstanceOptions;
 import io.dapr.durabletask.OrchestrationMetadata;
 import io.dapr.durabletask.PurgeResult;
-import io.dapr.config.Properties;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;

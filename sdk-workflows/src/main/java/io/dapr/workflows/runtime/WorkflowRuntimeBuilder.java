@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.config.Properties;
+import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
