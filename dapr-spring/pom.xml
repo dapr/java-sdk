@@ -19,6 +19,7 @@
 
   <modules>
     <module>dapr-spring-data</module>
+    <module>dapr-spring-invoke</module>
     <module>dapr-spring-messaging</module>
     <module>dapr-spring-workflows</module>
     <module>dapr-spring-boot-autoconfigure</module>

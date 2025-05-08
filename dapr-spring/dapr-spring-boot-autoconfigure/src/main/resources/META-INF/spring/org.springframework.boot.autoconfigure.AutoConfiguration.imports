@@ -1,1 +1,2 @@
 io.dapr.spring.boot.autoconfigure.client.DaprClientAutoConfiguration
+io.dapr.spring.boot.autoconfigure.client.DaprInvokeAutoConfiguration
