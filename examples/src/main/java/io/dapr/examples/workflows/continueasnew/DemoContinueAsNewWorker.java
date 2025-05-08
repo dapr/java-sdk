@@ -34,7 +34,7 @@ public class DemoContinueAsNewWorker {
     builder.registerActivity(CleanUpActivity.class);
 
     // Build and then start the workflow runtime pulling and executing tasks
-    WorkflowRuntime runtime = builder.build()
+    WorkflowRuntime runtime = builder.build();
     System.out.println("Start workflow runtime");
     runtime.start();
   }
