@@ -1,0 +1,18 @@
+{
+  "properties": [
+    {
+      "name": "dapr.feign.timeout",
+      "type": "java.lang.Integer",
+      "defaultValue": 2000,
+      "sourceType": "io.dapr.spring.openfeign.autoconfigure.DaprFeignClientProperties",
+      "description": "timeout for dapr invoke."
+    },
+    {
+      "name": "dapr.feign.retries",
+      "type": "java.lang.Integer",
+      "defaultValue": 3,
+      "sourceType": "io.dapr.spring.openfeign.autoconfigure.DaprFeignClientProperties",
+      "description": "retries for invoke fails."
+    }
+  ]
+}
