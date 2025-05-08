@@ -13,10 +13,10 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
-import com.microsoft.durabletask.DurableTaskClient;
-import com.microsoft.durabletask.NewOrchestrationInstanceOptions;
-import com.microsoft.durabletask.OrchestrationMetadata;
-import com.microsoft.durabletask.OrchestrationRuntimeStatus;
+import io.dapr.durabletask.DurableTaskClient;
+import io.dapr.durabletask.NewOrchestrationInstanceOptions;
+import io.dapr.durabletask.OrchestrationMetadata;
+import io.dapr.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowStub;

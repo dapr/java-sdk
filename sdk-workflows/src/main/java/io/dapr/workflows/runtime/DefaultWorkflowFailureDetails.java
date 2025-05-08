@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.FailureDetails;
+import io.dapr.durabletask.FailureDetails;
 import io.dapr.workflows.client.WorkflowFailureDetails;
 
 /**

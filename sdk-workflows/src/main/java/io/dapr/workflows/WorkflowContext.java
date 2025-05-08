@@ -13,10 +13,10 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import com.microsoft.durabletask.CompositeTaskFailedException;
-import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskCanceledException;
-import com.microsoft.durabletask.TaskFailedException;
+import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.Task;
+import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.durabletask.TaskFailedException;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;

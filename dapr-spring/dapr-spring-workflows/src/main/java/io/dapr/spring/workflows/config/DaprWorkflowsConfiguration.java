@@ -46,10 +46,9 @@ public class DaprWorkflowsConfiguration implements ApplicationContextAware {
       workflowRuntimeBuilder.registerActivity(activity);
     }
 
-    try (WorkflowRuntime runtime = workflowRuntimeBuilder.build()) {
-      LOGGER.info("Starting workflow runtime ... ");
-      runtime.start(false);
-    }
+    WorkflowRuntime runtime = workflowRuntimeBuilder.build();
+    LOGGER.info("Starting workflow runtime ... ");
+    runtime.start(false);
   }
 
   @Override

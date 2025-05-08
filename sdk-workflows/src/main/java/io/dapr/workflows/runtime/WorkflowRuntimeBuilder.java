@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.config.Properties;
+import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WorkflowRuntimeBuilder {
   private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
@@ -36,6 +38,8 @@ public class WorkflowRuntimeBuilder {
   private final Set<String> activitySet = Collections.synchronizedSet(new HashSet<>());
   private final Set<String> workflowSet = Collections.synchronizedSet(new HashSet<>());
   private final DurableTaskGrpcWorkerBuilder builder;
+  private final ManagedChannel managedChannel;
+  private ExecutorService executorService;
 
   /**
    * Constructs the WorkflowRuntimeBuilder.
@@ -58,8 +62,8 @@ public class WorkflowRuntimeBuilder {
   }
 
   private WorkflowRuntimeBuilder(Properties properties, Logger logger) {
-    ManagedChannel managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR);
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(managedChannel);
+    this.managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR);
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(this.managedChannel);
     this.logger = logger;
   }
 
@@ -71,8 +75,11 @@ public class WorkflowRuntimeBuilder {
   public WorkflowRuntime build() {
     if (instance == null) {
       synchronized (WorkflowRuntime.class) {
+        this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
         if (instance == null) {
-          instance = new WorkflowRuntime(this.builder.build());
+          instance = new WorkflowRuntime(
+                  this.builder.withExecutorService(this.executorService).build(),
+                  this.managedChannel, this.executorService);
         }
       }
     }
@@ -82,6 +89,18 @@ public class WorkflowRuntimeBuilder {
     this.logger.info("Successfully built dapr workflow runtime");
 
     return instance;
+  }
+
+  /**
+   * Register Executor Service to use with workflow.
+   *
+   * @param executorService to be used.
+   * @return {@link WorkflowRuntimeBuilder}.
+   */
+  public WorkflowRuntimeBuilder withExecutorService(ExecutorService executorService) {
+    this.executorService = executorService;
+    this.builder.withExecutorService(executorService);
+    return this;
   }
 
   /**

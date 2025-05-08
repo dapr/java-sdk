@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.TaskActivityContext;
+import io.dapr.durabletask.TaskActivityContext;
 import io.dapr.workflows.WorkflowActivityContext;
 
 /**

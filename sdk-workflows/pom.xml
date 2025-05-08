@@ -45,14 +45,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.microsoft</groupId>
+      <groupId>io.dapr</groupId>
       <artifactId>durabletask-client</artifactId>
-      <version>1.5.0</version>
+      <version>1.5.2</version>
     </dependency>
     <!--
     manually declare durabletask-client's jackson dependencies
     which conflict with dapr-sdk's jackson dependencies
-    https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
+    https://github.com/dapr/durabletask-java/blob/main/client/build.gradle#L16
     -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
