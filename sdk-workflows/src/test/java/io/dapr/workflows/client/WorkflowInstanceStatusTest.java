@@ -13,9 +13,9 @@ limitations under the License.
 
 package io.dapr.workflows.client;
 
-import com.microsoft.durabletask.FailureDetails;
-import com.microsoft.durabletask.OrchestrationMetadata;
-import com.microsoft.durabletask.OrchestrationRuntimeStatus;
+import io.dapr.durabletask.FailureDetails;
+import io.dapr.durabletask.OrchestrationMetadata;
+import io.dapr.durabletask.OrchestrationRuntimeStatus;
 import io.dapr.workflows.runtime.DefaultWorkflowInstanceStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
