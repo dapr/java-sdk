@@ -244,4 +244,9 @@ public class DefaultWorkflowContext implements WorkflowContext {
 
     return new TaskOptions(retryPolicy);
   }
+
+  @Override
+  public void sendEvent(String instanceID, String eventName, Object data) {
+    this.innerContext.sendEvent(instanceID, eventName, data);
+  }
 }

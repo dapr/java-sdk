@@ -117,7 +117,7 @@ public interface WorkflowContext {
    * @return a new {@link Task} that completes when the external event is received
    */
   <V> Task<Void> waitForExternalEvent(String name) throws TaskCanceledException;
-
+  
   /**
    * Waits for an event to be raised named {@code name} and returns a {@link Task} that completes when the event is
    * received.
@@ -137,6 +137,25 @@ public interface WorkflowContext {
       throw new RuntimeException("An unexpected exception was throw while waiting for an external event.", e);
     }
   }
+
+  /**
+    * Sends an external event to another orchestration instance.
+    * 
+    * @param instanceID the instance ID of the workflow to send the event to
+    * @param eventName the name of the event to send
+    */
+  default void sendEvent(String instanceID, String eventName) {
+    this.sendEvent(instanceID, eventName, null);
+  }
+
+  /**
+   * Sends an external event to another orchestration instance.
+   * 
+   * @param instanceID the instance ID of the workflow to send the event to
+   * @param eventName the name of the event to send
+   * @param data the data to send to the workflow
+   */
+  void sendEvent(String instanceID, String eventName, Object data);
 
   /**
    * Asynchronously invokes an activity by name and with the specified input value and returns a new {@link Task}
