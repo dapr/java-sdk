@@ -13,8 +13,8 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.TaskOrchestration;
-import com.microsoft.durabletask.TaskOrchestrationFactory;
+import io.dapr.durabletask.TaskOrchestration;
+import io.dapr.durabletask.TaskOrchestrationFactory;
 import io.dapr.workflows.Workflow;
 
 import java.lang.reflect.Constructor;
