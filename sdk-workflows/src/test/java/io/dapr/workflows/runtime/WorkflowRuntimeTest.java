@@ -14,9 +14,14 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 
-import com.microsoft.durabletask.DurableTaskGrpcWorker;
-import com.microsoft.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.durabletask.DurableTaskGrpcWorker;
+import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.config.Properties;
+import io.dapr.utils.NetworkUtils;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -25,15 +30,16 @@ public class WorkflowRuntimeTest {
   @Test
   public void startTest() {
     DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
-    try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
-      assertDoesNotThrow(() -> runtime.start(false));
-    }
+    WorkflowRuntime runtime = new WorkflowRuntime(worker, NetworkUtils.buildGrpcManagedChannel(new Properties()),
+            Executors.newCachedThreadPool());
+    assertDoesNotThrow(() -> runtime.start(false));
   }
 
   @Test
   public void closeWithoutStarting() {
     DurableTaskGrpcWorker worker = new DurableTaskGrpcWorkerBuilder().build();
-    try (WorkflowRuntime runtime = new WorkflowRuntime(worker)) {
+    try (WorkflowRuntime runtime = new WorkflowRuntime(worker, NetworkUtils.buildGrpcManagedChannel(new Properties()),
+            Executors.newCachedThreadPool())) {
       assertDoesNotThrow(runtime::close);
     }
   }

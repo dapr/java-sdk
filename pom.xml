@@ -36,7 +36,7 @@
     <!--
         manually declare durabletask-client's jackson dependencies for workflows sdk
         which conflict with dapr-sdk's jackson dependencies
-        https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
+        https://github.com/dapr/durabletask-java/blob/main/client/build.gradle#L16
         -->
     <jackson.version>2.16.1</jackson.version>
     <gpg.skip>true</gpg.skip>
