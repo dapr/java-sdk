@@ -33,7 +33,7 @@
     <maven.compiler.release>11</maven.compiler.release>
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.11.2</junit.version>
-    <dapr.spring.version>0.15.0-SNAPSHOT</dapr.spring.version>
+    <dapr.spring.version>0.16.0-SNAPSHOT</dapr.spring.version>
     <springboot.version>3.2.6</springboot.version>
     <springframework.version>6.1.8</springframework.version>
   </properties>
@@ -89,7 +89,7 @@
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-workflows</artifactId>
-        <version>0.15.0-SNAPSHOT</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
