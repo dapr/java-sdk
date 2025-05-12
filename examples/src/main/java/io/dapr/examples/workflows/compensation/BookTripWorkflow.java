@@ -25,7 +25,7 @@ public class BookTripWorkflow implements Workflow {
     @Override
     public WorkflowStub create() {
         return ctx -> {
-            ctx.getLogger().info("Starting Workflow: " + ctx.getName());
+            ctx.getLogger().info("Starting Workflow: " + ctx.getInstanceId());
             List<String> compensations = new ArrayList<>();
 
             try {

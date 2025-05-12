@@ -23,13 +23,13 @@ dapr init
 2. Start the workflow worker:
 
 ```bash
-dapr run --app-id book-trip-worker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-sdk-examples-1.15.0-SNAPSHOT-exec.jar io.dapr.examples.workflows.compensation.BookTripWorker
+dapr run --app-id book-trip-worker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripWorker
 ```
 
 3. In a separate terminal, run the client:
 
 ```bash
-java -jar target/dapr-sdk-examples-1.15.0-SNAPSHOT-exec.jar io.dapr.examples.workflows.compensation.BookTripClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripClient
 ```
 
 ## Expected Output
