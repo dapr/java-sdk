@@ -13,12 +13,8 @@ limitations under the License.
 
 package io.dapr.examples.workflows.childworkflow;
 
-import io.dapr.workflows.WorkflowTaskRetryPolicy;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
-
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 public class DemoChildWorkflowWorker {
   /**
