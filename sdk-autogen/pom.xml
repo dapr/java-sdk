@@ -55,11 +55,6 @@
       <version>${grpc.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.squareup.okio</groupId>
-      <artifactId>okio</artifactId>
-      <version>3.11.0</version>
-    </dependency>
   </dependencies>
 
   <build>
