@@ -37,7 +37,7 @@ public class DaprClientAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean(DaprConnectionDetails.class)
   DaprConnectionDetails daprConnectionDetails(DaprClientProperties properties) {
-    return new PropertiesDaprConnectionDetails(properties);
+    return new ClientPropertiesDaprConnectionDetails(properties);
   }
 
   @Bean
