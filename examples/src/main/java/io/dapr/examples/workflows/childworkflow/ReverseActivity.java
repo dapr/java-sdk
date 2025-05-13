@@ -30,6 +30,13 @@ public class ReverseActivity implements WorkflowActivity {
     logger.info("Message Received from input: " + message);
     logger.info("Sending message to output: " + newMessage);
 
-    return newMessage;
+    throw new RuntimeException("abcdef");
+  }
+}
+
+class MyCustomException extends RuntimeException {
+
+  public MyCustomException(String message) {
+    super(message);
   }
 }

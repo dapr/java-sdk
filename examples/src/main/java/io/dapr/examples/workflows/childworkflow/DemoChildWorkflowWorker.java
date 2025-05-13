@@ -13,8 +13,12 @@ limitations under the License.
 
 package io.dapr.examples.workflows.childworkflow;
 
+import io.dapr.workflows.WorkflowTaskRetryPolicy;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 public class DemoChildWorkflowWorker {
   /**
@@ -25,6 +29,7 @@ public class DemoChildWorkflowWorker {
    */
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the builder.
+
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder()
         .registerWorkflow(DemoWorkflow.class)
             .registerWorkflow(DemoChildWorkflow.class);
@@ -32,6 +37,7 @@ public class DemoChildWorkflowWorker {
 
     // Build and then start the workflow runtime pulling and executing tasks
     WorkflowRuntime runtime = builder.build();
+    runtime.start();
     System.out.println("Start workflow runtime");
   }
 }
