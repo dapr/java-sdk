@@ -25,7 +25,6 @@ public class DemoChildWorkflowWorker {
    */
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the builder.
-
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder()
         .registerWorkflow(DemoWorkflow.class)
             .registerWorkflow(DemoChildWorkflow.class);
