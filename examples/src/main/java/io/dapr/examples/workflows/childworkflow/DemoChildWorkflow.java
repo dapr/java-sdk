@@ -38,16 +38,7 @@ public class DemoChildWorkflow implements Workflow {
       ctx.getLogger().info("ChildWorkflow received input: " + childWorkflowInput);
 
       ctx.getLogger().info("ChildWorkflow is calling Activity: " + ReverseActivity.class.getName());
-      String result = new String("");
-
-      try {
-        result = ctx.callActivity(ReverseActivity.class.getName(), childWorkflowInput, options, String.class).await();
-      } catch (OrchestratorBlockedException ex) {
-        throw ex;
-      } catch (Exception ex) {
-        System.out.println("EX:" + ex.getMessage());
-        ctx.getLogger().warn("Ex is what instance of " + (ex.getMessage()));
-      }
+      String result = ctx.callActivity(ReverseActivity.class.getName(), childWorkflowInput, options, String.class).await();
 
       ctx.getLogger().info("ChildWorkflow finished with: " + result);
       ctx.complete(result);

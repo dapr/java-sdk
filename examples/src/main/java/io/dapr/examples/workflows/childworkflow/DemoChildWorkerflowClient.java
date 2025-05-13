@@ -16,7 +16,6 @@ package io.dapr.examples.workflows.childworkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
-import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 public class DemoChildWorkerflowClient {
@@ -28,19 +27,15 @@ public class DemoChildWorkerflowClient {
    */
   public static void main(String[] args) {
     try (DaprWorkflowClient client = new DaprWorkflowClient()) {
-      String instanceId = client.scheduleNewWorkflow(DemoChildWorkflow.class, "Hello Word");
+      String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
       System.out.printf("Started a new child-workflow model workflow with instance ID: %s%n", instanceId);
+      WorkflowInstanceStatus workflowInstanceStatus =
+              client.waitForInstanceCompletion(instanceId, null, true);
 
-      while (true) {
-        try {
-          Thread.sleep(10000);
-          System.out.println(client.getInstanceState(instanceId, true).getRuntimeStatus());
-        } catch (Exception ex) {
-          System.out.println("exception");
-        }
-      }
+      String result = workflowInstanceStatus.readOutputAs(String.class);
+      System.out.printf("workflow instance with ID: %s completed with result: %s%n", instanceId, result);
 
-    } catch (InterruptedException e) {
+    } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
