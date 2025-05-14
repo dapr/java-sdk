@@ -103,6 +103,41 @@ public class Properties {
       DEFAULT_GRPC_PORT);
 
   /**
+   * GRPC TLS cert path for Dapr after checking system property and environment variable.
+   */
+  public static final Property<String> GRPC_TLS_CERT_PATH = new StringProperty(
+      "dapr.grpc.tls.cert.path",
+      "DAPR_GRPC_TLS_CERT_PATH",
+      null);
+
+  /**
+   * GRPC TLS key path for Dapr after checking system property and environment variable.
+   */
+  public static final Property<String> GRPC_TLS_KEY_PATH = new StringProperty(
+      "dapr.grpc.tls.key.path",
+      "DAPR_GRPC_TLS_KEY_PATH",
+      null);
+
+  /**
+   * GRPC TLS CA cert path for Dapr after checking system property and environment variable.
+   * This is used for TLS connections to servers with self-signed certificates.
+   */
+  public static final Property<String> GRPC_TLS_CA_PATH = new StringProperty(
+      "dapr.grpc.tls.ca.path",
+      "DAPR_GRPC_TLS_CA_PATH",
+      null);
+
+  /**
+   * Use insecure TLS mode which still uses TLS but doesn't verify certificates.
+   * This uses InsecureTrustManagerFactory to trust all certificates.
+   * This should only be used for testing or in secure environments.
+   */
+  public static final Property<Boolean> GRPC_TLS_INSECURE = new BooleanProperty(
+      "dapr.grpc.tls.insecure",
+      "DAPR_GRPC_TLS_INSECURE",
+      false);
+
+  /**
    * GRPC endpoint for remote sidecar connectivity.
    */
   public static final Property<String> GRPC_ENDPOINT = new StringProperty(
