@@ -119,14 +119,23 @@ public class Properties {
       null);
 
   /**
-   * Path to the TLS CA certificate for gRPC communication after checking system property
-   * and environment variable.
+   * GRPC TLS CA cert path for Dapr after checking system property and environment variable.
+   * This is used for TLS connections to servers with self-signed certificates.
    */
   public static final Property<String> GRPC_TLS_CA_PATH = new StringProperty(
       "dapr.grpc.tls.ca.path",
       "DAPR_GRPC_TLS_CA_PATH",
       null);
-      
+
+  /**
+   * Force insecure (plaintext) mode for gRPC communication, regardless of other TLS settings.
+   * This should only be used for testing or in secure environments.
+   */
+  public static final Property<Boolean> GRPC_INSECURE = new BooleanProperty(
+      "dapr.grpc.insecure",
+      "DAPR_GRPC_INSECURE",
+      false);
+
   /**
    * GRPC endpoint for remote sidecar connectivity.
    */

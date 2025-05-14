@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
 import static io.dapr.config.Properties.GRPC_PORT;
+import static io.dapr.config.Properties.GRPC_INSECURE;
 import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
@@ -124,6 +125,17 @@ public final class NetworkUtils {
    */
   public static ManagedChannel buildGrpcManagedChannel(Properties properties, ClientInterceptor... interceptors) {
     var settings = GrpcEndpointSettings.parse(properties);
+
+    boolean forceInsecure = properties.getValue(GRPC_INSECURE);
+    if (forceInsecure) {
+      ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint)
+          .usePlaintext();
+      builder.userAgent(Version.getSdkVersion());
+      if (interceptors != null && interceptors.length > 0) {
+        builder = builder.intercept(interceptors);
+      }
+      return builder.build();
+    }
 
     String clientKeyPath = settings.tlsPrivateKeyPath;
     String clientCertPath = settings.tlsCertPath;

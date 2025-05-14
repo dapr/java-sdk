@@ -514,4 +514,60 @@ public class NetworkUtilsTest {
       caCertFile.delete();
     }
   }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithForceInsecure() throws Exception {
+    KeyPair caKeyPair = generateKeyPair();
+    X509Certificate caCert = generateCertificate(caKeyPair);
+    KeyPair clientKeyPair = generateKeyPair();
+    X509Certificate clientCert = generateCertificate(clientKeyPair);
+    
+    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
+    File clientCertFile = File.createTempFile("test-client-cert", ".pem");
+    File clientKeyFile = File.createTempFile("test-client-key", ".pem");
+    try {
+      writeCertificateToFile(caCert, caCertFile);
+      writeCertificateToFile(clientCert, clientCertFile);
+      writePrivateKeyToFile(clientKeyPair, clientKeyFile);
+
+      // Force insecure overrides all TLS settings
+      var properties = new Properties(Map.of(
+          Properties.GRPC_INSECURE.getName(), "true",
+          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+          Properties.GRPC_TLS_CERT_PATH.getName(), clientCertFile.getAbsolutePath(),
+          Properties.GRPC_TLS_KEY_PATH.getName(), clientKeyFile.getAbsolutePath(),
+          Properties.GRPC_ENDPOINT.getName(), "https://example.com:443"  // Even with HTTPS
+      ));
+
+      channel = NetworkUtils.buildGrpcManagedChannel(properties);
+      channels.add(channel);
+      
+      // Verify the channel is created with the correct authority
+      Assertions.assertEquals("example.com:443", channel.authority());
+      
+      Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
+    } finally {
+      caCertFile.delete();
+      clientCertFile.delete();
+      clientKeyFile.delete();
+    }
+  }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithInsecureOnly() {
+    // Test insecure mode with no TLS settings
+    var properties = new Properties(Map.of(
+        Properties.GRPC_INSECURE.getName(), "true"
+    ));
+
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+    
+    // Verify the channel is created with the default authority
+    String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
+    Assertions.assertEquals(expectedAuthority, channel.authority());
+    
+    // Verify the channel is active
+    Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
+  }
 }
