@@ -14,11 +14,18 @@ limitations under the License.
 package io.dapr.utils;
 
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprError;
+import io.dapr.exceptions.DaprException;
+import io.grpc.ChannelCredentials;
 import io.grpc.ClientInterceptor;
+import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.TlsChannelCredentials;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -26,6 +33,7 @@ import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
 import static io.dapr.config.Properties.GRPC_PORT;
+import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.SIDECAR_IP;
 
 
@@ -113,8 +121,24 @@ public final class NetworkUtils {
    */
   public static ManagedChannel buildGrpcManagedChannel(Properties properties, ClientInterceptor... interceptors) {
     var settings = GrpcEndpointSettings.parse(properties);
-    ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint)
-        .userAgent(Version.getSdkVersion());
+    String caPath = properties.getValue(GRPC_TLS_CA_PATH);
+
+    ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint);
+
+    if (caPath != null) {
+      try {
+        InputStream caInputStream = new FileInputStream(caPath);
+        ChannelCredentials credentials = TlsChannelCredentials.newBuilder()
+            .trustManager(caInputStream)
+            .build();
+        builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
+      } catch (IOException e) {
+        throw new DaprException(
+            new DaprError().setErrorCode("TLS_CA_ERROR").setMessage("Failed to configure TLS CA"), e);
+      }
+    }
+
+    builder.userAgent(Version.getSdkVersion());
     if (!settings.secure) {
       builder = builder.usePlaintext();
     }

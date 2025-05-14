@@ -176,6 +176,14 @@ public class Properties {
           DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
 
   /**
+   * Path to the TLS CA certificate for gRPC communication.
+   */
+  public static final Property<String> GRPC_TLS_CA_PATH = new StringProperty(
+      "dapr.grpc.tls.ca.path",
+      "DAPR_GRPC_TLS_CA_PATH",
+      null);
+
+  /**
    * Mechanism to override properties set in a static context.
    */
   private final Map<String, String> overrides;
