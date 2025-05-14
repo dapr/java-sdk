@@ -35,6 +35,7 @@ import static io.dapr.config.Properties.GRPC_ENDPOINT;
 import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
+import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.SIDECAR_IP;
 
 /**
@@ -126,21 +127,40 @@ public final class NetworkUtils {
 
     String clientKeyPath = settings.tlsPrivateKeyPath;
     String clientCertPath = settings.tlsCertPath;
+    String caCertPath = settings.tlsCaPath;
 
     ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint);
 
     if (clientCertPath != null && clientKeyPath != null) {
+      // mTLS case - using client cert and key, with optional CA cert for server authentication
       try (
           InputStream clientCertInputStream = new FileInputStream(clientCertPath);
-          InputStream clientKeyInputStream = new FileInputStream(clientKeyPath)
+          InputStream clientKeyInputStream = new FileInputStream(clientKeyPath);
+          InputStream caCertInputStream = caCertPath != null ? new FileInputStream(caCertPath) : null
       ) {
+        TlsChannelCredentials.Builder builderCreds = TlsChannelCredentials.newBuilder()
+            .keyManager(clientCertInputStream, clientKeyInputStream);  // For client authentication
+        if (caCertInputStream != null) {
+          builderCreds.trustManager(caCertInputStream);  // For server authentication
+        }
+        ChannelCredentials credentials = builderCreds.build();
+        builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
+      } catch (IOException e) {
+        throw new DaprException(
+            new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
+                .setMessage("Failed to create mTLS credentials" + (caCertPath != null ? " with CA cert" : "")), e);
+      }
+    } else if (caCertPath != null) {
+      // Simple TLS case - using CA cert only for server authentication
+      try (InputStream caCertInputStream = new FileInputStream(caCertPath)) {
         ChannelCredentials credentials = TlsChannelCredentials.newBuilder()
-            .keyManager(clientCertInputStream, clientKeyInputStream)
+            .trustManager(caCertInputStream)
             .build();
         builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
       } catch (IOException e) {
         throw new DaprException(
-            new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR").setMessage("Failed to create TLS credentials"), e);
+            new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
+                .setMessage("Failed to create TLS credentials with CA cert"), e);
       }
     } else if (!settings.secure) {
       builder = builder.usePlaintext();
@@ -160,12 +180,14 @@ public final class NetworkUtils {
     final boolean secure;
     final String tlsPrivateKeyPath;
     final String tlsCertPath;
+    final String tlsCaPath;
 
-    private GrpcEndpointSettings(String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath) {
+    private GrpcEndpointSettings(String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath) {
       this.endpoint = endpoint;
       this.secure = secure;
       this.tlsPrivateKeyPath = tlsPrivateKeyPath;
       this.tlsCertPath = tlsCertPath;
+      this.tlsCaPath = tlsCaPath;
     }
 
     static GrpcEndpointSettings parse(Properties properties) {
@@ -173,7 +195,7 @@ public final class NetworkUtils {
       int port = properties.getValue(GRPC_PORT);
       String clientKeyPath = properties.getValue(GRPC_TLS_KEY_PATH);
       String clientCertPath = properties.getValue(GRPC_TLS_CERT_PATH);
-
+      String caCertPath = properties.getValue(GRPC_TLS_CA_PATH);
 
       boolean secure = false;
       String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
@@ -216,17 +238,17 @@ public final class NetworkUtils {
                           authorityEndpoint,
                           address,
                           port
-                  ), secure, clientKeyPath, clientCertPath);
+                  ), secure, clientKeyPath, clientCertPath, caCertPath);
         }
 
         var socket = matcher.group("socket");
         if (socket != null) {
-          return new GrpcEndpointSettings(socket, secure, clientKeyPath, clientCertPath);
+          return new GrpcEndpointSettings(socket, secure, clientKeyPath, clientCertPath, caCertPath);
         }
 
         var vsocket = matcher.group("vsocket");
         if (vsocket != null) {
-          return new GrpcEndpointSettings(vsocket, secure, clientKeyPath, clientCertPath);
+          return new GrpcEndpointSettings(vsocket, secure, clientKeyPath, clientCertPath, caCertPath);
         }
       }
 
@@ -234,7 +256,7 @@ public final class NetworkUtils {
               "dns:///%s:%d",
               address,
               port
-      ), secure, clientKeyPath, clientCertPath);
+      ), secure, clientKeyPath, clientCertPath, caCertPath);
     }
 
   }

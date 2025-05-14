@@ -1,3 +1,16 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the sppecific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.utils;
 
 import io.dapr.config.Properties;
@@ -274,6 +287,98 @@ public class NetworkUtilsTest {
   }
 
   @Test
+  public void testBuildGrpcManagedChannelWithTlsAndCaCert() throws Exception {
+    // Generate test CA certificate
+    KeyPair caKeyPair = generateKeyPair();
+    X509Certificate caCert = generateCertificate(caKeyPair);
+    
+    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
+    try {
+      writeCertificateToFile(caCert, caCertFile);
+
+      var properties = new Properties(Map.of(
+          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath()
+      ));
+
+      channel = NetworkUtils.buildGrpcManagedChannel(properties);
+      channels.add(channel);
+      String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
+      Assertions.assertEquals(expectedAuthority, channel.authority());
+    } finally {
+      caCertFile.delete();
+    }
+  }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithTlsAndCaCertAndEndpoint() throws Exception {
+    // Generate test CA certificate
+    KeyPair caKeyPair = generateKeyPair();
+    X509Certificate caCert = generateCertificate(caKeyPair);
+    
+    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
+    try {
+      writeCertificateToFile(caCert, caCertFile);
+
+      var properties = new Properties(Map.of(
+          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+          Properties.GRPC_ENDPOINT.getName(), "https://example.com:443"
+      ));
+
+      channel = NetworkUtils.buildGrpcManagedChannel(properties);
+      channels.add(channel);
+      Assertions.assertEquals("example.com:443", channel.authority());
+    } finally {
+      caCertFile.delete();
+    }
+  }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithInvalidCaCert() {
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_CA_PATH.getName(), "/nonexistent/ca.pem"
+    ));
+
+    Assertions.assertThrows(DaprException.class, () -> {
+      NetworkUtils.buildGrpcManagedChannel(properties);
+    });
+  }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithMtlsAndCaCert() throws Exception {
+    // Generate test certificates
+    KeyPair caKeyPair = generateKeyPair();
+    X509Certificate caCert = generateCertificate(caKeyPair);
+    KeyPair clientKeyPair = generateKeyPair();
+    X509Certificate clientCert = generateCertificate(clientKeyPair);
+    
+    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
+    File clientCertFile = File.createTempFile("test-client-cert", ".pem");
+    File clientKeyFile = File.createTempFile("test-client-key", ".pem");
+    try {
+      writeCertificateToFile(caCert, caCertFile);
+      writeCertificateToFile(clientCert, clientCertFile);
+      writePrivateKeyToFile(clientKeyPair, clientKeyFile);
+
+      // Test mTLS with both client certs and CA cert
+      var properties = new Properties(Map.of(
+          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+          Properties.GRPC_TLS_CERT_PATH.getName(), clientCertFile.getAbsolutePath(),
+          Properties.GRPC_TLS_KEY_PATH.getName(), clientKeyFile.getAbsolutePath()
+      ));
+
+      channel = NetworkUtils.buildGrpcManagedChannel(properties);
+      channels.add(channel);
+      String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
+      Assertions.assertEquals(expectedAuthority, channel.authority());
+      Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
+    } finally {
+      caCertFile.delete();
+      clientCertFile.delete();
+      clientKeyFile.delete();
+    }
+  }
+
+  @Test
   public void testGrpcEndpointParsing() {
     testGrpcEndpointParsingScenario(":5000", "dns:///127.0.0.1:5000", false);
     testGrpcEndpointParsingScenario(":5000?tls=true", "dns:///127.0.0.1:5000", true);
@@ -351,6 +456,62 @@ public class NetworkUtilsTest {
       Assert.fail();
     } catch (IllegalArgumentException e) {
       // Expected
+    }
+  }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithCaCertAndUnixSocket() throws Exception {
+    // Skip test if Unix domain sockets are not supported
+    Assumptions.assumeTrue(System.getProperty("os.name").toLowerCase().contains("linux") || 
+                          System.getProperty("os.name").toLowerCase().contains("mac"));
+
+    // Generate test CA certificate
+    KeyPair caKeyPair = generateKeyPair();
+    X509Certificate caCert = generateCertificate(caKeyPair);
+    
+    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
+    try {
+      writeCertificateToFile(caCert, caCertFile);
+
+      var properties = new Properties(Map.of(
+          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+          Properties.GRPC_ENDPOINT.getName(), "unix:/tmp/test.sock"
+      ));
+
+      // For Unix sockets, we expect an exception if the platform doesn't support it
+      try {
+        channel = NetworkUtils.buildGrpcManagedChannel(properties);
+        channels.add(channel);
+        Assertions.assertNotNull(channel.authority(), "Channel authority should not be null");
+      } catch (Exception e) {
+        // If we get here, Unix sockets are not supported
+        Assertions.assertTrue(e.getMessage().contains("DomainSocketAddress"));
+      }
+    } finally {
+      caCertFile.delete();
+    }
+  }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithCaCertAndDnsAuthority() throws Exception {
+    // Generate test CA certificate
+    KeyPair caKeyPair = generateKeyPair();
+    X509Certificate caCert = generateCertificate(caKeyPair);
+    
+    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
+    try {
+      writeCertificateToFile(caCert, caCertFile);
+
+      var properties = new Properties(Map.of(
+          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+          Properties.GRPC_ENDPOINT.getName(), "dns://authority:53/example.com:443"
+      ));
+
+      channel = NetworkUtils.buildGrpcManagedChannel(properties);
+      channels.add(channel);
+      Assertions.assertEquals("example.com:443", channel.authority());
+    } finally {
+      caCertFile.delete();
     }
   }
 }

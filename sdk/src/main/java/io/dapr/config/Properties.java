@@ -117,6 +117,15 @@ public class Properties {
       "dapr.grpc.tls.key.path",
       "DAPR_GRPC_TLS_KEY_PATH",
       null);
+
+  /**
+   * Path to the TLS CA certificate for gRPC communication after checking system property
+   * and environment variable.
+   */
+  public static final Property<String> GRPC_TLS_CA_PATH = new StringProperty(
+      "dapr.grpc.tls.ca.path",
+      "DAPR_GRPC_TLS_CA_PATH",
+      null);
       
   /**
    * GRPC endpoint for remote sidecar connectivity.
