@@ -128,12 +128,13 @@ public class Properties {
       null);
 
   /**
-   * Force insecure (plaintext) mode for gRPC communication, regardless of other TLS settings.
+   * Use insecure TLS mode which still uses TLS but doesn't verify certificates.
+   * This uses InsecureTrustManagerFactory to trust all certificates.
    * This should only be used for testing or in secure environments.
    */
-  public static final Property<Boolean> GRPC_INSECURE = new BooleanProperty(
-      "dapr.grpc.insecure",
-      "DAPR_GRPC_INSECURE",
+  public static final Property<Boolean> GRPC_TLS_INSECURE = new BooleanProperty(
+      "dapr.grpc.tls.insecure",
+      "DAPR_GRPC_TLS_INSECURE",
       false);
 
   /**

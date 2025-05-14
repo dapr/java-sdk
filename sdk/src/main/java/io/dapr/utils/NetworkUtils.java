@@ -22,6 +22,9 @@ import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.TlsChannelCredentials;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import io.grpc.netty.shaded.io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,10 +35,10 @@ import java.net.Socket;
 import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
-import static io.dapr.config.Properties.GRPC_INSECURE;
 import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
+import static io.dapr.config.Properties.GRPC_TLS_INSECURE;
 import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
 import static io.dapr.config.Properties.SIDECAR_IP;
 
@@ -126,15 +129,23 @@ public final class NetworkUtils {
   public static ManagedChannel buildGrpcManagedChannel(Properties properties, ClientInterceptor... interceptors) {
     var settings = GrpcEndpointSettings.parse(properties);
 
-    boolean forceInsecure = properties.getValue(GRPC_INSECURE);
-    if (forceInsecure) {
-      ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint)
-          .usePlaintext();
-      builder.userAgent(Version.getSdkVersion());
-      if (interceptors != null && interceptors.length > 0) {
-        builder = builder.intercept(interceptors);
+    boolean insecureTls = properties.getValue(GRPC_TLS_INSECURE);
+    if (insecureTls) {
+      try {
+        ManagedChannelBuilder<?> builder = NettyChannelBuilder.forTarget(settings.endpoint)
+            .sslContext(GrpcSslContexts.forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .build());
+        builder.userAgent(Version.getSdkVersion());
+        if (interceptors != null && interceptors.length > 0) {
+          builder = builder.intercept(interceptors);
+        }
+        return builder.build();
+      } catch (Exception e) {
+        throw new DaprException(
+            new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
+                .setMessage("Failed to create insecure TLS credentials"), e);
       }
-      return builder.build();
     }
 
     String clientKeyPath = settings.tlsPrivateKeyPath;
