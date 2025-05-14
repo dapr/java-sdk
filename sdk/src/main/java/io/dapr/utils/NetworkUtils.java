@@ -63,7 +63,8 @@ public final class NetworkUtils {
 
   private static final String GRPC_ENDPOINT_HOSTNAME_REGEX_PART = "(([A-Za-z0-9_\\-\\.]+)|(\\[" + IPV6_REGEX + "\\]))";
 
-  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART = "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>"
+  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART =
+          "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>"
       + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)?/";
 
   private static final String GRPC_ENDPOINT_PARAM_REGEX_PART = "(\\?(?<param>tls\\=((true)|(false))))?";
@@ -127,26 +128,27 @@ public final class NetworkUtils {
     String clientCertPath = settings.tlsCertPath;
 
     ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint);
-    if (clientCertPath != null && clientKeyPath != null) {
-      try {
-        InputStream clientCertInputStream = new FileInputStream(clientCertPath);
-        InputStream clientKeyInputStream = new FileInputStream(clientKeyPath);
 
+    if (clientCertPath != null && clientKeyPath != null) {
+      try (
+          InputStream clientCertInputStream = new FileInputStream(clientCertPath);
+          InputStream clientKeyInputStream = new FileInputStream(clientKeyPath)
+      ) {
         ChannelCredentials credentials = TlsChannelCredentials.newBuilder()
             .keyManager(clientCertInputStream, clientKeyInputStream)
             .build();
-
         builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
       } catch (IOException e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR").setMessage("Failed to create TLS credentials"), e);
       }
-    } else if (!settings.secure) {
-      builder = builder.usePlaintext();
     }
 
     builder.userAgent(Version.getSdkVersion());
 
+    if (!settings.secure) {
+      builder = builder.usePlaintext();
+    }
     if (interceptors != null && interceptors.length > 0) {
       builder = builder.intercept(interceptors);
     }
@@ -172,6 +174,7 @@ public final class NetworkUtils {
       int port = properties.getValue(GRPC_PORT);
       String clientKeyPath = properties.getValue(GRPC_TLS_KEY_PATH);
       String clientCertPath = properties.getValue(GRPC_TLS_CERT_PATH);
+
 
       boolean secure = false;
       String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
@@ -208,7 +211,13 @@ public final class NetworkUtils {
 
         var authorityEndpoint = matcher.group("authorityEndpoint");
         if (authorityEndpoint != null) {
-          return new GrpcEndpointSettings(String.format("dns://%s/%s:%d", authorityEndpoint, address, port), secure, clientKeyPath, clientCertPath);
+          return new GrpcEndpointSettings(
+                  String.format(
+                          "dns://%s/%s:%d",
+                          authorityEndpoint,
+                          address,
+                          port
+                  ), secure, clientKeyPath, clientCertPath);
         }
 
         var socket = matcher.group("socket");
@@ -222,8 +231,13 @@ public final class NetworkUtils {
         }
       }
 
-      return new GrpcEndpointSettings(String.format("dns:///%s:%d", address, port), secure, clientKeyPath, clientCertPath);
+      return new GrpcEndpointSettings(String.format(
+              "dns:///%s:%d",
+              address,
+              port
+      ), secure, clientKeyPath, clientCertPath);
     }
+
   }
 
   private static void callWithRetry(Runnable function, long retryTimeoutMilliseconds) throws InterruptedException {
