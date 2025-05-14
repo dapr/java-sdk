@@ -14,11 +14,18 @@ limitations under the License.
 package io.dapr.utils;
 
 import io.dapr.config.Properties;
+import io.dapr.exceptions.DaprError;
+import io.dapr.exceptions.DaprException;
+import io.grpc.ChannelCredentials;
 import io.grpc.ClientInterceptor;
+import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.TlsChannelCredentials;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -26,8 +33,9 @@ import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
 import static io.dapr.config.Properties.GRPC_PORT;
+import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
+import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
 import static io.dapr.config.Properties.SIDECAR_IP;
-
 
 /**
  * Utility methods for network, internal to Dapr SDK.
@@ -55,20 +63,20 @@ public final class NetworkUtils {
 
   private static final String GRPC_ENDPOINT_HOSTNAME_REGEX_PART = "(([A-Za-z0-9_\\-\\.]+)|(\\[" + IPV6_REGEX + "\\]))";
 
-  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART =
-      "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>" + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)?/";
+  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART = "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>"
+      + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)?/";
 
   private static final String GRPC_ENDPOINT_PARAM_REGEX_PART = "(\\?(?<param>tls\\=((true)|(false))))?";
 
-  private static final String GRPC_ENDPOINT_SOCKET_REGEX_PART =
-      "(?<socket>((unix:)|(unix://)|(unix-abstract:))" + GRPC_ENDPOINT_FILENAME_REGEX_PART + ")";
+  private static final String GRPC_ENDPOINT_SOCKET_REGEX_PART = "(?<socket>((unix:)|(unix://)|(unix-abstract:))"
+      + GRPC_ENDPOINT_FILENAME_REGEX_PART + ")";
 
-  private static final String GRPC_ENDPOINT_VSOCKET_REGEX_PART =
-      "(?<vsocket>vsock:" + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)";
-  private static final String GRPC_ENDPOINT_HOST_REGEX_PART =
-      "((?<http>http://)|(?<https>https://)|(?<dns>dns:)|(" + GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART + "))?"
-          + "(?<hostname>" + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ")?+"
-          + "(:(?<port>[0-9]+))?";
+  private static final String GRPC_ENDPOINT_VSOCKET_REGEX_PART = "(?<vsocket>vsock:" + GRPC_ENDPOINT_HOSTNAME_REGEX_PART
+      + ":[0-9]+)";
+  private static final String GRPC_ENDPOINT_HOST_REGEX_PART = "((?<http>http://)|(?<https>https://)|(?<dns>dns:)|("
+      + GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART + "))?"
+      + "(?<hostname>" + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ")?+"
+      + "(:(?<port>[0-9]+))?";
 
   private static final String GRPC_ENDPOINT_REGEX = "^("
       + "(" + GRPC_ENDPOINT_HOST_REGEX_PART + ")|"
@@ -107,14 +115,36 @@ public final class NetworkUtils {
 
   /**
    * Creates a GRPC managed channel.
-   * @param properties instance to set up the GrpcEndpoint
+   * 
+   * @param properties   instance to set up the GrpcEndpoint
    * @param interceptors Optional interceptors to add to the channel.
    * @return GRPC managed channel to communicate with the sidecar.
    */
   public static ManagedChannel buildGrpcManagedChannel(Properties properties, ClientInterceptor... interceptors) {
     var settings = GrpcEndpointSettings.parse(properties);
-    ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint)
-        .userAgent(Version.getSdkVersion());
+
+    String clientKeyPath = settings.tlsPrivateKeyPath;
+    String clientCertPath = settings.tlsCertPath;
+
+    ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint);
+
+    if (clientCertPath != null && clientKeyPath != null) {
+      try {
+        InputStream clientCertInputStream = new FileInputStream(clientCertPath);
+        InputStream clientKeyInputStream = new FileInputStream(clientKeyPath);
+
+        ChannelCredentials credentials = TlsChannelCredentials.newBuilder()
+            .keyManager(clientCertInputStream, clientKeyInputStream)
+            .build();
+        builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
+      } catch (IOException e) {
+        throw new DaprException(
+            new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR").setMessage("Failed to create TLS credentials"), e);
+      }
+    }
+
+    builder.userAgent(Version.getSdkVersion());
+
     if (!settings.secure) {
       builder = builder.usePlaintext();
     }
@@ -128,15 +158,23 @@ public final class NetworkUtils {
   static final class GrpcEndpointSettings {
     final String endpoint;
     final boolean secure;
+    final String tlsPrivateKeyPath;
+    final String tlsCertPath;
 
-    private GrpcEndpointSettings(String endpoint, boolean secure) {
+    private GrpcEndpointSettings(String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath) {
       this.endpoint = endpoint;
       this.secure = secure;
+      this.tlsPrivateKeyPath = tlsPrivateKeyPath;
+      this.tlsCertPath = tlsCertPath;
     }
 
     static GrpcEndpointSettings parse(Properties properties) {
       String address = properties.getValue(SIDECAR_IP);
       int port = properties.getValue(GRPC_PORT);
+      String clientKeyPath = properties.getValue(GRPC_TLS_KEY_PATH);
+      String clientCertPath = properties.getValue(GRPC_TLS_CERT_PATH);
+
+
       boolean secure = false;
       String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
       if ((grpcEndpoint != null) && !grpcEndpoint.isEmpty()) {
@@ -172,21 +210,21 @@ public final class NetworkUtils {
 
         var authorityEndpoint = matcher.group("authorityEndpoint");
         if (authorityEndpoint != null) {
-          return new GrpcEndpointSettings(String.format("dns://%s/%s:%d", authorityEndpoint, address, port), secure);
+          return new GrpcEndpointSettings(String.format("dns://%s/%s:%d", authorityEndpoint, address, port), secure, clientKeyPath, clientCertPath);
         }
 
         var socket = matcher.group("socket");
         if (socket != null) {
-          return new GrpcEndpointSettings(socket, secure);
+          return new GrpcEndpointSettings(socket, secure, clientKeyPath, clientCertPath);
         }
 
         var vsocket = matcher.group("vsocket");
         if (vsocket != null) {
-          return new GrpcEndpointSettings(vsocket, secure);
+          return new GrpcEndpointSettings(vsocket, secure, clientKeyPath, clientCertPath);
         }
       }
 
-      return new GrpcEndpointSettings(String.format("dns:///%s:%d", address, port), secure);
+      return new GrpcEndpointSettings(String.format("dns:///%s:%d", address, port), secure, clientKeyPath, clientCertPath);
     }
 
   }
