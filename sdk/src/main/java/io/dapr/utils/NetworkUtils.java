@@ -33,9 +33,9 @@ import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
 import static io.dapr.config.Properties.GRPC_PORT;
+import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
-import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.SIDECAR_IP;
 
 /**
@@ -182,7 +182,8 @@ public final class NetworkUtils {
     final String tlsCertPath;
     final String tlsCaPath;
 
-    private GrpcEndpointSettings(String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath) {
+    private GrpcEndpointSettings(
+            String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath) {
       this.endpoint = endpoint;
       this.secure = secure;
       this.tlsPrivateKeyPath = tlsPrivateKeyPath;
