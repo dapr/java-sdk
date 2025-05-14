@@ -32,8 +32,8 @@ import java.net.Socket;
 import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
-import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.GRPC_INSECURE;
+import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
