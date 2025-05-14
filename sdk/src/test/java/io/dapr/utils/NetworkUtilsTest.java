@@ -517,10 +517,10 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannelWithInsecureTls() throws Exception {
-    // Test insecure TLS mode with HTTPS endpoint
+    // Test insecure TLS mode with a secure endpoint
     var properties = new Properties(Map.of(
         Properties.GRPC_TLS_INSECURE.getName(), "true",
-        Properties.GRPC_ENDPOINT.getName(), "https://example.com:443"  // Using HTTPS to ensure TLS is used
+        Properties.GRPC_ENDPOINT.getName(), "dns:///example.com:443?tls=true"
     ));
 
     channel = NetworkUtils.buildGrpcManagedChannel(properties);
@@ -556,7 +556,7 @@ public class NetworkUtilsTest {
           Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
           Properties.GRPC_TLS_CERT_PATH.getName(), clientCertFile.getAbsolutePath(),
           Properties.GRPC_TLS_KEY_PATH.getName(), clientKeyFile.getAbsolutePath(),
-          Properties.GRPC_ENDPOINT.getName(), "https://example.com:443"
+          Properties.GRPC_ENDPOINT.getName(), "dns:///example.com:443?tls=true"
       ));
 
       channel = NetworkUtils.buildGrpcManagedChannel(properties);
