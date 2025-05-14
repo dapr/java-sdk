@@ -142,13 +142,12 @@ public final class NetworkUtils {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR").setMessage("Failed to create TLS credentials"), e);
       }
+    } else if (!settings.secure) {
+      builder = builder.usePlaintext();
     }
 
     builder.userAgent(Version.getSdkVersion());
 
-    if (!settings.secure) {
-      builder = builder.usePlaintext();
-    }
     if (interceptors != null && interceptors.length > 0) {
       builder = builder.intercept(interceptors);
     }
