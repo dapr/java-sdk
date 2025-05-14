@@ -127,7 +127,6 @@ public final class NetworkUtils {
     String clientCertPath = settings.tlsCertPath;
 
     ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint);
-
     if (clientCertPath != null && clientKeyPath != null) {
       try {
         InputStream clientCertInputStream = new FileInputStream(clientCertPath);
@@ -136,18 +135,18 @@ public final class NetworkUtils {
         ChannelCredentials credentials = TlsChannelCredentials.newBuilder()
             .keyManager(clientCertInputStream, clientKeyInputStream)
             .build();
+
         builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
       } catch (IOException e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR").setMessage("Failed to create TLS credentials"), e);
       }
+    } else if (!settings.secure) {
+      builder = builder.usePlaintext();
     }
 
     builder.userAgent(Version.getSdkVersion());
 
-    if (!settings.secure) {
-      builder = builder.usePlaintext();
-    }
     if (interceptors != null && interceptors.length > 0) {
       builder = builder.intercept(interceptors);
     }
@@ -173,7 +172,6 @@ public final class NetworkUtils {
       int port = properties.getValue(GRPC_PORT);
       String clientKeyPath = properties.getValue(GRPC_TLS_KEY_PATH);
       String clientCertPath = properties.getValue(GRPC_TLS_CERT_PATH);
-
 
       boolean secure = false;
       String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
@@ -226,7 +224,6 @@ public final class NetworkUtils {
 
       return new GrpcEndpointSettings(String.format("dns:///%s:%d", address, port), secure, clientKeyPath, clientCertPath);
     }
-
   }
 
   private static void callWithRetry(Runnable function, long retryTimeoutMilliseconds) throws InterruptedException {
