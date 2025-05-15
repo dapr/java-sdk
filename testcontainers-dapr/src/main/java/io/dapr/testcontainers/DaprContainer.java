@@ -217,14 +217,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       String type = (String) spec.get("type");
       String version = (String) spec.get("version");
       List<Map<String, String>> specMetadata =
-          (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyMap());
+          (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyList());
 
       ArrayList<MetadataEntry> metadataEntries = new ArrayList<>();
 
       for (Map<String, String> specMetadataItem : specMetadata) {
-        for (Map.Entry<String, String> metadataItem : specMetadataItem.entrySet()) {
-          metadataEntries.add(new MetadataEntry(metadataItem.getKey(), metadataItem.getValue()));
-        }
+          metadataEntries.add(new MetadataEntry(specMetadataItem.get("name"), specMetadataItem.get("value")));
       }
 
       return withComponent(new Component(name, type, version, metadataEntries));

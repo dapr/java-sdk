@@ -72,17 +72,11 @@ public class DaprComponentTest {
         + "  type: state.redis\n"
         + "  version: v1\n"
         + "  metadata:\n"
-        + "  - name: name\n"
-        + "    value: keyPrefix\n"
-        + "  - name: value\n"
+        + "  - name: keyPrefix\n"
         + "    value: name\n"
-        + "  - name: name\n"
-        + "    value: redisHost\n"
-        + "  - name: value\n"
+        + "  - name: redisHost\n"
         + "    value: redis:6379\n"
-        + "  - name: name\n"
-        + "    value: redisPassword\n"
-        + "  - name: value\n"
+        + "  - name: redisPassword\n"
         + "    value: ''\n";
 
     assertEquals(expectedComponentYaml, componentYaml);
