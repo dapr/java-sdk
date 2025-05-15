@@ -210,11 +210,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     try {
       Map<String, Object> component = YAML_MAPPER.loadAs(Files.newInputStream(path), Map.class);
 
-      String type = (String) component.get("type");
       Map<String, Object> metadata = (Map<String, Object>) component.get("metadata");
       String name = (String) metadata.get("name");
 
       Map<String, Object> spec = (Map<String, Object>) component.get("spec");
+      String type = (String) spec.get("type");
       String version = (String) spec.get("version");
       List<Map<String, String>> specMetadata =
           (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyMap());
