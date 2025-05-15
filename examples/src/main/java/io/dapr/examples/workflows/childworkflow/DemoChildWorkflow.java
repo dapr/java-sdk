@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.examples.workflows.childworkflow;
 
-import io.dapr.durabletask.interruption.OrchestratorBlockedException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;
