@@ -304,6 +304,7 @@ public class DefaultWorkflowContextTest {
 
     assertEquals(retryPolicy.getMaxNumberOfAttempts(), taskOptions.getRetryPolicy().getMaxNumberOfAttempts());
     assertEquals(retryPolicy.getFirstRetryInterval(), taskOptions.getRetryPolicy().getFirstRetryInterval());
+    assertEquals(Duration.ZERO, taskOptions.getRetryPolicy().getRetryTimeout());
   }
 
   @Test
@@ -326,5 +327,53 @@ public class DefaultWorkflowContextTest {
     RuntimeException runtimeException = assertThrows(RuntimeException.class, testWorkflowContext::newUuid);
     String expectedMessage = "No implementation found.";
     assertEquals(expectedMessage, runtimeException.getMessage());
+  }
+
+  @Test
+  public void workflowRetryPolicyRetryTimeoutValueShouldHaveRightValueWhenBeingSet() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(1)
+            .setFirstRetryInterval(Duration.ofSeconds(10))
+            .setRetryTimeout(Duration.ofSeconds(10))
+            .build();
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryPolicy);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callSubOrchestrator(
+                    eq(expectedName),
+                    eq(expectedInput),
+                    eq(expectedInstanceId),
+                    captor.capture(),
+                    eq(String.class)
+            );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    assertEquals(Duration.ofSeconds(10), taskOptions.getRetryPolicy().getRetryTimeout());
+  }
+
+  @Test
+  public void workflowRetryPolicyRetryThrowIllegalArgumentWhenNullRetryTimeoutIsSet() {
+    assertThrows(IllegalArgumentException.class, () ->
+            WorkflowTaskRetryPolicy.newBuilder()
+                    .setMaxNumberOfAttempts(1)
+                    .setFirstRetryInterval(Duration.ofSeconds(10))
+                    .setRetryTimeout(null)
+                    .build());
+  }
+
+  @Test
+  public void workflowRetryPolicyRetryThrowIllegalArgumentWhenRetryTimeoutIsLessThanMaxRetryInterval() {
+    assertThrows(IllegalArgumentException.class, () -> WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(1)
+            .setFirstRetryInterval(Duration.ofSeconds(10))
+            .setRetryTimeout(Duration.ofSeconds(9))
+            .build());
   }
 }

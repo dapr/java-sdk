@@ -32,6 +32,7 @@ public class DemoChildWorkflowWorker {
 
     // Build and then start the workflow runtime pulling and executing tasks
     WorkflowRuntime runtime = builder.build();
+    runtime.start();
     System.out.println("Start workflow runtime");
   }
 }

@@ -240,7 +240,9 @@ public class DefaultWorkflowContext implements WorkflowContext {
     );
 
     retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
-    retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
+      retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    }
 
     return new TaskOptions(retryPolicy);
   }
