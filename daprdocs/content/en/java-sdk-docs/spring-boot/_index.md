@@ -11,29 +11,28 @@ By combining Dapr and Spring Boot, we can create infrastructure independent Java
 First, we will start with a simple integration covering the `DaprClient` and the [Testcontainers](https://testcontainers.com/) integration, to then use Spring and Spring Boot mechanisms and programming model to leverage the Dapr APIs under the hood. This help teams to remove dependencies such as clients and drivers required to connect to environment specific infrastructure (databases, key-value stores, message brokers, configuration/secret stores, etc.) 
 
 {{% alert title="Note" color="primary" %}}
-The Spring Boot integration explained in this page is still alpha, hence most artifacts are labeled with 0.13.0.
-
+The Spring Boot integration requires Spring Boot 3.x+ to work. This will not work with Spring Boot 2.x.
+The Spring Boot integration still remains in alpha. We need your help and feedback to graduate it. 
 {{% /alert %}}
 
 
 ## Adding the Dapr and Spring Boot integration to your project
 
-If you already have a Spring Boot application (Spring Boot 3.x+), you can directly add the following dependencies to your project: 
-
+If you already have a Spring Boot application, you can directly add the following dependencies to your project: 
 
 ```
 	<dependency>
         <groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter</artifactId>
-		<version>0.14.1</version>
 	</dependency>
 	<dependency>
 		<groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter-test</artifactId>
-		<version>0.14.1</version>
 		<scope>test</scope>
 	</dependency>
 ```
+
+You can find the [latest released version here](https://central.sonatype.com/artifact/io.dapr.spring/dapr-spring-boot-starter). 
 
 By adding these dependencies you can: 
 - Autowire a `DaprClient` to use inside your applications
