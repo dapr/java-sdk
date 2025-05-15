@@ -357,4 +357,23 @@ public class DefaultWorkflowContextTest {
 
     assertEquals(Duration.ofSeconds(10), taskOptions.getRetryPolicy().getRetryTimeout());
   }
+
+  @Test
+  public void workflowRetryPolicyRetryThrowIllegalArgumentWhenNullRetryTimeoutIsSet() {
+    assertThrows(IllegalArgumentException.class, () ->
+            WorkflowTaskRetryPolicy.newBuilder()
+                    .setMaxNumberOfAttempts(1)
+                    .setFirstRetryInterval(Duration.ofSeconds(10))
+                    .setRetryTimeout(null)
+                    .build());
+  }
+
+  @Test
+  public void workflowRetryPolicyRetryThrowIllegalArgumentWhenRetryTimeoutIsLessThanMaxRetryInterval() {
+    assertThrows(IllegalArgumentException.class, () -> WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(1)
+            .setFirstRetryInterval(Duration.ofSeconds(10))
+            .setRetryTimeout(Duration.ofSeconds(9))
+            .build());
+  }
 }
