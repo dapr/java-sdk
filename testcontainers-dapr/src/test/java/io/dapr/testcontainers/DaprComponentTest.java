@@ -69,7 +69,7 @@ public class DaprComponentTest {
         + "metadata:\n"
         + "  name: statestore\n"
         + "spec:\n"
-        + "  type: null\n"
+        + "  type: state.redis\n"
         + "  version: v1\n"
         + "  metadata:\n"
         + "  - name: name\n"
