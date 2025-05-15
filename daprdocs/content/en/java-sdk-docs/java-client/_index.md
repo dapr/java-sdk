@@ -40,6 +40,14 @@ If your Dapr instance is configured to require the `DAPR_API_TOKEN` environment 
 set it in the environment and the client will use it automatically.  
 You can read more about Dapr API token authentication [here](https://docs.dapr.io/operations/security/api-token/).
 
+##### TLS Configuration
+For secure gRPC communication, you can configure TLS settings using the following environment variables:
+
+- `DAPR_GRPC_TLS_INSECURE`: When set to "true", enables insecure TLS mode which still uses TLS but doesn't verify certificates. This uses InsecureTrustManagerFactory to trust all certificates. This should only be used for testing or in secure environments.
+- `DAPR_GRPC_TLS_CA_PATH`: Specifies the path to the CA certificate file. This is used for TLS connections to servers with self-signed certificates.
+- `DAPR_GRPC_TLS_CERT_PATH`: Specifies the path to the TLS certificate file for client authentication.
+- `DAPR_GRPC_TLS_KEY_PATH`: Specifies the path to the TLS private key file for client authentication.
+
 #### Error Handling
 
 Initially, errors in Dapr followed the Standard gRPC error model. However, to provide more detailed and informative error 
