@@ -59,16 +59,18 @@ graph LR
 ```
 
 <!-- STEP
-name: Start Customer Workflow
+name: Start Chain Activities Workflow
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
-- 'New Workflow Instance created for Customer'
+- 'TOKYO, LONDON, SEATTLE'
 background: true
 sleep: 1
 timeout_seconds: 2
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To start the workflow with the three chained activities you can run: 
 
 ```sh
 curl -X POST localhost:8080/wfp/chain -H 'Content-Type: application/json' 
@@ -102,6 +104,9 @@ In the application output you should see the workflow activities being executed.
 
 ### Parent / Child Workflows example
 
+In this example we start a Parent workflow that calls a child workflow that execute one activity that reverse the . 
+
+The Parent workflow looks like this: 
 
 ```mermaid
 graph LR
@@ -110,14 +115,78 @@ graph LR
    subgraph for each word in the input
     GWL[Call child workflow]
    end
-   ALL[Wait until all tasks
-   are completed]
    EW((End
    Workflow))
    SW --> GWL
-   GWL --> ALL
-   ALL --> EW
+   GWL --> EW
 ```
+
+The Child workflow looks like this:
+
+```mermaid
+graph LR
+   SW((Start
+   Workflow))
+   A1[Activity1]
+   EW((End
+   Workflow))
+   SW --> A1
+   A1 --> EW
+```
+
+To start the parent workflow you can run:
+
+
+<!-- STEP
+name: Start Parent/Child Workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- '!wolfkroW rpaD olleH'
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To start the workflow with the three chained activities you can run:
+
+```sh
+curl -X POST localhost:8080/wfp/child -H 'Content-Type: application/json' 
+```
+
+<!-- END_STEP -->
+
+
+As result from executing the request you should see:
+
+```bash
+!wolfkroW rpaD olleH
+```
+
+In the application output you should see the workflow activities being executed.
+
+```bash
+2025-05-16T10:27:01.845+01:00  INFO 9855 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.child.ParentWorkflow
+2025-05-16T10:27:01.845+01:00  INFO 9855 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : calling childworkflow with input: Hello Dapr Workflow!
+2025-05-16T10:27:01.865+01:00  INFO 9855 --- [nio-8080-exec-1] i.d.s.e.w.WorkflowPatternsRestController : Workflow instance f3ec9566-a0fc-4d28-8912-3f3ded3cd8a9 started
+2025-05-16T10:27:01.866+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : Starting ChildWorkflow: io.dapr.springboot.examples.wfp.child.ChildWorkflow
+2025-05-16T10:27:01.868+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : ChildWorkflow received input: Hello Dapr Workflow!
+2025-05-16T10:27:01.868+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : ChildWorkflow is calling Activity: io.dapr.springboot.examples.wfp.child.ReverseActivity
+2025-05-16T10:27:01.874+01:00  INFO 9855 --- [pool-3-thread-3] i.d.s.e.wfp.child.ReverseActivity        : Starting Activity: io.dapr.springboot.examples.wfp.child.ReverseActivity
+2025-05-16T10:27:01.874+01:00  INFO 9855 --- [pool-3-thread-3] i.d.s.e.wfp.child.ReverseActivity        : Message Received from input: Hello Dapr Workflow!
+2025-05-16T10:27:01.874+01:00  INFO 9855 --- [pool-3-thread-3] i.d.s.e.wfp.child.ReverseActivity        : Sending message to output: !wolfkroW rpaD olleH
+2025-05-16T10:27:01.882+01:00  INFO 9855 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : ChildWorkflow finished with: !wolfkroW rpaD olleH
+2025-05-16T10:27:01.892+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : childworkflow finished with: !wolfkroW rpaD olleH
+```
+
+### ContinueAsNew Workflows example
+
+
+### External Event Workflow example
+
+
+### Fan Out/In Workflow example
 
 
 ## Testing workflow executions
