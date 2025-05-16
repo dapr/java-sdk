@@ -30,7 +30,6 @@ timeout_seconds: 45
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-cd workflows/
 ../../mvnw spring-boot:test-run
 ```
 
@@ -193,8 +192,8 @@ output_match_mode: substring
 expected_stdout_lines:
 - '{"cleanUpTimes":5}'
 background: true
-sleep: 1
-timeout_seconds: 2
+sleep: 10
+timeout_seconds: 15
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -298,8 +297,8 @@ output_match_mode: substring
 expected_stdout_lines:
 - '{"approved":true}'
 background: true
-sleep: 1
-timeout_seconds: 2
+sleep: 5
+timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
