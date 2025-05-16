@@ -45,7 +45,7 @@ public class ContinueAsNewWorkflow implements Workflow {
       ctx.getLogger().info("wait 5 seconds for next clean up");
       ctx.createTimer(Duration.ofSeconds(3)).await();
 
-      if(cleanUpLog.getCleanUpTimes().size() < 5) {
+      if(cleanUpLog.getCleanUpTimes() < 5) {
         // continue the workflow.
         ctx.getLogger().info("Let's do more cleaning.");
         ctx.continueAsNew(null);

@@ -1,22 +1,15 @@
 package io.dapr.springboot.examples.wfp.continueasnew;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class CleanUpLog {
-  private List<String> cleanUpTimes = new ArrayList<>();
+  private Integer cleanUpTimes = 0;
 
   public CleanUpLog() {
   }
-
-  public List<String> getCleanUpTimes() {
-    return cleanUpTimes;
+  public void increment() {
+    this.cleanUpTimes += 1;
   }
 
-  @Override
-  public String toString() {
-    return "CleanUpLog{" +
-            "cleanUpTimes=" + cleanUpTimes +
-            '}';
+  public Integer getCleanUpTimes() {
+    return cleanUpTimes;
   }
 }
