@@ -88,18 +88,18 @@ TOKYO, LONDON, SEATTLE
 In the application output you should see the workflow activities being executed. 
 
 ```bash
-2025-05-16T09:59:22.176+01:00  INFO 8360 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.chain.ChainWorkflow
-2025-05-16T09:59:22.194+01:00  INFO 8360 --- [nio-8080-exec-2] i.d.s.e.w.WorkflowPatternsRestController : Workflow instance 7625b4af-8c04-408a-93dc-bad753466e43 started
-2025-05-16T09:59:22.195+01:00  INFO 8360 --- [pool-3-thread-2] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Starting Activity: io.dapr.springboot.examples.wfp.chain.ToUpperCaseActivity
-2025-05-16T09:59:22.196+01:00  INFO 8360 --- [pool-3-thread-2] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Message Received from input: Tokyo
-2025-05-16T09:59:22.197+01:00  INFO 8360 --- [pool-3-thread-2] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Sending message to output: TOKYO
-2025-05-16T09:59:22.210+01:00  INFO 8360 --- [pool-3-thread-1] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Starting Activity: io.dapr.springboot.examples.wfp.chain.ToUpperCaseActivity
-2025-05-16T09:59:22.210+01:00  INFO 8360 --- [pool-3-thread-1] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Message Received from input: London
-2025-05-16T09:59:22.210+01:00  INFO 8360 --- [pool-3-thread-1] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Sending message to output: LONDON
-2025-05-16T09:59:22.216+01:00  INFO 8360 --- [pool-3-thread-3] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Starting Activity: io.dapr.springboot.examples.wfp.chain.ToUpperCaseActivity
-2025-05-16T09:59:22.216+01:00  INFO 8360 --- [pool-3-thread-3] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Message Received from input: Seattle
-2025-05-16T09:59:22.216+01:00  INFO 8360 --- [pool-3-thread-3] i.d.s.e.wfp.chain.ToUpperCaseActivity    : Sending message to output: SEATTLE
-2025-05-16T09:59:22.219+01:00  INFO 8360 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : Workflow finished with result: TOKYO, LONDON, SEATTLE
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.chain.ChainWorkflow
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance 7625b4af-8c04-408a-93dc-bad753466e43 started
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Starting Activity: io.dapr.springboot.examples.wfp.chain.ToUpperCaseActivity
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Message Received from input: Tokyo
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Sending message to output: TOKYO
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Starting Activity: io.dapr.springboot.examples.wfp.chain.ToUpperCaseActivity
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Message Received from input: London
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Sending message to output: LONDON
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Starting Activity: io.dapr.springboot.examples.wfp.chain.ToUpperCaseActivity
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Message Received from input: Seattle
+i.d.s.e.wfp.chain.ToUpperCaseActivity    : Sending message to output: SEATTLE
+io.dapr.workflows.WorkflowContext        : Workflow finished with result: TOKYO, LONDON, SEATTLE
 ```
 
 ### Parent / Child Workflows example
@@ -136,7 +136,6 @@ graph LR
 
 To start the parent workflow you can run:
 
-
 <!-- STEP
 name: Start Parent/Child Workflow
 match_order: none
@@ -167,26 +166,236 @@ As result from executing the request you should see:
 In the application output you should see the workflow activities being executed.
 
 ```bash
-2025-05-16T10:27:01.845+01:00  INFO 9855 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.child.ParentWorkflow
-2025-05-16T10:27:01.845+01:00  INFO 9855 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : calling childworkflow with input: Hello Dapr Workflow!
-2025-05-16T10:27:01.865+01:00  INFO 9855 --- [nio-8080-exec-1] i.d.s.e.w.WorkflowPatternsRestController : Workflow instance f3ec9566-a0fc-4d28-8912-3f3ded3cd8a9 started
-2025-05-16T10:27:01.866+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : Starting ChildWorkflow: io.dapr.springboot.examples.wfp.child.ChildWorkflow
-2025-05-16T10:27:01.868+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : ChildWorkflow received input: Hello Dapr Workflow!
-2025-05-16T10:27:01.868+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : ChildWorkflow is calling Activity: io.dapr.springboot.examples.wfp.child.ReverseActivity
-2025-05-16T10:27:01.874+01:00  INFO 9855 --- [pool-3-thread-3] i.d.s.e.wfp.child.ReverseActivity        : Starting Activity: io.dapr.springboot.examples.wfp.child.ReverseActivity
-2025-05-16T10:27:01.874+01:00  INFO 9855 --- [pool-3-thread-3] i.d.s.e.wfp.child.ReverseActivity        : Message Received from input: Hello Dapr Workflow!
-2025-05-16T10:27:01.874+01:00  INFO 9855 --- [pool-3-thread-3] i.d.s.e.wfp.child.ReverseActivity        : Sending message to output: !wolfkroW rpaD olleH
-2025-05-16T10:27:01.882+01:00  INFO 9855 --- [pool-3-thread-1] io.dapr.workflows.WorkflowContext        : ChildWorkflow finished with: !wolfkroW rpaD olleH
-2025-05-16T10:27:01.892+01:00  INFO 9855 --- [pool-3-thread-2] io.dapr.workflows.WorkflowContext        : childworkflow finished with: !wolfkroW rpaD olleH
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.child.ParentWorkflow
+io.dapr.workflows.WorkflowContext        : calling childworkflow with input: Hello Dapr Workflow!
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance f3ec9566-a0fc-4d28-8912-3f3ded3cd8a9 started
+io.dapr.workflows.WorkflowContext        : Starting ChildWorkflow: io.dapr.springboot.examples.wfp.child.ChildWorkflow
+io.dapr.workflows.WorkflowContext        : ChildWorkflow received input: Hello Dapr Workflow!
+io.dapr.workflows.WorkflowContext        : ChildWorkflow is calling Activity: io.dapr.springboot.examples.wfp.child.ReverseActivity
+i.d.s.e.wfp.child.ReverseActivity        : Starting Activity: io.dapr.springboot.examples.wfp.child.ReverseActivity
+i.d.s.e.wfp.child.ReverseActivity        : Message Received from input: Hello Dapr Workflow!
+i.d.s.e.wfp.child.ReverseActivity        : Sending message to output: !wolfkroW rpaD olleH
+io.dapr.workflows.WorkflowContext        : ChildWorkflow finished with: !wolfkroW rpaD olleH
+io.dapr.workflows.WorkflowContext        : childworkflow finished with: !wolfkroW rpaD olleH
 ```
 
 ### ContinueAsNew Workflows example
 
+In this example we start a workflow that every 3 seconds schedule a new workflow consistently. This workflow executes 
+one activity called CleanUpActivity that takes 2 seconds to complete. This loops repeat consistently for 5 times.
+
+To start the workflow you can run:
+
+<!-- STEP
+name: Start ContinueAsNew Workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- '{"cleanUpTimes":5}'
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To start the workflow you can run:
+
+```sh
+curl -X POST localhost:8080/wfp/continueasnew -H 'Content-Type: application/json'
+```
+
+<!-- END_STEP -->
+
+As result from executing the request you should see:
+
+```bash
+{"cleanUpTimes":5}
+````
+
+In the application output you should see the workflow activities being executed.
+
+```bash
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.continueasnew.ContinueAsNewWorkflow
+io.dapr.workflows.WorkflowContext        : call CleanUpActivity to do the clean up
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance b808e7d6-ab47-4eba-8188-dc9ff8780764 started
+i.d.s.e.w.continueasnew.CleanUpActivity  : Starting Activity: io.dapr.springboot.examples.wfp.continueasnew.CleanUpActivity
+i.d.s.e.w.continueasnew.CleanUpActivity  : start clean up work, it may take few seconds to finish... Time:10:48:45
+io.dapr.workflows.WorkflowContext        : CleanUpActivity finished
+io.dapr.workflows.WorkflowContext        : wait 5 seconds for next clean up
+io.dapr.workflows.WorkflowContext        : Let's do more cleaning.
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.continueasnew.ContinueAsNewWorkflow
+io.dapr.workflows.WorkflowContext        : call CleanUpActivity to do the clean up
+i.d.s.e.w.continueasnew.CleanUpActivity  : Starting Activity: io.dapr.springboot.examples.wfp.continueasnew.CleanUpActivity
+i.d.s.e.w.continueasnew.CleanUpActivity  : start clean up work, it may take few seconds to finish... Time:10:48:50
+io.dapr.workflows.WorkflowContext        : CleanUpActivity finished
+io.dapr.workflows.WorkflowContext        : wait 5 seconds for next clean up
+io.dapr.workflows.WorkflowContext        : Let's do more cleaning.
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.continueasnew.ContinueAsNewWorkflow
+io.dapr.workflows.WorkflowContext        : call CleanUpActivity to do the clean up
+i.d.s.e.w.continueasnew.CleanUpActivity  : Starting Activity: io.dapr.springboot.examples.wfp.continueasnew.CleanUpActivity
+i.d.s.e.w.continueasnew.CleanUpActivity  : start clean up work, it may take few seconds to finish... Time:10:48:55
+io.dapr.workflows.WorkflowContext        : CleanUpActivity finished
+io.dapr.workflows.WorkflowContext        : wait 5 seconds for next clean up
+io.dapr.workflows.WorkflowContext        : Let's do more cleaning.
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.continueasnew.ContinueAsNewWorkflow
+io.dapr.workflows.WorkflowContext        : call CleanUpActivity to do the clean up
+i.d.s.e.w.continueasnew.CleanUpActivity  : Starting Activity: io.dapr.springboot.examples.wfp.continueasnew.CleanUpActivity
+i.d.s.e.w.continueasnew.CleanUpActivity  : start clean up work, it may take few seconds to finish... Time:10:49:0
+io.dapr.workflows.WorkflowContext        : CleanUpActivity finished
+io.dapr.workflows.WorkflowContext        : wait 5 seconds for next clean up
+io.dapr.workflows.WorkflowContext        : Let's do more cleaning.
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.continueasnew.ContinueAsNewWorkflow
+io.dapr.workflows.WorkflowContext        : call CleanUpActivity to do the clean up
+i.d.s.e.w.continueasnew.CleanUpActivity  : Starting Activity: io.dapr.springboot.examples.wfp.continueasnew.CleanUpActivity
+i.d.s.e.w.continueasnew.CleanUpActivity  : start clean up work, it may take few seconds to finish... Time:10:49:5
+io.dapr.workflows.WorkflowContext        : CleanUpActivity finished
+io.dapr.workflows.WorkflowContext        : wait 5 seconds for next clean up
+io.dapr.workflows.WorkflowContext        : We did enough cleaning
+```
 
 ### External Event Workflow example
 
+In this example we start a workflow that as part of its execution waits for an external event to continue. To correlate
+workflows and events we use the parameter `orderId`
+
+To start the workflow you can run:
+
+<!-- STEP
+name: Start External Event Workflow
+match_order: none
+output_match_mode: substring
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To start the workflow you can run:
+
+```sh
+curl -X POST "localhost:8080/wfp/externalevent?orderId=123" -H 'Content-Type: application/json'
+```
+
+<!-- END_STEP -->
+
+
+In the application output you should see the workflow activities being executed.
+
+```bash
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.externalevent.ExternalEventWorkflow
+io.dapr.workflows.WorkflowContext        : Waiting for approval...
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance 8a55cf6d-9059-49b1-8c83-fbe17567a02e started
+```
+
+You should see the Workflow ID that was created, in this example you don't need to remember this id, 
+as you can use the orderId to find the right instance. 
+When you are ready to approve the order you can send the following request:
+
+<!-- STEP
+name: Send External Event
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- '{"approved":true}'
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To send the event you can run:
+
+```sh
+curl -X POST "localhost:8080/wfp/externalevent-continue?orderId=123&decision=true" -H 'Content-Type: application/json'
+```
+
+<!-- END_STEP -->
+
+```bash
+{"approved":true}
+```
+
+In the application output you should see the workflow activities being executed.
+
+```bash
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance e86bc464-6166-434d-8c91-d99040d6f54e continue
+io.dapr.workflows.WorkflowContext        : approval granted - do the approved action
+i.d.s.e.w.externalevent.ApproveActivity  : Starting Activity: io.dapr.springboot.examples.wfp.externalevent.ApproveActivity
+i.d.s.e.w.externalevent.ApproveActivity  : Running approval activity...
+io.dapr.workflows.WorkflowContext        : approval-activity finished
+```
 
 ### Fan Out/In Workflow example
+
+In this example we start a workflow that takes an ArrayList of strings and calls one activity per item in the ArrayList. The activities
+are executed and the workflow waits for all of them to complete to aggregate the results.
+
+```mermaid
+graph LR
+   SW((Start
+   Workflow))
+   subgraph for each word in the input
+    GWL[GetWordLength]
+   end
+   ALL[Wait until all tasks
+   are completed]
+   EW((End
+   Workflow))
+   SW --> GWL
+   GWL --> ALL
+   ALL --> EW
+```
+
+To start the workflow you can run:
+
+<!-- STEP
+name: Start Parent/Child Workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- '{"wordCount":60}'
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To start the workflow you can run:
+
+```sh
+curl -X POST localhost:8080/wfp/fanoutin -H 'Content-Type: application/json' -d @body.json
+```
+
+<!-- END_STEP -->
+
+As result from executing the request you should see:
+
+```bash
+{"wordCount":60}
+```
+
+In the application output you should see the workflow activities being executed.
+
+```bash
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.fanoutin.FanOutInWorkflow
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance a771a7ba-f9fb-4399-aaee-a2fb0b102e5d started
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Starting Activity: io.dapr.springboot.examples.wfp.fanoutin.CountWordsActivity
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Starting Activity: io.dapr.springboot.examples.wfp.fanoutin.CountWordsActivity
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Starting Activity: io.dapr.springboot.examples.wfp.fanoutin.CountWordsActivity
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity returned: 2.
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity finished
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity returned: 11.
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity returned: 17.
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity finished
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity finished
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Starting Activity: io.dapr.springboot.examples.wfp.fanoutin.CountWordsActivity
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity returned: 21.
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity finished
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Starting Activity: io.dapr.springboot.examples.wfp.fanoutin.CountWordsActivity
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity returned: 9.
+i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity finished
+io.dapr.workflows.WorkflowContext        : Workflow finished with result: 60
+```
 
 
 ## Testing workflow executions

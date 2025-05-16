@@ -34,7 +34,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 @RestController
@@ -45,6 +47,8 @@ public class WorkflowPatternsRestController {
 
   @Autowired
   private DaprWorkflowClient daprWorkflowClient;
+
+  private Map<String, String> ordersToApprove = new HashMap<>();
 
   @Bean
   public CleanUpLog cleanUpLog(){
@@ -104,15 +108,17 @@ public class WorkflowPatternsRestController {
    * @return confirmation that the workflow instance was created for the workflow pattern externalevent
    */
   @PostMapping("wfp/externalevent")
-  public String externalevent() {
+  public String externalevent(@RequestParam("orderId") String orderId) {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ExternalEventWorkflow.class);
+    ordersToApprove.put(orderId, instanceId);
     logger.info("Workflow instance " + instanceId + " started");
     return instanceId;
   }
 
   @PostMapping("wfp/externalevent-continue")
-  public Decision externaleventContinue(@RequestParam("instanceId") String instanceId, @RequestParam("decision") Boolean decision)
+  public Decision externaleventContinue(@RequestParam("orderId") String orderId, @RequestParam("decision") Boolean decision)
           throws TimeoutException {
+    String instanceId = ordersToApprove.get(orderId);
     logger.info("Workflow instance " + instanceId + " continue");
     daprWorkflowClient.raiseEvent(instanceId, "Approval", decision);
     WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient

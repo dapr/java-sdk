@@ -134,7 +134,7 @@ class WorkflowPatternsAppTests {
             .then()
             .statusCode(200).extract().as(CleanUpLog.class);
 
-    assertEquals(5, cleanUpLog.getCleanUpTimes().size());
+    assertEquals(5, cleanUpLog.getCleanUpTimes());
   }
 
 }

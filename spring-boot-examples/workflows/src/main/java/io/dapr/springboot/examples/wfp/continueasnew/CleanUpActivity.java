@@ -36,7 +36,6 @@ public class CleanUpActivity implements WorkflowActivity {
 
     LocalDateTime now = LocalDateTime.now();
     String cleanUpTimeString = now.getHour() + ":" + now.getMinute() + ":" + now.getSecond();
-    cleanUpLog.getCleanUpTimes().add(cleanUpTimeString);
     logger.info("start clean up work, it may take few seconds to finish... Time:" + cleanUpTimeString);
 
     //Sleeping for 2 seconds to simulate long running operation
@@ -45,6 +44,8 @@ public class CleanUpActivity implements WorkflowActivity {
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
+
+    cleanUpLog.increment();
 
     return "clean up finish.";
   }
