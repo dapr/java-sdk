@@ -86,7 +86,8 @@ class WorkflowPatternsAppTests {
   @Test
   void testExternalEventApprove() {
 
-    String instanceId = given()
+    given()
+            .queryParam("orderId", "123")
             .when()
             .post("/wfp/externalevent")
             .then()
@@ -95,7 +96,7 @@ class WorkflowPatternsAppTests {
 
 
     given()
-            .queryParam("instanceId", instanceId)
+            .queryParam("orderId", "123")
             .queryParam("decision", true)
             .when()
             .post("/wfp/externalevent-continue")
@@ -106,7 +107,8 @@ class WorkflowPatternsAppTests {
   @Test
   void testExternalEventDeny() {
 
-    String instanceId = given()
+    given()
+            .queryParam("orderId", "123")
             .when()
             .post("/wfp/externalevent")
             .then()
@@ -115,7 +117,7 @@ class WorkflowPatternsAppTests {
 
 
     given()
-            .queryParam("instanceId", instanceId)
+            .queryParam("orderId", "123")
             .queryParam("decision", false)
             .when()
             .post("/wfp/externalevent-continue")
