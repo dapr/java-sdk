@@ -222,7 +222,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       ArrayList<MetadataEntry> metadataEntries = new ArrayList<>();
 
       for (Map<String, String> specMetadataItem : specMetadata) {
-          metadataEntries.add(new MetadataEntry(specMetadataItem.get("name"), specMetadataItem.get("value")));
+        metadataEntries.add(new MetadataEntry(specMetadataItem.get("name"), specMetadataItem.get("value")));
       }
 
       return withComponent(new Component(name, type, version, metadataEntries));
