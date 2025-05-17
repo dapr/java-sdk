@@ -230,6 +230,11 @@
         <artifactId>spring-boot-testcontainers</artifactId>
         <version>${springboot.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.dapr</groupId>
+        <artifactId>testcontainers-dapr</artifactId>
+        <version>${dapr.sdk.alpha.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
