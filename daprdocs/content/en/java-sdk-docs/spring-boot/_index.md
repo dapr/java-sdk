@@ -24,17 +24,19 @@ If you already have a Spring Boot application, you can directly add the followin
 	<dependency>
         <groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter</artifactId>
+                <version>0.x.x</version> // see below for the latest versions
 	</dependency>
 	<dependency>
 		<groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter-test</artifactId>
+                <version>0.x.x</version> // see below for the latest versions
 		<scope>test</scope>
 	</dependency>
 ```
 
 You can find the [latest released version here](https://central.sonatype.com/artifact/io.dapr.spring/dapr-spring-boot-starter). 
 
-By adding these dependencies you can: 
+By adding these dependencies, you can: 
 - Autowire a `DaprClient` to use inside your applications
 - Use the Spring Data and Messaging abstractions and programming model that uses the Dapr APIs under the hood
 - Improve your inner-development loop by relying on [Testcontainers](https://testcontainers.com/) to bootstrap Dapr Control plane services and default components
