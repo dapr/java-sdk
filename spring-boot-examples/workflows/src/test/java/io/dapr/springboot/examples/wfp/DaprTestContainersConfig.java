@@ -33,8 +33,6 @@ public class DaprTestContainersConfig {
     return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("workflow-patterns-app")
             .withComponent(new Component("kvstore", "state.in-memory", "v1", Collections.singletonMap("actorStateStore", String.valueOf(true))))
-//            .withDaprLogLevel(DaprLogLevel.DEBUG)
-//            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
             .withAppPort(8080)
             .withAppHealthCheckPath("/actuator/health")
             .withAppChannelAddress("host.testcontainers.internal");
