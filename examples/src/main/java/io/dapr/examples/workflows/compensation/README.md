@@ -49,37 +49,34 @@ name: Run Compensation Pattern workflow worker
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
-  - Registered Workflow: BookTripWorkflow
-  - Registered Activity: BookFlightActivity
-  - Registered Activity: CancelFlightActivity
-  - Registered Activity: BookHotelActivity
-  - Registered Activity: CancelHotelActivity
-  - Registered Activity: BookCarActivity
-  - Registered Activity: CancelCarActivity
-  - List of registered workflows: [io.dapr.examples.workflows.compensation.BookTripWorkflow]
-  - List of registered activities: [io.dapr.examples.workflows.compensation.BookCarActivity, io.dapr.examples.workflows.compensation.BookFlightActivity, io.dapr.examples.workflows.compensation.CancelHotelActivity, io.dapr.examples.workflows.compensation.CancelCarActivity, io.dapr.examples.workflows.compensation.CancelFlightActivity, io.dapr.examples.workflows.compensation.BookHotelActivity]
-  - Successfully built dapr workflow runtime
-  - Start workflow runtime
-  - io.dapr.durabletask.DurableTaskGrpcWorker startAndBlock
-  - Durable Task worker is connecting to sidecar at 127.0.0.1:50001.
+  - "Registered Workflow: BookTripWorkflow"
+  - "Registered Activity: BookFlightActivity"
+  - "Registered Activity: CancelFlightActivity"
+  - "Registered Activity: BookHotelActivity"
+  - "Registered Activity: CancelHotelActivity"
+  - "Registered Activity: BookCarActivity"
+  - "Registered Activity: CancelCarActivity"
+  - "Successfully built dapr workflow runtime"
+  - "Start workflow runtime"
+  - "Durable Task worker is connecting to sidecar at 127.0.0.1:50001."
 
-  - Starting Workflow: io.dapr.examples.workflows.compensation.BookTripWorkflow
-  - Starting Activity: io.dapr.examples.workflows.compensation.BookFlightActivity
-  - Activity completed with result: Flight booked successfully
-  - Flight booking completed: Flight booked successfully
-  - Starting Activity: io.dapr.examples.workflows.compensation.BookHotelActivity
-  - Simulating hotel booking process...
-  - Activity completed with result: Hotel booked successfully
-  - Hotel booking completed: Hotel booked successfully
-  - Starting Activity: io.dapr.examples.workflows.compensation.BookCarActivity
-  - Forcing Failure to trigger compensation for activity: io.dapr.examples.workflows.compensation.BookCarActivity
-  - ******** executing compensation logic ********
-  - Activity failed: Task 'io.dapr.examples.workflows.compensation.BookCarActivity' (#2) failed with an unhandled exception: Failed to book car
-  - Error during compensation: The orchestrator is blocked and waiting for new inputs. This Throwable should never be caught by user code.
-  - Starting Activity: io.dapr.examples.workflows.compensation.CancelHotelActivity
-  - Activity completed with result: Hotel canceled successfully
-  - Starting Activity: io.dapr.examples.workflows.compensation.CancelFlightActivity
-  - Activity completed with result: Flight canceled successfully
+  - "Starting Workflow: io.dapr.examples.workflows.compensation.BookTripWorkflow"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.BookFlightActivity"
+  - "Activity completed with result: Flight booked successfully"
+  - "Flight booking completed: Flight booked successfully"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.BookHotelActivity"
+  - "Simulating hotel booking process..."
+  - "Activity completed with result: Hotel booked successfully"
+  - "Hotel booking completed: Hotel booked successfully"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.BookCarActivity"
+  - "Forcing Failure to trigger compensation for activity: io.dapr.examples.workflows.compensation.BookCarActivity"
+  - "******** executing compensation logic ********"
+  - "Activity failed: Task 'io.dapr.examples.workflows.compensation.BookCarActivity' (#2) failed with an unhandled exception: Failed to book car"
+  - "Error during compensation: The orchestrator is blocked and waiting for new inputs. This Throwable should never be caught by user code."
+  - "Starting Activity: io.dapr.examples.workflows.compensation.CancelHotelActivity"
+  - "Activity completed with result: Hotel canceled successfully"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.CancelFlightActivity"
+  - "Activity completed with result: Flight canceled successfully"
 background: true
 sleep: 60
 timeout_seconds: 60
@@ -99,8 +96,6 @@ Once running, you can see the registered workflow and activities followed by the
 == APP == 2025-05-19 16:09:51,490 {HH:mm:ss.SSS} [main] INFO  i.d.w.runtime.WorkflowRuntimeBuilder - Registered Activity: CancelHotelActivity
 == APP == 2025-05-19 16:09:51,490 {HH:mm:ss.SSS} [main] INFO  i.d.w.runtime.WorkflowRuntimeBuilder - Registered Activity: BookCarActivity
 == APP == 2025-05-19 16:09:51,491 {HH:mm:ss.SSS} [main] INFO  i.d.w.runtime.WorkflowRuntimeBuilder - Registered Activity: CancelCarActivity
-== APP == 2025-05-19 16:09:51,619 {HH:mm:ss.SSS} [main] INFO  i.d.w.runtime.WorkflowRuntimeBuilder - List of registered workflows: [io.dapr.examples.workflows.compensation.BookTripWorkflow]
-== APP == 2025-05-19 16:09:51,619 {HH:mm:ss.SSS} [main] INFO  i.d.w.runtime.WorkflowRuntimeBuilder - List of registered activities: [io.dapr.examples.workflows.compensation.BookCarActivity, io.dapr.examples.workflows.compensation.BookFlightActivity, io.dapr.examples.workflows.compensation.CancelHotelActivity, io.dapr.examples.workflows.compensation.CancelCarActivity, io.dapr.examples.workflows.compensation.CancelFlightActivity, io.dapr.examples.workflows.compensation.BookHotelActivity]
 == APP == 2025-05-19 16:09:51,619 {HH:mm:ss.SSS} [main] INFO  i.d.w.runtime.WorkflowRuntimeBuilder - Successfully built dapr workflow runtime
 == APP == Start workflow runtime
 == APP == May 19, 2025 4:09:51 PM io.dapr.durabletask.DurableTaskGrpcWorker startAndBlock
