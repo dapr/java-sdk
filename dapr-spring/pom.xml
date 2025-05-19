@@ -118,18 +118,23 @@
         <artifactId>spring-boot-autoconfigure-processor</artifactId>
         <version>${springboot.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.dapr.spring</groupId>
+        <artifactId>dapr-spring-boot-tests</artifactId>
+        <version>${dapr.spring.version}</version>
+      </dependency>
 
       <!-- Test dependencies -->
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
-        <version>${springboot.version}</version>
-        <scope>test</scope>
-      </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
         <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <version>${springboot.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -154,18 +159,6 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>junit-jupiter</artifactId>
         <version>${testcontainers.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr</groupId>
-        <artifactId>testcontainers-dapr</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.dapr.spring</groupId>
-        <artifactId>dapr-spring-boot-tests</artifactId>
-        <version>${dapr.spring.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
