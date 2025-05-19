@@ -13,12 +13,12 @@ limitations under the License.
 
 package io.dapr.workflows.runtime;
 
-import com.microsoft.durabletask.CompositeTaskFailedException;
-import com.microsoft.durabletask.RetryPolicy;
-import com.microsoft.durabletask.Task;
-import com.microsoft.durabletask.TaskCanceledException;
-import com.microsoft.durabletask.TaskOptions;
-import com.microsoft.durabletask.TaskOrchestrationContext;
+import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.RetryPolicy;
+import io.dapr.durabletask.Task;
+import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.durabletask.TaskOptions;
+import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowTaskOptions;
 import io.dapr.workflows.WorkflowTaskRetryPolicy;
@@ -240,7 +240,9 @@ public class DefaultWorkflowContext implements WorkflowContext {
     );
 
     retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
-    retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
+      retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    }
 
     return new TaskOptions(retryPolicy);
   }
