@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.15.0-SNAPSHOT</version>
+    <version>1.16.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk-workflows</artifactId>
   <packaging>jar</packaging>
-  <version>0.15.0-SNAPSHOT</version>
+  <version>0.16.0-SNAPSHOT</version>
   <name>dapr-sdk-workflows</name>
   <description>SDK for Workflows on Dapr</description>
 
@@ -45,14 +45,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.microsoft</groupId>
+      <groupId>io.dapr</groupId>
       <artifactId>durabletask-client</artifactId>
-      <version>1.5.0</version>
+      <version>1.5.4</version>
     </dependency>
     <!--
     manually declare durabletask-client's jackson dependencies
     which conflict with dapr-sdk's jackson dependencies
-    https://github.com/microsoft/durabletask-java/blob/main/client/build.gradle#L16
+    https://github.com/dapr/durabletask-java/blob/main/client/build.gradle#L16
     -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

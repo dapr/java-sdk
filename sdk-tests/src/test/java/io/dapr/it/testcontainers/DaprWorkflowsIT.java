@@ -91,10 +91,9 @@ public class DaprWorkflowsIT {
    */
   @BeforeEach
   public void init() {
-    try (WorkflowRuntime runtime = workflowRuntimeBuilder.build()) {
-      System.out.println("Start workflow runtime");
-      runtime.start(false);
-    }
+    WorkflowRuntime runtime = workflowRuntimeBuilder.build();
+    System.out.println("Start workflow runtime");
+    runtime.start(false);
   }
 
   @Test
