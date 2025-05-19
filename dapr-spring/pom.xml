@@ -89,7 +89,7 @@
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-workflows</artifactId>
-        <version>0.15.0-SNAPSHOT</version>
+        <version>${dapr.sdk.alpha.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>

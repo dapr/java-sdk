@@ -21,6 +21,10 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk-actors</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-messaging</artifactId>
       <optional>true</optional>
