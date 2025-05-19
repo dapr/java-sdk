@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.compensation;
 
-import com.microsoft.durabletask.TaskFailedException;
+import io.dapr.durabletask.TaskFailedException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 
