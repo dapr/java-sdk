@@ -70,7 +70,7 @@ pip3 install mechanical-markdown
 2. Run the test from the respective examples README directory, for example:
 ```bash
 cd examples
-mm.py ./src/main/java/io/dapr/examples/workflows/compensation/README.md
+mm.py ./src/main/java/io/dapr/examples/workflows/README.md
 ```
 
 The test will:
