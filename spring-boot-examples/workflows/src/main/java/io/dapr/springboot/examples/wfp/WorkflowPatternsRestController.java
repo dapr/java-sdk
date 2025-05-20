@@ -88,7 +88,7 @@ public class WorkflowPatternsRestController {
    * @return confirmation that the workflow instance was created for the workflow pattern faninout
    */
   @PostMapping("wfp/fanoutin")
-  public Result faninout(@RequestBody List<String> listOfStrings) throws TimeoutException {
+  public Result fanOutIn(@RequestBody List<String> listOfStrings) throws TimeoutException {
 
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(FanOutInWorkflow.class, listOfStrings);
     logger.info("Workflow instance " + instanceId + " started");
@@ -108,7 +108,7 @@ public class WorkflowPatternsRestController {
    * @return confirmation that the workflow instance was created for the workflow pattern externalevent
    */
   @PostMapping("wfp/externalevent")
-  public String externalevent(@RequestParam("orderId") String orderId) {
+  public String externalEvent(@RequestParam("orderId") String orderId) {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ExternalEventWorkflow.class);
     ordersToApprove.put(orderId, instanceId);
     logger.info("Workflow instance " + instanceId + " started");
@@ -116,7 +116,7 @@ public class WorkflowPatternsRestController {
   }
 
   @PostMapping("wfp/externalevent-continue")
-  public Decision externaleventContinue(@RequestParam("orderId") String orderId, @RequestParam("decision") Boolean decision)
+  public Decision externalEventContinue(@RequestParam("orderId") String orderId, @RequestParam("decision") Boolean decision)
           throws TimeoutException {
     String instanceId = ordersToApprove.get(orderId);
     logger.info("Workflow instance " + instanceId + " continue");
@@ -127,7 +127,7 @@ public class WorkflowPatternsRestController {
   }
 
   @PostMapping("wfp/continueasnew")
-  public CleanUpLog continueasnew()
+  public CleanUpLog continueAsNew()
           throws TimeoutException {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ContinueAsNewWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");

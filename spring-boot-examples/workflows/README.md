@@ -13,8 +13,7 @@ To run these examples you will need:
 - Maven
 - Docker or a container runtime such as Podman
 
-From the `spring-boot-examples/workflows` directory you can start the service using the test configuration that uses
-[Testcontainers](https://testcontainers.com) to boostrap [Dapr](https://dapr.io) by running the following command:
+From the `spring-boot-examples/workflows` directory you can start the service by running the following command:
 
 <!-- STEP
 name: Run Demo Workflow Application
@@ -34,6 +33,9 @@ timeout_seconds: 45
 ```
 
 <!-- END_STEP -->
+
+By running the `spring-boot:test-run` goal, the application is loaded using the [test configurations](src/test/java/io/dapr/springboot/examples/wfp/DaprTestContainersConfig.java) 
+configured using [Testcontainers](https://testcontainers.com) to boostrap the [Dapr](https://dapr.io) sidecar and control plane.
 
 Once the application is running you can trigger the different patterns by sending the following requests: 
 
@@ -103,7 +105,7 @@ io.dapr.workflows.WorkflowContext        : Workflow finished with result: TOKYO,
 
 ### Parent / Child Workflows example
 
-In this example we start a Parent workflow that calls a child workflow that execute one activity that reverse the . 
+In this example we start a Parent workflow that calls a child workflow that execute one activity that reverses an input string. 
 
 The Parent workflow looks like this: 
 
@@ -197,8 +199,6 @@ timeout_seconds: 15
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
-To start the workflow you can run:
-
 ```sh
 curl -X POST localhost:8080/wfp/continueasnew -H 'Content-Type: application/json'
 ```
@@ -209,7 +209,7 @@ As result from executing the request you should see:
 
 ```bash
 {"cleanUpTimes":5}
-````
+```
 
 In the application output you should see the workflow activities being executed.
 
@@ -268,8 +268,6 @@ sleep: 1
 timeout_seconds: 2
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
-
-To start the workflow you can run:
 
 ```sh
 curl -X POST "localhost:8080/wfp/externalevent?orderId=123" -H 'Content-Type: application/json'
@@ -358,8 +356,6 @@ sleep: 1
 timeout_seconds: 2
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
-
-To start the workflow you can run:
 
 ```sh
 curl -X POST localhost:8080/wfp/fanoutin -H 'Content-Type: application/json' -d @body.json
