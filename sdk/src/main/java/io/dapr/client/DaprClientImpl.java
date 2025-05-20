@@ -146,7 +146,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   private final DaprGrpc.DaprStub asyncStub;
 
   /**
-   * The HTTP client to be used for healthz and HTTP service invocation only.
+   * The HTTP client to be used for health and HTTP service invocation only.
    *
    * @see io.dapr.client.DaprHttp
    */
