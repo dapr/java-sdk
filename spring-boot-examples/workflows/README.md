@@ -1,6 +1,6 @@
 # Dapr Spring Boot Workflow Examples
 
-This application allows you to run different workflow patterns including: 
+This application allows you to run different [workflow patterns](https://docs.dapr.io/developing-applications/building-blocks/workflow/workflow-patterns) including: 
 - Chained Activities
 - Parent/Child Workflows
 - Continue workflow by sending External Events
