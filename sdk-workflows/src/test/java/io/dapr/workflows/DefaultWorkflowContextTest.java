@@ -285,7 +285,6 @@ public class DefaultWorkflowContextTest {
     WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
         .setMaxNumberOfAttempts(1)
         .setFirstRetryInterval(Duration.ofSeconds(10))
-        .setRetryTimeout(Duration.ofSeconds(10))
         .build();
     WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryPolicy);
     ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
