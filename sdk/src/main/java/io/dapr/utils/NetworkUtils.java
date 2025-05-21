@@ -39,8 +39,8 @@ import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENABLE_KEEP_ALIVE;
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
-import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIMEOUT_MILLISECONDS;
-import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIME_MILLISECONDS;
+import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIMEOUT_SECONDS;
+import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIME_SECONDS;
 import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_WITHOUT_CALLS;
 import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
@@ -206,8 +206,8 @@ public final class NetworkUtils {
     }
 
     if (settings.enableKeepAlive) {
-      builder.keepAliveTime(settings.keepAliveTimeSeconds.toMillis(), TimeUnit.MILLISECONDS)
-          .keepAliveTimeout(settings.keepAliveTimeoutSeconds.toMillis(), TimeUnit.MILLISECONDS)
+      builder.keepAliveTime(settings.keepAliveTimeSeconds.toSeconds(), TimeUnit.SECONDS)
+          .keepAliveTimeout(settings.keepAliveTimeoutSeconds.toSeconds(), TimeUnit.SECONDS)
           .keepAliveWithoutCalls(settings.keepAliveWithoutCalls);
     }
 
@@ -249,8 +249,8 @@ public final class NetworkUtils {
       String clientCertPath = properties.getValue(GRPC_TLS_CERT_PATH);
       String caCertPath = properties.getValue(GRPC_TLS_CA_PATH);
       boolean enablekeepAlive = properties.getValue(GRPC_ENABLE_KEEP_ALIVE);
-      Duration keepAliveTimeMilliseconds = properties.getValue(GRPC_KEEP_ALIVE_TIME_MILLISECONDS);
-      Duration keepAliveTimeoutMilliseconds = properties.getValue(GRPC_KEEP_ALIVE_TIMEOUT_MILLISECONDS);
+      Duration keepAliveTimeSeconds = properties.getValue(GRPC_KEEP_ALIVE_TIME_SECONDS);
+      Duration keepAliveTimeoutSeconds = properties.getValue(GRPC_KEEP_ALIVE_TIMEOUT_SECONDS);
       boolean keepAliveWithoutCalls = properties.getValue(GRPC_KEEP_ALIVE_WITHOUT_CALLS);
 
       boolean secure = false;
@@ -294,28 +294,28 @@ public final class NetworkUtils {
                   authorityEndpoint,
                   address,
                   port),
-              secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeMilliseconds,
-              keepAliveTimeoutMilliseconds, keepAliveWithoutCalls);
+              secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeSeconds,
+              keepAliveTimeoutSeconds, keepAliveWithoutCalls);
         }
 
         var socket = matcher.group("socket");
         if (socket != null) {
           return new GrpcEndpointSettings(socket, secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive,
-              keepAliveTimeMilliseconds, keepAliveTimeoutMilliseconds, keepAliveWithoutCalls);
+              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls);
         }
 
         var vsocket = matcher.group("vsocket");
         if (vsocket != null) {
           return new GrpcEndpointSettings(vsocket, secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive,
-              keepAliveTimeMilliseconds, keepAliveTimeoutMilliseconds, keepAliveWithoutCalls);
+              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls);
         }
       }
 
       return new GrpcEndpointSettings(String.format(
           "dns:///%s:%d",
           address,
-          port), secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeMilliseconds,
-          keepAliveTimeoutMilliseconds, keepAliveWithoutCalls);
+          port), secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeSeconds,
+          keepAliveTimeoutSeconds, keepAliveWithoutCalls);
     }
 
   }
