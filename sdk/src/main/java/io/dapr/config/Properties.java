@@ -146,6 +146,38 @@ public class Properties {
       null);
 
   /**
+   * GRPC enable keep alive.
+   */
+  public static final Property<Boolean> GRPC_ENABLE_KEEP_ALIVE = new BooleanProperty(
+      "dapr.grpc.enableKeepAlive",
+      "DAPR_GRPC_ENABLE_KEEP_ALIVE",
+      false);
+
+  /**
+   * GRPC keep alive time in milliseconds.
+   */
+  public static final Property<Duration> GRPC_KEEP_ALIVE_TIME_MILLISECONDS = new MillisecondsDurationProperty(
+      "dapr.grpc.keepAliveTimeSeconds",
+      "DAPR_GRPC_KEEP_ALIVE_TIME_MILLISECONDS",
+      Duration.ofMillis(10000));
+
+  /**
+   * GRPC keep alive timeout in seconds.
+   */
+  public static final Property<Duration> GRPC_KEEP_ALIVE_TIMEOUT_MILLISECONDS = new MillisecondsDurationProperty(
+      "dapr.grpc.keepAliveTimeoutSeconds",
+      "DAPR_GRPC_KEEP_ALIVE_TIMEOUT_MILLISECONDS",
+      Duration.ofMillis(1000));
+
+  /**
+   * GRPC keep alive without calls.
+   */
+  public static final Property<Boolean> GRPC_KEEP_ALIVE_WITHOUT_CALLS = new BooleanProperty(
+      "dapr.grpc.keepAliveWithoutCalls",
+      "DAPR_GRPC_KEEP_ALIVE_WITHOUT_CALLS",
+      false);
+
+  /**
    * GRPC endpoint for remote sidecar connectivity.
    */
   public static final Property<String> HTTP_ENDPOINT = new StringProperty(
