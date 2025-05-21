@@ -154,7 +154,7 @@ public class Properties {
       false);
 
   /**
-   * GRPC keep alive time in milliseconds.
+   * GRPC keep alive time in seconds.
    */
   public static final Property<Duration> GRPC_KEEP_ALIVE_TIME_SECONDS = new SecondsDurationProperty(
       "dapr.grpc.keepAliveTimeSeconds",
