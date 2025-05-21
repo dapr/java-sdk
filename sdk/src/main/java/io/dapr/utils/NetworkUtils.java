@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.utils;
 
-
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprError;
 import io.dapr.exceptions.DaprException;
@@ -147,6 +146,13 @@ public final class NetworkUtils {
         if (interceptors != null && interceptors.length > 0) {
           builder = builder.intercept(interceptors);
         }
+
+        if (settings.enableKeepAlive) {
+          builder.keepAliveTime(settings.keepAliveTimeSeconds.toSeconds(), TimeUnit.SECONDS)
+              .keepAliveTimeout(settings.keepAliveTimeoutSeconds.toSeconds(), TimeUnit.SECONDS)
+              .keepAliveWithoutCalls(settings.keepAliveWithoutCalls);
+        }
+
         return builder.build();
       } catch (Exception e) {
         throw new DaprException(
