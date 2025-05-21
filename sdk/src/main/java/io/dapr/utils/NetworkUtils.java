@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
@@ -48,7 +49,8 @@ import static io.dapr.config.Properties.SIDECAR_IP;
 public final class NetworkUtils {
 
   private static final long RETRY_WAIT_MILLISECONDS = 1000;
-
+  private static final long KEEP_ALIVE_TIME_SECONDS = 10;
+  private static final long KEEP_ALIVE_TIMEOUT_SECONDS = 1;
   // Thanks to https://ihateregex.io/expr/ipv6/
   private static final String IPV6_REGEX = "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|"
       + "([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|"
@@ -68,8 +70,8 @@ public final class NetworkUtils {
 
   private static final String GRPC_ENDPOINT_HOSTNAME_REGEX_PART = "(([A-Za-z0-9_\\-\\.]+)|(\\[" + IPV6_REGEX + "\\]))";
 
-  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART =
-          "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>"
+  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART = "(?<dnsWithAuthority>dns://)"
+      + "(?<authorityEndpoint>"
       + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)?/";
 
   private static final String GRPC_ENDPOINT_PARAM_REGEX_PART = "(\\?(?<param>tls\\=((true)|(false))))?";
@@ -144,7 +146,8 @@ public final class NetworkUtils {
       } catch (Exception e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
-                .setMessage("Failed to create insecure TLS credentials"), e);
+                .setMessage("Failed to create insecure TLS credentials"),
+            e);
       }
     }
 
@@ -155,23 +158,24 @@ public final class NetworkUtils {
     ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint);
 
     if (clientCertPath != null && clientKeyPath != null) {
-      // mTLS case - using client cert and key, with optional CA cert for server authentication
+      // mTLS case - using client cert and key, with optional CA cert for server
+      // authentication
       try (
           InputStream clientCertInputStream = new FileInputStream(clientCertPath);
           InputStream clientKeyInputStream = new FileInputStream(clientKeyPath);
-          InputStream caCertInputStream = caCertPath != null ? new FileInputStream(caCertPath) : null
-      ) {
+          InputStream caCertInputStream = caCertPath != null ? new FileInputStream(caCertPath) : null) {
         TlsChannelCredentials.Builder builderCreds = TlsChannelCredentials.newBuilder()
-            .keyManager(clientCertInputStream, clientKeyInputStream);  // For client authentication
+            .keyManager(clientCertInputStream, clientKeyInputStream); // For client authentication
         if (caCertInputStream != null) {
-          builderCreds.trustManager(caCertInputStream);  // For server authentication
+          builderCreds.trustManager(caCertInputStream); // For server authentication
         }
         ChannelCredentials credentials = builderCreds.build();
         builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
       } catch (IOException e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
-                .setMessage("Failed to create mTLS credentials" + (caCertPath != null ? " with CA cert" : "")), e);
+                .setMessage("Failed to create mTLS credentials" + (caCertPath != null ? " with CA cert" : "")),
+            e);
       }
     } else if (caCertPath != null) {
       // Simple TLS case - using CA cert only for server authentication
@@ -183,7 +187,8 @@ public final class NetworkUtils {
       } catch (IOException e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
-                .setMessage("Failed to create TLS credentials with CA cert"), e);
+                .setMessage("Failed to create TLS credentials with CA cert"),
+            e);
       }
     } else if (!settings.secure) {
       builder = builder.usePlaintext();
@@ -194,6 +199,11 @@ public final class NetworkUtils {
     if (interceptors != null && interceptors.length > 0) {
       builder = builder.intercept(interceptors);
     }
+
+    builder.keepAliveTime(KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS)
+        .keepAliveTimeout(KEEP_ALIVE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .keepAliveWithoutCalls(true);
+
     return builder.build();
   }
 
@@ -206,7 +216,7 @@ public final class NetworkUtils {
     final String tlsCaPath;
 
     private GrpcEndpointSettings(
-            String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath) {
+        String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath) {
       this.endpoint = endpoint;
       this.secure = secure;
       this.tlsPrivateKeyPath = tlsPrivateKeyPath;
@@ -257,12 +267,12 @@ public final class NetworkUtils {
         var authorityEndpoint = matcher.group("authorityEndpoint");
         if (authorityEndpoint != null) {
           return new GrpcEndpointSettings(
-                  String.format(
-                          "dns://%s/%s:%d",
-                          authorityEndpoint,
-                          address,
-                          port
-                  ), secure, clientKeyPath, clientCertPath, caCertPath);
+              String.format(
+                  "dns://%s/%s:%d",
+                  authorityEndpoint,
+                  address,
+                  port),
+              secure, clientKeyPath, clientCertPath, caCertPath);
         }
 
         var socket = matcher.group("socket");
@@ -277,10 +287,9 @@ public final class NetworkUtils {
       }
 
       return new GrpcEndpointSettings(String.format(
-              "dns:///%s:%d",
-              address,
-              port
-      ), secure, clientKeyPath, clientCertPath, caCertPath);
+          "dns:///%s:%d",
+          address,
+          port), secure, clientKeyPath, clientCertPath, caCertPath);
     }
 
   }
