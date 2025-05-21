@@ -23,7 +23,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DaprApplication {
 
   /**
-   * Starts Dapr's callback in a given port and specified protocal.
+   * Starts Dapr's callback in a given port and specified protocol.
    * 
    * @param port Port to listen to.
    * @param protocal select Http or gRPC to run.
