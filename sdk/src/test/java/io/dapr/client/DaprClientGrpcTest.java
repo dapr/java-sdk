@@ -1365,7 +1365,7 @@ public class DaprClientGrpcTest {
    * you will not find the state.
    * <p>This test will execute the following flow:</p>
    * <ol>
-   *   <li>Exeucte client getState for Key=key1</li>
+   *   <li>Execute client getState for Key=key1</li>
    *   <li>Block for result to the the state</li>
    *   <li>Assert the Returned State is the expected to key1</li>
    *   <li>Execute client getState for Key=key2</li>
