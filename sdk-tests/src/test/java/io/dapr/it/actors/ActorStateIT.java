@@ -55,7 +55,7 @@ public class ActorStateIT extends BaseIT {
         new ActorProxyBuilder(actorType, ActorProxy.class, deferClose(run.newActorClient()));
     ActorProxy proxy = proxyBuilder.build(actorId);
 
-    // wating for actor to be activated
+    // waiting for actor to be activated
     Thread.sleep(5000);
     
     // Validate conditional read works.
