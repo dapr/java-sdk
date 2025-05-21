@@ -11,24 +11,16 @@
 limitations under the License.
 */
 
-package io.dapr.springboot.examples.wfp.continueasnew;
+package io.dapr.springboot.examples.wfp;
 
-public class CleanUpLog {
-  private Integer cleanUpTimes = 0;
+import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-  public CleanUpLog() {
-  }
-
-  public void increment() {
-    this.cleanUpTimes += 1;
-  }
-
-  public Integer getCleanUpTimes() {
-    return cleanUpTimes;
-  }
-
-  public void clearLog(){
-    this.cleanUpTimes = 0;
+@Configuration
+public class WorkflowPatternsConfiguration {
+  @Bean
+  public CleanUpLog cleanUpLog(){
+    return new CleanUpLog();
   }
 }
-

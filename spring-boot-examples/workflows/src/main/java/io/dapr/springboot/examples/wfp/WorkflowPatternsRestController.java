@@ -27,7 +27,6 @@ import io.dapr.workflows.client.WorkflowInstanceStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,12 +47,11 @@ public class WorkflowPatternsRestController {
   @Autowired
   private DaprWorkflowClient daprWorkflowClient;
 
+  @Autowired
+  private CleanUpLog cleanUpLog;
+
   private Map<String, String> ordersToApprove = new HashMap<>();
 
-  @Bean
-  public CleanUpLog cleanUpLog(){
-    return new CleanUpLog();
-  }
 
   /**
    * Run Chain Demo Workflow
@@ -129,6 +127,8 @@ public class WorkflowPatternsRestController {
   @PostMapping("wfp/continueasnew")
   public CleanUpLog continueAsNew()
           throws TimeoutException {
+
+    cleanUpLog.clearLog();
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ContinueAsNewWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");
 
