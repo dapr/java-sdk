@@ -51,4 +51,10 @@
         <Package name="~io\.dapr.*"/>
         <Bug pattern="NP_UNWRITTEN_FIELD"/>
     </Match>
+
+    <!-- have to disable this in order to make test work  -->
+    <Match>
+        <Class name="~io.dapr.spring.boot.cloudconfig.*"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
 </FindBugsFilter>
