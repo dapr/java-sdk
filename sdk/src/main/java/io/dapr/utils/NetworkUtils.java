@@ -32,9 +32,15 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import static io.dapr.config.Properties.GRPC_ENABLE_KEEP_ALIVE;
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
+import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIMEOUT_SECONDS;
+import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIME_SECONDS;
+import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_WITHOUT_CALLS;
 import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
@@ -68,8 +74,8 @@ public final class NetworkUtils {
 
   private static final String GRPC_ENDPOINT_HOSTNAME_REGEX_PART = "(([A-Za-z0-9_\\-\\.]+)|(\\[" + IPV6_REGEX + "\\]))";
 
-  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART =
-          "(?<dnsWithAuthority>dns://)(?<authorityEndpoint>"
+  private static final String GRPC_ENDPOINT_DNS_AUTHORITY_REGEX_PART = "(?<dnsWithAuthority>dns://)"
+      + "(?<authorityEndpoint>"
       + GRPC_ENDPOINT_HOSTNAME_REGEX_PART + ":[0-9]+)?/";
 
   private static final String GRPC_ENDPOINT_PARAM_REGEX_PART = "(\\?(?<param>tls\\=((true)|(false))))?";
@@ -140,11 +146,19 @@ public final class NetworkUtils {
         if (interceptors != null && interceptors.length > 0) {
           builder = builder.intercept(interceptors);
         }
+
+        if (settings.enableKeepAlive) {
+          builder.keepAliveTime(settings.keepAliveTimeSeconds.toSeconds(), TimeUnit.SECONDS)
+              .keepAliveTimeout(settings.keepAliveTimeoutSeconds.toSeconds(), TimeUnit.SECONDS)
+              .keepAliveWithoutCalls(settings.keepAliveWithoutCalls);
+        }
+
         return builder.build();
       } catch (Exception e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
-                .setMessage("Failed to create insecure TLS credentials"), e);
+                .setMessage("Failed to create insecure TLS credentials"),
+            e);
       }
     }
 
@@ -155,23 +169,24 @@ public final class NetworkUtils {
     ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(settings.endpoint);
 
     if (clientCertPath != null && clientKeyPath != null) {
-      // mTLS case - using client cert and key, with optional CA cert for server authentication
+      // mTLS case - using client cert and key, with optional CA cert for server
+      // authentication
       try (
           InputStream clientCertInputStream = new FileInputStream(clientCertPath);
           InputStream clientKeyInputStream = new FileInputStream(clientKeyPath);
-          InputStream caCertInputStream = caCertPath != null ? new FileInputStream(caCertPath) : null
-      ) {
+          InputStream caCertInputStream = caCertPath != null ? new FileInputStream(caCertPath) : null) {
         TlsChannelCredentials.Builder builderCreds = TlsChannelCredentials.newBuilder()
-            .keyManager(clientCertInputStream, clientKeyInputStream);  // For client authentication
+            .keyManager(clientCertInputStream, clientKeyInputStream); // For client authentication
         if (caCertInputStream != null) {
-          builderCreds.trustManager(caCertInputStream);  // For server authentication
+          builderCreds.trustManager(caCertInputStream); // For server authentication
         }
         ChannelCredentials credentials = builderCreds.build();
         builder = Grpc.newChannelBuilder(settings.endpoint, credentials);
       } catch (IOException e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
-                .setMessage("Failed to create mTLS credentials" + (caCertPath != null ? " with CA cert" : "")), e);
+                .setMessage("Failed to create mTLS credentials" + (caCertPath != null ? " with CA cert" : "")),
+            e);
       }
     } else if (caCertPath != null) {
       // Simple TLS case - using CA cert only for server authentication
@@ -183,7 +198,8 @@ public final class NetworkUtils {
       } catch (IOException e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
-                .setMessage("Failed to create TLS credentials with CA cert"), e);
+                .setMessage("Failed to create TLS credentials with CA cert"),
+            e);
       }
     } else if (!settings.secure) {
       builder = builder.usePlaintext();
@@ -194,6 +210,13 @@ public final class NetworkUtils {
     if (interceptors != null && interceptors.length > 0) {
       builder = builder.intercept(interceptors);
     }
+
+    if (settings.enableKeepAlive) {
+      builder.keepAliveTime(settings.keepAliveTimeSeconds.toSeconds(), TimeUnit.SECONDS)
+          .keepAliveTimeout(settings.keepAliveTimeoutSeconds.toSeconds(), TimeUnit.SECONDS)
+          .keepAliveWithoutCalls(settings.keepAliveWithoutCalls);
+    }
+
     return builder.build();
   }
 
@@ -205,13 +228,24 @@ public final class NetworkUtils {
     final String tlsCertPath;
     final String tlsCaPath;
 
+    final boolean enableKeepAlive;
+    final Duration keepAliveTimeSeconds;
+    final Duration keepAliveTimeoutSeconds;
+    final boolean keepAliveWithoutCalls;
+
     private GrpcEndpointSettings(
-            String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath) {
+        String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath,
+        boolean enableKeepAlive, Duration keepAliveTimeSeconds, Duration keepAliveTimeoutSeconds,
+        boolean keepAliveWithoutCalls) {
       this.endpoint = endpoint;
       this.secure = secure;
       this.tlsPrivateKeyPath = tlsPrivateKeyPath;
       this.tlsCertPath = tlsCertPath;
       this.tlsCaPath = tlsCaPath;
+      this.enableKeepAlive = enableKeepAlive;
+      this.keepAliveTimeSeconds = keepAliveTimeSeconds;
+      this.keepAliveTimeoutSeconds = keepAliveTimeoutSeconds;
+      this.keepAliveWithoutCalls = keepAliveWithoutCalls;
     }
 
     static GrpcEndpointSettings parse(Properties properties) {
@@ -220,6 +254,10 @@ public final class NetworkUtils {
       String clientKeyPath = properties.getValue(GRPC_TLS_KEY_PATH);
       String clientCertPath = properties.getValue(GRPC_TLS_CERT_PATH);
       String caCertPath = properties.getValue(GRPC_TLS_CA_PATH);
+      boolean enablekeepAlive = properties.getValue(GRPC_ENABLE_KEEP_ALIVE);
+      Duration keepAliveTimeSeconds = properties.getValue(GRPC_KEEP_ALIVE_TIME_SECONDS);
+      Duration keepAliveTimeoutSeconds = properties.getValue(GRPC_KEEP_ALIVE_TIMEOUT_SECONDS);
+      boolean keepAliveWithoutCalls = properties.getValue(GRPC_KEEP_ALIVE_WITHOUT_CALLS);
 
       boolean secure = false;
       String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
@@ -257,30 +295,33 @@ public final class NetworkUtils {
         var authorityEndpoint = matcher.group("authorityEndpoint");
         if (authorityEndpoint != null) {
           return new GrpcEndpointSettings(
-                  String.format(
-                          "dns://%s/%s:%d",
-                          authorityEndpoint,
-                          address,
-                          port
-                  ), secure, clientKeyPath, clientCertPath, caCertPath);
+              String.format(
+                  "dns://%s/%s:%d",
+                  authorityEndpoint,
+                  address,
+                  port),
+              secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeSeconds,
+              keepAliveTimeoutSeconds, keepAliveWithoutCalls);
         }
 
         var socket = matcher.group("socket");
         if (socket != null) {
-          return new GrpcEndpointSettings(socket, secure, clientKeyPath, clientCertPath, caCertPath);
+          return new GrpcEndpointSettings(socket, secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive,
+              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls);
         }
 
         var vsocket = matcher.group("vsocket");
         if (vsocket != null) {
-          return new GrpcEndpointSettings(vsocket, secure, clientKeyPath, clientCertPath, caCertPath);
+          return new GrpcEndpointSettings(vsocket, secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive,
+              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls);
         }
       }
 
       return new GrpcEndpointSettings(String.format(
-              "dns:///%s:%d",
-              address,
-              port
-      ), secure, clientKeyPath, clientCertPath, caCertPath);
+          "dns:///%s:%d",
+          address,
+          port), secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeSeconds,
+          keepAliveTimeoutSeconds, keepAliveWithoutCalls);
     }
 
   }
