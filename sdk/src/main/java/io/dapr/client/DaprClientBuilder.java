@@ -156,7 +156,7 @@ public class DaprClientBuilder {
   }
 
   /**
-   * Creates an instance of the GPRC Client.
+   * Creates an instance of the GRPC Client.
    *
    * @return the GRPC Client.
    * @throws java.lang.IllegalStateException if either host is missing or if port is missing or a negative number.
