@@ -55,7 +55,7 @@ Configure gRPC keepalive behavior using these environment variables:
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `DAPR_GRPC_KEEP_ALIVE_ENABLED` | Whether to enable gRPC keepalive | `false` |
+| `DAPR_GRPC_ENABLE_KEEP_ALIVE` | Whether to enable gRPC keepalive | `false` |
 | `DAPR_GRPC_KEEP_ALIVE_TIME_SECONDS` | gRPC keepalive time in seconds | `10` |
 | `DAPR_GRPC_KEEP_ALIVE_TIMEOUT_SECONDS` | gRPC keepalive timeout in seconds | `5` |
 | `DAPR_GRPC_KEEP_ALIVE_WITHOUT_CALLS` | Whether to keep gRPC connection alive without calls | `true` |
@@ -99,7 +99,7 @@ All environment variables can be set as system properties using the `-D` flag. H
 | `dapr.grpc.tls.ca.path` | Path to the gRPC TLS CA certificate | `null` |
 | `dapr.grpc.tls.insecure` | Whether to use insecure TLS mode | `false` |
 | `dapr.grpc.endpoint` | gRPC endpoint for remote sidecar | `null` |
-| `dapr.grpc.keep.alive.enabled` | Whether to enable gRPC keepalive | `false` |
+| `dapr.grpc.enable.keep.alive` | Whether to enable gRPC keepalive | `false` |
 | `dapr.grpc.keep.alive.time.seconds` | gRPC keepalive time in seconds | `10` |
 | `dapr.grpc.keep.alive.timeout.seconds` | gRPC keepalive timeout in seconds | `5` |
 | `dapr.grpc.keep.alive.without.calls` | Whether to keep gRPC connection alive without calls | `true` |
@@ -124,20 +124,20 @@ The SDK checks each source in order. If a value is invalid for the property type
 
 ```bash
 # Invalid boolean value - will be ignored
-java -Ddapr.grpc.keep.alive.enabled=not-a-boolean -jar myapp.jar
+java -Ddapr.grpc.enable.keep.alive=not-a-boolean -jar myapp.jar
 
 # Valid boolean value - will be used
-export DAPR_GRPC_KEEP_ALIVE_ENABLED=false
+export DAPR_GRPC_ENABLE_KEEP_ALIVE=false
 ```
 
 In this case, the environment variable is used because the system property value is invalid. However, if both values are valid, the system property takes precedence:
 
 ```bash
 # Valid boolean value - will be used
-java -Ddapr.grpc.keep.alive.enabled=true -jar myapp.jar
+java -Ddapr.grpc.enable.keep.alive=true -jar myapp.jar
 
 # Valid boolean value - will be ignored
-export DAPR_GRPC_KEEP_ALIVE_ENABLED=false
+export DAPR_GRPC_ENABLE_KEEP_ALIVE=false
 ```
 
 Override values can be set using the `DaprClientBuilder` in two ways:
@@ -162,7 +162,7 @@ DaprClient client = new DaprClientBuilder()
 ```java
 // Create a map of property overrides
 Map<String, String> overrides = new HashMap<>();
-overrides.put("dapr.grpc.keep.alive.enabled", "true");
+overrides.put("dapr.grpc.enable.keep.alive", "true");
 overrides.put("dapr.http.client.readTimeoutSeconds", "120");
 
 // Create a Properties instance with overrides

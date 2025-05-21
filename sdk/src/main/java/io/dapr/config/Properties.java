@@ -147,13 +147,13 @@ public class Properties {
 
   /**
    * GRPC enable keep alive.
-   * Environment variable: DAPR_GRPC_KEEP_ALIVE_ENABLED
-   * System property: dapr.grpc.keep.alive.enabled
+   * Environment variable: DAPR_GRPC_ENABLE_KEEP_ALIVE
+   * System property: dapr.grpc.enable.keep.alive
    * Default: false
    */
   public static final Property<Boolean> GRPC_ENABLE_KEEP_ALIVE = new BooleanProperty(
-      "dapr.grpc.keep.alive.enabled",
-      "DAPR_GRPC_KEEP_ALIVE_ENABLED",
+      "dapr.grpc.enable.keep.alive",
+      "DAPR_GRPC_ENABLE_KEEP_ALIVE",
       false);
 
   /**
