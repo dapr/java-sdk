@@ -216,4 +216,10 @@ jobs:
         run: |
           mm.py README.md
         env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}      
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate Spring Boot Workflow examples
+        working-directory: ./spring-boot-examples/workflows
+        run: |
+          mm.py README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
