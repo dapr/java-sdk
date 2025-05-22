@@ -331,7 +331,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
 
 
     response = daprClient.getState(STATE_STORE_NAME, new State<>(stateKey, (MyData) null, null), MyData.class);
-    //retrive the data wihout any etag
+    //retrieve the data without any etag
     myDataResponse = response.block();
 
     //review that state value changes
@@ -509,7 +509,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
   public void saveUpdateAndGetStateWithEtagAndStateOptionsFirstWrite() {
     final String stateKey = "keyToBeUpdatedWithEtagAndOptions";
 
-    //create option with concurrency with first writte and consistency of strong
+    //create option with concurrency with first write and consistency of strong
     StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG,
         StateOptions.Concurrency.FIRST_WRITE);
 
@@ -571,7 +571,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
   public void saveUpdateAndGetStateWithEtagAndStateOptionsLastWrite() {
     final String stateKey = "keyToBeUpdatedWithEtagAndOptions";
 
-    //create option with concurrency with first writte and consistency of strong
+    //create option with concurrency with first write and consistency of strong
     StateOptions stateOptions = new StateOptions(StateOptions.Consistency.STRONG, StateOptions.Concurrency.LAST_WRITE);
 
     //create dapr client
@@ -599,7 +599,7 @@ public abstract class AbstractStateClientIT extends BaseIT {
     assertEquals("data in property A", myDataResponse.getValue().getPropertyA());
     assertEquals("data in property B", myDataResponse.getValue().getPropertyB());
 
-    //change data to be udpated
+    //change data to be updated
     data.setPropertyA("data in property A2");
     data.setPropertyB("data in property B2");
     //create deferred action to update the action with options

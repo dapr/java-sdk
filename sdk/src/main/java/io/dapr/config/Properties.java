@@ -146,6 +146,50 @@ public class Properties {
       null);
 
   /**
+   * GRPC enable keep alive.
+   * Environment variable: DAPR_GRPC_ENABLE_KEEP_ALIVE
+   * System property: dapr.grpc.enable.keep.alive
+   * Default: false
+   */
+  public static final Property<Boolean> GRPC_ENABLE_KEEP_ALIVE = new BooleanProperty(
+      "dapr.grpc.enable.keep.alive",
+      "DAPR_GRPC_ENABLE_KEEP_ALIVE",
+      false);
+
+  /**
+   * GRPC keep alive time in seconds.
+   * Environment variable: DAPR_GRPC_KEEP_ALIVE_TIME_SECONDS
+   * System property: dapr.grpc.keep.alive.time.seconds
+   * Default: 10 seconds
+   */
+  public static final Property<Duration> GRPC_KEEP_ALIVE_TIME_SECONDS = new SecondsDurationProperty(
+      "dapr.grpc.keep.alive.time.seconds",
+      "DAPR_GRPC_KEEP_ALIVE_TIME_SECONDS",
+      Duration.ofSeconds(10));
+
+  /**
+   * GRPC keep alive timeout in seconds.
+   * Environment variable: DAPR_GRPC_KEEP_ALIVE_TIMEOUT_SECONDS
+   * System property: dapr.grpc.keep.alive.timeout.seconds
+   * Default: 5 seconds
+   */
+  public static final Property<Duration> GRPC_KEEP_ALIVE_TIMEOUT_SECONDS = new SecondsDurationProperty(
+      "dapr.grpc.keep.alive.timeout.seconds",
+      "DAPR_GRPC_KEEP_ALIVE_TIMEOUT_SECONDS",
+      Duration.ofSeconds(5));
+
+  /**
+   * GRPC keep alive without calls.
+   * Environment variable: DAPR_GRPC_KEEP_ALIVE_WITHOUT_CALLS
+   * System property: dapr.grpc.keep.alive.without.calls
+   * Default: true
+   */
+  public static final Property<Boolean> GRPC_KEEP_ALIVE_WITHOUT_CALLS = new BooleanProperty(
+      "dapr.grpc.keep.alive.without.calls",
+      "DAPR_GRPC_KEEP_ALIVE_WITHOUT_CALLS",
+      true);
+
+  /**
    * GRPC endpoint for remote sidecar connectivity.
    */
   public static final Property<String> HTTP_ENDPOINT = new StringProperty(
