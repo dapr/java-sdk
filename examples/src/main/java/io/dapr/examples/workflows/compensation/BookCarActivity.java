@@ -39,4 +39,4 @@ public class BookCarActivity implements WorkflowActivity {
         // force the compensation
         throw new RuntimeException("Failed to book car");
     }
-} 
+}
