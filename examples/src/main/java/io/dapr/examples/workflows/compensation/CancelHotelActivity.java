@@ -38,4 +38,4 @@ public class CancelHotelActivity implements WorkflowActivity {
         logger.info("Activity completed with result: " + result);
         return result;
     }
-} 
+}
