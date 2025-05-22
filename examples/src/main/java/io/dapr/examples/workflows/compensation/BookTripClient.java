@@ -32,4 +32,4 @@ public class BookTripClient {
             throw new RuntimeException(e);
         }
     }
-} 
+}
