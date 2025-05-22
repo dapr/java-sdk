@@ -8,11 +8,13 @@ description: How to get started with Dapr and Spring Boot
 
 By combining Dapr and Spring Boot, we can create infrastructure independent Java applications that can be deployed across different environments, supporting a wide range of on-premises and cloud provider services. 
 
-First, we will start with a simple integration covering the `DaprClient` and the [Testcontainers](https://testcontainers.com/) integration, to then use Spring and Spring Boot mechanisms and programming model to leverage the Dapr APIs under the hood. This help teams to remove dependencies such as clients and drivers required to connect to environment specific infrastructure (databases, key-value stores, message brokers, configuration/secret stores, etc.) 
+First, we will start with a simple integration covering the `DaprClient` and the [Testcontainers](https://testcontainers.com/) integration, to then use Spring and Spring Boot mechanisms and programming model to leverage the Dapr APIs under the hood. This helps teams to remove dependencies such as clients and drivers required to connect to environment-specific infrastructure (databases, key-value stores, message brokers, configuration/secret stores, etc) 
 
 {{% alert title="Note" color="primary" %}}
 The Spring Boot integration requires Spring Boot 3.x+ to work. This will not work with Spring Boot 2.x.
-The Spring Boot integration still remains in alpha. We need your help and feedback to graduate it. 
+The Spring Boot integration remains in alpha. We need your help and feedback to graduate it. 
+Please join the [#java-sdk discord channel](https://discord.com/channels/778680217417809931/778749797242765342) discussion or open issues in the [dapr/java-sdk](https://github.com/dapr/java-sdk/issues).
+
 {{% /alert %}}
 
 
