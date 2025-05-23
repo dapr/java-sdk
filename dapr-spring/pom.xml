@@ -34,6 +34,7 @@
     <maven.compiler.release>11</maven.compiler.release>
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.10.2</junit.version>
+    <logback-core.version>1.4.14</logback-core.version>
   </properties>
 
   <dependencyManagement>
@@ -69,6 +70,11 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>junit-jupiter</artifactId>
         <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>${logback-core.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
