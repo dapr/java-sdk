@@ -34,7 +34,7 @@
     <maven.compiler.release>11</maven.compiler.release>
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.10.2</junit.version>
-    <logback-core.version>1.4.14</logback-core.version>
+    <logback-core.version>1.5.13</logback-core.version>
   </properties>
 
   <dependencyManagement>
