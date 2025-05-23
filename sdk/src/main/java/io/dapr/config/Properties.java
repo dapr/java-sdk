@@ -103,12 +103,91 @@ public class Properties {
       DEFAULT_GRPC_PORT);
 
   /**
+   * GRPC TLS cert path for Dapr after checking system property and environment variable.
+   */
+  public static final Property<String> GRPC_TLS_CERT_PATH = new StringProperty(
+      "dapr.grpc.tls.cert.path",
+      "DAPR_GRPC_TLS_CERT_PATH",
+      null);
+
+  /**
+   * GRPC TLS key path for Dapr after checking system property and environment variable.
+   */
+  public static final Property<String> GRPC_TLS_KEY_PATH = new StringProperty(
+      "dapr.grpc.tls.key.path",
+      "DAPR_GRPC_TLS_KEY_PATH",
+      null);
+
+  /**
+   * GRPC TLS CA cert path for Dapr after checking system property and environment variable.
+   * This is used for TLS connections to servers with self-signed certificates.
+   */
+  public static final Property<String> GRPC_TLS_CA_PATH = new StringProperty(
+      "dapr.grpc.tls.ca.path",
+      "DAPR_GRPC_TLS_CA_PATH",
+      null);
+
+  /**
+   * Use insecure TLS mode which still uses TLS but doesn't verify certificates.
+   * This uses InsecureTrustManagerFactory to trust all certificates.
+   * This should only be used for testing or in secure environments.
+   */
+  public static final Property<Boolean> GRPC_TLS_INSECURE = new BooleanProperty(
+      "dapr.grpc.tls.insecure",
+      "DAPR_GRPC_TLS_INSECURE",
+      false);
+
+  /**
    * GRPC endpoint for remote sidecar connectivity.
    */
   public static final Property<String> GRPC_ENDPOINT = new StringProperty(
       "dapr.grpc.endpoint",
       "DAPR_GRPC_ENDPOINT",
       null);
+
+  /**
+   * GRPC enable keep alive.
+   * Environment variable: DAPR_GRPC_ENABLE_KEEP_ALIVE
+   * System property: dapr.grpc.enable.keep.alive
+   * Default: false
+   */
+  public static final Property<Boolean> GRPC_ENABLE_KEEP_ALIVE = new BooleanProperty(
+      "dapr.grpc.enable.keep.alive",
+      "DAPR_GRPC_ENABLE_KEEP_ALIVE",
+      false);
+
+  /**
+   * GRPC keep alive time in seconds.
+   * Environment variable: DAPR_GRPC_KEEP_ALIVE_TIME_SECONDS
+   * System property: dapr.grpc.keep.alive.time.seconds
+   * Default: 10 seconds
+   */
+  public static final Property<Duration> GRPC_KEEP_ALIVE_TIME_SECONDS = new SecondsDurationProperty(
+      "dapr.grpc.keep.alive.time.seconds",
+      "DAPR_GRPC_KEEP_ALIVE_TIME_SECONDS",
+      Duration.ofSeconds(10));
+
+  /**
+   * GRPC keep alive timeout in seconds.
+   * Environment variable: DAPR_GRPC_KEEP_ALIVE_TIMEOUT_SECONDS
+   * System property: dapr.grpc.keep.alive.timeout.seconds
+   * Default: 5 seconds
+   */
+  public static final Property<Duration> GRPC_KEEP_ALIVE_TIMEOUT_SECONDS = new SecondsDurationProperty(
+      "dapr.grpc.keep.alive.timeout.seconds",
+      "DAPR_GRPC_KEEP_ALIVE_TIMEOUT_SECONDS",
+      Duration.ofSeconds(5));
+
+  /**
+   * GRPC keep alive without calls.
+   * Environment variable: DAPR_GRPC_KEEP_ALIVE_WITHOUT_CALLS
+   * System property: dapr.grpc.keep.alive.without.calls
+   * Default: true
+   */
+  public static final Property<Boolean> GRPC_KEEP_ALIVE_WITHOUT_CALLS = new BooleanProperty(
+      "dapr.grpc.keep.alive.without.calls",
+      "DAPR_GRPC_KEEP_ALIVE_WITHOUT_CALLS",
+      true);
 
   /**
    * GRPC endpoint for remote sidecar connectivity.
