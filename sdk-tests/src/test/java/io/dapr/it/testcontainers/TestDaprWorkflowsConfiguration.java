@@ -56,9 +56,12 @@ public class TestDaprWorkflowsConfiguration {
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
 
     builder.registerWorkflow(TestWorkflow.class);
+    builder.registerWorkflow(TestExecutionKeysWorkflow.class);
     builder.registerActivity(FirstActivity.class);
     builder.registerActivity(SecondActivity.class);
-
+    builder.registerActivity(TaskExecutionKeyActivity.class);
+    
+    
     return builder;
   }
 }
