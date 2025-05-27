@@ -16,6 +16,7 @@ package io.dapr.springboot.examples.wfp;
 import io.dapr.client.DaprClient;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
+import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,6 +138,19 @@ class WorkflowPatternsAppTests {
             .statusCode(200).extract().as(CleanUpLog.class);
 
     assertEquals(5, cleanUpLog.getCleanUpTimes());
+  }
+
+  @Test
+  void testRemoteEndpoint() {
+
+    Payload payload = given().contentType(ContentType.JSON)
+            .body(new Payload("123", "content goes here"))
+            .when()
+            .post("/wfp/remote-endpoint")
+            .then()
+            .statusCode(200).extract().as(Payload.class);
+
+    assertEquals(true, payload.getProcessed());
   }
 
 }
