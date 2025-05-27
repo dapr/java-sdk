@@ -25,7 +25,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
-import org.testcontainers.utility.DockerImageName;
 
 import java.util.Collections;
 import java.util.List;
@@ -51,11 +50,15 @@ public class DaprTestContainersConfig {
 
   @Bean
   MicrocksContainersEnsemble microcksEnsemble(Network network) {
-    DockerImageName nativeImage = DockerImageName.parse("quay.io/microcks/microcks-uber:1.11.2-native")
-            .asCompatibleSubstituteFor("quay.io/microcks/microcks-uber:1.9.0");
-    return new MicrocksContainersEnsemble(network, nativeImage)
+//    DockerImageName nativeImage = DockerImageName.parse("quay.io/microcks/microcks-uber:1.11.2-native")
+//            .asCompatibleSubstituteFor("quay.io/microcks/microcks-uber:1.9.0");
+
+    //new MicrocksContainersEnsemble(network, nativeImage)
+    MicrocksContainersEnsemble ensemble = new MicrocksContainersEnsemble(network, "quay.io/microcks/microcks-uber:1.11.2")
             .withAccessToHost(true)   // We need this to access our webapp while it runs
             .withMainArtifacts("third-parties/remote-http-service.yaml");
+    return ensemble;
+
   }
 
   @Bean

@@ -17,6 +17,7 @@ import io.dapr.client.DaprClient;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
 import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
+import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,9 @@ class WorkflowPatternsAppTests {
 
   @Autowired
   private DaprClient daprClient;
+
+  @Autowired
+  private MicrocksContainersEnsemble ensemble;
 
   @BeforeEach
   void setUp() {
@@ -151,6 +155,9 @@ class WorkflowPatternsAppTests {
             .statusCode(200).extract().as(Payload.class);
 
     assertEquals(true, payload.getProcessed());
+
+    assertEquals(2, ensemble.getMicrocksContainer()
+            .getServiceInvocationsCount("API Payload Processor", "1.0.0"));
   }
 
 }

@@ -17,6 +17,16 @@ paths:
     post:
       tags:
         - process
+      x-microcks-operation:
+        dispatcher: SCRIPT
+        dispatcherRules: |
+          def retries = store.get("retries") ?:"first"
+          if (retries == "first") {
+            store.put("retries", "second", 60)
+            return "Error"
+          }
+          store.delete("retries")
+          return "Payload"
       requestBody:
         content:
           application/json:
@@ -36,6 +46,20 @@ paths:
                     content: payload content here
                     processed: true
           description: Process payload
+        "500":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                Error:
+                  value:
+                    message: Something unexpected happened
+          description: Error payload
       operationId: Process
       summary: Process incoming payload
 components:
