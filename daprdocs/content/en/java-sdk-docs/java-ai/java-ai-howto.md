@@ -9,7 +9,7 @@ description: How to get up and running with Conversation AI using the Dapr Java 
 As part of this demonstration, we will look at how to use the Conversation API to converse with a Large Language Model (LLM). The API
 will return the response from the LLM for the given prompt. With the [provided conversation ai example](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/conversation), you will:
 
-- You will provide a prompt [Conversation AI example](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/conversation/DemoConversationAI.java)
+- You will provide a prompt using the [Conversation AI example](https://github.com/dapr/java-sdk/blob/master/examples/src/main/java/io/dapr/examples/conversation/DemoConversationAI.java)
 - Filter out Personally identifiable information (PII).
 
 This example uses the default configuration from `dapr init` in [self-hosted mode](https://github.com/dapr/cli#install-dapr-on-your-local-machine-self-hosted).
