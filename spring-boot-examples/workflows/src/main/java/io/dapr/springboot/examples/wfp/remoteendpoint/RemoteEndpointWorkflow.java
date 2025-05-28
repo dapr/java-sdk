@@ -32,8 +32,8 @@ public class RemoteEndpointWorkflow implements Workflow {
       Payload payload = ctx.getInput(Payload.class);
       payload = ctx.callActivity(CallRemoteEndpointActivity.class.getName(), payload ,
               new WorkflowTaskOptions(new WorkflowTaskRetryPolicy(5,
-                      Duration.ofSeconds(2), 1.0, Duration.ofSeconds(10), Duration.ofSeconds(20)))
-              ,Payload.class).await();
+                      Duration.ofSeconds(2), 1.0, Duration.ofSeconds(10), Duration.ofSeconds(20))),
+              Payload.class).await();
 
       ctx.getLogger().info("Workflow finished with result: " + payload);
       ctx.complete(payload);

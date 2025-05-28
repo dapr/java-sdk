@@ -23,11 +23,9 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.DynamicPropertyRegistrar;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
 
 import java.util.Collections;
-import java.util.List;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
@@ -50,15 +48,9 @@ public class DaprTestContainersConfig {
 
   @Bean
   MicrocksContainersEnsemble microcksEnsemble(Network network) {
-//    DockerImageName nativeImage = DockerImageName.parse("quay.io/microcks/microcks-uber:1.11.2-native")
-//            .asCompatibleSubstituteFor("quay.io/microcks/microcks-uber:1.9.0");
-
-    //new MicrocksContainersEnsemble(network, nativeImage)
-    MicrocksContainersEnsemble ensemble = new MicrocksContainersEnsemble(network, "quay.io/microcks/microcks-uber:1.11.2")
+    return new MicrocksContainersEnsemble(network, "quay.io/microcks/microcks-uber:1.11.2")
             .withAccessToHost(true)   // We need this to access our webapp while it runs
             .withMainArtifacts("third-parties/remote-http-service.yaml");
-    return ensemble;
-
   }
 
   @Bean
@@ -72,9 +64,7 @@ public class DaprTestContainersConfig {
 
   @Bean
   public Network getDaprNetwork(Environment env) {
-    boolean reuse = env.getProperty("reuse", Boolean.class, false);
-    if (reuse) {
-      Network defaultDaprNetwork = new Network() {
+    return new Network() {
         @Override
         public String getId() {
           return "dapr-network";
@@ -90,18 +80,6 @@ public class DaprTestContainersConfig {
           return null;
         }
       };
-
-      List<com.github.dockerjava.api.model.Network> networks = DockerClientFactory.instance().client().listNetworksCmd()
-              .withNameFilter("dapr-network").exec();
-      if (networks.isEmpty()) {
-        Network.builder().createNetworkCmdModifier(cmd -> cmd.withName("dapr-network")).build().getId();
-        return defaultDaprNetwork;
-      } else {
-        return defaultDaprNetwork;
-      }
-    } else {
-      return Network.newNetwork();
-    }
   }
 
 }
