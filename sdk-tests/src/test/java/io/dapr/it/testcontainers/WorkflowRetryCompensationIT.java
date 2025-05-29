@@ -28,6 +28,10 @@ import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.workflows.client.WorkflowFailureDetails;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+import io.dapr.client.DaprClient;
+import io.dapr.client.DaprClientBuilder;
+import io.dapr.config.Properties;
+import io.dapr.config.Property;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -94,7 +98,7 @@ public class WorkflowRetryCompensationIT {
     private WorkflowRuntime runtime;
 
     @BeforeEach
-    public void init() {
+    public void init() throws InterruptedException {
         // Reset attempt counts before each test
         BookFlightActivity.attemptCount = 0;
         BookHotelActivity.attemptCount = 0;
@@ -106,6 +110,23 @@ public class WorkflowRetryCompensationIT {
         // Reset failure flags
         BookCarActivity.alwaysFail = false;
         CancelHotelActivity.shouldFail = false;
+        
+        // Wait for Dapr sidecar to be ready before starting workflow runtime
+        Map<Property<?>, String> overrides = Map.of(
+            Properties.HTTP_ENDPOINT, DAPR_CONTAINER.getHttpEndpoint(),
+            Properties.GRPC_ENDPOINT, DAPR_CONTAINER.getGrpcEndpoint()
+        );
+        
+        while (true) {
+            try (DaprClient client = new DaprClientBuilder()
+                    .withPropertyOverrides(overrides).build()) {
+                client.waitForSidecar(10000).block(); // 10 seconds
+                break;
+            } catch (Exception e) {
+                System.out.println("Sidecar not ready yet, retrying in 10 seconds...");
+                Thread.sleep(1000);
+            }
+        }
         
         runtime = workflowRuntimeBuilder.build();
         System.out.println("Starting new workflow runtime for test");
