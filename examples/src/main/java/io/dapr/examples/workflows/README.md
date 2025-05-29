@@ -621,7 +621,6 @@ expected_stdout_lines:
   - "Forcing Failure to trigger compensation for activity: io.dapr.examples.workflows.compensation.BookCarActivity"
   - "******** executing compensation logic ********"
   - "Activity failed: Task 'io.dapr.examples.workflows.compensation.BookCarActivity' (#2) failed with an unhandled exception: Failed to book car"
-  - "Error during compensation: The orchestrator is blocked and waiting for new inputs. This Throwable should never be caught by user code."
   - "Starting Activity: io.dapr.examples.workflows.compensation.CancelHotelActivity"
   - "Activity completed with result: Hotel canceled successfully"
   - "Starting Activity: io.dapr.examples.workflows.compensation.CancelFlightActivity"
