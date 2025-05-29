@@ -74,6 +74,7 @@ public class WorkflowRetryCompensationIT {
         .withNetwork(DAPR_NETWORK)
         .withComponent(new Component("kvstore", "state.in-memory", "v1",
             Map.of("actorStateStore", "true")))
+        .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
         .withDaprLogLevel(DaprLogLevel.DEBUG)
         .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
         .withAppChannelAddress("host.testcontainers.internal");
