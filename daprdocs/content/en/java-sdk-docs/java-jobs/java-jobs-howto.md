@@ -38,7 +38,7 @@ Run the following command to install the requirements for running the jobs examp
 mvn clean install -DskipTests
 ```
 
-From the Java SDK root directory, navigate to the Dapr Jobs example.
+From the Java SDK root directory, navigate to the examples' directory.
 
 ```bash
 cd examples
