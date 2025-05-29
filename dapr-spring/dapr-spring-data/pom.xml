@@ -19,6 +19,10 @@
       <groupId>org.springframework.data</groupId>
       <artifactId>spring-data-keyvalue</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
