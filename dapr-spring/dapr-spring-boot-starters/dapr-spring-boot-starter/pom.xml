@@ -23,27 +23,22 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-springboot</artifactId>
-      <version>${dapr.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-boot-autoconfigure</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-data</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-messaging</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-workflows</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
   </dependencies>
 
