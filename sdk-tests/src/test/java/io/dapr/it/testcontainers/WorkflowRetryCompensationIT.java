@@ -419,4 +419,38 @@ public class WorkflowRetryCompensationIT {
         assertEquals(3, CancelHotelActivity.attemptCount, "Hotel cancellation should have retried twice before failing");
         assertEquals(0, CancelCarActivity.attemptCount, "Car should not be cancelled since booking failed");
     }
+
+    @Test
+    public void testRetrySuccessNoCompensation() throws Exception {
+        // Let car booking retry and succeed (default behavior)
+        BookCarActivity.alwaysFail = false;
+        
+        WorkflowInput input = new WorkflowInput(false, false);
+        System.out.println("Starting testRetrySuccessNoCompensation with input: " + input);
+        
+        // Start the workflow
+        String instanceId = workflowClient.scheduleNewWorkflow(BookTripWorkflow.class, input);
+        assertNotNull(instanceId, "Workflow instance ID should not be null");
+        System.out.println("Started workflow with instance ID: " + instanceId);
+
+        // Wait for workflow to start & complete
+        workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(30), false);
+        WorkflowInstanceStatus status = workflowClient.waitForInstanceCompletion(instanceId, Duration.ofSeconds(120), true);
+        assertNotNull(status, "Workflow status should not be null");
+        assertEquals(WorkflowRuntimeStatus.COMPLETED, status.getRuntimeStatus(), 
+            "Workflow should have completed successfully");
+        
+        String result = status.readOutputAs(String.class);
+        assertNotNull(result, "Workflow result should not be null");
+        assertEquals("Flight booked successfully, Hotel booked successfully, Car booked successfully", result,
+            "All bookings should have succeeded");
+        
+        // Assert all booking attempts & no compensations ran
+        assertEquals(1, BookFlightActivity.attemptCount, "Flight should succeed on first attempt");
+        assertEquals(1, BookHotelActivity.attemptCount, "Hotel should succeed on first attempt");  
+        assertEquals(3, BookCarActivity.attemptCount, "Car should succeed on 3rd attempt after 2 retries");
+        assertEquals(0, CancelFlightActivity.attemptCount, "No flight cancellation should occur");
+        assertEquals(0, CancelHotelActivity.attemptCount, "No hotel cancellation should occur");
+        assertEquals(0, CancelCarActivity.attemptCount, "No car cancellation should occur");
+    }
 }

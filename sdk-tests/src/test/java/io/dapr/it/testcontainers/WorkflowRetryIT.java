@@ -174,6 +174,8 @@ public class WorkflowRetryIT {
         assertNotNull(result, "Workflow result should not be null");
         assertEquals("Activity succeeded after 3 attempts", result, 
             "Activity should have succeeded after 3 attempts");
+        
+        assertEquals(3, RetryTestActivity.attemptCount, "Activity should have been attempted 3 times");
     }
 
     @Test
@@ -198,5 +200,7 @@ public class WorkflowRetryIT {
         System.out.println("Error message: " + errorMessage);
         assertTrue(errorMessage.contains("Simulated failure on attempt 3"), 
             "Error should indicate failure on final attempt. Actual error: " + errorMessage);
+        
+        assertEquals(3, RetryTestActivity.attemptCount, "Activity should have failed after 3 attempts");
     }
 }
