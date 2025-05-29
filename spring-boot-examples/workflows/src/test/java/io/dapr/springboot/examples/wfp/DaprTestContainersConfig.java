@@ -23,9 +23,11 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.DynamicPropertyRegistrar;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
 
 import java.util.Collections;
+import java.util.List;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
@@ -64,7 +66,9 @@ public class DaprTestContainersConfig {
 
   @Bean
   public Network getDaprNetwork(Environment env) {
-    return new Network() {
+    boolean reuse = env.getProperty("reuse", Boolean.class, false);
+    if (reuse) {
+      Network defaultDaprNetwork = new Network() {
         @Override
         public String getId() {
           return "dapr-network";
@@ -80,6 +84,18 @@ public class DaprTestContainersConfig {
           return null;
         }
       };
+
+      List<com.github.dockerjava.api.model.Network> networks = DockerClientFactory.instance().client().listNetworksCmd()
+              .withNameFilter("dapr-network").exec();
+      if (networks.isEmpty()) {
+        Network.builder().createNetworkCmdModifier(cmd -> cmd.withName("dapr-network")).build().getId();
+        return defaultDaprNetwork;
+      } else {
+        return defaultDaprNetwork;
+      }
+    } else {
+      return Network.newNetwork();
+    }
   }
 
 }
