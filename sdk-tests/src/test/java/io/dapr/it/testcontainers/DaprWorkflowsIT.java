@@ -15,10 +15,7 @@ package io.dapr.it.testcontainers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
-import io.dapr.config.Properties;
-import io.dapr.config.Property;
+
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -44,6 +41,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -94,24 +92,7 @@ public class DaprWorkflowsIT {
    * Initializes the test.
    */
   @BeforeEach
-  public void init() throws InterruptedException {
-    // Wait for Dapr sidecar to be ready before starting workflow runtime
-    Map<Property<?>, String> overrides = Map.of(
-        Properties.HTTP_ENDPOINT, DAPR_CONTAINER.getHttpEndpoint(),
-        Properties.GRPC_ENDPOINT, DAPR_CONTAINER.getGrpcEndpoint()
-    );
-    
-    while (true) {
-      try (DaprClient client = new DaprClientBuilder()
-              .withPropertyOverrides(overrides).build()) {
-        client.waitForSidecar(10000).block(); // 10 seconds
-          break;
-      } catch (Exception e) {
-          System.out.println("Sidecar not ready yet, retrying in 10 seconds...");
-          Thread.sleep(1000);
-      }
-  }
-    
+  public void init() {
     WorkflowRuntime runtime = workflowRuntimeBuilder.build();
     System.out.println("Start workflow runtime");
     runtime.start(false);
@@ -135,6 +116,29 @@ public class DaprWorkflowsIT {
     assertEquals(2, workflowOutput.getPayloads().size());
     assertEquals("First Activity", workflowOutput.getPayloads().get(0));
     assertEquals("Second Activity", workflowOutput.getPayloads().get(1));
+    assertEquals(instanceId, workflowOutput.getWorkflowId());
+  }
+
+  @Test
+  public void testExecutionKeyWorkflows() throws Exception {
+    TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
+    String instanceId = workflowClient.scheduleNewWorkflow(TestExecutionKeysWorkflow.class, payload);
+
+    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(100), false);
+    
+    Duration timeout = Duration.ofSeconds(1000);
+    WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+
+    assertNotNull(workflowStatus);
+
+    TestWorkflowPayload workflowOutput = deserialize(workflowStatus.getSerializedOutput());
+
+    assertEquals(1, workflowOutput.getPayloads().size());
+    assertEquals("Execution key found", workflowOutput.getPayloads().get(0));
+    
+    String executionKey = workflowOutput.getWorkflowId() +"-"+"io.dapr.it.testcontainers.TaskExecutionKeyActivity";
+    assertTrue(KeyStore.getInstance().getKey(executionKey));
+    
     assertEquals(instanceId, workflowOutput.getWorkflowId());
   }
 

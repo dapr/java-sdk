@@ -56,20 +56,12 @@ public class TestDaprWorkflowsConfiguration {
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
 
     builder.registerWorkflow(TestWorkflow.class);
+    builder.registerWorkflow(TestExecutionKeysWorkflow.class);
     builder.registerActivity(FirstActivity.class);
     builder.registerActivity(SecondActivity.class);
-
-    builder.registerWorkflow(WorkflowRetryIT.RetryTestWorkflowImpl.class);
-    builder.registerActivity(WorkflowRetryIT.RetryTestActivity.class);
-
-    builder.registerWorkflow(WorkflowRetryCompensationIT.BookTripWorkflow.class);
-    builder.registerActivity(WorkflowRetryCompensationIT.BookFlightActivity.class);
-    builder.registerActivity(WorkflowRetryCompensationIT.BookHotelActivity.class);
-    builder.registerActivity(WorkflowRetryCompensationIT.BookCarActivity.class);
-    builder.registerActivity(WorkflowRetryCompensationIT.CancelFlightActivity.class);
-    builder.registerActivity(WorkflowRetryCompensationIT.CancelHotelActivity.class);
-    builder.registerActivity(WorkflowRetryCompensationIT.CancelCarActivity.class);
-
+    builder.registerActivity(TaskExecutionKeyActivity.class);
+    
+    
     return builder;
   }
 }
