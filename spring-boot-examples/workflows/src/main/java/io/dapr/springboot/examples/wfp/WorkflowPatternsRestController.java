@@ -22,6 +22,8 @@ import io.dapr.springboot.examples.wfp.externalevent.Decision;
 import io.dapr.springboot.examples.wfp.externalevent.ExternalEventWorkflow;
 import io.dapr.springboot.examples.wfp.fanoutin.FanOutInWorkflow;
 import io.dapr.springboot.examples.wfp.fanoutin.Result;
+import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
+import io.dapr.springboot.examples.wfp.remoteendpoint.RemoteEndpointWorkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import org.slf4j.Logger;
@@ -51,6 +53,7 @@ public class WorkflowPatternsRestController {
   private CleanUpLog cleanUpLog;
 
   private Map<String, String> ordersToApprove = new HashMap<>();
+
 
 
   /**
@@ -135,6 +138,19 @@ public class WorkflowPatternsRestController {
     WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient.waitForInstanceCompletion(instanceId, null, true);
     System.out.printf("workflow instance with ID: %s completed.", instanceId);
     return workflowInstanceStatus.readOutputAs(CleanUpLog.class);
+  }
+
+  @PostMapping("wfp/remote-endpoint")
+  public Payload remoteEndpoint(@RequestBody Payload payload)
+          throws TimeoutException {
+
+    String instanceId = daprWorkflowClient.scheduleNewWorkflow(RemoteEndpointWorkflow.class, payload);
+    logger.info("Workflow instance " + instanceId + " started");
+
+    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient
+            .waitForInstanceCompletion(instanceId, null, true);
+    System.out.printf("workflow instance with ID: %s completed.", instanceId);
+    return workflowInstanceStatus.readOutputAs(Payload.class);
   }
 
 }
