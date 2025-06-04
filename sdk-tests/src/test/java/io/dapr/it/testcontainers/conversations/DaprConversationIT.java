@@ -11,12 +11,13 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.conversations;
 
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationResponse;
+import io.dapr.it.testcontainers.DaprPreviewClientConfiguration;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
