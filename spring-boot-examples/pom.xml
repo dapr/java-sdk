@@ -21,6 +21,7 @@
   <modules>
     <module>producer-app</module>
     <module>consumer-app</module>
+    <module>workflows</module>
   </modules>
 
   <dependencyManagement>

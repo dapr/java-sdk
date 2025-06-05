@@ -1,0 +1,87 @@
+---
+openapi: 3.0.2
+info:
+  title: API Payload Processor
+  version: 1.0.0
+  description: API definition of API Payload Processor sample app
+  contact:
+    name: Salaboy
+    url: http://github.com/salaboy
+    email: salaboy@gmail.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+paths:
+  /process:
+    summary: Process payload
+    post:
+      tags:
+        - process
+      x-microcks-operation:
+        dispatcher: SCRIPT
+        dispatcherRules: |
+          def retries = store.get("retries") ?:"first"
+          if (retries == "first") {
+            store.put("retries", "second", 60)
+            return "Error"
+          }
+          store.delete("retries")
+          return "Payload"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payload'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payload'
+              examples:
+                Payload:
+                  value:
+                    id: 123
+                    content: payload content here
+                    processed: true
+          description: Process payload
+        "500":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                Error:
+                  value:
+                    message: Something unexpected happened
+          description: Error payload
+      operationId: Process
+      summary: Process incoming payload
+components:
+  schemas:
+    Payload:
+      title: Payload to be processed
+      description: Payload to be processed following the Payload type's schema.
+      type: object
+      properties:
+        id:
+          description: Payload Id
+          type: string
+        content:
+          description: Payload Content
+          type: string
+        processed:
+          description: Is the Payload processed
+          type: boolean
+      required:
+        - id
+        - content
+      additionalProperties: false
+tags:
+  - name: payload
+    description: Payload resource

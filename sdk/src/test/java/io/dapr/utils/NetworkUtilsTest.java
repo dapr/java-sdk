@@ -7,7 +7,7 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the sppecific language governing permissions and
+ * See the License for the specific language governing permissions and
 limitations under the License.
 */
 
@@ -15,6 +15,7 @@ package io.dapr.utils;
 
 import io.dapr.config.Properties;
 import io.dapr.exceptions.DaprException;
+import io.dapr.utils.NetworkUtils.GrpcEndpointSettings;
 import io.grpc.ManagedChannel;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
@@ -590,5 +591,45 @@ public class NetworkUtilsTest {
     
     // Verify the channel is active and using TLS (not plaintext)
     Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
+  }
+
+  @Test
+  public void testBuildGrpcManagedChannelWithKeepAliveDefaults() throws Exception {
+    var properties = new Properties(Map.of(
+          Properties.GRPC_ENABLE_KEEP_ALIVE.getName(), "true"
+    ));
+
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+    
+    // Verify the channel is active and using TLS (not plaintext)
+    Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
+  }
+
+  @Test
+  public void testDefaultKeepAliveSettings() throws Exception {
+    Properties properties = new Properties();
+
+    GrpcEndpointSettings settings = NetworkUtils.GrpcEndpointSettings.parse(properties);
+    Assertions.assertEquals(false, settings.enableKeepAlive);
+    Assertions.assertEquals(10, settings.keepAliveTimeSeconds.getSeconds());
+    Assertions.assertEquals(5, settings.keepAliveTimeoutSeconds.getSeconds());
+    Assertions.assertEquals(true, settings.keepAliveWithoutCalls); 
+  }
+
+  @Test
+  public void testDefaultKeepAliveOverride() throws Exception {
+    Properties properties = new Properties(Map.of(
+        Properties.GRPC_ENABLE_KEEP_ALIVE.getName(), "true",
+        Properties.GRPC_KEEP_ALIVE_TIME_SECONDS.getName(), "100",
+        Properties.GRPC_KEEP_ALIVE_TIMEOUT_SECONDS.getName(), "50",
+        Properties.GRPC_KEEP_ALIVE_WITHOUT_CALLS.getName(), "false"
+    ));
+
+    GrpcEndpointSettings settings = NetworkUtils.GrpcEndpointSettings.parse(properties);
+    Assertions.assertEquals(true, settings.enableKeepAlive);
+    Assertions.assertEquals(100, settings.keepAliveTimeSeconds.getSeconds());
+    Assertions.assertEquals(50, settings.keepAliveTimeoutSeconds.getSeconds());
+    Assertions.assertEquals(false, settings.keepAliveWithoutCalls); 
   }
 }
