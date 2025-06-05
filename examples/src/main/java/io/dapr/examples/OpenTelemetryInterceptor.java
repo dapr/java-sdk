@@ -15,6 +15,7 @@ package io.dapr.examples;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,8 +35,8 @@ public class OpenTelemetryInterceptor implements HandlerInterceptor {
   @Autowired
   private OpenTelemetry openTelemetry;
 
-  private static final TextMapPropagator.Getter<HttpServletRequest> HTTP_SERVLET_REQUEST_GETTER =
-      new TextMapPropagator.Getter<>() {
+  private static final TextMapGetter<HttpServletRequest> HTTP_SERVLET_REQUEST_GETTER =
+      new TextMapGetter<>() {
         @Override
         public Iterable<String> keys(HttpServletRequest carrier) {
           return Collections.list(carrier.getHeaderNames());
