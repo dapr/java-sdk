@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.workflows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     classes = {
-        TestDaprWorkflowsConfiguration.class,
+        TestWorkflowsConfiguration.class,
         TestWorkflowsApplication.class
     }
 )
