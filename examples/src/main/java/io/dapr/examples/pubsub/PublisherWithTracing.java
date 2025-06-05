@@ -18,6 +18,7 @@ import io.dapr.client.DaprClientBuilder;
 import io.dapr.examples.OpenTelemetryConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -51,9 +52,9 @@ public class PublisherWithTracing {
    * @throws Exception A startup Exception.
    */
   public static void main(String[] args) throws Exception {
-    OpenTelemetry openTelemetry = OpenTelemetryConfig.createOpenTelemetry();
-    Tracer tracer = openTelemetry.getTracer(PublisherWithTracing.class.getCanonicalName());
-    Span span = tracer.spanBuilder("Publisher's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
+    OpenTelemetrySdk openTelemetrySdk = OpenTelemetryConfig.createOpenTelemetry();
+    Tracer tracer = openTelemetrySdk.getTracer(PublisherWithTracing.class.getCanonicalName());
+    Span span = tracer.spanBuilder("Publisher's Main").setSpanKind(SpanKind.CLIENT).startSpan();
 
     try (DaprClient client = new DaprClientBuilder().build()) {
       try (Scope scope = span.makeCurrent()) {
@@ -80,7 +81,7 @@ public class PublisherWithTracing {
       span.end();
 
       // Shutdown the OpenTelemetry tracer.
-      OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
+      openTelemetrySdk.getSdkTracerProvider().shutdown();
 
       // This is an example, so for simplicity we are just exiting here.
       // Normally a dapr app would be a web service and not exit main.
