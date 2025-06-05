@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.workflows;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
