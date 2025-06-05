@@ -70,17 +70,11 @@ public class InvokeClient {
               }).contextWrite(getReactorContext()).block();
         }
       }
+
+      span.end();
+      openTelemetrySdk.getSdkTracerProvider().shutdown();
+      Validation.validate();
+      System.out.println("Done");
     }
-
-    span.end();
-    shutdown(openTelemetrySdk);
-    System.out.println("Done");
   }
-
-  private static void shutdown(OpenTelemetrySdk openTelemetrySdk) {
-    openTelemetrySdk.getSdkTracerProvider().shutdown();
-
-    Validation.validate();
-  }
-
 }
