@@ -16,8 +16,8 @@ package io.dapr.examples.pubsub;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.examples.OpenTelemetryConfig;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -51,19 +51,21 @@ public class PublisherWithTracing {
    * @throws Exception A startup Exception.
    */
   public static void main(String[] args) throws Exception {
-    OpenTelemetry openTelemetry = OpenTelemetryConfig.createOpenTelemetry();
-    Tracer tracer = openTelemetry.getTracer(PublisherWithTracing.class.getCanonicalName());
-    Span span = tracer.spanBuilder("Publisher's Main").setSpanKind(Span.Kind.CLIENT).startSpan();
+    OpenTelemetrySdk openTelemetrySdk = OpenTelemetryConfig.createOpenTelemetry();
+    Tracer tracer = openTelemetrySdk.getTracer(PublisherWithTracing.class.getCanonicalName());
+    Span span = tracer.spanBuilder("Publisher's Main").setSpanKind(SpanKind.CLIENT).startSpan();
 
     try (DaprClient client = new DaprClientBuilder().build()) {
       try (Scope scope = span.makeCurrent()) {
         for (int i = 0; i < NUM_MESSAGES; i++) {
           String message = String.format("This is message #%d", i);
+
           // Publishing messages, notice the use of subscriberContext() for tracing.
           client.publishEvent(
               PUBSUB_NAME,
               TOPIC_NAME,
               message).contextWrite(getReactorContext()).block();
+
           System.out.println("Published message: " + message);
 
           try {
@@ -71,19 +73,14 @@ public class PublisherWithTracing {
           } catch (InterruptedException e) {
             e.printStackTrace();
             Thread.currentThread().interrupt();
+
             return;
           }
         }
       }
 
-      // Close the span.
       span.end();
-
-      // Shutdown the OpenTelemetry tracer.
-      OpenTelemetrySdk.getGlobalTracerManagement().shutdown();
-
-      // This is an example, so for simplicity we are just exiting here.
-      // Normally a dapr app would be a web service and not exit main.
+      openTelemetrySdk.getSdkTracerProvider().shutdown();
       System.out.println("Done.");
     }
   }
