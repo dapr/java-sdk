@@ -22,7 +22,12 @@
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <spotbugs.fail>false</spotbugs.fail>
+<<<<<<< HEAD
     <opentelemetry.version>0.14.0</opentelemetry.version>
+=======
+    <opentelemetry.version>1.41.0</opentelemetry.version>
+    <zipkin.version>3.4.0</zipkin.version>
+>>>>>>> 3a8fd611 (Ensure OTEL version from examples aligns with SDK and ITs (#1403))
   </properties>
 
   <dependencies>
@@ -79,10 +84,28 @@
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-sdk-metrics</artifactId>
+      <version>${opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+<<<<<<< HEAD
+=======
+      <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-exporter-zipkin</artifactId>
       <version>${opentelemetry.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.zipkin.reporter2</groupId>
+      <artifactId>zipkin-reporter</artifactId>
+      <version>${zipkin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.zipkin.reporter2</groupId>
+      <artifactId>zipkin-sender-urlconnection</artifactId>
+      <version>${zipkin.version}</version>
+    </dependency>
+    <dependency>
+>>>>>>> 3a8fd611 (Ensure OTEL version from examples aligns with SDK and ITs (#1403))
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>

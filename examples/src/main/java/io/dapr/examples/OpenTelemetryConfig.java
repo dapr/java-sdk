@@ -20,9 +20,10 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,18 +60,23 @@ public class OpenTelemetryConfig {
    * Creates an opentelemetry instance.
    * @return OpenTelemetry.
    */
-  public static OpenTelemetry createOpenTelemetry() {
+  public static OpenTelemetrySdk createOpenTelemetry() {
     // Only exports to Zipkin if it is up. Otherwise, ignore it.
     // This is helpful to avoid exceptions for examples that do not require Zipkin.
     if (isZipkinUp()) {
+      Resource serviceResource = Resource.getDefault()
+          .toBuilder()
+          .put("service.name", InvokeClient.class.getName()) // Use ResourceAttributes constant
+          .build();
       String httpUrl = String.format("http://localhost:%d", ZIPKIN_PORT);
+
       ZipkinSpanExporter zipkinExporter =
           ZipkinSpanExporter.builder()
               .setEndpoint(httpUrl + ENDPOINT_V2_SPANS)
-              .setServiceName(InvokeClient.class.getName())
               .build();
 
       SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
+          .setResource(serviceResource)
           .addSpanProcessor(SimpleSpanProcessor.create(zipkinExporter))
           .build();
 
@@ -100,7 +106,7 @@ public class OpenTelemetryConfig {
    */
   public static reactor.util.context.Context getReactorContext(Context context) {
     Map<String, String> map = new HashMap<>();
-    TextMapPropagator.Setter<Map<String, String>> setter =
+    TextMapSetter<Map<String, String>> setter =
         (carrier, key, value) -> map.put(key, value);
 
     GlobalOpenTelemetry.getPropagators().getTextMapPropagator().inject(context, map, setter);

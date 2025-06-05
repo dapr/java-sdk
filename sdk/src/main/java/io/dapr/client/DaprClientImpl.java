@@ -1346,10 +1346,8 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       if (scheduleJobRequest.getFailurePolicy() != null) {
-        scheduleJobRequestBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
+        jobBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
       }
-
-      scheduleJobRequestBuilder.setOverwrite(scheduleJobRequest.getOverwrite());
 
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
