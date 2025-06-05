@@ -16,7 +16,6 @@ package io.dapr.examples.pubsub;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprClientBuilder;
 import io.dapr.examples.OpenTelemetryConfig;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
@@ -60,11 +59,13 @@ public class PublisherWithTracing {
       try (Scope scope = span.makeCurrent()) {
         for (int i = 0; i < NUM_MESSAGES; i++) {
           String message = String.format("This is message #%d", i);
+
           // Publishing messages, notice the use of subscriberContext() for tracing.
           client.publishEvent(
               PUBSUB_NAME,
               TOPIC_NAME,
               message).contextWrite(getReactorContext()).block();
+
           System.out.println("Published message: " + message);
 
           try {
@@ -72,19 +73,14 @@ public class PublisherWithTracing {
           } catch (InterruptedException e) {
             e.printStackTrace();
             Thread.currentThread().interrupt();
+
             return;
           }
         }
       }
 
-      // Close the span.
       span.end();
-
-      // Shutdown the OpenTelemetry tracer.
       openTelemetrySdk.getSdkTracerProvider().shutdown();
-
-      // This is an example, so for simplicity we are just exiting here.
-      // Normally a dapr app would be a web service and not exit main.
       System.out.println("Done.");
     }
   }

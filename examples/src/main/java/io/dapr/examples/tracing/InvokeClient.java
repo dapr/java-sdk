@@ -19,7 +19,6 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.examples.OpenTelemetryConfig;
 import io.dapr.utils.TypeRef;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
@@ -49,10 +48,10 @@ public class InvokeClient {
    * @param args Messages to be sent as request for the invoke API.
    */
   public static void main(String[] args) throws Exception {
-    final OpenTelemetrySdk openTelemetrySdk = OpenTelemetryConfig.createOpenTelemetry();
-    final Tracer tracer = openTelemetrySdk.getTracer(InvokeClient.class.getCanonicalName());
-
+    OpenTelemetrySdk openTelemetrySdk = OpenTelemetryConfig.createOpenTelemetry();
+    Tracer tracer = openTelemetrySdk.getTracer(InvokeClient.class.getCanonicalName());
     Span span = tracer.spanBuilder("Example's Main").setSpanKind(SpanKind.CLIENT).startSpan();
+
     try (DaprClient client = (new DaprClientBuilder()).build()) {
       for (String message : args) {
         try (Scope scope = span.makeCurrent()) {
@@ -72,12 +71,13 @@ public class InvokeClient {
         }
       }
     }
+
     span.end();
     shutdown(openTelemetrySdk);
     System.out.println("Done");
   }
 
-  private static void shutdown(OpenTelemetrySdk openTelemetrySdk) throws Exception {
+  private static void shutdown(OpenTelemetrySdk openTelemetrySdk) {
     openTelemetrySdk.getSdkTracerProvider().shutdown();
 
     Validation.validate();
