@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.jobs;
 
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.DeleteJobRequest;
@@ -19,6 +19,7 @@ import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ScheduleJobRequest;
+import io.dapr.it.testcontainers.DaprPreviewClientConfiguration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import org.junit.jupiter.api.BeforeEach;

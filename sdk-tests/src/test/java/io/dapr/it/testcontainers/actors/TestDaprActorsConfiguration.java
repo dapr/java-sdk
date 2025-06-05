@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.actors;
 
 import java.util.Map;
 

@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.conversations;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

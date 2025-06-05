@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.core;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.dapr.client.DaprClient;

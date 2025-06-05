@@ -11,24 +11,16 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.jobs;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
-@RestController
-public class TestActorsApplication {
+public class TestJobsApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(TestActorsApplication.class, args);
+    SpringApplication.run(TestJobsApplication.class, args);
   }
 
-  //Mocking the actuator health endpoint for the sidecar health check
-  @GetMapping("/actuator/health")
-  public String health(){
-    return "OK";
-  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Dapr Authors
+ * Copyright 2024 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,19 +11,18 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.workflows;
 
-import io.dapr.actors.ActorId;
-import io.dapr.actors.runtime.AbstractActor;
-import io.dapr.actors.runtime.ActorRuntimeContext;
+import io.dapr.workflows.WorkflowActivity;
+import io.dapr.workflows.WorkflowActivityContext;
 
-public class TestActorImpl extends AbstractActor implements TestActor {
-  public TestActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
-    super(runtimeContext, id);
-  }
+public class SecondActivity implements WorkflowActivity {
 
   @Override
-  public String echo(String message) {
-    return message;
+  public Object run(WorkflowActivityContext ctx) {
+    TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
+    workflowPayload.getPayloads().add("Second Activity");
+    return workflowPayload;
   }
+
 }

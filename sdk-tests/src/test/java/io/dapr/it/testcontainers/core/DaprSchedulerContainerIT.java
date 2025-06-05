@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.core;
 
 import io.dapr.testcontainers.DaprSchedulerContainer;
 import org.junit.jupiter.api.Tag;

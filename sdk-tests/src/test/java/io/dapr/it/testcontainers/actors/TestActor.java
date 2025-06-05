@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.actors;
 import io.dapr.actors.ActorMethod;
 import io.dapr.actors.ActorType;
 
