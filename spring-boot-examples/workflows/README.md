@@ -395,11 +395,11 @@ io.dapr.workflows.WorkflowContext        : Workflow finished with result: 60
 
 ### Suspend/Resume Workflow example
 
-In this example we start a workflow that executes and activity and then wait for an event. While the workflow instance 
-is waiting for the event we execute a suspend workflow operation. Once we check the state of the instance a resume
+In this example, we start a workflow that executes an activity and then waits for an event. While the workflow instance 
+is waiting for the event, we execute a suspend workflow operation. Once we check the state of the instance, a resume
 operation is executed. 
 
-To start the workflow you can run:
+To start the workflow, you can run:
 
 <!-- STEP
 name: Start Suspend/Resume Workflow
