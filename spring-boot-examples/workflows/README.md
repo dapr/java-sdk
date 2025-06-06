@@ -431,7 +431,7 @@ io.dapr.workflows.WorkflowContext        : Waiting for approval...
 
 You should see the Workflow ID that was created, in this example you don't need to remember this id,
 as you can use the orderId to find the right instance.
-When you are ready to approve the order you can send the following request:
+
 
 <!-- STEP
 name: Suspend Workflow Operation
@@ -445,7 +445,7 @@ timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
-To send the event you can run:
+Let's suspend the workflow instance by sending the following request:
 
 ```sh
 curl -X POST "localhost:8080/wfp/suspendresume-suspend?orderId=123" -H 'Content-Type: application/json'
@@ -453,27 +453,6 @@ curl -X POST "localhost:8080/wfp/suspendresume-suspend?orderId=123" -H 'Content-
 
 <!-- END_STEP -->
 
-Let's suspend the workflow instance by sending the following request: 
-
-<!-- STEP
-name: Suspend Workflow Operation
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-- 'SUSPENDED'
-background: true
-sleep: 5
-timeout_seconds: 10
--->
-<!-- Timeout for above service must be more than sleep + timeout for the client-->
-
-To send the event you can run:
-
-```sh
-curl -X POST "localhost:8080/wfp/suspendresume-suspend?orderId=123" -H 'Content-Type: application/json'
-```
-
-<!-- END_STEP -->
 
 You should see the output of the requests:
 
