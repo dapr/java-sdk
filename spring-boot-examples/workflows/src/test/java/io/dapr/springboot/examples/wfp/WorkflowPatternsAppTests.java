@@ -13,10 +13,10 @@ limitations under the License.
 
 package io.dapr.springboot.examples.wfp;
 
-import io.dapr.client.DaprClient;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
 import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
+import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -32,14 +32,12 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = {TestWorkflowPatternsApplication.class, DaprTestContainersConfig.class,
         DaprAutoConfiguration.class, },
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class WorkflowPatternsAppTests {
-
-  @Autowired
-  private DaprClient daprClient;
 
   @Autowired
   private MicrocksContainersEnsemble ensemble;
@@ -158,6 +156,49 @@ class WorkflowPatternsAppTests {
 
     assertEquals(2, ensemble.getMicrocksContainer()
             .getServiceInvocationsCount("API Payload Processor", "1.0.0"));
+  }
+
+  @Test
+  void testSuspendResume() {
+
+    String instanceId = given()
+            .queryParam("orderId", "123")
+            .when()
+            .post("/wfp/suspendresume")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertNotNull(instanceId);
+
+    // The workflow is waiting on an event, let's suspend the workflow
+    String state = given()
+            .queryParam("orderId", "123")
+            .when()
+            .post("/wfp/suspendresume-suspend")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertEquals(WorkflowRuntimeStatus.SUSPENDED.name(), state);
+
+    // The let's resume the suspended workflow and check the state
+    state = given()
+            .queryParam("orderId", "123")
+            .when()
+            .post("/wfp/suspendresume-resume")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertEquals(WorkflowRuntimeStatus.RUNNING.name(), state);
+
+    // Now complete the workflow by sending an event
+    given()
+            .queryParam("orderId", "123")
+            .queryParam("decision", false)
+            .when()
+            .post("/wfp/suspendresume-continue")
+            .then()
+            .statusCode(200).body("approved", equalTo(false));
+
   }
 
 }
