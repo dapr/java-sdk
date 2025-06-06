@@ -13,16 +13,32 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import io.dapr.durabletask.RetryHandler;
+
 public class WorkflowTaskOptions {
 
   private final WorkflowTaskRetryPolicy retryPolicy;
+  private final RetryHandler retryHandler;
+
+  public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy, RetryHandler retryHandler) {
+    this.retryPolicy = retryPolicy;
+    this.retryHandler = retryHandler;
+  }
 
   public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy) {
-    this.retryPolicy = retryPolicy;
+    this(retryPolicy, null);
+  }
+
+  public WorkflowTaskOptions(RetryHandler retryHandler) {
+    this(null, retryHandler);
   }
 
   public WorkflowTaskRetryPolicy getRetryPolicy() {
     return retryPolicy;
+  }
+
+  public RetryHandler getRetryHandler() {
+    return retryHandler;
   }
 
 }

@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.RetryPolicy;
 import io.dapr.durabletask.Task;
 import io.dapr.durabletask.TaskCanceledException;
@@ -233,17 +234,22 @@ public class DefaultWorkflowContext implements WorkflowContext {
       return null;
     }
 
-    WorkflowTaskRetryPolicy workflowTaskRetryPolicy = options.getRetryPolicy();
-    RetryPolicy retryPolicy = new RetryPolicy(
-        workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
-        workflowTaskRetryPolicy.getFirstRetryInterval()
-    );
+    RetryPolicy retryPolicy = null;
+    RetryHandler retryHandler = options.getRetryHandler();
 
-    retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
-    if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
-      retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    if (options.getRetryPolicy() != null) {
+      WorkflowTaskRetryPolicy workflowTaskRetryPolicy = options.getRetryPolicy();
+      retryPolicy = new RetryPolicy(
+              workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
+              workflowTaskRetryPolicy.getFirstRetryInterval()
+      );
+
+      retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
+      if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
+        retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+      }
     }
 
-    return new TaskOptions(retryPolicy);
+    return new TaskOptions(retryPolicy, retryHandler);
   }
 }
