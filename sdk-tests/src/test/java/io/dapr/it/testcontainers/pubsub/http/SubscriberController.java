@@ -80,6 +80,7 @@ public class SubscriberController {
 
   @GetMapping(path = "/messages/topicBulkSub")
   public List<BulkSubscribeAppResponse> getMessagesReceivedTestingTopicBulkSub() {
+    System.out.println("res size: " + responsesReceivedTestingTopicBulkSub.size());
     return responsesReceivedTestingTopicBulkSub;
   }
   
@@ -224,15 +225,18 @@ public class SubscriberController {
    * @param bulkMessage incoming bulk of messages from the message bus.
    * @return status for each message received.
    */
-  @BulkSubscribe(maxMessagesCount = 100, maxAwaitDurationMs = 5000)
+  @BulkSubscribe(maxMessagesCount = 100, maxAwaitDurationMs = 100)
   @Topic(name = "topicBulkSub", pubsubName = "pubsub")
   @PostMapping(path = "/routeBulkSub")
   public Mono<BulkSubscribeAppResponse> handleMessageBulk(
-          @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
+      @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
+      System.out.println("bulkMessage: " + bulkMessage.getEntries().size());
+
       if (bulkMessage.getEntries().size() == 0) {
         BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(new ArrayList<>());
         responsesReceivedTestingTopicBulkSub.add(response);
+        System.out.println("res size: " + responsesReceivedTestingTopicBulkSub.size());
         return response;
       }
 
@@ -247,6 +251,8 @@ public class SubscriberController {
       }
       BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(entries);
       responsesReceivedTestingTopicBulkSub.add(response);
+      System.out.println("res size: " + responsesReceivedTestingTopicBulkSub.size());
+
       return response;
     });
   }
