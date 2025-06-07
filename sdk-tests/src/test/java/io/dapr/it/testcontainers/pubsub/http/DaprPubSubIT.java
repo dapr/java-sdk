@@ -56,8 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     classes = {
-        TestPubSubApplication.class,
-        DaprClientAutoConfiguration.class
+        TestPubSubApplication.class
     }
 )
 @Testcontainers
