@@ -44,15 +44,15 @@ public class WorkflowTaskRetryContext {
   }
 
   /**
-   * Gets the context of the current orchestration.
+   * Gets the context of the current workflow.
    *
-   * <p>The orchestration context can be used in retry handlers to schedule timers (via the
+   * <p>The workflow context can be used in retry handlers to schedule timers (via the
    * {@link DefaultWorkflowContext#createTimer} methods) for implementing delays between retries. It can also be
    * used to implement time-based retry logic by using the {@link DefaultWorkflowContext#getCurrentInstant} method.
    *
-   * @return the context of the parent orchestration
+   * @return the context of the parent workflow
    */
-  public DefaultWorkflowContext getOrchestrationContext() {
+  public DefaultWorkflowContext getWorkflowContext() {
     return this.workflowContext;
   }
 
