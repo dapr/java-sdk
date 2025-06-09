@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.FailureDetails;
 import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.RetryPolicy;
 import io.dapr.durabletask.Task;
@@ -21,7 +22,10 @@ import io.dapr.durabletask.TaskCanceledException;
 import io.dapr.durabletask.TaskOptions;
 import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
+import io.dapr.workflows.WorkflowTaskFailureDetails;
 import io.dapr.workflows.WorkflowTaskOptions;
+import io.dapr.workflows.WorkflowTaskRetryContext;
+import io.dapr.workflows.WorkflowTaskRetryHandler;
 import io.dapr.workflows.WorkflowTaskRetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -229,13 +233,13 @@ public class DefaultWorkflowContext implements WorkflowContext {
     return this.innerContext.newUUID();
   }
 
-  private static TaskOptions toTaskOptions(WorkflowTaskOptions options) {
+  private TaskOptions toTaskOptions(WorkflowTaskOptions options) {
     if (options == null) {
       return null;
     }
 
     RetryPolicy retryPolicy = null;
-    RetryHandler retryHandler = options.getRetryHandler();
+    RetryHandler retryHandler = toRetryHandler(options.getRetryHandler());
 
     if (options.getRetryPolicy() != null) {
       WorkflowTaskRetryPolicy workflowTaskRetryPolicy = options.getRetryPolicy();
@@ -251,5 +255,34 @@ public class DefaultWorkflowContext implements WorkflowContext {
     }
 
     return new TaskOptions(retryPolicy, retryHandler);
+  }
+
+  /**
+   * Converts a {@link WorkflowTaskRetryHandler} to a {@link RetryHandler}.
+   *
+   * @param workflowTaskRetryHandler The {@link WorkflowTaskRetryHandler} being converted
+   * @return A {@link RetryHandler}
+   */
+  private RetryHandler toRetryHandler(WorkflowTaskRetryHandler workflowTaskRetryHandler) {
+    if (workflowTaskRetryHandler == null) {
+      return null;
+    }
+
+    return retryContext -> {
+      FailureDetails failureDetails = retryContext.getLastFailure();
+      WorkflowTaskFailureDetails workflowFailureDetails = new WorkflowTaskFailureDetails(
+              failureDetails.getErrorType(),
+              failureDetails.getErrorMessage(),
+              failureDetails.getStackTrace()
+      );
+      WorkflowTaskRetryContext workflowRetryContext = new WorkflowTaskRetryContext(
+              this,
+              retryContext.getLastAttemptNumber(),
+              workflowFailureDetails,
+              retryContext.getTotalRetryTime()
+      );
+
+      return workflowTaskRetryHandler.handle(workflowRetryContext);
+    };
   }
 }
