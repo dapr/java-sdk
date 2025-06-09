@@ -273,7 +273,8 @@ public class DefaultWorkflowContext implements WorkflowContext {
       WorkflowTaskFailureDetails workflowFailureDetails = new WorkflowTaskFailureDetails(
               failureDetails.getErrorType(),
               failureDetails.getErrorMessage(),
-              failureDetails.getStackTrace()
+              failureDetails.getStackTrace(),
+              failureDetails.isNonRetriable()
       );
       WorkflowTaskRetryContext workflowRetryContext = new WorkflowTaskRetryContext(
               this,

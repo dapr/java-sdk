@@ -17,6 +17,7 @@ public class WorkflowTaskFailureDetails {
   private final String errorType;
   private final String errorMessage;
   private final String stackTrace;
+  private final boolean isNonRetriable;
 
   /**
    * Constructor for WorkflowTaskFailureDetails.
@@ -24,14 +25,17 @@ public class WorkflowTaskFailureDetails {
    * @param errorType The type of error
    * @param errorMessage The error message
    * @param stackTrace The stacktrace of the error
+   * @param isNonRetriable Whether the failure is retriable or not
    */
   public WorkflowTaskFailureDetails(
           String errorType,
           String errorMessage,
-          String stackTrace) {
+          String stackTrace,
+          boolean isNonRetriable) {
     this.errorType = errorType;
     this.errorMessage = errorMessage;
     this.stackTrace = stackTrace;
+    this.isNonRetriable = isNonRetriable;
   }
 
   /**
@@ -62,6 +66,14 @@ public class WorkflowTaskFailureDetails {
    */
   public String getStackTrace() {
     return this.stackTrace;
+  }
+
+  /**
+   * Returns {@code true} if the failure doesn't permit retries, otherwise {@code false}.
+   * @return {@code true} if the failure doesn't permit retries, otherwise {@code false}.
+   */
+  public boolean isNonRetriable() {
+    return this.isNonRetriable;
   }
 
   /**
