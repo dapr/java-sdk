@@ -174,7 +174,7 @@ class WorkflowPatternsAppTests {
     String state = given()
             .queryParam("orderId", "123")
             .when()
-            .post("/wfp/suspendresume-suspend")
+            .post("/wfp/suspendresume/suspend")
             .then()
             .statusCode(200).extract().asString();
 
@@ -184,7 +184,7 @@ class WorkflowPatternsAppTests {
     state = given()
             .queryParam("orderId", "123")
             .when()
-            .post("/wfp/suspendresume-resume")
+            .post("/wfp/suspendresume/resume")
             .then()
             .statusCode(200).extract().asString();
 
@@ -195,7 +195,7 @@ class WorkflowPatternsAppTests {
             .queryParam("orderId", "123")
             .queryParam("decision", false)
             .when()
-            .post("/wfp/suspendresume-continue")
+            .post("/wfp/suspendresume/continue")
             .then()
             .statusCode(200).body("approved", equalTo(false));
 

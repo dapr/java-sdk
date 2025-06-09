@@ -162,7 +162,7 @@ public class WorkflowPatternsRestController {
     return instanceId;
   }
 
-  @PostMapping("wfp/suspendresume-suspend")
+  @PostMapping("wfp/suspendresume/suspend")
   public String suspendResumeExecuteSuspend(@RequestParam("orderId") String orderId) {
     String instanceId = ordersToApprove.get(orderId);
     daprWorkflowClient.suspendWorkflow(instanceId, "testing suspend");
@@ -170,7 +170,7 @@ public class WorkflowPatternsRestController {
     return instanceState.getRuntimeStatus().name();
   }
 
-  @PostMapping("wfp/suspendresume-resume")
+  @PostMapping("wfp/suspendresume/resume")
   public String suspendResumeExecuteResume(@RequestParam("orderId") String orderId) {
     String instanceId = ordersToApprove.get(orderId);
     daprWorkflowClient.resumeWorkflow(instanceId, "testing resume");
@@ -179,7 +179,7 @@ public class WorkflowPatternsRestController {
   }
 
 
-  @PostMapping("wfp/suspendresume-continue")
+  @PostMapping("wfp/suspendresume/continue")
   public Decision suspendResumeContinue(@RequestParam("orderId") String orderId, @RequestParam("decision") Boolean decision)
           throws TimeoutException {
     String instanceId = ordersToApprove.get(orderId);
