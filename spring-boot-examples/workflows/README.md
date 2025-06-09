@@ -448,7 +448,7 @@ timeout_seconds: 10
 Let's suspend the workflow instance by sending the following request:
 
 ```sh
-curl -X POST "localhost:8080/wfp/suspendresume-suspend?orderId=123" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/suspendresume/suspend?orderId=123" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -477,7 +477,7 @@ timeout_seconds: 10
 To send the event you can run:
 
 ```sh
-curl -X POST "localhost:8080/wfp/suspendresume-resume?orderId=123" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/suspendresume/resume?orderId=123" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -506,7 +506,7 @@ timeout_seconds: 10
 To send the event you can run:
 
 ```sh
-curl -X POST "localhost:8080/wfp/suspendresume-continue?orderId=123&decision=true" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/suspendresume/continue?orderId=123&decision=true" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
