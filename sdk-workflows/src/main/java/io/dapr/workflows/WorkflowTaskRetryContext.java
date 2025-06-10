@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import io.dapr.workflows.client.WorkflowFailureDetails;
 import io.dapr.workflows.runtime.DefaultWorkflowContext;
 
 import java.time.Duration;
@@ -21,7 +22,7 @@ public class WorkflowTaskRetryContext {
 
   private final DefaultWorkflowContext workflowContext;
   private final int lastAttemptNumber;
-  private final WorkflowTaskFailureDetails lastFailure;
+  private final WorkflowFailureDetails lastFailure;
   private final Duration totalRetryTime;
 
   /**
@@ -35,7 +36,7 @@ public class WorkflowTaskRetryContext {
   public WorkflowTaskRetryContext(
           DefaultWorkflowContext workflowContext,
           int lastAttemptNumber,
-          WorkflowTaskFailureDetails lastFailure,
+          WorkflowFailureDetails lastFailure,
           Duration totalRetryTime) {
     this.workflowContext = workflowContext;
     this.lastAttemptNumber = lastAttemptNumber;
@@ -61,7 +62,7 @@ public class WorkflowTaskRetryContext {
    *
    * @return the details of the previous task failure
    */
-  public WorkflowTaskFailureDetails getLastFailure() {
+  public WorkflowFailureDetails getLastFailure() {
     return this.lastFailure;
   }
 

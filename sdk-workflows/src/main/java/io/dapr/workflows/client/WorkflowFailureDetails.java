@@ -39,4 +39,14 @@ public interface WorkflowFailureDetails {
    */
   String getStackTrace();
 
+  /**
+   * Checks whether the failure was caused by the provided exception class.
+   *
+   * @param exceptionClass the exception class to check
+   * @return {@code true} if the failure was caused by the provided exception class
+   */
+  default boolean isCausedBy(Class<? extends Exception> exceptionClass) {
+    throw new UnsupportedOperationException("This method is not implemented");
+  }
+
 }

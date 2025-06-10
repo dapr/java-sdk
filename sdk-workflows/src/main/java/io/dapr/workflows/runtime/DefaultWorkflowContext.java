@@ -14,7 +14,6 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
-import io.dapr.durabletask.FailureDetails;
 import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.RetryPolicy;
 import io.dapr.durabletask.Task;
@@ -22,7 +21,6 @@ import io.dapr.durabletask.TaskCanceledException;
 import io.dapr.durabletask.TaskOptions;
 import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
-import io.dapr.workflows.WorkflowTaskFailureDetails;
 import io.dapr.workflows.WorkflowTaskOptions;
 import io.dapr.workflows.WorkflowTaskRetryContext;
 import io.dapr.workflows.WorkflowTaskRetryHandler;
@@ -269,17 +267,10 @@ public class DefaultWorkflowContext implements WorkflowContext {
     }
 
     return retryContext -> {
-      FailureDetails failureDetails = retryContext.getLastFailure();
-      WorkflowTaskFailureDetails workflowFailureDetails = new WorkflowTaskFailureDetails(
-              failureDetails.getErrorType(),
-              failureDetails.getErrorMessage(),
-              failureDetails.getStackTrace(),
-              failureDetails.isNonRetriable()
-      );
       WorkflowTaskRetryContext workflowRetryContext = new WorkflowTaskRetryContext(
               this,
               retryContext.getLastAttemptNumber(),
-              workflowFailureDetails,
+              new DefaultWorkflowFailureDetails(retryContext.getLastFailure()),
               retryContext.getTotalRetryTime()
       );
 
