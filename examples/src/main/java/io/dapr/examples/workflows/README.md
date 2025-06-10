@@ -662,6 +662,23 @@ For testing the suspend and resume operations we will use the same workflow defi
 
 Start the workflow and client using the following commands:
 
+
+<!-- STEP
+name: Run Compensation Pattern workflow worker
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - "Starting Workflow: io.dapr.examples.workflows.suspendresume.DemoExternalEventWorkflow"
+  - "Waiting for approval..."
+  - "approval granted - do the approved action"
+  - "Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity"
+  - "Running approval activity..."
+  - "approval-activity finished"
+background: true
+sleep: 60
+timeout_seconds: 60
+-->
+
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker
 ```
@@ -669,6 +686,8 @@ dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- 
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient
 ```
+
+<!-- END_STEP -->
 
 The worker logs:
 ```text
