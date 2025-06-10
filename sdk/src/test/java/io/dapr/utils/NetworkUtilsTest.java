@@ -632,4 +632,27 @@ public class NetworkUtilsTest {
     Assertions.assertEquals(50, settings.keepAliveTimeoutSeconds.getSeconds());
     Assertions.assertEquals(false, settings.keepAliveWithoutCalls); 
   }
+
+  @Test
+  public void testMaxDefaultInboundSize() throws Exception {
+    Properties properties = new Properties();
+
+    GrpcEndpointSettings settings = NetworkUtils.GrpcEndpointSettings.parse(properties);
+    Assertions.assertEquals(4194304, settings.maxInboundMessageSize);
+    Assertions.assertEquals(8192, settings.maxInboundMetadataSize);
+    
+  }
+
+  @Test
+  public void testMaxInboundSize() throws Exception {
+    Properties properties = new Properties(Map.of(
+        Properties.GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES.getName(), "123456789",
+        Properties.GRPC_MAX_INBOUND_METADATA_SIZE_BYTES.getName(), "123456"
+    ));
+
+    GrpcEndpointSettings settings = NetworkUtils.GrpcEndpointSettings.parse(properties);
+    Assertions.assertEquals(123456789, settings.maxInboundMessageSize);
+    Assertions.assertEquals(123456, settings.maxInboundMetadataSize);
+    
+  }
 }
