@@ -664,7 +664,7 @@ Start the workflow and client using the following commands:
 
 
 <!-- STEP
-name: Run Compensation Pattern workflow worker
+name: Run Suspend/Resume workflow 
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
@@ -680,7 +680,7 @@ timeout_seconds: 60
 -->
 
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker
 ```
 
 ```sh
