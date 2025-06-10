@@ -13,21 +13,14 @@ limitations under the License.
 
 package io.dapr.workflows;
 
-import io.dapr.durabletask.CompositeTaskFailedException;
-import io.dapr.durabletask.Task;
-import io.dapr.durabletask.TaskCanceledException;
-import io.dapr.durabletask.TaskOptions;
-import io.dapr.durabletask.TaskOrchestrationContext;
-
+import io.dapr.durabletask.*;
 import io.dapr.workflows.runtime.DefaultWorkflowContext;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -35,14 +28,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 public class DefaultWorkflowContextTest {
   private DefaultWorkflowContext context;
@@ -117,6 +106,11 @@ public class DefaultWorkflowContextTest {
 
       @Override
       public Task<Void> createTimer(Duration duration) {
+        return null;
+      }
+
+      @Override
+      public Task<Void> createTimer(ZonedDateTime zonedDateTime) {
         return null;
       }
 
