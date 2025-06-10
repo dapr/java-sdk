@@ -668,8 +668,12 @@ name: Run Suspend/Resume workflow
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
-  - "Starting Workflow: io.dapr.examples.workflows.suspendresume.DemoExternalEventWorkflow"
   - "Waiting for approval..."
+  - "Suspending Workflow Instance"
+  - "Workflow Instance Status: SUSPENDED"
+  - "Let's resume the Workflow Instance before sending the external event"
+  - "Workflow Instance Status: RUNNING"
+  - "Now that the instance is RUNNING again, lets send the external event."
   - "approval granted - do the approved action"
   - "Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity"
   - "Running approval activity..."
