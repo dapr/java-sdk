@@ -41,12 +41,15 @@ import static io.dapr.config.Properties.GRPC_ENDPOINT;
 import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIMEOUT_SECONDS;
 import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_TIME_SECONDS;
 import static io.dapr.config.Properties.GRPC_KEEP_ALIVE_WITHOUT_CALLS;
+import static io.dapr.config.Properties.GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES;
+import static io.dapr.config.Properties.GRPC_MAX_INBOUND_METADATA_SIZE_BYTES;
 import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.GRPC_TLS_CA_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_CERT_PATH;
 import static io.dapr.config.Properties.GRPC_TLS_INSECURE;
 import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
 import static io.dapr.config.Properties.SIDECAR_IP;
+
 
 /**
  * Utility methods for network, internal to Dapr SDK.
@@ -152,8 +155,11 @@ public final class NetworkUtils {
               .keepAliveTimeout(settings.keepAliveTimeoutSeconds.toSeconds(), TimeUnit.SECONDS)
               .keepAliveWithoutCalls(settings.keepAliveWithoutCalls);
         }
+        
+        return builder.maxInboundMessageSize(settings.maxInboundMessageSize)
+        .maxInboundMetadataSize(settings.maxInboundMetadataSize)
+        .build();
 
-        return builder.build();
       } catch (Exception e) {
         throw new DaprException(
             new DaprError().setErrorCode("TLS_CREDENTIALS_ERROR")
@@ -217,7 +223,8 @@ public final class NetworkUtils {
           .keepAliveWithoutCalls(settings.keepAliveWithoutCalls);
     }
 
-    return builder.build();
+    return builder.maxInboundMessageSize(settings.maxInboundMessageSize)
+        .maxInboundMetadataSize(settings.maxInboundMetadataSize).build();
   }
 
   // Not private to allow unit testing
@@ -233,10 +240,13 @@ public final class NetworkUtils {
     final Duration keepAliveTimeoutSeconds;
     final boolean keepAliveWithoutCalls;
 
+    final int maxInboundMessageSize;
+    final int maxInboundMetadataSize;
+
     private GrpcEndpointSettings(
         String endpoint, boolean secure, String tlsPrivateKeyPath, String tlsCertPath, String tlsCaPath,
         boolean enableKeepAlive, Duration keepAliveTimeSeconds, Duration keepAliveTimeoutSeconds,
-        boolean keepAliveWithoutCalls) {
+        boolean keepAliveWithoutCalls, int maxInboundMessageSize, int maxInboundMetadataSize) {
       this.endpoint = endpoint;
       this.secure = secure;
       this.tlsPrivateKeyPath = tlsPrivateKeyPath;
@@ -246,6 +256,8 @@ public final class NetworkUtils {
       this.keepAliveTimeSeconds = keepAliveTimeSeconds;
       this.keepAliveTimeoutSeconds = keepAliveTimeoutSeconds;
       this.keepAliveWithoutCalls = keepAliveWithoutCalls;
+      this.maxInboundMessageSize = maxInboundMessageSize;
+      this.maxInboundMetadataSize = maxInboundMetadataSize;
     }
 
     static GrpcEndpointSettings parse(Properties properties) {
@@ -258,6 +270,8 @@ public final class NetworkUtils {
       Duration keepAliveTimeSeconds = properties.getValue(GRPC_KEEP_ALIVE_TIME_SECONDS);
       Duration keepAliveTimeoutSeconds = properties.getValue(GRPC_KEEP_ALIVE_TIMEOUT_SECONDS);
       boolean keepAliveWithoutCalls = properties.getValue(GRPC_KEEP_ALIVE_WITHOUT_CALLS);
+      int maxInboundMessageSizeBytes = properties.getValue(GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES);
+      int maxInboundMetadataSizeBytes = properties.getValue(GRPC_MAX_INBOUND_METADATA_SIZE_BYTES);
 
       boolean secure = false;
       String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
@@ -301,19 +315,21 @@ public final class NetworkUtils {
                   address,
                   port),
               secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeSeconds,
-              keepAliveTimeoutSeconds, keepAliveWithoutCalls);
+              keepAliveTimeoutSeconds, keepAliveWithoutCalls, maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
         }
 
         var socket = matcher.group("socket");
         if (socket != null) {
           return new GrpcEndpointSettings(socket, secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive,
-              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls);
+              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls,
+              maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
         }
 
         var vsocket = matcher.group("vsocket");
         if (vsocket != null) {
           return new GrpcEndpointSettings(vsocket, secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive,
-              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls);
+              keepAliveTimeSeconds, keepAliveTimeoutSeconds, keepAliveWithoutCalls, 
+              maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
         }
       }
 
@@ -321,7 +337,8 @@ public final class NetworkUtils {
           "dns:///%s:%d",
           address,
           port), secure, clientKeyPath, clientCertPath, caCertPath, enablekeepAlive, keepAliveTimeSeconds,
-          keepAliveTimeoutSeconds, keepAliveWithoutCalls);
+          keepAliveTimeoutSeconds, keepAliveWithoutCalls,
+          maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
     }
 
   }
