@@ -342,12 +342,7 @@ public class DefaultWorkflowContextTest {
     TaskOptions taskOptions = captor.getValue();
 
     RetryHandler durableRetryHandler = taskOptions.getRetryHandler();
-    RetryContext retryContext = mock(RetryContext.class);
-
-    when(retryContext.getLastFailure()).thenReturn(mock(FailureDetails.class, invocationOnMock -> null));
-    when(retryContext.getLastAttemptNumber()).thenReturn(0);
-    when(retryContext.getOrchestrationContext()).thenReturn(null);
-    when(retryContext.getTotalRetryTime()).thenReturn(null);
+    RetryContext retryContext = mock(RetryContext.class, invocationOnMock -> null);
 
     durableRetryHandler.handle(retryContext);
 
