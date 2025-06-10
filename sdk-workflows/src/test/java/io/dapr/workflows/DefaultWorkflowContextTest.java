@@ -259,8 +259,10 @@ public class DefaultWorkflowContextTest {
   }
 
   @Test
-  public void createTimerWithZonedDateTimeThrowsTest() {
-    assertThrows(UnsupportedOperationException.class, () -> context.createTimer(ZonedDateTime.now()));
+  public void createTimerWithZonedDateTimeTest() {
+    ZonedDateTime now = ZonedDateTime.now();
+    context.createTimer(now);
+    verify(mockInnerContext, times(1)).createTimer(now);
   }
 
   @Test
