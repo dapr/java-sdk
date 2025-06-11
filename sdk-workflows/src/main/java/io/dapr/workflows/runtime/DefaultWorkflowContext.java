@@ -236,23 +236,34 @@ public class DefaultWorkflowContext implements WorkflowContext {
       return null;
     }
 
-    RetryPolicy retryPolicy = null;
+    RetryPolicy retryPolicy = toRetryPolicy(options.getRetryPolicy());
     RetryHandler retryHandler = toRetryHandler(options.getRetryHandler());
 
-    if (options.getRetryPolicy() != null) {
-      WorkflowTaskRetryPolicy workflowTaskRetryPolicy = options.getRetryPolicy();
-      retryPolicy = new RetryPolicy(
-              workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
-              workflowTaskRetryPolicy.getFirstRetryInterval()
-      );
+    return new TaskOptions(retryPolicy, retryHandler);
+  }
 
-      retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
-      if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
-        retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
-      }
+  /**
+   * Converts a {@link WorkflowTaskRetryPolicy} to a {@link RetryPolicy}.
+   *
+   * @param workflowTaskRetryPolicy The {@link WorkflowTaskRetryPolicy} being converted
+   * @return A {@link RetryPolicy}
+   */
+  private RetryPolicy toRetryPolicy(WorkflowTaskRetryPolicy workflowTaskRetryPolicy) {
+    if (workflowTaskRetryPolicy == null) {
+      return null;
     }
 
-    return new TaskOptions(retryPolicy, retryHandler);
+    RetryPolicy retryPolicy = new RetryPolicy(
+            workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
+            workflowTaskRetryPolicy.getFirstRetryInterval()
+    );
+
+    retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
+    if (workflowTaskRetryPolicy.getRetryTimeout() != null) {
+      retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
+    }
+
+    return retryPolicy;
   }
 
   /**
