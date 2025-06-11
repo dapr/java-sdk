@@ -20,6 +20,7 @@ import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
+import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,6 +117,36 @@ public class DaprWorkflowsIT {
     assertEquals("Second Activity", workflowOutput.getPayloads().get(1));
     assertEquals(instanceId, workflowOutput.getWorkflowId());
   }
+
+  @Test
+  public void testSuspendAndResumeWorkflows() throws Exception {
+    TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
+    String instanceId = workflowClient.scheduleNewWorkflow(TestWorkflow.class, payload);
+    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(10), false);
+
+    workflowClient.suspendWorkflow(instanceId, "testing suspend.");
+
+
+    WorkflowInstanceStatus instanceState = workflowClient.getInstanceState(instanceId, false);
+    assertNotNull(instanceState);
+    assertEquals(WorkflowRuntimeStatus.SUSPENDED, instanceState.getRuntimeStatus());
+
+    workflowClient.resumeWorkflow(instanceId, "testing resume");
+
+    instanceState = workflowClient.getInstanceState(instanceId, false);
+    assertNotNull(instanceState);
+    assertEquals(WorkflowRuntimeStatus.RUNNING, instanceState.getRuntimeStatus());
+
+    workflowClient.raiseEvent(instanceId, "MoveForward", payload);
+
+    Duration timeout = Duration.ofSeconds(10);
+    instanceState = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+
+    assertNotNull(instanceState);
+    assertEquals(WorkflowRuntimeStatus.COMPLETED, instanceState.getRuntimeStatus());
+
+  }
+
 
   private TestWorkflowPayload deserialize(String value) throws JsonProcessingException {
     return OBJECT_MAPPER.readValue(value, TestWorkflowPayload.class);
