@@ -130,6 +130,26 @@ public class DaprWorkflowClient implements AutoCloseable {
   }
 
   /**
+   * Suspend the workflow associated with the provided instance id.
+   *
+   * @param workflowInstanceId Workflow instance id to suspend.
+   * @param reason             reason for suspending the workflow instance.
+   */
+  public void suspendWorkflow(String workflowInstanceId, @Nullable String reason) {
+    this.innerClient.suspendInstance(workflowInstanceId, reason);
+  }
+
+  /**
+   * Resume the workflow associated with the provided instance id.
+   *
+   * @param workflowInstanceId Workflow instance id to resume.
+   * @param reason             reason for resuming the workflow instance.
+   */
+  public void resumeWorkflow(String workflowInstanceId, @Nullable String reason) {
+    this.innerClient.resumeInstance(workflowInstanceId, reason);
+  }
+
+  /**
    * Terminates the workflow associated with the provided instance id.
    *
    * @param workflowInstanceId Workflow instance id to terminate.
