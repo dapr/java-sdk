@@ -121,6 +121,12 @@ jobs:
           mm.py ./src/main/java/io/dapr/examples/jobs/README.md
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate conversation ai example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/conversation/README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate invoke http example
         working-directory: ./examples
         run: |
@@ -210,4 +216,10 @@ jobs:
         run: |
           mm.py README.md
         env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}      
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate Spring Boot Workflow examples
+        working-directory: ./spring-boot-examples/workflows
+        run: |
+          mm.py README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}

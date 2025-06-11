@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.dapr.spring</groupId>
     <artifactId>dapr-spring-parent</artifactId>
-    <version>0.15.0-SNAPSHOT</version>
+    <version>0.16.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-spring-data</artifactId>
@@ -18,6 +18,10 @@
     <dependency>
       <groupId>org.springframework.data</groupId>
       <artifactId>spring-data-keyvalue</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr</groupId>
+      <artifactId>dapr-sdk</artifactId>
     </dependency>
   </dependencies>
 

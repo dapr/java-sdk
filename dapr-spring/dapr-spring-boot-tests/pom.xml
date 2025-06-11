@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.dapr.spring</groupId>
     <artifactId>dapr-spring-parent</artifactId>
-    <version>0.15.0-SNAPSHOT</version>
+    <version>0.16.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-spring-boot-tests</artifactId>
@@ -22,7 +22,6 @@
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-boot-autoconfigure</artifactId>
-      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
@@ -38,7 +37,6 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>testcontainers-dapr</artifactId>
-      <version>${dapr.sdk.alpha.version}</version>
     </dependency>
   </dependencies>
   <build>

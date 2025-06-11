@@ -51,6 +51,52 @@ Before you file an issue, make sure you've checked the following:
 
 This section describes the guidelines for contributing code / docs to Dapr.
 
+### Things to consider when adding new API to SDK
+
+1. All the new API's go under [dapr-sdk maven package](https://github.com/dapr/java-sdk/tree/master/sdk)
+2. Make sure there is an example talking about how to use the API along with a README with mechanical markdown. [Example](https://github.com/dapr/java-sdk/pull/1235/files#diff-69ed756c4c01fd5fa884aac030dccb8f3f4d4fefa0dc330862d55a6f87b34a14)
+
+#### Mechanical Markdown
+
+Mechanical markdown is used to validate example outputs in our CI pipeline. It ensures that the expected output in README files matches the actual output when running the examples. This helps maintain example output, catches any unintended changes in example behavior, and regressions.
+
+To test mechanical markdown locally:
+
+1. Install the package:
+```bash
+pip3 install mechanical-markdown
+```
+
+2. Run the test from the respective examples README directory, for example:
+```bash
+cd examples
+mm.py ./src/main/java/io/dapr/examples/workflows/README.md
+```
+
+The test will:
+- Parse the STEP markers in the README
+- Execute the commands specified in the markers
+- Compare the actual output with the expected output
+- Report any mismatches
+
+When writing STEP markers:
+- Use `output_match_mode: substring` for flexible matching
+- Quote strings containing special YAML characters (like `:`, `*`, `'`)
+- Set appropriate timeouts for long-running examples
+
+Example STEP marker:
+```yaml
+<!-- STEP
+name: Run example
+output_match_mode: substring
+expected_stdout_lines:
+  - "Starting workflow: io.dapr.examples.workflows.compensation.BookTripWorkflow"
+  ...
+background: true
+timeout_seconds: 60
+-->
+```
+
 ### Pull Requests
 
 All contributions come through pull requests. To submit a proposed change, we recommend following this workflow:
@@ -64,6 +110,7 @@ All contributions come through pull requests. To submit a proposed change, we re
 6. Commit and open a PR
 7. Wait for the CI process to finish and make sure all checks are green
 8. A maintainer of the project will be assigned, and you can expect a review within a few days
+9. All the files have the Copyright header.
 
 ### Configure the code style with checkstyle
 

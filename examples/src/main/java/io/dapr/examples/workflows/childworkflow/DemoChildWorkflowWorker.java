@@ -31,9 +31,8 @@ public class DemoChildWorkflowWorker {
     builder.registerActivity(ReverseActivity.class);
 
     // Build and then start the workflow runtime pulling and executing tasks
-    try (WorkflowRuntime runtime = builder.build()) {
-      System.out.println("Start workflow runtime");
-      runtime.start();
-    }
+    WorkflowRuntime runtime = builder.build();
+    runtime.start();
+    System.out.println("Start workflow runtime");
   }
 }

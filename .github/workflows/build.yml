@@ -123,7 +123,7 @@ jobs:
       env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Codecov
-      uses: codecov/codecov-action@v5.4.2
+      uses: codecov/codecov-action@v5.4.3
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
