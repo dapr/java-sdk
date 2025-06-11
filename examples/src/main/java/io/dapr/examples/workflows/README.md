@@ -420,7 +420,6 @@ client.raiseEvent(instanceId, "Approval", true);
 
 Start the workflow and client using the following commands:
 
-ex
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
 ```
@@ -653,3 +652,59 @@ Key Points:
 2. If an error occurs, the list of compensations is reversed and executed in reverse order
 3. The workflow ensures that all resources are properly cleaned up even if the process fails
 4. Each activity simulates work with a short delay for demonstration purposes
+
+
+### Suspend/Resume Pattern
+
+Workflow instances can be suspended and resumed. This example shows how to use the suspend and resume commands. 
+
+For testing the suspend and resume operations we will use the same workflow definition used by the DemoExternalEventWorkflow.
+
+Start the workflow and client using the following commands:
+
+
+<!-- STEP
+name: Run Suspend/Resume workflow 
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - "Waiting for approval..."
+  - "Suspending Workflow Instance"
+  - "Workflow Instance Status: SUSPENDED"
+  - "Let's resume the Workflow Instance before sending the external event"
+  - "Workflow Instance Status: RUNNING"
+  - "Now that the instance is RUNNING again, lets send the external event."
+  - "approval granted - do the approved action"
+  - "Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity"
+  - "Running approval activity..."
+  - "approval-activity finished"
+background: true
+sleep: 60
+timeout_seconds: 60
+-->
+
+```sh
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker
+```
+
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient
+```
+
+<!-- END_STEP -->
+
+The worker logs:
+```text
+== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.suspendresume.DemoExternalEventWorkflow
+== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Waiting for approval...
+== APP == 2023-11-07 16:01:23,324 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval granted - do the approved action
+== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity
+== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Running approval activity...
+== APP == 2023-11-07 16:01:28,410 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval-activity finished
+```
+
+The client log:
+```text
+Started a new external-event model workflow with instance ID: 23410d96-1afe-4698-9fcd-c01c1e0db255
+workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
+```
