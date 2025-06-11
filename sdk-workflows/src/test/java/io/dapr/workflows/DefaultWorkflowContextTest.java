@@ -39,14 +39,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 public class DefaultWorkflowContextTest {
   private DefaultWorkflowContext context;
@@ -121,6 +117,11 @@ public class DefaultWorkflowContextTest {
 
       @Override
       public Task<Void> createTimer(Duration duration) {
+        return null;
+      }
+
+      @Override
+      public Task<Void> createTimer(ZonedDateTime zonedDateTime) {
         return null;
       }
 
@@ -269,8 +270,10 @@ public class DefaultWorkflowContextTest {
   }
 
   @Test
-  public void createTimerWithZonedDateTimeThrowsTest() {
-    assertThrows(UnsupportedOperationException.class, () -> context.createTimer(ZonedDateTime.now()));
+  public void createTimerWithZonedDateTimeTest() {
+    ZonedDateTime now = ZonedDateTime.now();
+    context.createTimer(now);
+    verify(mockInnerContext, times(1)).createTimer(now);
   }
 
   @Test
