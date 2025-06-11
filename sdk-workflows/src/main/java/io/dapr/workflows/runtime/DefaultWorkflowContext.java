@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -184,6 +185,11 @@ public class DefaultWorkflowContext implements WorkflowContext {
    */
   public Task<Void> createTimer(Duration duration) {
     return this.innerContext.createTimer(duration);
+  }
+
+  @Override
+  public Task<Void> createTimer(ZonedDateTime zonedDateTime) {
+    return this.innerContext.createTimer(zonedDateTime);
   }
 
   /**
