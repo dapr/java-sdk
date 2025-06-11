@@ -40,12 +40,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
+
 public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DaprContainer.class);
   private static final int DAPRD_DEFAULT_HTTP_PORT = 3500;
   private static final int DAPRD_DEFAULT_GRPC_PORT = 50001;
   private static final DaprProtocol DAPR_PROTOCOL = DaprProtocol.HTTP;
-  private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("daprio/daprd");
+  private static final DockerImageName DEFAULT_IMAGE_NAME =
+          DockerImageName.parse(DAPR_RUNTIME_IMAGE_TAG);
   private static final Yaml YAML_MAPPER = YamlMapperFactory.create();
   private static final YamlConverter<Component> COMPONENT_CONVERTER = new ComponentYamlConverter(YAML_MAPPER);
   private static final YamlConverter<Subscription> SUBSCRIPTION_CONVERTER = new SubscriptionYamlConverter(YAML_MAPPER);
@@ -62,14 +67,18 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private DaprLogLevel daprLogLevel = DaprLogLevel.INFO;
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
-  private String placementDockerImageName = "daprio/placement";
+  private String schedulerService = "scheduler";
+  private String placementDockerImageName = DAPR_PLACEMENT_IMAGE_TAG;
+  private String schedulerDockerImageName = DAPR_SCHEDULER_IMAGE_TAG;
 
   private Configuration configuration;
   private DaprPlacementContainer placementContainer;
+  private DaprSchedulerContainer schedulerContainer;
   private String appName;
   private Integer appPort;
   private String appHealthCheckPath;
   private boolean shouldReusePlacement;
+  private boolean shouldReuseScheduler;
 
   /**
    * Creates a new Dapr container.
@@ -132,6 +141,11 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
+  public DaprContainer withSchedulerService(String schedulerService) {
+    this.schedulerService = schedulerService;
+    return this;
+  }
+
   public DaprContainer withAppName(String appName) {
     this.appName = appName;
     return this;
@@ -157,13 +171,28 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withReusablePlacement(boolean reuse) {
-    this.shouldReusePlacement = reuse;
+  public DaprContainer withSchedulerImage(String schedulerDockerImageName) {
+    this.schedulerDockerImageName = schedulerDockerImageName;
+    return this;
+  }
+
+  public DaprContainer withReusablePlacement(boolean shouldReusePlacement) {
+    this.shouldReusePlacement = shouldReusePlacement;
+    return this;
+  }
+
+  public DaprContainer withReuseScheduler(boolean shouldReuseScheduler) {
+    this.shouldReuseScheduler = shouldReuseScheduler;
     return this;
   }
 
   public DaprContainer withPlacementContainer(DaprPlacementContainer placementContainer) {
     this.placementContainer = placementContainer;
+    return this;
+  }
+
+  public DaprContainer withSchedulerContainer(DaprSchedulerContainer schedulerContainer) {
+    this.schedulerContainer = schedulerContainer;
     return this;
   }
 
@@ -181,21 +210,19 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     try {
       Map<String, Object> component = YAML_MAPPER.loadAs(Files.newInputStream(path), Map.class);
 
-      String type = (String) component.get("type");
       Map<String, Object> metadata = (Map<String, Object>) component.get("metadata");
       String name = (String) metadata.get("name");
 
       Map<String, Object> spec = (Map<String, Object>) component.get("spec");
+      String type = (String) spec.get("type");
       String version = (String) spec.get("version");
       List<Map<String, String>> specMetadata =
-          (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyMap());
+          (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyList());
 
       ArrayList<MetadataEntry> metadataEntries = new ArrayList<>();
 
       for (Map<String, String> specMetadataItem : specMetadata) {
-        for (Map.Entry<String, String> metadataItem : specMetadataItem.entrySet()) {
-          metadataEntries.add(new MetadataEntry(metadataItem.getKey(), metadataItem.getValue()));
-        }
+        metadataEntries.add(new MetadataEntry(specMetadataItem.get("name"), specMetadataItem.get("value")));
       }
 
       return withComponent(new Component(name, type, version, metadataEntries));
@@ -237,6 +264,14 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       this.placementContainer.start();
     }
 
+    if (this.schedulerContainer == null) {
+      this.schedulerContainer = new DaprSchedulerContainer(this.schedulerDockerImageName)
+          .withNetwork(getNetwork())
+          .withNetworkAliases(schedulerService)
+          .withReuse(this.shouldReuseScheduler);
+      this.schedulerContainer.start();
+    }
+
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
     cmds.add("--app-id");
@@ -246,6 +281,8 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     cmds.add(DAPR_PROTOCOL.getName());
     cmds.add("--placement-host-address");
     cmds.add(placementService + ":50005");
+    cmds.add("--scheduler-host-address");
+    cmds.add(schedulerService + ":51005");
 
     if (appChannelAddress != null && !appChannelAddress.isEmpty()) {
       cmds.add("--app-channel-address");
@@ -324,7 +361,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
     }
 
-    dependsOn(placementContainer);
+    dependsOn(placementContainer, schedulerContainer);
   }
 
   public String getAppName() {

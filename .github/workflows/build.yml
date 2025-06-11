@@ -39,7 +39,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
       DAPR_CLI_VER: 1.15.0
-      DAPR_RUNTIME_VER: 1.15.3
+      DAPR_RUNTIME_VER: 1.15.4
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
@@ -121,7 +121,7 @@ jobs:
       env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Codecov
-      uses: codecov/codecov-action@v5.4.0
+      uses: codecov/codecov-action@v5.4.3
     - name: Install jars
       run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}

@@ -67,7 +67,8 @@ public class WorkflowRuntimeBuilderTest {
   @Test
   public void buildTest() {
     assertDoesNotThrow(() -> {
-      try (WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build()) {
+      try {
+        WorkflowRuntime runtime = new WorkflowRuntimeBuilder().build();
         System.out.println("WorkflowRuntime created");
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -88,13 +89,11 @@ public class WorkflowRuntimeBuilderTest {
 
     WorkflowRuntimeBuilder workflowRuntimeBuilder = new WorkflowRuntimeBuilder();
 
-    try (WorkflowRuntime runtime = workflowRuntimeBuilder.build()) {
-      verify(testLogger, times(1))
-          .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
+    WorkflowRuntime runtime = workflowRuntimeBuilder.build();
+    verify(testLogger, times(1))
+        .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
 
-      verify(testLogger, times(1))
-          .info(eq("Registered Activity: {}"), eq("TestActivity"));
-    }
+    verify(testLogger, times(1))
+        .info(eq("Registered Activity: {}"), eq("TestActivity"));
   }
-
 }

@@ -19,11 +19,11 @@ import com.evanlennick.retry4j.config.RetryConfig;
 import com.evanlennick.retry4j.config.RetryConfigBuilder;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +34,11 @@ import static java.time.temporal.ChronoUnit.SECONDS;
  */
 final class Validation {
 
-  private static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
+  private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+      .version(HttpClient.Version.HTTP_1_1)
+      .build();
+
+  private static final String TRACES_URL = "http://localhost:9411/api/v2/traces";
 
   private static final RetryConfig RETRY_CONFIG = new RetryConfigBuilder()
       .withMaxNumberOfTries(5)
@@ -56,27 +60,16 @@ final class Validation {
 
   static void validate() {
     Status<Void> result = new CallExecutorBuilder().config(RETRY_CONFIG).build().execute(() -> doValidate());
+
     if (!result.wasSuccessful()) {
       throw new RuntimeException(result.getLastExceptionThatCausedRetry());
     }
   }
 
   private static Void doValidate() throws Exception {
-    System.out.println("Performing validation of tracing events ...");
-
-    HttpUrl.Builder urlBuilder = new HttpUrl.Builder();
-    urlBuilder.scheme("http")
-        .host("localhost")
-        .port(9411);
-    urlBuilder.addPathSegments("api/v2/traces");
-    Request.Builder requestBuilder = new Request.Builder()
-        .url(urlBuilder.build());
-    requestBuilder.method("GET", null);
-
-    Request request = requestBuilder.build();
-
-    Response response = HTTP_CLIENT.newCall(request).execute();
-    DocumentContext documentContext = JsonPath.parse(response.body().string());
+    HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(TRACES_URL)).build();
+    HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    DocumentContext documentContext = JsonPath.parse(response.body());
     String mainSpanId = readOne(documentContext, "$..[?(@.name == \"example's main\")]['id']").toString();
 
     // Validate echo
@@ -104,13 +97,14 @@ final class Validation {
         .toString();
     readOne(documentContext,
         String.format(JSONPATH_SLEEP_SPAN_ID, proxySleepSpanId2));
-    System.out.println("Validation of tracing events has succeeded.");
+
     return null;
   }
 
   private static Object readOne(DocumentContext documentContext, String path) {
     List<Map<String, Object>> arr = documentContext.read(path);
-    if (arr.size() == 0) {
+
+    if (arr.isEmpty()) {
       throw new RuntimeException("No record found for " + path);
     }
 
@@ -119,6 +113,7 @@ final class Validation {
 
   private static void assertCount(DocumentContext documentContext, String path, int expectedCount) {
     List<Map<String, Object>> arr = documentContext.read(path);
+
     if (arr.size() != expectedCount) {
       throw new RuntimeException(
           String.format("Unexpected count %d vs expected %d for %s", arr.size(), expectedCount, path));

@@ -6,11 +6,11 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.15.0-SNAPSHOT</version>
+    <version>1.16.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>spring-boot-examples</artifactId>
-  <version>0.15.0-SNAPSHOT</version>
+  <version>0.16.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
@@ -21,6 +21,7 @@
   <modules>
     <module>producer-app</module>
     <module>consumer-app</module>
+    <module>workflows</module>
     <module>cloud-config-demo</module>
   </modules>
 

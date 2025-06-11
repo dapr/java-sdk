@@ -26,6 +26,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
 public class DaprComponentTest {
   private final Yaml MAPPER = YamlMapperFactory.create();
@@ -33,7 +34,7 @@ public class DaprComponentTest {
 
   @Test
   public void containerConfigurationTest() {
-    DaprContainer dapr = new DaprContainer("daprio/daprd")
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("dapr-app")
         .withAppPort(8081)
         .withDaprLogLevel(DaprLogLevel.DEBUG)
@@ -50,7 +51,7 @@ public class DaprComponentTest {
     URL stateStoreYaml = this.getClass().getClassLoader().getResource("dapr-resources/statestore.yaml");
     Path path = Paths.get(stateStoreYaml.getPath());
 
-    DaprContainer dapr = new DaprContainer("daprio/daprd")
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("dapr-app")
         .withAppPort(8081)
         .withComponent(path)
@@ -68,20 +69,14 @@ public class DaprComponentTest {
         + "metadata:\n"
         + "  name: statestore\n"
         + "spec:\n"
-        + "  type: null\n"
+        + "  type: state.redis\n"
         + "  version: v1\n"
         + "  metadata:\n"
-        + "  - name: name\n"
-        + "    value: keyPrefix\n"
-        + "  - name: value\n"
+        + "  - name: keyPrefix\n"
         + "    value: name\n"
-        + "  - name: name\n"
-        + "    value: redisHost\n"
-        + "  - name: value\n"
+        + "  - name: redisHost\n"
         + "    value: redis:6379\n"
-        + "  - name: name\n"
-        + "    value: redisPassword\n"
-        + "  - name: value\n"
+        + "  - name: redisPassword\n"
         + "    value: ''\n";
 
     assertEquals(expectedComponentYaml, componentYaml);
