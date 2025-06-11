@@ -18,7 +18,6 @@ public class DaprPredicate implements Predicate<Object> {
     this(path, expected, (valueToCompare) -> ObjectUtils.nullSafeEquals(valueToCompare, expected));
   }
 
-
   /**
    * Creates a new {@link DaprPredicate}.
    *

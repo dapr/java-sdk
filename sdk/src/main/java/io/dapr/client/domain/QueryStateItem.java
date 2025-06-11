@@ -13,9 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-
 public class QueryStateItem<T> {
-
 
   /**
    * The value of the state.

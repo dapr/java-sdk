@@ -123,7 +123,6 @@ class DaprTopicSubscription {
     this(pubsubName, topic, route, "", routes, metadata, bulkSubscribe);
   }
 
-
   /**
    * Create a subscription topic.
    *

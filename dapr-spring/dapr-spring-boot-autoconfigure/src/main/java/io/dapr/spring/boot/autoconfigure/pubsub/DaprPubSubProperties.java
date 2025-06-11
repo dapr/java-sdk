@@ -15,7 +15,6 @@ package io.dapr.spring.boot.autoconfigure.pubsub;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-
 @ConfigurationProperties(prefix = DaprPubSubProperties.CONFIG_PREFIX)
 public class DaprPubSubProperties {
 
