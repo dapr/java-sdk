@@ -5,6 +5,7 @@ This application allows you to run different [workflow patterns](https://docs.da
 - Parent/Child Workflows
 - Continue workflow by sending External Events
 - Fan Out/In activities for parallel execution
+- Suspend/Resume workflows
 
 ## Running these examples from source code
 
@@ -392,6 +393,139 @@ i.d.s.e.wfp.fanoutin.CountWordsActivity  : Activity finished
 io.dapr.workflows.WorkflowContext        : Workflow finished with result: 60
 ```
 
+### Suspend/Resume Workflow example
+
+In this example, we start a workflow that executes an activity and then waits for an event. While the workflow instance 
+is waiting for the event, we execute a suspend workflow operation. Once we check the state of the instance, a resume
+operation is executed. 
+
+To start the workflow, you can run:
+
+<!-- STEP
+name: Start Suspend/Resume Workflow
+match_order: none
+output_match_mode: substring
+background: true
+sleep: 1
+timeout_seconds: 2
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+```sh
+curl -X POST "localhost:8080/wfp/suspendresume?orderId=123" -H 'Content-Type: application/json'
+```
+
+<!-- END_STEP -->
+
+In the application output you should see the workflow activities being executed.
+
+```bash
+io.dapr.workflows.WorkflowContext        : Starting Workflow: io.dapr.springboot.examples.wfp.suspendresume.SuspendResumeWorkflow
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance 2de2b968-900a-4f5b-9092-b26aefbfc6b3 started
+i.d.s.e.w.s.PerformTaskActivity          : Starting Activity: io.dapr.springboot.examples.wfp.suspendresume.PerformTaskActivity
+i.d.s.e.w.s.PerformTaskActivity          : Running activity...
+i.d.s.e.w.s.PerformTaskActivity          : Completing activity...
+io.dapr.workflows.WorkflowContext        : Waiting for approval...
+
+```
+
+You should see the Workflow ID that was created, in this example you don't need to remember this id,
+as you can use the orderId to find the right instance.
+
+
+<!-- STEP
+name: Suspend Workflow Operation
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- 'SUSPENDED'
+background: true
+sleep: 5
+timeout_seconds: 10
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+Let's suspend the workflow instance by sending the following request:
+
+```sh
+curl -X POST "localhost:8080/wfp/suspendresume/suspend?orderId=123" -H 'Content-Type: application/json'
+```
+
+<!-- END_STEP -->
+
+
+You should see the output of the requests:
+
+```sh
+SUSPENDED
+```
+
+Now, let's resume the workflow instance: 
+
+<!-- STEP
+name: Resume Workflow Operation
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- 'RUNNING'
+background: true
+sleep: 5
+timeout_seconds: 10
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To send the event you can run:
+
+```sh
+curl -X POST "localhost:8080/wfp/suspendresume/resume?orderId=123" -H 'Content-Type: application/json'
+```
+
+<!-- END_STEP -->
+
+You should see the output of the requests:
+
+```sh
+RUNNING
+```
+
+Now, let's send the event that the instance is waiting to validate that the workflow complete after 
+being suspended and resumed. 
+
+<!-- STEP
+name: Send External Event
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+- '{"approved":true}'
+background: true
+sleep: 5
+timeout_seconds: 10
+-->
+<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
+To send the event you can run:
+
+```sh
+curl -X POST "localhost:8080/wfp/suspendresume/continue?orderId=123&decision=true" -H 'Content-Type: application/json'
+```
+
+<!-- END_STEP -->
+
+The output of the request contains the output of the workflow based on the `decision` parameter that we sent.
+
+```bash
+{"approved":true}
+```
+
+In the application output you should see, that the workflow instance completed correctly: 
+
+```sh
+i.d.s.e.w.WorkflowPatternsRestController : Workflow instance 2de2b968-900a-4f5b-9092-b26aefbfc6b3 continue
+io.dapr.workflows.WorkflowContext        : approval-event arrived
+i.d.s.e.w.s.PerformTaskActivity          : Starting Activity: io.dapr.springboot.examples.wfp.suspendresume.PerformTaskActivity
+i.d.s.e.w.s.PerformTaskActivity          : Running activity...
+i.d.s.e.w.s.PerformTaskActivity          : Completing activity...
+```
 
 ## Testing workflow executions
 

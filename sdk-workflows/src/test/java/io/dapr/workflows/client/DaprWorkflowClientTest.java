@@ -218,6 +218,17 @@ public class DaprWorkflowClientTest {
   }
 
   @Test
+  public void suspendResumeInstance() {
+    String expectedArgument = "TestWorkflowInstanceId";
+    client.suspendWorkflow(expectedArgument, "suspending workflow instance");
+    client.resumeWorkflow(expectedArgument, "resuming workflow instance");
+    verify(mockInnerClient, times(1)).suspendInstance(expectedArgument,
+            "suspending workflow instance");
+    verify(mockInnerClient, times(1)).resumeInstance(expectedArgument,
+            "resuming workflow instance");
+  }
+
+  @Test
   public void purgeInstance() {
     String expectedArgument = "TestWorkflowInstanceId";
     client.purgeInstance(expectedArgument);
