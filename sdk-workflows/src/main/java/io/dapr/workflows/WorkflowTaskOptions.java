@@ -16,13 +16,27 @@ package io.dapr.workflows;
 public class WorkflowTaskOptions {
 
   private final WorkflowTaskRetryPolicy retryPolicy;
+  private final WorkflowTaskRetryHandler retryHandler;
+
+  public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy, WorkflowTaskRetryHandler retryHandler) {
+    this.retryPolicy = retryPolicy;
+    this.retryHandler = retryHandler;
+  }
 
   public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy) {
-    this.retryPolicy = retryPolicy;
+    this(retryPolicy, null);
+  }
+
+  public WorkflowTaskOptions(WorkflowTaskRetryHandler retryHandler) {
+    this(null, retryHandler);
   }
 
   public WorkflowTaskRetryPolicy getRetryPolicy() {
     return retryPolicy;
+  }
+
+  public WorkflowTaskRetryHandler getRetryHandler() {
+    return retryHandler;
   }
 
 }
