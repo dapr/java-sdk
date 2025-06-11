@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.RetryPolicy;
 import io.dapr.durabletask.Task;
 import io.dapr.durabletask.TaskCanceledException;
@@ -21,6 +22,8 @@ import io.dapr.durabletask.TaskOptions;
 import io.dapr.durabletask.TaskOrchestrationContext;
 import io.dapr.workflows.WorkflowContext;
 import io.dapr.workflows.WorkflowTaskOptions;
+import io.dapr.workflows.WorkflowTaskRetryContext;
+import io.dapr.workflows.WorkflowTaskRetryHandler;
 import io.dapr.workflows.WorkflowTaskRetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,15 +237,31 @@ public class DefaultWorkflowContext implements WorkflowContext {
     return this.innerContext.newUUID();
   }
 
-  private static TaskOptions toTaskOptions(WorkflowTaskOptions options) {
+  private TaskOptions toTaskOptions(WorkflowTaskOptions options) {
     if (options == null) {
       return null;
     }
 
-    WorkflowTaskRetryPolicy workflowTaskRetryPolicy = options.getRetryPolicy();
+    RetryPolicy retryPolicy = toRetryPolicy(options.getRetryPolicy());
+    RetryHandler retryHandler = toRetryHandler(options.getRetryHandler());
+
+    return new TaskOptions(retryPolicy, retryHandler);
+  }
+
+  /**
+   * Converts a {@link WorkflowTaskRetryPolicy} to a {@link RetryPolicy}.
+   *
+   * @param workflowTaskRetryPolicy The {@link WorkflowTaskRetryPolicy} being converted
+   * @return A {@link RetryPolicy}
+   */
+  private RetryPolicy toRetryPolicy(WorkflowTaskRetryPolicy workflowTaskRetryPolicy) {
+    if (workflowTaskRetryPolicy == null) {
+      return null;
+    }
+
     RetryPolicy retryPolicy = new RetryPolicy(
-        workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
-        workflowTaskRetryPolicy.getFirstRetryInterval()
+            workflowTaskRetryPolicy.getMaxNumberOfAttempts(),
+            workflowTaskRetryPolicy.getFirstRetryInterval()
     );
 
     retryPolicy.setBackoffCoefficient(workflowTaskRetryPolicy.getBackoffCoefficient());
@@ -250,6 +269,29 @@ public class DefaultWorkflowContext implements WorkflowContext {
       retryPolicy.setRetryTimeout(workflowTaskRetryPolicy.getRetryTimeout());
     }
 
-    return new TaskOptions(retryPolicy);
+    return retryPolicy;
+  }
+
+  /**
+   * Converts a {@link WorkflowTaskRetryHandler} to a {@link RetryHandler}.
+   *
+   * @param workflowTaskRetryHandler The {@link WorkflowTaskRetryHandler} being converted
+   * @return A {@link RetryHandler}
+   */
+  private RetryHandler toRetryHandler(WorkflowTaskRetryHandler workflowTaskRetryHandler) {
+    if (workflowTaskRetryHandler == null) {
+      return null;
+    }
+
+    return retryContext -> {
+      WorkflowTaskRetryContext workflowRetryContext = new WorkflowTaskRetryContext(
+              this,
+              retryContext.getLastAttemptNumber(),
+              new DefaultWorkflowFailureDetails(retryContext.getLastFailure()),
+              retryContext.getTotalRetryTime()
+      );
+
+      return workflowTaskRetryHandler.handle(workflowRetryContext);
+    };
   }
 }
