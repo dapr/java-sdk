@@ -14,6 +14,9 @@ limitations under the License.
 package io.dapr.workflows;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
+import io.dapr.durabletask.FailureDetails;
+import io.dapr.durabletask.RetryContext;
+import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.Task;
 import io.dapr.durabletask.TaskCanceledException;
 import io.dapr.durabletask.TaskOptions;
@@ -35,6 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -281,7 +285,7 @@ public class DefaultWorkflowContextTest {
   }
 
   @Test
-  public void callChildWorkflowWithOptions() {
+  public void callChildWorkflowWithRetryPolicy() {
     String expectedName = "TestActivity";
     String expectedInput = "TestInput";
     String expectedInstanceId = "TestInstanceId";
@@ -305,6 +309,90 @@ public class DefaultWorkflowContextTest {
 
     TaskOptions taskOptions = captor.getValue();
 
+    assertEquals(retryPolicy.getMaxNumberOfAttempts(), taskOptions.getRetryPolicy().getMaxNumberOfAttempts());
+    assertEquals(retryPolicy.getFirstRetryInterval(), taskOptions.getRetryPolicy().getFirstRetryInterval());
+    assertEquals(Duration.ZERO, taskOptions.getRetryPolicy().getRetryTimeout());
+    assertNull(taskOptions.getRetryHandler());
+  }
+
+  @Test
+  public void callChildWorkflowWithRetryHandler() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+
+    WorkflowTaskRetryHandler retryHandler = spy(new WorkflowTaskRetryHandler() {
+      @Override
+      public boolean handle(WorkflowTaskRetryContext retryContext) {
+        return true;
+      }
+    });
+
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryHandler);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callSubOrchestrator(
+                    eq(expectedName),
+                    eq(expectedInput),
+                    eq(expectedInstanceId),
+                    captor.capture(),
+                    eq(String.class)
+            );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    RetryHandler durableRetryHandler = taskOptions.getRetryHandler();
+    RetryContext retryContext = mock(RetryContext.class, invocationOnMock -> null);
+
+    durableRetryHandler.handle(retryContext);
+
+    verify(retryHandler, times(1)).handle(any());
+    assertNull(taskOptions.getRetryPolicy());
+  }
+
+  @Test
+  public void callChildWorkflowWithRetryPolicyAndHandler() {
+    String expectedName = "TestActivity";
+    String expectedInput = "TestInput";
+    String expectedInstanceId = "TestInstanceId";
+
+    WorkflowTaskRetryPolicy retryPolicy = WorkflowTaskRetryPolicy.newBuilder()
+            .setMaxNumberOfAttempts(1)
+            .setFirstRetryInterval(Duration.ofSeconds(10))
+            .build();
+
+    WorkflowTaskRetryHandler retryHandler = spy(new WorkflowTaskRetryHandler() {
+      @Override
+      public boolean handle(WorkflowTaskRetryContext retryContext) {
+        return true;
+      }
+    });
+
+    WorkflowTaskOptions executionOptions = new WorkflowTaskOptions(retryPolicy, retryHandler);
+    ArgumentCaptor<TaskOptions> captor = ArgumentCaptor.forClass(TaskOptions.class);
+
+    context.callChildWorkflow(expectedName, expectedInput, expectedInstanceId, executionOptions, String.class);
+
+    verify(mockInnerContext, times(1))
+            .callSubOrchestrator(
+                    eq(expectedName),
+                    eq(expectedInput),
+                    eq(expectedInstanceId),
+                    captor.capture(),
+                    eq(String.class)
+            );
+
+    TaskOptions taskOptions = captor.getValue();
+
+    RetryHandler durableRetryHandler = taskOptions.getRetryHandler();
+    RetryContext retryContext = mock(RetryContext.class, invocationOnMock -> null);
+
+    durableRetryHandler.handle(retryContext);
+
+    verify(retryHandler, times(1)).handle(any());
     assertEquals(retryPolicy.getMaxNumberOfAttempts(), taskOptions.getRetryPolicy().getMaxNumberOfAttempts());
     assertEquals(retryPolicy.getFirstRetryInterval(), taskOptions.getRetryPolicy().getFirstRetryInterval());
     assertEquals(Duration.ZERO, taskOptions.getRetryPolicy().getRetryTimeout());

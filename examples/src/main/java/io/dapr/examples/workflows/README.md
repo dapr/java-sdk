@@ -51,7 +51,8 @@ Those examples contain the following workflow patterns:
 2. [Fan-out/Fan-in Pattern](#fan-outfan-in-pattern)
 3. [Continue As New Pattern](#continue-as-new-pattern)
 4. [External Event Pattern](#external-event-pattern)
-5. [child-workflow Pattern](#child-workflow-pattern)
+5. [Child-workflow Pattern](#child-workflow-pattern)
+6. [Compensation Pattern](#compensation-pattern)
 
 ### Chaining Pattern
 In the chaining pattern, a sequence of activities executes in a specific order.
@@ -353,7 +354,7 @@ dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- 
 ```
 ```sh
 java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.continueasnew.DemoContinueAsNewClient
-````
+```
 
 You will see the logs from worker showing the `CleanUpActivity` is invoked every 10 seconds after previous one is finished:
 ```text
@@ -419,7 +420,6 @@ client.raiseEvent(instanceId, "Approval", true);
 
 Start the workflow and client using the following commands:
 
-ex
 ```sh
 dapr run --app-id demoworkflowworker --resources-path ./components/workflows -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.externalevent.DemoExternalEventWorker
 ```
@@ -444,7 +444,7 @@ Started a new external-event model workflow with instance ID: 23410d96-1afe-4698
 workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
 ```
 
-### child-workflow Pattern
+### Child-workflow Pattern
 The child-workflow pattern allows you to call a workflow from another workflow.
 
 The `DemoWorkflow` class defines the workflow. It calls a child-workflow `DemoChildWorkflow` to do the work. See the code snippet below:
@@ -539,4 +539,172 @@ The log from client:
 ```text
 Started a new child-workflow model workflow with instance ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb
 workflow instance with ID: c2fb9c83-435b-4b55-bdf1-833b39366cfb completed with result: !wolfkroW rpaD olleH
+```
+
+### Compensation Pattern
+The compensation pattern is used to "undo" or "roll back" previously completed steps if a later step fails. This pattern is particularly useful in scenarios where you need to ensure that all resources are properly cleaned up even if the process fails.
+
+The example simulates a trip booking workflow that books a flight, hotel, and car. If any step fails, the workflow will automatically compensate (cancel) the previously completed bookings in reverse order.
+
+The `BookTripWorkflow` class defines the workflow. It orchestrates the booking process and handles compensation if any step fails. See the code snippet below:
+```java
+public class BookTripWorkflow extends Workflow {
+  @Override
+  public WorkflowStub create() {
+    return ctx -> {
+      List<String> compensations = new ArrayList<>();
+      
+      try {
+        // Book flight
+        String flightResult = ctx.callActivity(BookFlightActivity.class.getName(), String.class).await();
+        ctx.getLogger().info("Flight booking completed: " + flightResult);
+        compensations.add(CancelFlightActivity.class.getName());
+
+        // Book hotel
+        String hotelResult = ctx.callActivity(BookHotelActivity.class.getName(), String.class).await();
+        ctx.getLogger().info("Hotel booking completed: " + hotelResult);
+        compensations.add(CancelHotelActivity.class.getName());
+
+        // Book car
+        String carResult = ctx.callActivity(BookCarActivity.class.getName(), String.class).await();
+        ctx.getLogger().info("Car booking completed: " + carResult);
+        compensations.add(CancelCarActivity.class.getName());
+
+      } catch (Exception e) {
+        ctx.getLogger().info("******** executing compensation logic ********");
+        // Execute compensations in reverse order
+        Collections.reverse(compensations);
+        for (String compensation : compensations) {
+          try {
+            ctx.callActivity(compensation, String.class).await();
+          } catch (Exception ex) {
+            ctx.getLogger().error("Error during compensation: " + ex.getMessage());
+          }
+        }
+        ctx.complete("Workflow failed, compensation applied");
+        return;
+      }
+      ctx.complete("All bookings completed successfully");
+    };
+  }
+}
+```
+
+Each activity class (`BookFlightActivity`, `BookHotelActivity`, `BookCarActivity`) implements the booking logic, while their corresponding compensation activities (`CancelFlightActivity`, `CancelHotelActivity`, `CancelCarActivity`) implement the cancellation logic.
+
+<!-- STEP
+name: Run Compensation Pattern workflow worker
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - "Registered Workflow: BookTripWorkflow"
+  - "Registered Activity: BookFlightActivity"
+  - "Registered Activity: CancelFlightActivity"
+  - "Registered Activity: BookHotelActivity"
+  - "Registered Activity: CancelHotelActivity"
+  - "Registered Activity: BookCarActivity"
+  - "Registered Activity: CancelCarActivity"
+  - "Successfully built dapr workflow runtime"
+  - "Start workflow runtime"
+  - "Durable Task worker is connecting to sidecar at 127.0.0.1:50001."
+
+  - "Starting Workflow: io.dapr.examples.workflows.compensation.BookTripWorkflow"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.BookFlightActivity"
+  - "Activity completed with result: Flight booked successfully"
+  - "Flight booking completed: Flight booked successfully"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.BookHotelActivity"
+  - "Simulating hotel booking process..."
+  - "Activity completed with result: Hotel booked successfully"
+  - "Hotel booking completed: Hotel booked successfully"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.BookCarActivity"
+  - "Forcing Failure to trigger compensation for activity: io.dapr.examples.workflows.compensation.BookCarActivity"
+  - "******** executing compensation logic ********"
+  - "Activity failed: Task 'io.dapr.examples.workflows.compensation.BookCarActivity' (#2) failed with an unhandled exception: Failed to book car"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.CancelHotelActivity"
+  - "Activity completed with result: Hotel canceled successfully"
+  - "Starting Activity: io.dapr.examples.workflows.compensation.CancelFlightActivity"
+  - "Activity completed with result: Flight canceled successfully"
+background: true
+sleep: 60
+timeout_seconds: 60
+-->
+
+Execute the following script in order to run the BookTripWorker:
+```sh
+dapr run --app-id book-trip-worker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripWorker
+```
+
+Once running, execute the following script to run the BookTripClient:
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripClient
+```
+<!-- END_STEP -->
+
+The output demonstrates:
+1. The workflow starts and successfully books a flight
+2. Then successfully books a hotel
+3. When attempting to book a car, it fails (intentionally)
+4. The compensation logic triggers, canceling the hotel and flight in reverse order
+5. The workflow completes with a status indicating the compensation was applied
+
+Key Points:
+1. Each successful booking step adds its compensation action to an ArrayList
+2. If an error occurs, the list of compensations is reversed and executed in reverse order
+3. The workflow ensures that all resources are properly cleaned up even if the process fails
+4. Each activity simulates work with a short delay for demonstration purposes
+
+
+### Suspend/Resume Pattern
+
+Workflow instances can be suspended and resumed. This example shows how to use the suspend and resume commands. 
+
+For testing the suspend and resume operations we will use the same workflow definition used by the DemoExternalEventWorkflow.
+
+Start the workflow and client using the following commands:
+
+
+<!-- STEP
+name: Run Suspend/Resume workflow 
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - "Waiting for approval..."
+  - "Suspending Workflow Instance"
+  - "Workflow Instance Status: SUSPENDED"
+  - "Let's resume the Workflow Instance before sending the external event"
+  - "Workflow Instance Status: RUNNING"
+  - "Now that the instance is RUNNING again, lets send the external event."
+  - "approval granted - do the approved action"
+  - "Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity"
+  - "Running approval activity..."
+  - "approval-activity finished"
+background: true
+sleep: 60
+timeout_seconds: 60
+-->
+
+```sh
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker
+```
+
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient
+```
+
+<!-- END_STEP -->
+
+The worker logs:
+```text
+== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.suspendresume.DemoExternalEventWorkflow
+== APP == 2023-11-07 16:01:23,279 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Waiting for approval...
+== APP == 2023-11-07 16:01:23,324 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval granted - do the approved action
+== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity
+== APP == 2023-11-07 16:01:23,348 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.e.ApproveActivity - Running approval activity...
+== APP == 2023-11-07 16:01:28,410 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - approval-activity finished
+```
+
+The client log:
+```text
+Started a new external-event model workflow with instance ID: 23410d96-1afe-4698-9fcd-c01c1e0db255
+workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
 ```
