@@ -50,7 +50,6 @@ import static io.dapr.config.Properties.GRPC_TLS_INSECURE;
 import static io.dapr.config.Properties.GRPC_TLS_KEY_PATH;
 import static io.dapr.config.Properties.SIDECAR_IP;
 
-
 /**
  * Utility methods for network, internal to Dapr SDK.
  */

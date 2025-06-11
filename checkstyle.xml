@@ -288,4 +288,5 @@
         <module name="SuppressWarningsHolder"/>
     </module>
     <module name="SuppressWarningsFilter"/>
+    <module name="NewlineAtEndOfFile"/>
 </module>
