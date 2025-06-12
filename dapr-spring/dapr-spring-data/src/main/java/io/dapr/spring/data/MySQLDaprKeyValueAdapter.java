@@ -76,7 +76,6 @@ public class MySQLDaprKeyValueAdapter extends AbstractDaprKeyValueAdapter {
     this.bindingName = bindingName;
   }
 
-
   @Override
   public <T> Iterable<T> getAllOf(String keyspace, Class<T> type) {
     Assert.hasText(keyspace, "Keyspace must not be empty");

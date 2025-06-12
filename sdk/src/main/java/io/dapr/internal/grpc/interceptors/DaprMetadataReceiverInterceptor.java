@@ -62,7 +62,4 @@ public class DaprMetadataReceiverInterceptor implements ClientInterceptor {
       }
     };
   }
-
-
-
 }

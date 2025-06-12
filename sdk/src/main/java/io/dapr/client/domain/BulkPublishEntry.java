@@ -81,7 +81,6 @@ public final class BulkPublishEntry<T> {
     return event;
   }
 
-
   public String getContentType() {
     return contentType;
   }

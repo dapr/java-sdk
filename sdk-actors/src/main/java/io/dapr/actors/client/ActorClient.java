@@ -130,7 +130,6 @@ public class ActorClient implements AutoCloseable {
     }
   }
 
-
   /**
    * Build an instance of the Client based on the provided setup.
    *

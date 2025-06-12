@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.springboot;
 
-
 import io.dapr.actors.runtime.ActorRuntime;
 import io.dapr.serializer.DefaultObjectSerializer;
 import org.springframework.http.MediaType;
@@ -124,5 +123,4 @@ public class DaprController {
                                         @RequestBody(required = false) byte[] body) {
     return ActorRuntime.getInstance().invokeReminder(type, id, reminder, body);
   }
-
 }

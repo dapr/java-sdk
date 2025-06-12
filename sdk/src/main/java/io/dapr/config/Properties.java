@@ -254,8 +254,6 @@ public class Properties {
           "DAPR_HTTP_CLIENT_MAX_IDLE_CONNECTIONS",
           DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
 
-
-
   /**
    * Dapr's default maximum inbound message size for GRPC in bytes.
    */

@@ -112,6 +112,7 @@
         <module name="ModifierOrder"/>
         <module name="EmptyLineSeparator">
             <property name="allowNoEmptyLineBetweenFields" value="true"/>
+            <property name="allowMultipleEmptyLines" value="false"/>
         </module>
         <module name="SeparatorWrap">
             <property name="id" value="SeparatorWrapDot"/>
@@ -287,4 +288,5 @@
         <module name="SuppressWarningsHolder"/>
     </module>
     <module name="SuppressWarningsFilter"/>
+    <module name="NewlineAtEndOfFile"/>
 </module>
