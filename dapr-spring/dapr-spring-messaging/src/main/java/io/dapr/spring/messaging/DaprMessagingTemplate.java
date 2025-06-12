@@ -192,7 +192,6 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
       return this;
     }
 
-
     @Override
     public void send() {
       template.doSend(topic, message);
@@ -202,7 +201,5 @@ public class DaprMessagingTemplate<T> implements DaprMessagingOperations<T>, App
     public Mono<Void> sendAsync() {
       return template.doSendAsync(topic, message);
     }
-
   }
-
 }
