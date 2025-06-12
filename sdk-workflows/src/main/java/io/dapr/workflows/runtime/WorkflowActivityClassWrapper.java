@@ -48,7 +48,6 @@ public class WorkflowActivityClassWrapper<T extends WorkflowActivity> implements
     return name;
   }
 
-
   @Override
   public TaskActivity create() {
     return ctx -> {
