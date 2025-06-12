@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,13 +11,16 @@
 limitations under the License.
 */
 
-package io.dapr.client.domain;
+package io.dapr.workflows;
 
-/**
- * Status of the message handled in bulk subscribe handler.
- */
-public enum BulkSubscribeAppResponseStatus {
-  SUCCESS,
-  RETRY,
-  DROP
+public interface WorkflowTaskRetryHandler {
+
+  /**
+   * Invokes retry handler logic. Return value indicates whether to continue retrying.
+   *
+   * @param retryContext The context of the retry
+   * @return {@code true} to continue retrying or {@code false} to stop retrying.
+   */
+  boolean handle(WorkflowTaskRetryContext retryContext);
+
 }

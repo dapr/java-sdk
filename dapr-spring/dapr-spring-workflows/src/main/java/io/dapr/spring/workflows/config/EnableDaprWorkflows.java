@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.spring.workflows.config;
 
-
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.Retention;

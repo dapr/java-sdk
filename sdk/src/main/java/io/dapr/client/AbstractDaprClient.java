@@ -655,7 +655,6 @@ abstract class AbstractDaprClient implements DaprClient, DaprPreviewClient {
     return this.unlock(request);
   }
 
-
   private List<String> filterEmptyKeys(String... keys) {
     return Arrays.stream(keys)
         .filter(key -> !key.trim().isEmpty())
