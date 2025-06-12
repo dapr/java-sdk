@@ -25,6 +25,7 @@
     <module>dapr-spring-boot-tests</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter</module>
     <module>dapr-spring-boot-starters/dapr-spring-boot-starter-test</module>
+    <module>dapr-spring-cloudconfig</module>
   </modules>
 
   <properties>
