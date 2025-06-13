@@ -164,7 +164,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * {@inheritDoc}
    */
   public <V> Task<V> callActivity(String name, Object input, WorkflowTaskOptions options, Class<V> returnType) {
-    TaskOptions taskOptions = toTaskOptions(options);
+    TaskOptions taskOptions = toTaskOptions(options, name, input);
 
     return this.innerContext.callActivity(name, input, taskOptions, returnType);
   }
@@ -208,7 +208,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
   @Override
   public <V> Task<V> callChildWorkflow(String name, @Nullable Object input, @Nullable String instanceID,
                                        @Nullable WorkflowTaskOptions options, Class<V> returnType) {
-    TaskOptions taskOptions = toTaskOptions(options);
+    TaskOptions taskOptions = toTaskOptions(options, name, input);
 
     return this.innerContext.callSubOrchestrator(name, input, instanceID, taskOptions, returnType);
   }
@@ -237,13 +237,13 @@ public class DefaultWorkflowContext implements WorkflowContext {
     return this.innerContext.newUUID();
   }
 
-  private TaskOptions toTaskOptions(WorkflowTaskOptions options) {
+  private TaskOptions toTaskOptions(WorkflowTaskOptions options, String taskName, Object input) {
     if (options == null) {
       return null;
     }
 
     RetryPolicy retryPolicy = toRetryPolicy(options.getRetryPolicy());
-    RetryHandler retryHandler = toRetryHandler(options.getRetryHandler());
+    RetryHandler retryHandler = toRetryHandler(options.getRetryHandler(), taskName, input);
 
     return new TaskOptions(retryPolicy, retryHandler);
   }
@@ -276,9 +276,13 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * Converts a {@link WorkflowTaskRetryHandler} to a {@link RetryHandler}.
    *
    * @param workflowTaskRetryHandler The {@link WorkflowTaskRetryHandler} being converted
+   * @param taskName The name of the task
+   * @param input The input object passed to the task
    * @return A {@link RetryHandler}
    */
-  private RetryHandler toRetryHandler(WorkflowTaskRetryHandler workflowTaskRetryHandler) {
+  private RetryHandler toRetryHandler(WorkflowTaskRetryHandler workflowTaskRetryHandler,
+                                      String taskName,
+                                      Object input) {
     if (workflowTaskRetryHandler == null) {
       return null;
     }
@@ -288,7 +292,9 @@ public class DefaultWorkflowContext implements WorkflowContext {
               this,
               retryContext.getLastAttemptNumber(),
               new DefaultWorkflowFailureDetails(retryContext.getLastFailure()),
-              retryContext.getTotalRetryTime()
+              retryContext.getTotalRetryTime(),
+              taskName,
+              input
       );
 
       return workflowTaskRetryHandler.handle(workflowRetryContext);
