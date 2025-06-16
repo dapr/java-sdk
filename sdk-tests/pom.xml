@@ -44,6 +44,13 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${springcloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>org.junit.platform</groupId>
         <artifactId>junit-platform-commons</artifactId>
         <version>${junit-platform.version}</version>
@@ -220,6 +227,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-openfeign</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dapr.spring</groupId>
+      <artifactId>dapr-spring-openfeign</artifactId>
+      <version>${dapr.sdk.alpha.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>toxiproxy</artifactId>
       <scope>test</scope>
@@ -346,6 +363,7 @@
       </activation>
       <properties>
         <springboot.version>${env.PRODUCT_SPRING_BOOT_VERSION}</springboot.version>
+        <springcloud.version>${env.PRODUCT_SPRING_CLOUD_VERSION}</springcloud.version>
       </properties>
     </profile>
   </profiles>
