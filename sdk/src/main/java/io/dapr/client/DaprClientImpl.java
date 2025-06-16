@@ -514,7 +514,6 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("Method name cannot be null or empty.");
       }
 
-
       String[] methodSegments = method.split("/");
 
       List<String> pathSegments = new ArrayList<>(Arrays.asList(DaprHttp.API_VERSION, "invoke", appId, "method"));
