@@ -162,11 +162,6 @@
         <version>${testcontainers.version}</version>
         <scope>test</scope>
       </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
-        <version>${logback-core.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
