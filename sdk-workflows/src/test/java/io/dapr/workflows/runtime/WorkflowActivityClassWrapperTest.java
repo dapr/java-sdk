@@ -22,7 +22,7 @@ public class WorkflowActivityClassWrapperTest {
 
   @Test
   public void getName() {
-    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>(TestActivity.class);
+    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>( TestActivity.class);
 
     assertEquals(
         "io.dapr.workflows.runtime.WorkflowActivityClassWrapperTest.TestActivity",
