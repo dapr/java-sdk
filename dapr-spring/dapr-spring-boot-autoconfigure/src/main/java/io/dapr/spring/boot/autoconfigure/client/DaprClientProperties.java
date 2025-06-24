@@ -23,7 +23,6 @@ public class DaprClientProperties {
   private Integer httpPort;
   private Integer grpcPort;
 
-
   /**
    * Constructs a {@link DaprClientProperties}.
    */
