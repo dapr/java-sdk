@@ -34,9 +34,6 @@
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.11.2</junit.version>
     <dapr.spring.version>0.16.0-SNAPSHOT</dapr.spring.version>
-    <springboot.version>3.2.6</springboot.version>
-    <springframework.version>6.1.21</springframework.version>
-    <logback-core.version>1.4.14</logback-core.version>
   </properties>
 
   <dependencyManagement>
@@ -161,11 +158,6 @@
         <artifactId>junit-jupiter</artifactId>
         <version>${testcontainers.version}</version>
         <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
-        <version>${logback-core.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
