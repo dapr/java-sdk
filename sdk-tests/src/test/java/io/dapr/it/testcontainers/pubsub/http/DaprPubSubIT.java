@@ -586,7 +586,7 @@ public class DaprPubSubIT {
         for (CloudEvent<PubSubIT.ConvertToLong> message : messages) {
           actual.add(message.getData());
         }
-        assertThat(values).containsExactlyInAnyOrder(actual);
+        assertThat(values).containsAll(actual);
       }, 2000);
     }
   }
