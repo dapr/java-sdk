@@ -1376,51 +1376,68 @@ public class DaprClientGrpcTest {
    *
    * @throws Exception - Test will fail if any unexpected exception is being thrown.
    */
+@Test
+public void getStateThenDelete() throws Exception {
+  String etag = "ETag1";
+  String key1 = "key1";
+  String expectedValue1 = "Expected state 1";
+  String key2 = "key2";
+  String expectedValue2 = "Expected state 2";
 
-  @Test
-  public void getStateThenDelete() throws Exception {
-    String etag = "ETag1";
-    String key1 = "key1";
-    String expectedValue1 = "Expected state 1";
-    String key2 = "key2";
-    String expectedValue2 = "Expected state 2";
-    State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
-    State<String> expectedState2 = buildStateKey(expectedValue2, key2, etag, new HashMap<>(), null);
-    Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
-    futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
-    futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
+  State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
+  State<String> expectedState2 = buildStateKey(expectedValue2, key2, etag, new HashMap<>(), null);
 
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
-      observer.onNext(futuresMap.get(key1));
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
-      observer.onNext(futuresMap.get(key2));
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key2)), any());
+  Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
+  futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
+  futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag)); // this will be cleared in a moment
 
-    State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
-    Mono<State<String>> resultGet1 = client.getState(STATE_STORE_NAME, keyRequest1, String.class);
-    assertEquals(expectedState1, resultGet1.block());
-    State<String> keyRequest2 = buildStateKey(null, key2, etag, null);
-    Mono<State<String>> resultGet2 = client.getState(STATE_STORE_NAME, keyRequest2, String.class);
-    assertEquals(expectedState2, resultGet2.block());
+  // Mock getState for key1 (unchanged)
+  doAnswer((Answer<Void>) invocation -> {
+    StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+    observer.onNext(futuresMap.get(key1));
+    observer.onCompleted();
+    return null;
+  }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
 
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class), any());
+  // Mock getState for key2 — this will be updated later to simulate a deleted state
+  doAnswer((Answer<Void>) invocation -> {
+    StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+    // This will initially return a value, but after delete, we will simulate it returning empty
+    DaprProtos.GetStateResponse response = futuresMap.get(key2);
+    if (response != null) {
+      observer.onNext(response);
+    }
+    observer.onCompleted();
+    return null;
+  }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key2)), any());
 
-    Mono<Void> resultDelete = client.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
-        keyRequest2.getOptions());
-    resultDelete.block();
-  }
+  State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
+  Mono<State<String>> resultGet1 = client.getState(STATE_STORE_NAME, keyRequest1, String.class);
+  assertEquals(expectedState1, resultGet1.block()); // ✅ get before delete
+
+  // Create the Mono for key2 but don't block yet
+  State<String> keyRequest2 = buildStateKey(null, key2, etag, null);
+  Mono<State<String>> resultGet2 = client.getState(STATE_STORE_NAME, keyRequest2, String.class);
+
+  // Mock deleteState for key2
+  doAnswer((Answer<Void>) invocation -> {
+    // Simulate deletion by removing from futuresMap
+    futuresMap.remove(key2);
+    StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
+    observer.onNext(Empty.getDefaultInstance());
+    observer.onCompleted();
+    return null;
+  }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+
+  // Perform delete
+  Mono<Void> resultDelete = client.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(), keyRequest2.getOptions());
+  resultDelete.block();
+
+  // Now trigger the getState after deletion
+  State<String> stateAfterDelete = resultGet2.block();
+  assertNull(stateAfterDelete.getValue()); // ✅ should be null because state was deleted
+}
+
 
   @Test
   public void deleteStateNullEtag() {
