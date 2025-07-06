@@ -1385,7 +1385,6 @@ public class DaprClientGrpcTest {
     String key2 = "key2";
     String expectedValue2 = "Expected state 2";
   
-    // Build expected states
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
     State<String> expectedState2 = buildStateKey(expectedValue2, key2, etag, new HashMap<>(), null);
   
@@ -1417,22 +1416,20 @@ public class DaprClientGrpcTest {
     assertEquals(expectedState1, resultGet1.block());
   
     State<String> keyRequest2 = buildStateKey(null, key2, etag, null);
+    Mono<State<String>> resultGet2 = client.getState(STATE_STORE_NAME, keyRequest2, String.class);
   
-    // Step 2: Mock deleteState to remove key2 from map
     doAnswer((Answer<Void>) invocation -> {
-      futuresMap.remove(key2); 
+      futuresMap.remove(key2);
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
     }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
   
-    
     Mono<Void> resultDelete = client.deleteState(
         STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(), keyRequest2.getOptions());
     resultDelete.block();
   
-    Mono<State<String>> resultGet2 = client.getState(STATE_STORE_NAME, keyRequest2, String.class);
     State<String> stateAfterDelete = resultGet2.block();
     assertNull(stateAfterDelete.getValue());
   }
