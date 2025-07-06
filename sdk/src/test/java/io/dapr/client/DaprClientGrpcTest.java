@@ -1384,43 +1384,56 @@ public class DaprClientGrpcTest {
     String expectedValue1 = "Expected state 1";
     String key2 = "key2";
     String expectedValue2 = "Expected state 2";
+  
     State<String> expectedState1 = buildStateKey(expectedValue1, key1, etag, new HashMap<>(), null);
     State<String> expectedState2 = buildStateKey(expectedValue2, key2, etag, new HashMap<>(), null);
+  
     Map<String, DaprProtos.GetStateResponse> futuresMap = new HashMap<>();
     futuresMap.put(key1, buildFutureGetStateEnvelop(expectedValue1, etag));
     futuresMap.put(key2, buildFutureGetStateEnvelop(expectedValue2, etag));
-
+  
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      StreamObserver<DaprProtos.GetStateResponse> observer =
+          (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
       observer.onNext(futuresMap.get(key1));
       observer.onCompleted();
       return null;
     }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key1)), any());
+  
     doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.GetStateResponse> observer = (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
-      observer.onNext(futuresMap.get(key2));
+      StreamObserver<DaprProtos.GetStateResponse> observer =
+          (StreamObserver<DaprProtos.GetStateResponse>) invocation.getArguments()[1];
+      DaprProtos.GetStateResponse response = futuresMap.get(key2);
+      if (response != null) {
+        observer.onNext(response);
+      }
       observer.onCompleted();
       return null;
     }).when(daprStub).getState(argThat(new GetStateRequestKeyMatcher(key2)), any());
-
+  
     State<String> keyRequest1 = buildStateKey(null, key1, etag, null);
     Mono<State<String>> resultGet1 = client.getState(STATE_STORE_NAME, keyRequest1, String.class);
     assertEquals(expectedState1, resultGet1.block());
+  
     State<String> keyRequest2 = buildStateKey(null, key2, etag, null);
     Mono<State<String>> resultGet2 = client.getState(STATE_STORE_NAME, keyRequest2, String.class);
-    assertEquals(expectedState2, resultGet2.block());
-
+  
     doAnswer((Answer<Void>) invocation -> {
+      futuresMap.remove(key2);
       StreamObserver<Empty> observer = (StreamObserver<Empty>) invocation.getArguments()[1];
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
       return null;
-    }).when(daprStub).deleteState(any(io.dapr.v1.DaprProtos.DeleteStateRequest.class), any());
-
-    Mono<Void> resultDelete = client.deleteState(STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(),
-        keyRequest2.getOptions());
+    }).when(daprStub).deleteState(any(DaprProtos.DeleteStateRequest.class), any());
+  
+    Mono<Void> resultDelete = client.deleteState(
+        STATE_STORE_NAME, keyRequest2.getKey(), keyRequest2.getEtag(), keyRequest2.getOptions());
     resultDelete.block();
+  
+    State<String> stateAfterDelete = resultGet2.block();
+    assertNull(stateAfterDelete.getValue());
   }
+
 
   @Test
   public void deleteStateNullEtag() {
