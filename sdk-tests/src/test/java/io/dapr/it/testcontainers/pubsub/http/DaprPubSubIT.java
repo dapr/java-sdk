@@ -12,10 +12,8 @@ limitations under the License.
 */
 package io.dapr.it.testcontainers.pubsub.http;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.client.DaprClient;
-import io.dapr.client.DaprClientBuilder;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
@@ -24,10 +22,10 @@ import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.Metadata;
 import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.config.Properties;
 import io.dapr.it.pubsub.http.PubSubIT;
+import io.dapr.it.testcontainers.DaprClientFactory;
+import io.dapr.serializer.CustomizableObjectSerializer;
 import io.dapr.serializer.DaprObjectSerializer;
-import io.dapr.spring.boot.autoconfigure.client.DaprClientAutoConfiguration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
 import io.dapr.utils.TypeRef;
@@ -37,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -45,7 +45,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -62,7 +61,6 @@ import static io.dapr.it.TestUtils.assertThrowsDaprException;
 import static io.dapr.it.TestUtils.assertThrowsDaprExceptionWithReason;
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(
@@ -75,12 +73,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("testcontainers")
 public class DaprPubSubIT {
 
+  private static final Logger LOG = LoggerFactory.getLogger(DaprPubSubIT.class);
   private static final Network DAPR_NETWORK = Network.newNetwork();
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port.*";
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final DaprObjectSerializer SERIALIZER = new CustomizableObjectSerializer(new ObjectMapper());
 
   private static final String PUBSUB_APP_ID = "pubsub-dapr-app";
   private static final String PUBSUB_NAME = "pubsub";
@@ -112,7 +110,7 @@ public class DaprPubSubIT {
       .withAppName(PUBSUB_APP_ID)
       .withNetwork(DAPR_NETWORK)
       .withDaprLogLevel(DaprLogLevel.DEBUG)
-      .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+      .withLogConsumer(outputFrame -> LOG.info(outputFrame.getUtf8String()))
       .withAppChannelAddress("host.testcontainers.internal")
       .withAppPort(PORT);
 
@@ -139,7 +137,7 @@ public class DaprPubSubIT {
   public void shouldReceiveInvalidArgument() throws Exception {
     Wait.forLogMessage(APP_FOUND_MESSAGE_PATTERN, 1).waitUntilReady(DAPR_CONTAINER);
 
-    try (DaprClient client = createDaprClientBuilder().build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       assertThrowsDaprExceptionWithReason(
           "INVALID_ARGUMENT",
           "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
@@ -151,7 +149,7 @@ public class DaprPubSubIT {
   @Test
   @DisplayName("Should receive INVALID_ARGUMENT using bulk publish when the specified Pub/Sub name does not exist")
   public void shouldReceiveInvalidArgumentWithBulkPublish() throws Exception {
-    try (DaprPreviewClient client = createDaprClientBuilder().buildPreviewClient()) {
+    try (DaprPreviewClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).buildPreviewClient()) {
       assertThrowsDaprException(
           "INVALID_ARGUMENT",
           "INVALID_ARGUMENT: pubsub unknown pubsub is not found",
@@ -163,11 +161,10 @@ public class DaprPubSubIT {
   @DisplayName("Should publish some payload types successfully")
   public void shouldPublishSomePayloadTypesWithNoError() throws Exception {
 
-    DaprObjectSerializer serializer = createJacksonObjectSerializer();
-
     try (
-        DaprClient client = createDaprClientBuilder().withObjectSerializer(serializer).build();
-        DaprPreviewClient previewClient = createDaprClientBuilder().withObjectSerializer(serializer)
+        DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
+        DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(
+                SERIALIZER)
             .buildPreviewClient()
     ) {
 
@@ -189,10 +186,8 @@ public class DaprPubSubIT {
   @DisplayName("Should publish various payload types to different topics")
   public void testPubSub() throws Exception {
 
-    DaprObjectSerializer serializer = createJacksonObjectSerializer();
-
     // Send a batch of messages on one topic
-    try (DaprClient client = createDaprClientBuilder().withObjectSerializer(serializer).build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(SERIALIZER).build()) {
 
       sendBulkMessagesAsText(client, TOPIC_NAME);
 
@@ -202,10 +197,10 @@ public class DaprPubSubIT {
       PubSubIT.MyObject object = new PubSubIT.MyObject();
       object.setId("123");
       client.publishEvent(PUBSUB_NAME, TOPIC_NAME, object).block();
-      System.out.println("Published one object.");
+      LOG.info("Published one object.");
 
       client.publishEvent(PUBSUB_NAME, TYPED_TOPIC_NAME, object).block();
-      System.out.println("Published another object.");
+      LOG.info("Published another object.");
 
       //Publishing a single byte: Example of non-string based content published
       publishOneByteSync(client, TOPIC_NAME);
@@ -221,7 +216,7 @@ public class DaprPubSubIT {
       //Publishing a cloud event.
       client.publishEvent(new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEvent)
           .setContentType("application/cloudevents+json")).block();
-      System.out.println("Published one cloud event.");
+      LOG.info("Published one cloud event.");
 
       {
         CloudEvent<String> cloudEventV2 = new CloudEvent<>();
@@ -234,7 +229,7 @@ public class DaprPubSubIT {
         client.publishEvent(
             new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEventV2)
                 .setContentType("application/cloudevents+json")).block();
-        System.out.println("Published one cloud event for v2.");
+        LOG.info("Published one cloud event for v2.");
       }
 
       {
@@ -248,13 +243,13 @@ public class DaprPubSubIT {
         client.publishEvent(
             new PublishEventRequest(PUBSUB_NAME, TOPIC_NAME, cloudEventV3)
                 .setContentType("application/cloudevents+json")).block();
-        System.out.println("Published one cloud event for v3.");
+        LOG.info("Published one cloud event for v3.");
       }
 
       Thread.sleep(2000);
 
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TOPIC_NAME);
+        LOG.info("Checking results for topic " + TOPIC_NAME);
 
         List<CloudEvent> messages = client.invokeMethod(
             PUBSUB_APP_ID,
@@ -289,7 +284,7 @@ public class DaprPubSubIT {
       }, 2000);
 
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TOPIC_NAME + " V2");
+        LOG.info("Checking results for topic " + TOPIC_NAME + " V2");
 
         List<CloudEvent> messages = client.invokeMethod(
             PUBSUB_APP_ID,
@@ -304,7 +299,7 @@ public class DaprPubSubIT {
       }, 2000);
 
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TOPIC_NAME + " V3");
+        LOG.info("Checking results for topic " + TOPIC_NAME + " V3");
 
         List<CloudEvent> messages = client.invokeMethod(
             PUBSUB_APP_ID,
@@ -319,7 +314,7 @@ public class DaprPubSubIT {
       }, 2000);
 
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TYPED_TOPIC_NAME);
+        LOG.info("Checking results for topic " + TYPED_TOPIC_NAME);
 
         List<CloudEvent<PubSubIT.MyObject>> messages = client.invokeMethod(
             PUBSUB_APP_ID,
@@ -338,7 +333,7 @@ public class DaprPubSubIT {
       }, 2000);
 
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + ANOTHER_TOPIC_NAME);
+        LOG.info("Checking results for topic " + ANOTHER_TOPIC_NAME);
 
         List<CloudEvent> messages = client.invokeMethod(
             PUBSUB_APP_ID,
@@ -369,15 +364,15 @@ public class DaprPubSubIT {
 
     DaprObjectSerializer serializer = createBinaryObjectSerializer();
 
-    try (DaprClient client = createDaprClientBuilder().withObjectSerializer(serializer).build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(serializer).build()) {
       publishOneByteSync(client, BINARY_TOPIC_NAME);
     }
 
     Thread.sleep(3000);
 
-    try (DaprClient client = createDaprClientBuilder().build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + BINARY_TOPIC_NAME);
+        LOG.info("Checking results for topic " + BINARY_TOPIC_NAME);
         final List<CloudEvent> messages = client.invokeMethod(
             PUBSUB_APP_ID,
             "messages/binarytopic",
@@ -510,7 +505,7 @@ public class DaprPubSubIT {
   public void testPubSubTTLMetadata() throws Exception {
 
     // Send a batch of messages on one topic, all to be expired in 1 second.
-    try (DaprClient client = createDaprClientBuilder().build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         String message = String.format("This is message #%d on topic %s", i, TTL_TOPIC_NAME);
         //Publishing messages
@@ -520,16 +515,16 @@ public class DaprPubSubIT {
             message,
             Map.of(Metadata.TTL_IN_SECONDS, "1"))
             .block();
-        System.out.printf("Published message: '%s' to topic '%s' pubsub_name '%s'%n", message, TOPIC_NAME, PUBSUB_NAME);
+        LOG.info("Published message: '{}' to topic '{}' pubsub_name '{}'\n", message, TOPIC_NAME, PUBSUB_NAME);
       }
     }
 
     // Sleeps for two seconds to let them expire.
     Thread.sleep(2000);
 
-    try (DaprClient client = createDaprClientBuilder().build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + TTL_TOPIC_NAME);
+        LOG.info("Checking results for topic " + TTL_TOPIC_NAME);
         final List
             messages = client.invokeMethod(PUBSUB_APP_ID, "messages/" + TTL_TOPIC_NAME, null, HttpExtension.GET, List.class).block();
         assertThat(messages).hasSize(0);
@@ -552,10 +547,10 @@ public class DaprPubSubIT {
       values.add(val);
     }
     Iterator<PubSubIT.ConvertToLong> valuesIt = values.iterator();
-    try (DaprClient client = createDaprClientBuilder().build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       for (int i = 0; i < NUM_MESSAGES; i++) {
         PubSubIT.ConvertToLong value = valuesIt.next();
-        System.out.println("The long value sent " + value.getValue());
+        LOG.info("The long value sent " + value.getValue());
         //Publishing messages
         client.publishEvent(
             PUBSUB_NAME,
@@ -574,9 +569,9 @@ public class DaprPubSubIT {
     }
 
     Set<PubSubIT.ConvertToLong> actual = new HashSet<>();
-    try (DaprClient client = createDaprClientBuilder().build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build()) {
       callWithRetry(() -> {
-        System.out.println("Checking results for topic " + LONG_TOPIC_NAME);
+        LOG.info("Checking results for topic " + LONG_TOPIC_NAME);
         final List<CloudEvent<PubSubIT.ConvertToLong>> messages = client.invokeMethod(
             PUBSUB_APP_ID,
             "messages/testinglongvalues",
@@ -589,31 +584,6 @@ public class DaprPubSubIT {
         assertThat(values).containsAll(actual);
       }, 2000);
     }
-  }
-
-  private static DaprClientBuilder createDaprClientBuilder() {
-    return new DaprClientBuilder()
-        .withPropertyOverride(Properties.HTTP_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getHttpPort())
-        .withPropertyOverride(Properties.GRPC_ENDPOINT, "http://localhost:" + DAPR_CONTAINER.getGrpcPort());
-  }
-
-  private DaprObjectSerializer createJacksonObjectSerializer() {
-    return new DaprObjectSerializer() {
-      @Override
-      public byte[] serialize(Object o) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsBytes(o);
-      }
-
-      @Override
-      public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
-        return OBJECT_MAPPER.readValue(data, OBJECT_MAPPER.constructType(type.getType()));
-      }
-
-      @Override
-      public String getContentType() {
-        return "application/json";
-      }
-    };
   }
 
   private @NotNull DaprObjectSerializer createBinaryObjectSerializer() {

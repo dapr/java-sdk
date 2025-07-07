@@ -23,6 +23,8 @@ import io.dapr.client.domain.BulkSubscribeMessageEntry;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.it.pubsub.http.PubSubIT;
 import io.dapr.springboot.annotations.BulkSubscribe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,6 +46,7 @@ import java.util.function.BiFunction;
 public class SubscriberController {
 
   private final Map<String, List<CloudEvent<?>>> messagesByTopic = Collections.synchronizedMap(new HashMap<>());
+  private static final Logger LOG = LoggerFactory.getLogger(SubscriberController.class);
 
   @GetMapping(path = "/messages/{topic}")
   public List<CloudEvent<?>> getMessagesByTopic(@PathVariable("topic") String topic) {
@@ -80,7 +83,7 @@ public class SubscriberController {
 
   @GetMapping(path = "/messages/topicBulkSub")
   public List<BulkSubscribeAppResponse> getMessagesReceivedTestingTopicBulkSub() {
-    System.out.println("res size: " + responsesReceivedTestingTopicBulkSub.size());
+    LOG.info("res size: " + responsesReceivedTestingTopicBulkSub.size());
     return responsesReceivedTestingTopicBulkSub;
   }
   
@@ -91,7 +94,7 @@ public class SubscriberController {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
-        System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        LOG.info("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesReceivedTestingTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -106,7 +109,7 @@ public class SubscriberController {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
-        System.out.println("Testing bulk publish topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        LOG.info("Testing bulk publish topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesReceivedBulkPublishTopic.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -138,7 +141,7 @@ public class SubscriberController {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
-        System.out.println("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        LOG.info("Testing topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesReceivedTestingTopicV3.add(envelope);
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -153,7 +156,7 @@ public class SubscriberController {
       try {
         String id = envelope.getData() == null ? "" : envelope.getData().getId();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
-        System.out.println("Testing typed topic Subscriber got message with ID: " + id + "; Content-type: " + contentType);
+        LOG.info("Testing typed topic Subscriber got message with ID: " + id + "; Content-type: " + contentType);
         messagesByTopic.compute("typedtestingtopic", merge(envelope));
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -168,7 +171,7 @@ public class SubscriberController {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
         String contentType = envelope.getDatacontenttype() == null ? "" : envelope.getDatacontenttype();
-        System.out.println("Binary topic Subscriber got message: " + message + "; Content-type: " + contentType);
+        LOG.info("Binary topic Subscriber got message: " + message + "; Content-type: " + contentType);
         messagesByTopic.compute("binarytopic", merge(envelope));
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -182,7 +185,7 @@ public class SubscriberController {
     return Mono.fromRunnable(() -> {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
-        System.out.println("Another topic Subscriber got message: " + message);
+        LOG.info("Another topic Subscriber got message: " + message);
         messagesByTopic.compute("anothertopic", merge(envelope));
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -195,7 +198,7 @@ public class SubscriberController {
     return Mono.fromRunnable(() -> {
       try {
         String message = envelope.getData() == null ? "" : envelope.getData().toString();
-        System.out.println("TTL topic Subscriber got message: " + message);
+        LOG.info("TTL topic Subscriber got message: " + message);
         messagesByTopic.compute("ttltopic", merge(envelope));
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -209,7 +212,7 @@ public class SubscriberController {
     return Mono.fromRunnable(() -> {
       try {
         Long message = cloudEvent.getData().getValue();
-        System.out.println("Subscriber got: " + message);
+        LOG.info("Subscriber got: " + message);
         messagesByTopic.compute("testinglongvalues", merge(cloudEvent));
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -231,7 +234,7 @@ public class SubscriberController {
   public Mono<BulkSubscribeAppResponse> handleMessageBulk(
       @RequestBody(required = false) BulkSubscribeMessage<CloudEvent<String>> bulkMessage) {
     return Mono.fromCallable(() -> {
-      System.out.println("bulkMessage: " + bulkMessage.getEntries().size());
+      LOG.info("bulkMessage: " + bulkMessage.getEntries().size());
 
       if (bulkMessage.getEntries().size() == 0) {
         BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(new ArrayList<>());
@@ -243,7 +246,7 @@ public class SubscriberController {
       List<BulkSubscribeAppResponseEntry> entries = new ArrayList<>();
       for (BulkSubscribeMessageEntry<?> entry: bulkMessage.getEntries()) {
         try {
-          System.out.printf("Bulk Subscriber got entry ID: %s\n", entry.getEntryId());
+          LOG.info("Bulk Subscriber got entry ID: %s\n", entry.getEntryId());
           entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.SUCCESS));
         } catch (Exception e) {
           entries.add(new BulkSubscribeAppResponseEntry(entry.getEntryId(), BulkSubscribeAppResponseStatus.RETRY));
@@ -251,7 +254,7 @@ public class SubscriberController {
       }
       BulkSubscribeAppResponse response = new BulkSubscribeAppResponse(entries);
       responsesReceivedTestingTopicBulkSub.add(response);
-      System.out.println("res size: " + responsesReceivedTestingTopicBulkSub.size());
+      LOG.info("res size: " + responsesReceivedTestingTopicBulkSub.size());
 
       return response;
     });
