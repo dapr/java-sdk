@@ -113,7 +113,6 @@ public class ScheduleJobRequest {
 
   /**
    * Sets the failure policy for the scheduled job.
-   * <p>
    * This defines how the job should behave in case of failure, such as retrying with a delay
    * or dropping the job entirely.
    *
@@ -124,9 +123,6 @@ public class ScheduleJobRequest {
     this.failurePolicy = failurePolicy;
     return this;
   }
-
-
-  // Getters
 
   /**
    * Gets the name of the job.

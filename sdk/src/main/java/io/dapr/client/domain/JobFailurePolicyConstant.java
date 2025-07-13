@@ -1,10 +1,22 @@
+/*
+ * Copyright 2021 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.client.domain;
 
 import java.time.Duration;
 
 /**
  * A failure policy that applies a constant retry interval for job retries.
- * <p>
  * This implementation of {@link FailurePolicy} retries a job a fixed number of times
  * with a constant delay between each retry attempt.
  */
@@ -35,6 +47,7 @@ public class JobFailurePolicyConstant implements FailurePolicy {
    * Sets the duration to wait between retry attempts.
    *
    * @param durationBetweenRetries the duration between retries
+   * @return a {@code JobFailurePolicyConstant}.
    */
   public JobFailurePolicyConstant setDurationBetweenRetries(Duration durationBetweenRetries) {
     this.durationBetweenRetries = durationBetweenRetries;
@@ -45,6 +58,7 @@ public class JobFailurePolicyConstant implements FailurePolicy {
    * Sets the maximum number of retries allowed.
    *
    * @param maxRetries the number of retries
+   * @return a {@code JobFailurePolicyConstant}.
    */
   public JobFailurePolicyConstant setMaxRetries(int maxRetries) {
     this.maxRetries = maxRetries;
