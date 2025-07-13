@@ -25,6 +25,7 @@ public class ScheduleJobRequest {
   private Instant dueTime;
   private Integer repeats;
   private Instant ttl;
+  private FailurePolicy failurePolicy;
 
   /**
    * Constructor to create ScheduleJobRequest.
@@ -110,6 +111,21 @@ public class ScheduleJobRequest {
     return this;
   }
 
+  /**
+   * Sets the failure policy for the scheduled job.
+   * <p>
+   * This defines how the job should behave in case of failure, such as retrying with a delay
+   * or dropping the job entirely.
+   *
+   * @param failurePolicy the {@link FailurePolicy} to apply to the job
+   * @return this {@code ScheduleJobRequest} instance for method chaining
+   */
+  public ScheduleJobRequest setFailurePolicy(FailurePolicy failurePolicy) {
+    this.failurePolicy = failurePolicy;
+    return this;
+  }
+
+
   // Getters
 
   /**
@@ -164,5 +180,14 @@ public class ScheduleJobRequest {
    */
   public Instant getTtl() {
     return ttl;
+  }
+
+  /**
+   * Gets the failure policy.
+   *
+   * @return FailurePolicy.
+   */
+  public FailurePolicy getFailurePolicy() {
+    return failurePolicy;
   }
 }

@@ -17,54 +17,7 @@ import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import io.dapr.client.domain.ActorMetadata;
-import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
-import io.dapr.client.domain.AppConnectionPropertiesMetadata;
-import io.dapr.client.domain.BulkPublishEntry;
-import io.dapr.client.domain.BulkPublishRequest;
-import io.dapr.client.domain.BulkPublishResponse;
-import io.dapr.client.domain.BulkPublishResponseFailedEntry;
-import io.dapr.client.domain.CloudEvent;
-import io.dapr.client.domain.ComponentMetadata;
-import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.ConversationInput;
-import io.dapr.client.domain.ConversationOutput;
-import io.dapr.client.domain.ConversationRequest;
-import io.dapr.client.domain.ConversationResponse;
-import io.dapr.client.domain.DaprMetadata;
-import io.dapr.client.domain.DeleteJobRequest;
-import io.dapr.client.domain.DeleteStateRequest;
-import io.dapr.client.domain.ExecuteStateTransactionRequest;
-import io.dapr.client.domain.GetBulkSecretRequest;
-import io.dapr.client.domain.GetBulkStateRequest;
-import io.dapr.client.domain.GetConfigurationRequest;
-import io.dapr.client.domain.GetJobRequest;
-import io.dapr.client.domain.GetJobResponse;
-import io.dapr.client.domain.GetSecretRequest;
-import io.dapr.client.domain.GetStateRequest;
-import io.dapr.client.domain.HttpEndpointMetadata;
-import io.dapr.client.domain.HttpExtension;
-import io.dapr.client.domain.InvokeBindingRequest;
-import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.JobSchedule;
-import io.dapr.client.domain.LockRequest;
-import io.dapr.client.domain.PublishEventRequest;
-import io.dapr.client.domain.QueryStateItem;
-import io.dapr.client.domain.QueryStateRequest;
-import io.dapr.client.domain.QueryStateResponse;
-import io.dapr.client.domain.RuleMetadata;
-import io.dapr.client.domain.SaveStateRequest;
-import io.dapr.client.domain.ScheduleJobRequest;
-import io.dapr.client.domain.State;
-import io.dapr.client.domain.StateOptions;
-import io.dapr.client.domain.SubscribeConfigurationRequest;
-import io.dapr.client.domain.SubscribeConfigurationResponse;
-import io.dapr.client.domain.SubscriptionMetadata;
-import io.dapr.client.domain.TransactionalStateOperation;
-import io.dapr.client.domain.UnlockRequest;
-import io.dapr.client.domain.UnlockResponseStatus;
-import io.dapr.client.domain.UnsubscribeConfigurationRequest;
-import io.dapr.client.domain.UnsubscribeConfigurationResponse;
+import io.dapr.client.domain.*;
 import io.dapr.client.resiliency.ResiliencyOptions;
 import io.dapr.exceptions.DaprException;
 import io.dapr.internal.exceptions.DaprHttpException;
@@ -1336,6 +1289,31 @@ public class DaprClientImpl extends AbstractDaprClient {
         scheduleJobRequestBuilder.setDueTime(iso8601Formatter.format(scheduleJobRequest.getDueTime()));
       }
 
+      if (scheduleJobRequest.getFailurePolicy() != null) {
+        CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
+
+        FailurePolicy failurePolicy = scheduleJobRequest.getFailurePolicy();
+        if (failurePolicy.getFailurePolicyKind() == FailurePolicyKind.DROP) {
+
+          jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
+        } else {
+
+          CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
+              CommonProtos.JobFailurePolicyConstant.newBuilder();
+          JobFailurePolicyConstant jobConstantFailurePolicy = (JobFailurePolicyConstant)failurePolicy;
+          if (jobConstantFailurePolicy.getMaxRetries() != null) {
+            constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
+          }
+          if (jobConstantFailurePolicy.getDurationBetweenRetries() != null) {
+            constantPolicyBuilder.setInterval(com.google.protobuf.Duration.newBuilder()
+                .setNanos(jobConstantFailurePolicy.getDurationBetweenRetries().getNano()).build());
+          }
+        }
+      }
+
+      CommonProtos.JobFailurePolicy.newBuilder()
+              .setConstant(CommonProtos.JobFailurePolicyConstant.newBuilder().setInterval()e.build())
+      scheduleJobRequestBuilder.setFailurePolicy();
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
