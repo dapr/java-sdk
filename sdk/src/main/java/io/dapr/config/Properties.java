@@ -255,6 +255,22 @@ public class Properties {
           DEFAULT_HTTP_CLIENT_MAX_IDLE_CONNECTIONS);
 
   /**
+   * Dapr's default maximum inbound message size for GRPC in bytes.
+   */
+  public static final Property<Integer> GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES = new IntegerProperty(
+      "dapr.grpc.max.inbound.message.size.bytes",
+      "DAPR_GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES",
+      4194304);
+
+  /**
+   * Dapr's default maximum inbound metadata size for GRPC in bytes.
+   */
+  public static final Property<Integer> GRPC_MAX_INBOUND_METADATA_SIZE_BYTES = new IntegerProperty(
+        "dapr.grpc.max.inbound.metadata.size.bytes",
+        "DAPR_GRPC_MAX_INBOUND_METADATA_SIZE_BYTES",
+        8192);
+    
+  /**
    * Mechanism to override properties set in a static context.
    */
   private final Map<String, String> overrides;

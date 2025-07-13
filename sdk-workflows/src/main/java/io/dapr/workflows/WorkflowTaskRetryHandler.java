@@ -11,12 +11,16 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
-import io.dapr.actors.ActorMethod;
-import io.dapr.actors.ActorType;
+package io.dapr.workflows;
 
-@ActorType(name = "TestActor")
-public interface TestActor {
-    @ActorMethod(name = "echo_message")
-    String echo(String message);
+public interface WorkflowTaskRetryHandler {
+
+  /**
+   * Invokes retry handler logic. Return value indicates whether to continue retrying.
+   *
+   * @param retryContext The context of the retry
+   * @return {@code true} to continue retrying or {@code false} to stop retrying.
+   */
+  boolean handle(WorkflowTaskRetryContext retryContext);
+
 }

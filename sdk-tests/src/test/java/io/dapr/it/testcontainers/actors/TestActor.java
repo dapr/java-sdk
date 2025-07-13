@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,18 +11,12 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.actors;
+import io.dapr.actors.ActorMethod;
+import io.dapr.actors.ActorType;
 
-import io.dapr.workflows.WorkflowActivity;
-import io.dapr.workflows.WorkflowActivityContext;
-
-public class FirstActivity implements WorkflowActivity {
-
-  @Override
-  public Object run(WorkflowActivityContext ctx) {
-    TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
-    workflowPayload.getPayloads().add("First Activity");
-    return workflowPayload;
-  }
-
+@ActorType(name = "TestActor")
+public interface TestActor {
+    @ActorMethod(name = "echo_message")
+    String echo(String message);
 }

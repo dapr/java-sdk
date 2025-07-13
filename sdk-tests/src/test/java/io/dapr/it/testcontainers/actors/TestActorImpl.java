@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,16 +11,19 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.actors;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import io.dapr.actors.ActorId;
+import io.dapr.actors.runtime.AbstractActor;
+import io.dapr.actors.runtime.ActorRuntimeContext;
 
-@SpringBootApplication
-public class TestWorkflowsApplication {
-
-  public static void main(String[] args) {
-    SpringApplication.run(TestWorkflowsApplication.class, args);
+public class TestActorImpl extends AbstractActor implements TestActor {
+  public TestActorImpl(ActorRuntimeContext runtimeContext, ActorId id) {
+    super(runtimeContext, id);
   }
 
+  @Override
+  public String echo(String message) {
+    return message;
+  }
 }

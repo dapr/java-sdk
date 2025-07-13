@@ -22,6 +22,9 @@ import io.dapr.springboot.examples.wfp.externalevent.Decision;
 import io.dapr.springboot.examples.wfp.externalevent.ExternalEventWorkflow;
 import io.dapr.springboot.examples.wfp.fanoutin.FanOutInWorkflow;
 import io.dapr.springboot.examples.wfp.fanoutin.Result;
+import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
+import io.dapr.springboot.examples.wfp.remoteendpoint.RemoteEndpointWorkflow;
+import io.dapr.springboot.examples.wfp.suspendresume.SuspendResumeWorkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import org.slf4j.Logger;
@@ -51,6 +54,7 @@ public class WorkflowPatternsRestController {
   private CleanUpLog cleanUpLog;
 
   private Map<String, String> ordersToApprove = new HashMap<>();
+
 
 
   /**
@@ -137,4 +141,52 @@ public class WorkflowPatternsRestController {
     return workflowInstanceStatus.readOutputAs(CleanUpLog.class);
   }
 
+  @PostMapping("wfp/remote-endpoint")
+  public Payload remoteEndpoint(@RequestBody Payload payload)
+          throws TimeoutException {
+
+    String instanceId = daprWorkflowClient.scheduleNewWorkflow(RemoteEndpointWorkflow.class, payload);
+    logger.info("Workflow instance " + instanceId + " started");
+
+    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient
+            .waitForInstanceCompletion(instanceId, null, true);
+    System.out.printf("workflow instance with ID: %s completed.", instanceId);
+    return workflowInstanceStatus.readOutputAs(Payload.class);
+  }
+
+  @PostMapping("wfp/suspendresume")
+  public String suspendResume(@RequestParam("orderId") String orderId) {
+    String instanceId = daprWorkflowClient.scheduleNewWorkflow(SuspendResumeWorkflow.class);
+    logger.info("Workflow instance " + instanceId + " started");
+    ordersToApprove.put(orderId, instanceId);
+    return instanceId;
+  }
+
+  @PostMapping("wfp/suspendresume/suspend")
+  public String suspendResumeExecuteSuspend(@RequestParam("orderId") String orderId) {
+    String instanceId = ordersToApprove.get(orderId);
+    daprWorkflowClient.suspendWorkflow(instanceId, "testing suspend");
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(instanceId, false);
+    return instanceState.getRuntimeStatus().name();
+  }
+
+  @PostMapping("wfp/suspendresume/resume")
+  public String suspendResumeExecuteResume(@RequestParam("orderId") String orderId) {
+    String instanceId = ordersToApprove.get(orderId);
+    daprWorkflowClient.resumeWorkflow(instanceId, "testing resume");
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(instanceId, false);
+    return instanceState.getRuntimeStatus().name();
+  }
+
+
+  @PostMapping("wfp/suspendresume/continue")
+  public Decision suspendResumeContinue(@RequestParam("orderId") String orderId, @RequestParam("decision") Boolean decision)
+          throws TimeoutException {
+    String instanceId = ordersToApprove.get(orderId);
+    logger.info("Workflow instance " + instanceId + " continue");
+    daprWorkflowClient.raiseEvent(instanceId, "Approval", decision);
+    WorkflowInstanceStatus workflowInstanceStatus = daprWorkflowClient
+            .waitForInstanceCompletion(instanceId, null, true);
+    return workflowInstanceStatus.readOutputAs(Decision.class);
+  }
 }

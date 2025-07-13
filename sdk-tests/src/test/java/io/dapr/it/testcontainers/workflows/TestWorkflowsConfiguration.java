@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.workflows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.config.Properties;
@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Map;
 
 @Configuration
-public class TestDaprWorkflowsConfiguration {
+public class TestWorkflowsConfiguration {
   @Bean
   public ObjectMapper mapper() {
     return new ObjectMapper();

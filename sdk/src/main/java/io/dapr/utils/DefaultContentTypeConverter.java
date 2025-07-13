@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.utils;
 
-
 import io.dapr.serializer.DefaultObjectSerializer;
 
 import java.io.IOException;
@@ -144,7 +143,6 @@ public class DefaultContentTypeConverter {
   public static boolean isCloudEventContentType(String contentType) {
     return isContentType(contentType, "application/cloudevents+json");
   }
-
 
   public static boolean isJsonContentType(String contentType) {
     return isContentType(contentType, "application/json");

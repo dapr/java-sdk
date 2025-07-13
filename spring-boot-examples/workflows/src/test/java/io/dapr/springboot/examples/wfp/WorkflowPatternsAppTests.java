@@ -13,9 +13,11 @@ limitations under the License.
 
 package io.dapr.springboot.examples.wfp;
 
-import io.dapr.client.DaprClient;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
+import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
+import io.dapr.workflows.client.WorkflowRuntimeStatus;
+import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = {TestWorkflowPatternsApplication.class, DaprTestContainersConfig.class,
         DaprAutoConfiguration.class, },
@@ -37,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class WorkflowPatternsAppTests {
 
   @Autowired
-  private DaprClient daprClient;
+  private MicrocksContainersEnsemble ensemble;
 
   @BeforeEach
   void setUp() {
@@ -137,6 +140,65 @@ class WorkflowPatternsAppTests {
             .statusCode(200).extract().as(CleanUpLog.class);
 
     assertEquals(5, cleanUpLog.getCleanUpTimes());
+  }
+
+  @Test
+  void testRemoteEndpoint() {
+
+    Payload payload = given().contentType(ContentType.JSON)
+            .body(new Payload("123", "content goes here"))
+            .when()
+            .post("/wfp/remote-endpoint")
+            .then()
+            .statusCode(200).extract().as(Payload.class);
+
+    assertEquals(true, payload.getProcessed());
+
+    assertEquals(2, ensemble.getMicrocksContainer()
+            .getServiceInvocationsCount("API Payload Processor", "1.0.0"));
+  }
+
+  @Test
+  void testSuspendResume() {
+
+    String instanceId = given()
+            .queryParam("orderId", "123")
+            .when()
+            .post("/wfp/suspendresume")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertNotNull(instanceId);
+
+    // The workflow is waiting on an event, let's suspend the workflow
+    String state = given()
+            .queryParam("orderId", "123")
+            .when()
+            .post("/wfp/suspendresume/suspend")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertEquals(WorkflowRuntimeStatus.SUSPENDED.name(), state);
+
+    // The let's resume the suspended workflow and check the state
+    state = given()
+            .queryParam("orderId", "123")
+            .when()
+            .post("/wfp/suspendresume/resume")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertEquals(WorkflowRuntimeStatus.RUNNING.name(), state);
+
+    // Now complete the workflow by sending an event
+    given()
+            .queryParam("orderId", "123")
+            .queryParam("decision", false)
+            .when()
+            .post("/wfp/suspendresume/continue")
+            .then()
+            .statusCode(200).body("approved", equalTo(false));
+
   }
 
 }

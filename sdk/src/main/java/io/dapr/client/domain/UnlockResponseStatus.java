@@ -13,7 +13,6 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-
 public enum UnlockResponseStatus {
 
   /**
