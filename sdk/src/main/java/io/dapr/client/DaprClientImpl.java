@@ -49,6 +49,7 @@ import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
 import io.dapr.client.domain.JobFailurePolicyConstant;
+import io.dapr.client.domain.JobFailurePolicyDrop;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
@@ -108,6 +109,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1405,6 +1407,29 @@ public class DaprClientImpl extends AbstractDaprClient {
           getJobResponse = new GetJobResponse(job.getName(), JobSchedule.fromString(job.getSchedule()));
         } else {
           getJobResponse = new GetJobResponse(job.getName(), Instant.parse(job.getDueTime()));
+        }
+
+        if (job.hasFailurePolicy()) {
+          CommonProtos.JobFailurePolicy jobFailurePolicy = job.getFailurePolicy();
+
+          if (jobFailurePolicy.hasDrop()) {
+            getJobResponse.setFailurePolicy(new JobFailurePolicyDrop());
+          }
+          if (jobFailurePolicy.hasConstant()) {
+            CommonProtos.JobFailurePolicyConstant jobFailurePolicyConstant = jobFailurePolicy.getConstant();
+            if (jobFailurePolicyConstant.hasInterval() && jobFailurePolicyConstant.hasMaxRetries()) {
+              getJobResponse.setFailurePolicy(
+                  new JobFailurePolicyConstant(jobFailurePolicyConstant.getMaxRetries())
+                      .setDurationBetweenRetries(Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+                          ChronoUnit.NANOS)));
+            } else if (jobFailurePolicyConstant.hasMaxRetries()) {
+              getJobResponse.setFailurePolicy(new JobFailurePolicyConstant(jobFailurePolicyConstant.getMaxRetries()));
+            } else {
+              getJobResponse.setFailurePolicy(new JobFailurePolicyConstant(
+                  Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+                  ChronoUnit.NANOS)));
+            }
+          }
         }
 
         return getJobResponse

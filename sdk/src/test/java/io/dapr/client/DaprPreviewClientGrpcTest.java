@@ -40,6 +40,7 @@ import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
 import io.dapr.utils.TypeRef;
+import io.dapr.v1.CommonProtos;
 import io.dapr.v1.DaprAppCallbackProtos;
 import io.dapr.v1.DaprGrpc;
 import io.dapr.v1.DaprProtos;
@@ -1036,6 +1037,154 @@ public class DaprPreviewClientGrpcTest {
     assertNull(response.getTtl());
     assertEquals(job.getDueTime(), datetime);
   }
+
+  @Test
+  public void getJobShouldReturnResponseWithDropFailurePolicySet() {
+    GetJobRequest getJobRequest = new GetJobRequest("testJob");
+
+    String datetime = OffsetDateTime.now().toString();
+    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+        .setName("testJob")
+        .setDueTime(datetime)
+        .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
+            .setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build()).build())
+        .build();
+
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+          .setJob(job)
+          .build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+
+    Mono<GetJobResponse> resultMono = previewClient.getJob(getJobRequest);
+
+    GetJobResponse response = resultMono.block();
+    assertNotNull(response);
+    assertEquals("testJob", response.getName());
+    assertNull(response.getData());
+    assertNull(response.getSchedule());
+    assertNull(response.getRepeats());
+    assertNull(response.getTtl());
+    assertEquals(job.getDueTime(), datetime);
+    assertTrue(job.hasFailurePolicy());
+    assertTrue(job.getFailurePolicy().hasDrop());
+  }
+
+  @Test
+  public void getJobShouldReturnResponseWithConstantFailurePolicyAndMaxRetriesSet() {
+    GetJobRequest getJobRequest = new GetJobRequest("testJob");
+
+    String datetime = OffsetDateTime.now().toString();
+    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+        .setName("testJob")
+        .setDueTime(datetime)
+        .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
+            .setConstant(CommonProtos.JobFailurePolicyConstant.newBuilder().setMaxRetries(2).build()).build())
+        .build();
+
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+          .setJob(job)
+          .build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+
+    Mono<GetJobResponse> resultMono = previewClient.getJob(getJobRequest);
+
+    GetJobResponse response = resultMono.block();
+    assertNotNull(response);
+    assertEquals("testJob", response.getName());
+    assertNull(response.getData());
+    assertNull(response.getSchedule());
+    assertNull(response.getRepeats());
+    assertNull(response.getTtl());
+    assertEquals(job.getDueTime(), datetime);
+    assertTrue(job.hasFailurePolicy());
+    assertTrue(job.getFailurePolicy().hasConstant());
+    assertEquals(2, job.getFailurePolicy().getConstant().getMaxRetries());
+  }
+
+  @Test
+  public void getJobShouldReturnResponseWithConstantFailurePolicyAndIntervalSet() {
+    GetJobRequest getJobRequest = new GetJobRequest("testJob");
+
+    String datetime = OffsetDateTime.now().toString();
+    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+        .setName("testJob")
+        .setDueTime(datetime)
+        .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
+            .setConstant(CommonProtos.JobFailurePolicyConstant.newBuilder()
+                .setInterval(com.google.protobuf.Duration.newBuilder().setNanos(5).build()).build()).build())
+        .build();
+
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+          .setJob(job)
+          .build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+
+    Mono<GetJobResponse> resultMono = previewClient.getJob(getJobRequest);
+
+    GetJobResponse response = resultMono.block();
+    assertNotNull(response);
+    assertEquals("testJob", response.getName());
+    assertNull(response.getData());
+    assertNull(response.getSchedule());
+    assertNull(response.getRepeats());
+    assertNull(response.getTtl());
+    assertEquals(job.getDueTime(), datetime);
+    assertTrue(job.hasFailurePolicy());
+    assertTrue(job.getFailurePolicy().hasConstant());
+    assertEquals(5, job.getFailurePolicy().getConstant().getInterval().getNanos());
+  }
+
+  @Test
+  public void getJobShouldReturnResponseWithConstantFailurePolicyIntervalAndMaxRetriesSet() {
+    GetJobRequest getJobRequest = new GetJobRequest("testJob");
+
+    String datetime = OffsetDateTime.now().toString();
+    DaprProtos.Job job = DaprProtos.Job.newBuilder()
+        .setName("testJob")
+        .setDueTime(datetime)
+        .setFailurePolicy(CommonProtos.JobFailurePolicy.newBuilder()
+            .setConstant(CommonProtos.JobFailurePolicyConstant.newBuilder()
+                .setMaxRetries(10)
+                .setInterval(com.google.protobuf.Duration.newBuilder().setNanos(5).build()).build()).build())
+        .build();
+
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.GetJobResponse> observer = invocation.getArgument(1);
+      observer.onNext(DaprProtos.GetJobResponse.newBuilder()
+          .setJob(job)
+          .build());
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).getJobAlpha1(any(DaprProtos.GetJobRequest.class), any());
+
+    Mono<GetJobResponse> resultMono = previewClient.getJob(getJobRequest);
+
+    GetJobResponse response = resultMono.block();
+    assertNotNull(response);
+    assertEquals("testJob", response.getName());
+    assertNull(response.getData());
+    assertNull(response.getSchedule());
+    assertNull(response.getRepeats());
+    assertNull(response.getTtl());
+    assertEquals(job.getDueTime(), datetime);
+    assertTrue(job.hasFailurePolicy());
+    assertTrue(job.getFailurePolicy().hasConstant());
+    assertEquals(10, job.getFailurePolicy().getConstant().getMaxRetries());
+    assertEquals(5, job.getFailurePolicy().getConstant().getInterval().getNanos());
+  }
+
 
   @Test
   public void getJobShouldThrowWhenRequestIsNull() {
