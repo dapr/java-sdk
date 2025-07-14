@@ -14,23 +14,19 @@ limitations under the License.
 package io.dapr.workflows;
 
 import io.dapr.durabletask.CompositeTaskFailedException;
-import io.dapr.durabletask.FailureDetails;
 import io.dapr.durabletask.RetryContext;
 import io.dapr.durabletask.RetryHandler;
 import io.dapr.durabletask.Task;
 import io.dapr.durabletask.TaskCanceledException;
 import io.dapr.durabletask.TaskOptions;
 import io.dapr.durabletask.TaskOrchestrationContext;
-
 import io.dapr.workflows.runtime.DefaultWorkflowContext;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
