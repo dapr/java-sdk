@@ -16,6 +16,7 @@ package io.dapr.springboot.examples.wfp;
 import io.dapr.springboot.DaprAutoConfiguration;
 import io.dapr.springboot.examples.wfp.continueasnew.CleanUpLog;
 import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
+import io.dapr.springboot.examples.wfp.timer.TimerLogService;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import io.restassured.RestAssured;
@@ -25,10 +26,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,10 +46,14 @@ class WorkflowPatternsAppTests {
   @Autowired
   private MicrocksContainersEnsemble ensemble;
 
+  @Autowired
+  private TimerLogService logService;
+
   @BeforeEach
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8080;
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
+    logService.clearLog();
   }
 
 
@@ -199,6 +207,66 @@ class WorkflowPatternsAppTests {
             .then()
             .statusCode(200).body("approved", equalTo(false));
 
+  }
+
+  @Test
+  void testDurationTimer() throws InterruptedException {
+
+    String instanceId = given()
+            .when()
+            .post("/wfp/durationtimer")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertNotNull(instanceId);
+
+    // Check that the workflow completed successfully
+    await().atMost(Duration.ofSeconds(30))
+            .pollDelay(500, TimeUnit.MILLISECONDS)
+            .pollInterval(500, TimeUnit.MILLISECONDS)
+            .until(() -> {
+              System.out.println("Log Size: " + logService.getLogDates().size());
+              if( logService.getLogDates().size() == 2 ) {
+                long diffInMillis = Math.abs(logService.getLogDates().get(1).getTime() - logService.getLogDates().get(0).getTime());
+                long diff = TimeUnit.SECONDS.convert(diffInMillis, TimeUnit.MILLISECONDS);
+                System.out.println("First Log at: " + logService.getLogDates().get(0));
+                System.out.println("Second Log at: " + logService.getLogDates().get(1));
+                System.out.println("Diff in seconds: " + diff);
+                // The updated time differences should be between 9 and 11 seconds
+                return diff >= 9 && diff <= 11;
+              }
+              return false;
+            });
+  }
+
+  @Test
+  void testZonedDateTimeTimer() throws InterruptedException {
+
+    String instanceId = given()
+            .when()
+            .post("/wfp/zoneddatetimetimer")
+            .then()
+            .statusCode(200).extract().asString();
+
+    assertNotNull(instanceId);
+
+    // Check that the workflow completed successfully
+    await().atMost(Duration.ofSeconds(30))
+            .pollDelay(500, TimeUnit.MILLISECONDS)
+            .pollInterval(500, TimeUnit.MILLISECONDS)
+            .until(() -> {
+              System.out.println("Log Size: " + logService.getLogDates().size());
+              if( logService.getLogDates().size() == 2 ) {
+                long diffInMillis = Math.abs(logService.getLogDates().get(1).getTime() - logService.getLogDates().get(0).getTime());
+                long diff = TimeUnit.SECONDS.convert(diffInMillis, TimeUnit.MILLISECONDS);
+                System.out.println("First Log at: " + logService.getLogDates().get(0));
+                System.out.println("Second Log at: " + logService.getLogDates().get(1));
+                System.out.println("Diff in seconds: " + diff);
+                // The updated time differences should be between 9 and 11 seconds
+                return diff >= 9 && diff <= 11;
+              }
+              return false;
+            });
   }
 
 }
