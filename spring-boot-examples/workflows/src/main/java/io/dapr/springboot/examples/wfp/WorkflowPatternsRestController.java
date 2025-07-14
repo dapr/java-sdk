@@ -24,7 +24,8 @@ import io.dapr.springboot.examples.wfp.fanoutin.FanOutInWorkflow;
 import io.dapr.springboot.examples.wfp.fanoutin.Result;
 import io.dapr.springboot.examples.wfp.remoteendpoint.Payload;
 import io.dapr.springboot.examples.wfp.remoteendpoint.RemoteEndpointWorkflow;
-import io.dapr.springboot.examples.wfp.suspendresume.SuspendResumeWorkflow;
+import io.dapr.springboot.examples.wfp.timer.DurationTimerWorkflow;
+import io.dapr.springboot.examples.wfp.timer.ZonedDateTimeTimerWorkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import org.slf4j.Logger;
@@ -156,7 +157,7 @@ public class WorkflowPatternsRestController {
 
   @PostMapping("wfp/suspendresume")
   public String suspendResume(@RequestParam("orderId") String orderId) {
-    String instanceId = daprWorkflowClient.scheduleNewWorkflow(SuspendResumeWorkflow.class);
+    String instanceId = daprWorkflowClient.scheduleNewWorkflow(ExternalEventWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");
     ordersToApprove.put(orderId, instanceId);
     return instanceId;
@@ -189,4 +190,16 @@ public class WorkflowPatternsRestController {
             .waitForInstanceCompletion(instanceId, null, true);
     return workflowInstanceStatus.readOutputAs(Decision.class);
   }
+
+  @PostMapping("wfp/durationtimer")
+  public String durationTimerWorkflow() {
+    return daprWorkflowClient.scheduleNewWorkflow(DurationTimerWorkflow.class);
+  }
+
+  @PostMapping("wfp/zoneddatetimetimer")
+  public String zonedDateTimeTimerWorkflow() {
+    return daprWorkflowClient.scheduleNewWorkflow(ZonedDateTimeTimerWorkflow.class);
+  }
+
 }
+
