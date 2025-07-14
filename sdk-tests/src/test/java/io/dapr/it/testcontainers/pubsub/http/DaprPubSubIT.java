@@ -12,7 +12,12 @@ limitations under the License.
 */
 package io.dapr.it.testcontainers.pubsub.http;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.dapr.client.DaprClient;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.BulkPublishEntry;
@@ -45,6 +50,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -78,7 +84,7 @@ public class DaprPubSubIT {
   private static final Random RANDOM = new Random();
   private static final int PORT = RANDOM.nextInt(1000) + 8000;
   private static final String APP_FOUND_MESSAGE_PATTERN = ".*application discovered on port.*";
-  private static final DaprObjectSerializer SERIALIZER = new CustomizableObjectSerializer(new ObjectMapper());
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final String PUBSUB_APP_ID = "pubsub-dapr-app";
   private static final String PUBSUB_NAME = "pubsub";
@@ -91,7 +97,6 @@ public class DaprPubSubIT {
   private static final String BINARY_TOPIC_NAME = "binarytopic";
   private static final String TTL_TOPIC_NAME = "ttltopic";
   private static final String LONG_TOPIC_NAME = "testinglongvalues";
-
 
   private static final int NUM_MESSAGES = 10;
 
@@ -164,7 +169,7 @@ public class DaprPubSubIT {
     try (
         DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).build();
         DaprPreviewClient previewClient = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(
-                SERIALIZER)
+                createJacksonObjectSerializer())
             .buildPreviewClient()
     ) {
 
@@ -187,7 +192,9 @@ public class DaprPubSubIT {
   public void testPubSub() throws Exception {
 
     // Send a batch of messages on one topic
-    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(SERIALIZER).build()) {
+    try (DaprClient client = DaprClientFactory.createDaprClientBuilder(DAPR_CONTAINER).withObjectSerializer(
+            createJacksonObjectSerializer()
+    ).build()) {
 
       sendBulkMessagesAsText(client, TOPIC_NAME);
 
@@ -601,6 +608,25 @@ public class DaprPubSubIT {
       @Override
       public String getContentType() {
         return "application/octet-stream";
+      }
+    };
+  }
+
+  private DaprObjectSerializer createJacksonObjectSerializer() {
+    return new DaprObjectSerializer() {
+      @Override
+      public byte[] serialize(Object o) throws JsonProcessingException {
+        return OBJECT_MAPPER.writeValueAsBytes(o);
+      }
+
+      @Override
+      public <T> T deserialize(byte[] data, TypeRef<T> type) throws IOException {
+        return OBJECT_MAPPER.readValue(data, OBJECT_MAPPER.constructType(type.getType()));
+      }
+
+      @Override
+      public String getContentType() {
+        return "application/json";
       }
     };
   }
