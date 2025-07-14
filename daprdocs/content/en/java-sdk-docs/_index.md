@@ -15,8 +15,8 @@ Dapr offers a variety of packages to help with the development of Java applicati
 
 ## Prerequisites
 
-- [Dapr CLI]({{< ref install-dapr-cli.md >}}) installed
-- Initialized [Dapr environment]({{< ref install-dapr-selfhost.md >}})
+- [Dapr CLI]({{% ref install-dapr-cli.md %}}) installed
+- Initialized [Dapr environment]({{% ref install-dapr-selfhost.md %}})
 - JDK 11 or above - the published jars are compatible with Java 8:
     - [AdoptOpenJDK 11 - LTS](https://adoptopenjdk.net/)
     - [Oracle's JDK 15](https://www.oracle.com/java/technologies/javase-downloads.html)
@@ -30,9 +30,9 @@ Dapr offers a variety of packages to help with the development of Java applicati
 
 Next, import the Java SDK packages to get started. Select your preferred build tool to learn how to import.
 
-{{< tabs Maven Gradle >}}
+{{< tabpane text=true >}}
 
-{{% codetab %}}
+{{% tab header="Maven" %}}
 <!--Maven-->
 
 For a Maven project, add the following to your `pom.xml` file: 
@@ -65,9 +65,9 @@ For a Maven project, add the following to your `pom.xml` file:
   ...
 </project>
 ```
-{{% /codetab %}}
+{{% /tab %}}
 
-{{% codetab %}}
+{{% tab header="Gradle" %}}
 <!--Gradle-->
 
 For a Gradle project, add the following to your `build.gradle` file:
@@ -84,9 +84,9 @@ dependencies {
 }
 ```
 
-{{% /codetab %}}
+{{% /tab %}}
 
-{{< /tabs >}}
+{{< /tabpane >}}
 
 If you are also using Spring Boot, you may run into a common issue where the `OkHttp` version that the Dapr SDK uses conflicts with the one specified in the Spring Boot _Bill of Materials_.
 
@@ -106,7 +106,7 @@ Put the Dapr Java SDK to the test. Walk through the Java quickstarts and tutoria
 
 | SDK samples | Description |
 | ----------- | ----------- |
-| [Quickstarts]({{< ref quickstarts >}}) | Experience Dapr's API building blocks in just a few minutes using the Java SDK. |
+| [Quickstarts]({{% ref quickstarts %}}) | Experience Dapr's API building blocks in just a few minutes using the Java SDK. |
 | [SDK samples](https://github.com/dapr/java-sdk/tree/master/examples) | Clone the SDK repo to try out some examples and get started. |
 
 ```java
@@ -122,7 +122,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 }
 ```
 
-- For a full guide on output bindings visit [How-To: Output bindings]({{< ref howto-bindings.md >}}).
+- For a full guide on output bindings visit [How-To: Output bindings]({{% ref howto-bindings.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http) for code samples and instructions to try out output bindings.
 
 ## Available packages
@@ -132,14 +132,14 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
     <div class="card-body">
       <h5 class="card-title"><b>Client</b></h5>
       <p class="card-text">Create Java clients that interact with a Dapr sidecar and other Dapr applications.</p>
-      <a href="{{< ref java-client >}}" class="stretched-link"></a>
+      <a href="{{% ref java-client %}}" class="stretched-link"></a>
     </div>
   </div>
   <div class="card">
     <div class="card-body">
       <h5 class="card-title"><b>Workflow</b></h5>
       <p class="card-text">Create and manage workflows that work with other Dapr APIs in Java.</p>
-      <a href="{{< ref workflow >}}" class="stretched-link"></a>
+      <a href="{{% ref workflow %}}" class="stretched-link"></a>
     </div>
   </div>
 </div>
