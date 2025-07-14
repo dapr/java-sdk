@@ -101,5 +101,5 @@ component for testing, which simply returns the input message.
 When integrated with LLMs like OpenAI or Claude, you’ll receive meaningful responses instead of echoed input.
 
 ## Next steps
-- [Learn more about Conversation AI]({{< ref conversation-overview.md >}})
-- [Conversation AI API reference]({{< ref conversation_api.md >}})
+- [Learn more about Conversation AI]({{% ref conversation-overview.md %}})
+- [Conversation AI API reference]({{% ref conversation_api.md %}})
