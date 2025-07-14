@@ -68,8 +68,8 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
   private String schedulerService = "scheduler";
-  private String placementDockerImageName = DAPR_PLACEMENT_IMAGE_TAG;
-  private String schedulerDockerImageName = DAPR_SCHEDULER_IMAGE_TAG;
+  private DockerImageName placementDockerImageName = DockerImageName.parse(DAPR_PLACEMENT_IMAGE_TAG);
+  private DockerImageName schedulerDockerImageName = DockerImageName.parse(DAPR_SCHEDULER_IMAGE_TAG);
 
   private Configuration configuration;
   private DaprPlacementContainer placementContainer;
@@ -166,13 +166,23 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withPlacementImage(String placementDockerImageName) {
+  public DaprContainer withPlacementImage(DockerImageName placementDockerImageName) {
     this.placementDockerImageName = placementDockerImageName;
     return this;
   }
 
-  public DaprContainer withSchedulerImage(String schedulerDockerImageName) {
+  public DaprContainer withPlacementImage(String placementDockerImageName) {
+    this.placementDockerImageName = DockerImageName.parse(placementDockerImageName);
+    return this;
+  }
+
+  public DaprContainer withSchedulerImage(DockerImageName schedulerDockerImageName) {
     this.schedulerDockerImageName = schedulerDockerImageName;
+    return this;
+  }
+
+  public DaprContainer withSchedulerImage(String schedulerDockerImageName) {
+    this.schedulerDockerImageName = DockerImageName.parse(schedulerDockerImageName);
     return this;
   }
 
