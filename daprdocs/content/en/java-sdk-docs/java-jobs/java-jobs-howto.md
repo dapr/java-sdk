@@ -160,5 +160,5 @@ public class DemoJobsClient {
 ```
 
 ## Next steps
-- [Learn more about Jobs]({{< ref jobs-overview.md >}})
-- [Jobs API reference]({{< ref jobs_api.md >}})
+- [Learn more about Jobs]({{% ref jobs-overview.md %}})
+- [Jobs API reference]({{% ref jobs_api.md %}})
