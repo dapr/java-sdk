@@ -31,7 +31,7 @@ public class DaprClientPropertiesTest {
   public void shouldCreateDaprClientPropertiesCorrectly() {
 
     DaprClientProperties properties = new DaprClientProperties(
-        "http://localhost", "localhost", 3500, 50001
+        "http://localhost", "localhost", 3500, 50001, "ABC"
     );
 
     SoftAssertions.assertSoftly(softly -> {
@@ -39,6 +39,7 @@ public class DaprClientPropertiesTest {
       softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
       softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
       softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      softly.assertThat(properties.getApiToken()).isEqualTo("ABC");
     });
   }
 
@@ -52,12 +53,14 @@ public class DaprClientPropertiesTest {
     properties.setGrpcPort(50001);
     properties.setHttpEndpoint("http://localhost");
     properties.setHttpPort(3500);
+    properties.setApiToken("ABC");
 
     SoftAssertions.assertSoftly(softAssertions -> {
       softAssertions.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
       softAssertions.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
       softAssertions.assertThat(properties.getHttpPort()).isEqualTo(3500);
       softAssertions.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      softAssertions.assertThat(properties.getApiToken()).isEqualTo("ABC");
     });
   }
 
