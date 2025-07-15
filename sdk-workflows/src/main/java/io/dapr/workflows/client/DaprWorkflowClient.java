@@ -37,8 +37,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class DaprWorkflowClient implements AutoCloseable {
 
-  private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
-
+  private ClientInterceptor workflowApiTokenInterceptor;
   private DurableTaskClient innerClient;
   private ManagedChannel grpcChannel;
 
@@ -55,7 +54,7 @@ public class DaprWorkflowClient implements AutoCloseable {
    * @param properties Properties for the GRPC Channel.
    */
   public DaprWorkflowClient(Properties properties) {
-    this(NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR));
+    this(NetworkUtils.buildGrpcManagedChannel(properties, new ApiTokenClientInterceptor(properties)));
   }
 
   /**
