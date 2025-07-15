@@ -9,13 +9,13 @@ description: How to get up and running with the Dapr Java SDK
 The Dapr client package allows you to interact with other Dapr applications from a Java application.
 
 {{% alert title="Note" color="primary" %}}
-If you haven't already, [try out one of the quickstarts]({{< ref quickstarts >}}) for a quick walk-through on how to use the Dapr Java SDK with an API building block.
+If you haven't already, [try out one of the quickstarts]({{% ref quickstarts %}}) for a quick walk-through on how to use the Dapr Java SDK with an API building block.
 
 {{% /alert %}}
 
 ## Prerequisites
 
-[Complete initial setup and import the Java SDK into your project]({{< ref java >}})
+[Complete initial setup and import the Java SDK into your project]({{% ref java %}})
 
 ## Initializing the client
 You can initialize a Dapr client as so:
@@ -24,7 +24,7 @@ You can initialize a Dapr client as so:
 DaprClient client = new DaprClientBuilder().build()
 ```
 
-This will connect to the default Dapr gRPC endpoint `localhost:50001`. For information about configuring the client using environment variables and system properties, see [Properties]({{< ref properties.md >}}).
+This will connect to the default Dapr gRPC endpoint `localhost:50001`. For information about configuring the client using environment variables and system properties, see [Properties]({{% ref properties.md %}}).
 
 #### Error Handling
 
@@ -52,7 +52,7 @@ Example of handling the DaprException and consuming the error details when using
 
 ## Building blocks
 
-The Java SDK allows you to interface with all of the [Dapr building blocks]({{< ref building-blocks >}}).
+The Java SDK allows you to interface with all of the [Dapr building blocks]({{% ref building-blocks %}}).
 
 ### Invoke a service
 
@@ -76,7 +76,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 }
 ```
 
-- For a full guide on service invocation visit [How-To: Invoke a service]({{< ref howto-invoke-discover-services.md >}}).
+- For a full guide on service invocation visit [How-To: Invoke a service]({{% ref howto-invoke-discover-services.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/invoke) for code samples and instructions to try out service invocation
 
 ### Save & get application state
@@ -99,7 +99,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 }
 ```
 
-- For a full list of state operations visit [How-To: Get & save state]({{< ref howto-get-save-state.md >}}).
+- For a full list of state operations visit [How-To: Get & save state]({{% ref howto-get-save-state.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/state) for code samples and instructions to try out state management
 
 ### Publish & subscribe to messages
@@ -225,7 +225,7 @@ class Solution {
 }
 ```
 
-- For a full guide on publishing messages and subscribing to a topic [How-To: Publish & subscribe]({{< ref howto-publish-subscribe.md >}}).
+- For a full guide on publishing messages and subscribing to a topic [How-To: Publish & subscribe]({{% ref howto-publish-subscribe.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/pubsub/http) for code samples and instructions to try out pub/sub
 
 ### Interact with output bindings
@@ -243,7 +243,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 }
 ```
 
-- For a full guide on output bindings visit [How-To: Output bindings]({{< ref howto-bindings.md >}}).
+- For a full guide on output bindings visit [How-To: Output bindings]({{% ref howto-bindings.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http) for code samples and instructions to try out output bindings.
 
 ### Interact with input bindings
@@ -265,7 +265,7 @@ public class myClass {
 }
 ```
 
-- For a full guide on input bindings, visit [How-To: Input bindings]({{< ref howto-triggers >}}).
+- For a full guide on input bindings, visit [How-To: Input bindings]({{% ref howto-triggers %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/bindings/http) for code samples and instructions to try out input bindings.
 
 ### Retrieve secrets
@@ -282,7 +282,7 @@ try (DaprClient client = (new DaprClientBuilder()).build()) {
 }
 ```
 
-- For a full guide on secrets visit [How-To: Retrieve secrets]({{< ref howto-secrets.md >}}).
+- For a full guide on secrets visit [How-To: Retrieve secrets]({{% ref howto-secrets.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/secrets) for code samples and instructions to try out retrieving secrets
 
 ### Actors
@@ -308,7 +308,7 @@ public interface DemoActor {
 }
 ```
 
-- For a full guide on actors visit [How-To: Use virtual actors in Dapr]({{< ref howto-actors.md >}}).
+- For a full guide on actors visit [How-To: Use virtual actors in Dapr]({{% ref howto-actors.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/actors) for code samples and instructions to try actors
 
 ### Get & Subscribe to application configurations
@@ -341,7 +341,7 @@ try (DaprPreviewClient client = (new DaprClientBuilder()).buildPreviewClient()) 
 }
 ```
 
-- For a full list of configuration operations visit [How-To: Manage configuration from a store]({{< ref howto-manage-configuration.md >}}).
+- For a full list of configuration operations visit [How-To: Manage configuration from a store]({{% ref howto-manage-configuration.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/configuration) for code samples and instructions to try out different configuration operations.
 
 ### Query saved state
@@ -411,7 +411,7 @@ try (DaprClient client = builder.build(); DaprPreviewClient previewClient = buil
         }
 }
 ```
-- For a full how-to on query state, visit [How-To: Query state]({{< ref howto-state-query-api.md >}}).
+- For a full how-to on query state, visit [How-To: Query state]({{% ref howto-state-query-api.md %}}).
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/querystate) for complete code sample.
 
 ### Distributed lock
@@ -477,7 +477,7 @@ public class DistributedLockGrpcClient {
 }
 ```
 
-- For a full how-to on distributed lock, visit [How-To: Use a Lock]({{< ref howto-use-distributed-lock.md >}})
+- For a full how-to on distributed lock, visit [How-To: Use a Lock]({{% ref howto-use-distributed-lock.md %}})
 - Visit [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples/lock) for complete code sample.
 
 ### Workflow
@@ -598,9 +598,9 @@ public class DemoWorkflowClient {
 ```
 
 - For a full guide on workflows, visit:
-   - [How-To: Author workflows]({{< ref howto-author-workflow.md >}}).
-   - [How-To: Manage workflows]({{< ref howto-manage-workflow.md >}}).
-- [Learn more about how to use workflows with the Java SDK]({{< ref java-workflow.md >}}).
+   - [How-To: Author workflows]({{% ref howto-author-workflow.md %}}).
+   - [How-To: Manage workflows]({{% ref howto-manage-workflow.md %}}).
+- [Learn more about how to use workflows with the Java SDK]({{% ref java-workflow.md %}}).
 
 ## Sidecar APIs
 
@@ -635,4 +635,4 @@ Learn more about the [Dapr Java SDK packages available to add to your Java appli
 ## Related links
 - [Java SDK examples](https://github.com/dapr/java-sdk/tree/master/examples/src/main/java/io/dapr/examples)
 
-For a full list of SDK properties and how to configure them, visit [Properties]({{< ref properties.md >}}).
+For a full list of SDK properties and how to configure them, visit [Properties]({{% ref properties.md %}}).
