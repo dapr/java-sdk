@@ -25,4 +25,6 @@ public interface DaprConnectionDetails extends ConnectionDetails {
 
   Integer getGrpcPort();
 
+  String getApiToken();
+
 }
