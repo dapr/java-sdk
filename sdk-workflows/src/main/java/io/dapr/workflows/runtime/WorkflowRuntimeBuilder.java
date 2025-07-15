@@ -23,6 +23,7 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class WorkflowRuntimeBuilder {
-  private static final ClientInterceptor WORKFLOW_INTERCEPTOR = new ApiTokenClientInterceptor();
+  private ClientInterceptor workflowApiTokenInterceptor;
   private static volatile WorkflowRuntime instance;
   private final Logger logger;
   private final Set<String> workflows = new HashSet<>();
@@ -62,7 +63,8 @@ public class WorkflowRuntimeBuilder {
   }
 
   private WorkflowRuntimeBuilder(Properties properties, Logger logger) {
-    this.managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, WORKFLOW_INTERCEPTOR);
+    this.workflowApiTokenInterceptor = new ApiTokenClientInterceptor(properties);
+    this.managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, workflowApiTokenInterceptor);
     this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(this.managedChannel);
     this.logger = logger;
   }

@@ -40,4 +40,10 @@ public class ClientPropertiesDaprConnectionDetails implements DaprConnectionDeta
   public Integer getGrpcPort() {
     return this.daprClientProperties.getGrpcPort();
   }
+
+  @Override
+  public String getApiToken() {
+    return this.daprClientProperties.getApiToken();
+  }
+
 }

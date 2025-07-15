@@ -54,5 +54,13 @@ public class DaprContainerConnectionDetailsFactory
     public Integer getGrpcPort() {
       return getContainer().getGrpcPort();
     }
+
+    /*
+     * No API Token for local container
+     */
+    @Override
+    public String getApiToken() {
+      return "";
+    }
   }
 }
