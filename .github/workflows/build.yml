@@ -191,3 +191,4 @@ jobs:
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
           ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy
+          curl -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.dapr
