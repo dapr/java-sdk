@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.workflows;
 
 import io.dapr.durabletask.Task;
 import io.dapr.workflows.Workflow;
@@ -47,7 +47,7 @@ public class TestExecutionKeysWorkflow implements Workflow {
       .build());
             
       
-      Task<TestWorkflowPayload> t =   ctx.callActivity(TaskExecutionKeyActivity.class.getName(), workflowPayload, options,TestWorkflowPayload.class);
+      Task<TestWorkflowPayload> t =   ctx.callActivity(TaskExecutionIdActivity.class.getName(), workflowPayload, options,TestWorkflowPayload.class);
 
       TestWorkflowPayload payloadAfterExecution = t.await();
    

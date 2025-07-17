@@ -16,8 +16,6 @@ package io.dapr.it.testcontainers.workflows;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.dapr.it.testcontainers.KeyStore;
-import io.dapr.it.testcontainers.TestExecutionKeysWorkflow;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -151,7 +149,7 @@ public class DaprWorkflowsIT {
 
   }
 
-
+  @Test
   public void testExecutionKeyWorkflows() throws Exception {
     TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
     String instanceId = workflowClient.scheduleNewWorkflow(TestExecutionKeysWorkflow.class, payload);
@@ -168,8 +166,7 @@ public class DaprWorkflowsIT {
     assertEquals(1, workflowOutput.getPayloads().size());
     assertEquals("Execution key found", workflowOutput.getPayloads().get(0));
     
-    String executionKey = workflowOutput.getWorkflowId() +"-"+"io.dapr.it.testcontainers.TaskExecutionKeyActivity";
-    assertTrue(KeyStore.getInstance().getKey(executionKey));
+    assertTrue(KeyStore.getInstance().size() == 1);
     
     assertEquals(instanceId, workflowOutput.getWorkflowId());
   }

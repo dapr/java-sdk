@@ -16,7 +16,7 @@ public class WorkflowActivityClassWrapperTest {
     @Override
     public Object run(WorkflowActivityContext ctx) {
       String activityContextName = ctx.getName();
-      return ctx.getInput(String.class) + " world! from " + activityContextName + " with task execution key " + ctx.getTaskExecutionKey();
+      return ctx.getInput(String.class) + " world! from " + activityContextName + " with task execution key " + ctx.getTaskExecutionId();
     }
   }
 
@@ -37,7 +37,7 @@ public class WorkflowActivityClassWrapperTest {
 
     when(mockContext.getInput(String.class)).thenReturn("Hello");
     when(mockContext.getName()).thenReturn("TestActivityContext");
-    when(mockContext.getTaskExecutionKey()).thenReturn("123");
+    when(mockContext.getTaskExecutionId()).thenReturn("123");
 
     Object result = wrapper.create().run(mockContext);
 

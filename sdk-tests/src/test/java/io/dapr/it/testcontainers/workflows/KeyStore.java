@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
 limitations under the License.
 */
-package io.dapr.it.testcontainers;
+package io.dapr.it.testcontainers.workflows;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +46,10 @@ public class KeyStore {
 
     public void removeKey(String key) {
         keyStore.remove(key);
+    }
+
+    public int size() {
+        return keyStore.size();
     }
 
 }
