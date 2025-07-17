@@ -12,12 +12,12 @@ limitations under the License.
 */
 package io.dapr.it.testcontainers;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class KeyStore {
 
-    private final Map<String, Boolean> keyStore = new HashMap<>();
+    private final Map<String, Boolean> keyStore = new ConcurrentHashMap<>();
 
     private static KeyStore instance;
 
