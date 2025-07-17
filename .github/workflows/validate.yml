@@ -32,16 +32,16 @@ jobs:
       matrix:
         java: [ 17 ]
     env:
-      GOVER: "1.20"
+      GOVER: "1.24.4"
       GOOS: linux
       GOARCH: amd64
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
-      DAPR_CLI_VER: 1.15.0
-      DAPR_RUNTIME_VER: 1.15.7
-      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
+      DAPR_CLI_VER: 1.16.0-rc.1
+      DAPR_RUNTIME_VER: 1.16.0-rc.1
+      DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.16.0-rc.1/install/install.sh
       DAPR_CLI_REF:
-      DAPR_REF:
+      DAPR_REF: 
     steps:
       - uses: actions/checkout@v4
       - name: Set up OpenJDK ${{ env.JDK_VER }}
