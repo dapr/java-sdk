@@ -59,7 +59,7 @@ public class TestWorkflowsConfiguration {
     builder.registerWorkflow(TestExecutionKeysWorkflow.class);
     builder.registerActivity(FirstActivity.class);
     builder.registerActivity(SecondActivity.class);
-    builder.registerActivity(TaskExecutionKeyActivity.class);
+    builder.registerActivity(TaskExecutionIdActivity.class);
     
     
     return builder;

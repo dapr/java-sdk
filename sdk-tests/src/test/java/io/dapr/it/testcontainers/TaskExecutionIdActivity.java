@@ -16,15 +16,15 @@ package io.dapr.it.testcontainers;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 
-public class TaskExecutionKeyActivity implements WorkflowActivity {
+public class TaskExecutionIdActivity implements WorkflowActivity {
 
   @Override
   public Object run(WorkflowActivityContext ctx) {
     TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
     KeyStore keyStore = KeyStore.getInstance();
-    Boolean exists = keyStore.getKey(ctx.getTaskExecutionKey());
+    Boolean exists = keyStore.getKey(ctx.getTaskExecutionId());
     if (!Boolean.TRUE.equals(exists)) {
-      keyStore.addKey(ctx.getTaskExecutionKey(), true);
+      keyStore.addKey(ctx.getTaskExecutionId(), true);
       workflowPayload.getPayloads().add("Execution key not found");
       throw new IllegalStateException("Task execution key not found");
     }

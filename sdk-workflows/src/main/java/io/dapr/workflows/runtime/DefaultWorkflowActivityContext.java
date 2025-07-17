@@ -58,7 +58,7 @@ class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   }
 
   @Override
-  public String getTaskExecutionKey() {
-    return this.innerContext.getTaskExecutionKey();
+  public String getTaskExecutionId() {
+    return this.innerContext.getTaskExecutionId();
   }
 }
