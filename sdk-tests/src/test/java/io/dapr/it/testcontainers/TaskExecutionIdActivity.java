@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.it.testcontainers;
 
+import io.dapr.it.testcontainers.workflows.TestWorkflowPayload;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 
