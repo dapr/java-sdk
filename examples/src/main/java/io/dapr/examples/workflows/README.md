@@ -53,6 +53,8 @@ Those examples contain the following workflow patterns:
 4. [External Event Pattern](#external-event-pattern)
 5. [Child-workflow Pattern](#child-workflow-pattern)
 6. [Compensation Pattern](#compensation-pattern)
+6. [Suspend/resume Pattern](#suspendresume-pattern)
+7. [Idempotency Pattern](#idempotency-pattern) 
 
 ### Chaining Pattern
 In the chaining pattern, a sequence of activities executes in a specific order.
@@ -708,3 +710,5 @@ The client log:
 Started a new external-event model workflow with instance ID: 23410d96-1afe-4698-9fcd-c01c1e0db255
 workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
 ```
+
+### Idempotency Pattern
