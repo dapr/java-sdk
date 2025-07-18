@@ -56,8 +56,14 @@ public class TestWorkflowsConfiguration {
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
 
     builder.registerWorkflow(TestWorkflow.class);
+    builder.registerWorkflow(TestNamedActivitiesWorkflow.class);
+
     builder.registerActivity(FirstActivity.class);
     builder.registerActivity(SecondActivity.class);
+    builder.registerActivity("a",FirstActivity.class);
+    builder.registerActivity("b",FirstActivity.class);
+    builder.registerActivity("c", new SecondActivity());
+
 
     return builder;
   }
