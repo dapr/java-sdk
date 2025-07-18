@@ -17,9 +17,9 @@
     <grpc.version>1.69.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
     <protocCommand>protoc</protocCommand>
-    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.15.4/dapr/proto</dapr.proto.baseurl>
-    <dapr.sdk.version>1.15.0-rc-8</dapr.sdk.version>
-    <dapr.sdk.alpha.version>0.15.0-rc-8</dapr.sdk.alpha.version>
+    <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.15.7/dapr/proto</dapr.proto.baseurl>
+    <dapr.sdk.version>1.16.0-SNAPSHOT</dapr.sdk.version>
+    <dapr.sdk.alpha.version>0.16.0-SNAPSHOT</dapr.sdk.alpha.version>
     <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
     <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
     <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
