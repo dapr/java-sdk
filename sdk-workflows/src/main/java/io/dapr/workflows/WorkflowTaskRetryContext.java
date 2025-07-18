@@ -14,16 +14,17 @@ limitations under the License.
 package io.dapr.workflows;
 
 import io.dapr.workflows.client.WorkflowFailureDetails;
-import io.dapr.workflows.runtime.DefaultWorkflowContext;
 
 import java.time.Duration;
 
 public class WorkflowTaskRetryContext {
 
-  private final DefaultWorkflowContext workflowContext;
+  private final WorkflowContext workflowContext;
   private final int lastAttemptNumber;
   private final WorkflowFailureDetails lastFailure;
   private final Duration totalRetryTime;
+  private final String taskName;
+  private final Object input;
 
   /**
    * Constructor for WorkflowTaskRetryContext.
@@ -32,28 +33,34 @@ public class WorkflowTaskRetryContext {
    * @param lastAttemptNumber The number of the previous attempt
    * @param lastFailure The failure details from the most recent failure
    * @param totalRetryTime The amount of time spent retrying
+   * @param taskName The name of the task
+   * @param input The input of the task
    */
   public WorkflowTaskRetryContext(
-          DefaultWorkflowContext workflowContext,
+          WorkflowContext workflowContext,
           int lastAttemptNumber,
           WorkflowFailureDetails lastFailure,
-          Duration totalRetryTime) {
+          Duration totalRetryTime,
+          String taskName,
+          Object input) {
     this.workflowContext = workflowContext;
     this.lastAttemptNumber = lastAttemptNumber;
     this.lastFailure = lastFailure;
     this.totalRetryTime = totalRetryTime;
+    this.taskName = taskName;
+    this.input = input;
   }
 
   /**
    * Gets the context of the current workflow.
    *
    * <p>The workflow context can be used in retry handlers to schedule timers (via the
-   * {@link DefaultWorkflowContext#createTimer} methods) for implementing delays between retries. It can also be
-   * used to implement time-based retry logic by using the {@link DefaultWorkflowContext#getCurrentInstant} method.
+   * {@link WorkflowContext#createTimer} methods) for implementing delays between retries. It can also be
+   * used to implement time-based retry logic by using the {@link WorkflowContext#getCurrentInstant} method.
    *
    * @return the context of the parent workflow
    */
-  public DefaultWorkflowContext getWorkflowContext() {
+  public WorkflowContext getWorkflowContext() {
     return this.workflowContext;
   }
 
@@ -85,4 +92,21 @@ public class WorkflowTaskRetryContext {
     return this.totalRetryTime;
   }
 
+  /**
+   * Gets the name of the task.
+   *
+   * @return the name of the task
+   */
+  public String getTaskName() {
+    return taskName;
+  }
+
+  /**
+   * Gets the input of the task.
+   *
+   * @return the task's input
+   */
+  public Object getInput() {
+    return input;
+  }
 }

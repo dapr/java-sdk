@@ -53,6 +53,8 @@ Those examples contain the following workflow patterns:
 4. [External Event Pattern](#external-event-pattern)
 5. [Child-workflow Pattern](#child-workflow-pattern)
 6. [Compensation Pattern](#compensation-pattern)
+7. [Suspend/Resume Pattern](#suspendresume-pattern)
+8. [RetryHandler](#retryhandler)
 
 ### Chaining Pattern
 In the chaining pattern, a sequence of activities executes in a specific order.
@@ -707,4 +709,94 @@ The client log:
 ```text
 Started a new external-event model workflow with instance ID: 23410d96-1afe-4698-9fcd-c01c1e0db255
 workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
+```
+
+### RetryHandler
+
+When an activity or child workflow fails, Dapr supports auto retry mechanisms such as a `WorkflowTaskRetryHandler` and
+`WorkflowTaskRetryPolicy`. An example of `WorkflowTaskRetryPolicy` in use can be found in the child workflow example.
+
+A `WorkflowTaskRetryHandler` allows you to have complete control over whether an activity or child workflow retries or fails.
+This is done by implemented the handle method within this interface.
+
+The example RetryHandler below allows for unlimited retries. If a task of type `FailureActivity` fails, it pulls out the 
+input passed to the activity, an `Instant` in this case, and then uses that to calculate a backoff time.
+```java
+public class DemoRetryHandler implements WorkflowTaskRetryHandler {
+
+  @Override
+  public boolean handle(WorkflowTaskRetryContext retryContext) {
+    WorkflowContext workflowContext = retryContext.getWorkflowContext();
+    Logger logger = retryContext.getWorkflowContext().getLogger();
+    Object input = retryContext.getInput();
+    String taskName = retryContext.getTaskName();
+
+    if(taskName.equalsIgnoreCase(FailureActivity.class.getName())) {
+      logger.info("FailureActivity Input: {}", input);
+      Instant timestampInput = (Instant) input;
+      // Add a second to ensure, it is 100% passed the time to success
+      Instant timeToSuccess = timestampInput.plusSeconds(FailureActivity.TIME_TO_SUCCESS + 1);
+      long timeToWait = timestampInput.until(timeToSuccess, TimeUnit.SECONDS.toChronoUnit());
+
+      logger.info("Waiting {} seconds before retrying.", timeToWait);
+      workflowContext.createTimer(Duration.ofSeconds(timeToWait)).await();
+      logger.info("Send request to FailureActivity");
+    }
+
+    return true;
+  }
+}
+```
+
+Start the workflow and client using the following commands:
+<!-- STEP
+name: Run RetryHandler workflow 
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - "Starting RetryWorkflow: io.dapr.examples.workflows.retryhandler.DemoRetryWorkflow"
+  - "RetryWorkflow is calling Activity: io.dapr.examples.workflows.retryhandler.FailureActivity"
+  - "Starting Activity: io.dapr.examples.workflows.retryhandler.FailureActivity"
+  - "Input timestamp:"
+  - "Throwing exception for Activity: io.dapr.examples.workflows.retryhandler.FailureActivity"
+  - "FailureActivity Input:"
+  - "Waiting 11 seconds before retrying."
+  - "Completing Activity: io.dapr.examples.workflows.retryhandler.FailureActivity"
+background: true
+sleep: 60
+timeout_seconds: 60
+-->
+
+```sh
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.retryhandler.DemoRetryHandlerWorker
+```
+
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.retryhandler.DemoRetryHandlerClient
+```
+
+<!-- END_STEP -->
+
+The worker logs:
+```text
+== APP == 2025-06-16 14:13:42,821 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  io.dapr.workflows.WorkflowContext - Starting RetryWorkflow: io.dapr.examples.workflows.retryhandler.DemoRetryWorkflow
+== APP == 2025-06-16 14:13:42,821 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  io.dapr.workflows.WorkflowContext - RetryWorkflow is calling Activity: io.dapr.examples.workflows.retryhandler.FailureActivity
+== APP == 2025-06-16 14:13:42,851 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  i.d.e.w.retryhandler.FailureActivity - Starting Activity: io.dapr.examples.workflows.retryhandler.FailureActivity
+== APP == 2025-06-16 14:13:42,861 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  i.d.e.w.retryhandler.FailureActivity - Input timestamp: 2025-06-16T18:13:42.820Z
+== APP == 2025-06-16 14:13:42,861 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  i.d.e.w.retryhandler.FailureActivity - Throwing exception for Activity: io.dapr.examples.workflows.retryhandler.FailureActivity
+== APP == 2025-06-16 14:13:42,901 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  io.dapr.workflows.WorkflowContext - FailureActivity Input: 2025-06-16T18:13:42.820Z
+== APP == 2025-06-16 14:13:42,901 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  io.dapr.workflows.WorkflowContext - Waiting 11 seconds before retrying.
+== APP == Jun 16, 2025 2:13:52 PM io.dapr.durabletask.TaskOrchestrationExecutor$ContextImplTask$RetriableTask shouldRetry
+== APP == INFO: shouldRetryBasedOnHandler: true
+== APP == 2025-06-16 14:13:53,052 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  i.d.e.w.retryhandler.FailureActivity - Starting Activity: io.dapr.examples.workflows.retryhandler.FailureActivity
+== APP == 2025-06-16 14:13:53,052 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  i.d.e.w.retryhandler.FailureActivity - Input timestamp: 2025-06-16T18:13:42.820Z
+== APP == 2025-06-16 14:13:53,052 {HH:mm:ss.SSS} [pool-2-thread-1] INFO  i.d.e.w.retryhandler.FailureActivity - Completing Activity: io.dapr.examples.workflows.retryhandler.FailureActivity
+== APP == Jun 16, 2025 2:13:53 PM io.dapr.durabletask.TaskOrchestrationExecutor$ContextImplTask$RetriableTask shouldRetry
+== APP == INFO: shouldRetryBasedOnHandler: true
+```
+
+The client log:
+```text
+Started a new external-event workflow with instance ID: 9f3c70b6-329d-4715-95ed-6ec9bc55ca39
+workflow instance with ID: 9f3c70b6-329d-4715-95ed-6ec9bc55ca39 completed with result: 2025-06-16T18:06:24.068590500Z
 ```
