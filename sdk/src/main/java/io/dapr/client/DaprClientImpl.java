@@ -35,6 +35,8 @@ import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.FailurePolicy;
+import io.dapr.client.domain.FailurePolicyKind;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -46,6 +48,8 @@ import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
+import io.dapr.client.domain.JobFailurePolicyConstant;
+import io.dapr.client.domain.JobFailurePolicyDrop;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
@@ -105,6 +109,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1336,6 +1341,32 @@ public class DaprClientImpl extends AbstractDaprClient {
         scheduleJobRequestBuilder.setDueTime(iso8601Formatter.format(scheduleJobRequest.getDueTime()));
       }
 
+      if (scheduleJobRequest.getFailurePolicy() != null) {
+        CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
+
+        FailurePolicy failurePolicy = scheduleJobRequest.getFailurePolicy();
+        if (failurePolicy.getFailurePolicyKind() == FailurePolicyKind.DROP) {
+
+          jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
+        } else {
+
+          CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
+              CommonProtos.JobFailurePolicyConstant.newBuilder();
+          JobFailurePolicyConstant jobConstantFailurePolicy = (JobFailurePolicyConstant)failurePolicy;
+          if (jobConstantFailurePolicy.getMaxRetries() != null) {
+            constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
+          }
+          if (jobConstantFailurePolicy.getDurationBetweenRetries() != null) {
+            constantPolicyBuilder.setInterval(com.google.protobuf.Duration.newBuilder()
+                .setNanos(jobConstantFailurePolicy.getDurationBetweenRetries().getNano()).build());
+          }
+
+          jobFailurePolicyBuilder.setConstant(constantPolicyBuilder.build());
+        }
+
+        scheduleJobRequestBuilder.setFailurePolicy(jobFailurePolicyBuilder.build());
+      }
+
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
@@ -1376,6 +1407,29 @@ public class DaprClientImpl extends AbstractDaprClient {
           getJobResponse = new GetJobResponse(job.getName(), JobSchedule.fromString(job.getSchedule()));
         } else {
           getJobResponse = new GetJobResponse(job.getName(), Instant.parse(job.getDueTime()));
+        }
+
+        if (job.hasFailurePolicy()) {
+          CommonProtos.JobFailurePolicy jobFailurePolicy = job.getFailurePolicy();
+
+          if (jobFailurePolicy.hasDrop()) {
+            getJobResponse.setFailurePolicy(new JobFailurePolicyDrop());
+          }
+          if (jobFailurePolicy.hasConstant()) {
+            CommonProtos.JobFailurePolicyConstant jobFailurePolicyConstant = jobFailurePolicy.getConstant();
+            if (jobFailurePolicyConstant.hasInterval() && jobFailurePolicyConstant.hasMaxRetries()) {
+              getJobResponse.setFailurePolicy(
+                  new JobFailurePolicyConstant(jobFailurePolicyConstant.getMaxRetries())
+                      .setDurationBetweenRetries(Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+                          ChronoUnit.NANOS)));
+            } else if (jobFailurePolicyConstant.hasMaxRetries()) {
+              getJobResponse.setFailurePolicy(new JobFailurePolicyConstant(jobFailurePolicyConstant.getMaxRetries()));
+            } else {
+              getJobResponse.setFailurePolicy(new JobFailurePolicyConstant(
+                  Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+                  ChronoUnit.NANOS)));
+            }
+          }
         }
 
         return getJobResponse
