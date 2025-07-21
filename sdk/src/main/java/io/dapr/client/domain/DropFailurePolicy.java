@@ -18,15 +18,15 @@ package io.dapr.client.domain;
  * This implementation of {@link FailurePolicy} immediately discards failed jobs
  * instead of retrying them.
  */
-public class JobFailurePolicyDrop implements FailurePolicy {
+public class DropFailurePolicy implements FailurePolicy {
 
   /**
    * Returns the type of failure policy.
    *
-   * @return {@link FailurePolicyKind#DROP}
+   * @return {@link FailurePolicyType#DROP}
    */
   @Override
-  public FailurePolicyKind getFailurePolicyKind() {
-    return FailurePolicyKind.DROP;
+  public FailurePolicyType getFailurePolicyKind() {
+    return FailurePolicyType.DROP;
   }
 }
