@@ -50,13 +50,17 @@ public class DaprContainerTest {
     DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("dapr-app")
             .withAppPort(8081)
+            .withAppHealthCheckPath("/test")
             .withAppHealthCheckProbeInterval(10)
             .withAppHealthCheckProbeTimeout(600)
             .withAppHealthCheckThreshold(7);
 
+    dapr.configure();
+
     assertEquals(10, dapr.getAppHealthCheckProbeInterval());
     assertEquals(600, dapr.getAppHealthCheckProbeTimeout());
     assertEquals(7, dapr.getAppHealthCheckThreshold());
+    assertEquals("/test", dapr.getAppHealthCheckPath());
 
 
     //Check that the defaults are set by default
@@ -64,9 +68,12 @@ public class DaprContainerTest {
             .withAppName("dapr2-app")
             .withAppPort(8082);
 
+    dapr2.configure();
+
     assertEquals(5, dapr2.getAppHealthCheckProbeInterval());
     assertEquals(500, dapr2.getAppHealthCheckProbeTimeout());
     assertEquals(3, dapr2.getAppHealthCheckThreshold());
+
 
 
   }
