@@ -5,7 +5,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_VERSION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DaprContainerTest {
 
@@ -42,6 +42,32 @@ public class DaprContainerTest {
 
     assertEquals("daprio/placement:" + DAPR_VERSION, dapr.getPlacementDockerImageName().asCanonicalNameString());
     assertEquals("daprio/scheduler:" + DAPR_VERSION, dapr.getSchedulerDockerImageName().asCanonicalNameString());
+
+  }
+
+  @Test
+  public void appHealthParametersTest(){
+    DaprContainer dapr = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+            .withAppName("dapr-app")
+            .withAppPort(8081)
+            .withAppHealthCheckProbeInterval(10)
+            .withAppHealthCheckProbeTimeout(600)
+            .withAppHealthCheckThreshold(7);
+
+    assertEquals(10, dapr.getAppHealthCheckProbeInterval());
+    assertEquals(600, dapr.getAppHealthCheckProbeTimeout());
+    assertEquals(7, dapr.getAppHealthCheckThreshold());
+
+
+    //Check that the defaults are set by default
+    DaprContainer dapr2 = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+            .withAppName("dapr2-app")
+            .withAppPort(8082);
+
+    assertEquals(5, dapr2.getAppHealthCheckProbeInterval());
+    assertEquals(500, dapr2.getAppHealthCheckProbeTimeout());
+    assertEquals(3, dapr2.getAppHealthCheckThreshold());
+
 
   }
 }
