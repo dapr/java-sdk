@@ -97,6 +97,7 @@ public class DaprTestContainersConfig {
         .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
         .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
         .withReusablePlacement(reuse)
+        .withReusableScheduler(reuse)
         .withAppHealthCheckPath("/actuator/health")
         .dependsOn(rabbitMQContainer);
   }
