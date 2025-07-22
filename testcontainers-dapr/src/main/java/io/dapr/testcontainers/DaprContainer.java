@@ -141,12 +141,12 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withAppHealthCheckProbeTimeout(Integer appHealthCheckProbeTimeout){
+  public DaprContainer withAppHealthCheckProbeTimeout(Integer appHealthCheckProbeTimeout) {
     this.appHealthCheckProbeTimeout = appHealthCheckProbeTimeout;
     return this;
   }
 
-  public DaprContainer withAppHealthCheckThreshold(Integer appHealthCheckThreshold ){
+  public DaprContainer withAppHealthCheckThreshold(Integer appHealthCheckThreshold) {
     this.appHealthCheckThreshold = appHealthCheckThreshold;
     return this;
   }
