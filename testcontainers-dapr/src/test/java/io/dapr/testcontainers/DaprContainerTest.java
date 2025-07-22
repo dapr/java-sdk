@@ -5,7 +5,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_VERSION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DaprContainerTest {
 
@@ -62,7 +62,10 @@ public class DaprContainerTest {
     assertEquals(7, dapr.getAppHealthCheckThreshold());
     assertEquals("/test", dapr.getAppHealthCheckPath());
 
+  }
 
+  @Test
+  public void appHealthParametersDefaultsTest(){
     //Check that the defaults are set by default
     DaprContainer dapr2 = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("dapr2-app")
@@ -73,8 +76,6 @@ public class DaprContainerTest {
     assertEquals(5, dapr2.getAppHealthCheckProbeInterval());
     assertEquals(500, dapr2.getAppHealthCheckProbeTimeout());
     assertEquals(3, dapr2.getAppHealthCheckThreshold());
-
-
 
   }
 }
