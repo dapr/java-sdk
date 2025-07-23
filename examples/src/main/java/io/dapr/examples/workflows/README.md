@@ -53,6 +53,8 @@ Those examples contain the following workflow patterns:
 4. [External Event Pattern](#external-event-pattern)
 5. [Child-workflow Pattern](#child-workflow-pattern)
 6. [Compensation Pattern](#compensation-pattern)
+6. [Suspend/resume Pattern](#suspendresume-pattern)
+7. [Idempotency Pattern](#idempotency-pattern) 
 
 ### Chaining Pattern
 In the chaining pattern, a sequence of activities executes in a specific order.
@@ -708,3 +710,142 @@ The client log:
 Started a new external-event model workflow with instance ID: 23410d96-1afe-4698-9fcd-c01c1e0db255
 workflow instance with ID: 23410d96-1afe-4698-9fcd-c01c1e0db255 completed.
 ```
+
+### Idempotency Pattern
+
+The idempotency pattern ensures that activities can be safely retried without causing unintended side effects. This pattern is crucial when dealing with potentially unreliable external services or when network failures might cause activities to be retried. In this example, we demonstrate how to use task execution IDs to implement idempotent activities that return consistent results across retries.
+
+The `IdempotentWorkflow` class defines the workflow with retry policies and calls activities with specific limits. The workflow uses a shared key store to track task execution attempts. See the code snippet below:
+```java
+public class IdempotentWorkflow implements Workflow {
+
+  private static Map<String, AtomicInteger> keyStore;
+    
+  public static Map<String, AtomicInteger> getKeyStore() {
+    if (keyStore == null) {
+      synchronized (IdempotentWorkflow.class) {
+        if (keyStore == null) {
+          keyStore = new ConcurrentHashMap<>();
+        }
+      }
+    }
+    return keyStore;
+  }
+
+  @Override
+  public WorkflowStub create() {
+    return ctx -> {
+      ctx.getLogger().info("Starting Workflow: " + ctx.getName());
+
+      var result = new ArrayList<Integer>();
+
+      WorkflowTaskOptions options = new WorkflowTaskOptions(WorkflowTaskRetryPolicy.newBuilder()
+        .setMaxNumberOfAttempts(10)
+        .setFirstRetryInterval(Duration.ofSeconds(1))
+        .setMaxRetryInterval(Duration.ofSeconds(10))
+        .setBackoffCoefficient(2.0)  
+        .setRetryTimeout(Duration.ofSeconds(10))
+        .build());
+
+      result.add(ctx.callActivity(IdempotentActivity.class.getName(), 3, options, Integer.class).await());
+      result.add(ctx.callActivity(IdempotentActivity.class.getName(), 2, options, Integer.class).await());
+      result.add(ctx.callActivity(IdempotentActivity.class.getName(), 1, options, Integer.class).await());
+
+      result.forEach(r -> ctx.getLogger().info("Result: " + r));
+
+      ctx.complete(result);
+    };
+  }
+}
+```
+
+The `IdempotentActivity` class implements the idempotency logic using task execution IDs. Each task execution has a unique ID that remains consistent across retries, allowing the activity to track its state and ensure idempotent behavior. See the code snippet below:
+```java
+public class IdempotentActivity implements WorkflowActivity {
+
+  Logger logger = LoggerFactory.getLogger(IdempotentActivity.class);
+
+  @Override
+  public Object run(WorkflowActivityContext ctx) {
+
+    logger.info("[{}] Starting Activity {} ", ctx.getTaskExecutionId(), ctx.getName());
+    var limit = ctx.getInput(Integer.class);
+
+    var counter = IdempotentWorkflow.getKeyStore().getOrDefault(ctx.getTaskExecutionId(), new AtomicInteger(0));
+    if (counter.get() != limit) {
+      logger.info("Task execution key[{}] with limit {}, incrementing counter {}",ctx.getTaskExecutionId(), limit, counter.get());
+      IdempotentWorkflow.getKeyStore().put(ctx.getTaskExecutionId(), new AtomicInteger(counter.incrementAndGet()));
+
+      throw new IllegalStateException("Task execution key not found");
+    }
+    
+    return counter.get();
+  }
+}
+```
+
+<!-- STEP
+name: Run Idempotency Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Starting Workflow: io.dapr.examples.workflows.idempotency.IdempotentWorkflow'
+  - 'Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity'
+  - 'Task execution key'
+  - 'incrementing counter'
+  - 'Result: 3'
+  - 'Result: 2'
+  - 'Result: 1'
+background: true
+sleep: 60
+timeout_seconds: 60
+-->
+
+Execute the following script in order to run IdempotencyWorker:
+```sh
+dapr run --app-id idempotencyworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.idempotency.IdempotencyWorker
+```
+
+Once running, execute the following script in order to run IdempotencyClient:
+```sh
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.idempotency.IdempotencyClient
+```
+<!-- END_STEP -->
+
+The worker logs will show how the activity handles retries idempotently:
+```text
+== APP == 2023-11-07 15:30:22,145 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Starting Workflow: io.dapr.examples.workflows.idempotency.IdempotentWorkflow
+== APP == 2023-11-07 15:30:22,189 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_001] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,192 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - Task execution key[task_exec_001] with limit 3, incrementing counter 0
+== APP == 2023-11-07 15:30:22,198 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_001] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,199 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - Task execution key[task_exec_001] with limit 3, incrementing counter 1
+== APP == 2023-11-07 15:30:22,205 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_001] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,206 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - Task execution key[task_exec_001] with limit 3, incrementing counter 2
+== APP == 2023-11-07 15:30:22,212 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_001] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,226 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Result: 3
+== APP == 2023-11-07 15:30:22,230 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_002] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,231 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - Task execution key[task_exec_002] with limit 2, incrementing counter 0
+== APP == 2023-11-07 15:30:22,236 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_002] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,237 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - Task execution key[task_exec_002] with limit 2, incrementing counter 1
+== APP == 2023-11-07 15:30:22,242 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_002] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,255 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Result: 2
+== APP == 2023-11-07 15:30:22,259 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_003] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,262 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - Task execution key[task_exec_003] with limit 1, incrementing counter 0
+== APP == 2023-11-07 15:30:22,267 {HH:mm:ss.SSS} [main] INFO  i.d.e.w.idempotency.IdempotentActivity - [task_exec_003] Starting Activity io.dapr.examples.workflows.idempotency.IdempotentActivity
+== APP == 2023-11-07 15:30:22,280 {HH:mm:ss.SSS} [main] INFO  io.dapr.workflows.WorkflowContext - Result: 1
+```
+
+The client logs:
+```text
+Started a new chaining model workflow with instance ID: 7f8e92a4-5b3c-4d1f-8e2a-9b8c7d6e5f4g
+workflow instance with ID: 7f8e92a4-5b3c-4d1f-8e2a-9b8c7d6e5f4g completed with result: [3, 2, 1]
+```
+
+Key Points:
+1. **Task Execution ID**: Each activity call has a unique task execution ID that remains consistent across retries
+2. **Retry Policy**: The workflow defines a retry policy with exponential backoff and maximum attempts
+3. **State Tracking**: The activity uses a shared key store to track the execution state for each task execution ID
+4. **Controlled Failure**: The activity intentionally fails until it reaches the specified limit, demonstrating retry behavior
+5. **Idempotent Result**: Once the limit is reached, subsequent retries with the same task execution ID return the same result
+
+This pattern is essential for building resilient workflows that can handle transient failures without causing duplicate operations or inconsistent state.

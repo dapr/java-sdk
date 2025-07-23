@@ -15,6 +15,8 @@ package io.dapr.it.testcontainers.workflows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.config.Properties;
+import io.dapr.it.testcontainers.TaskExecutionIdActivity;
+import io.dapr.it.testcontainers.TestExecutionKeysWorkflow;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,9 +58,12 @@ public class TestWorkflowsConfiguration {
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
 
     builder.registerWorkflow(TestWorkflow.class);
+    builder.registerWorkflow(TestExecutionKeysWorkflow.class);
     builder.registerActivity(FirstActivity.class);
     builder.registerActivity(SecondActivity.class);
-
+    builder.registerActivity(TaskExecutionIdActivity.class);
+    
+    
     return builder;
   }
 }
