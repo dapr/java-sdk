@@ -53,6 +53,18 @@ private DaprClient daprClient;
 
 This will connect to the default Dapr gRPC endpoint `localhost:50001`, requiring you to start Dapr outside of your application. 
 
+{{% alert title="Note" color="primary" %}}
+By default, the following properties are preconfigured for `DaprClient` and `DaprWorkflowClient`:
+```properties
+dapr.client.http-endpoint=http://localhost
+dapr.client.http-port=3500
+dapr.client.grpc-endpoint=localhost
+dapr.client.grpc-port=50001
+dapr.client.api-token=<Your Remote App API Token>
+```
+These values are used by default, but you can override them in your `application.properties` file to suit your environment.
+{{% /alert %}}
+
 You can use the `DaprClient` to interact with the Dapr APIs anywhere in your application, for example from inside a REST endpoint: 
 
 ```java 
