@@ -13,15 +13,23 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.jobs;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import eu.rekawek.toxiproxy.Proxy;
+import eu.rekawek.toxiproxy.ToxiproxyClient;
 import io.dapr.client.DaprPreviewClient;
 import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.FailurePolicyKind;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
+import io.dapr.client.domain.JobFailurePolicyConstant;
+import io.dapr.client.domain.JobFailurePolicyDrop;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.it.testcontainers.DaprPreviewClientConfiguration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -34,6 +42,8 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -140,6 +150,51 @@ public class DaprJobsIT {
     assertEquals("Job data", new String(getJobResponse.getData()));
     assertEquals(iso8601Formatter.format(currentTime.plus(2, ChronoUnit.HOURS)),
             getJobResponse.getTtl().toString());
+  }
+
+  @Test
+  public void testJobScheduleCreationWithDropFailurePolicy() {
+    Instant currentTime = Instant.now();
+    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        .withZone(ZoneOffset.UTC);
+
+    String cronExpression = "2 * 3 * * FRI";
+
+    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+        .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
+        .setData("Job data".getBytes())
+        .setRepeat(3)
+            .setFailurePolicy(new JobFailurePolicyDrop())
+        .setSchedule(JobSchedule.fromString(cronExpression))).block();
+
+    GetJobResponse getJobResponse =
+        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+    assertEquals(FailurePolicyKind.DROP, getJobResponse.getFailurePolicy().getFailurePolicyKind());
+  }
+
+  @Test
+  public void testJobScheduleCreationWithConstantFailurePolicy() {
+    Instant currentTime = Instant.now();
+    DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        .withZone(ZoneOffset.UTC);
+
+    String cronExpression = "2 * 3 * * FRI";
+
+    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)
+        .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
+        .setData("Job data".getBytes())
+        .setRepeat(3)
+        .setFailurePolicy(new JobFailurePolicyConstant(3)
+            .setDurationBetweenRetries(Duration.of(10, ChronoUnit.SECONDS)))
+        .setSchedule(JobSchedule.fromString(cronExpression))).block();
+
+    GetJobResponse getJobResponse =
+        daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+    JobFailurePolicyConstant jobFailurePolicyConstant = (JobFailurePolicyConstant)getJobResponse.getFailurePolicy();
+    assertEquals(FailurePolicyKind.CONSTANT, getJobResponse.getFailurePolicy().getFailurePolicyKind());
+    assertEquals(3, (int)jobFailurePolicyConstant.getMaxRetries());
+    assertEquals(Duration.of(10, ChronoUnit.SECONDS).getNano(),
+        jobFailurePolicyConstant.getDurationBetweenRetries().getNano());
   }
 
   @Test
