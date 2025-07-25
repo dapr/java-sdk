@@ -684,7 +684,7 @@ Key Points:
 
 ### Cross-App Pattern
 
-The cross-app pattern allows workflows to call activities that are hosted in different Dapr applications. This is useful for microservices architectures where activities are distributed across multiple services, service mesh scenarios, or multi-tenant applications where activities are isolated by app ID.
+The cross-app pattern allows workflows to call activities that are hosted in different Dapr applications. This is useful for microservices architectures where activities are distributed across multiple services, or multi-tenant applications where activities are isolated by app ID.
 
 The `CrossAppWorkflow` class defines the workflow. It demonstrates calling activities in different apps using the `appId` parameter in `WorkflowTaskOptions`. See the code snippet below:
 ```java
@@ -885,7 +885,6 @@ The workflow demonstrates:
 
 This pattern is particularly useful for:
 - Microservices architectures where activities are distributed across multiple services
-- Service mesh scenarios where different apps handle different types of activities
 - Multi-tenant applications where activities are isolated by app ID
 
 ### Suspend/Resume Pattern
