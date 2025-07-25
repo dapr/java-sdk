@@ -132,7 +132,6 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <protocCommand>java-sdk-protoc</protocCommand>
               <protocVersion>${protobuf.version}</protocVersion>
               <protocArtifact>com.google.protobuf:protoc:3.25.5</protocArtifact>
               <addProtoSources>inputs</addProtoSources>
