@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -10,12 +10,14 @@
  * See the License for the specific language governing permissions and
 limitations under the License.
 */
+package io.dapr.it.testcontainers.pubsub.http;
 
-package io.dapr.testcontainers;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-public interface DaprContainerConstants {
-  String DAPR_VERSION = "1.15.7";
-  String DAPR_RUNTIME_IMAGE_TAG = "daprio/daprd:" + DAPR_VERSION;
-  String DAPR_PLACEMENT_IMAGE_TAG = "daprio/placement:" + DAPR_VERSION;
-  String DAPR_SCHEDULER_IMAGE_TAG = "daprio/scheduler:" + DAPR_VERSION;
+@SpringBootApplication
+public class TestPubSubApplication {
+  public static void main(String[] args) {
+    SpringApplication.run(TestPubSubApplication.class, args);
+  }
 }

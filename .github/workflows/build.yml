@@ -39,7 +39,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
       DAPR_CLI_VER: 1.15.0
-      DAPR_RUNTIME_VER: 1.15.4
+      DAPR_RUNTIME_VER: 1.15.7
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
@@ -191,3 +191,4 @@ jobs:
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
           ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy
+          curl -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.dapr

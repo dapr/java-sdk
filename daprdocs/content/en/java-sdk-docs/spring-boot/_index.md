@@ -53,6 +53,18 @@ private DaprClient daprClient;
 
 This will connect to the default Dapr gRPC endpoint `localhost:50001`, requiring you to start Dapr outside of your application. 
 
+{{% alert title="Note" color="primary" %}}
+By default, the following properties are preconfigured for `DaprClient` and `DaprWorkflowClient`:
+```properties
+dapr.client.http-endpoint=http://localhost
+dapr.client.http-port=3500
+dapr.client.grpc-endpoint=localhost
+dapr.client.grpc-port=50001
+dapr.client.api-token=<Your Remote App API Token>
+```
+These values are used by default, but you can override them in your `application.properties` file to suit your environment.
+{{% /alert %}}
+
 You can use the `DaprClient` to interact with the Dapr APIs anywhere in your application, for example from inside a REST endpoint: 
 
 ```java 
@@ -83,7 +95,7 @@ public class DaprTestContainersConfig {
   @ServiceConnection
   public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer){
     
-    return new DaprContainer("daprio/daprd:1.15.4")
+    return new DaprContainer("daprio/daprd:1.15.7")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))
@@ -122,7 +134,7 @@ Besides the previous configuration (`DaprTestContainersConfig`) your tests shoul
 
 ## Leveraging Spring & Spring Boot programming model with Dapr
 
-The Java SDK allows you to interface with all of the [Dapr building blocks]({{< ref building-blocks >}}). 
+The Java SDK allows you to interface with all of the [Dapr building blocks]({{% ref building-blocks %}}). 
 But if you want to leverage the Spring and Spring Boot programming model you can use the `dapr-spring-boot-starter` integration. 
 This includes implementations of Spring Data (`KeyValueTemplate` and `CrudRepository`) as well as a `DaprMessagingTemplate` for producing and consuming messages 
 (similar to [Spring Kafka](https://spring.io/projects/spring-kafka), [Spring Pulsar](https://spring.io/projects/spring-pulsar) and [Spring AMQP for RabbitMQ](https://spring.io/projects/spring-amqp)) and Dapr workflows. 
@@ -238,7 +250,7 @@ Finally, because Dapr PubSub requires a bidirectional connection between your ap
 @ServiceConnection
 public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer, RabbitMQContainer rabbitMQContainer){
     
-    return new DaprContainer("daprio/daprd:1.15.4")
+    return new DaprContainer("daprio/daprd:1.15.7")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))

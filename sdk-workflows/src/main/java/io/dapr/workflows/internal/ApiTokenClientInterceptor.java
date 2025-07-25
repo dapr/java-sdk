@@ -24,6 +24,13 @@ import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 
 public class ApiTokenClientInterceptor implements ClientInterceptor {
+
+  private Properties properties;
+
+  public ApiTokenClientInterceptor(Properties properties) {
+    this.properties = properties;
+  }
+
   @Override
   public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
             MethodDescriptor<ReqT, RespT> methodDescriptor,
@@ -34,7 +41,7 @@ public class ApiTokenClientInterceptor implements ClientInterceptor {
     return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(clientCall) {
         @Override
         public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-            String daprApiToken = Properties.API_TOKEN.get();
+            String daprApiToken = properties.getValue(Properties.API_TOKEN);
             if (daprApiToken != null) {
               metadata.put(Metadata.Key.of(Headers.DAPR_API_TOKEN, Metadata.ASCII_STRING_MARSHALLER), daprApiToken);
             }

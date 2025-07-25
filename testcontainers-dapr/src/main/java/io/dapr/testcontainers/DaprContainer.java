@@ -56,10 +56,10 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private static final YamlConverter<Subscription> SUBSCRIPTION_CONVERTER = new SubscriptionYamlConverter(YAML_MAPPER);
   private static final YamlConverter<HttpEndpoint> HTTPENDPOINT_CONVERTER = new HttpEndpointYamlConverter(YAML_MAPPER);
   private static final YamlConverter<Configuration> CONFIGURATION_CONVERTER = new ConfigurationYamlConverter(
-      YAML_MAPPER);
+          YAML_MAPPER);
   private static final WaitStrategy WAIT_STRATEGY = Wait.forHttp("/v1.0/healthz/outbound")
-      .forPort(DAPRD_DEFAULT_HTTP_PORT)
-      .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
+          .forPort(DAPRD_DEFAULT_HTTP_PORT)
+          .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399);
 
   private final Set<Component> components = new HashSet<>();
   private final Set<Subscription> subscriptions = new HashSet<>();
@@ -68,8 +68,8 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private String appChannelAddress = "localhost";
   private String placementService = "placement";
   private String schedulerService = "scheduler";
-  private String placementDockerImageName = DAPR_PLACEMENT_IMAGE_TAG;
-  private String schedulerDockerImageName = DAPR_SCHEDULER_IMAGE_TAG;
+  private DockerImageName placementDockerImageName = DockerImageName.parse(DAPR_PLACEMENT_IMAGE_TAG);
+  private DockerImageName schedulerDockerImageName = DockerImageName.parse(DAPR_SCHEDULER_IMAGE_TAG);
 
   private Configuration configuration;
   private DaprPlacementContainer placementContainer;
@@ -77,11 +77,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private String appName;
   private Integer appPort;
   private String appHealthCheckPath;
+  private Integer appHealthCheckProbeInterval = 5; //default from docs
+  private Integer appHealthCheckProbeTimeout = 500; //default from docs
+  private Integer appHealthCheckThreshold = 3; //default from docs
   private boolean shouldReusePlacement;
   private boolean shouldReuseScheduler;
 
   /**
    * Creates a new Dapr container.
+   *
    * @param dockerImageName Docker image name.
    */
   public DaprContainer(DockerImageName dockerImageName) {
@@ -94,6 +98,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   /**
    * Creates a new Dapr container.
+   *
    * @param image Docker image name.
    */
   public DaprContainer(String image) {
@@ -128,6 +133,21 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withAppHealthCheckPath(String appHealthCheckPath) {
     this.appHealthCheckPath = appHealthCheckPath;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckProbeInterval(Integer appHealthCheckProbeInterval) {
+    this.appHealthCheckProbeInterval = appHealthCheckProbeInterval;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckProbeTimeout(Integer appHealthCheckProbeTimeout) {
+    this.appHealthCheckProbeTimeout = appHealthCheckProbeTimeout;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckThreshold(Integer appHealthCheckThreshold) {
+    this.appHealthCheckThreshold = appHealthCheckThreshold;
     return this;
   }
 
@@ -166,13 +186,23 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withPlacementImage(String placementDockerImageName) {
+  public DaprContainer withPlacementImage(DockerImageName placementDockerImageName) {
     this.placementDockerImageName = placementDockerImageName;
     return this;
   }
 
-  public DaprContainer withSchedulerImage(String schedulerDockerImageName) {
+  public DaprContainer withPlacementImage(String placementDockerImageName) {
+    this.placementDockerImageName = DockerImageName.parse(placementDockerImageName);
+    return this;
+  }
+
+  public DaprContainer withSchedulerImage(DockerImageName schedulerDockerImageName) {
     this.schedulerDockerImageName = schedulerDockerImageName;
+    return this;
+  }
+
+  public DaprContainer withSchedulerImage(String schedulerDockerImageName) {
+    this.schedulerDockerImageName = DockerImageName.parse(schedulerDockerImageName);
     return this;
   }
 
@@ -181,7 +211,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withReuseScheduler(boolean shouldReuseScheduler) {
+  public DaprContainer withReusableScheduler(boolean shouldReuseScheduler) {
     this.shouldReuseScheduler = shouldReuseScheduler;
     return this;
   }
@@ -203,6 +233,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   /**
    * Adds a Dapr component from a YAML file.
+   *
    * @param path Path to the YAML file.
    * @return This container.
    */
@@ -217,7 +248,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       String type = (String) spec.get("type");
       String version = (String) spec.get("version");
       List<Map<String, String>> specMetadata =
-          (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyList());
+              (List<Map<String, String>>) spec.getOrDefault("metadata", Collections.emptyList());
 
       ArrayList<MetadataEntry> metadataEntries = new ArrayList<>();
 
@@ -258,17 +289,17 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     if (this.placementContainer == null) {
       this.placementContainer = new DaprPlacementContainer(this.placementDockerImageName)
-          .withNetwork(getNetwork())
-          .withNetworkAliases(placementService)
-          .withReuse(this.shouldReusePlacement);
+              .withNetwork(getNetwork())
+              .withNetworkAliases(placementService)
+              .withReuse(this.shouldReusePlacement);
       this.placementContainer.start();
     }
 
     if (this.schedulerContainer == null) {
       this.schedulerContainer = new DaprSchedulerContainer(this.schedulerDockerImageName)
-          .withNetwork(getNetwork())
-          .withNetworkAliases(schedulerService)
-          .withReuse(this.shouldReuseScheduler);
+              .withNetwork(getNetwork())
+              .withNetworkAliases(schedulerService)
+              .withReuse(this.shouldReuseScheduler);
       this.schedulerContainer.start();
     }
 
@@ -298,6 +329,16 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       cmds.add("--enable-app-health-check");
       cmds.add("--app-health-check-path");
       cmds.add(appHealthCheckPath);
+
+      cmds.add("--app-health-probe-interval");
+      cmds.add(Integer.toString(appHealthCheckProbeInterval));
+
+      cmds.add("--app-health-probe-timeout");
+      cmds.add(Integer.toString(appHealthCheckProbeTimeout));
+
+      cmds.add("--app-health-threshold");
+      cmds.add(Integer.toString(appHealthCheckThreshold));
+
     }
 
     if (configuration != null) {
@@ -372,6 +413,22 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return appPort;
   }
 
+  public String getAppHealthCheckPath() {
+    return appHealthCheckPath;
+  }
+
+  public Integer getAppHealthCheckProbeInterval() {
+    return appHealthCheckProbeInterval;
+  }
+
+  public Integer getAppHealthCheckProbeTimeout() {
+    return appHealthCheckProbeTimeout;
+  }
+
+  public Integer getAppHealthCheckThreshold() {
+    return appHealthCheckThreshold;
+  }
+
   public String getAppChannelAddress() {
     return appChannelAddress;
   }
@@ -382,6 +439,14 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public static DockerImageName getDefaultImageName() {
     return DEFAULT_IMAGE_NAME;
+  }
+
+  public DockerImageName getPlacementDockerImageName() {
+    return placementDockerImageName;
+  }
+
+  public DockerImageName getSchedulerDockerImageName() {
+    return schedulerDockerImageName;
   }
 
   // Required by spotbugs plugin

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -10,12 +10,27 @@
  * See the License for the specific language governing permissions and
 limitations under the License.
 */
+package io.dapr.springboot.examples.wfp.timer;
 
-package io.dapr.testcontainers;
+import org.springframework.stereotype.Component;
 
-public interface DaprContainerConstants {
-  String DAPR_VERSION = "1.15.7";
-  String DAPR_RUNTIME_IMAGE_TAG = "daprio/daprd:" + DAPR_VERSION;
-  String DAPR_PLACEMENT_IMAGE_TAG = "daprio/placement:" + DAPR_VERSION;
-  String DAPR_SCHEDULER_IMAGE_TAG = "daprio/scheduler:" + DAPR_VERSION;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+@Component
+public class TimerLogService {
+  private final List<Date> logDates = new ArrayList<>();
+
+  public void logDate(Date date){
+    logDates.add(date);
+  }
+
+  public void clearLog(){
+    logDates.clear();
+  }
+
+  public List<Date> getLogDates(){
+    return logDates;
+  }
 }
