@@ -1,3 +1,16 @@
+/*
+ * Copyright 2025 The Dapr Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package io.dapr.utils;
 
 import io.dapr.config.Properties;
@@ -145,5 +158,28 @@ public class NetworkUtilsTest {
     } catch (IllegalArgumentException e) {
       // Expected
     }
+  }
+
+  @Test
+  public void testMaxDefaultInboundSize() throws Exception {
+    Properties properties = new Properties();
+
+    NetworkUtils.GrpcEndpointSettings settings = NetworkUtils.GrpcEndpointSettings.parse(properties);
+    Assertions.assertEquals(4194304, settings.maxInboundMessageSize);
+    Assertions.assertEquals(8192, settings.maxInboundMetadataSize);
+
+  }
+
+  @Test
+  public void testMaxInboundSize() throws Exception {
+    Properties properties = new Properties(Map.of(
+        Properties.GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES.getName(), "123456789",
+        Properties.GRPC_MAX_INBOUND_METADATA_SIZE_BYTES.getName(), "123456"
+    ));
+
+    NetworkUtils.GrpcEndpointSettings settings = NetworkUtils.GrpcEndpointSettings.parse(properties);
+    Assertions.assertEquals(123456789, settings.maxInboundMessageSize);
+    Assertions.assertEquals(123456, settings.maxInboundMetadataSize);
+
   }
 }
