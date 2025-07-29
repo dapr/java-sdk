@@ -7,7 +7,7 @@ GPG_PWD: the password to access the GPG key
 <settings>
   <servers>
     <server>
-      <id>ossrh</id>
+      <id>central</id>
       <username>${env.OSSRH_USER_TOKEN}</username>
       <password>${env.OSSRH_PWD_TOKEN}</password>
     </server>
