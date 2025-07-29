@@ -25,6 +25,8 @@ import java.net.Socket;
 import java.util.regex.Pattern;
 
 import static io.dapr.config.Properties.GRPC_ENDPOINT;
+import static io.dapr.config.Properties.GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES;
+import static io.dapr.config.Properties.GRPC_MAX_INBOUND_METADATA_SIZE_BYTES;
 import static io.dapr.config.Properties.GRPC_PORT;
 import static io.dapr.config.Properties.SIDECAR_IP;
 
@@ -121,7 +123,9 @@ public final class NetworkUtils {
     if (interceptors != null && interceptors.length > 0) {
       builder = builder.intercept(interceptors);
     }
-    return builder.build();
+    return builder.maxInboundMessageSize(settings.maxInboundMessageSize)
+            .maxInboundMetadataSize(settings.maxInboundMetadataSize)
+            .build();
   }
 
   // Not private to allow unit testing
@@ -129,14 +133,24 @@ public final class NetworkUtils {
     final String endpoint;
     final boolean secure;
 
-    private GrpcEndpointSettings(String endpoint, boolean secure) {
+    final int maxInboundMessageSize;
+    final int maxInboundMetadataSize;
+
+    private GrpcEndpointSettings(
+        String endpoint, boolean secure,
+        int maxInboundMessageSize, int maxInboundMetadataSize) {
       this.endpoint = endpoint;
       this.secure = secure;
+      this.maxInboundMessageSize = maxInboundMessageSize;
+      this.maxInboundMetadataSize = maxInboundMetadataSize;
     }
 
     static GrpcEndpointSettings parse(Properties properties) {
       String address = properties.getValue(SIDECAR_IP);
       int port = properties.getValue(GRPC_PORT);
+      int maxInboundMessageSizeBytes = properties.getValue(GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES);
+      int maxInboundMetadataSizeBytes = properties.getValue(GRPC_MAX_INBOUND_METADATA_SIZE_BYTES);
+
       boolean secure = false;
       String grpcEndpoint = properties.getValue(GRPC_ENDPOINT);
       if ((grpcEndpoint != null) && !grpcEndpoint.isEmpty()) {
@@ -172,21 +186,23 @@ public final class NetworkUtils {
 
         var authorityEndpoint = matcher.group("authorityEndpoint");
         if (authorityEndpoint != null) {
-          return new GrpcEndpointSettings(String.format("dns://%s/%s:%d", authorityEndpoint, address, port), secure);
+          return new GrpcEndpointSettings(String.format("dns://%s/%s:%d", authorityEndpoint, address, port),
+                  secure, maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
         }
 
         var socket = matcher.group("socket");
         if (socket != null) {
-          return new GrpcEndpointSettings(socket, secure);
+          return new GrpcEndpointSettings(socket, secure, maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
         }
 
         var vsocket = matcher.group("vsocket");
         if (vsocket != null) {
-          return new GrpcEndpointSettings(vsocket, secure);
+          return new GrpcEndpointSettings(vsocket, secure, maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
         }
       }
 
-      return new GrpcEndpointSettings(String.format("dns:///%s:%d", address, port), secure);
+      return new GrpcEndpointSettings(String.format("dns:///%s:%d", address, port), secure, 
+          maxInboundMessageSizeBytes, maxInboundMetadataSizeBytes);
     }
 
   }
