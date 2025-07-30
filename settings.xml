@@ -1,5 +1,5 @@
 <!-- 
-OSSRH_USER_TOKEN and OSSRH-PWD_TOKEN: The username and password tokens for your OSSRH account
+OSSRH_USER_TOKEN and OSSRH_PWD_TOKEN: The username and password tokens for your OSSRH account
 GPG_KEY: the name of the GPG key file to use for signing e.g. F784FAB8
 GPG_PWD: the password to access the GPG key
 -->
@@ -7,7 +7,7 @@ GPG_PWD: the password to access the GPG key
 <settings>
   <servers>
     <server>
-      <id>ossrh</id>
+      <id>central</id>
       <username>${env.OSSRH_USER_TOKEN}</username>
       <password>${env.OSSRH_PWD_TOKEN}</password>
     </server>
