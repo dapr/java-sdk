@@ -175,10 +175,14 @@ jobs:
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
         run: ./mvnw install -B -q
-      - name: Publish to ossrh
+      - name: Publish to Central Publisher Portal
         if: env.DEPLOY_OSSRH == 'true'
         run: |
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
+          echo "Starting Maven deploy..."
           ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy
+          echo "Maven deploy completed"
+          curl -X POST https://central.sonatype.com/manual/upload/defaultRepository/io.dapr
+          echo "Manual upload completed"
