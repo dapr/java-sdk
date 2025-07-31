@@ -18,6 +18,7 @@
 
   <properties>
     <maven.deploy.skip>false</maven.deploy.skip>
+    <central-publishing-maven-plugin.skipPublishing>false</central-publishing-maven-plugin.skipPublishing>
     <argLine>
       --add-opens java.base/java.util=ALL-UNNAMED
     </argLine>

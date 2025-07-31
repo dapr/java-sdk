@@ -30,6 +30,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <central-publishing-maven-plugin.skipPublishing>true</central-publishing-maven-plugin.skipPublishing>
     <!--
         manually declare durabletask-client's jackson dependencies for workflows sdk
         which conflict with dapr-sdk's jackson dependencies
