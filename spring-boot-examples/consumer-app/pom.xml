@@ -12,7 +12,6 @@
   <name>consumer-app</name>
   <description>Spring Boot, Testcontainers and Dapr Integration Examples :: Consumer App</description>
 
-
   <dependencyManagement>
     <dependencies>
       <dependency>

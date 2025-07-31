@@ -13,7 +13,6 @@
   <name>producer-app</name>
   <description>Spring Boot, Testcontainers and Dapr Integration Examples :: Producer App</description>
 
-
   <dependencyManagement>
     <dependencies>
       <dependency>
