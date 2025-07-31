@@ -22,6 +22,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <central-publishing-maven-plugin.skipPublishing>true</central-publishing-maven-plugin.skipPublishing>
     <dapr.sdk.version>1.14.2-rc-4</dapr.sdk.version>
     <dapr.sdk.alpha.version>0.14.2-rc-4</dapr.sdk.alpha.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
