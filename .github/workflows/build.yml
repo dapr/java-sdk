@@ -184,3 +184,4 @@ jobs:
           echo "Starting Maven deploy..."
           ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy
           echo "Maven deploy completed"
+          curl -X POST https://central.sonatype.com/manual/upload/defaultRepository/io.dapr
