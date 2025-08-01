@@ -174,7 +174,7 @@ jobs:
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
       - name: Install jars
         if: env.DEPLOY_OSSRH == 'true'
-        run: ./mvnw install -B -q
+        run: ./mvnw install -DskipTests -B -q
       - name: Publish to Central Publisher Portal
         if: env.DEPLOY_OSSRH == 'true'
         run: |
@@ -184,5 +184,5 @@ jobs:
           echo "Starting Maven deploy..."
           ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy
           echo "Maven deploy completed"
-          curl -X POST https://central.sonatype.com/manual/upload/defaultRepository/io.dapr
+          curl -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.dapr
           echo "Manual upload completed"
