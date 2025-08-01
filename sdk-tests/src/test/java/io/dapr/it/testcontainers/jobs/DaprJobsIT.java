@@ -102,6 +102,9 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+
+    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals("Job", getJobResponse.getName());
   }
@@ -117,6 +120,9 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+
+    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals(JobSchedule.hourly().getExpression(), getJobResponse.getSchedule().getExpression());
     assertEquals("Job", getJobResponse.getName());
@@ -138,6 +144,9 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+
+    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+
     assertEquals(iso8601Formatter.format(currentTime), getJobResponse.getDueTime().toString());
     assertEquals("2 * 3 * * FRI", getJobResponse.getSchedule().getExpression());
     assertEquals("Job", getJobResponse.getName());
@@ -164,6 +173,9 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+
+    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+
     assertEquals(FailurePolicyType.DROP, getJobResponse.getFailurePolicy().getFailurePolicyType());
   }
 
@@ -185,6 +197,9 @@ public class DaprJobsIT {
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
+
+    daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
+
     ConstantFailurePolicy jobFailurePolicyConstant = (ConstantFailurePolicy) getJobResponse.getFailurePolicy();
     assertEquals(FailurePolicyType.CONSTANT, getJobResponse.getFailurePolicy().getFailurePolicyType());
     assertEquals(3, (int)jobFailurePolicyConstant.getMaxRetries());
