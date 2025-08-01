@@ -13,7 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
-public enum FailurePolicyKind {
+public enum FailurePolicyType {
   DROP,
 
   CONSTANT
