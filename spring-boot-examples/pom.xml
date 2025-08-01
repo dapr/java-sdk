@@ -15,7 +15,6 @@
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <central-publishing-maven-plugin.skipPublishing>true</central-publishing-maven-plugin.skipPublishing>
   </properties>
 
   <modules>
@@ -47,6 +46,13 @@
         <configuration>
           <!-- Skip checkstyle for auto-generated code -->
           <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <configuration>
+          <skipPublishing>true</skipPublishing>
         </configuration>
       </plugin>
     </plugins>

@@ -12,7 +12,6 @@
   <name>consumer-app</name>
   <description>Spring Boot, Testcontainers and Dapr Integration Examples :: Consumer App</description>
 
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -99,6 +98,13 @@
         <configuration>
           <!-- Skip checkstyle for auto-generated code -->
           <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <configuration>
+          <skipPublishing>true</skipPublishing>
         </configuration>
       </plugin>
     </plugins>
