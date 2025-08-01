@@ -13,26 +13,22 @@ limitations under the License.
 
 package io.dapr.it.testcontainers.jobs;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
-import eu.rekawek.toxiproxy.Proxy;
-import eu.rekawek.toxiproxy.ToxiproxyClient;
 import io.dapr.client.DaprPreviewClient;
+import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.DeleteJobRequest;
-import io.dapr.client.domain.FailurePolicyKind;
+import io.dapr.client.domain.DropFailurePolicy;
+import io.dapr.client.domain.FailurePolicyType;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
-import io.dapr.client.domain.JobFailurePolicyConstant;
-import io.dapr.client.domain.JobFailurePolicyDrop;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ScheduleJobRequest;
 import io.dapr.it.testcontainers.DaprPreviewClientConfiguration;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.runner.notification.Failure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -42,7 +38,6 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -164,12 +159,12 @@ public class DaprJobsIT {
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
-            .setFailurePolicy(new JobFailurePolicyDrop())
+            .setFailurePolicy(new DropFailurePolicy())
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    assertEquals(FailurePolicyKind.DROP, getJobResponse.getFailurePolicy().getFailurePolicyKind());
+    assertEquals(FailurePolicyType.DROP, getJobResponse.getFailurePolicy().getFailurePolicyType());
   }
 
   @Test
@@ -184,14 +179,14 @@ public class DaprJobsIT {
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
-        .setFailurePolicy(new JobFailurePolicyConstant(3)
+        .setFailurePolicy(new ConstantFailurePolicy(3)
             .setDurationBetweenRetries(Duration.of(10, ChronoUnit.SECONDS)))
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
-    JobFailurePolicyConstant jobFailurePolicyConstant = (JobFailurePolicyConstant)getJobResponse.getFailurePolicy();
-    assertEquals(FailurePolicyKind.CONSTANT, getJobResponse.getFailurePolicy().getFailurePolicyKind());
+    ConstantFailurePolicy jobFailurePolicyConstant = (ConstantFailurePolicy) getJobResponse.getFailurePolicy();
+    assertEquals(FailurePolicyType.CONSTANT, getJobResponse.getFailurePolicy().getFailurePolicyType());
     assertEquals(3, (int)jobFailurePolicyConstant.getMaxRetries());
     assertEquals(Duration.of(10, ChronoUnit.SECONDS).getNano(),
         jobFailurePolicyConstant.getDurationBetweenRetries().getNano());

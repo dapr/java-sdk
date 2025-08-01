@@ -1345,7 +1345,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
 
         FailurePolicy failurePolicy = scheduleJobRequest.getFailurePolicy();
-        if (failurePolicy.getFailurePolicyKind() == FailurePolicyType.DROP) {
+        if (failurePolicy.getFailurePolicyType() == FailurePolicyType.DROP) {
 
           jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
         } else {

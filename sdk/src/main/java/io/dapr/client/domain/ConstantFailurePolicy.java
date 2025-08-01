@@ -89,7 +89,7 @@ public class ConstantFailurePolicy implements FailurePolicy {
    * @return {@link FailurePolicyType#CONSTANT}
    */
   @Override
-  public FailurePolicyType getFailurePolicyKind() {
+  public FailurePolicyType getFailurePolicyType() {
     return FailurePolicyType.CONSTANT;
   }
 }

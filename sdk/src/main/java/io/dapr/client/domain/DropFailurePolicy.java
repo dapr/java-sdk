@@ -26,7 +26,7 @@ public class DropFailurePolicy implements FailurePolicy {
    * @return {@link FailurePolicyType#DROP}
    */
   @Override
-  public FailurePolicyType getFailurePolicyKind() {
+  public FailurePolicyType getFailurePolicyType() {
     return FailurePolicyType.DROP;
   }
 }
