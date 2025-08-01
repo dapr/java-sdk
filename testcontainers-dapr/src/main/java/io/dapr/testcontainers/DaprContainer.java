@@ -77,6 +77,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private String appName;
   private Integer appPort;
   private String appHealthCheckPath;
+  private Integer appHealthCheckProbeInterval = 5; //default from docs
+  private Integer appHealthCheckProbeTimeout = 500; //default from docs
+  private Integer appHealthCheckThreshold = 3; //default from docs
   private boolean shouldReusePlacement;
   private boolean shouldReuseScheduler;
 
@@ -130,6 +133,21 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withAppHealthCheckPath(String appHealthCheckPath) {
     this.appHealthCheckPath = appHealthCheckPath;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckProbeInterval(Integer appHealthCheckProbeInterval) {
+    this.appHealthCheckProbeInterval = appHealthCheckProbeInterval;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckProbeTimeout(Integer appHealthCheckProbeTimeout) {
+    this.appHealthCheckProbeTimeout = appHealthCheckProbeTimeout;
+    return this;
+  }
+
+  public DaprContainer withAppHealthCheckThreshold(Integer appHealthCheckThreshold) {
+    this.appHealthCheckThreshold = appHealthCheckThreshold;
     return this;
   }
 
@@ -193,7 +211,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withReuseScheduler(boolean shouldReuseScheduler) {
+  public DaprContainer withReusableScheduler(boolean shouldReuseScheduler) {
     this.shouldReuseScheduler = shouldReuseScheduler;
     return this;
   }
@@ -311,6 +329,16 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       cmds.add("--enable-app-health-check");
       cmds.add("--app-health-check-path");
       cmds.add(appHealthCheckPath);
+
+      cmds.add("--app-health-probe-interval");
+      cmds.add(Integer.toString(appHealthCheckProbeInterval));
+
+      cmds.add("--app-health-probe-timeout");
+      cmds.add(Integer.toString(appHealthCheckProbeTimeout));
+
+      cmds.add("--app-health-threshold");
+      cmds.add(Integer.toString(appHealthCheckThreshold));
+
     }
 
     if (configuration != null) {
@@ -383,6 +411,22 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public Integer getAppPort() {
     return appPort;
+  }
+
+  public String getAppHealthCheckPath() {
+    return appHealthCheckPath;
+  }
+
+  public Integer getAppHealthCheckProbeInterval() {
+    return appHealthCheckProbeInterval;
+  }
+
+  public Integer getAppHealthCheckProbeTimeout() {
+    return appHealthCheckProbeTimeout;
+  }
+
+  public Integer getAppHealthCheckThreshold() {
+    return appHealthCheckThreshold;
   }
 
   public String getAppChannelAddress() {

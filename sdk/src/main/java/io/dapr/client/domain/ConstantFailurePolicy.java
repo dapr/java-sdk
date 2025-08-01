@@ -20,7 +20,7 @@ import java.time.Duration;
  * This implementation of {@link FailurePolicy} retries a job a fixed number of times
  * with a constant delay between each retry attempt.
  */
-public class JobFailurePolicyConstant implements FailurePolicy {
+public class ConstantFailurePolicy implements FailurePolicy {
 
   private Integer maxRetries;
   private Duration durationBetweenRetries;
@@ -30,7 +30,7 @@ public class JobFailurePolicyConstant implements FailurePolicy {
    *
    * @param maxRetries the maximum number of retries
    */
-  public JobFailurePolicyConstant(Integer maxRetries) {
+  public ConstantFailurePolicy(Integer maxRetries) {
     this.maxRetries = maxRetries;
   }
 
@@ -39,7 +39,7 @@ public class JobFailurePolicyConstant implements FailurePolicy {
    *
    * @param durationBetweenRetries the duration to wait between retries
    */
-  public JobFailurePolicyConstant(Duration durationBetweenRetries) {
+  public ConstantFailurePolicy(Duration durationBetweenRetries) {
     this.durationBetweenRetries = durationBetweenRetries;
   }
 
@@ -49,7 +49,7 @@ public class JobFailurePolicyConstant implements FailurePolicy {
    * @param durationBetweenRetries the duration between retries
    * @return a {@code JobFailurePolicyConstant}.
    */
-  public JobFailurePolicyConstant setDurationBetweenRetries(Duration durationBetweenRetries) {
+  public ConstantFailurePolicy setDurationBetweenRetries(Duration durationBetweenRetries) {
     this.durationBetweenRetries = durationBetweenRetries;
     return this;
   }
@@ -60,7 +60,7 @@ public class JobFailurePolicyConstant implements FailurePolicy {
    * @param maxRetries the number of retries
    * @return a {@code JobFailurePolicyConstant}.
    */
-  public JobFailurePolicyConstant setMaxRetries(int maxRetries) {
+  public ConstantFailurePolicy setMaxRetries(int maxRetries) {
     this.maxRetries = maxRetries;
     return this;
   }
@@ -86,10 +86,10 @@ public class JobFailurePolicyConstant implements FailurePolicy {
   /**
    * Returns the type of failure policy.
    *
-   * @return {@link FailurePolicyKind#CONSTANT}
+   * @return {@link FailurePolicyType#CONSTANT}
    */
   @Override
-  public FailurePolicyKind getFailurePolicyKind() {
-    return FailurePolicyKind.CONSTANT;
+  public FailurePolicyType getFailurePolicyKind() {
+    return FailurePolicyType.CONSTANT;
   }
 }

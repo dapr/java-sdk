@@ -25,8 +25,8 @@ import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
-import io.dapr.client.domain.JobFailurePolicyConstant;
-import io.dapr.client.domain.JobFailurePolicyDrop;
+import io.dapr.client.domain.ConstantFailurePolicy;
+import io.dapr.client.domain.DropFailurePolicy;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationRequest;
@@ -831,7 +831,7 @@ public class DaprPreviewClientGrpcTest {
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
-        .setFailurePolicy(new JobFailurePolicyDrop());
+        .setFailurePolicy(new DropFailurePolicy());
 
     previewClient.scheduleJob(expectedScheduleJobRequest).block();
 
@@ -859,7 +859,7 @@ public class DaprPreviewClientGrpcTest {
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
-        .setFailurePolicy(new JobFailurePolicyConstant(2));
+        .setFailurePolicy(new ConstantFailurePolicy(2));
 
     previewClient.scheduleJob(expectedScheduleJobRequest).block();
 
@@ -888,7 +888,7 @@ public class DaprPreviewClientGrpcTest {
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
-        .setFailurePolicy(new JobFailurePolicyConstant(Duration.of(2, ChronoUnit.SECONDS)));
+        .setFailurePolicy(new ConstantFailurePolicy(Duration.of(2, ChronoUnit.SECONDS)));
 
     previewClient.scheduleJob(expectedScheduleJobRequest).block();
 
@@ -918,7 +918,7 @@ public class DaprPreviewClientGrpcTest {
 
     ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
         JobSchedule.fromString("* * * * * *"))
-        .setFailurePolicy(new JobFailurePolicyConstant(Duration.of(2, ChronoUnit.SECONDS))
+        .setFailurePolicy(new ConstantFailurePolicy(Duration.of(2, ChronoUnit.SECONDS))
             .setMaxRetries(10));
 
     previewClient.scheduleJob(expectedScheduleJobRequest).block();

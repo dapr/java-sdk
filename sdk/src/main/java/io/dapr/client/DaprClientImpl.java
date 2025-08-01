@@ -36,7 +36,7 @@ import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
 import io.dapr.client.domain.FailurePolicy;
-import io.dapr.client.domain.FailurePolicyKind;
+import io.dapr.client.domain.FailurePolicyType;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -48,8 +48,8 @@ import io.dapr.client.domain.HttpEndpointMetadata;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.client.domain.InvokeBindingRequest;
 import io.dapr.client.domain.InvokeMethodRequest;
-import io.dapr.client.domain.JobFailurePolicyConstant;
-import io.dapr.client.domain.JobFailurePolicyDrop;
+import io.dapr.client.domain.ConstantFailurePolicy;
+import io.dapr.client.domain.DropFailurePolicy;
 import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.LockRequest;
 import io.dapr.client.domain.PublishEventRequest;
@@ -1345,14 +1345,14 @@ public class DaprClientImpl extends AbstractDaprClient {
         CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
 
         FailurePolicy failurePolicy = scheduleJobRequest.getFailurePolicy();
-        if (failurePolicy.getFailurePolicyKind() == FailurePolicyKind.DROP) {
+        if (failurePolicy.getFailurePolicyKind() == FailurePolicyType.DROP) {
 
           jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
         } else {
 
           CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
               CommonProtos.JobFailurePolicyConstant.newBuilder();
-          JobFailurePolicyConstant jobConstantFailurePolicy = (JobFailurePolicyConstant)failurePolicy;
+          ConstantFailurePolicy jobConstantFailurePolicy = (ConstantFailurePolicy)failurePolicy;
           if (jobConstantFailurePolicy.getMaxRetries() != null) {
             constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
           }
@@ -1413,19 +1413,19 @@ public class DaprClientImpl extends AbstractDaprClient {
           CommonProtos.JobFailurePolicy jobFailurePolicy = job.getFailurePolicy();
 
           if (jobFailurePolicy.hasDrop()) {
-            getJobResponse.setFailurePolicy(new JobFailurePolicyDrop());
+            getJobResponse.setFailurePolicy(new DropFailurePolicy());
           }
           if (jobFailurePolicy.hasConstant()) {
             CommonProtos.JobFailurePolicyConstant jobFailurePolicyConstant = jobFailurePolicy.getConstant();
             if (jobFailurePolicyConstant.hasInterval() && jobFailurePolicyConstant.hasMaxRetries()) {
               getJobResponse.setFailurePolicy(
-                  new JobFailurePolicyConstant(jobFailurePolicyConstant.getMaxRetries())
+                  new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries())
                       .setDurationBetweenRetries(Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
                           ChronoUnit.NANOS)));
             } else if (jobFailurePolicyConstant.hasMaxRetries()) {
-              getJobResponse.setFailurePolicy(new JobFailurePolicyConstant(jobFailurePolicyConstant.getMaxRetries()));
+              getJobResponse.setFailurePolicy(new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries()));
             } else {
-              getJobResponse.setFailurePolicy(new JobFailurePolicyConstant(
+              getJobResponse.setFailurePolicy(new ConstantFailurePolicy(
                   Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
                   ChronoUnit.NANOS)));
             }
