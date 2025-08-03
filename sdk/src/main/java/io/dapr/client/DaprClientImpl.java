@@ -1647,147 +1647,160 @@ public class DaprClientImpl extends AbstractDaprClient {
    */
   @Override
   public Mono<ConversationResponseAlpha2> converseAlpha2(ConversationRequestAlpha2 conversationRequestAlpha2) {
-
     try {
       validateConversationRequestAlpha2(conversationRequestAlpha2);
-
-      DaprProtos.ConversationRequestAlpha2.Builder protosConversationRequestBuilder =
-          DaprProtos.ConversationRequestAlpha2
-          .newBuilder()
-          .setTemperature(conversationRequestAlpha2.getTemperature())
-          .setScrubPii(conversationRequestAlpha2.isScrubPii())
-          .setName(conversationRequestAlpha2.getName());
-
-      if (conversationRequestAlpha2.getContextId() != null) {
-        protosConversationRequestBuilder.setContextId(conversationRequestAlpha2.getContextId());
-      }
-
-      if (conversationRequestAlpha2.getToolChoice() != null) {
-        protosConversationRequestBuilder.setToolChoice(conversationRequestAlpha2.getToolChoice());
-      }
-
-      if (conversationRequestAlpha2.getTools() != null) {
-        for (ConversationTools tool : conversationRequestAlpha2.getTools()) {
-
-          ConversationFunction conversationFunction = tool.getFunction();
-
-          Map<String, Any> protosConversationToolFunctionParameters = conversationFunction.getParameters()
-              .entrySet().stream()
-              .collect(Collectors.toMap(
-                 Map.Entry::getKey,
-                 e -> Any.pack((Message) e.getValue())
-             ));
-          DaprProtos.ConversationToolsFunction protosConversationToolsFunction =
-              DaprProtos.ConversationToolsFunction.newBuilder()
-              .setName(conversationFunction.getName())
-              .setDescription(conversationFunction.getDescription())
-              .putAllParameters(protosConversationToolFunctionParameters)
-              .build();
-
-          DaprProtos.ConversationTools conversationTool = DaprProtos.ConversationTools.newBuilder()
-              .setFunction(protosConversationToolsFunction).build();
-
-          protosConversationRequestBuilder.addTools(conversationTool);
-        }
-      }
-
-      for (ConversationInputAlpha2 input : conversationRequestAlpha2.getInputs()) {
-        DaprProtos.ConversationInputAlpha2.Builder conversationInputBuilder = DaprProtos.ConversationInputAlpha2
-            .newBuilder()
-            .setScrubPii(input.isScrubPii());
-
-        if (input.getMessages() != null) {
-
-          for (ConversationMessage conversationMessage : input.getMessages()) {
-            DaprProtos.ConversationMessage.Builder messageBuilder =
-                DaprProtos.ConversationMessage.newBuilder();
-
-            ConversationMessage.Role role = conversationMessage.getRole();
-            switch (role) {
-              case TOOL:
-                messageBuilder.setOfTool(DaprProtos.ConversationMessageOfTool.newBuilder()
-                    .setToolId(conversationMessage.getToolId())
-                    .setName(conversationMessage.getName())
-                    .addAllContent(getConversationMessageContent(conversationMessage)).build());
-                break;
-              case USER:
-                messageBuilder.setOfUser(DaprProtos.ConversationMessageOfUser.newBuilder()
-                        .setName(conversationMessage.getName())
-                    .addAllContent(getConversationMessageContent(conversationMessage)).build());
-                break;
-              case ASSISTANT:
-                messageBuilder.setOfAssistant(DaprProtos.ConversationMessageOfAssistant.newBuilder()
-                    .setName(conversationMessage.getName())
-                    .addAllToolCalls(getConversationToolCalls(conversationMessage))
-                    .addAllContent(getConversationMessageContent(conversationMessage)).build());
-                break;
-              case DEVELOPER:
-                messageBuilder.setOfDeveloper(DaprProtos.ConversationMessageOfDeveloper.newBuilder()
-                    .setName(conversationMessage.getName())
-                    .addAllContent(getConversationMessageContent(conversationMessage)).build());
-                break;
-              case SYSTEM:
-                messageBuilder.setOfSystem(DaprProtos.ConversationMessageOfSystem.newBuilder()
-                    .setName(conversationMessage.getName())
-                    .addAllContent(getConversationMessageContent(conversationMessage)).build());
-                break;
-              default: throw new IllegalArgumentException("No role of type " + role + " found");
-            }
-
-            conversationInputBuilder.addMessages(messageBuilder.build());
-          }
-        }
-
-        protosConversationRequestBuilder.addInputs(conversationInputBuilder.build());
-      }
-
+      DaprProtos.ConversationRequestAlpha2 protoRequest = buildConversationRequestProto(conversationRequestAlpha2);
+      
       Mono<DaprProtos.ConversationResponseAlpha2> conversationResponseMono = Mono.deferContextual(
           context -> this.createMono(
-              it -> intercept(context, asyncStub)
-                  .converseAlpha2(protosConversationRequestBuilder.build(), it)
+              it -> intercept(context, asyncStub).converseAlpha2(protoRequest, it)
           )
       );
+      
+      DaprProtos.ConversationResponseAlpha2 conversationResponse = conversationResponseMono.block();
 
-      return conversationResponseMono.map(conversationResponse -> {
-        List<ConversationResultAlpha2> results = new ArrayList<>();
-        
-        for (DaprProtos.ConversationResultAlpha2 result : conversationResponse.getOutputsList()) {
-          List<ConversationResultChoices> choices = new ArrayList<>();
-          
-          for (DaprProtos.ConversationResultChoices choice : result.getChoicesList()) {
-            ConversationResultMessage message = null;
-            if (choice.hasMessage()) {
-              List<ConversationToolCalls> toolCalls = new ArrayList<>();
-
-              for (DaprProtos.ConversationToolCalls toolCall : choice.getMessage().getToolCallsList()) {
-                ConversationToolCallsFunction function = null;
-                if (toolCall.hasFunction()) {
-                  function = new ConversationToolCallsFunction(
-                      toolCall.getFunction().getName(),
-                      toolCall.getFunction().getArguments()
-                  );
-                }
-                
-                toolCalls.add(new ConversationToolCalls(toolCall.getId(), function));
-              }
-              
-              message = new ConversationResultMessage(
-                  choice.getMessage().getContent(),
-                  toolCalls
-              );
-            }
-
-            choices.add(new ConversationResultChoices(choice.getFinishReason(), choice.getIndex(), message));
-          }
-          
-          results.add(new ConversationResultAlpha2(choices));
-        }
-
-        return new ConversationResponseAlpha2(conversationResponse.getContextId(), results);
-      });
+      List<ConversationResultAlpha2> results = buildConversationResults(conversationResponse.getOutputsList());
+      return Mono.just(new ConversationResponseAlpha2(conversationResponse.getContextId(), results));
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  private DaprProtos.ConversationRequestAlpha2 buildConversationRequestProto(ConversationRequestAlpha2 request) {
+    DaprProtos.ConversationRequestAlpha2.Builder builder = DaprProtos.ConversationRequestAlpha2
+        .newBuilder()
+        .setTemperature(request.getTemperature())
+        .setScrubPii(request.isScrubPii())
+        .setName(request.getName());
+
+    if (request.getContextId() != null) {
+      builder.setContextId(request.getContextId());
+    }
+
+    if (request.getToolChoice() != null) {
+      builder.setToolChoice(request.getToolChoice());
+    }
+
+    if (request.getTools() != null) {
+      buildConversationTools(request.getTools(), builder);
+    }
+
+    for (ConversationInputAlpha2 input : request.getInputs()) {
+      DaprProtos.ConversationInputAlpha2.Builder inputBuilder = DaprProtos.ConversationInputAlpha2
+          .newBuilder()
+          .setScrubPii(input.isScrubPii());
+
+      if (input.getMessages() != null) {
+        for (ConversationMessage message : input.getMessages()) {
+          DaprProtos.ConversationMessage protoMessage = buildConversationMessage(message);
+          inputBuilder.addMessages(protoMessage);
+        }
+      }
+
+      builder.addInputs(inputBuilder.build());
+    }
+    
+    return builder.build();
+  }
+
+  private void buildConversationTools(List<ConversationTools> tools, 
+                                     DaprProtos.ConversationRequestAlpha2.Builder builder) {
+    for (ConversationTools tool : tools) {
+      ConversationFunction function = tool.getFunction();
+    
+      Map<String, Any> protoParameters = function.getParameters()
+          .entrySet().stream()
+          .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> Any.pack((Message) e.getValue())
+        ));
+    
+      DaprProtos.ConversationToolsFunction protoFunction = DaprProtos.ConversationToolsFunction.newBuilder()
+          .setName(function.getName())
+          .setDescription(function.getDescription())
+          .putAllParameters(protoParameters)
+          .build();
+
+      builder.addTools(DaprProtos.ConversationTools.newBuilder()
+          .setFunction(protoFunction)
+          .build());
+    }
+  }
+
+  private DaprProtos.ConversationMessage buildConversationMessage(ConversationMessage message) {
+    DaprProtos.ConversationMessage.Builder messageBuilder = DaprProtos.ConversationMessage.newBuilder();
+    
+    switch (message.getRole()) {
+      case TOOL:
+        messageBuilder.setOfTool(DaprProtos.ConversationMessageOfTool.newBuilder()
+            .setToolId(message.getToolId()).setName(message.getName())
+            .addAllContent(getConversationMessageContent(message)).build());
+        break;
+      case USER:
+        messageBuilder.setOfUser(DaprProtos.ConversationMessageOfUser.newBuilder()
+            .setName(message.getName()).addAllContent(getConversationMessageContent(message)).build());
+        break;
+      case ASSISTANT:
+        messageBuilder.setOfAssistant(DaprProtos.ConversationMessageOfAssistant.newBuilder()
+            .setName(message.getName()).addAllToolCalls(getConversationToolCalls(message))
+            .addAllContent(getConversationMessageContent(message)).build());
+        break;
+      case DEVELOPER:
+        messageBuilder.setOfDeveloper(DaprProtos.ConversationMessageOfDeveloper.newBuilder()
+            .setName(message.getName()).addAllContent(getConversationMessageContent(message)).build());
+        break;
+      case SYSTEM:
+        messageBuilder.setOfSystem(DaprProtos.ConversationMessageOfSystem.newBuilder()
+            .setName(message.getName()).addAllContent(getConversationMessageContent(message)).build());
+        break;
+      default:
+        throw new IllegalArgumentException("No role of type " + message.getRole() + " found");
+    }
+
+    return messageBuilder.build();
+  }
+
+  private List<ConversationResultAlpha2> buildConversationResults(
+      List<DaprProtos.ConversationResultAlpha2> protoResults) {
+    List<ConversationResultAlpha2> results = new ArrayList<>();
+    
+    for (DaprProtos.ConversationResultAlpha2 protoResult : protoResults) {
+      List<ConversationResultChoices> choices = new ArrayList<>();
+        
+      for (DaprProtos.ConversationResultChoices protoChoice : protoResult.getChoicesList()) {
+        ConversationResultMessage message = buildConversationResultMessage(protoChoice);
+        choices.add(new ConversationResultChoices(protoChoice.getFinishReason(), protoChoice.getIndex(), message));
+      }  
+
+      results.add(new ConversationResultAlpha2(choices));
+    }
+    
+    return results;
+  }
+
+  private ConversationResultMessage buildConversationResultMessage(DaprProtos.ConversationResultChoices protoChoice) {
+    if (!protoChoice.hasMessage()) {
+      return null;
+    }
+
+    List<ConversationToolCalls> toolCalls = new ArrayList<>();
+
+    for (DaprProtos.ConversationToolCalls protoToolCall : protoChoice.getMessage().getToolCallsList()) {
+      ConversationToolCallsFunction function = null;
+      if (protoToolCall.hasFunction()) {
+        function = new ConversationToolCallsFunction(
+            protoToolCall.getFunction().getName(),
+            protoToolCall.getFunction().getArguments()
+        );
+      }
+      
+      toolCalls.add(new ConversationToolCalls(protoToolCall.getId(), function));
+    }
+    
+    return new ConversationResultMessage(
+        protoChoice.getMessage().getContent(),
+        toolCalls
+    );
   }
 
   private List<DaprProtos.ConversationMessageContent> getConversationMessageContent(
