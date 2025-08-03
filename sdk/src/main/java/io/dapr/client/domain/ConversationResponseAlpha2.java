@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,27 +16,26 @@ package io.dapr.client.domain;
 import java.util.List;
 
 /**
- * Response from the Dapr Conversation API.
+ * Alpha2 response from the Dapr Conversation API with enhanced features.
  */
-public class ConversationResponse {
+public class ConversationResponseAlpha2 {
 
-  private String contextId;
-
-  private final List<ConversationOutput> outputs;
+  private final String contextId;
+  private final List<ConversationResultAlpha2> outputs;
 
   /**
    * Constructor.
    *
    * @param contextId context id supplied to LLM.
-   * @param outputs outputs from the LLM.
+   * @param outputs outputs from the LLM (Alpha2 format).
    */
-  public ConversationResponse(String contextId, List<ConversationOutput> outputs) {
+  public ConversationResponseAlpha2(String contextId, List<ConversationResultAlpha2> outputs) {
     this.contextId = contextId;
     this.outputs = List.copyOf(outputs);
   }
 
   /**
-   *  The ID of an existing chat (like in ChatGPT).
+   * The ID of an existing chat (like in ChatGPT).
    *
    * @return String identifier.
    */
@@ -45,11 +44,11 @@ public class ConversationResponse {
   }
 
   /**
-   * Get list of conversation outputs.
+   * Get list of conversation outputs (Alpha2 format).
    *
-   * @return List{@link ConversationOutput}.
+   * @return List{@link ConversationResultAlpha2}.
    */
-  public List<ConversationOutput> getConversationOutputs() {
+  public List<ConversationResultAlpha2> getOutputs() {
     return this.outputs;
   }
 }
