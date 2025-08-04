@@ -834,6 +834,84 @@ public class DaprPreviewClientGrpcTest {
   }
 
   @Test
+  public void scheduleJobShouldThrowWhenNameAlreadyExists() {
+        AtomicInteger callCount = new AtomicInteger(0);
+        
+        doAnswer(invocation -> {
+          StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+          if (callCount.incrementAndGet() == 1) {
+            // First call succeeds
+            observer.onCompleted();
+          } else {
+            // Second call fails with ALREADY_EXISTS
+            observer.onError(newStatusRuntimeException("ALREADY_EXISTS", "Job with name 'testJob' already exists"));
+          }
+          return null;
+        }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+        // First call should succeed
+        ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
+        assertDoesNotThrow(() -> previewClient.scheduleJob(firstRequest).block());
+
+        ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+            ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+
+        verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+        DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+        DaprProtos.Job job = actualScheduleJobRequest.getJob();
+        assertEquals("testJob", job.getName());
+        assertFalse(job.hasData());
+        assertEquals(0, job.getRepeats());
+        assertFalse(job.hasTtl());
+
+    // Second call with same name should fail
+    ScheduleJobRequest secondRequest = new ScheduleJobRequest("testJob", Instant.now());
+    
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "ALREADY_EXISTS",
+        "ALREADY_EXISTS: Job with name 'testJob' already exists",
+        () -> previewClient.scheduleJob(secondRequest).block());
+  }
+
+  @Test
+  public void scheduleJobShouldSucceedWhenNameAlreadyExistsWithOverwrite() {
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response for both calls
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+    // First call should succeed
+    ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
+    assertDoesNotThrow(() -> previewClient.scheduleJob(firstRequest).block());
+
+    // Second call with same name but overwrite=true should also succeed
+    ScheduleJobRequest secondRequest = new ScheduleJobRequest("testJob", Instant.now())
+            .setOverwrite(true);
+    assertDoesNotThrow(() -> previewClient.scheduleJob(secondRequest).block());
+
+    // Verify that both calls were made successfully
+    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+            ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    verify(daprStub, times(2)).scheduleJobAlpha1(captor.capture(), any());
+
+    // Verify the first call doesn't have overwrite set
+    DaprProtos.ScheduleJobRequest firstActualRequest = captor.getAllValues().get(0);
+    assertFalse(firstActualRequest.getJob().getOverwrite());
+    assertEquals("testJob", firstActualRequest.getJob().getName());
+
+    // Verify the second call has overwrite set to true
+    DaprProtos.ScheduleJobRequest secondActualRequest = captor.getAllValues().get(1);
+    assertTrue(secondActualRequest.getJob().getOverwrite());
+    assertEquals("testJob", secondActualRequest.getJob().getName());
+  }
+
+
+
+
+
+  @Test
   public void getJobShouldReturnResponseWhenAllFieldsArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             .withZone(ZoneOffset.UTC);
