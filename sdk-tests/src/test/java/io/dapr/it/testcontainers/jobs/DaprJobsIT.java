@@ -93,7 +93,7 @@ public class DaprJobsIT {
             .withZone(ZoneOffset.UTC);
 
     Instant currentTime = Instant.now();
-    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime)).block();
+    daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", currentTime).setOverwrite(true)).block();
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
@@ -108,7 +108,7 @@ public class DaprJobsIT {
 
     Instant currentTime = Instant.now();
     daprPreviewClient.scheduleJob(new ScheduleJobRequest("Job", JobSchedule.hourly())
-        .setDueTime(currentTime)).block();
+        .setDueTime(currentTime).setOverwrite(true)).block();
 
     GetJobResponse getJobResponse =
         daprPreviewClient.getJob(new GetJobRequest("Job")).block();
@@ -129,6 +129,7 @@ public class DaprJobsIT {
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
+        .setOverwrite(true)
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     GetJobResponse getJobResponse =
@@ -152,6 +153,7 @@ public class DaprJobsIT {
         .setTtl(currentTime.plus(2, ChronoUnit.HOURS))
         .setData("Job data".getBytes())
         .setRepeat(3)
+        .setOverwrite(true)
         .setSchedule(JobSchedule.fromString(cronExpression))).block();
 
     daprPreviewClient.deleteJob(new DeleteJobRequest("Job")).block();
