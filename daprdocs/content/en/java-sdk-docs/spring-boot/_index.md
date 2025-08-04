@@ -26,12 +26,12 @@ If you already have a Spring Boot application, you can directly add the followin
 	<dependency>
         <groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter</artifactId>
-                <version>0.x.x</version> // see below for the latest versions
+		<version>0.14.2</version>
 	</dependency>
 	<dependency>
 		<groupId>io.dapr.spring</groupId>
 		<artifactId>dapr-spring-boot-starter-test</artifactId>
-                <version>0.x.x</version> // see below for the latest versions
+		<version>0.14.2</version>
 		<scope>test</scope>
 	</dependency>
 ```
