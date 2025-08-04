@@ -60,6 +60,14 @@ Configure gRPC keepalive behavior using these environment variables:
 | `DAPR_GRPC_KEEP_ALIVE_TIMEOUT_SECONDS` | gRPC keepalive timeout in seconds | `5` |
 | `DAPR_GRPC_KEEP_ALIVE_WITHOUT_CALLS` | Whether to keep gRPC connection alive without calls | `true` |
 
+#### Inbound Message Settings
+Configure gRPC inbound message settings using these environment variables:
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `DAPR_GRPC_ENABLEDAPR_GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES_KEEP_ALIVE` | Dapr's maximum inbound message size for gRPC in bytes. This value sets the maximum size of a gRPC message that can be received by the application	| `4194304` |
+| `DAPR_GRPC_MAX_INBOUND_METADATA_SIZE_BYTES` | Dapr's maximum inbound metadata size for gRPC in bytes | `8192` |
+
 ### HTTP Client Configuration
 
 These properties control the behavior of the HTTP client used for communication with the Dapr sidecar:
