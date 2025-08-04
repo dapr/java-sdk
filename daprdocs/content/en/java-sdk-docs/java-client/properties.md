@@ -65,7 +65,7 @@ Configure gRPC inbound message settings using these environment variables:
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `DAPR_GRPC_ENABLEDAPR_GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES_KEEP_ALIVE` | Dapr's maximum inbound message size for gRPC in bytes. This value sets the maximum size of a gRPC message that can be received by the application	| `4194304` |
+| `DAPR_GRPC_MAX_INBOUND_MESSAGE_SIZE_BYTES` | Dapr's maximum inbound message size for gRPC in bytes. This value sets the maximum size of a gRPC message that can be received by the application	| `4194304` |
 | `DAPR_GRPC_MAX_INBOUND_METADATA_SIZE_BYTES` | Dapr's maximum inbound metadata size for gRPC in bytes | `8192` |
 
 ### HTTP Client Configuration
