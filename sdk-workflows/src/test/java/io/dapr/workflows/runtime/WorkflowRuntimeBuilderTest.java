@@ -19,14 +19,12 @@ import io.dapr.workflows.WorkflowStub;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class WorkflowRuntimeBuilderTest {
   public static class TestWorkflow implements Workflow {
@@ -94,6 +92,6 @@ public class WorkflowRuntimeBuilderTest {
         .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
 
     verify(testLogger, times(1))
-        .info(eq("Registered Activity: {}"), eq( "io.dapr.workflows.runtime.WorkflowRuntimeBuilderTest.TestActivity"));
+            .info(eq("Registered Activity: {}"), eq("io.dapr.workflows.runtime.WorkflowRuntimeBuilderTest.TestActivity"));
   }
 }

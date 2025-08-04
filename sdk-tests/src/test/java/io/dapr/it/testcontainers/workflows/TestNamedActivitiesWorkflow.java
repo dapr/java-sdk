@@ -31,18 +31,20 @@ public class TestNamedActivitiesWorkflow implements Workflow {
       TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
       workflowPayload.setWorkflowId(instanceId);
 
-      var payloadAfterA = ctx.callActivity("a", workflowPayload, TestWorkflowPayload.class).await();
+      var payloadAfterA = ctx.callActivity("a", workflowPayload, TestWorkflowPayload.class)
+              .await();
 
-      var payloadAfterB = ctx.callActivity("b", payloadAfterA, TestWorkflowPayload.class).await();
+      var payloadAfterB = ctx.callActivity("b", payloadAfterA, TestWorkflowPayload.class)
+              .await();
 
       var payloadAfterC = ctx.callActivity("c", payloadAfterB, TestWorkflowPayload.class)
-          .await();
+              .await();
 
       var payloadAfterD = ctx.callActivity("d", payloadAfterC, TestWorkflowPayload.class)
-          .await();
+              .await();
 
       var payloadAfterE = ctx.callActivity("e", payloadAfterD, TestWorkflowPayload.class)
-          .await();
+              .await();
           
       ctx.complete(payloadAfterE);
     };

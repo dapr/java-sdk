@@ -6,10 +6,7 @@ import io.dapr.workflows.WorkflowActivityContext;
 import org.junit.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class WorkflowActivityClassWrapperTest {
   public static class TestActivity implements WorkflowActivity {
@@ -22,7 +19,7 @@ public class WorkflowActivityClassWrapperTest {
 
   @Test
   public void getName() {
-    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>( TestActivity.class);
+    WorkflowActivityClassWrapper<TestActivity> wrapper = new WorkflowActivityClassWrapper<>(TestActivity.class);
 
     assertEquals(
         "io.dapr.workflows.runtime.WorkflowActivityClassWrapperTest.TestActivity",
