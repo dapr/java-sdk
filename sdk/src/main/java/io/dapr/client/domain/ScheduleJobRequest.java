@@ -26,6 +26,7 @@ public class ScheduleJobRequest {
   private Integer repeats;
   private Instant ttl;
   private FailurePolicy failurePolicy;
+  private boolean overwrite;
 
   /**
    * Constructor to create ScheduleJobRequest.
@@ -185,5 +186,25 @@ public class ScheduleJobRequest {
    */
   public FailurePolicy getFailurePolicy() {
     return failurePolicy;
+  }
+   
+  /*
+   * Gets the overwrite flag.
+   *
+   * @return The overwrite flag.
+   */
+  public boolean getOverwrite() {
+    return overwrite;
+  }
+
+  /**
+   * Sets the overwrite flag.
+   *
+   * @param overwrite The overwrite flag.
+   * @return This builder instance.
+   */
+  public ScheduleJobRequest setOverwrite(boolean overwrite) {
+    this.overwrite = overwrite;
+    return this;
   }
 }
