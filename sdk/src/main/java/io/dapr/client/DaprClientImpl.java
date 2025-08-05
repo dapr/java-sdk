@@ -1345,6 +1345,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         scheduleJobRequestBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
       }
 
+      scheduleJobRequestBuilder.setOverwrite(scheduleJobRequest.getOverwrite());
+
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
