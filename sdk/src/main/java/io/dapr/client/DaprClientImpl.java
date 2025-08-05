@@ -27,6 +27,7 @@ import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
+import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationOutput;
 import io.dapr.client.domain.ConversationRequest;
@@ -34,7 +35,10 @@ import io.dapr.client.domain.ConversationResponse;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
+import io.dapr.client.domain.DropFailurePolicy;
 import io.dapr.client.domain.ExecuteStateTransactionRequest;
+import io.dapr.client.domain.FailurePolicy;
+import io.dapr.client.domain.FailurePolicyType;
 import io.dapr.client.domain.GetBulkSecretRequest;
 import io.dapr.client.domain.GetBulkStateRequest;
 import io.dapr.client.domain.GetConfigurationRequest;
@@ -105,6 +109,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1336,6 +1341,10 @@ public class DaprClientImpl extends AbstractDaprClient {
         scheduleJobRequestBuilder.setDueTime(iso8601Formatter.format(scheduleJobRequest.getDueTime()));
       }
 
+      if (scheduleJobRequest.getFailurePolicy() != null) {
+        scheduleJobRequestBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
+      }
+
       scheduleJobRequestBuilder.setOverwrite(scheduleJobRequest.getOverwrite());
 
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
@@ -1380,6 +1389,10 @@ public class DaprClientImpl extends AbstractDaprClient {
           getJobResponse = new GetJobResponse(job.getName(), Instant.parse(job.getDueTime()));
         }
 
+        if (job.hasFailurePolicy()) {
+          getJobResponse.setFailurePolicy(getJobFailurePolicy(job.getFailurePolicy()));
+        }
+
         return getJobResponse
             .setTtl(job.hasTtl() ? Instant.parse(job.getTtl()) : null)
             .setData(job.hasData() ? job.getData().getValue().toByteArray() : null)
@@ -1388,6 +1401,53 @@ public class DaprClientImpl extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  private FailurePolicy getJobFailurePolicy(CommonProtos.JobFailurePolicy jobFailurePolicy) {
+    if (jobFailurePolicy.hasDrop()) {
+      return new DropFailurePolicy();
+    }
+
+    CommonProtos.JobFailurePolicyConstant jobFailurePolicyConstant = jobFailurePolicy.getConstant();
+    if (jobFailurePolicyConstant.hasInterval() && jobFailurePolicyConstant.hasMaxRetries()) {
+      return new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries())
+              .setDurationBetweenRetries(Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+                  ChronoUnit.NANOS));
+    }
+
+    if (jobFailurePolicyConstant.hasMaxRetries()) {
+      return new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries());
+    }
+
+    return new ConstantFailurePolicy(
+        Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+            ChronoUnit.NANOS));
+  }
+
+  private CommonProtos.JobFailurePolicy getJobFailurePolicy(FailurePolicy failurePolicy) {
+    CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
+
+    if (failurePolicy.getFailurePolicyType() == FailurePolicyType.DROP) {
+      jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
+      return jobFailurePolicyBuilder.build();
+    }
+
+    CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
+        CommonProtos.JobFailurePolicyConstant.newBuilder();
+    ConstantFailurePolicy jobConstantFailurePolicy = (ConstantFailurePolicy)failurePolicy;
+
+    if (jobConstantFailurePolicy.getMaxRetries() != null) {
+      constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
+    }
+
+    if (jobConstantFailurePolicy.getDurationBetweenRetries() != null) {
+      constantPolicyBuilder.setInterval(com.google.protobuf.Duration.newBuilder()
+          .setNanos(jobConstantFailurePolicy.getDurationBetweenRetries().getNano()).build());
+    }
+
+    jobFailurePolicyBuilder.setConstant(constantPolicyBuilder.build());
+
+    return jobFailurePolicyBuilder.build();
   }
 
   /**
