@@ -25,6 +25,7 @@ public class ScheduleJobRequest {
   private Instant dueTime;
   private Integer repeats;
   private Instant ttl;
+  private FailurePolicy failurePolicy;
   private boolean overwrite;
 
   /**
@@ -111,7 +112,18 @@ public class ScheduleJobRequest {
     return this;
   }
 
-  // Getters
+  /**
+   * Sets the failure policy for the scheduled job.
+   * This defines how the job should behave in case of failure, such as retrying with a delay
+   * or dropping the job entirely.
+   *
+   * @param failurePolicy the {@link FailurePolicy} to apply to the job
+   * @return this {@code ScheduleJobRequest} instance for method chaining
+   */
+  public ScheduleJobRequest setFailurePolicy(FailurePolicy failurePolicy) {
+    this.failurePolicy = failurePolicy;
+    return this;
+  }
 
   /**
    * Gets the name of the job.
@@ -168,6 +180,15 @@ public class ScheduleJobRequest {
   }
 
   /**
+   * Gets the failure policy.
+   *
+   * @return FailurePolicy.
+   */
+  public FailurePolicy getFailurePolicy() {
+    return failurePolicy;
+  }
+   
+  /*
    * Gets the overwrite flag.
    *
    * @return The overwrite flag.
