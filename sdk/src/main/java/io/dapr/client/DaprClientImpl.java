@@ -1342,29 +1342,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       if (scheduleJobRequest.getFailurePolicy() != null) {
-        CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
-
-        FailurePolicy failurePolicy = scheduleJobRequest.getFailurePolicy();
-        if (failurePolicy.getFailurePolicyType() == FailurePolicyType.DROP) {
-
-          jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
-        } else {
-
-          CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
-              CommonProtos.JobFailurePolicyConstant.newBuilder();
-          ConstantFailurePolicy jobConstantFailurePolicy = (ConstantFailurePolicy)failurePolicy;
-          if (jobConstantFailurePolicy.getMaxRetries() != null) {
-            constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
-          }
-          if (jobConstantFailurePolicy.getDurationBetweenRetries() != null) {
-            constantPolicyBuilder.setInterval(com.google.protobuf.Duration.newBuilder()
-                .setNanos(jobConstantFailurePolicy.getDurationBetweenRetries().getNano()).build());
-          }
-
-          jobFailurePolicyBuilder.setConstant(constantPolicyBuilder.build());
-        }
-
-        scheduleJobRequestBuilder.setFailurePolicy(jobFailurePolicyBuilder.build());
+        scheduleJobRequestBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
       }
 
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
@@ -1410,26 +1388,7 @@ public class DaprClientImpl extends AbstractDaprClient {
         }
 
         if (job.hasFailurePolicy()) {
-          CommonProtos.JobFailurePolicy jobFailurePolicy = job.getFailurePolicy();
-
-          if (jobFailurePolicy.hasDrop()) {
-            getJobResponse.setFailurePolicy(new DropFailurePolicy());
-          }
-          if (jobFailurePolicy.hasConstant()) {
-            CommonProtos.JobFailurePolicyConstant jobFailurePolicyConstant = jobFailurePolicy.getConstant();
-            if (jobFailurePolicyConstant.hasInterval() && jobFailurePolicyConstant.hasMaxRetries()) {
-              getJobResponse.setFailurePolicy(
-                  new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries())
-                      .setDurationBetweenRetries(Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
-                          ChronoUnit.NANOS)));
-            } else if (jobFailurePolicyConstant.hasMaxRetries()) {
-              getJobResponse.setFailurePolicy(new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries()));
-            } else {
-              getJobResponse.setFailurePolicy(new ConstantFailurePolicy(
-                  Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
-                  ChronoUnit.NANOS)));
-            }
-          }
+          getJobResponse.setFailurePolicy(getJobFailurePolicy(job.getFailurePolicy()));
         }
 
         return getJobResponse
@@ -1440,6 +1399,52 @@ public class DaprClientImpl extends AbstractDaprClient {
     } catch (Exception ex) {
       return DaprException.wrapMono(ex);
     }
+  }
+
+  private FailurePolicy getJobFailurePolicy(CommonProtos.JobFailurePolicy jobFailurePolicy) {
+    if (jobFailurePolicy.hasDrop()) {
+      return new DropFailurePolicy();
+    }
+
+    CommonProtos.JobFailurePolicyConstant jobFailurePolicyConstant = jobFailurePolicy.getConstant();
+    if (jobFailurePolicyConstant.hasInterval() && jobFailurePolicyConstant.hasMaxRetries()) {
+      return new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries())
+              .setDurationBetweenRetries(Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+                  ChronoUnit.NANOS));
+    }
+
+    if (jobFailurePolicyConstant.hasMaxRetries()) {
+      return new ConstantFailurePolicy(jobFailurePolicyConstant.getMaxRetries());
+    }
+
+    return new ConstantFailurePolicy(
+        Duration.of(jobFailurePolicyConstant.getInterval().getNanos(),
+            ChronoUnit.NANOS));
+  }
+
+  private CommonProtos.JobFailurePolicy getJobFailurePolicy(FailurePolicy failurePolicy) {
+    CommonProtos.JobFailurePolicy.Builder jobFailurePolicyBuilder = CommonProtos.JobFailurePolicy.newBuilder();
+
+    if (failurePolicy.getFailurePolicyType() == FailurePolicyType.DROP) {
+
+      jobFailurePolicyBuilder.setDrop(CommonProtos.JobFailurePolicyDrop.newBuilder().build());
+    } else {
+
+      CommonProtos.JobFailurePolicyConstant.Builder constantPolicyBuilder =
+          CommonProtos.JobFailurePolicyConstant.newBuilder();
+      ConstantFailurePolicy jobConstantFailurePolicy = (ConstantFailurePolicy)failurePolicy;
+      if (jobConstantFailurePolicy.getMaxRetries() != null) {
+        constantPolicyBuilder.setMaxRetries(jobConstantFailurePolicy.getMaxRetries());
+      }
+      if (jobConstantFailurePolicy.getDurationBetweenRetries() != null) {
+        constantPolicyBuilder.setInterval(com.google.protobuf.Duration.newBuilder()
+            .setNanos(jobConstantFailurePolicy.getDurationBetweenRetries().getNano()).build());
+      }
+
+      jobFailurePolicyBuilder.setConstant(constantPolicyBuilder.build());
+    }
+
+    return jobFailurePolicyBuilder.build();
   }
 
   /**
