@@ -25,6 +25,7 @@ public class ScheduleJobRequest {
   private Instant dueTime;
   private Integer repeats;
   private Instant ttl;
+  private boolean overwrite;
 
   /**
    * Constructor to create ScheduleJobRequest.
@@ -164,5 +165,25 @@ public class ScheduleJobRequest {
    */
   public Instant getTtl() {
     return ttl;
+  }
+
+  /**
+   * Gets the overwrite flag.
+   *
+   * @return The overwrite flag.
+   */
+  public boolean getOverwrite() {
+    return overwrite;
+  }
+
+  /**
+   * Sets the overwrite flag.
+   *
+   * @param overwrite The overwrite flag.
+   * @return This builder instance.
+   */
+  public ScheduleJobRequest setOverwrite(boolean overwrite) {
+    this.overwrite = overwrite;
+    return this;
   }
 }

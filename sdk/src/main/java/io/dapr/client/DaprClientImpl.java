@@ -1336,6 +1336,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         scheduleJobRequestBuilder.setDueTime(iso8601Formatter.format(scheduleJobRequest.getDueTime()));
       }
 
+      scheduleJobRequestBuilder.setOverwrite(scheduleJobRequest.getOverwrite());
+
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
