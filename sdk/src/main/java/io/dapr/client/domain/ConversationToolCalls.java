@@ -21,7 +21,6 @@ public class ConversationToolCalls {
   private String id;
   private final ConversationToolCallsOfFunction function;
 
-
   /**
    * Constructor without ID.
    *
@@ -44,6 +43,7 @@ public class ConversationToolCalls {
    * Set with ID.
    *
    * @param id the unique identifier for the tool call
+   * @return this instance for method chaining
    */
   public ConversationToolCalls setId(String id) {
     this.id = id;
