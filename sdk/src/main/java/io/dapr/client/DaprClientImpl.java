@@ -13,12 +13,10 @@ limitations under the License.
 
 package io.dapr.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
-import com.google.protobuf.Message;
 import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
@@ -30,9 +28,8 @@ import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConstantFailurePolicy;
-import io.dapr.client.domain.ConversationToolsFunction;
+import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationInputAlpha2;
 import io.dapr.client.domain.ConversationMessage;
 import io.dapr.client.domain.ConversationMessageContent;
@@ -47,6 +44,7 @@ import io.dapr.client.domain.ConversationResultMessage;
 import io.dapr.client.domain.ConversationToolCalls;
 import io.dapr.client.domain.ConversationToolCallsOfFunction;
 import io.dapr.client.domain.ConversationTools;
+import io.dapr.client.domain.ConversationToolsFunction;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
@@ -120,7 +118,6 @@ import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
 
 import javax.annotation.Nonnull;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
