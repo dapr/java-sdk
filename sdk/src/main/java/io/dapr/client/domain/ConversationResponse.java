@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client.domain;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
