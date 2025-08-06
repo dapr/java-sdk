@@ -48,18 +48,22 @@ public class ToolMessage implements ConversationMessage {
    * Sets the tool identifier.
    *
    * @param toolId the tool identifier to set
+   * @return this instance for method chaining
    */
-  public void setToolId(String toolId) {
+  public ToolMessage setToolId(String toolId) {
     this.toolId = toolId;
+    return this;
   }
 
   /**
    * Sets the name of the tool participant.
    *
    * @param name the name to set
+   * @return this instance for method chaining
    */
-  public void setName(String name) {
+  public ToolMessage setName(String name) {
     this.name = name;
+    return this;
   }
 
   @Override

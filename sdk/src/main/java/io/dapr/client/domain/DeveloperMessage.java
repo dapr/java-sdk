@@ -47,9 +47,11 @@ public class DeveloperMessage implements ConversationMessage {
    * Sets the name of the developer participant.
    *
    * @param name the name to set
+   * @return this instance for method chaining
    */
-  public void setName(String name) {
+  public DeveloperMessage setName(String name) {
     this.name = name;
+    return this;
   }
 
   @Override

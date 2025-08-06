@@ -47,9 +47,11 @@ public class UserMessage implements ConversationMessage {
    * Sets the name of the user participant.
    *
    * @param name the name to set
+   * @return this instance for method chaining
    */
-  public void setName(String name) {
+  public UserMessage setName(String name) {
     this.name = name;
+    return this;
   }
 
   @Override

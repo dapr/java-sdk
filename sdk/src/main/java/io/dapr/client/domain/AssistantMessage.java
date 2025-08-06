@@ -49,9 +49,11 @@ public class AssistantMessage implements ConversationMessage {
    * Sets the name of the assistant participant.
    *
    * @param name the name to set
+   * @return this instance for method chaining
    */
-  public void setName(String name) {
+  public AssistantMessage setName(String name) {
     this.name = name;
+    return this;
   }
 
   @Override
