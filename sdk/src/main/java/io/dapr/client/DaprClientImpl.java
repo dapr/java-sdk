@@ -1740,6 +1740,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       
       DaprProtos.ConversationResponseAlpha2 conversationResponse = conversationResponseMono.block();
 
+      assert conversationResponse != null;
       List<ConversationResultAlpha2> results = buildConversationResults(conversationResponse.getOutputsList());
       return Mono.just(new ConversationResponseAlpha2(conversationResponse.getContextId(), results));
     } catch (Exception ex) {
