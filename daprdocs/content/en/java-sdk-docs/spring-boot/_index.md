@@ -62,7 +62,7 @@ dapr.client.grpcEndpoint=localhost
 dapr.client.grpcPort=50001
 dapr.client.apiToken=<your remote api token>
 ```
-These values are used by default, but you can override them in your `application.properties` file to suit your environment.
+These values are used by default, but you can override them in your `application.properties` file to suit your environment. Please note that both kebab case and camel case are supported.
 {{% /alert %}}
 
 You can use the `DaprClient` to interact with the Dapr APIs anywhere in your application, for example from inside a REST endpoint: 
