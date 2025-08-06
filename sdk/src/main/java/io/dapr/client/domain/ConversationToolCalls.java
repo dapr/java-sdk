@@ -18,27 +18,17 @@ package io.dapr.client.domain;
  */
 public class ConversationToolCalls {
 
-  private final String id;
-  private final ConversationToolCallsFunction function;
+  private String id;
+  private final ConversationToolCallsOfFunction function;
 
-  /**
-   * Constructor.
-   *
-   * @param id the unique identifier for the tool call (optional)
-   * @param function the function to call
-   */
-  public ConversationToolCalls(String id, ConversationToolCallsFunction function) {
-    this.id = id;
-    this.function = function;
-  }
 
   /**
    * Constructor without ID.
    *
    * @param function the function to call
    */
-  public ConversationToolCalls(ConversationToolCallsFunction function) {
-    this(null, function);
+  public ConversationToolCalls(ConversationToolCallsOfFunction function) {
+    this.function = function;
   }
 
   /**
@@ -51,11 +41,21 @@ public class ConversationToolCalls {
   }
 
   /**
+   * Set with ID.
+   *
+   * @param id the unique identifier for the tool call
+   */
+  public ConversationToolCalls setId(String id) {
+    this.id = id;
+    return this;
+  }
+
+  /**
    * Gets the function to call.
    *
    * @return the function details
    */
-  public ConversationToolCallsFunction getFunction() {
+  public ConversationToolCallsOfFunction getFunction() {
     return function;
   }
 }

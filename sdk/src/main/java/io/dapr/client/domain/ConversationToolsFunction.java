@@ -18,22 +18,20 @@ import java.util.Map;
 /**
  * Represents a function definition for conversation tools.
  */
-public class ConversationFunction {
+public class ConversationToolsFunction {
 
+  private String description;
   private final String name;
-  private final String description;
   private final Map<String, Object> parameters;
 
   /**
    * Constructor.
    *
    * @param name        the function name
-   * @param description the function description
    * @param parameters  the function parameters schema
    */
-  public ConversationFunction(String name, String description, Map<String, Object> parameters) {
+  public ConversationToolsFunction(String name, Map<String, Object> parameters) {
     this.name = name;
-    this.description = description;
     this.parameters = parameters;
   }
 
@@ -53,6 +51,17 @@ public class ConversationFunction {
    */
   public String getDescription() {
     return description;
+  }
+
+  /**
+   * Sets the function description.
+   *
+   * @param description the function description
+   * @return this instance for method chaining
+   */
+  public ConversationToolsFunction setDescription(String description) {
+    this.description = description;
+    return this;
   }
 
   /**

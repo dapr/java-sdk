@@ -315,6 +315,7 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param conversationRequest request to be passed to the LLM.
    * @return {@link ConversationResponse}.
    */
+  @Deprecated
   public Mono<ConversationResponse> converse(ConversationRequest conversationRequest);
 
   /*

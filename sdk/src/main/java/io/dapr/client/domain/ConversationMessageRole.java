@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Dapr Authors
+ * Copyright 2022 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,27 +14,31 @@ limitations under the License.
 package io.dapr.client.domain;
 
 /**
- * Represents tool definitions that can be used during conversation.
+ * Enum representing the different roles a conversation message can have.
  */
-public class ConversationTools {
-
-  private final ConversationToolsFunction function;
+public enum ConversationMessageRole {
+  /**
+   * System message that sets the behavior or context for the conversation.
+   */
+  SYSTEM,
 
   /**
-   * Constructor.
-   *
-   * @param function the function definition
+   * User message containing input from the human user.
    */
-  public ConversationTools(ConversationToolsFunction function) {
-    this.function = function;
-  }
+  USER,
 
   /**
-   * Gets the function definition.
-   *
-   * @return the function definition
+   * Assistant message containing responses from the AI model.
    */
-  public ConversationToolsFunction getFunction() {
-    return function;
-  }
+  ASSISTANT,
+
+  /**
+   * Tool message containing results from function/tool calls.
+   */
+  TOOL,
+
+  /**
+   * Developer message for development and debugging purposes.
+   */
+  DEVELOPER
 }

@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
@@ -21,6 +22,7 @@ import com.google.protobuf.Message;
 import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
+import io.dapr.client.domain.AssistantMessage;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -28,7 +30,7 @@ import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.CloudEvent;
 import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
-import io.dapr.client.domain.ConversationFunction;
+import io.dapr.client.domain.ConversationToolsFunction;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationInputAlpha2;
 import io.dapr.client.domain.ConversationMessage;
@@ -42,7 +44,7 @@ import io.dapr.client.domain.ConversationResultAlpha2;
 import io.dapr.client.domain.ConversationResultChoices;
 import io.dapr.client.domain.ConversationResultMessage;
 import io.dapr.client.domain.ConversationToolCalls;
-import io.dapr.client.domain.ConversationToolCallsFunction;
+import io.dapr.client.domain.ConversationToolCallsOfFunction;
 import io.dapr.client.domain.ConversationTools;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteJobRequest;
@@ -73,6 +75,7 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.SubscriptionMetadata;
+import io.dapr.client.domain.ToolMessage;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
@@ -1572,6 +1575,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Deprecated(forRemoval = true)
   @Override
   public Mono<ConversationResponse> converse(ConversationRequest conversationRequest) {
 
@@ -1685,7 +1689,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private DaprProtos.ConversationRequestAlpha2 buildConversationRequestProto(ConversationRequestAlpha2 request,
-                                                                             DaprProtos.ConversationRequestAlpha2.Builder builder) {
+                                           DaprProtos.ConversationRequestAlpha2.Builder builder) {
     if (request.getTools() != null) {
       buildConversationTools(request.getTools(), builder);
     }
@@ -1694,13 +1698,21 @@ public class DaprClientImpl extends AbstractDaprClient {
       builder.putAllMetadata(request.getMetadata());
     }
 
+
     if (request.getParameters() != null) {
       Map<String, Any> parameters = request.getParameters()
           .entrySet().stream()
           .collect(Collectors.toMap(
               Map.Entry::getKey,
-              e -> Any.pack((Message) e.getValue())
-          ));
+              e -> {
+                try {
+                  return Any.newBuilder().setValue(ByteString.copyFrom(objectSerializer.serialize(e.getValue())))
+                      .build();
+                } catch (IOException ex) {
+                  throw new RuntimeException(ex);
+                }
+              })
+          );
       builder.putAllParameters(parameters);
     }
 
@@ -1727,7 +1739,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   private void buildConversationTools(List<ConversationTools> tools, 
                                      DaprProtos.ConversationRequestAlpha2.Builder builder) {
     for (ConversationTools tool : tools) {
-      ConversationFunction function = tool.getFunction();
+      ConversationToolsFunction function = tool.getFunction();
 
       DaprProtos.ConversationToolsFunction.Builder protoFunction = DaprProtos.ConversationToolsFunction.newBuilder()
           .setName(function.getName());
@@ -1741,7 +1753,14 @@ public class DaprClientImpl extends AbstractDaprClient {
             .entrySet().stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
-                e -> Any.pack((Message) e.getValue())
+                e -> {
+                  try {
+                    return Any.newBuilder().setValue(ByteString.copyFrom(objectSerializer.serialize(e.getValue())))
+                        .build();
+                  } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                  }
+                }
             ));
 
         protoFunction.putAllParameters(functionParams);
@@ -1766,8 +1785,8 @@ public class DaprClientImpl extends AbstractDaprClient {
         if (message.getContent() != null) {
           toolMessage.addAllContent(getConversationMessageContent(message));
         }
-        if (message.getToolId() != null) {
-          toolMessage.setToolId(message.getToolId());
+        if (((ToolMessage)message).getToolId() != null) {
+          toolMessage.setToolId(((ToolMessage)message).getToolId());
         }
         messageBuilder.setOfTool(toolMessage);
         break;
@@ -1785,14 +1804,15 @@ public class DaprClientImpl extends AbstractDaprClient {
       case ASSISTANT:
         DaprProtos.ConversationMessageOfAssistant.Builder assistantMessage =
             DaprProtos.ConversationMessageOfAssistant.newBuilder();
+
         if (message.getName() != null) {
           assistantMessage.setName(message.getName());
         }
         if (message.getContent() != null) {
           assistantMessage.addAllContent(getConversationMessageContent(message));
         }
-        if (message.getToolCalls() != null) {
-          assistantMessage.addAllToolCalls(getConversationToolCalls(message));
+        if (((AssistantMessage)message).getToolCalls() != null) {
+          assistantMessage.addAllToolCalls(getConversationToolCalls((AssistantMessage)message));
         }
         messageBuilder.setOfAssistant(assistantMessage);
         break;
@@ -1851,15 +1871,18 @@ public class DaprClientImpl extends AbstractDaprClient {
     List<ConversationToolCalls> toolCalls = new ArrayList<>();
 
     for (DaprProtos.ConversationToolCalls protoToolCall : protoChoice.getMessage().getToolCallsList()) {
-      ConversationToolCallsFunction function = null;
+      ConversationToolCallsOfFunction function = null;
       if (protoToolCall.hasFunction()) {
-        function = new ConversationToolCallsFunction(
+        function = new ConversationToolCallsOfFunction(
             protoToolCall.getFunction().getName(),
             protoToolCall.getFunction().getArguments()
         );
       }
-      
-      toolCalls.add(new ConversationToolCalls(protoToolCall.getId(), function));
+
+      ConversationToolCalls conversationToolCalls = new ConversationToolCalls(function);
+      conversationToolCalls.setId(protoToolCall.getId());
+
+      toolCalls.add(conversationToolCalls);
     }
     
     return new ConversationResultMessage(
@@ -1882,16 +1905,19 @@ public class DaprClientImpl extends AbstractDaprClient {
   }
 
   private List<DaprProtos.ConversationToolCalls> getConversationToolCalls(
-      ConversationMessage conversationMessage) {
+      AssistantMessage assistantMessage) {
     List<DaprProtos.ConversationToolCalls> conversationToolCalls = new ArrayList<>();
-    for (ConversationToolCalls conversationToolCall: conversationMessage.getToolCalls()) {
-      conversationToolCalls.add(DaprProtos.ConversationToolCalls.newBuilder()
-          .setId(conversationToolCall.getId())
+    for (ConversationToolCalls conversationToolCall: assistantMessage.getToolCalls()) {
+      DaprProtos.ConversationToolCalls.Builder toolCallsBuilder = DaprProtos.ConversationToolCalls.newBuilder()
           .setFunction(DaprProtos.ConversationToolCallsOfFunction.newBuilder()
-              .setName(conversationToolCall.getFunction().getName())
-              .setArguments(conversationToolCall.getFunction().getArguments())
-              .build())
-          .build());
+                  .setName(conversationToolCall.getFunction().getName())
+                  .setArguments(conversationToolCall.getFunction().getArguments())
+                  .build());
+      if (conversationToolCall.getId() != null) {
+        toolCallsBuilder.setId(conversationToolCall.getId());
+      }
+
+      conversationToolCalls.add(toolCallsBuilder.build());
     }
 
     return conversationToolCalls;
