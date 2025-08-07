@@ -36,7 +36,7 @@ public class UserMessageDemo {
    * @param args Input arguments (unused).
    */
   public static void main(String[] args) {
-    try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {
+    try (DaprPreviewClient client = new DaprClientBuilder().buildPreviewClient()) {
       System.out.println("Sending the following input to LLM: Hello How are you? This is the my number 672-123-4567");
 
       // Create user message with content
