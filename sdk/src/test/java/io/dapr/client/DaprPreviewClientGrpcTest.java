@@ -1400,7 +1400,7 @@ public class DaprPreviewClientGrpcTest {
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             previewClient.converseAlpha2(request).block());
-    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+    assertEquals("Conversation Inputs cannot be null or empty.", exception.getMessage());
   }
 
   @Test
@@ -1409,7 +1409,7 @@ public class DaprPreviewClientGrpcTest {
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             previewClient.converseAlpha2(request).block());
-    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+    assertEquals("Conversation Inputs cannot be null or empty.", exception.getMessage());
   }
 
   @Test
