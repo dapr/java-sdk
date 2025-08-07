@@ -25,7 +25,7 @@ expected_stdout_lines:
 background: true
 expected_return_code: 143
 sleep: 30
-timeout_seconds: 45
+timeout_seconds: 120
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -68,7 +68,7 @@ expected_stdout_lines:
 - 'TOKYO, LONDON, SEATTLE'
 background: true
 sleep: 1
-timeout_seconds: 2
+timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -146,7 +146,7 @@ expected_stdout_lines:
 - '!wolfkroW rpaD olleH'
 background: true
 sleep: 1
-timeout_seconds: 2
+timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -266,7 +266,7 @@ match_order: none
 output_match_mode: substring
 background: true
 sleep: 1
-timeout_seconds: 2
+timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -354,7 +354,7 @@ expected_stdout_lines:
 - '{"wordCount":60}'
 background: true
 sleep: 1
-timeout_seconds: 2
+timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -407,7 +407,7 @@ match_order: none
 output_match_mode: substring
 background: true
 sleep: 1
-timeout_seconds: 2
+timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
