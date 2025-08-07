@@ -36,11 +36,6 @@ public class UserMessageDemo {
    * @param args Input arguments (unused).
    */
   public static void main(String[] args) {
-      Map<Property<?>, String> overrides = Map.of(
-              Properties.HTTP_PORT, "3500",
-              Properties.GRPC_PORT, "50001"
-      );
-
     try (DaprPreviewClient client = new DaprClientBuilder().withPropertyOverrides(overrides).buildPreviewClient()) {
       System.out.println("Sending the following input to LLM: Hello How are you? This is the my number 672-123-4567");
 
