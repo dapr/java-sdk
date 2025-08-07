@@ -31,8 +31,8 @@ public class AssistantMessage implements ConversationMessage {
    * @param toolCalls the tool calls requested by the assistant.
    */
   public AssistantMessage(List<ConversationMessageContent> content, List<ConversationToolCalls> toolCalls) {
-    this.content = content != null ? List.copyOf(content) : null;
-    this.toolCalls = toolCalls != null ? List.copyOf(toolCalls) : null;
+    this.content = List.copyOf(content);
+    this.toolCalls = List.copyOf(toolCalls);
   }
 
   @Override

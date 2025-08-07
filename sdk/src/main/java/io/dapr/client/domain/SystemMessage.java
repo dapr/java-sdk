@@ -30,7 +30,7 @@ public class SystemMessage implements ConversationMessage {
    * @param content the content of the system message
    */
   public SystemMessage(List<ConversationMessageContent> content) {
-    this.content = content != null ? List.copyOf(content) : null;
+    this.content = List.copyOf(content);
   }
 
   @Override

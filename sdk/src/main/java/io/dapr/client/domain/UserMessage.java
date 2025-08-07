@@ -30,7 +30,7 @@ public class UserMessage implements ConversationMessage {
    * @param content the content of the user message
    */
   public UserMessage(List<ConversationMessageContent> content) {
-    this.content = content != null ? List.copyOf(content) : null;
+    this.content = List.copyOf(content);
   }
 
   @Override

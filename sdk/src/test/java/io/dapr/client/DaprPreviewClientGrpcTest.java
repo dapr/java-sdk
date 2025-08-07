@@ -16,6 +16,7 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import io.dapr.client.domain.AssistantMessage;
@@ -1347,7 +1348,14 @@ public class DaprPreviewClientGrpcTest {
 
   @Test
   public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenNameIsNull() {
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2(null, null);
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2(null, List.of(input));
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         previewClient.converseAlpha2(request).block());
@@ -1356,7 +1364,14 @@ public class DaprPreviewClientGrpcTest {
 
   @Test
   public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenNameIsEmpty() {
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("", null);
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("", List.of(input));
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         previewClient.converseAlpha2(request).block());
@@ -1365,10 +1380,35 @@ public class DaprPreviewClientGrpcTest {
 
   @Test
   public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenNameIsWhitespace() {
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
     ConversationRequestAlpha2 request = new ConversationRequestAlpha2("   ", null);
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         previewClient.converseAlpha2(request).block());
+    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenInputIsNull() {
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("abc", null);
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            previewClient.converseAlpha2(request).block());
+    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenInputIsEmpty() {
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("abc", new ArrayList<>());
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            previewClient.converseAlpha2(request).block());
     assertEquals("LLM name cannot be null or empty.", exception.getMessage());
   }
 
@@ -1380,11 +1420,7 @@ public class DaprPreviewClientGrpcTest {
 
     ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", null);
 
-    assertThrowsDaprException(
-        StatusRuntimeException.class,
-        "INVALID_ARGUMENT",
-        "INVALID_ARGUMENT: bad argument",
-        () -> previewClient.converseAlpha2(request).block());
+    assertThrows(IllegalArgumentException.class, () -> previewClient.converseAlpha2(request).block());
   }
 
   @Test
@@ -1396,7 +1432,14 @@ public class DaprPreviewClientGrpcTest {
       return null;
     }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
 
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", null);
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
     Mono<ConversationResponseAlpha2> result = previewClient.converseAlpha2(request);
 
     assertThrowsDaprException(
@@ -1429,7 +1472,14 @@ public class DaprPreviewClientGrpcTest {
       return null;
     }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
 
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", null);
+    List<ConversationMessage> messages = new ArrayList<>();
+    DeveloperMessage devMsg = new DeveloperMessage(List.of(new ConversationMessageContent("Debug info")));
+    devMsg.setName("developer");
+    messages.add(devMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
     ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
 
     assertNotNull(response);
@@ -1619,41 +1669,15 @@ public class DaprPreviewClientGrpcTest {
   }
 
   @Test
-  public void converseAlpha2EmptyInputsTest() {
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", new ArrayList<>());
-
-    DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
-        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
-            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
-                .setFinishReason("stop")
-                .setIndex(0)
-                .build())
-            .build())
-        .build();
-
-    doAnswer((Answer<Void>) invocation -> {
-      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
-          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
-      observer.onNext(grpcResponse);
-      observer.onCompleted();
-      return null;
-    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
-
-    ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
-
-    assertNotNull(response);
-
-    ArgumentCaptor<DaprProtos.ConversationRequestAlpha2> captor =
-        ArgumentCaptor.forClass(DaprProtos.ConversationRequestAlpha2.class);
-    verify(daprStub).converseAlpha2(captor.capture(), any());
-
-    DaprProtos.ConversationRequestAlpha2 capturedRequest = captor.getValue();
-    assertEquals(0, capturedRequest.getInputsCount());
-  }
-
-  @Test
   public void converseAlpha2ResponseWithoutMessageTest() {
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", null);
+    List<ConversationMessage> messages = new ArrayList<>();
+    DeveloperMessage devMsg = new DeveloperMessage(List.of(new ConversationMessageContent("Debug info")));
+    devMsg.setName("developer");
+    messages.add(devMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
 
     DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
         .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
@@ -1684,7 +1708,14 @@ public class DaprPreviewClientGrpcTest {
 
   @Test
   public void converseAlpha2MultipleResultsTest() {
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", null);
+    List<ConversationMessage> messages = new ArrayList<>();
+    DeveloperMessage devMsg = new DeveloperMessage(List.of(new ConversationMessageContent("Debug info")));
+    devMsg.setName("developer");
+    messages.add(devMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
 
     DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
         .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
@@ -1741,8 +1772,14 @@ public class DaprPreviewClientGrpcTest {
 
   @Test
   public void converseAlpha2ToolCallWithoutFunctionTest() {
-    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", null);
+    List<ConversationMessage> messages = new ArrayList<>();
+    UserMessage userMsg = new UserMessage(List.of(new ConversationMessageContent("Debug info")));
+    userMsg.setName("developer");
+    messages.add(userMsg);
 
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
     DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
         .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
             .addChoices(DaprProtos.ConversationResultChoices.newBuilder()

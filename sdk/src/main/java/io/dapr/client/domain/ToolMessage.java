@@ -31,7 +31,7 @@ public class ToolMessage implements ConversationMessage {
    * @param content the content containing the tool execution result
    */
   public ToolMessage(List<ConversationMessageContent> content) {
-    this.content = content != null ? List.copyOf(content) : null;
+    this.content = List.copyOf(content);
   }
 
   @Override

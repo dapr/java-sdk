@@ -30,7 +30,7 @@ public class DeveloperMessage implements ConversationMessage {
    * @param content the content of the developer message
    */
   public DeveloperMessage(List<ConversationMessageContent> content) {
-    this.content = content != null ? List.copyOf(content) : null;
+    this.content = List.copyOf(content);
   }
 
   @Override

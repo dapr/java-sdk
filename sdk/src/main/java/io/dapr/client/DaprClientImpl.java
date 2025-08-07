@@ -1715,6 +1715,10 @@ public class DaprClientImpl extends AbstractDaprClient {
         throw new IllegalArgumentException("LLM name cannot be null or empty.");
       }
 
+      if (conversationRequestAlpha2.getInputs() == null || conversationRequestAlpha2.getInputs().isEmpty()) {
+        throw new IllegalArgumentException("Conversation Inputs cannot be null or empty.");
+      }
+
       DaprProtos.ConversationRequestAlpha2.Builder builder = DaprProtos.ConversationRequestAlpha2
           .newBuilder()
           .setTemperature(conversationRequestAlpha2.getTemperature())
@@ -1776,21 +1780,19 @@ public class DaprClientImpl extends AbstractDaprClient {
       builder.putAllParameters(parameters);
     }
 
-    if (request.getInputs() != null) {
-      for (ConversationInputAlpha2 input : request.getInputs()) {
-        DaprProtos.ConversationInputAlpha2.Builder inputBuilder = DaprProtos.ConversationInputAlpha2
-            .newBuilder()
-            .setScrubPii(input.isScrubPii());
+    for (ConversationInputAlpha2 input : request.getInputs()) {
+      DaprProtos.ConversationInputAlpha2.Builder inputBuilder = DaprProtos.ConversationInputAlpha2
+              .newBuilder()
+              .setScrubPii(input.isScrubPii());
 
-        if (input.getMessages() != null) {
-          for (ConversationMessage message : input.getMessages()) {
-            DaprProtos.ConversationMessage protoMessage = buildConversationMessage(message);
-            inputBuilder.addMessages(protoMessage);
-          }
+      if (input.getMessages() != null) {
+        for (ConversationMessage message : input.getMessages()) {
+          DaprProtos.ConversationMessage protoMessage = buildConversationMessage(message);
+          inputBuilder.addMessages(protoMessage);
         }
-
-        builder.addInputs(inputBuilder.build());
       }
+
+      builder.addInputs(inputBuilder.build());
     }
     
     return builder.build();
@@ -1945,9 +1947,7 @@ public class DaprClientImpl extends AbstractDaprClient {
       toolCalls.add(conversationToolCalls);
     }
     
-    return new ConversationResultMessage(
-        protoChoice.getMessage().getContent(),
-        toolCalls
+    return new ConversationResultMessage(protoChoice.getMessage().getContent(), toolCalls
     );
   }
 
