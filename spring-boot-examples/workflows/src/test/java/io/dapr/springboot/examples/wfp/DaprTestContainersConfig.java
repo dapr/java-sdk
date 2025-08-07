@@ -15,6 +15,7 @@ package io.dapr.springboot.examples.wfp;
 
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
 import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -44,7 +45,9 @@ public class DaprTestContainersConfig {
             .withAppPort(8080)
             .withNetwork(network)
             .withAppHealthCheckPath("/actuator/health")
-            .withAppChannelAddress("host.testcontainers.internal");
+            .withAppChannelAddress("host.testcontainers.internal")
+            .withDaprLogLevel(DaprLogLevel.DEBUG)
+            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()));
   }
 
 
