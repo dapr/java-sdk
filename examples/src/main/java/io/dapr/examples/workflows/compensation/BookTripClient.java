@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.compensation;
 
+import io.dapr.examples.workflows.utils.PropertyUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 
 public class BookTripClient {
     public static void main(String[] args) {
-        try (DaprWorkflowClient client = new DaprWorkflowClient()) {
+        try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
             String instanceId = client.scheduleNewWorkflow(BookTripWorkflow.class);
             System.out.printf("Started a new trip booking workflow with instance ID: %s%n", instanceId);
 
