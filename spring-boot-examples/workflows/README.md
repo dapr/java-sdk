@@ -24,8 +24,7 @@ expected_stdout_lines:
 - 'Started WorkflowPatternsApplication'
 background: true
 expected_return_code: 143
-sleep: 30
-timeout_seconds: 120
+timeout_seconds: 180
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
@@ -35,6 +34,15 @@ timeout_seconds: 120
 
 <!-- END_STEP -->
 
+<!-- STEP
+name: Wait until app is ready
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+background: false
+sleep: 20
+-->
+<!-- END_STEP -->
 By running the `spring-boot:test-run` goal, the application is loaded using the [test configurations](src/test/java/io/dapr/springboot/examples/wfp/DaprTestContainersConfig.java) 
 configured using [Testcontainers](https://testcontainers.com) to boostrap the [Dapr](https://dapr.io) sidecar and control plane.
 
@@ -66,8 +74,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'TOKYO, LONDON, SEATTLE'
-background: true
-sleep: 1
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -144,8 +151,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '!wolfkroW rpaD olleH'
-background: true
-sleep: 1
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -194,8 +200,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"cleanUpTimes":5}'
-background: true
-sleep: 10
+background: false
 timeout_seconds: 15
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -264,8 +269,7 @@ To start the workflow you can run:
 name: Start External Event Workflow
 match_order: none
 output_match_mode: substring
-background: true
-sleep: 1
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -295,8 +299,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"approved":true}'
-background: true
-sleep: 5
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -352,8 +355,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"wordCount":60}'
-background: true
-sleep: 1
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -405,8 +407,7 @@ To start the workflow, you can run:
 name: Start Suspend/Resume Workflow
 match_order: none
 output_match_mode: substring
-background: true
-sleep: 1
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -439,8 +440,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'SUSPENDED'
-background: true
-sleep: 5
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -468,8 +468,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'RUNNING'
-background: true
-sleep: 5
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -497,8 +496,7 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"approved":true}'
-background: true
-sleep: 5
+background: false
 timeout_seconds: 10
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->

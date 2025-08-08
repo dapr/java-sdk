@@ -111,6 +111,24 @@ jobs:
         run: ./mvnw clean install -DskipTests -q
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate workflows example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/workflows/README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate Spring Boot examples
+        working-directory: ./spring-boot-examples
+        run: |
+          mm.py README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate Spring Boot Workflow examples
+        working-directory: ./spring-boot-examples/workflows
+        run: |
+          mm.py README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate Jobs example
         working-directory: ./examples
         run: |
@@ -195,27 +213,10 @@ jobs:
             mm.py ./src/main/java/io/dapr/examples/querystate/README.md
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}    
-      - name: Validate workflows example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/workflows/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate streaming subscription example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
-      - name: Validate Spring Boot examples
-        working-directory: ./spring-boot-examples
-        run: |
-          mm.py README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
-      - name: Validate Spring Boot Workflow examples
-        working-directory: ./spring-boot-examples/workflows
-        run: |
-          mm.py README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+
