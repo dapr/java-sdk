@@ -34,15 +34,6 @@ timeout_seconds: 180
 
 <!-- END_STEP -->
 
-<!-- STEP
-name: Wait until app is ready
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-background: false
-sleep: 20
--->
-<!-- END_STEP -->
 By running the `spring-boot:test-run` goal, the application is loaded using the [test configurations](src/test/java/io/dapr/springboot/examples/wfp/DaprTestContainersConfig.java) 
 configured using [Testcontainers](https://testcontainers.com) to boostrap the [Dapr](https://dapr.io) sidecar and control plane.
 
@@ -74,15 +65,15 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'TOKYO, LONDON, SEATTLE'
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 To start the workflow with the three chained activities you can run: 
 
 ```sh
-curl -X POST localhost:8080/wfp/chain -H 'Content-Type: application/json' 
+sleep 35 && curl -X POST localhost:8080/wfp/chain -H 'Content-Type: application/json' 
 ```
 
 <!-- END_STEP -->
@@ -151,15 +142,15 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '!wolfkroW rpaD olleH'
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 To start the workflow with the three chained activities you can run:
 
 ```sh
-curl -X POST localhost:8080/wfp/child -H 'Content-Type: application/json' 
+sleep 35 && curl -X POST localhost:8080/wfp/child -H 'Content-Type: application/json' 
 ```
 
 <!-- END_STEP -->
@@ -200,13 +191,13 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"cleanUpTimes":5}'
-background: false
-timeout_seconds: 15
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-curl -X POST localhost:8080/wfp/continueasnew -H 'Content-Type: application/json'
+sleep 30 && curl -X POST localhost:8080/wfp/continueasnew -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -269,13 +260,13 @@ To start the workflow you can run:
 name: Start External Event Workflow
 match_order: none
 output_match_mode: substring
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-curl -X POST "localhost:8080/wfp/externalevent?orderId=123" -H 'Content-Type: application/json'
+sleep 30 && curl -X POST "localhost:8080/wfp/externalevent?orderId=123" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -299,15 +290,15 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"approved":true}'
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 To send the event you can run:
 
 ```sh
-curl -X POST "localhost:8080/wfp/externalevent-continue?orderId=123&decision=true" -H 'Content-Type: application/json'
+sleep 42 && curl -X POST "localhost:8080/wfp/externalevent-continue?orderId=123&decision=true" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -355,13 +346,13 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"wordCount":60}'
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-curl -X POST localhost:8080/wfp/fanoutin -H 'Content-Type: application/json' -d @body.json
+sleep 45 && curl -X POST localhost:8080/wfp/fanoutin -H 'Content-Type: application/json' -d @body.json
 ```
 
 <!-- END_STEP -->
@@ -407,13 +398,13 @@ To start the workflow, you can run:
 name: Start Suspend/Resume Workflow
 match_order: none
 output_match_mode: substring
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-curl -X POST "localhost:8080/wfp/suspendresume?orderId=123" -H 'Content-Type: application/json'
+sleep 50 && curl -X POST "localhost:8080/wfp/suspendresume?orderId=456" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -440,15 +431,15 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'SUSPENDED'
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
-<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
 
 Let's suspend the workflow instance by sending the following request:
 
 ```sh
-curl -X POST "localhost:8080/wfp/suspendresume/suspend?orderId=123" -H 'Content-Type: application/json'
+sleep 55 && curl -X POST "localhost:8080/wfp/suspendresume/suspend?orderId=456" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -468,15 +459,15 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'RUNNING'
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
-<!-- Timeout for above service must be more than sleep + timeout for the client-->
+
 
 To send the event you can run:
 
 ```sh
-curl -X POST "localhost:8080/wfp/suspendresume/resume?orderId=123" -H 'Content-Type: application/json'
+sleep 60 && curl -X POST "localhost:8080/wfp/suspendresume/resume?orderId=456" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
@@ -496,15 +487,15 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"approved":true}'
-background: false
-timeout_seconds: 10
+background: true
+timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 To send the event you can run:
 
 ```sh
-curl -X POST "localhost:8080/wfp/suspendresume/continue?orderId=123&decision=true" -H 'Content-Type: application/json'
+sleep 65 && curl -X POST "localhost:8080/wfp/suspendresume/continue?orderId=456&decision=true" -H 'Content-Type: application/json'
 ```
 
 <!-- END_STEP -->
