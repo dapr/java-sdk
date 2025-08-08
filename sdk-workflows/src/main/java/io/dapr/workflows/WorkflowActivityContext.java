@@ -17,6 +17,8 @@ public interface WorkflowActivityContext {
 
   String getName();
 
+  String getTaskExecutionId();
+
   <T> T getInput(Class<T> targetType);
 
 }
