@@ -112,7 +112,7 @@ jobs:
       - name: Build sdk
         run: ./mvnw compile -q
       - name: Install jars
-        run: ./mvnw install -q
+        run: ./mvnw install -DskipTests -q
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate Jobs example
