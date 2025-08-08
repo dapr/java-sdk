@@ -166,7 +166,6 @@ output_match_mode: substring
 expected_stdout_lines:
   - 'completed with result: TOKYO, LONDON, SEATTLE'
 timeout_seconds: 20
-background: true
 -->
 Then, execute the following script in order to run DemoChainClient:
 ```sh
@@ -279,7 +278,6 @@ output_match_mode: substring
 expected_stdout_lines:
   - 'completed with result: 60'
 timeout_seconds: 20
-background: true
 -->
 Execute the following script in order to run DemoFanInOutClient:
 
@@ -659,7 +657,6 @@ output_match_mode: substring
 expected_stdout_lines:
   - 'Workflow failed, compensation applied'
 timeout_seconds: 30
-background: true
 -->
 Once running, execute the following script to run the BookTripClient:
 ```sh
@@ -721,7 +718,6 @@ expected_stdout_lines:
   - "Workflow Instance Status: RUNNING"
   - "Now that the instance is RUNNING again, lets send the external event."
 timeout_seconds: 30
-background: true
 -->
 ```sh
 sleep 15 && java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient 50004
