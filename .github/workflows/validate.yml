@@ -107,12 +107,8 @@ jobs:
           pip3 install mechanical-markdown
       - name: Verify scheduler is listening on port.
         run: sleep 30 && docker logs dapr_scheduler && nc -vz localhost 50006
-      - name: Clean up files
-        run: ./mvnw clean
-      - name: Build sdk
-        run: ./mvnw compile -q
       - name: Install jars
-        run: ./mvnw install -DskipTests -q
+        run: ./mvnw clean install -DskipTests -q
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate Jobs example
