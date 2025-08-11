@@ -75,6 +75,7 @@ public class InvokeClient {
       openTelemetrySdk.getSdkTracerProvider().shutdown();
       Validation.validate();
       System.out.println("Done");
+      System.exit(0);
     }
   }
 }
