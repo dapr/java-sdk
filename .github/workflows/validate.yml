@@ -38,7 +38,11 @@ jobs:
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
       DAPR_CLI_VER: 1.15.0
+<<<<<<< HEAD
       DAPR_RUNTIME_VER: 1.15.7
+=======
+      DAPR_RUNTIME_VER: 1.16.0-rc.3
+>>>>>>> c5658eb5 (Use 1.16 rc.3 (#1488))
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
@@ -107,12 +111,26 @@ jobs:
           pip3 install mechanical-markdown
       - name: Verify scheduler is listening on port.
         run: sleep 30 && docker logs dapr_scheduler && nc -vz localhost 50006
-      - name: Clean up files
-        run: ./mvnw clean
-      - name: Build sdk
-        run: ./mvnw compile -q
       - name: Install jars
-        run: ./mvnw install -q
+        run: ./mvnw clean install -DskipTests -q
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate workflows example
+        working-directory: ./examples
+        run: |
+          mm.py ./src/main/java/io/dapr/examples/workflows/README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate Spring Boot examples
+        working-directory: ./spring-boot-examples
+        run: |
+          mm.py README.md
+        env:
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
+      - name: Validate Spring Boot Workflow examples
+        working-directory: ./spring-boot-examples/workflows
+        run: |
+          mm.py README.md
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
       - name: Validate Jobs example
@@ -199,21 +217,9 @@ jobs:
             mm.py ./src/main/java/io/dapr/examples/querystate/README.md
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}    
-      - name: Validate workflows example
-        working-directory: ./examples
-        run: |
-          mm.py ./src/main/java/io/dapr/examples/workflows/README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
       - name: Validate streaming subscription example
         working-directory: ./examples
         run: |
           mm.py ./src/main/java/io/dapr/examples/pubsub/stream/README.md
         env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}  
-      - name: Validate Spring Boot examples
-        working-directory: ./spring-boot-examples
-        run: |
-          mm.py README.md
-        env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}      
+          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}

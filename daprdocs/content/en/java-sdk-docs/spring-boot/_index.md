@@ -80,7 +80,11 @@ public class DaprTestContainersConfig {
   @ServiceConnection
   public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer){
     
+<<<<<<< HEAD
     return new DaprContainer("daprio/daprd:1.15.7")
+=======
+    return new DaprContainer("daprio/daprd:1.16.0-rc.3")
+>>>>>>> c5658eb5 (Use 1.16 rc.3 (#1488))
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))
@@ -235,7 +239,11 @@ Finally, because Dapr PubSub requires a bidirectional connection between your ap
 @ServiceConnection
 public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer, RabbitMQContainer rabbitMQContainer){
     
+<<<<<<< HEAD
     return new DaprContainer("daprio/daprd:1.15.7")
+=======
+    return new DaprContainer("daprio/daprd:1.16.0-rc.3")
+>>>>>>> c5658eb5 (Use 1.16 rc.3 (#1488))
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))

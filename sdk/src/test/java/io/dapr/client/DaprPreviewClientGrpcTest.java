@@ -22,13 +22,15 @@ import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.CloudEvent;
-import io.dapr.client.domain.DeleteJobRequest;
-import io.dapr.client.domain.GetJobRequest;
-import io.dapr.client.domain.GetJobResponse;
-import io.dapr.client.domain.JobSchedule;
+import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationResponse;
+import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.DropFailurePolicy;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
+import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -818,6 +820,202 @@ public class DaprPreviewClientGrpcTest {
   }
 
   @Test
+<<<<<<< HEAD
+=======
+  public void scheduleJobShouldHavePolicyWhenPolicyIsSet() {
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("* * * * * *"))
+        .setFailurePolicy(new DropFailurePolicy());
+
+    previewClient.scheduleJob(expectedScheduleJobRequest).block();
+
+    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+
+    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    assertEquals("testJob", job.getName());
+    assertFalse(job.hasData());
+    assertEquals( "* * * * * *", job.getSchedule());
+    assertEquals(0, job.getRepeats());
+    assertFalse(job.hasTtl());
+    Assertions.assertTrue(job.hasFailurePolicy());
+  }
+
+  @Test
+  public void scheduleJobShouldHaveConstantPolicyWithMaxRetriesWhenConstantPolicyIsSetWithMaxRetries() {
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("* * * * * *"))
+        .setFailurePolicy(new ConstantFailurePolicy(2));
+
+    previewClient.scheduleJob(expectedScheduleJobRequest).block();
+
+    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+
+    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    assertEquals("testJob", job.getName());
+    assertFalse(job.hasData());
+    assertEquals( "* * * * * *", job.getSchedule());
+    assertEquals(0, job.getRepeats());
+    assertFalse(job.hasTtl());
+    Assertions.assertTrue(job.hasFailurePolicy());
+    assertEquals(2, job.getFailurePolicy().getConstant().getMaxRetries());
+  }
+
+  @Test
+  public void scheduleJobShouldHaveConstantPolicyWithIntervalWhenConstantPolicyIsSetWithInterval() {
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("* * * * * *"))
+        .setFailurePolicy(new ConstantFailurePolicy(Duration.of(2, ChronoUnit.SECONDS)));
+
+    previewClient.scheduleJob(expectedScheduleJobRequest).block();
+
+    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+
+    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    assertEquals("testJob", job.getName());
+    assertFalse(job.hasData());
+    assertEquals( "* * * * * *", job.getSchedule());
+    assertEquals(0, job.getRepeats());
+    assertFalse(job.hasTtl());
+    Assertions.assertTrue(job.hasFailurePolicy());
+    assertEquals(Duration.of(2, ChronoUnit.SECONDS).getNano(),
+        job.getFailurePolicy().getConstant().getInterval().getNanos());
+  }
+
+  @Test
+  public void scheduleJobShouldHaveBothRetiresAndIntervalWhenConstantPolicyIsSetWithRetriesAndInterval() {
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+    ScheduleJobRequest expectedScheduleJobRequest = new ScheduleJobRequest("testJob",
+        JobSchedule.fromString("* * * * * *"))
+        .setFailurePolicy(new ConstantFailurePolicy(Duration.of(2, ChronoUnit.SECONDS))
+            .setMaxRetries(10));
+
+    previewClient.scheduleJob(expectedScheduleJobRequest).block();
+
+    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+        ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+
+    verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+    DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+    DaprProtos.Job job = actualScheduleJobRequest.getJob();
+    assertEquals("testJob", job.getName());
+    assertFalse(job.hasData());
+    assertEquals( "* * * * * *", job.getSchedule());
+    assertEquals(0, job.getRepeats());
+    assertFalse(job.hasTtl());
+    Assertions.assertTrue(job.hasFailurePolicy());
+    assertEquals(Duration.of(2, ChronoUnit.SECONDS).getNano(),
+        job.getFailurePolicy().getConstant().getInterval().getNanos());
+    assertEquals(10, job.getFailurePolicy().getConstant().getMaxRetries());
+  }
+
+  @Test
+  public void scheduleJobShouldThrowWhenNameAlreadyExists() {
+        AtomicInteger callCount = new AtomicInteger(0);
+        
+        doAnswer(invocation -> {
+          StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+          if (callCount.incrementAndGet() == 1) {
+            // First call succeeds
+            observer.onCompleted();
+          } else {
+            // Second call fails with ALREADY_EXISTS
+            observer.onError(newStatusRuntimeException("ALREADY_EXISTS", "Job with name 'testJob' already exists"));
+          }
+          return null;
+        }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+        // First call should succeed
+        ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
+        assertDoesNotThrow(() -> previewClient.scheduleJob(firstRequest).block());
+
+        ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+            ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+
+        verify(daprStub, times(1)).scheduleJobAlpha1(captor.capture(), Mockito.any());
+        DaprProtos.ScheduleJobRequest actualScheduleJobRequest = captor.getValue();
+        DaprProtos.Job job = actualScheduleJobRequest.getJob();
+        assertEquals("testJob", job.getName());
+        assertFalse(job.hasData());
+        assertEquals(0, job.getRepeats());
+        assertFalse(job.hasTtl());
+
+    // Second call with same name should fail
+    ScheduleJobRequest secondRequest = new ScheduleJobRequest("testJob", Instant.now());
+    
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "ALREADY_EXISTS",
+        "ALREADY_EXISTS: Job with name 'testJob' already exists",
+        () -> previewClient.scheduleJob(secondRequest).block());
+  }
+
+  @Test
+  public void scheduleJobShouldSucceedWhenNameAlreadyExistsWithOverwrite() {
+    doAnswer(invocation -> {
+      StreamObserver<DaprProtos.ScheduleJobResponse> observer = invocation.getArgument(1);
+      observer.onCompleted(); // Simulate successful response for both calls
+      return null;
+    }).when(daprStub).scheduleJobAlpha1(any(DaprProtos.ScheduleJobRequest.class), any());
+
+    // First call should succeed
+    ScheduleJobRequest firstRequest = new ScheduleJobRequest("testJob", Instant.now());
+    assertDoesNotThrow(() -> previewClient.scheduleJob(firstRequest).block());
+
+    // Second call with same name but overwrite=true should also succeed
+    ScheduleJobRequest secondRequest = new ScheduleJobRequest("testJob", Instant.now())
+            .setOverwrite(true);
+    assertDoesNotThrow(() -> previewClient.scheduleJob(secondRequest).block());
+
+    // Verify that both calls were made successfully
+    ArgumentCaptor<DaprProtos.ScheduleJobRequest> captor =
+            ArgumentCaptor.forClass(DaprProtos.ScheduleJobRequest.class);
+    verify(daprStub, times(2)).scheduleJobAlpha1(captor.capture(), any());
+
+    // Verify the first call doesn't have overwrite set
+    DaprProtos.ScheduleJobRequest firstActualRequest = captor.getAllValues().get(0);
+    assertFalse(firstActualRequest.getOverwrite());
+    assertEquals("testJob", firstActualRequest.getJob().getName());
+
+    // Verify the second call has overwrite set to true
+    DaprProtos.ScheduleJobRequest secondActualRequest = captor.getAllValues().get(1);
+    assertTrue(secondActualRequest.getOverwrite());
+    assertEquals("testJob", secondActualRequest.getJob().getName());
+  }
+
+  @Test
+>>>>>>> c5658eb5 (Use 1.16 rc.3 (#1488))
   public void getJobShouldReturnResponseWhenAllFieldsArePresentInRequest() {
     DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             .withZone(ZoneOffset.UTC);

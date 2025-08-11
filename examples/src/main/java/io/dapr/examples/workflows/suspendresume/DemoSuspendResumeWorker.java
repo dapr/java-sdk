@@ -16,6 +16,7 @@ package io.dapr.examples.workflows.suspendresume;
 import io.dapr.examples.workflows.externalevent.ApproveActivity;
 import io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow;
 import io.dapr.examples.workflows.externalevent.DenyActivity;
+import io.dapr.examples.workflows.utils.PropertyUtils;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 
@@ -28,7 +29,7 @@ public class DemoSuspendResumeWorker {
    */
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the builder.
-    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(DemoExternalEventWorkflow.class);
+    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(PropertyUtils.getProperties(args)).registerWorkflow(DemoExternalEventWorkflow.class);
     builder.registerActivity(ApproveActivity.class);
     builder.registerActivity(DenyActivity.class);
 
