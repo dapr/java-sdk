@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.childworkflow;
 
+import io.dapr.examples.workflows.utils.PropertyUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
@@ -26,7 +27,7 @@ public class DemoChildWorkerflowClient {
    * @throws InterruptedException If program has been interrupted.
    */
   public static void main(String[] args) {
-    try (DaprWorkflowClient client = new DaprWorkflowClient()) {
+    try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
       String instanceId = client.scheduleNewWorkflow(DemoWorkflow.class);
       System.out.printf("Started a new child-workflow model workflow with instance ID: %s%n", instanceId);
       WorkflowInstanceStatus workflowInstanceStatus =

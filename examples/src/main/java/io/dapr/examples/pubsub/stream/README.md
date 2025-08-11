@@ -93,7 +93,8 @@ expected_stdout_lines:
   - '== APP == Subscriber got: This is message #0'
   - '== APP == Subscriber got: This is message #1'
 background: true
-sleep: 30
+sleep: 15
+timeout_seconds: 30
 -->
 
 ```bash
@@ -111,6 +112,7 @@ expected_stdout_lines:
   - '== APP == Published message: This is message #1'
 background: true
 sleep: 15
+timeout_seconds: 30
 -->
 
 ```bash

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Dapr Authors
+ * Copyright 2025 The Dapr Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,11 +11,22 @@
 limitations under the License.
 */
 
-package io.dapr.testcontainers;
+package io.dapr.examples.workflows.utils;
 
-public interface DaprContainerConstants {
-  String DAPR_VERSION = "1.16.0-rc.3";
-  String DAPR_RUNTIME_IMAGE_TAG = "daprio/daprd:" + DAPR_VERSION;
-  String DAPR_PLACEMENT_IMAGE_TAG = "daprio/placement:" + DAPR_VERSION;
-  String DAPR_SCHEDULER_IMAGE_TAG = "daprio/scheduler:" + DAPR_VERSION;
+import io.dapr.config.Properties;
+
+import java.util.HashMap;
+
+public class PropertyUtils {
+
+    public static Properties getProperties(String[] args) {
+        Properties properties = new Properties();
+        if (args != null && args.length > 0) {
+            properties = new Properties(new HashMap<>() {{
+                put(Properties.GRPC_PORT, args[0]);
+            }});
+        }
+
+        return properties;
+    }
 }
