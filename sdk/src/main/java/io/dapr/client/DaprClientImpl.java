@@ -1309,38 +1309,44 @@ public class DaprClientImpl extends AbstractDaprClient {
     try {
       validateScheduleJobRequest(scheduleJobRequest);
 
-      DaprProtos.Job.Builder scheduleJobRequestBuilder = DaprProtos.Job.newBuilder();
-      scheduleJobRequestBuilder.setName(scheduleJobRequest.getName());
+      DaprProtos.Job.Builder jobBuilder = DaprProtos.Job.newBuilder();
+      jobBuilder.setName(scheduleJobRequest.getName());
 
       DateTimeFormatter iso8601Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
               .withZone(ZoneOffset.UTC);
 
       if (scheduleJobRequest.getData() != null) {
-        scheduleJobRequestBuilder.setData(Any.newBuilder()
+        jobBuilder.setData(Any.newBuilder()
             .setValue(ByteString.copyFrom(scheduleJobRequest.getData())).build());
       }
 
       if (scheduleJobRequest.getSchedule() != null) {
-        scheduleJobRequestBuilder.setSchedule(scheduleJobRequest.getSchedule().getExpression());
+        jobBuilder.setSchedule(scheduleJobRequest.getSchedule().getExpression());
       }
 
       if (scheduleJobRequest.getTtl() != null) {
-        scheduleJobRequestBuilder.setTtl(iso8601Formatter.format(scheduleJobRequest.getTtl()));
+        jobBuilder.setTtl(iso8601Formatter.format(scheduleJobRequest.getTtl()));
       }
 
       if (scheduleJobRequest.getRepeats() != null) {
-        scheduleJobRequestBuilder.setRepeats(scheduleJobRequest.getRepeats());
+        jobBuilder.setRepeats(scheduleJobRequest.getRepeats());
       }
 
       if (scheduleJobRequest.getDueTime() != null) {
-        scheduleJobRequestBuilder.setDueTime(iso8601Formatter.format(scheduleJobRequest.getDueTime()));
+        jobBuilder.setDueTime(iso8601Formatter.format(scheduleJobRequest.getDueTime()));
       }
+
+      if (scheduleJobRequest.getFailurePolicy() != null) {
+        jobBuilder.setFailurePolicy(getJobFailurePolicy(scheduleJobRequest.getFailurePolicy()));
+      }
+
 
       Mono<DaprProtos.ScheduleJobResponse> scheduleJobResponseMono =
           Mono.deferContextual(context -> this.createMono(
                   it -> intercept(context, asyncStub)
-                      .scheduleJobAlpha1(DaprProtos.ScheduleJobRequest.newBuilder()
-                          .setJob(scheduleJobRequestBuilder.build()).build(), it)
+                          .scheduleJobAlpha1(DaprProtos.ScheduleJobRequest.newBuilder()
+                                  .setOverwrite(scheduleJobRequest.getOverwrite())
+                                  .setJob(jobBuilder.build()).build(), it)
               )
           );
 
