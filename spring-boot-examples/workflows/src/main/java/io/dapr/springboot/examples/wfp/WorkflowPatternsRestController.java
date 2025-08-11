@@ -66,7 +66,7 @@ public class WorkflowPatternsRestController {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ChainWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");
     return daprWorkflowClient
-            .waitForInstanceCompletion(instanceId, Duration.ofSeconds(2), true)
+            .waitForInstanceCompletion(instanceId, Duration.ofSeconds(10), true)
             .readOutputAs(String.class);
   }
 
@@ -80,7 +80,7 @@ public class WorkflowPatternsRestController {
     String instanceId = daprWorkflowClient.scheduleNewWorkflow(ParentWorkflow.class);
     logger.info("Workflow instance " + instanceId + " started");
     return daprWorkflowClient
-            .waitForInstanceCompletion(instanceId, Duration.ofSeconds(2), true)
+            .waitForInstanceCompletion(instanceId, Duration.ofSeconds(10), true)
             .readOutputAs(String.class);
   }
 
