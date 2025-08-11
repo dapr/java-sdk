@@ -40,11 +40,14 @@ import io.dapr.client.domain.DeveloperMessage;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.ConstantFailurePolicy;
-import io.dapr.client.domain.DropFailurePolicy;
-import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationRequest;
 import io.dapr.client.domain.ConversationResponse;
+import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.DropFailurePolicy;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
+import io.dapr.client.domain.JobSchedule;
 import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
@@ -1022,12 +1025,12 @@ public class DaprPreviewClientGrpcTest {
 
     // Verify the first call doesn't have overwrite set
     DaprProtos.ScheduleJobRequest firstActualRequest = captor.getAllValues().get(0);
-    assertFalse(firstActualRequest.getJob().getOverwrite());
+    assertFalse(firstActualRequest.getOverwrite());
     assertEquals("testJob", firstActualRequest.getJob().getName());
 
     // Verify the second call has overwrite set to true
     DaprProtos.ScheduleJobRequest secondActualRequest = captor.getAllValues().get(1);
-    assertTrue(secondActualRequest.getJob().getOverwrite());
+    assertTrue(secondActualRequest.getOverwrite());
     assertEquals("testJob", secondActualRequest.getJob().getName());
   }
 
