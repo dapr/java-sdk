@@ -14,6 +14,8 @@ package io.dapr.it.testcontainers.workflows.crossapp;
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
+import io.dapr.testcontainers.DaprPlacementContainer;
+import io.dapr.testcontainers.DaprSchedulerContainer;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
@@ -22,12 +24,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -36,7 +38,7 @@ import java.util.Map;
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import org.testcontainers.images.builder.Transferable;
+import io.dapr.testcontainers.Subscription;
 
 /**
  * Cross-App Pattern integration test.
@@ -52,113 +54,19 @@ import org.testcontainers.images.builder.Transferable;
 public class WorkflowsCrossAppCallActivityIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
-
+  
+  // Shared placement and scheduler containers for all Dapr instances
+  private static DaprPlacementContainer sharedPlacementContainer;
+  private static DaprSchedulerContainer sharedSchedulerContainer;
+  
   // Main workflow orchestrator container
-  @Container
-  private static final DaprContainer MAIN_WORKFLOW_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
-      .withAppName("crossapp-worker")
-      .withNetwork(DAPR_NETWORK)
-      .withNetworkAliases("main-workflow-sidecar")
-      .withComponent(new Component("kvstore", "state.in-memory", "v1",
-          Map.of("actorStateStore", "true")))
-      .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
-      .withDaprLogLevel(DaprLogLevel.DEBUG)
-      .withLogConsumer(outputFrame -> System.out.println("MAIN_WORKFLOW: " + outputFrame.getUtf8String()))
-      .withAppChannelAddress("host.testcontainers.internal");
-
-  // App2 container for App2TransformActivity - using GenericContainer for custom ports
-  @Container
-  private static final GenericContainer<?> APP2_CONTAINER = new GenericContainer<>(DAPR_RUNTIME_IMAGE_TAG)
-      .withNetwork(DAPR_NETWORK)
-      .withNetworkAliases("app2-sidecar")
-      .withExposedPorts(3501, 50002)
-      .withCommand("./daprd", 
-                   "--app-id", "app2",
-                   "--dapr-listen-addresses=0.0.0.0",
-                   "--dapr-http-port", "3501",
-                   "--dapr-grpc-port", "50002",
-                   "--app-protocol", "http",
-                   "--placement-host-address", "placement:50005",
-                   "--scheduler-host-address", "scheduler:51005",
-                   "--app-channel-address", "main-workflow-sidecar:3500", // cant use host.testcontainers.internal because it's not a valid hostname
-                   "--log-level", "DEBUG",
-                   "--resources-path", "/dapr-resources")
-      .withCopyToContainer(Transferable.of("apiVersion: dapr.io/v1alpha1\n" +
-          "kind: Component\n" +
-          "metadata:\n" +
-          "  name: kvstore\n" +
-          "spec:\n" +
-          "  type: state.in-memory\n" +
-          "  version: v1\n" +
-          "  metadata:\n" +
-          "  - name: actorStateStore\n" +
-          "    value: 'true'\n"), "/dapr-resources/kvstore.yaml")
-      .withCopyToContainer(Transferable.of("apiVersion: dapr.io/v1alpha1\n" +
-          "kind: Component\n" +
-          "metadata:\n" +
-          "  name: pubsub\n" +
-          "spec:\n" +
-          "  type: pubsub.in-memory\n" +
-          "  version: v1\n"), "/dapr-resources/pubsub.yaml")
-      .withCopyToContainer(Transferable.of("apiVersion: dapr.io/v1alpha1\n" +
-          "kind: Subscription\n" +
-          "metadata:\n" +
-          "  name: local\n" +
-          "spec:\n" +
-          "  pubsubname: pubsub\n" +
-          "  topic: topic\n" +
-          "  route: /events\n"), "/dapr-resources/subscription.yaml")
-      .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
-          .forPort(3501)
-          .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399))
-      .withLogConsumer(outputFrame -> System.out.println("APP2: " + outputFrame.getUtf8String()));
-
-  // App3 container for App3FinalizeActivity - using GenericContainer for custom ports
-  @Container
-  private static final GenericContainer<?> APP3_CONTAINER = new GenericContainer<>(DAPR_RUNTIME_IMAGE_TAG)
-      .withNetwork(DAPR_NETWORK)
-      .withNetworkAliases("app3-sidecar")
-      .withExposedPorts(3502, 50003)
-      .withCommand("./daprd", 
-                   "--app-id", "app3",
-                   "--dapr-listen-addresses=0.0.0.0",
-                   "--dapr-http-port", "3502",
-                   "--dapr-grpc-port", "50003",
-                   "--app-protocol", "http",
-                   "--placement-host-address", "placement:50005",
-                   "--scheduler-host-address", "scheduler:51005",
-                   "--app-channel-address", "main-workflow-sidecar:3500", // cant use host.testcontainers.internal because it's not a valid hostname
-                   "--log-level", "DEBUG",
-                   "--resources-path", "/dapr-resources")
-      .withCopyToContainer(Transferable.of("apiVersion: dapr.io/v1alpha1\n" +
-          "kind: Component\n" +
-          "metadata:\n" +
-          "  name: kvstore\n" +
-          "spec:\n" +
-          "  type: state.in-memory\n" +
-          "  version: v1\n" +
-          "  metadata:\n" +
-          "  - name: actorStateStore\n" +
-          "    value: 'true'\n"), "/dapr-resources/kvstore.yaml")
-      .withCopyToContainer(Transferable.of("apiVersion: dapr.io/v1alpha1\n" +
-          "kind: Component\n" +
-          "metadata:\n" +
-          "  name: pubsub\n" +
-          "spec:\n" +
-          "  type: pubsub.in-memory\n" +
-          "  version: v1\n"), "/dapr-resources/pubsub.yaml")
-      .withCopyToContainer(Transferable.of("apiVersion: dapr.io/v1alpha1\n" +
-          "kind: Subscription\n" +
-          "metadata:\n" +
-          "  name: local\n" +
-          "spec:\n" +
-          "  pubsubname: pubsub\n" +
-          "  topic: topic\n" +
-          "  route: /events\n"), "/dapr-resources/subscription.yaml")
-      .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
-          .forPort(3502)
-          .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399))
-      .withLogConsumer(outputFrame -> System.out.println("APP3: " + outputFrame.getUtf8String()));
+  private static DaprContainer MAIN_WORKFLOW_CONTAINER;
+  
+  // App2 container for App2TransformActivity - using DaprContainer with custom ports
+  private static DaprContainer APP2_CONTAINER;
+  
+  // App3 container for App3FinalizeActivity - using DaprContainer with custom ports
+  private static DaprContainer APP3_CONTAINER;
 
   // TestContainers for each app
   private static GenericContainer<?> crossappWorker;
@@ -167,9 +75,81 @@ public class WorkflowsCrossAppCallActivityIT {
 
   @BeforeAll
   public static void setUp() throws Exception {
-    // Wait for sidecars to be fully initialized & stabilize
-    Thread.sleep(15000);
+    sharedPlacementContainer = new DaprPlacementContainer("daprio/placement:1.16.0-rc.3")
+        .withNetwork(DAPR_NETWORK)
+        .withNetworkAliases("placement")
+        .withReuse(false);
+    sharedPlacementContainer.start();
     
+    sharedSchedulerContainer = new DaprSchedulerContainer("daprio/scheduler:1.16.0-rc.3")
+        .withNetwork(DAPR_NETWORK)
+        .withNetworkAliases("scheduler")
+        .withReuse(false);
+    sharedSchedulerContainer.start();
+
+    // Initialize Dapr containers with shared placement and scheduler
+    MAIN_WORKFLOW_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("crossapp-worker")
+        .withNetwork(DAPR_NETWORK)
+        .withNetworkAliases("main-workflow-sidecar")
+        .withPlacementContainer(sharedPlacementContainer)
+        .withSchedulerContainer(sharedSchedulerContainer)
+        .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+        .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
+        .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
+        .withDaprLogLevel(DaprLogLevel.DEBUG)
+        .withLogConsumer(outputFrame -> System.out.println("MAIN_WORKFLOW: " + outputFrame.getUtf8String()))
+        .withAppChannelAddress("host.testcontainers.internal")
+        .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
+            .forPort(3500)
+            .forStatusCode(200)
+            .forStatusCode(204));
+    
+    APP2_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("app2")
+        .withNetwork(DAPR_NETWORK)
+        .withNetworkAliases("app2-sidecar")
+        .withPlacementContainer(sharedPlacementContainer)
+        .withSchedulerContainer(sharedSchedulerContainer)
+        .withCustomHttpPort(3501)
+        .withCustomGrpcPort(50002)
+        .withAppChannelAddress("main-workflow-sidecar:3500")
+        .withDaprLogLevel(DaprLogLevel.DEBUG)
+        .withComponent(new Component("kvstore", "state.in-memory", "v1",
+            Map.of("actorStateStore", "true")))
+        .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
+        .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
+        .withLogConsumer(outputFrame -> System.out.println("APP2: " + outputFrame.getUtf8String()))
+        .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
+            .forPort(3501)
+            .forStatusCode(200)
+            .forStatusCode(204));
+    
+    APP3_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+        .withAppName("app3")
+        .withNetwork(DAPR_NETWORK)
+        .withNetworkAliases("app3-sidecar")
+        .withPlacementContainer(sharedPlacementContainer)
+        .withSchedulerContainer(sharedSchedulerContainer)
+        .withCustomHttpPort(3502)
+        .withCustomGrpcPort(50003)
+        .withAppChannelAddress("main-workflow-sidecar:3500")
+        .withDaprLogLevel(DaprLogLevel.DEBUG)
+        .withComponent(new Component("kvstore", "state.in-memory", "v1",
+            Map.of("actorStateStore", "true")))
+        .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
+        .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
+        .withLogConsumer(outputFrame -> System.out.println("APP3: " + outputFrame.getUtf8String()))
+        .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
+            .forPort(3502)
+            .forStatusCode(200)
+            .forStatusCode(204));
+    
+    // Start the Dapr containers
+    MAIN_WORKFLOW_CONTAINER.start();
+    APP2_CONTAINER.start();
+    APP3_CONTAINER.start();
+
     // Start crossapp worker (connects to MAIN_WORKFLOW_CONTAINER)
     crossappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
         .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
@@ -216,14 +196,10 @@ public class WorkflowsCrossAppCallActivityIT {
     crossappWorker.start();
     app2Worker.start();
     app3Worker.start();
-    
-    // Wait for workers to be fully ready and connected
-    Thread.sleep(5000);
   }
 
   @AfterAll
-  public static void tearDown() throws Exception {
-    // Clean up worker containers
+  public static void tearDown() {
     if (crossappWorker != null) {
       crossappWorker.stop();
     }
@@ -233,63 +209,27 @@ public class WorkflowsCrossAppCallActivityIT {
     if (app3Worker != null) {
       app3Worker.stop();
     }
-  }
-
-  /**
-   * Verifies that all Dapr sidecars are healthy and ready to accept connections.
-   * This helps prevent the "sidecar unavailable" errors we were seeing.
-   */
-  private void verifySidecarsReady() throws Exception {
-    // Main container uses ports (3500, 50001)
-    String mainHealthUrl = "http://localhost:" + MAIN_WORKFLOW_CONTAINER.getMappedPort(3500) + "/v1.0/healthz/outbound";
-    waitForHealthEndpoint(mainHealthUrl, "Main workflow sidecar");
-    
-    // App2 uses custom ports (3501, 50002)
-    String app2HealthUrl = "http://localhost:" + APP2_CONTAINER.getMappedPort(3501) + "/v1.0/healthz/outbound";
-    waitForHealthEndpoint(app2HealthUrl, "App2 sidecar");
-    
-    // App3 uses custom ports (3502, 50003)
-    String app3HealthUrl = "http://localhost:" + APP3_CONTAINER.getMappedPort(3502) + "/v1.0/healthz/outbound";
-    waitForHealthEndpoint(app3HealthUrl, "App3 sidecar");
-  }
-  
-  /**
-   * Waits for a health endpoint to return a successful response.
-   */
-  private void waitForHealthEndpoint(String healthUrl, String sidecarName) throws Exception {
-    int maxAttempts = 30; // 30s max
-    int attempt = 0;
-    
-    while (attempt < maxAttempts) {
-      try {
-        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-            .uri(java.net.URI.create(healthUrl))
-            .GET()
-            .build();
-        
-        java.net.http.HttpResponse<String> response = client.send(request, 
-            java.net.http.HttpResponse.BodyHandlers.ofString());
-        
-        if (response.statusCode() >= 200 && response.statusCode() < 400) {
-          System.out.println(sidecarName + " is healthy and ready");
-          return;
-        }
-      } catch (Exception e) {
-        // Ignore connection errors bc they're expected while sidecar is starting
-      }
-      
-      attempt++;
-      Thread.sleep(1000); // Wait 1s before retry
+    if (MAIN_WORKFLOW_CONTAINER != null) {
+      MAIN_WORKFLOW_CONTAINER.stop();
     }
-    
-    throw new RuntimeException(sidecarName + " failed to become healthy within " + maxAttempts + " seconds");
+    if (APP2_CONTAINER != null) {
+      APP2_CONTAINER.stop();
+    }
+    if (APP3_CONTAINER != null) {
+      APP3_CONTAINER.stop();
+    }
+    if (sharedPlacementContainer != null) {
+      sharedPlacementContainer.stop();
+    }
+    if (sharedSchedulerContainer != null) {
+      sharedSchedulerContainer.stop();
+    }
   }
 
   @Test
   public void testCrossAppWorkflow() throws Exception {
-    verifySidecarsReady();
-    
+    // TestContainers wait strategies ensure all containers are ready before this test runs
+
     String input = "Hello World";
     String expectedOutput = "HELLO WORLD [TRANSFORMED BY APP2] [FINALIZED BY APP3]";
     
