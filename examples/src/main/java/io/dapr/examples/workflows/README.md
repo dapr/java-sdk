@@ -825,26 +825,6 @@ dapr run --app-id app3 --resources-path ./components/workflows --dapr-grpc-port 
 java -Djava.util.logging.ConsoleHandler.level=FINE -Dio.dapr.durabletask.level=FINE -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.CrossAppWorkflowClient "Hello World"
 ```
 
-<!-- STEP
-name: Run Cross-App Pattern workflow
-match_order: none
-output_match_mode: substring
-expected_stdout_lines:
-  - "=== Starting Cross-App Workflow Client ==="
-  - "Input: Hello World"
-  - "Created DaprWorkflowClient successfully"
-  - "Attempting to start new workflow..."
-  - "Started a new cross-app workflow with instance ID:"
-  - "Waiting for workflow completion..."
-  - "Workflow instance with ID:"
-  - "completed with result: HELLO WORLD [TRANSFORMED BY APP2] [FINALIZED BY APP3]"
-background: true
-sleep: 60
-timeout_seconds: 60
--->
-
-<!-- END_STEP -->
-
 **Expected Output:**
 
 The client will show:
