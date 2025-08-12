@@ -138,6 +138,7 @@ name: Run demo service
 expected_stdout_lines:
 background: true
 sleep: 20
+timeout_seconds: 40
 -->
 
 ```bash
@@ -225,6 +226,7 @@ name: Run proxy service
 expected_stdout_lines:
 background: true
 sleep: 20
+timeout_seconds: 40
 -->
 
 ```bash
@@ -284,6 +286,7 @@ expected_stdout_lines:
   - '== APP == Done'
 background: true
 sleep: 20
+timeout_seconds: 40
 -->
 
 ```bash

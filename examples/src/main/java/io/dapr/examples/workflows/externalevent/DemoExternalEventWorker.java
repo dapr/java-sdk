@@ -13,6 +13,7 @@ limitations under the License.
 
 package io.dapr.examples.workflows.externalevent;
 
+import io.dapr.examples.workflows.utils.PropertyUtils;
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 
@@ -25,7 +26,7 @@ public class DemoExternalEventWorker {
    */
   public static void main(String[] args) throws Exception {
     // Register the Workflow with the builder.
-    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder().registerWorkflow(DemoExternalEventWorkflow.class);
+    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(PropertyUtils.getProperties(args)).registerWorkflow(DemoExternalEventWorkflow.class);
     builder.registerActivity(ApproveActivity.class);
     builder.registerActivity(DenyActivity.class);
 
