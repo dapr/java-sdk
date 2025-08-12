@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
@@ -82,6 +83,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private Integer appHealthCheckThreshold = 3; //default from docs
   private boolean shouldReusePlacement;
   private boolean shouldReuseScheduler;
+
+  private Integer customHttpPort;
+  private Integer customGrpcPort;
 
   /**
    * Creates a new Dapr container.
@@ -163,6 +167,16 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
   public DaprContainer withSchedulerService(String schedulerService) {
     this.schedulerService = schedulerService;
+    return this;
+  }
+
+  public DaprContainer withCustomHttpPort(Integer port) {
+    this.customHttpPort = port;
+    return this;
+  }
+
+  public DaprContainer withCustomGrpcPort(Integer port) {
+    this.customGrpcPort = port;
     return this;
   }
 
@@ -287,6 +301,42 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       withNetwork(Network.newNetwork());
     }
 
+    if (configuration != null) {
+      String configurationYaml = CONFIGURATION_CONVERTER.convert(configuration);
+
+      LOGGER.info("> Configuration YAML: \n");
+      LOGGER.info("\t\n" + configurationYaml + "\n");
+
+      withCopyToContainer(Transferable.of(configurationYaml), "/dapr-resources/" + configuration.getName() + ".yaml");
+    }
+
+    for (Component component : components) {
+      String componentYaml = COMPONENT_CONVERTER.convert(component);
+
+      LOGGER.info("> Component YAML: \n");
+      LOGGER.info("\t\n" + componentYaml + "\n");
+
+      withCopyToContainer(Transferable.of(componentYaml), "/dapr-resources/" + component.getName() + ".yaml");
+    }
+
+    for (Subscription subscription : subscriptions) {
+      String subscriptionYaml = SUBSCRIPTION_CONVERTER.convert(subscription);
+
+      LOGGER.info("> Subscription YAML: \n");
+      LOGGER.info("\t\n" + subscriptionYaml + "\n");
+
+      withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
+    }
+
+    for (HttpEndpoint endpoint : httpEndpoints) {
+      String endpointYaml = HTTPENDPOINT_CONVERTER.convert(endpoint);
+
+      LOGGER.info("> HTTPEndpoint YAML: \n");
+      LOGGER.info("\t\n" + endpointYaml + "\n");
+
+      withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
+    }
+
     if (this.placementContainer == null) {
       this.placementContainer = new DaprPlacementContainer(this.placementDockerImageName)
               .withNetwork(getNetwork())
@@ -303,11 +353,33 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
       this.schedulerContainer.start();
     }
 
+    dependsOn(placementContainer, schedulerContainer);
+  }
+
+  @Override
+  public void start() {
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
+    
+    String finalAppName = (appName != null && !appName.trim().isEmpty())
+        ? appName 
+        : "dapr-app-" + UUID.randomUUID().toString().substring(0, 8);
+    
     cmds.add("--app-id");
-    cmds.add(appName);
+    cmds.add(finalAppName);
+    
     cmds.add("--dapr-listen-addresses=0.0.0.0");
+    
+    if (customHttpPort != null) {
+      cmds.add("--dapr-http-port");
+      cmds.add(Integer.toString(customHttpPort));
+    }
+    
+    if (customGrpcPort != null) {
+      cmds.add("--dapr-grpc-port");
+      cmds.add(Integer.toString(customGrpcPort));
+    }
+    
     cmds.add("--app-protocol");
     cmds.add(DAPR_PROTOCOL.getName());
     cmds.add("--placement-host-address");
@@ -357,52 +429,15 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     withCommand(cmdArray);
 
-    if (configuration != null) {
-      String configurationYaml = CONFIGURATION_CONVERTER.convert(configuration);
-
-      LOGGER.info("> Configuration YAML: \n");
-      LOGGER.info("\t\n" + configurationYaml + "\n");
-
-      withCopyToContainer(Transferable.of(configurationYaml), "/dapr-resources/" + configuration.getName() + ".yaml");
+    // Update exposed ports and wait strategy if custom ports are specified
+    if (customHttpPort != null && customGrpcPort != null) {
+      withExposedPorts(customHttpPort, customGrpcPort);
+      setWaitStrategy(Wait.forHttp("/v1.0/healthz/outbound")
+          .forPort(customHttpPort)
+          .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399));
     }
 
-    if (components.isEmpty()) {
-      components.add(new Component("kvstore", "state.in-memory", "v1", Collections.emptyMap()));
-      components.add(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()));
-    }
-
-    if (subscriptions.isEmpty() && !components.isEmpty()) {
-      subscriptions.add(new Subscription("local", "pubsub", "topic", "/events"));
-    }
-
-    for (Component component : components) {
-      String componentYaml = COMPONENT_CONVERTER.convert(component);
-
-      LOGGER.info("> Component YAML: \n");
-      LOGGER.info("\t\n" + componentYaml + "\n");
-
-      withCopyToContainer(Transferable.of(componentYaml), "/dapr-resources/" + component.getName() + ".yaml");
-    }
-
-    for (Subscription subscription : subscriptions) {
-      String subscriptionYaml = SUBSCRIPTION_CONVERTER.convert(subscription);
-
-      LOGGER.info("> Subscription YAML: \n");
-      LOGGER.info("\t\n" + subscriptionYaml + "\n");
-
-      withCopyToContainer(Transferable.of(subscriptionYaml), "/dapr-resources/" + subscription.getName() + ".yaml");
-    }
-
-    for (HttpEndpoint endpoint : httpEndpoints) {
-      String endpointYaml = HTTPENDPOINT_CONVERTER.convert(endpoint);
-
-      LOGGER.info("> HTTPEndpoint YAML: \n");
-      LOGGER.info("\t\n" + endpointYaml + "\n");
-
-      withCopyToContainer(Transferable.of(endpointYaml), "/dapr-resources/" + endpoint.getName() + ".yaml");
-    }
-
-    dependsOn(placementContainer, schedulerContainer);
+    super.start();
   }
 
   public String getAppName() {
