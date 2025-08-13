@@ -1,0 +1,3 @@
+io.dapr.spring.boot.autoconfigure.client
+io.dapr.spring.boot.autoconfigure.pubsub
+io.dapr.spring.boot.autoconfigure.statestore

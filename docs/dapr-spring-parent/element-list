@@ -1,0 +1,10 @@
+io.dapr.spring.boot.autoconfigure.client
+io.dapr.spring.boot.autoconfigure.pubsub
+io.dapr.spring.boot.autoconfigure.statestore
+io.dapr.spring.boot.testcontainers.service.connection
+io.dapr.spring.data
+io.dapr.spring.data.repository.config
+io.dapr.spring.data.repository.query
+io.dapr.spring.messaging
+io.dapr.spring.messaging.observation
+io.dapr.spring.workflows.config

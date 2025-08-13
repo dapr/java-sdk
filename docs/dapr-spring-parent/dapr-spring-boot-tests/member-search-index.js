@@ -1,0 +1,1 @@
+memberSearchIndex = [{"p":"io.dapr.spring.boot.testcontainers.service.connection","c":"DaprContainerConnectionDetailsFactory","l":"getContainerConnectionDetails(ContainerConnectionSource<DaprContainer>)","u":"getContainerConnectionDetails(org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource)"}];updateSearchResults();

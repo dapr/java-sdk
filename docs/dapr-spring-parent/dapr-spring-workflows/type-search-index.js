@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"io.dapr.spring.workflows.config","l":"DaprWorkflowsConfiguration"},{"p":"io.dapr.spring.workflows.config","l":"EnableDaprWorkflows"}];updateSearchResults();

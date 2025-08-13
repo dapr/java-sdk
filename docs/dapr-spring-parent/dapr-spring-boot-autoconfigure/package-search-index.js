@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"io.dapr.spring.boot.autoconfigure.client"},{"l":"io.dapr.spring.boot.autoconfigure.pubsub"},{"l":"io.dapr.spring.boot.autoconfigure.statestore"}];updateSearchResults();

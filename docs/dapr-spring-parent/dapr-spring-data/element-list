@@ -1,0 +1,3 @@
+io.dapr.spring.data
+io.dapr.spring.data.repository.config
+io.dapr.spring.data.repository.query

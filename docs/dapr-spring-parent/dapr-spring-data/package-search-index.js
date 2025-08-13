@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"io.dapr.spring.data"},{"l":"io.dapr.spring.data.repository.config"},{"l":"io.dapr.spring.data.repository.query"}];updateSearchResults();
