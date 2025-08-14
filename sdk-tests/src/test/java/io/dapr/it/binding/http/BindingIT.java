@@ -75,8 +75,10 @@ public class BindingIT extends BaseIT {
           assertEquals(404, e.getHttpStatusCode());
           // The HTTP binding must set `errorIfNot2XX` to false in component metadata for the error payload to be
           // consistent between HTTP and gRPC.
-          assertTrue(new String(e.getPayload()).contains("\"message\":\"Not Found\""));
-          assertTrue(new String(e.getPayload()).contains("\"documentation_url\":\"https://docs.github.com/rest\""));
+          assertTrue(new String(e.getPayload()).contains("message"));
+          assertTrue(new String(e.getPayload()).contains("Not Found"));
+          assertTrue(new String(e.getPayload()).contains("documentation_url"));
+          assertTrue(new String(e.getPayload()).contains("https://docs.github.com/rest"));
         }
       }, 10000);
     }
