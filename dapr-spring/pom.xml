@@ -33,7 +33,7 @@
     <maven.compiler.release>11</maven.compiler.release>
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.11.2</junit.version>
-    <dapr.spring.version>0.16.0-SNAPSHOT</dapr.spring.version>
+    <dapr.spring.version>0.16.0-rc-1</dapr.spring.version>
   </properties>
 
   <dependencyManagement>
