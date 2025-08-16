@@ -20,6 +20,7 @@ import com.google.protobuf.Empty;
 import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
+import io.dapr.client.domain.AssistantMessage;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
@@ -29,9 +30,21 @@ import io.dapr.client.domain.ComponentMetadata;
 import io.dapr.client.domain.ConfigurationItem;
 import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.ConversationInput;
+import io.dapr.client.domain.ConversationInputAlpha2;
+import io.dapr.client.domain.ConversationMessage;
+import io.dapr.client.domain.ConversationMessageContent;
 import io.dapr.client.domain.ConversationOutput;
 import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
+import io.dapr.client.domain.ConversationResponseAlpha2;
+import io.dapr.client.domain.ConversationResultAlpha2;
+import io.dapr.client.domain.ConversationResultChoices;
+import io.dapr.client.domain.ConversationResultMessage;
+import io.dapr.client.domain.ConversationToolCalls;
+import io.dapr.client.domain.ConversationToolCallsOfFunction;
+import io.dapr.client.domain.ConversationTools;
+import io.dapr.client.domain.ConversationToolsFunction;
 import io.dapr.client.domain.DaprMetadata;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.DeleteStateRequest;
@@ -64,6 +77,7 @@ import io.dapr.client.domain.StateOptions;
 import io.dapr.client.domain.SubscribeConfigurationRequest;
 import io.dapr.client.domain.SubscribeConfigurationResponse;
 import io.dapr.client.domain.SubscriptionMetadata;
+import io.dapr.client.domain.ToolMessage;
 import io.dapr.client.domain.TransactionalStateOperation;
 import io.dapr.client.domain.UnlockRequest;
 import io.dapr.client.domain.UnlockResponseStatus;
@@ -1620,6 +1634,7 @@ public class DaprClientImpl extends AbstractDaprClient {
   /**
    * {@inheritDoc}
    */
+  @Deprecated(forRemoval = true)
   @Override
   public Mono<ConversationResponse> converse(ConversationRequest conversationRequest) {
 
@@ -1688,6 +1703,284 @@ public class DaprClientImpl extends AbstractDaprClient {
         .getInputs().isEmpty())) {
       throw new IllegalArgumentException("Conversation inputs cannot be null or empty.");
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public Mono<ConversationResponseAlpha2> converseAlpha2(ConversationRequestAlpha2 conversationRequestAlpha2) {
+    try {
+      if ((conversationRequestAlpha2.getName() == null) || (conversationRequestAlpha2.getName().trim().isEmpty())) {
+        throw new IllegalArgumentException("LLM name cannot be null or empty.");
+      }
+
+      if (conversationRequestAlpha2.getInputs() == null || conversationRequestAlpha2.getInputs().isEmpty()) {
+        throw new IllegalArgumentException("Conversation Inputs cannot be null or empty.");
+      }
+
+      DaprProtos.ConversationRequestAlpha2.Builder builder = DaprProtos.ConversationRequestAlpha2
+          .newBuilder()
+          .setTemperature(conversationRequestAlpha2.getTemperature())
+          .setScrubPii(conversationRequestAlpha2.isScrubPii())
+          .setName(conversationRequestAlpha2.getName());
+
+      if (conversationRequestAlpha2.getContextId() != null) {
+        builder.setContextId(conversationRequestAlpha2.getContextId());
+      }
+
+      if (conversationRequestAlpha2.getToolChoice() != null) {
+        builder.setToolChoice(conversationRequestAlpha2.getToolChoice());
+      }
+
+      DaprProtos.ConversationRequestAlpha2 protoRequest = buildConversationRequestProto(conversationRequestAlpha2,
+          builder);
+      
+      Mono<DaprProtos.ConversationResponseAlpha2> conversationResponseMono = Mono.deferContextual(
+          context -> this.createMono(
+              it -> intercept(context, asyncStub).converseAlpha2(protoRequest, it)
+          )
+      );
+      
+      DaprProtos.ConversationResponseAlpha2 conversationResponse = conversationResponseMono.block();
+
+      assert conversationResponse != null;
+      List<ConversationResultAlpha2> results = buildConversationResults(conversationResponse.getOutputsList());
+      return Mono.just(new ConversationResponseAlpha2(conversationResponse.getContextId(), results));
+    } catch (Exception ex) {
+      return DaprException.wrapMono(ex);
+    }
+  }
+
+  private DaprProtos.ConversationRequestAlpha2 buildConversationRequestProto(ConversationRequestAlpha2 request,
+                                           DaprProtos.ConversationRequestAlpha2.Builder builder) {
+    if (request.getTools() != null) {
+      buildConversationTools(request.getTools(), builder);
+    }
+
+    if (request.getMetadata() != null) {
+      builder.putAllMetadata(request.getMetadata());
+    }
+
+
+    if (request.getParameters() != null) {
+      Map<String, Any> parameters = request.getParameters()
+          .entrySet().stream()
+          .collect(Collectors.toMap(
+              Map.Entry::getKey,
+              e -> {
+                try {
+                  return Any.newBuilder().setValue(ByteString.copyFrom(objectSerializer.serialize(e.getValue())))
+                      .build();
+                } catch (IOException ex) {
+                  throw new RuntimeException(ex);
+                }
+              })
+          );
+      builder.putAllParameters(parameters);
+    }
+
+    for (ConversationInputAlpha2 input : request.getInputs()) {
+      DaprProtos.ConversationInputAlpha2.Builder inputBuilder = DaprProtos.ConversationInputAlpha2
+              .newBuilder()
+              .setScrubPii(input.isScrubPii());
+
+      if (input.getMessages() != null) {
+        for (ConversationMessage message : input.getMessages()) {
+          DaprProtos.ConversationMessage protoMessage = buildConversationMessage(message);
+          inputBuilder.addMessages(protoMessage);
+        }
+      }
+
+      builder.addInputs(inputBuilder.build());
+    }
+    
+    return builder.build();
+  }
+
+  private void buildConversationTools(List<ConversationTools> tools, 
+                                     DaprProtos.ConversationRequestAlpha2.Builder builder) {
+    for (ConversationTools tool : tools) {
+      ConversationToolsFunction function = tool.getFunction();
+
+      DaprProtos.ConversationToolsFunction.Builder protoFunction = DaprProtos.ConversationToolsFunction.newBuilder()
+          .setName(function.getName());
+
+      if (function.getDescription() != null) {
+        protoFunction.setDescription(function.getDescription());
+      }
+
+      if (function.getParameters() != null) {
+        Map<String, Any> functionParams = function.getParameters()
+            .entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> {
+                  try {
+                    return Any.newBuilder().setValue(ByteString.copyFrom(objectSerializer.serialize(e.getValue())))
+                        .build();
+                  } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                  }
+                }
+            ));
+
+        protoFunction.putAllParameters(functionParams);
+      }
+
+      builder.addTools(DaprProtos.ConversationTools.newBuilder()
+          .setFunction(protoFunction)
+          .build());
+    }
+  }
+
+  private DaprProtos.ConversationMessage buildConversationMessage(ConversationMessage message) {
+    DaprProtos.ConversationMessage.Builder messageBuilder = DaprProtos.ConversationMessage.newBuilder();
+
+    switch (message.getRole()) {
+      case TOOL:
+        DaprProtos.ConversationMessageOfTool.Builder toolMessage =
+            DaprProtos.ConversationMessageOfTool.newBuilder();
+        if (message.getName() != null) {
+          toolMessage.setName(message.getName());
+        }
+        if (message.getContent() != null) {
+          toolMessage.addAllContent(getConversationMessageContent(message));
+        }
+        if (((ToolMessage)message).getToolId() != null) {
+          toolMessage.setToolId(((ToolMessage)message).getToolId());
+        }
+        messageBuilder.setOfTool(toolMessage);
+        break;
+      case USER:
+        DaprProtos.ConversationMessageOfUser.Builder userMessage =
+            DaprProtos.ConversationMessageOfUser.newBuilder();
+        if (message.getName() != null) {
+          userMessage.setName(message.getName());
+        }
+        if (message.getContent() != null) {
+          userMessage.addAllContent(getConversationMessageContent(message));
+        }
+        messageBuilder.setOfUser(userMessage);
+        break;
+      case ASSISTANT:
+        DaprProtos.ConversationMessageOfAssistant.Builder assistantMessage =
+            DaprProtos.ConversationMessageOfAssistant.newBuilder();
+
+        if (message.getName() != null) {
+          assistantMessage.setName(message.getName());
+        }
+        if (message.getContent() != null) {
+          assistantMessage.addAllContent(getConversationMessageContent(message));
+        }
+        if (((AssistantMessage)message).getToolCalls() != null) {
+          assistantMessage.addAllToolCalls(getConversationToolCalls((AssistantMessage)message));
+        }
+        messageBuilder.setOfAssistant(assistantMessage);
+        break;
+      case DEVELOPER:
+        DaprProtos.ConversationMessageOfDeveloper.Builder developerMessage =
+            DaprProtos.ConversationMessageOfDeveloper.newBuilder();
+        if (message.getName() != null) {
+          developerMessage.setName(message.getName());
+        }
+        if (message.getContent() != null) {
+          developerMessage.addAllContent(getConversationMessageContent(message));
+        }
+        messageBuilder.setOfDeveloper(developerMessage);
+        break;
+      case SYSTEM:
+        DaprProtos.ConversationMessageOfSystem.Builder systemMessage =
+            DaprProtos.ConversationMessageOfSystem.newBuilder();
+        if (message.getName() != null) {
+          systemMessage.setName(message.getName());
+        }
+        if (message.getContent() != null) {
+          systemMessage.addAllContent(getConversationMessageContent(message));
+        }
+        messageBuilder.setOfSystem(systemMessage);
+        break;
+      default:
+        throw new IllegalArgumentException("No role of type " + message.getRole() + " found");
+    }
+
+    return messageBuilder.build();
+  }
+
+  private List<ConversationResultAlpha2> buildConversationResults(
+      List<DaprProtos.ConversationResultAlpha2> protoResults) {
+    List<ConversationResultAlpha2> results = new ArrayList<>();
+    
+    for (DaprProtos.ConversationResultAlpha2 protoResult : protoResults) {
+      List<ConversationResultChoices> choices = new ArrayList<>();
+        
+      for (DaprProtos.ConversationResultChoices protoChoice : protoResult.getChoicesList()) {
+        ConversationResultMessage message = buildConversationResultMessage(protoChoice);
+        choices.add(new ConversationResultChoices(protoChoice.getFinishReason(), protoChoice.getIndex(), message));
+      }  
+
+      results.add(new ConversationResultAlpha2(choices));
+    }
+    
+    return results;
+  }
+
+  private ConversationResultMessage buildConversationResultMessage(DaprProtos.ConversationResultChoices protoChoice) {
+    if (!protoChoice.hasMessage()) {
+      return null;
+    }
+
+    List<ConversationToolCalls> toolCalls = new ArrayList<>();
+
+    for (DaprProtos.ConversationToolCalls protoToolCall : protoChoice.getMessage().getToolCallsList()) {
+      ConversationToolCallsOfFunction function = null;
+      if (protoToolCall.hasFunction()) {
+        function = new ConversationToolCallsOfFunction(
+            protoToolCall.getFunction().getName(),
+            protoToolCall.getFunction().getArguments()
+        );
+      }
+
+      ConversationToolCalls conversationToolCalls = new ConversationToolCalls(function);
+      conversationToolCalls.setId(protoToolCall.getId());
+
+      toolCalls.add(conversationToolCalls);
+    }
+    
+    return new ConversationResultMessage(protoChoice.getMessage().getContent(), toolCalls
+    );
+  }
+
+  private List<DaprProtos.ConversationMessageContent> getConversationMessageContent(
+      ConversationMessage conversationMessage) {
+
+    List<DaprProtos.ConversationMessageContent> conversationMessageContents = new ArrayList<>();
+    for (ConversationMessageContent conversationMessageContent: conversationMessage.getContent()) {
+      conversationMessageContents.add(DaprProtos.ConversationMessageContent.newBuilder()
+          .setText(conversationMessageContent.getText())
+          .build());
+    }
+
+    return conversationMessageContents;
+  }
+
+  private List<DaprProtos.ConversationToolCalls> getConversationToolCalls(
+      AssistantMessage assistantMessage) {
+    List<DaprProtos.ConversationToolCalls> conversationToolCalls = new ArrayList<>();
+    for (ConversationToolCalls conversationToolCall: assistantMessage.getToolCalls()) {
+      DaprProtos.ConversationToolCalls.Builder toolCallsBuilder = DaprProtos.ConversationToolCalls.newBuilder()
+          .setFunction(DaprProtos.ConversationToolCallsOfFunction.newBuilder()
+                  .setName(conversationToolCall.getFunction().getName())
+                  .setArguments(conversationToolCall.getFunction().getArguments())
+                  .build());
+      if (conversationToolCall.getId() != null) {
+        toolCallsBuilder.setId(conversationToolCall.getId());
+      }
+
+      conversationToolCalls.add(toolCallsBuilder.build());
+    }
+
+    return conversationToolCalls;
   }
 
   private DaprMetadata buildDaprMetadata(DaprProtos.GetMetadataResponse response) throws IOException {
