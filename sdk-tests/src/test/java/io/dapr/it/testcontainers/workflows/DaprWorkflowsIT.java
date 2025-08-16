@@ -15,6 +15,7 @@ package io.dapr.it.testcontainers.workflows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import io.dapr.testcontainers.DaprLogLevel;
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -147,6 +149,27 @@ public class DaprWorkflowsIT {
 
   }
 
+  @Test
+  public void testExecutionKeyWorkflows() throws Exception {
+    TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
+    String instanceId = workflowClient.scheduleNewWorkflow(TestExecutionKeysWorkflow.class, payload);
+
+    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(100), false);
+    
+    Duration timeout = Duration.ofSeconds(1000);
+    WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+
+    assertNotNull(workflowStatus);
+
+    TestWorkflowPayload workflowOutput = deserialize(workflowStatus.getSerializedOutput());
+
+    assertEquals(1, workflowOutput.getPayloads().size());
+    assertEquals("Execution key found", workflowOutput.getPayloads().get(0));
+    
+    assertTrue(KeyStore.getInstance().size() == 1);
+    
+    assertEquals(instanceId, workflowOutput.getWorkflowId());
+  }
 
   private TestWorkflowPayload deserialize(String value) throws JsonProcessingException {
     return OBJECT_MAPPER.readValue(value, TestWorkflowPayload.class);
