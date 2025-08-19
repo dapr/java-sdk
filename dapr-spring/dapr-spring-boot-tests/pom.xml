@@ -14,6 +14,10 @@
   <description>Dapr Spring Boot Tests</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -22,6 +26,7 @@
     <dependency>
       <groupId>io.dapr.spring</groupId>
       <artifactId>dapr-spring-boot-autoconfigure</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
@@ -37,6 +42,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>testcontainers-dapr</artifactId>
+      <version>${dapr.sdk.alpha.version}</version>
     </dependency>
   </dependencies>
   <build>
@@ -44,6 +50,16 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <configuration>
+          <skipPublishing>true</skipPublishing>
+        </configuration>
       </plugin>
     </plugins>
   </build>
