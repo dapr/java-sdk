@@ -26,6 +26,7 @@ mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f testcontainers-dap
 
 # dapr-spring
 mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -DprocessDependencies=true -f dapr-spring/pom.xml
+mvn versions:set-property -Dproperty=dapr.spring.version -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f dapr-spring/pom.xml
 
 # spring-boot-examples
 mvn versions:set -DnewVersion=$DAPR_JAVA_SDK_ALPHA_VERSION -f spring-boot-examples/pom.xml
