@@ -17,6 +17,8 @@ import com.google.common.base.Strings;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 import io.dapr.client.domain.ActorMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesHealthMetadata;
 import io.dapr.client.domain.AppConnectionPropertiesMetadata;
@@ -1811,21 +1813,20 @@ public class DaprClientImpl extends AbstractDaprClient {
       }
 
       if (function.getParameters() != null) {
-        Map<String, Any> functionParams = function.getParameters()
+        Map<String, Value> functionParams = function.getParameters()
             .entrySet().stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 e -> {
                   try {
-                    return Any.newBuilder().setValue(ByteString.copyFrom(objectSerializer.serialize(e.getValue())))
-                        .build();
+                    return ProtobufValueHelper.toProtobufValue(e.getValue());
                   } catch (IOException ex) {
                     throw new RuntimeException(ex);
                   }
                 }
             ));
 
-        protoFunction.putAllParameters(functionParams);
+        protoFunction.setParameters(Struct.newBuilder().putAllFields(functionParams).build());
       }
 
       builder.addTools(DaprProtos.ConversationTools.newBuilder()
