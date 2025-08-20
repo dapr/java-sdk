@@ -135,6 +135,11 @@ public class DefaultWorkflowContextTest {
       @Override
       public void continueAsNew(Object input, boolean preserveUnprocessedEvents) {
       }
+
+      @Override
+      public void setCustomStatus(Object status) {
+
+      }
     };
   }
 
@@ -401,6 +406,15 @@ public class DefaultWorkflowContextTest {
 
     context.callChildWorkflow(expectedName, expectedInput, String.class);
     verify(mockInnerContext, times(1)).callSubOrchestrator(expectedName, expectedInput, null, null, String.class);
+  }
+
+  @Test
+  public void setCustomStatusWorkflow() {
+    String customStatus = "CustomStatus";
+
+    context.setCustomStatus(customStatus);
+    verify(mockInnerContext, times(1)).setCustomStatus(customStatus);
+
   }
 
   @Test

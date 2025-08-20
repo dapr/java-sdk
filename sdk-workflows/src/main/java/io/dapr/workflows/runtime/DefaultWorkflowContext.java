@@ -59,7 +59,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * @throws IllegalArgumentException if context or logger is null
    */
   public DefaultWorkflowContext(TaskOrchestrationContext context, Logger logger)
-      throws IllegalArgumentException {
+          throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
@@ -114,7 +114,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    */
   @Override
   public <V> Task<V> waitForExternalEvent(String name, Duration timeout, Class<V> dataType)
-      throws TaskCanceledException {
+          throws TaskCanceledException {
     return this.innerContext.waitForExternalEvent(name, timeout, dataType);
   }
 
@@ -130,7 +130,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * @param timeout the amount of time to wait before canceling the returned
    *                {@code Task}
    * @return a new {@link Task} that completes when the external event is received
-   *         or when {@code timeout} expires
+   *     or when {@code timeout} expires
    * @throws TaskCanceledException if the specified {@code timeout} value expires
    *                               before the event is received
    */
@@ -293,5 +293,14 @@ public class DefaultWorkflowContext implements WorkflowContext {
 
       return workflowTaskRetryHandler.handle(workflowRetryContext);
     };
+  }
+
+  /**
+   * Set custom status to a workflow execution.
+   *
+   * @param status to set to the execution
+   */
+  public void setCustomStatus(Object status) {
+    innerContext.setCustomStatus(status);
   }
 }
