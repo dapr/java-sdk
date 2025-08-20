@@ -15,12 +15,14 @@ package io.dapr.workflows.runtime;
 
 import io.dapr.config.Properties;
 import io.dapr.durabletask.DurableTaskGrpcWorkerBuilder;
+import io.dapr.durabletask.interceptors.DaprWorkflowClientGrpcInterceptors;
 import io.dapr.utils.NetworkUtils;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.internal.ApiTokenClientInterceptor;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import io.opentelemetry.context.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +67,8 @@ public class WorkflowRuntimeBuilder {
   private WorkflowRuntimeBuilder(Properties properties, Logger logger) {
     this.workflowApiTokenInterceptor = new ApiTokenClientInterceptor(properties);
     this.managedChannel = NetworkUtils.buildGrpcManagedChannel(properties, workflowApiTokenInterceptor);
-    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(this.managedChannel);
+    this.builder = new DurableTaskGrpcWorkerBuilder().grpcChannel(this.managedChannel)
+            .interceptors(new DaprWorkflowClientGrpcInterceptors());
     this.logger = logger;
   }
 
@@ -77,7 +80,8 @@ public class WorkflowRuntimeBuilder {
   public WorkflowRuntime build() {
     if (instance == null) {
       synchronized (WorkflowRuntime.class) {
-        this.executorService = this.executorService == null ? Executors.newCachedThreadPool() : this.executorService;
+        this.executorService = Context.taskWrapping(this.executorService == null ? Executors.newCachedThreadPool()
+                : this.executorService);
         if (instance == null) {
           instance = new WorkflowRuntime(
                   this.builder.withExecutorService(this.executorService).build(),
