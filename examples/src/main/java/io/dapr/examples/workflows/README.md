@@ -808,17 +808,17 @@ This example requires running multiple Dapr applications simultaneously. You'll 
 
 1. **Start the main workflow worker (crossapp-worker):**
 ```sh
-dapr run --app-id crossapp-worker --resources-path ./components/workflows --dapr-grpc-port 50001 --log-level=debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.CrossAppWorker
+dapr run --app-id crossapp-worker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.CrossAppWorker
 ```
 
 2. **Start app2 worker (handles App2TransformActivity):**
 ```sh
-dapr run --app-id app2 --resources-path ./components/workflows --dapr-grpc-port 50002 --log-level=debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.App2Worker
+dapr run --app-id app2 --resources-path ./components/workflows --dapr-grpc-port 50002 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.App2Worker
 ```
 
 3. **Start app3 worker (handles App3FinalizeActivity):**
 ```sh
-dapr run --app-id app3 --resources-path ./components/workflows --dapr-grpc-port 50003 --log-level=debug -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.App3Worker
+dapr run --app-id app3 --resources-path ./components/workflows --dapr-grpc-port 50003 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.App3Worker
 ```
 
 4. **Run the workflow client:**
