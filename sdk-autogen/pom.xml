@@ -22,6 +22,7 @@
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
     <grpc.version>1.69.0</grpc.version>
+    <protocCommand>java-sdk-protoc</protocCommand>
     <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
@@ -131,6 +132,7 @@
               <goal>run</goal>
             </goals>
             <configuration>
+              <protocCommand>java-sdk-protoc</protocCommand>
               <protocVersion>${protobuf.version}</protocVersion>
               <protocArtifact>com.google.protobuf:protoc:3.25.5</protocArtifact>
               <addProtoSources>inputs</addProtoSources>
