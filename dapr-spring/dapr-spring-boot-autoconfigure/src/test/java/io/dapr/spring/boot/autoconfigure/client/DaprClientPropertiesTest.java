@@ -83,7 +83,26 @@ public class DaprClientPropertiesTest {
       });
 
     });
+  }
 
+  @Test
+  @DisplayName("Should map DaprClient properties correctly (camelCase)")
+  public void shouldMapDaprClientPropertiesCamelCase() {
+    runner.withSystemProperties(
+            "dapr.client.httpEndpoint=http://localhost",
+            "dapr.client.httpPort=3500",
+            "dapr.client.grpcEndpoint=localhost",
+            "dapr.client.grpcPort=50001"
+    ).run(context -> {
+      DaprClientProperties properties = context.getBean(DaprClientProperties.class);
+      SoftAssertions.assertSoftly(softly -> {
+        softly.assertThat(properties.getGrpcEndpoint()).isEqualTo("localhost");
+        softly.assertThat(properties.getHttpEndpoint()).isEqualTo("http://localhost");
+        softly.assertThat(properties.getHttpPort()).isEqualTo(3500);
+        softly.assertThat(properties.getGrpcPort()).isEqualTo(50001);
+      });
+
+    });
   }
 
   @EnableConfigurationProperties(DaprClientProperties.class)
