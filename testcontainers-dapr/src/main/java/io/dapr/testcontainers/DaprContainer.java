@@ -84,8 +84,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private boolean shouldReusePlacement;
   private boolean shouldReuseScheduler;
 
-  private Integer customHttpPort;
-  private Integer customGrpcPort;
+
 
   /**
    * Creates a new Dapr container.
@@ -170,15 +169,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     return this;
   }
 
-  public DaprContainer withCustomHttpPort(Integer port) {
-    this.customHttpPort = port;
-    return this;
-  }
 
-  public DaprContainer withCustomGrpcPort(Integer port) {
-    this.customGrpcPort = port;
-    return this;
-  }
 
   public DaprContainer withAppName(String appName) {
     this.appName = appName;
@@ -370,16 +361,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     
     cmds.add("--dapr-listen-addresses=0.0.0.0");
     
-    if (customHttpPort != null) {
-      cmds.add("--dapr-http-port");
-      cmds.add(Integer.toString(customHttpPort));
-    }
-    
-    if (customGrpcPort != null) {
-      cmds.add("--dapr-grpc-port");
-      cmds.add(Integer.toString(customGrpcPort));
-    }
-    
     cmds.add("--app-protocol");
     cmds.add(DAPR_PROTOCOL.getName());
     cmds.add("--placement-host-address");
@@ -429,13 +410,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
 
     withCommand(cmdArray);
 
-    // Update exposed ports and wait strategy if custom ports are specified
-    if (customHttpPort != null && customGrpcPort != null) {
-      withExposedPorts(customHttpPort, customGrpcPort);
-      setWaitStrategy(Wait.forHttp("/v1.0/healthz/outbound")
-          .forPort(customHttpPort)
-          .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode <= 399));
-    }
+
 
     super.start();
   }
