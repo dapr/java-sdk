@@ -93,7 +93,7 @@ public class DaprTestContainersConfig {
         .withAppName("consumer-app")
         .withNetwork(daprNetwork).withComponent(new Component("pubsub",
             "pubsub.rabbitmq", "v1", rabbitMqProperties))
-        .withDaprLogLevel(DaprLogLevel.DEBUG)
+        .withDaprLogLevel(DaprLogLevel.INFO)
         .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
         .withAppPort(8081).withAppChannelAddress("host.testcontainers.internal")
         .withReusablePlacement(reuse)
