@@ -39,6 +39,8 @@ import java.util.Map;
 import java.io.File;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
+import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import io.dapr.testcontainers.Subscription;
@@ -81,13 +83,13 @@ public class WorkflowsCrossAppCallActivityIT {
     // Ensure dependencies are copied for container classpath
     ensureDependenciesCopied();
     
-    sharedPlacementContainer = new DaprPlacementContainer("daprio/placement:1.16.0-rc.3")
+    sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)
         .withNetwork(DAPR_NETWORK)
         .withNetworkAliases("placement")
         .withReuse(false);
     sharedPlacementContainer.start();
     
-    sharedSchedulerContainer = new DaprSchedulerContainer("daprio/scheduler:1.16.0-rc.3")
+    sharedSchedulerContainer = new DaprSchedulerContainer(DAPR_SCHEDULER_IMAGE_TAG)
         .withNetwork(DAPR_NETWORK)
         .withNetworkAliases("scheduler")
         .withReuse(false);
