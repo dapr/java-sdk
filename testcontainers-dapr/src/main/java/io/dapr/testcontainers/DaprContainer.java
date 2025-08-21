@@ -347,13 +347,9 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   public void start() {
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
-    
-    String finalAppName = (appName != null && !appName.trim().isEmpty())
-        ? appName 
-        : "dapr-app-" + UUID.randomUUID().toString().substring(0, 8);
-    
+
     cmds.add("--app-id");
-    cmds.add(finalAppName);
+    cmds.add(appName);
     
     cmds.add("--dapr-listen-addresses=0.0.0.0");
     
