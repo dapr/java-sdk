@@ -84,8 +84,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
   private boolean shouldReusePlacement;
   private boolean shouldReuseScheduler;
 
-
-
   /**
    * Creates a new Dapr container.
    *
@@ -168,8 +166,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     this.schedulerService = schedulerService;
     return this;
   }
-
-
 
   public DaprContainer withAppName(String appName) {
     this.appName = appName;

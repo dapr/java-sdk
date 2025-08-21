@@ -55,9 +55,7 @@ public class DaprTestContainersConfig {
             .withAppPort(8080)
             .withNetwork(network)
             .withAppHealthCheckPath("/actuator/health")
-            .withAppChannelAddress("host.testcontainers.internal")
-            .withDaprLogLevel(DaprLogLevel.DEBUG)
-            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()));
+            .withAppChannelAddress("host.testcontainers.internal");
   }
 
 
