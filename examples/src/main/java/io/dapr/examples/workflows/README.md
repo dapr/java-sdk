@@ -768,24 +768,6 @@ public class App3FinalizeActivity implements WorkflowActivity {
 }
 ```
 
-**WorkflowTaskOptions Constructors for Cross-App Calls:**
-
-The `WorkflowTaskOptions` class supports several constructors for cross-app calls:
-
-```java
-// App ID only
-new WorkflowTaskOptions("app2")
-
-// Retry policy + app ID
-new WorkflowTaskOptions(retryPolicy, "app2")
-
-// Retry handler + app ID
-new WorkflowTaskOptions(retryHandler, "app2")
-
-// All parameters
-new WorkflowTaskOptions(retryPolicy, retryHandler, "app2")
-```
-
 **Key Features:**
 - **Cross-app activity calls**: Call activities in different Dapr applications specifying the appID in the WorkflowTaskOptions
 - **WorkflowTaskOptions with appId**: Specify which app should handle the activity
