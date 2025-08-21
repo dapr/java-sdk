@@ -126,11 +126,7 @@ public class WorkflowsCrossAppCallActivityIT {
         .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
         .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
         .withLogConsumer(outputFrame -> System.out.println("APP2: " + outputFrame.getUtf8String()))
-        .withExposedPorts(3500, 50001)
-        .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
-            .forPort(3500)
-            .forStatusCode(200)
-            .forStatusCode(204));
+        .withExposedPorts(3500, 50001);
     
     APP3_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("app3")
@@ -145,11 +141,7 @@ public class WorkflowsCrossAppCallActivityIT {
         .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
         .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
         .withLogConsumer(outputFrame -> System.out.println("APP3: " + outputFrame.getUtf8String()))
-        .withExposedPorts(3500, 50001)
-        .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
-            .forPort(3500)
-            .forStatusCode(200)
-            .forStatusCode(204));
+        .withExposedPorts(3500, 50001);
     
     // Start crossapp worker (connects to MAIN_WORKFLOW_CONTAINER)
     crossappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
