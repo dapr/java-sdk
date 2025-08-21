@@ -103,15 +103,9 @@ public class WorkflowsCrossAppCallActivityIT {
         .withPlacementContainer(sharedPlacementContainer)
         .withSchedulerContainer(sharedSchedulerContainer)
         .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
-        .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
-        .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
         .withDaprLogLevel(DaprLogLevel.DEBUG)
         .withLogConsumer(outputFrame -> System.out.println("MAIN_WORKFLOW: " + outputFrame.getUtf8String()))
-        .withAppChannelAddress("host.testcontainers.internal")
-        .waitingFor(Wait.forHttp("/v1.0/healthz/outbound")
-            .forPort(3500)
-            .forStatusCode(200)
-            .forStatusCode(204));
+        .withAppChannelAddress("host.testcontainers.internal");
     
     APP2_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
         .withAppName("app2")
@@ -121,10 +115,7 @@ public class WorkflowsCrossAppCallActivityIT {
         .withSchedulerContainer(sharedSchedulerContainer)
         .withAppChannelAddress("main-workflow-sidecar:3500")
         .withDaprLogLevel(DaprLogLevel.DEBUG)
-        .withComponent(new Component("kvstore", "state.in-memory", "v1",
-            Map.of("actorStateStore", "true")))
-        .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
-        .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
+        .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
         .withLogConsumer(outputFrame -> System.out.println("APP2: " + outputFrame.getUtf8String()))
         .withExposedPorts(3500, 50001);
     
@@ -136,10 +127,7 @@ public class WorkflowsCrossAppCallActivityIT {
         .withSchedulerContainer(sharedSchedulerContainer)
         .withAppChannelAddress("main-workflow-sidecar:3500")
         .withDaprLogLevel(DaprLogLevel.DEBUG)
-        .withComponent(new Component("kvstore", "state.in-memory", "v1",
-            Map.of("actorStateStore", "true")))
-        .withComponent(new Component("pubsub", "pubsub.in-memory", "v1", Collections.emptyMap()))
-        .withSubscription(new Subscription("local", "pubsub", "topic", "/events"))
+        .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
         .withLogConsumer(outputFrame -> System.out.println("APP3: " + outputFrame.getUtf8String()))
         .withExposedPorts(3500, 50001);
     
