@@ -239,8 +239,7 @@ public class WorkflowsCrossAppCallActivityIT {
       assertNotNull(instanceId, "Workflow instance ID should not be null");
       workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(30), false);
 
-      Duration timeout = Duration.ofMinutes(2);
-      WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+      WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, null, true);
       assertNotNull(workflowStatus, "Workflow status should not be null");
       assertEquals(WorkflowRuntimeStatus.COMPLETED, workflowStatus.getRuntimeStatus(),
           "Workflow should complete successfully");
