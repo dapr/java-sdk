@@ -341,10 +341,7 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     }
 
     dependsOn(placementContainer, schedulerContainer);
-  }
 
-  @Override
-  public void start() {
     List<String> cmds = new ArrayList<>();
     cmds.add("./daprd");
     cmds.add("--app-id");
@@ -398,10 +395,6 @@ public class DaprContainer extends GenericContainer<DaprContainer> {
     LOGGER.info("\t" + Arrays.toString(cmdArray) + "\n");
 
     withCommand(cmdArray);
-
-
-
-    super.start();
   }
 
   public String getAppName() {
