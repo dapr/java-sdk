@@ -16,12 +16,29 @@ package io.dapr.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import io.dapr.client.domain.AssistantMessage;
 import io.dapr.client.domain.BulkPublishEntry;
 import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.CloudEvent;
+import io.dapr.client.domain.ConversationToolCallsOfFunction;
+import io.dapr.client.domain.ConversationToolsFunction;
+import io.dapr.client.domain.ConversationInputAlpha2;
+import io.dapr.client.domain.ConversationMessage;
+import io.dapr.client.domain.ConversationMessageContent;
+import io.dapr.client.domain.ConversationRequestAlpha2;
+import io.dapr.client.domain.ConversationResponseAlpha2;
+import io.dapr.client.domain.ConversationResultAlpha2;
+import io.dapr.client.domain.ConversationResultChoices;
+import io.dapr.client.domain.ConversationToolCalls;
+import io.dapr.client.domain.ConversationTools;
+import io.dapr.client.domain.DeleteJobRequest;
+import io.dapr.client.domain.DeveloperMessage;
+import io.dapr.client.domain.GetJobRequest;
+import io.dapr.client.domain.GetJobResponse;
 import io.dapr.client.domain.ConstantFailurePolicy;
 import io.dapr.client.domain.ConversationInput;
 import io.dapr.client.domain.ConversationRequest;
@@ -35,7 +52,10 @@ import io.dapr.client.domain.QueryStateItem;
 import io.dapr.client.domain.QueryStateRequest;
 import io.dapr.client.domain.QueryStateResponse;
 import io.dapr.client.domain.ScheduleJobRequest;
+import io.dapr.client.domain.SystemMessage;
+import io.dapr.client.domain.ToolMessage;
 import io.dapr.client.domain.UnlockResponseStatus;
+import io.dapr.client.domain.UserMessage;
 import io.dapr.client.domain.query.Query;
 import io.dapr.serializer.DaprObjectSerializer;
 import io.dapr.serializer.DefaultObjectSerializer;
@@ -1327,6 +1347,473 @@ public class DaprPreviewClientGrpcTest {
       previewClient.deleteJob(deleteJobRequest).block();
     });
     assertEquals("Name in the request cannot be null or empty", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenNameIsNull() {
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2(null, List.of(input));
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+        previewClient.converseAlpha2(request).block());
+    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenNameIsEmpty() {
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("", List.of(input));
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+        previewClient.converseAlpha2(request).block());
+    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenNameIsWhitespace() {
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("   ", null);
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+        previewClient.converseAlpha2(request).block());
+    assertEquals("LLM name cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenInputIsNull() {
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("abc", null);
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            previewClient.converseAlpha2(request).block());
+    assertEquals("Conversation Inputs cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ShouldThrowIllegalArgumentExceptionWhenInputIsEmpty() {
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("abc", new ArrayList<>());
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            previewClient.converseAlpha2(request).block());
+    assertEquals("Conversation Inputs cannot be null or empty.", exception.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2ExceptionThrownTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      throw newStatusRuntimeException("INVALID_ARGUMENT", "bad argument");
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", null);
+
+    assertThrows(IllegalArgumentException.class, () -> previewClient.converseAlpha2(request).block());
+  }
+
+  @Test
+  public void converseAlpha2CallbackExceptionThrownTest() {
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
+          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
+      observer.onError(newStatusRuntimeException("INVALID_ARGUMENT", "bad argument"));
+      return null;
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    List<ConversationMessage> messages = new ArrayList<>();
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("System info")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
+    Mono<ConversationResponseAlpha2> result = previewClient.converseAlpha2(request);
+
+    assertThrowsDaprException(
+        ExecutionException.class,
+        "INVALID_ARGUMENT",
+        "INVALID_ARGUMENT: bad argument",
+        () -> result.block());
+  }
+
+  @Test
+  public void converseAlpha2MinimalRequestTest() {
+    DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
+        .setContextId("test-context")
+        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("stop")
+                .setIndex(0)
+                .setMessage(DaprProtos.ConversationResultMessage.newBuilder()
+                    .setContent("Hello! How can I help you today?")
+                    .build())
+                .build())
+            .build())
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
+          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
+      observer.onNext(grpcResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    List<ConversationMessage> messages = new ArrayList<>();
+    DeveloperMessage devMsg = new DeveloperMessage(List.of(new ConversationMessageContent("Debug info")));
+    devMsg.setName("developer");
+    messages.add(devMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
+    ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
+
+    assertNotNull(response);
+    assertEquals("test-context", response.getContextId());
+    assertEquals(1, response.getOutputs().size());
+
+    ConversationResultAlpha2 result = response.getOutputs().get(0);
+    assertEquals(1, result.getChoices().size());
+
+    ConversationResultChoices choice = result.getChoices().get(0);
+    assertEquals("stop", choice.getFinishReason());
+    assertEquals(0, choice.getIndex());
+    assertEquals("Hello! How can I help you today?", choice.getMessage().getContent());
+  }
+
+  @Test
+  public void converseAlpha2ComplexRequestTest() {
+    // Create messages
+    List<ConversationMessage> messages = new ArrayList<>();
+    UserMessage userMessage = new UserMessage(List.of(new ConversationMessageContent("Hello, how are you?")));
+    userMessage.setName("John");
+    messages.add(userMessage);
+
+    // Create input
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+    input.setScrubPii(true);
+
+    // Create tools
+    Map<String, Object> functionParams = new HashMap<>();
+    functionParams.put("location", "Required location parameter");
+    List<ConversationTools> tools = new ArrayList<>();
+    ConversationToolsFunction function = new ConversationToolsFunction("get_weather", functionParams);
+    function.setDescription("Get current weather");
+
+    ConversationTools tool = new ConversationTools(function);
+    tools.add(tool);
+
+    Map<String, String> metadata = new HashMap<>();
+    metadata.put("key1", "value1");
+
+    Map<String, Object> parameters = new HashMap<>();
+    parameters.put("max_tokens", "1000");
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
+    request.setContextId("test-context");
+    request.setTemperature(0.7);
+    request.setScrubPii(true);
+    request.setTools(tools);
+    request.setToolChoice("auto");
+    request.setMetadata(metadata);
+    request.setParameters(parameters);
+
+    // Mock response with tool calls
+    DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
+        .setContextId("test-context")
+        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("tool_calls")
+                .setIndex(0)
+                .setMessage(DaprProtos.ConversationResultMessage.newBuilder()
+                    .setContent("I'll help you get the weather information.")
+                    .addToolCalls(DaprProtos.ConversationToolCalls.newBuilder()
+                        .setId("call_123")
+                        .setFunction(DaprProtos.ConversationToolCallsOfFunction.newBuilder()
+                            .setName("get_weather")
+                            .setArguments("{\"location\": \"New York\"}")
+                            .build())
+                        .build())
+                    .build())
+                .build())
+            .build())
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
+          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
+      observer.onNext(grpcResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
+
+    assertNotNull(response);
+    assertEquals("test-context", response.getContextId());
+
+    ConversationResultChoices choice = response.getOutputs().get(0).getChoices().get(0);
+    assertEquals("tool_calls", choice.getFinishReason());
+    assertEquals("I'll help you get the weather information.", choice.getMessage().getContent());
+    assertEquals(1, choice.getMessage().getToolCalls().size());
+
+    ConversationToolCalls toolCall = choice.getMessage().getToolCalls().get(0);
+    assertEquals("call_123", toolCall.getId());
+    assertEquals("get_weather", toolCall.getFunction().getName());
+    assertEquals("{\"location\": \"New York\"}", toolCall.getFunction().getArguments());
+
+    // Verify the request was built correctly
+    ArgumentCaptor<DaprProtos.ConversationRequestAlpha2> captor =
+        ArgumentCaptor.forClass(DaprProtos.ConversationRequestAlpha2.class);
+    verify(daprStub).converseAlpha2(captor.capture(), any());
+
+    DaprProtos.ConversationRequestAlpha2 capturedRequest = captor.getValue();
+    assertEquals("openai", capturedRequest.getName());
+    assertEquals("test-context", capturedRequest.getContextId());
+    assertEquals(0.7, capturedRequest.getTemperature(), 0.001);
+    assertTrue(capturedRequest.getScrubPii());
+    assertEquals("auto", capturedRequest.getToolChoice());
+    assertEquals("value1", capturedRequest.getMetadataMap().get("key1"));
+    assertEquals(1, capturedRequest.getToolsCount());
+    assertEquals("get_weather", capturedRequest.getTools(0).getFunction().getName());
+  }
+
+  @Test
+  public void converseAlpha2AllMessageTypesTest() {
+    List<ConversationMessage> messages = new ArrayList<>();
+
+    // System message
+    SystemMessage systemMsg = new SystemMessage(List.of(new ConversationMessageContent("You are a helpful assistant.")));
+    systemMsg.setName("system");
+    messages.add(systemMsg);
+
+    // User message
+    UserMessage userMsg = new UserMessage(List.of(new ConversationMessageContent("Hello!")));
+    userMsg.setName("user");
+    messages.add(userMsg);
+
+    // Assistant message
+    AssistantMessage assistantMsg = new AssistantMessage(List.of(new ConversationMessageContent("Hi there!")),
+        List.of(new ConversationToolCalls(new ConversationToolCallsOfFunction("abc", "parameters"))));
+    assistantMsg.setName("assistant");
+    messages.add(assistantMsg);
+
+    // Tool message
+    ToolMessage toolMsg = new ToolMessage(List.of(new ConversationMessageContent("Weather data: 72F")));
+    toolMsg.setName("tool");
+    messages.add(toolMsg);
+
+    // Developer message
+    DeveloperMessage devMsg = new DeveloperMessage(List.of(new ConversationMessageContent("Debug info")));
+    devMsg.setName("developer");
+    messages.add(devMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
+
+    DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
+        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("stop")
+                .setIndex(0)
+                .setMessage(DaprProtos.ConversationResultMessage.newBuilder()
+                    .setContent("Processed all message types")
+                    .build())
+                .build())
+            .build())
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
+          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
+      observer.onNext(grpcResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
+
+    assertNotNull(response);
+    assertEquals("Processed all message types", response.getOutputs().get(0).getChoices().get(0).getMessage().getContent());
+
+    // Verify all message types were processed
+    ArgumentCaptor<DaprProtos.ConversationRequestAlpha2> captor =
+        ArgumentCaptor.forClass(DaprProtos.ConversationRequestAlpha2.class);
+    verify(daprStub).converseAlpha2(captor.capture(), any());
+
+    DaprProtos.ConversationRequestAlpha2 capturedRequest = captor.getValue();
+    assertEquals(1, capturedRequest.getInputsCount());
+    assertEquals(5, capturedRequest.getInputs(0).getMessagesCount());
+
+    // Verify each message type was converted correctly
+    List<DaprProtos.ConversationMessage> capturedMessages = capturedRequest.getInputs(0).getMessagesList();
+    assertTrue(capturedMessages.get(0).hasOfSystem());
+    assertTrue(capturedMessages.get(1).hasOfUser());
+    assertTrue(capturedMessages.get(2).hasOfAssistant());
+    assertTrue(capturedMessages.get(3).hasOfTool());
+    assertTrue(capturedMessages.get(4).hasOfDeveloper());
+  }
+
+  @Test
+  public void converseAlpha2ResponseWithoutMessageTest() {
+    List<ConversationMessage> messages = new ArrayList<>();
+    DeveloperMessage devMsg = new DeveloperMessage(List.of(new ConversationMessageContent("Debug info")));
+    devMsg.setName("developer");
+    messages.add(devMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
+
+    DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
+        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("stop")
+                .setIndex(0)
+                // No message set
+                .build())
+            .build())
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
+          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
+      observer.onNext(grpcResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
+
+    assertNotNull(response);
+    ConversationResultChoices choice = response.getOutputs().get(0).getChoices().get(0);
+    assertEquals("stop", choice.getFinishReason());
+    assertEquals(0, choice.getIndex());
+    assertNull(choice.getMessage());
+  }
+
+  @Test
+  public void converseAlpha2MultipleResultsTest() {
+    List<ConversationMessage> messages = new ArrayList<>();
+    DeveloperMessage devMsg = new DeveloperMessage(List.of(new ConversationMessageContent("Debug info")));
+    devMsg.setName("developer");
+    messages.add(devMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
+
+    DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
+        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("stop")
+                .setIndex(0)
+                .setMessage(DaprProtos.ConversationResultMessage.newBuilder()
+                    .setContent("First choice")
+                    .build())
+                .build())
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("stop")
+                .setIndex(1)
+                .setMessage(DaprProtos.ConversationResultMessage.newBuilder()
+                    .setContent("Second choice")
+                    .build())
+                .build())
+            .build())
+        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("length")
+                .setIndex(0)
+                .setMessage(DaprProtos.ConversationResultMessage.newBuilder()
+                    .setContent("Third result")
+                    .build())
+                .build())
+            .build())
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
+          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
+      observer.onNext(grpcResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
+
+    assertNotNull(response);
+    assertEquals(2, response.getOutputs().size());
+
+    // First result with 2 choices
+    ConversationResultAlpha2 firstResult = response.getOutputs().get(0);
+    assertEquals(2, firstResult.getChoices().size());
+    assertEquals("First choice", firstResult.getChoices().get(0).getMessage().getContent());
+    assertEquals("Second choice", firstResult.getChoices().get(1).getMessage().getContent());
+
+    // Second result with 1 choice
+    ConversationResultAlpha2 secondResult = response.getOutputs().get(1);
+    assertEquals(1, secondResult.getChoices().size());
+    assertEquals("Third result", secondResult.getChoices().get(0).getMessage().getContent());
+  }
+
+  @Test
+  public void converseAlpha2ToolCallWithoutFunctionTest() {
+    List<ConversationMessage> messages = new ArrayList<>();
+    UserMessage userMsg = new UserMessage(List.of(new ConversationMessageContent("Debug info")));
+    userMsg.setName("developer");
+    messages.add(userMsg);
+
+    ConversationInputAlpha2 input = new ConversationInputAlpha2(messages);
+
+    ConversationRequestAlpha2 request = new ConversationRequestAlpha2("openai", List.of(input));
+    DaprProtos.ConversationResponseAlpha2 grpcResponse = DaprProtos.ConversationResponseAlpha2.newBuilder()
+        .addOutputs(DaprProtos.ConversationResultAlpha2.newBuilder()
+            .addChoices(DaprProtos.ConversationResultChoices.newBuilder()
+                .setFinishReason("tool_calls")
+                .setIndex(0)
+                .setMessage(DaprProtos.ConversationResultMessage.newBuilder()
+                    .setContent("Test content")
+                    .addToolCalls(DaprProtos.ConversationToolCalls.newBuilder()
+                        .setId("call_123")
+                        // No function set
+                        .build())
+                    .build())
+                .build())
+            .build())
+        .build();
+
+    doAnswer((Answer<Void>) invocation -> {
+      StreamObserver<DaprProtos.ConversationResponseAlpha2> observer =
+          (StreamObserver<DaprProtos.ConversationResponseAlpha2>) invocation.getArguments()[1];
+      observer.onNext(grpcResponse);
+      observer.onCompleted();
+      return null;
+    }).when(daprStub).converseAlpha2(any(DaprProtos.ConversationRequestAlpha2.class), any());
+
+    ConversationResponseAlpha2 response = previewClient.converseAlpha2(request).block();
+
+    assertNotNull(response);
+    ConversationToolCalls toolCall = response.getOutputs().get(0).getChoices().get(0)
+        .getMessage().getToolCalls().get(0);
+    assertEquals("call_123", toolCall.getId());
+    assertNull(toolCall.getFunction());
   }
 
   private DaprProtos.QueryStateResponse buildQueryStateResponse(List<QueryStateItem<?>> resp,String token)
