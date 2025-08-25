@@ -147,7 +147,7 @@ background: true
 -->
 Execute the following script in order to run DemoChainWorker:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker 50001
+dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 --dapr-http-port 3501 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker 50001
 ```
 
 Once running, the logs will start displaying the different steps: First, you can see workflow is starting:
@@ -169,7 +169,8 @@ timeout_seconds: 20
 -->
 Then, execute the following script in order to run DemoChainClient:
 ```sh
-sleep 10 && java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient 50001
+wait_for_dapr 3501
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient 50001
 ```
 <!-- END_STEP -->
 
