@@ -147,6 +147,29 @@ public class DaprWorkflowsIT {
 
   }
 
+  @Test
+  public void testNamedActivitiesWorkflows() throws Exception {
+    TestWorkflowPayload payload = new TestWorkflowPayload(new ArrayList<>());
+    String instanceId = workflowClient.scheduleNewWorkflow(TestNamedActivitiesWorkflow.class, payload);
+
+    workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(10), false);
+    
+    Duration timeout = Duration.ofSeconds(10);
+    WorkflowInstanceStatus workflowStatus = workflowClient.waitForInstanceCompletion(instanceId, timeout, true);
+
+    assertNotNull(workflowStatus);
+
+    TestWorkflowPayload workflowOutput = deserialize(workflowStatus.getSerializedOutput());
+
+    assertEquals(5, workflowOutput.getPayloads().size());
+    assertEquals("First Activity", workflowOutput.getPayloads().get(0));
+    assertEquals("First Activity", workflowOutput.getPayloads().get(1));
+    assertEquals("Second Activity", workflowOutput.getPayloads().get(2));
+    assertEquals("Anonymous Activity", workflowOutput.getPayloads().get(3));
+    assertEquals("Anonymous Activity 2", workflowOutput.getPayloads().get(4));
+
+    assertEquals(instanceId, workflowOutput.getWorkflowId());
+  }
 
   private TestWorkflowPayload deserialize(String value) throws JsonProcessingException {
     return OBJECT_MAPPER.readValue(value, TestWorkflowPayload.class);
