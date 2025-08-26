@@ -248,7 +248,6 @@ public class DefaultWorkflowContext implements WorkflowContext {
     return TaskOptions.builder()
             .retryPolicy(retryPolicy)
             .retryHandler(retryHandler)
-            .appID(options.getAppId())
             .build();
   }
 
