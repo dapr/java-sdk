@@ -41,12 +41,11 @@ public class DemoFanInOutClient {
           "Always remember that you are absolutely unique. Just like everyone else.");
 
       // Schedule an orchestration which will reliably count the number of words in all the given sentences.
-        String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(
+      String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(
           DemoFanInOutWorkflow.class,
-                listOfStrings), Duration.ofSeconds(60));
+          listOfStrings), Duration.ofSeconds(60));
 
-
-        System.out.printf("Started a new fan out/fan in model workflow with instance ID: %s%n", instanceId);
+      System.out.printf("Started a new fan out/fan in model workflow with instance ID: %s%n", instanceId);
 
       // Block until the orchestration completes. Then print the final status, which includes the output.
       WorkflowInstanceStatus workflowInstanceStatus = client.waitForInstanceCompletion(

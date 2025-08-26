@@ -30,15 +30,15 @@ public class DemoChainClient {
    */
   public static void main(String[] args) {
     try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
-        String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(DemoChainWorkflow.class),
-                Duration.ofSeconds(60));
+      String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(DemoChainWorkflow.class),
+          Duration.ofSeconds(60));
 
-        System.out.printf("Started a new chaining model workflow with instance ID: %s%n", instanceId);
-        WorkflowInstanceStatus workflowInstanceStatus =
-                client.waitForInstanceCompletion(instanceId, null, true);
+      System.out.printf("Started a new chaining model workflow with instance ID: %s%n", instanceId);
+      WorkflowInstanceStatus workflowInstanceStatus =
+          client.waitForInstanceCompletion(instanceId, null, true);
 
-        String result = workflowInstanceStatus.readOutputAs(String.class);
-        System.out.printf("workflow instance with ID: %s completed with result: %s%n", instanceId, result);
+      String result = workflowInstanceStatus.readOutputAs(String.class);
+      System.out.printf("workflow instance with ID: %s completed with result: %s%n", instanceId, result);
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }

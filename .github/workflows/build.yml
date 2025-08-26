@@ -112,18 +112,14 @@ jobs:
         wget -q ${{ env.TOXIPROXY_URL }} -O /home/runner/.local/bin/toxiproxy-server
         chmod +x /home/runner/.local/bin/toxiproxy-server
         /home/runner/.local/bin/toxiproxy-server --version
-    - name: Clean up files
-      run: ./mvnw clean -B
-    - name: Build sdk
-      run: ./mvnw compile -B -q
+    - name: Clean up and install sdk
+      run: ./mvnw clean install -B -q -DskipTests
     - name: Unit tests
       run: ./mvnw test # making it temporarily verbose.
       env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
     - name: Codecov
       uses: codecov/codecov-action@v5.5.0
-    - name: Install jars
-      run: ./mvnw install -q -B -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
       run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests verify

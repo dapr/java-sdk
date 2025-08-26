@@ -31,7 +31,7 @@ public class DemoSuspendResumeClient {
    */
   public static void main(String[] args) {
     try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
-        String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(DemoExternalEventWorkflow.class), Duration.ofSeconds(60));
+      String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(DemoExternalEventWorkflow.class), Duration.ofSeconds(60));
       System.out.printf("Started a new external-event workflow with instance ID: %s%n", instanceId);
 
 
