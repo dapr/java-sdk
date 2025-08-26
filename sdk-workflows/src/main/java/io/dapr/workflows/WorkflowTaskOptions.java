@@ -50,11 +50,6 @@ public class WorkflowTaskOptions {
   public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy, WorkflowTaskRetryHandler retryHandler, String appId) {
     this.retryPolicy = retryPolicy;
     this.retryHandler = retryHandler;
-    if( appId != null){
-      throw new RuntimeException("Setting an appId is not supported in 1.15.x");
-    }
-  }
-
     if (appId != null) {
       throw new RuntimeException("Setting an appId is not supported in 1.15.x");
     }
@@ -85,7 +80,7 @@ public class WorkflowTaskOptions {
    */
   public WorkflowTaskOptions(WorkflowTaskRetryHandler retryHandler, String appId) {
     this(null, retryHandler, appId);
-    if( appId != null){
+    if (appId != null) {
       throw new RuntimeException("Setting an appId is not supported in 1.15.x");
     }
   }
