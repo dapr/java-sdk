@@ -17,6 +17,7 @@ public class WorkflowTaskOptions {
 
   private final WorkflowTaskRetryPolicy retryPolicy;
   private final WorkflowTaskRetryHandler retryHandler;
+  private final String appId;
 
   public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy, WorkflowTaskRetryHandler retryHandler) {
     this(retryPolicy, retryHandler, null);
