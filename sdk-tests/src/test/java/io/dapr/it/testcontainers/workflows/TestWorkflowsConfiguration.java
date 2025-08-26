@@ -15,8 +15,10 @@ package io.dapr.it.testcontainers.workflows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dapr.config.Properties;
+import io.dapr.workflows.WorkflowActivityContext;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
+import io.dapr.workflows.WorkflowActivity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,8 +58,31 @@ public class TestWorkflowsConfiguration {
     WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
 
     builder.registerWorkflow(TestWorkflow.class);
+    builder.registerWorkflow(TestNamedActivitiesWorkflow.class);
+
     builder.registerActivity(FirstActivity.class);
     builder.registerActivity(SecondActivity.class);
+    builder.registerActivity("a",FirstActivity.class);
+    builder.registerActivity("b",FirstActivity.class);
+    builder.registerActivity("c", new SecondActivity());
+    builder.registerActivity("d", new WorkflowActivity() {
+      @Override
+      public Object run(WorkflowActivityContext ctx) {
+        TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
+        workflowPayload.getPayloads().add("Anonymous Activity");
+        return workflowPayload;
+      }
+    });
+    builder.registerActivity("e", new WorkflowActivity() {
+      @Override
+      public Object run(WorkflowActivityContext ctx) {
+        TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
+        workflowPayload.getPayloads().add("Anonymous Activity 2");
+        return workflowPayload;
+      }
+    });
+
+
 
     return builder;
   }
