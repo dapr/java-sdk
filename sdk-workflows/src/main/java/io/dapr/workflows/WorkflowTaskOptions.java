@@ -17,7 +17,6 @@ public class WorkflowTaskOptions {
 
   private final WorkflowTaskRetryPolicy retryPolicy;
   private final WorkflowTaskRetryHandler retryHandler;
-  private final String appId;
 
   public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy, WorkflowTaskRetryHandler retryHandler) {
     this(retryPolicy, retryHandler, null);
@@ -38,6 +37,7 @@ public class WorkflowTaskOptions {
    */
   public WorkflowTaskOptions(String appId) {
     this(null, null, appId);
+    throw new RuntimeException("Setting an appId is not supported in 1.15.x");
   }
 
   /**
@@ -50,15 +50,23 @@ public class WorkflowTaskOptions {
   public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy, WorkflowTaskRetryHandler retryHandler, String appId) {
     this.retryPolicy = retryPolicy;
     this.retryHandler = retryHandler;
-    this.appId = appId;
+    if( appId != null){
+      throw new RuntimeException("Setting an appId is not supported in 1.15.x");
+    }
   }
 
   public WorkflowTaskOptions(WorkflowTaskRetryPolicy retryPolicy, String appId) {
     this(retryPolicy, null, appId);
+    if( appId != null){
+      throw new RuntimeException("Setting an appId is not supported in 1.15.x");
+    }
   }
 
   public WorkflowTaskOptions(WorkflowTaskRetryHandler retryHandler, String appId) {
     this(null, retryHandler, appId);
+    if( appId != null){
+      throw new RuntimeException("Setting an appId is not supported in 1.15.x");
+    }
   }
 
   public WorkflowTaskRetryPolicy getRetryPolicy() {
@@ -70,7 +78,7 @@ public class WorkflowTaskOptions {
   }
 
   public String getAppId() {
-    return appId;
+    throw new RuntimeException("Setting an appId is not supported in 1.15.x");
   }
 
 }
