@@ -245,7 +245,10 @@ public class DefaultWorkflowContext implements WorkflowContext {
     RetryPolicy retryPolicy = toRetryPolicy(options.getRetryPolicy());
     RetryHandler retryHandler = toRetryHandler(options.getRetryHandler());
 
-    return new TaskOptions(retryPolicy, retryHandler);
+    return TaskOptions.builder()
+            .retryPolicy(retryPolicy)
+            .retryHandler(retryHandler)
+            .build();
   }
 
   /**
