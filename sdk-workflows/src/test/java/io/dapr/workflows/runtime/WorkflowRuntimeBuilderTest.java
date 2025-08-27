@@ -92,6 +92,6 @@ public class WorkflowRuntimeBuilderTest {
         .info(eq("Registered Workflow: {}"), eq("TestWorkflow"));
 
     verify(testLogger, times(1))
-            .info(eq("Registered Activity: {}"), eq("io.dapr.workflows.runtime.WorkflowRuntimeBuilderTest.TestActivity"));
+        .info(eq("Registered Activity: {}"), eq("TestActivity"));
   }
 }

@@ -165,7 +165,7 @@ public class WorkflowRuntimeBuilder {
     this.activitySet.add(name);
     this.activities.add(name);
 
-    this.logger.info("Registered Activity: {}", name);
+    this.logger.info("Registered Activity: {}", clazz.getSimpleName());
 
     return this;
   }
