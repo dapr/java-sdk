@@ -149,9 +149,21 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(Class<T> clazz) {
-    this.builder.addActivity(new WorkflowActivityClassWrapper<>(clazz));
-    this.activitySet.add(clazz.getCanonicalName());
-    this.activities.add(clazz.getSimpleName());
+    return registerActivity(clazz.getCanonicalName(), clazz);
+  }
+
+  /**
+   * Registers an Activity object.
+   *
+   * @param <T>   any WorkflowActivity type
+   * @param name Name of the activity to register.
+   * @param clazz Class of the activity to register.
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(String name, Class<T> clazz) {
+    this.builder.addActivity(new WorkflowActivityClassWrapper<>(name, clazz));
+    this.activitySet.add(name);
+    this.activities.add(name);
 
     this.logger.info("Registered Activity: {}", clazz.getSimpleName());
 
@@ -166,13 +178,23 @@ public class WorkflowRuntimeBuilder {
    * @return the WorkflowRuntimeBuilder
    */
   public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(T instance) {
-    Class<T> clazz = (Class<T>) instance.getClass();
+    return this.registerActivity(instance.getClass().getCanonicalName(), instance);
+  }
 
-    this.builder.addActivity(new WorkflowActivityInstanceWrapper<>(instance));
-    this.activitySet.add(clazz.getCanonicalName());
-    this.activities.add(clazz.getSimpleName());
+  /**
+   * Registers an Activity object.
+   *
+   * @param <T>   any WorkflowActivity type
+   * @param name Name of the activity to register.
+   * @param instance the class instance being registered
+   * @return the WorkflowRuntimeBuilder
+   */
+  public <T extends WorkflowActivity> WorkflowRuntimeBuilder registerActivity(String name, T instance) {
+    this.builder.addActivity(new WorkflowActivityInstanceWrapper<>(name, instance));
+    this.activitySet.add(name);
+    this.activities.add(name);
 
-    this.logger.info("Registered Activity: {}", clazz.getSimpleName());
+    this.logger.info("Registered Activity: {}", name);
 
     return this;
   }
