@@ -15,9 +15,11 @@ package io.dapr.examples.workflows.suspendresume;
 
 import io.dapr.examples.workflows.externalevent.DemoExternalEventWorkflow;
 import io.dapr.examples.workflows.utils.PropertyUtils;
+import io.dapr.examples.workflows.utils.RetryUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 public class DemoSuspendResumeClient {
@@ -29,7 +31,7 @@ public class DemoSuspendResumeClient {
    */
   public static void main(String[] args) {
     try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
-      String instanceId = client.scheduleNewWorkflow(DemoExternalEventWorkflow.class);
+      String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(DemoExternalEventWorkflow.class), Duration.ofSeconds(60));
       System.out.printf("Started a new external-event workflow with instance ID: %s%n", instanceId);
 
 
