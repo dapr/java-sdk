@@ -14,6 +14,7 @@ limitations under the License.
 package io.dapr.examples.workflows.faninout;
 
 import io.dapr.examples.workflows.utils.PropertyUtils;
+import io.dapr.examples.workflows.utils.RetryUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
@@ -40,9 +41,10 @@ public class DemoFanInOutClient {
           "Always remember that you are absolutely unique. Just like everyone else.");
 
       // Schedule an orchestration which will reliably count the number of words in all the given sentences.
-      String instanceId = client.scheduleNewWorkflow(
+      String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(
           DemoFanInOutWorkflow.class,
-          listOfStrings);
+          listOfStrings), Duration.ofSeconds(60));
+
       System.out.printf("Started a new fan out/fan in model workflow with instance ID: %s%n", instanceId);
 
       // Block until the orchestration completes. Then print the final status, which includes the output.
