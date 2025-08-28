@@ -142,13 +142,12 @@ expected_stdout_lines:
   - 'Message Received from input: Seattle'
   - 'Sending message to output: SEATTLE'
   - 'Workflow finished with result: TOKYO, LONDON, SEATTLE'
+timeout_seconds: 20
 background: true
-sleep: 60
-timeout_seconds: 60
 -->
 Execute the following script in order to run DemoChainWorker:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker
+dapr run --app-id chainingworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker 50001
 ```
 
 Once running, the logs will start displaying the different steps: First, you can see workflow is starting:
@@ -158,9 +157,20 @@ Once running, the logs will start displaying the different steps: First, you can
 == APP == INFO: Durable Task worker is connecting to sidecar at 127.0.0.1:50001.
 ```
 
+<!-- END_STEP -->
+
+<!-- STEP
+name: Execute Chaining Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'completed with result: TOKYO, LONDON, SEATTLE'
+timeout_seconds: 20
+-->
 Then, execute the following script in order to run DemoChainClient:
 ```sh
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient 50001
+dapr stop --app-id chainingworker
 ```
 <!-- END_STEP -->
 
@@ -241,7 +251,7 @@ public class CountWordsActivity implements WorkflowActivity {
 }
 ```
 <!-- STEP
-name: Run Chaining Pattern workflow
+name: Run FanInOut Pattern workflow
 match_order: none
 output_match_mode: substring
 expected_stdout_lines:
@@ -251,20 +261,30 @@ expected_stdout_lines:
   - 'Activity returned: 17.'
   - 'Activity returned: 11.'
   - 'Workflow finished with result: 60'
+timeout_seconds: 20
 background: true
-sleep: 60
-timeout_seconds: 60
 -->
 
 Execute the following script in order to run DemoFanInOutWorker:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker
+dapr run --app-id faninoutworker --resources-path ./components/workflows --dapr-grpc-port 50002 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker 50002
 ```
 
+<!-- END_STEP -->
+
+<!-- STEP
+name: Execute FanInOut Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'completed with result: 60'
+timeout_seconds: 20
+-->
 Execute the following script in order to run DemoFanInOutClient:
 
 ```sh
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient 50002
+dapr stop --app-id faninoutworker
 ```
 <!-- END_STEP -->
 
@@ -294,7 +314,6 @@ and the client:
 Started a new fan out/fan in model model workflow with instance ID: 092c1928-b5dd-4576-9468-300bf6aed986
 workflow instance with ID: 092c1928-b5dd-4576-9468-300bf6aed986 completed with result: 60
 ```
-
 ### Continue As New Pattern
 `ContinueAsNew` API allows you to restart the workflow with a new input.
 
@@ -606,8 +625,6 @@ expected_stdout_lines:
   - "Registered Activity: CancelCarActivity"
   - "Successfully built dapr workflow runtime"
   - "Start workflow runtime"
-  - "Durable Task worker is connecting to sidecar at 127.0.0.1:50001."
-
   - "Starting Workflow: io.dapr.examples.workflows.compensation.BookTripWorkflow"
   - "Starting Activity: io.dapr.examples.workflows.compensation.BookFlightActivity"
   - "Activity completed with result: Flight booked successfully"
@@ -625,18 +642,28 @@ expected_stdout_lines:
   - "Starting Activity: io.dapr.examples.workflows.compensation.CancelFlightActivity"
   - "Activity completed with result: Flight canceled successfully"
 background: true
-sleep: 60
-timeout_seconds: 60
+timeout_seconds: 30
 -->
 
 Execute the following script in order to run the BookTripWorker:
 ```sh
-dapr run --app-id book-trip-worker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripWorker
+dapr run --app-id book-trip-worker --resources-path ./components/workflows --dapr-grpc-port 50003 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripWorker 50003
 ```
 
+<!-- END_STEP -->
+
+<!-- STEP
+name: Execute Compensation Pattern workflow
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - 'Workflow failed, compensation applied'
+timeout_seconds: 30
+-->
 Once running, execute the following script to run the BookTripClient:
 ```sh
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripClient 50003
+dapr stop --app-id book-trip-worker
 ```
 <!-- END_STEP -->
 
@@ -656,7 +683,7 @@ Key Points:
 
 ### Suspend/Resume Pattern
 
-Workflow instances can be suspended and resumed. This example shows how to use the suspend and resume commands. 
+Workflow instances can be suspended and resumed. This example shows how to use the suspend and resume commands.
 
 For testing the suspend and resume operations we will use the same workflow definition used by the DemoExternalEventWorkflow.
 
@@ -669,26 +696,35 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
   - "Waiting for approval..."
-  - "Suspending Workflow Instance"
-  - "Workflow Instance Status: SUSPENDED"
-  - "Let's resume the Workflow Instance before sending the external event"
-  - "Workflow Instance Status: RUNNING"
-  - "Now that the instance is RUNNING again, lets send the external event."
   - "approval granted - do the approved action"
   - "Starting Activity: io.dapr.examples.workflows.externalevent.ApproveActivity"
   - "Running approval activity..."
   - "approval-activity finished"
 background: true
-sleep: 60
-timeout_seconds: 60
+timeout_seconds: 30
 -->
 
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker
+dapr run --app-id suspendresumeworker --resources-path ./components/workflows --dapr-grpc-port 50004 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker 50004
 ```
 
+<!-- END_STEP -->
+
+<!-- STEP
+name: Execute Suspend/Resume workflow 
+match_order: none
+output_match_mode: substring
+expected_stdout_lines:
+  - "Suspending Workflow Instance"
+  - "Workflow Instance Status: SUSPENDED"
+  - "Let's resume the Workflow Instance before sending the external event"
+  - "Workflow Instance Status: RUNNING"
+  - "Now that the instance is RUNNING again, lets send the external event."
+timeout_seconds: 30
+-->
 ```sh
-java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient 50004
+dapr stop --app-id suspendresumeworker
 ```
 
 <!-- END_STEP -->

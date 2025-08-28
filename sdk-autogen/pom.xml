@@ -7,12 +7,12 @@
   <parent>
     <groupId>io.dapr</groupId>
     <artifactId>dapr-sdk-parent</artifactId>
-    <version>1.16.0-SNAPSHOT</version>
+    <version>1.17.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dapr-sdk-autogen</artifactId>
   <packaging>jar</packaging>
-  <version>1.16.0-SNAPSHOT</version>
+  <version>1.17.0-SNAPSHOT</version>
   <name>dapr-sdk-autogen</name>
   <description>Auto-generated SDK for Dapr</description>
 
@@ -22,7 +22,7 @@
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
     <grpc.version>1.69.0</grpc.version>
-    <protocCommand>protoc</protocCommand>
+    <protocCommand>java-sdk-protoc</protocCommand>
     <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
@@ -132,7 +132,7 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <protocCommand>protoc</protocCommand>
+              <protocCommand>java-sdk-protoc</protocCommand>
               <protocVersion>${protobuf.version}</protocVersion>
               <protocArtifact>com.google.protobuf:protoc:3.25.5</protocArtifact>
               <addProtoSources>inputs</addProtoSources>
