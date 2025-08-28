@@ -142,7 +142,7 @@ public class ActorStateIT extends BaseIT {
     ActorProxy newProxy = proxyBuilder.build(actorId);
 
     // waiting for actor to be activated
-    Thread.sleep(2000);  
+    Thread.sleep(2000);
 
     callWithRetry(() -> {
       logger.debug("Invoking readMessage where data is not cached ... ");
@@ -167,6 +167,81 @@ public class ActorStateIT extends BaseIT {
       logger.debug("Invoking readBytes where content is not cached ... ");
       byte[] result = newProxy.invokeMethod("readBytes", byte[].class).block();
       assertArrayEquals(bytes, result);
+    }, 5000);
+  }
+
+  @ParameterizedTest
+  @MethodSource("data")
+  public void stateTTL(AppRun.AppProtocol serviceAppProtocol) throws Exception {
+    logger.debug("Starting actor runtime ...");
+    // The call below will fail if service cannot start successfully.
+    DaprRun runtime = startDaprApp(
+        this.getClass().getSimpleName(),
+        StatefulActorService.SUCCESS_MESSAGE,
+        StatefulActorService.class,
+        true,
+        60000,
+        serviceAppProtocol);
+
+    String message = "This is a message to be saved and retrieved.";
+    String name = "Jon Doe";
+    byte[] bytes = new byte[] { 0x1 };
+    ActorId actorId = new ActorId(
+        String.format("%d-%b-state-ttl", System.currentTimeMillis(), serviceAppProtocol));
+    String actorType = "StatefulActorTest";
+    logger.debug("Building proxy ...");
+    ActorProxyBuilder<ActorProxy> proxyBuilder =
+        new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+    ActorProxy proxy = proxyBuilder.build(actorId);
+
+    // wating for actor to be activated
+    Thread.sleep(2000);
+
+    // Validate conditional read works.
+    callWithRetry(() -> {
+      logger.debug("Invoking readMessage where data is not present yet ... ");
+      String result = proxy.invokeMethod("readMessage", String.class).block();
+      assertNull(result);
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking writeMessageFor1s ... ");
+      proxy.invokeMethod("writeMessageFor1s", message).block();
+    }, 5000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readMessage where data is probably still cached ... ");
+      String result = proxy.invokeMethod("readMessage", String.class).block();
+      assertEquals(message, result);
+    }, 5000);
+
+
+    logger.debug("Waiting, so actor can be deactivated ...");
+    Thread.sleep(10000);
+
+    logger.debug("Stopping service ...");
+    runtime.stop();
+
+    logger.debug("Starting service ...");
+    DaprRun run2 = startDaprApp(
+        this.getClass().getSimpleName(),
+        StatefulActorService.SUCCESS_MESSAGE,
+        StatefulActorService.class,
+        true,
+        60000,
+        serviceAppProtocol);
+
+    // Need new proxy builder because the proxy builder holds the channel.
+    proxyBuilder = new ActorProxyBuilder(actorType, ActorProxy.class, newActorClient());
+    ActorProxy newProxy = proxyBuilder.build(actorId);
+
+    // waiting for actor to be activated
+    Thread.sleep(2000);
+
+    callWithRetry(() -> {
+      logger.debug("Invoking readMessage where data is not cached and expired ... ");
+      String result = newProxy.invokeMethod("readMessage", String.class).block();
+      assertNull(result);
     }, 5000);
   }
 }

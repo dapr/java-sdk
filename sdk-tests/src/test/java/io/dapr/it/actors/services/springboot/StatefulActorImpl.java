@@ -18,6 +18,8 @@ import io.dapr.actors.ActorType;
 import io.dapr.actors.runtime.AbstractActor;
 import io.dapr.actors.runtime.ActorRuntimeContext;
 
+import java.time.Duration;
+
 @ActorType(name = "StatefulActorTest")
 public class StatefulActorImpl extends AbstractActor implements StatefulActor {
 
@@ -28,6 +30,11 @@ public class StatefulActorImpl extends AbstractActor implements StatefulActor {
   @Override
   public void writeMessage(String something) {
     super.getActorStateManager().set("message", something).block();
+  }
+
+  @Override
+  public void writeMessageFor1s(String something) {
+    super.getActorStateManager().set("message", something, Duration.ofSeconds(1)).block();
   }
 
   @Override

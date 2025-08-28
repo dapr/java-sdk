@@ -110,13 +110,13 @@ public class DaprStateAsyncProviderTest {
                 if (operation.getOperationType() == null) {
                   return false;
                 }
-                if (operation.getKey() == null) {
+                if (operation.getState().getName() == null) {
                   return false;
                 }
 
                 String opName = operation.getOperationType();
-                String key = operation.getKey();
-                Object value = operation.getValue();
+                String key = operation.getState().getName();
+                Object value = operation.getState().getValue();
 
                 foundInsertName |= "upsert".equals(opName) &&
                     "name".equals(key) &&
@@ -153,58 +153,59 @@ public class DaprStateAsyncProviderTest {
     DaprClient daprClient = mock(DaprClient.class);
     when(daprClient
         .getState(any(), any(), eq("name")))
-        .thenReturn(Mono.just(SERIALIZER.serialize("Jon Doe")));
+        .thenReturn(Mono.just(new ActorState<>("name", SERIALIZER.serialize("Jon Doe"))));
     when(daprClient
         .getState(any(), any(), eq("zipcode")))
-        .thenReturn(Mono.just(SERIALIZER.serialize(98021)));
+        .thenReturn(Mono.just(new ActorState<>("zipcode", SERIALIZER.serialize(98021))));
     when(daprClient
         .getState(any(), any(), eq("goals")))
-        .thenReturn(Mono.just(SERIALIZER.serialize(98)));
+        .thenReturn(Mono.just(new ActorState<>("goals", SERIALIZER.serialize(98))));
     when(daprClient
         .getState(any(), any(), eq("balance")))
-        .thenReturn(Mono.just(SERIALIZER.serialize(46.55)));
+        .thenReturn(Mono.just(new ActorState<>("balance", SERIALIZER.serialize(46.55))));
     when(daprClient
         .getState(any(), any(), eq("active")))
-        .thenReturn(Mono.just(SERIALIZER.serialize(true)));
+        .thenReturn(Mono.just(new ActorState<>("active", SERIALIZER.serialize(true))));
     when(daprClient
         .getState(any(), any(), eq("customer")))
-        .thenReturn(Mono.just("{ \"id\": 1000, \"name\": \"Roxane\"}".getBytes()));
+        .thenReturn(Mono.just(new ActorState<>("customer", "{ \"id\": 1000, \"name\": \"Roxane\"}".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("anotherCustomer")))
-        .thenReturn(Mono.just("{ \"id\": 2000, \"name\": \"Max\"}".getBytes()));
+        .thenReturn(Mono.just(new ActorState<>("anotherCustomer", "{ \"id\": 2000, \"name\": \"Max\"}".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("nullCustomer")))
         .thenReturn(Mono.empty());
     when(daprClient
         .getState(any(), any(), eq("bytes")))
-        .thenReturn(Mono.just("\"QQ==\"".getBytes()));
+        .thenReturn(Mono.just(new ActorState<>("bytes", "\"QQ==\"".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("emptyBytes")))
-        .thenReturn(Mono.just(new byte[0]));
+        .thenReturn(Mono.just(new ActorState<>("emptyBytes", new byte[0])));
 
     DaprStateAsyncProvider provider = new DaprStateAsyncProvider(daprClient, SERIALIZER);
 
     Assertions.assertEquals("Jon Doe",
-        provider.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block());
+        provider.load("MyActor", new ActorId("123"), "name", TypeRef.STRING).block().getValue());
     Assertions.assertEquals(98021,
-        (int) provider.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block());
+        (int) provider.load("MyActor", new ActorId("123"), "zipcode", TypeRef.INT).block().getValue());
     Assertions.assertEquals(98,
-        (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
+        (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block().getValue());
     Assertions.assertEquals(98,
-        (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block());
+        (int) provider.load("MyActor", new ActorId("123"), "goals", TypeRef.INT).block().getValue());
     Assertions.assertEquals(46.55,
-        (double) provider.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block(),
+        (double) provider.load("MyActor", new ActorId("123"), "balance", TypeRef.DOUBLE).block().getValue(),
         EPSILON);
     Assertions.assertEquals(true,
-        (boolean) provider.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block());
+        (boolean) provider.load("MyActor", new ActorId("123"), "active", TypeRef.BOOLEAN).block().getValue());
     Assertions.assertEquals(new Customer().setId(1000).setName("Roxane"),
-        provider.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block());
+        provider.load("MyActor", new ActorId("123"), "customer", TypeRef.get(Customer.class)).block().getValue());
     Assertions.assertNotEquals(new Customer().setId(1000).setName("Roxane"),
-        provider.load("MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block());
+        provider.load(
+            "MyActor", new ActorId("123"), "anotherCustomer", TypeRef.get(Customer.class)).block().getValue());
     Assertions.assertNull(
         provider.load("MyActor", new ActorId("123"), "nullCustomer", TypeRef.get(Customer.class)).block());
     Assertions.assertArrayEquals("A".getBytes(),
-        provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block());
+        provider.load("MyActor", new ActorId("123"), "bytes", TypeRef.get(byte[].class)).block().getValue());
     Assertions.assertNull(
         provider.load("MyActor", new ActorId("123"), "emptyBytes", TypeRef.get(byte[].class)).block());
   }
@@ -216,22 +217,28 @@ public class DaprStateAsyncProviderTest {
     // Keys that exists.
     when(daprClient
         .getState(any(), any(), eq("name")))
-        .thenReturn(Mono.just("Jon Doe".getBytes()));
+        .thenReturn(Mono.just(
+            new ActorState<>("name", "Jon Doe".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("zipcode")))
-        .thenReturn(Mono.just("98021".getBytes()));
+        .thenReturn(Mono.just(
+            new ActorState<>("zipcode", "98021".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("goals")))
-        .thenReturn(Mono.just("98".getBytes()));
+        .thenReturn(Mono.just(
+            new ActorState<>("goals", "98".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("balance")))
-        .thenReturn(Mono.just("46.55".getBytes()));
+        .thenReturn(Mono.just(
+            new ActorState<>("balance", "46.55".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("active")))
-        .thenReturn(Mono.just("true".getBytes()));
+        .thenReturn(Mono.just(
+            new ActorState<>("active", "true".getBytes())));
     when(daprClient
         .getState(any(), any(), eq("customer")))
-        .thenReturn(Mono.just("{ \"id\": \"3000\", \"name\": \"Ely\" }".getBytes()));
+        .thenReturn(Mono.just(
+            new ActorState<>("customer", "{ \"id\": \"3000\", \"name\": \"Ely\" }".getBytes())));
 
     // Keys that do not exist.
     when(daprClient
@@ -257,15 +264,15 @@ public class DaprStateAsyncProviderTest {
     Assertions.assertFalse(provider.contains("MyActor", new ActorId("123"), null).block());
   }
 
-  private final <T> ActorStateChange createInsertChange(String name, T value) {
-    return new ActorStateChange(name, value, ActorStateChangeKind.ADD);
+  private <T> ActorStateChange createInsertChange(String name, T value) {
+    return new ActorStateChange(new ActorState(name, value), ActorStateChangeKind.ADD);
   }
 
-  private final <T> ActorStateChange createUpdateChange(String name, T value) {
-    return new ActorStateChange(name, value, ActorStateChangeKind.UPDATE);
+  private <T> ActorStateChange createUpdateChange(String name, T value) {
+    return new ActorStateChange(new ActorState(name, value), ActorStateChangeKind.UPDATE);
   }
 
-  private final ActorStateChange createDeleteChange(String name) {
-    return new ActorStateChange(name, null, ActorStateChangeKind.REMOVE);
+  private ActorStateChange createDeleteChange(String name) {
+    return new ActorStateChange(new ActorState(name, null), ActorStateChangeKind.REMOVE);
   }
 }
