@@ -56,4 +56,9 @@ class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   public <T> T getInput(Class<T> targetType) {
     return this.innerContext.getInput(targetType);
   }
+
+  @Override
+  public String getTaskExecutionId() {
+    return this.innerContext.getTaskExecutionId();
+  }
 }
