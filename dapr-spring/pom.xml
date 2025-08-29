@@ -13,7 +13,7 @@
   <groupId>io.dapr.spring</groupId>
   <artifactId>dapr-spring-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.17.0-SNAPSHOT</version>
+  <version>1.17.0-SNAPSHOT</version>
   <name>dapr-spring-parent</name>
   <description>SDK extension for Spring and Spring Boot</description>
 
@@ -34,7 +34,7 @@
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.11.2</junit.version>
     <!-- WARNING: don't change this property unless you also update .github/scripts/update_sdk_version.sh -->
-    <dapr.spring.version>0.17.0-SNAPSHOT</dapr.spring.version>
+    <dapr.spring.version>1.17.0-SNAPSHOT</dapr.spring.version>
   </properties>
 
   <dependencyManagement>
@@ -58,7 +58,7 @@
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-workflows</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
