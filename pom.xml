@@ -207,12 +207,12 @@
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-starter</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-starter-test</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -247,7 +247,7 @@
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>testcontainers-dapr</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
@@ -365,7 +365,7 @@
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-workflows</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>org.wiremock</groupId>
