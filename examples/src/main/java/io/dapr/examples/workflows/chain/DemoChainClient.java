@@ -14,9 +14,11 @@ limitations under the License.
 package io.dapr.examples.workflows.chain;
 
 import io.dapr.examples.workflows.utils.PropertyUtils;
+import io.dapr.examples.workflows.utils.RetryUtils;
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 public class DemoChainClient {
@@ -28,15 +30,15 @@ public class DemoChainClient {
    */
   public static void main(String[] args) {
     try (DaprWorkflowClient client = new DaprWorkflowClient(PropertyUtils.getProperties(args))) {
-      String instanceId = client.scheduleNewWorkflow(DemoChainWorkflow.class);
+      String instanceId = RetryUtils.callWithRetry(() -> client.scheduleNewWorkflow(DemoChainWorkflow.class),
+          Duration.ofSeconds(60));
+
       System.out.printf("Started a new chaining model workflow with instance ID: %s%n", instanceId);
       WorkflowInstanceStatus workflowInstanceStatus =
           client.waitForInstanceCompletion(instanceId, null, true);
 
       String result = workflowInstanceStatus.readOutputAs(String.class);
       System.out.printf("workflow instance with ID: %s completed with result: %s%n", instanceId, result);
-
-
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }

@@ -148,7 +148,7 @@ background: true
 -->
 Execute the following script in order to run DemoChainWorker:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker 50001
+dapr run --app-id chainingworker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainWorker 50001
 ```
 
 Once running, the logs will start displaying the different steps: First, you can see workflow is starting:
@@ -170,7 +170,8 @@ timeout_seconds: 20
 -->
 Then, execute the following script in order to run DemoChainClient:
 ```sh
-sleep 10 && java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient 50001
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.chain.DemoChainClient 50001
+dapr stop --app-id chainingworker
 ```
 <!-- END_STEP -->
 
@@ -267,7 +268,7 @@ background: true
 
 Execute the following script in order to run DemoFanInOutWorker:
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50002 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker 50002
+dapr run --app-id faninoutworker --resources-path ./components/workflows --dapr-grpc-port 50002 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutWorker 50002
 ```
 
 <!-- END_STEP -->
@@ -283,7 +284,8 @@ timeout_seconds: 20
 Execute the following script in order to run DemoFanInOutClient:
 
 ```sh
-sleep 10 && java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient 50002
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.faninout.DemoFanInOutClient 50002
+dapr stop --app-id faninoutworker
 ```
 <!-- END_STEP -->
 
@@ -661,7 +663,8 @@ timeout_seconds: 30
 -->
 Once running, execute the following script to run the BookTripClient:
 ```sh
-sleep 15 && java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripClient 50003
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.compensation.BookTripClient 50003
+dapr stop --app-id book-trip-worker
 ```
 <!-- END_STEP -->
 
@@ -852,7 +855,7 @@ timeout_seconds: 30
 -->
 
 ```sh
-dapr run --app-id demoworkflowworker --resources-path ./components/workflows --dapr-grpc-port 50004 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker 50004
+dapr run --app-id suspendresumeworker --resources-path ./components/workflows --dapr-grpc-port 50004 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeWorker 50004
 ```
 
 <!-- END_STEP -->
@@ -870,7 +873,8 @@ expected_stdout_lines:
 timeout_seconds: 30
 -->
 ```sh
-sleep 15 && java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient 50004
+java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.suspendresume.DemoSuspendResumeClient 50004
+dapr stop --app-id suspendresumeworker
 ```
 
 <!-- END_STEP -->

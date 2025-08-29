@@ -50,40 +50,41 @@ public class TestWorkflowsConfiguration {
       @Value("${dapr.http.endpoint}") String daprHttpEndpoint,
       @Value("${dapr.grpc.endpoint}") String daprGrpcEndpoint
   ){
-    Map<String, String> overrides = Map.of(
-        "dapr.http.endpoint", daprHttpEndpoint,
-        "dapr.grpc.endpoint", daprGrpcEndpoint
-    );
+      Map<String, String> overrides = Map.of(
+              "dapr.http.endpoint", daprHttpEndpoint,
+              "dapr.grpc.endpoint", daprGrpcEndpoint
+      );
 
-    WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
+      WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder(new Properties(overrides));
 
-    builder.registerWorkflow(TestWorkflow.class);
-    builder.registerWorkflow(TestNamedActivitiesWorkflow.class);
+      builder.registerWorkflow(TestWorkflow.class);
+      builder.registerWorkflow(TestExecutionKeysWorkflow.class);
+      builder.registerWorkflow(TestNamedActivitiesWorkflow.class);
 
-    builder.registerActivity(FirstActivity.class);
-    builder.registerActivity(SecondActivity.class);
-    builder.registerActivity("a",FirstActivity.class);
-    builder.registerActivity("b",FirstActivity.class);
-    builder.registerActivity("c", new SecondActivity());
-    builder.registerActivity("d", new WorkflowActivity() {
-      @Override
-      public Object run(WorkflowActivityContext ctx) {
-        TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
-        workflowPayload.getPayloads().add("Anonymous Activity");
-        return workflowPayload;
-      }
-    });
-    builder.registerActivity("e", new WorkflowActivity() {
-      @Override
-      public Object run(WorkflowActivityContext ctx) {
-        TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
-        workflowPayload.getPayloads().add("Anonymous Activity 2");
-        return workflowPayload;
-      }
-    });
+      builder.registerActivity(FirstActivity.class);
+      builder.registerActivity(SecondActivity.class);
+      builder.registerActivity(TaskExecutionIdActivity.class);
 
+      builder.registerActivity("a", FirstActivity.class);
+      builder.registerActivity("b", FirstActivity.class);
+      builder.registerActivity("c", new SecondActivity());
+      builder.registerActivity("d", new WorkflowActivity() {
+          @Override
+          public Object run(WorkflowActivityContext ctx) {
+              TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
+              workflowPayload.getPayloads().add("Anonymous Activity");
+              return workflowPayload;
+          }
+      });
+      builder.registerActivity("e", new WorkflowActivity() {
+          @Override
+          public Object run(WorkflowActivityContext ctx) {
+              TestWorkflowPayload workflowPayload = ctx.getInput(TestWorkflowPayload.class);
+              workflowPayload.getPayloads().add("Anonymous Activity 2");
+              return workflowPayload;
+          }
+      });
 
-
-    return builder;
+      return builder;
   }
 }

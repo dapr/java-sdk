@@ -65,7 +65,6 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'TOKYO, LONDON, SEATTLE'
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -73,7 +72,7 @@ timeout_seconds: 90
 To start the workflow with the three chained activities you can run: 
 
 ```sh
-sleep 35 && curl -X POST localhost:8080/wfp/chain -H 'Content-Type: application/json' 
+curl -X POST localhost:8080/wfp/chain -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -142,7 +141,6 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '!wolfkroW rpaD olleH'
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -150,7 +148,7 @@ timeout_seconds: 90
 To start the workflow with the three chained activities you can run:
 
 ```sh
-sleep 35 && curl -X POST localhost:8080/wfp/child -H 'Content-Type: application/json' 
+curl -X POST localhost:8080/wfp/child -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90 
 ```
 
 <!-- END_STEP -->
@@ -191,13 +189,12 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"cleanUpTimes":5}'
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-sleep 30 && curl -X POST localhost:8080/wfp/continueasnew -H 'Content-Type: application/json'
+curl -X POST localhost:8080/wfp/continueasnew -H 'Content-Type: application/json' --retry 10 --max-time 60 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -260,13 +257,12 @@ To start the workflow you can run:
 name: Start External Event Workflow
 match_order: none
 output_match_mode: substring
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-sleep 30 && curl -X POST "localhost:8080/wfp/externalevent?orderId=123" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/externalevent?orderId=123" -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -290,7 +286,6 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"approved":true}'
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -298,7 +293,7 @@ timeout_seconds: 90
 To send the event you can run:
 
 ```sh
-sleep 42 && curl -X POST "localhost:8080/wfp/externalevent-continue?orderId=123&decision=true" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/externalevent-continue?orderId=123&decision=true" -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -346,13 +341,12 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"wordCount":60}'
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-sleep 45 && curl -X POST localhost:8080/wfp/fanoutin -H 'Content-Type: application/json' -d @body.json
+curl -X POST localhost:8080/wfp/fanoutin -H 'Content-Type: application/json' -d @body.json --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -398,13 +392,12 @@ To start the workflow, you can run:
 name: Start Suspend/Resume Workflow
 match_order: none
 output_match_mode: substring
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-sleep 50 && curl -X POST "localhost:8080/wfp/suspendresume?orderId=456" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/suspendresume?orderId=456" -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -431,7 +424,6 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'SUSPENDED'
-background: true
 timeout_seconds: 90
 -->
 
@@ -439,7 +431,7 @@ timeout_seconds: 90
 Let's suspend the workflow instance by sending the following request:
 
 ```sh
-sleep 55 && curl -X POST "localhost:8080/wfp/suspendresume/suspend?orderId=456" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/suspendresume/suspend?orderId=456" -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -459,7 +451,6 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - 'RUNNING'
-background: true
 timeout_seconds: 90
 -->
 
@@ -467,7 +458,7 @@ timeout_seconds: 90
 To send the event you can run:
 
 ```sh
-sleep 60 && curl -X POST "localhost:8080/wfp/suspendresume/resume?orderId=456" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/suspendresume/resume?orderId=456" -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
@@ -487,7 +478,6 @@ match_order: none
 output_match_mode: substring
 expected_stdout_lines:
 - '{"approved":true}'
-background: true
 timeout_seconds: 90
 -->
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
@@ -495,7 +485,7 @@ timeout_seconds: 90
 To send the event you can run:
 
 ```sh
-sleep 65 && curl -X POST "localhost:8080/wfp/suspendresume/continue?orderId=456&decision=true" -H 'Content-Type: application/json'
+curl -X POST "localhost:8080/wfp/suspendresume/continue?orderId=456&decision=true" -H 'Content-Type: application/json' --retry 10 --max-time 20 --retry-all-errors --retry-max-time 90
 ```
 
 <!-- END_STEP -->
