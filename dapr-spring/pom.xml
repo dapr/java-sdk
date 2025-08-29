@@ -34,7 +34,7 @@
     <testcontainers.version>1.19.8</testcontainers.version>
     <junit.version>5.11.2</junit.version>
     <!-- WARNING: don't change this property unless you also update .github/scripts/update_sdk_version.sh -->
-    <dapr.spring.version>0.17.0-SNAPSHOT</dapr.spring.version>
+    <dapr.spring.version>1.17.0-SNAPSHOT</dapr.spring.version>
   </properties>
 
   <dependencyManagement>
