@@ -190,14 +190,11 @@ jobs:
         if: startswith(github.ref, 'refs/tags/v') && !contains(env.PARENT_VERSION, '-SNAPSHOT')
         run: |
           echo "DEPLOY_OSSRH=true" >> $GITHUB_ENV
-      - name: Install jars
-        if: env.DEPLOY_OSSRH == 'true'
-        run: ./mvnw install -DskipTests -B -q
       - name: Publish to ossrh
         if: env.DEPLOY_OSSRH == 'true'
         run: |
           echo ${{ secrets.GPG_PRIVATE_KEY }} | base64 -d > private-key.gpg
           export GPG_TTY=$(tty)
           gpg --batch --import private-key.gpg
-          ./mvnw -V -B -Dgpg.skip=false -s settings.xml deploy
+          ./mvnw -V -B -Dgpg.skip=false -DskipTests -s settings.xml deploy
           curl -X POST https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/io.dapr
