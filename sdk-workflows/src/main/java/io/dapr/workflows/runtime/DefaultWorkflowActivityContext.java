@@ -32,7 +32,7 @@ class DefaultWorkflowActivityContext implements WorkflowActivityContext {
    * @throws IllegalArgumentException if context is null
    */
   public DefaultWorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
-    this(context, LoggerFactory.getLogger(WorkflowActivityContext .class));
+    this(context, LoggerFactory.getLogger(WorkflowActivityContext.class));
   }
 
   /**
