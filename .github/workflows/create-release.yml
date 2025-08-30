@@ -35,7 +35,7 @@ jobs:
           token: ${{ secrets.DAPR_BOT_TOKEN }}
           persist-credentials: false
       - name: Set up OpenJDK ${{ env.JDK_VER }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}
