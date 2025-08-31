@@ -1,6 +1,7 @@
 package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.TaskActivityContext;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,7 +12,8 @@ import static org.mockito.Mockito.when;
 class DefaultWorkflowActivityContextTest {
 
   @Test
-  void testDefaultWorkflowActivityContext() {
+  @DisplayName("Should successfully create context and return correct values for all methods")
+  void shouldSuccessfullyCreateContextAndReturnCorrectValuesForAllMethods() {
     TaskActivityContext mockInnerContext = mock(TaskActivityContext.class);
     DefaultWorkflowActivityContext context = new DefaultWorkflowActivityContext(mockInnerContext);
 
@@ -29,7 +31,8 @@ class DefaultWorkflowActivityContextTest {
   }
 
   @Test
-  void testDefaultWorkflowActivityContextWithNullContext() {
+  @DisplayName("Should throw IllegalArgumentException when context parameter is null")
+  void shouldThrowIllegalArgumentExceptionWhenContextParameterIsNull() {
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
       new DefaultWorkflowActivityContext(null);
     });
@@ -37,7 +40,8 @@ class DefaultWorkflowActivityContextTest {
   }
 
   @Test
-  void testDefaultWorkflowActivityContextWithNullLogger() {
+  @DisplayName("Should throw IllegalArgumentException when logger parameter is null")
+  void shouldThrowIllegalArgumentExceptionWhenLoggerParameterIsNull() {
     TaskActivityContext mockInnerContext = mock(TaskActivityContext.class);
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
