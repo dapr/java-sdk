@@ -110,6 +110,18 @@ class DaprClientAutoConfigurationTest {
   }
 
   @Test
+  @DisplayName("Should override API token if it exists")
+  void shouldOverrideApiTokenIfExists() {
+    String apiToken = "token";
+
+    when(connectionDetails.getApiToken()).thenReturn(apiToken);
+
+    configuration.daprClientBuilder(connectionDetails);
+
+    verify(builder).withPropertyOverride(Properties.API_TOKEN, apiToken);
+  }
+
+  @Test
   @DisplayName("Should override HTTP endpoint in properties if it exists")
   void shouldOverrideHttpEndpointInPropertiesIfExists() {
     String httpEndpoint = "http://localhost:3500";
