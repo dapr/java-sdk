@@ -109,11 +109,9 @@ public class DaprConversationIT {
                 this.daprPreviewClient.converse(new ConversationRequest("echo", conversationInputList)
                         .setScrubPii(true)).block();
 
-        Assertions.assertEquals("", response.getContextId());
-        Assertions.assertEquals("input this <EMAIL_ADDRESS>",
+      Assertions.assertEquals("", response.getContextId());
+      Assertions.assertEquals("input this <EMAIL_ADDRESS>\ninput this <PHONE_NUMBER>",
                 response.getConversationOutputs().get(0).getResult());
-        Assertions.assertEquals("input this <PHONE_NUMBER>",
-                response.getConversationOutputs().get(1).getResult());
     }
 
     @Test
@@ -126,9 +124,7 @@ public class DaprConversationIT {
                 this.daprPreviewClient.converse(new ConversationRequest("echo", conversationInputList)).block();
 
         Assertions.assertEquals("", response.getContextId());
-        Assertions.assertEquals("input this abcd@gmail.com",
+      Assertions.assertEquals("input this abcd@gmail.com\ninput this <PHONE_NUMBER>",
                 response.getConversationOutputs().get(0).getResult());
-        Assertions.assertEquals("input this <PHONE_NUMBER>",
-                response.getConversationOutputs().get(1).getResult());
     }
 }
