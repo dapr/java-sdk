@@ -692,18 +692,19 @@ public class CrossAppWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
       return ctx -> {
-          ctx.getLogger().info("=== WORKFLOW STARTING ===");
-          ctx.getLogger().info("Starting CrossAppWorkflow: " + ctx.getName());
-          ctx.getLogger().info("Workflow name: " + ctx.getName());
-          ctx.getLogger().info("Workflow instance ID: " + ctx.getInstanceId());
+          var logger = ctx.getLogger();
+          logger.info("=== WORKFLOW STARTING ===");
+          logger.info("Starting CrossAppWorkflow: {}", ctx.getName());
+          logger.info("Workflow name: {}", ctx.getName());
+          logger.info("Workflow instance ID: {}", ctx.getInstanceId());
 
           String input = ctx.getInput(String.class);
-          ctx.getLogger().info("CrossAppWorkflow received input: " + input);
-          ctx.getLogger().info("Workflow input: " + input);
+          logger.info("CrossAppWorkflow received input: {}", input);
+          logger.info("Workflow input: {}", input);
 
           // Call an activity in another app by passing in an active appID to the WorkflowTaskOptions
-          ctx.getLogger().info("Calling cross-app activity in 'app2'...");
-          ctx.getLogger().info("About to call cross-app activity in app2...");
+          logger.info("Calling cross-app activity in 'app2'...");
+          logger.info("About to call cross-app activity in app2...");
           String crossAppResult = ctx.callActivity(
                   App2TransformActivity.class.getName(),
                   input,
@@ -712,19 +713,19 @@ public class CrossAppWorkflow implements Workflow {
           ).await();
 
           // Call another activity in a different app
-          ctx.getLogger().info("Calling cross-app activity in 'app3'...");
-          ctx.getLogger().info("About to call cross-app activity in app3...");
+          logger.info("Calling cross-app activity in 'app3'...");
+          logger.info("About to call cross-app activity in app3...");
           String finalResult = ctx.callActivity(
                   App3FinalizeActivity.class.getName(),
                   crossAppResult,
                   new WorkflowTaskOptions("app3"),
                   String.class
           ).await();
-          ctx.getLogger().info("Final cross-app activity result: " + finalResult);
-          ctx.getLogger().info("Final cross-app activity result: " + finalResult);
+          logger.info("Final cross-app activity result: {}", finalResult);
+          logger.info("Final cross-app activity result: {}", finalResult);
 
-          ctx.getLogger().info("CrossAppWorkflow finished with: " + finalResult);
-          ctx.getLogger().info("=== WORKFLOW COMPLETING WITH: " + finalResult + " ===");
+          logger.info("CrossAppWorkflow finished with: {}", finalResult);
+          logger.info("=== WORKFLOW COMPLETING WITH: {} ===" , finalResult);
           ctx.complete(finalResult);
       };
   }
@@ -737,14 +738,15 @@ The `App2TransformActivity` class defines an activity in app2 that transforms th
 public class App2TransformActivity implements WorkflowActivity {
   @Override
   public Object run(WorkflowActivityContext ctx) {
-    System.out.println("=== App2: TransformActivity called ===");
+    var logger = ctx.getLogger();
+    logger.info("=== App2: TransformActivity called ===");
     String input = ctx.getInput(String.class);
-    System.out.println("Input: " + input);
+    logger.info("Input: {}", input);
     
     // Transform the input
     String result = input.toUpperCase() + " [TRANSFORMED BY APP2]";
-    
-    System.out.println("Output: " + result);
+
+    logger.info("Output: {}", result);
     return result;
   }
 }
@@ -755,14 +757,15 @@ The `App3FinalizeActivity` class defines an activity in app3 that finalizes the 
 public class App3FinalizeActivity implements WorkflowActivity {
   @Override
   public Object run(WorkflowActivityContext ctx) {
-    System.out.println("=== App3: FinalizeActivity called ===");
+    var logger = ctx.getLogger();
+    logger.info("=== App3: FinalizeActivity called ===");
     String input = ctx.getInput(String.class);
-    System.out.println("Input: " + input);
+    logger.info("Input: ", input);
     
     // Finalize the processing
     String result = input + " [FINALIZED BY APP3]";
-    
-    System.out.println("Output: " + result);
+
+    logger.info("Output: {}", result);
     return result;
   }
 }
