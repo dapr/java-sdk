@@ -63,6 +63,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
+
     if (logger == null) {
       throw new IllegalArgumentException("Logger cannot be null");
     }

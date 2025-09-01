@@ -25,8 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -112,6 +110,18 @@ class DaprClientAutoConfigurationTest {
   }
 
   @Test
+  @DisplayName("Should override API token if it exists")
+  void shouldOverrideApiTokenIfExists() {
+    String apiToken = "token";
+
+    when(connectionDetails.getApiToken()).thenReturn(apiToken);
+
+    configuration.daprClientBuilder(connectionDetails);
+
+    verify(builder).withPropertyOverride(Properties.API_TOKEN, apiToken);
+  }
+
+  @Test
   @DisplayName("Should override HTTP endpoint in properties if it exists")
   void shouldOverrideHttpEndpointInPropertiesIfExists() {
     String httpEndpoint = "http://localhost:3500";
@@ -157,6 +167,18 @@ class DaprClientAutoConfigurationTest {
     Properties result = configuration.createPropertiesFromConnectionDetails(connectionDetails);
 
     assertThat(result.getValue(Properties.GRPC_PORT)).isEqualTo(grpcPort);
+  }
+
+  @Test
+  @DisplayName("Should override API token in properties if it exists")
+  void shouldOverrideApiTokenPropertiesIfExists() {
+    String apiToken = "token";
+
+    when(connectionDetails.getApiToken()).thenReturn(apiToken);
+
+    Properties result = configuration.createPropertiesFromConnectionDetails(connectionDetails);
+
+    assertThat(result.getValue(Properties.API_TOKEN)).isEqualTo(apiToken);
   }
 
   private static class TestDaprClientAutoConfiguration extends DaprClientAutoConfiguration {
