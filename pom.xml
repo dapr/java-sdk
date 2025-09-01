@@ -610,6 +610,7 @@
           <failOnWarnings>false</failOnWarnings>
           <failOnError>true</failOnError>
           <goal>site</goal>
+          <notimestamp>true</notimestamp>
           <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*
           </excludePackageNames>
         </configuration>
