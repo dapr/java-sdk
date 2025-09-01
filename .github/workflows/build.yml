@@ -68,7 +68,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
       DAPR_CLI_VER: 1.15.0
-      DAPR_RUNTIME_VER: 1.16.0-rc.3
+      DAPR_RUNTIME_VER: 1.16.0-rc.5
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
