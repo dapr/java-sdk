@@ -24,10 +24,11 @@ public class App3FinalizeActivity implements WorkflowActivity {
     @Override
     public Object run(WorkflowActivityContext context) {
         String input = context.getInput(String.class);
-        System.out.println("=== App3: FinalizeActivity called ===");
-        System.out.println("Input: " + input);
+        var logger = context.getLogger();
+        logger.info("=== App3: FinalizeActivity called ===");
+        logger.info("Input: {}", input);
         String result = input + " [FINALIZED BY APP3]";
-        System.out.println("Output: " + result);
+        logger.info("Output: {}", result);
         return result;
     }
 }

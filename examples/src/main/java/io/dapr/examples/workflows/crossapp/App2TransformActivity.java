@@ -21,13 +21,14 @@ import io.dapr.workflows.WorkflowActivityContext;
  * This activity is called cross-app from the main workflow.
  */
 public class App2TransformActivity implements WorkflowActivity {
-    @Override
-    public Object run(WorkflowActivityContext context) {
-        String input = context.getInput(String.class);
-        System.out.println("=== App2: TransformActivity called ===");
-        System.out.println("Input: " + input);
-        String result = input.toUpperCase() + " [TRANSFORMED BY APP2]";
-        System.out.println("Output: " + result);
-        return result;
-    }
+  @Override
+  public Object run(WorkflowActivityContext context) {
+    String input = context.getInput(String.class);
+    var logger = context.getLogger();
+    logger.info("=== App2: TransformActivity called ===");
+    logger.info("Input: {}", input);
+    String result = input.toUpperCase() + " [TRANSFORMED BY APP2]";
+    logger.info("Output: {}", result);
+    return result;
+  }
 }
