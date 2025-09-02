@@ -47,7 +47,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>durabletask-client</artifactId>
-      <version>1.5.7</version>
+      <version>1.5.10</version>
     </dependency>
     <!--
     manually declare durabletask-client's jackson dependencies

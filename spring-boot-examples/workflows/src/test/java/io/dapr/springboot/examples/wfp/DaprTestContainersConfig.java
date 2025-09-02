@@ -15,6 +15,7 @@ package io.dapr.springboot.examples.wfp;
 
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
+import io.dapr.testcontainers.DaprLogLevel;
 import io.github.microcks.testcontainers.MicrocksContainersEnsemble;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -31,6 +32,16 @@ import java.util.List;
 
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 
+/**
+ * Test configuration for Dapr containers with debug logging enabled.
+ * 
+ * This configuration sets up Dapr with DEBUG log level and console output
+ * for detailed logging during test execution.
+ * 
+ * ADDITIONAL DEBUGGING: For even more detailed logs, you can also:
+ * 1. Run `docker ps` to find the Dapr container ID
+ * 2. Run `docker logs --follow <container-id>` to stream real-time logs
+ */
 @TestConfiguration(proxyBeanMethods = false)
 public class DaprTestContainersConfig {
 
