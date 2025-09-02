@@ -38,6 +38,23 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * Integration tests for Dapr Workflow Patterns.
+ * 
+ * DEBUGGING: For more detailed logs during test execution, you can:
+ * 1. Run `docker ps` to find the Dapr container ID
+ * 2. Run `docker logs --follow <container-id>` to stream real-time logs
+ * 3. The container name will typically be something like "dapr-workflow-patterns-app-<hash>"
+ * 
+ * Example:
+ * ```bash
+ * docker ps | grep dapr
+ * docker logs --follow <container-id>
+ * ```
+ * 
+ * This will show you detailed Dapr runtime logs including workflow execution,
+ * state transitions, and component interactions.
+ */
 @SpringBootTest(classes = {TestWorkflowPatternsApplication.class, DaprTestContainersConfig.class,
         DaprAutoConfiguration.class, },
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -137,6 +154,12 @@ class WorkflowPatternsAppTests {
   }
 
 
+  /**
+   * Tests the ContinueAsNew workflow pattern.
+   * 
+   * The ContinueAsNew pattern should execute cleanup activities 5 times
+   * with 5-second intervals between each iteration.
+   */
   @Test
   void testContinueAsNew() {
     //This call blocks until all the clean up activities are executed
