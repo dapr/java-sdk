@@ -22,8 +22,6 @@ import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.config.Properties;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
@@ -34,16 +32,13 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
-import java.io.File;
 
 import static io.dapr.it.testcontainers.ContainerConstants.DAPR_RUNTIME_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_PLACEMENT_IMAGE_TAG;
 import static io.dapr.testcontainers.DaprContainerConstants.DAPR_SCHEDULER_IMAGE_TAG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import io.dapr.testcontainers.Subscription;
 
 /**
  * Cross-App Pattern integration test.
@@ -60,157 +55,105 @@ public class WorkflowsCrossAppCallActivityIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
   
-  // Shared placement and scheduler containers for all Dapr instances
-  private static DaprPlacementContainer sharedPlacementContainer;
-  private static DaprSchedulerContainer sharedSchedulerContainer;
-  
+  @Container
+  private final static DaprPlacementContainer sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)
+      .withNetwork(DAPR_NETWORK)
+      .withNetworkAliases("placement")
+      .withReuse(false);
+
+  @Container
+  private final static DaprSchedulerContainer sharedSchedulerContainer = new DaprSchedulerContainer(DAPR_SCHEDULER_IMAGE_TAG)
+          .withNetwork(DAPR_NETWORK)
+          .withNetworkAliases("scheduler")
+          .withReuse(false);
+
   // Main workflow orchestrator container
-  private static DaprContainer MAIN_WORKFLOW_CONTAINER;
+  @Container
+  private final static DaprContainer MAIN_WORKFLOW_SIDECAR = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withAppName("crossapp-worker")
+      .withNetwork(DAPR_NETWORK)
+      .withNetworkAliases("main-workflow-sidecar")
+      .withPlacementContainer(sharedPlacementContainer)
+      .withSchedulerContainer(sharedSchedulerContainer)
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .dependsOn(sharedPlacementContainer, sharedSchedulerContainer)
+      .withLogConsumer(outputFrame -> System.out.println("MAIN_WORKFLOW: " + outputFrame.getUtf8String()))
+      .withAppChannelAddress("host.testcontainers.internal");
   
-  // App2 container for App2TransformActivity - using DaprContainer with custom ports
-  private static DaprContainer APP2_CONTAINER;
+  // App2 container for App2TransformActivity
+  @Container
+  private final static DaprContainer APP2_SIDECAR = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withAppName("app2")
+      .withNetwork(DAPR_NETWORK)
+      .withNetworkAliases("app2-sidecar")
+      .withPlacementContainer(sharedPlacementContainer)
+      .withSchedulerContainer(sharedSchedulerContainer)
+      .withAppChannelAddress("main-workflow-sidecar:3500")
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .dependsOn(sharedPlacementContainer, sharedSchedulerContainer, MAIN_WORKFLOW_SIDECAR)
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withLogConsumer(outputFrame -> System.out.println("APP2: " + outputFrame.getUtf8String()));
   
-  // App3 container for App3FinalizeActivity - using DaprContainer with custom ports
-  private static DaprContainer APP3_CONTAINER;
+  // App3 container for App3FinalizeActivity
+  @Container
+  private final static DaprContainer APP3_SIDECAR = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+      .withAppName("app3")
+      .withNetwork(DAPR_NETWORK)
+      .withNetworkAliases("app3-sidecar")
+      .withPlacementContainer(sharedPlacementContainer)
+      .withSchedulerContainer(sharedSchedulerContainer)
+      .withAppChannelAddress("main-workflow-sidecar:3500")
+      .withDaprLogLevel(DaprLogLevel.DEBUG)
+      .dependsOn(sharedPlacementContainer, sharedSchedulerContainer, MAIN_WORKFLOW_SIDECAR)
+      .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
+      .withLogConsumer(outputFrame -> System.out.println("APP3: " + outputFrame.getUtf8String()));
 
   // TestContainers for each app
-  private static GenericContainer<?> crossappWorker;
-  private static GenericContainer<?> app2Worker;
-  private static GenericContainer<?> app3Worker;
+  @Container
+  private static GenericContainer<?> crossappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
+      .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
+      .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
+      .withWorkingDirectory("/app")
+      .withCommand("java", "-cp", "/app/classes:/app/libs/*",
+          "-Ddapr.app.id=crossapp-worker",
+          "-Ddapr.grpc.endpoint=main-workflow-sidecar:50001",
+          "-Ddapr.http.endpoint=main-workflow-sidecar:3500",
+          "io.dapr.it.testcontainers.workflows.crossapp.CrossAppWorker")
+      .withNetwork(DAPR_NETWORK)
+      .dependsOn(MAIN_WORKFLOW_SIDECAR)
+      .waitingFor(Wait.forLogMessage(".*CrossAppWorker started.*", 1))
+      .withLogConsumer(outputFrame -> System.out.println("CrossAppWorker: " + outputFrame.getUtf8String()));
 
-  @BeforeAll
-  public static void setUp() throws Exception {
-    // Ensure dependencies are copied for container classpath
-    ensureDependenciesCopied();
-    
-    sharedPlacementContainer = new DaprPlacementContainer(DAPR_PLACEMENT_IMAGE_TAG)
-        .withNetwork(DAPR_NETWORK)
-        .withNetworkAliases("placement")
-        .withReuse(false);
-    sharedPlacementContainer.start();
-    
-    sharedSchedulerContainer = new DaprSchedulerContainer(DAPR_SCHEDULER_IMAGE_TAG)
-        .withNetwork(DAPR_NETWORK)
-        .withNetworkAliases("scheduler")
-        .withReuse(false);
-    sharedSchedulerContainer.start();
+  @Container
+  private final static GenericContainer<?> app2Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+      .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
+      .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
+      .withWorkingDirectory("/app")
+      .withCommand("java", "-cp", "/app/classes:/app/libs/*",
+          "-Ddapr.app.id=app2",
+          "-Ddapr.grpc.endpoint=app2-sidecar:50001",
+          "-Ddapr.http.endpoint=app2-sidecar:3500",
+          "io.dapr.it.testcontainers.workflows.crossapp.App2Worker")
+      .withNetwork(DAPR_NETWORK)
+      .dependsOn(APP2_SIDECAR)
+      .waitingFor(Wait.forLogMessage(".*App2Worker started.*", 1))
+      .withLogConsumer(outputFrame -> System.out.println("App2Worker: " + outputFrame.getUtf8String()));
 
-    // Initialize Dapr containers with shared placement and scheduler
-    MAIN_WORKFLOW_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
-        .withAppName("crossapp-worker")
-        .withNetwork(DAPR_NETWORK)
-        .withNetworkAliases("main-workflow-sidecar")
-        .withPlacementContainer(sharedPlacementContainer)
-        .withSchedulerContainer(sharedSchedulerContainer)
-        .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
-        .withDaprLogLevel(DaprLogLevel.DEBUG)
-        .withLogConsumer(outputFrame -> System.out.println("MAIN_WORKFLOW: " + outputFrame.getUtf8String()))
-        .withAppChannelAddress("host.testcontainers.internal");
-    
-    APP2_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
-        .withAppName("app2")
-        .withNetwork(DAPR_NETWORK)
-        .withNetworkAliases("app2-sidecar")
-        .withPlacementContainer(sharedPlacementContainer)
-        .withSchedulerContainer(sharedSchedulerContainer)
-        .withAppChannelAddress("main-workflow-sidecar:3500")
-        .withDaprLogLevel(DaprLogLevel.DEBUG)
-        .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
-        .withLogConsumer(outputFrame -> System.out.println("APP2: " + outputFrame.getUtf8String()))
-        .withExposedPorts(3500, 50001);
-    
-    APP3_CONTAINER = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
-        .withAppName("app3")
-        .withNetwork(DAPR_NETWORK)
-        .withNetworkAliases("app3-sidecar")
-        .withPlacementContainer(sharedPlacementContainer)
-        .withSchedulerContainer(sharedSchedulerContainer)
-        .withAppChannelAddress("main-workflow-sidecar:3500")
-        .withDaprLogLevel(DaprLogLevel.DEBUG)
-        .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
-        .withLogConsumer(outputFrame -> System.out.println("APP3: " + outputFrame.getUtf8String()))
-        .withExposedPorts(3500, 50001);
-    
-    // Start crossapp worker (connects to MAIN_WORKFLOW_CONTAINER)
-    crossappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
-        .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
-        .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
-        .withWorkingDirectory("/app")
-        .withCommand("java", "-cp", "/app/classes:/app/libs/*", 
-                     "-Ddapr.app.id=crossapp-worker",
-                     "-Ddapr.grpc.endpoint=main-workflow-sidecar:50001",
-                     "-Ddapr.http.endpoint=main-workflow-sidecar:3500",
-                     "io.dapr.it.testcontainers.workflows.crossapp.CrossAppWorker")
-        .withNetwork(DAPR_NETWORK)
-        .waitingFor(Wait.forLogMessage(".*CrossAppWorker started.*", 1))
-        .withLogConsumer(outputFrame -> System.out.println("CrossAppWorker: " + outputFrame.getUtf8String()));
-    
-    // Start all Dapr containers
-    MAIN_WORKFLOW_CONTAINER.start();
-    APP2_CONTAINER.start();
-    APP3_CONTAINER.start();
-
-      // Start app2 worker (connects to APP2_CONTAINER)
-    app2Worker = new GenericContainer<>("openjdk:17-jdk-slim")
-        .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
-        .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
-        .withWorkingDirectory("/app")
-        .withCommand("java", "-cp", "/app/classes:/app/libs/*", 
-                     "-Ddapr.app.id=app2",
-                     "-Ddapr.grpc.endpoint=app2-sidecar:50001",
-                     "-Ddapr.http.endpoint=app2-sidecar:3500",
-                     "io.dapr.it.testcontainers.workflows.crossapp.App2Worker")
-        .withNetwork(DAPR_NETWORK)
-        .waitingFor(Wait.forLogMessage(".*App2Worker started.*", 1))
-        .withLogConsumer(outputFrame -> System.out.println("App2Worker: " + outputFrame.getUtf8String()));
-
-    // Start app3 worker (connects to APP3_CONTAINER)
-    app3Worker = new GenericContainer<>("openjdk:17-jdk-slim")
-        .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
-        .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
-        .withWorkingDirectory("/app")
-        .withCommand("java", "-cp", "/app/classes:/app/libs/*", 
-                     "-Ddapr.app.id=app3",
-                     "-Ddapr.grpc.endpoint=app3-sidecar:50001",
-                     "-Ddapr.http.endpoint=app3-sidecar:3500",
-                     "io.dapr.it.testcontainers.workflows.crossapp.App3Worker")
-        .withNetwork(DAPR_NETWORK)
-        .waitingFor(Wait.forLogMessage(".*App3Worker started.*", 1))
-        .withLogConsumer(outputFrame -> System.out.println("App3Worker: " + outputFrame.getUtf8String()));
-    
-    // Start all worker containers
-    crossappWorker.start();
-    app2Worker.start();
-    app3Worker.start();
-  }
-
-  @AfterAll
-  public static void tearDown() {
-    if (crossappWorker != null) {
-      crossappWorker.stop();
-    }
-    if (app2Worker != null) {
-      app2Worker.stop();
-    }
-    if (app3Worker != null) {
-      app3Worker.stop();
-    }
-    if (MAIN_WORKFLOW_CONTAINER != null) {
-      MAIN_WORKFLOW_CONTAINER.stop();
-    }
-    if (APP2_CONTAINER != null) {
-      APP2_CONTAINER.stop();
-    }
-    if (APP3_CONTAINER != null) {
-      APP3_CONTAINER.stop();
-    }
-    if (sharedPlacementContainer != null) {
-      sharedPlacementContainer.stop();
-    }
-    if (sharedSchedulerContainer != null) {
-      sharedSchedulerContainer.stop();
-    }
-  }
+  @Container
+  private final static GenericContainer<?> app3Worker = new GenericContainer<>("openjdk:17-jdk-slim")
+      .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
+      .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
+      .withWorkingDirectory("/app")
+      .withCommand("java", "-cp", "/app/classes:/app/libs/*",
+          "-Ddapr.app.id=app3",
+          "-Ddapr.grpc.endpoint=app3-sidecar:50001",
+          "-Ddapr.http.endpoint=app3-sidecar:3500",
+          "io.dapr.it.testcontainers.workflows.crossapp.App3Worker")
+      .withNetwork(DAPR_NETWORK)
+      .dependsOn(APP3_SIDECAR)
+      .waitingFor(Wait.forLogMessage(".*App3Worker started.*", 1))
+      .withLogConsumer(outputFrame -> System.out.println("App3Worker: " + outputFrame.getUtf8String()));
 
   @Test
   public void testCrossAppWorkflow() throws Exception {
@@ -218,20 +161,18 @@ public class WorkflowsCrossAppCallActivityIT {
 
     String input = "Hello World";
     String expectedOutput = "HELLO WORLD [TRANSFORMED BY APP2] [FINALIZED BY APP3]";
-    
+
     // Create workflow client connected to the main workflow orchestrator
     // Use the same endpoint configuration that the workers use
-    // The workers use host.testcontainers.internal:50001, so we need to use the mapped port
-    String grpcEndpoint = "localhost:" + MAIN_WORKFLOW_CONTAINER.getMappedPort(50001);
-    String httpEndpoint = "localhost:" + MAIN_WORKFLOW_CONTAINER.getMappedPort(3500);
+    // The workers use host.testcontainers.internal:50001
     Map<String, String> propertyOverrides = Map.of(
-        "dapr.grpc.endpoint", grpcEndpoint,
-        "dapr.http.endpoint", httpEndpoint
+        "dapr.grpc.endpoint", MAIN_WORKFLOW_SIDECAR.getGrpcEndpoint(),
+        "dapr.http.endpoint", MAIN_WORKFLOW_SIDECAR.getHttpEndpoint()
     );
-    
+
     Properties clientProperties = new Properties(propertyOverrides);
     DaprWorkflowClient workflowClient = new DaprWorkflowClient(clientProperties);
-    
+
     try {
       String instanceId = workflowClient.scheduleNewWorkflow(CrossAppWorkflow.class, input);
       assertNotNull(instanceId, "Workflow instance ID should not be null");
@@ -247,30 +188,5 @@ public class WorkflowsCrossAppCallActivityIT {
       workflowClient.close();
     }
   }
-  
-  /**
-   * Ensures that dependencies are copied to target/dependency for container classpath.
-   * This is needed because the containers need access to the workflow runtime classes.
-   */
-  private static void ensureDependenciesCopied() {
-    File dependencyDir = new File("target/dependency");
-    if (!dependencyDir.exists() || dependencyDir.listFiles() == null || dependencyDir.listFiles().length == 0) {
-      System.out.println("Dependencies not found in target/dependency, copying...");
-      try {
-        ProcessBuilder pb = new ProcessBuilder("mvn", "dependency:copy-dependencies",
-            "-Dspotbugs.skip=true", "-Dcheckstyle.skip=true");
-        pb.inheritIO();
-        Process process = pb.start();
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-          throw new RuntimeException("Failed to copy dependencies, exit code: " + exitCode);
-        }
-        System.out.println("Dependencies copied successfully");
-      } catch (Exception e) {
-        throw new RuntimeException("Failed to ensure dependencies are copied", e);
-      }
-    } else {
-      System.out.println("Dependencies already exist in target/dependency");
-    }
-  }
+
 }
