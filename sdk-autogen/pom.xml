@@ -22,7 +22,6 @@
     <protobuf.input.directory>${project.build.directory}/proto</protobuf.input.directory>
     <maven.deploy.skip>false</maven.deploy.skip>
     <grpc.version>1.69.0</grpc.version>
-    <protocCommand>java-sdk-protoc</protocCommand>
     <protobuf.version>3.25.5</protobuf.version>
   </properties>
 
@@ -110,52 +109,21 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.0</version>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          <pluginId>grpc-java</pluginId>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+          <protoSourceRoot>${protobuf.input.directory}</protoSourceRoot>
+        </configuration>
         <executions>
           <execution>
             <goals>
-              <goal>detect</goal>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.github.os72</groupId>
-        <artifactId>protoc-jar-maven-plugin</artifactId>
-        <version>3.11.4</version>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <protocCommand>java-sdk-protoc</protocCommand>
-              <protocVersion>${protobuf.version}</protocVersion>
-              <protocArtifact>com.google.protobuf:protoc:3.25.5</protocArtifact>
-              <addProtoSources>inputs</addProtoSources>
-              <includeMavenTypes>direct</includeMavenTypes>
-              <includeStdTypes>true</includeStdTypes>
-              <inputDirectories>
-                <include>${protobuf.input.directory}</include>
-              </inputDirectories>
-              <includeDirectories>
-                <include>${protobuf.input.directory}</include>
-              </includeDirectories>
-              <outputTargets>
-                <outputTarget>
-                  <type>java</type>
-                  <outputDirectory>${protobuf.output.directory}</outputDirectory>
-                </outputTarget>
-                <outputTarget>
-                  <type>grpc-java</type>
-                  <outputDirectory>${protobuf.output.directory}</outputDirectory>
-                  <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}</pluginArtifact>
-                </outputTarget>
-              </outputTargets>
-            </configuration>
           </execution>
         </executions>
       </plugin>
