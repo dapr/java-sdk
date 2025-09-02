@@ -63,6 +63,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
+
     if (logger == null) {
       throw new IllegalArgumentException("Logger cannot be null");
     }
@@ -245,7 +246,11 @@ public class DefaultWorkflowContext implements WorkflowContext {
     RetryPolicy retryPolicy = toRetryPolicy(options.getRetryPolicy());
     RetryHandler retryHandler = toRetryHandler(options.getRetryHandler());
 
-    return new TaskOptions(retryPolicy, retryHandler);
+    return TaskOptions.builder()
+            .retryPolicy(retryPolicy)
+            .retryHandler(retryHandler)
+            .appID(options.getAppId())
+            .build();
   }
 
   /**
