@@ -224,8 +224,6 @@ public class WorkflowsCrossAppCallActivityIT {
     // The workers use host.testcontainers.internal:50001, so we need to use the mapped port
     String grpcEndpoint = "localhost:" + MAIN_WORKFLOW_CONTAINER.getMappedPort(50001);
     String httpEndpoint = "localhost:" + MAIN_WORKFLOW_CONTAINER.getMappedPort(3500);
-    System.setProperty("dapr.grpc.endpoint", grpcEndpoint);
-    System.setProperty("dapr.http.endpoint", httpEndpoint);
     Map<String, String> propertyOverrides = Map.of(
         "dapr.grpc.endpoint", grpcEndpoint,
         "dapr.http.endpoint", httpEndpoint

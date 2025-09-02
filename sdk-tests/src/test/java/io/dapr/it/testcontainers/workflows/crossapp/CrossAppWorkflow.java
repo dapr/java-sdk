@@ -19,19 +19,16 @@ import io.dapr.workflows.WorkflowTaskOptions;
 import org.slf4j.Logger;
 
 public class CrossAppWorkflow implements Workflow {
-
-
-
   @Override
   public WorkflowStub create() {
     return ctx -> {
       Logger logger = ctx.getLogger();
       String instanceId = ctx.getInstanceId();
-      logger.info("Starting CrossAppWorkflow: " + ctx.getName());
-      logger.info("Instance ID: " + instanceId);
+      logger.info("Starting CrossAppWorkflow: {}", ctx.getName());
+      logger.info("Instance ID: {}", instanceId);
 
       String input = ctx.getInput(String.class);
-      logger.info("Workflow input: " + input);
+      logger.info("Workflow input: {}", input);
 
       // Call App2TransformActivity in app2
       logger.info("Calling cross-app activity in 'app2'...");
@@ -51,7 +48,7 @@ public class CrossAppWorkflow implements Workflow {
           String.class
       ).await();
 
-      logger.info("Final cross-app activity result: " + finalizedByApp3);
+      logger.info("Final cross-app activity result: {}", finalizedByApp3);
       ctx.complete(finalizedByApp3);
     };
   }

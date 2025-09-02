@@ -26,10 +26,10 @@ public class App2TransformActivity implements WorkflowActivity {
   public Object run(WorkflowActivityContext ctx) {
     String input = ctx.getInput(String.class);
     logger.info("=== App2: TransformActivity called ===");
-    logger.info("Input: " + input);
+    logger.info("Input: {}", input);
     
     String output = input.toUpperCase() + " [TRANSFORMED BY APP2]";
-    logger.info("Output: " + output);
+    logger.info("Output: {}", output);
     
     return output;
   }
