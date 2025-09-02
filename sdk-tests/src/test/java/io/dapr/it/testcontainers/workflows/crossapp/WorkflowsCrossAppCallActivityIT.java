@@ -22,6 +22,7 @@ import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
 import io.dapr.workflows.client.WorkflowRuntimeStatus;
 import io.dapr.config.Properties;
+import net.bytebuddy.utility.dispatcher.JavaDispatcher;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
@@ -109,13 +110,13 @@ public class WorkflowsCrossAppCallActivityIT {
       .withComponent(new Component("kvstore", "state.in-memory", "v1", Map.of("actorStateStore", "true")))
       .withLogConsumer(outputFrame -> System.out.println("APP3: " + outputFrame.getUtf8String()));
 
+
   // TestContainers for each app
   @Container
   private static GenericContainer<?> crossappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
-      .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
-      .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
+      .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
-      .withCommand("java", "-cp", "/app/classes:/app/libs/*",
+      .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
           "-Ddapr.app.id=crossapp-worker",
           "-Ddapr.grpc.endpoint=main-workflow-sidecar:50001",
           "-Ddapr.http.endpoint=main-workflow-sidecar:3500",
@@ -127,10 +128,9 @@ public class WorkflowsCrossAppCallActivityIT {
 
   @Container
   private final static GenericContainer<?> app2Worker = new GenericContainer<>("openjdk:17-jdk-slim")
-      .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
-      .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
+      .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
-      .withCommand("java", "-cp", "/app/classes:/app/libs/*",
+      .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
           "-Ddapr.app.id=app2",
           "-Ddapr.grpc.endpoint=app2-sidecar:50001",
           "-Ddapr.http.endpoint=app2-sidecar:3500",
@@ -142,10 +142,9 @@ public class WorkflowsCrossAppCallActivityIT {
 
   @Container
   private final static GenericContainer<?> app3Worker = new GenericContainer<>("openjdk:17-jdk-slim")
-      .withCopyFileToContainer(MountableFile.forHostPath("target/test-classes"), "/app/classes")
-      .withCopyFileToContainer(MountableFile.forHostPath("target/dependency"), "/app/libs")
+      .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
-      .withCommand("java", "-cp", "/app/classes:/app/libs/*",
+      .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
           "-Ddapr.app.id=app3",
           "-Ddapr.grpc.endpoint=app3-sidecar:50001",
           "-Ddapr.http.endpoint=app3-sidecar:3500",
