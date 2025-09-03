@@ -11,7 +11,7 @@
 	<artifactId>testcontainers-dapr</artifactId>
 	<name>testcontainers-dapr</name>
 	<description>Testcontainers Dapr Module</description>
-    <version>0.16.0-rc-1</version>
+  <version>1.16.0-rc-1</version>
 	<packaging>jar</packaging>
 
 	<dependencies>
@@ -56,6 +56,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <notimestamp>true</notimestamp>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>

@@ -27,67 +27,15 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.cert.X509Certificate;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 public class NetworkUtilsTest {
   private final int defaultGrpcPort = 50001;
   private final String defaultSidecarIP = "127.0.0.1";
   private ManagedChannel channel;
   private static final List<ManagedChannel> channels = new ArrayList<>();
-
-  // Helper method to generate a self-signed certificate for testing
-  private static KeyPair generateKeyPair() throws Exception {
-    KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-    keyPairGenerator.initialize(2048);
-    return keyPairGenerator.generateKeyPair();
-  }
-
-  private static X509Certificate generateCertificate(KeyPair keyPair) throws Exception {
-    X500Name issuer = new X500Name("CN=Test Certificate");
-    X500Name subject = new X500Name("CN=Test Certificate");
-    Date notBefore = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
-    Date notAfter = new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000L);
-    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded());
-    X509v3CertificateBuilder certBuilder = new X509v3CertificateBuilder(
-        issuer,
-        java.math.BigInteger.valueOf(System.currentTimeMillis()),
-        notBefore,
-        notAfter,
-        subject,
-        publicKeyInfo
-    );
-
-    ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA").build(keyPair.getPrivate());
-    X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certBuilder.build(signer));
-    return cert;
-  }
-
-  private static void writeCertificateToFile(X509Certificate cert, File file) throws Exception {
-    String certPem = "-----BEGIN CERTIFICATE-----\n" +
-        java.util.Base64.getEncoder().encodeToString(cert.getEncoded()) +
-        "\n-----END CERTIFICATE-----";
-    Files.write(file.toPath(), certPem.getBytes());
-  }
-
-  private static void writePrivateKeyToFile(KeyPair keyPair, File file) throws Exception {
-    String keyPem = "-----BEGIN PRIVATE KEY-----\n" +
-        java.util.Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded()) +
-        "\n-----END PRIVATE KEY-----";
-    Files.write(file.toPath(), keyPem.getBytes());
-  }
 
   @AfterEach
   public void tearDown() {
@@ -157,56 +105,35 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannelWithTls() throws Exception {
-    // Generate test certificate and key
-    KeyPair keyPair = generateKeyPair();
-    X509Certificate cert = generateCertificate(keyPair);
-    
-    File certFile = File.createTempFile("test-cert", ".pem");
-    File keyFile = File.createTempFile("test-key", ".pem");
-    try {
-      writeCertificateToFile(cert, certFile);
-      writePrivateKeyToFile(keyPair, keyFile);
+    File certFile = new File(this.getClass().getResource("/certs/test-cert.pem").getFile());
+    File keyFile = new File(this.getClass().getResource("/certs/test-cert.key").getFile());
 
-      var properties = new Properties(Map.of(
+    var properties = new Properties(Map.of(
           Properties.GRPC_TLS_CERT_PATH.getName(), certFile.getAbsolutePath(),
           Properties.GRPC_TLS_KEY_PATH.getName(), keyFile.getAbsolutePath()
       ));
 
-      channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
-      String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
-      Assertions.assertEquals(expectedAuthority, channel.authority());
-    } finally {
-      certFile.delete();
-      keyFile.delete();
-    }
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+    String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
+    Assertions.assertEquals(expectedAuthority, channel.authority());
+
   }
 
   @Test
   public void testBuildGrpcManagedChannelWithTlsAndEndpoint() throws Exception {
-    // Generate test certificate and key
-    KeyPair keyPair = generateKeyPair();
-    X509Certificate cert = generateCertificate(keyPair);
-    
-    File certFile = File.createTempFile("test-cert", ".pem");
-    File keyFile = File.createTempFile("test-key", ".pem");
-    try {
-      writeCertificateToFile(cert, certFile);
-      writePrivateKeyToFile(keyPair, keyFile);
+    File certFile = new File(this.getClass().getResource("/certs/test-cert.pem").getFile());
+    File keyFile = new File(this.getClass().getResource("/certs/test-cert.key").getFile());
 
-      var properties = new Properties(Map.of(
-          Properties.GRPC_TLS_CERT_PATH.getName(), certFile.getAbsolutePath(),
-          Properties.GRPC_TLS_KEY_PATH.getName(), keyFile.getAbsolutePath(),
-          Properties.GRPC_ENDPOINT.getName(), "https://example.com:443"
-      ));
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_CERT_PATH.getName(), certFile.getAbsolutePath(),
+        Properties.GRPC_TLS_KEY_PATH.getName(), keyFile.getAbsolutePath(),
+        Properties.GRPC_ENDPOINT.getName(), "https://example.com:443"
+    ));
 
-      channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
-      Assertions.assertEquals("example.com:443", channel.authority());
-    } finally {
-      certFile.delete();
-      keyFile.delete();
-    }
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+    Assertions.assertEquals("example.com:443", channel.authority());
   }
 
   @Test
@@ -229,49 +156,32 @@ public class NetworkUtilsTest {
                           System.getProperty("os.name").toLowerCase().contains("mac"));
 
     // Generate test certificate and key
-    KeyPair keyPair = generateKeyPair();
-    X509Certificate cert = generateCertificate(keyPair);
-    
-    File certFile = File.createTempFile("test-cert", ".pem");
-    File keyFile = File.createTempFile("test-key", ".pem");
+    File certFile = new File(this.getClass().getResource("/certs/test-cert.pem").getFile());
+    File keyFile = new File(this.getClass().getResource("/certs/test-cert.key").getFile());
+
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_CERT_PATH.getName(), certFile.getAbsolutePath(),
+        Properties.GRPC_TLS_KEY_PATH.getName(), keyFile.getAbsolutePath(),
+        Properties.GRPC_ENDPOINT.getName(), "unix:/tmp/test.sock"
+    ));
+
+    // For Unix sockets, we expect an exception if the platform doesn't support it
     try {
-      writeCertificateToFile(cert, certFile);
-      writePrivateKeyToFile(keyPair, keyFile);
-
-      var properties = new Properties(Map.of(
-          Properties.GRPC_TLS_CERT_PATH.getName(), certFile.getAbsolutePath(),
-          Properties.GRPC_TLS_KEY_PATH.getName(), keyFile.getAbsolutePath(),
-          Properties.GRPC_ENDPOINT.getName(), "unix:/tmp/test.sock"
-      ));
-
-      // For Unix sockets, we expect an exception if the platform doesn't support it
-      try {
-        channel = NetworkUtils.buildGrpcManagedChannel(properties);
-        channels.add(channel);
-        // If we get here, Unix sockets are supported
-        Assertions.assertNotNull(channel.authority(), "Channel authority should not be null");
-      } catch (Exception e) {
-        // If we get here, Unix sockets are not supported
-        Assertions.assertTrue(e.getMessage().contains("DomainSocketAddress"));
-      }
-    } finally {
-      certFile.delete();
-      keyFile.delete();
+      channel = NetworkUtils.buildGrpcManagedChannel(properties);
+      channels.add(channel);
+      // If we get here, Unix sockets are supported
+      Assertions.assertNotNull(channel.authority(), "Channel authority should not be null");
+    } catch (Exception e) {
+      // If we get here, Unix sockets are not supported
+      Assertions.assertTrue(e.getMessage().contains("DomainSocketAddress"));
     }
+
   }
 
   @Test
   public void testBuildGrpcManagedChannelWithTlsAndDnsAuthority() throws Exception {
-    // Generate test certificate and key
-    KeyPair keyPair = generateKeyPair();
-    X509Certificate cert = generateCertificate(keyPair);
-    
-    File certFile = File.createTempFile("test-cert", ".pem");
-    File keyFile = File.createTempFile("test-key", ".pem");
-    try {
-      writeCertificateToFile(cert, certFile);
-      writePrivateKeyToFile(keyPair, keyFile);
-
+    File certFile = new File(this.getClass().getResource("/certs/test-cert.pem").getFile());
+    File keyFile = new File(this.getClass().getResource("/certs/test-cert.key").getFile());
       var properties = new Properties(Map.of(
           Properties.GRPC_TLS_CERT_PATH.getName(), certFile.getAbsolutePath(),
           Properties.GRPC_TLS_KEY_PATH.getName(), keyFile.getAbsolutePath(),
@@ -281,44 +191,26 @@ public class NetworkUtilsTest {
       channel = NetworkUtils.buildGrpcManagedChannel(properties);
       channels.add(channel);
       Assertions.assertEquals("example.com:443", channel.authority());
-    } finally {
-      certFile.delete();
-      keyFile.delete();
-    }
+
   }
 
   @Test
   public void testBuildGrpcManagedChannelWithTlsAndCaCert() throws Exception {
-    // Generate test CA certificate
-    KeyPair caKeyPair = generateKeyPair();
-    X509Certificate caCert = generateCertificate(caKeyPair);
-    
-    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
-    try {
-      writeCertificateToFile(caCert, caCertFile);
+    File caCertFile = new File(this.getClass().getResource("/certs/test-ca-cert.pem").getFile());
 
-      var properties = new Properties(Map.of(
-          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath()
-      ));
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath()
+    ));
 
-      channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
-      String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
-      Assertions.assertEquals(expectedAuthority, channel.authority());
-    } finally {
-      caCertFile.delete();
-    }
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+    String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
+    Assertions.assertEquals(expectedAuthority, channel.authority());
   }
 
   @Test
   public void testBuildGrpcManagedChannelWithTlsAndCaCertAndEndpoint() throws Exception {
-    // Generate test CA certificate
-    KeyPair caKeyPair = generateKeyPair();
-    X509Certificate caCert = generateCertificate(caKeyPair);
-    
-    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
-    try {
-      writeCertificateToFile(caCert, caCertFile);
+    File caCertFile = new File(this.getClass().getResource("/certs/test-ca-cert.pem").getFile());
 
       var properties = new Properties(Map.of(
           Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
@@ -328,9 +220,7 @@ public class NetworkUtilsTest {
       channel = NetworkUtils.buildGrpcManagedChannel(properties);
       channels.add(channel);
       Assertions.assertEquals("example.com:443", channel.authority());
-    } finally {
-      caCertFile.delete();
-    }
+
   }
 
   @Test
@@ -346,37 +236,22 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannelWithMtlsAndCaCert() throws Exception {
-    // Generate test certificates
-    KeyPair caKeyPair = generateKeyPair();
-    X509Certificate caCert = generateCertificate(caKeyPair);
-    KeyPair clientKeyPair = generateKeyPair();
-    X509Certificate clientCert = generateCertificate(clientKeyPair);
-    
-    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
-    File clientCertFile = File.createTempFile("test-client-cert", ".pem");
-    File clientKeyFile = File.createTempFile("test-client-key", ".pem");
-    try {
-      writeCertificateToFile(caCert, caCertFile);
-      writeCertificateToFile(clientCert, clientCertFile);
-      writePrivateKeyToFile(clientKeyPair, clientKeyFile);
+    File caCertFile = new File(this.getClass().getResource("/certs/test-ca-cert.pem").getFile());
+    File clientCertFile = new File(this.getClass().getResource("/certs/test-cert.pem").getFile());
+    File clientKeyFile = new File(this.getClass().getResource("/certs/test-cert.key").getFile());
 
-      // Test mTLS with both client certs and CA cert
-      var properties = new Properties(Map.of(
-          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
-          Properties.GRPC_TLS_CERT_PATH.getName(), clientCertFile.getAbsolutePath(),
-          Properties.GRPC_TLS_KEY_PATH.getName(), clientKeyFile.getAbsolutePath()
-      ));
+    // Test mTLS with both client certs and CA cert
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+        Properties.GRPC_TLS_CERT_PATH.getName(), clientCertFile.getAbsolutePath(),
+        Properties.GRPC_TLS_KEY_PATH.getName(), clientKeyFile.getAbsolutePath()
+    ));
 
-      channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
-      String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
-      Assertions.assertEquals(expectedAuthority, channel.authority());
-      Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
-    } finally {
-      caCertFile.delete();
-      clientCertFile.delete();
-      clientKeyFile.delete();
-    }
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+    String expectedAuthority = String.format("%s:%s", defaultSidecarIP, defaultGrpcPort);
+    Assertions.assertEquals(expectedAuthority, channel.authority());
+    Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
   }
 
   @Test
@@ -463,57 +338,40 @@ public class NetworkUtilsTest {
   @Test
   public void testBuildGrpcManagedChannelWithCaCertAndUnixSocket() throws Exception {
     // Skip test if Unix domain sockets are not supported
-    Assumptions.assumeTrue(System.getProperty("os.name").toLowerCase().contains("linux") || 
-                          System.getProperty("os.name").toLowerCase().contains("mac"));
+    Assumptions.assumeTrue(System.getProperty("os.name").toLowerCase().contains("linux") ||
+        System.getProperty("os.name").toLowerCase().contains("mac"));
 
-    // Generate test CA certificate
-    KeyPair caKeyPair = generateKeyPair();
-    X509Certificate caCert = generateCertificate(caKeyPair);
-    
-    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
+    File caCertFile = new File(this.getClass().getResource("/certs/test-ca-cert.pem").getFile());
+
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+        Properties.GRPC_ENDPOINT.getName(), "unix:/tmp/test.sock"
+    ));
+
+    // For Unix sockets, we expect an exception if the platform doesn't support it
     try {
-      writeCertificateToFile(caCert, caCertFile);
-
-      var properties = new Properties(Map.of(
-          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
-          Properties.GRPC_ENDPOINT.getName(), "unix:/tmp/test.sock"
-      ));
-
-      // For Unix sockets, we expect an exception if the platform doesn't support it
-      try {
-        channel = NetworkUtils.buildGrpcManagedChannel(properties);
-        channels.add(channel);
-        Assertions.assertNotNull(channel.authority(), "Channel authority should not be null");
-      } catch (Exception e) {
-        // If we get here, Unix sockets are not supported
-        Assertions.assertTrue(e.getMessage().contains("DomainSocketAddress"));
-      }
-    } finally {
-      caCertFile.delete();
+      channel = NetworkUtils.buildGrpcManagedChannel(properties);
+      channels.add(channel);
+      Assertions.assertNotNull(channel.authority(), "Channel authority should not be null");
+    } catch (Exception e) {
+      // If we get here, Unix sockets are not supported
+      Assertions.assertTrue(e.getMessage().contains("DomainSocketAddress"));
     }
+
   }
 
   @Test
   public void testBuildGrpcManagedChannelWithCaCertAndDnsAuthority() throws Exception {
-    // Generate test CA certificate
-    KeyPair caKeyPair = generateKeyPair();
-    X509Certificate caCert = generateCertificate(caKeyPair);
-    
-    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
-    try {
-      writeCertificateToFile(caCert, caCertFile);
+    File caCertFile = new File(this.getClass().getResource("/certs/test-ca-cert.pem").getFile());
 
-      var properties = new Properties(Map.of(
-          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
-          Properties.GRPC_ENDPOINT.getName(), "dns://authority:53/example.com:443"
-      ));
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+        Properties.GRPC_ENDPOINT.getName(), "dns://authority:53/example.com:443"
+    ));
 
-      channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
-      Assertions.assertEquals("example.com:443", channel.authority());
-    } finally {
-      caCertFile.delete();
-    }
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+    Assertions.assertEquals("example.com:443", channel.authority());
   }
 
   @Test
@@ -536,43 +394,28 @@ public class NetworkUtilsTest {
 
   @Test
   public void testBuildGrpcManagedChannelWithInsecureTlsAndMtls() throws Exception {
-    // Generate test certificates
-    KeyPair caKeyPair = generateKeyPair();
-    X509Certificate caCert = generateCertificate(caKeyPair);
-    KeyPair clientKeyPair = generateKeyPair();
-    X509Certificate clientCert = generateCertificate(clientKeyPair);
-    
-    File caCertFile = File.createTempFile("test-ca-cert", ".pem");
-    File clientCertFile = File.createTempFile("test-client-cert", ".pem");
-    File clientKeyFile = File.createTempFile("test-client-key", ".pem");
-    try {
-      writeCertificateToFile(caCert, caCertFile);
-      writeCertificateToFile(clientCert, clientCertFile);
-      writePrivateKeyToFile(clientKeyPair, clientKeyFile);
+    File caCertFile = new File(this.getClass().getResource("/certs/test-ca-cert.pem").getFile());
+    File clientCertFile = new File(this.getClass().getResource("/certs/test-cert.pem").getFile());
+    File clientKeyFile = new File(this.getClass().getResource("/certs/test-cert.key").getFile());
 
-      // Test that insecure TLS still works with mTLS settings
-      // The client certs should be ignored since we're using InsecureTrustManagerFactory
-      var properties = new Properties(Map.of(
-          Properties.GRPC_TLS_INSECURE.getName(), "true",
-          Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
-          Properties.GRPC_TLS_CERT_PATH.getName(), clientCertFile.getAbsolutePath(),
-          Properties.GRPC_TLS_KEY_PATH.getName(), clientKeyFile.getAbsolutePath(),
-          Properties.GRPC_ENDPOINT.getName(), "dns:///example.com:443?tls=true"
-      ));
+    // Test that insecure TLS still works with mTLS settings
+    // The client certs should be ignored since we're using InsecureTrustManagerFactory
+    var properties = new Properties(Map.of(
+        Properties.GRPC_TLS_INSECURE.getName(), "true",
+        Properties.GRPC_TLS_CA_PATH.getName(), caCertFile.getAbsolutePath(),
+        Properties.GRPC_TLS_CERT_PATH.getName(), clientCertFile.getAbsolutePath(),
+        Properties.GRPC_TLS_KEY_PATH.getName(), clientKeyFile.getAbsolutePath(),
+        Properties.GRPC_ENDPOINT.getName(), "dns:///example.com:443?tls=true"
+    ));
 
-      channel = NetworkUtils.buildGrpcManagedChannel(properties);
-      channels.add(channel);
-      
-      // Verify the channel is created with the correct authority
-      Assertions.assertEquals("example.com:443", channel.authority());
-      
-      // Verify the channel is active and using TLS (not plaintext)
-      Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
-    } finally {
-      caCertFile.delete();
-      clientCertFile.delete();
-      clientKeyFile.delete();
-    }
+    channel = NetworkUtils.buildGrpcManagedChannel(properties);
+    channels.add(channel);
+
+    // Verify the channel is created with the correct authority
+    Assertions.assertEquals("example.com:443", channel.authority());
+
+    // Verify the channel is active and using TLS (not plaintext)
+    Assertions.assertFalse(channel.isTerminated(), "Channel should be active");
   }
 
   @Test

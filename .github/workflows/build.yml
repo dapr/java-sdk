@@ -15,6 +15,35 @@ on:
     - release-*
 
 jobs:
+  test:
+    name: "Unit tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: false
+    env:
+      JDK_VER: 17
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up OpenJDK ${{ env.JDK_VER }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JDK_VER }}
+      - name: Run tests
+        run: ./mvnw clean install -B -q
+      - name: Codecov
+        uses: codecov/codecov-action@v5.5.0
+      - name: Upload test report for sdk
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-dapr-java-sdk-jdk${{ env.JDK_VER }}
+          path: sdk/target/jacoco-report/
+      - name: Upload test report for sdk-actors
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-dapr-java-sdk-actors-jdk${{ env.JDK_VER }}
+          path: sdk-actors/target/jacoco-report/
+
   build:
     name: "Build jdk:${{ matrix.java }} sb:${{ matrix.spring-boot-display-version }} exp:${{ matrix.experimental }}"
     runs-on: ubuntu-latest
@@ -39,7 +68,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
       JDK_VER: ${{ matrix.java }}
       DAPR_CLI_VER: 1.15.0
-      DAPR_RUNTIME_VER: 1.16.0-rc.3
+      DAPR_RUNTIME_VER: 1.16.0-rc.5
       DAPR_INSTALL_URL: https://raw.githubusercontent.com/dapr/cli/v1.15.0/install/install.sh
       DAPR_CLI_REF:
       DAPR_REF:
@@ -50,9 +79,9 @@ jobs:
       uses: docker/setup-docker-action@v4   
     - name: Check Docker version
       run: docker version     
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up OpenJDK ${{ env.JDK_VER }}
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: ${{ env.JDK_VER }}
@@ -64,14 +93,14 @@ jobs:
       with:
         go-version: ${{ env.GOVER }}
     - name: Checkout Dapr CLI repo to override dapr command.
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       if: env.DAPR_CLI_REF != ''
       with:
         repository: dapr/cli
         ref: ${{ env.DAPR_CLI_REF }}
         path: cli
     - name: Checkout Dapr repo to override daprd.
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       if: env.DAPR_REF != ''
       with:
         repository: dapr/dapr
@@ -112,33 +141,13 @@ jobs:
         wget -q ${{ env.TOXIPROXY_URL }} -O /home/runner/.local/bin/toxiproxy-server
         chmod +x /home/runner/.local/bin/toxiproxy-server
         /home/runner/.local/bin/toxiproxy-server --version
-    - name: Clean up files
-      run: ./mvnw clean -B
-    - name: Build sdk
-      run: ./mvnw compile -B -q
-    - name: Unit tests
-      run: ./mvnw test # making it temporarily verbose.
-      env:
-          DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
-    - name: Codecov
-      uses: codecov/codecov-action@v5.4.3
-    - name: Install jars
-      run: ./mvnw install -q -B -DskipTests
+    - name: Clean up and install sdk
+      run: ./mvnw clean install -B -q -DskipTests
     - name: Integration tests using spring boot version ${{ matrix.spring-boot-version }}
       id: integration_tests
-      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests verify
+      run: PRODUCT_SPRING_BOOT_VERSION=${{ matrix.spring-boot-version }} ./mvnw -B -Pintegration-tests dependency:copy-dependencies verify
       env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
-    - name: Upload test report for sdk
-      uses: actions/upload-artifact@v4
-      with:
-        name: report-dapr-java-sdk-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
-        path: sdk/target/jacoco-report/
-    - name: Upload test report for sdk-actors
-      uses: actions/upload-artifact@v4
-      with:
-        name: report-dapr-java-sdk-actors-jdk${{ matrix.java }}-sb${{ matrix.spring-boot-version }}
-        path: sdk-actors/target/jacoco-report/
     - name: Upload failsafe test report for sdk-tests on failure
       if: ${{ failure() && steps.integration_tests.conclusion == 'failure' }}
       uses: actions/upload-artifact@v4
@@ -154,7 +163,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [ build, test ]
     timeout-minutes: 30
     env:
       JDK_VER: 17
@@ -163,9 +172,9 @@ jobs:
       GPG_KEY: ${{ secrets.GPG_KEY }}
       GPG_PWD: ${{ secrets.GPG_PWD }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up OpenJDK ${{ env.JDK_VER }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}

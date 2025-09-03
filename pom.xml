@@ -16,7 +16,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <grpc.version>1.69.0</grpc.version>
     <protobuf.version>3.25.5</protobuf.version>
-    <protocCommand>protoc</protocCommand>
+    <protocCommand>java-sdk-protoc</protocCommand>
     <dapr.proto.baseurl>https://raw.githubusercontent.com/dapr/dapr/v1.16.0-rc.3/dapr/proto</dapr.proto.baseurl>
     <dapr.sdk.version>1.16.0-rc-1</dapr.sdk.version>
     <dapr.sdk.alpha.version>0.16.0-rc-1</dapr.sdk.alpha.version>
@@ -70,7 +70,7 @@
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
-      <url>https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots</url>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
     </snapshotRepository>
     <site>
       <id>localDocsDirectory</id>
@@ -207,12 +207,12 @@
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-starter</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dapr.spring</groupId>
         <artifactId>dapr-spring-boot-starter-test</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -247,7 +247,7 @@
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>testcontainers-dapr</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
@@ -365,7 +365,7 @@
       <dependency>
         <groupId>io.dapr</groupId>
         <artifactId>dapr-sdk-workflows</artifactId>
-        <version>${dapr.sdk.alpha.version}</version>
+        <version>${dapr.sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>org.wiremock</groupId>
@@ -610,6 +610,7 @@
           <failOnWarnings>false</failOnWarnings>
           <failOnError>true</failOnError>
           <goal>site</goal>
+          <notimestamp>true</notimestamp>
           <excludePackageNames>io.dapr.examples:io.dapr.springboot:io.dapr.examples.*:io.dapr.springboot.*
           </excludePackageNames>
         </configuration>
@@ -658,6 +659,18 @@
       <modules>
         <module>sdk-tests</module>
       </modules>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <skipTests>true</skipTests>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </build>
+
     </profile>
   </profiles>
 

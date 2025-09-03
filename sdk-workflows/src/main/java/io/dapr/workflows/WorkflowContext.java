@@ -526,4 +526,12 @@ public interface WorkflowContext {
   default UUID newUuid() {
     throw new RuntimeException("No implementation found.");
   }
+
+  /**
+   * Set a custom status to a workflow execution.
+   *
+   * @param status to be set to the current execution
+   */
+  void setCustomStatus(Object status);
+  
 }

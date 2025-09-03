@@ -13,9 +13,15 @@ limitations under the License.
 
 package io.dapr.workflows;
 
+import org.slf4j.Logger;
+
 public interface WorkflowActivityContext {
 
+  Logger getLogger();
+
   String getName();
+
+  String getTaskExecutionId();
 
   <T> T getInput(Class<T> targetType);
 

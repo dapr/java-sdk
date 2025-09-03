@@ -27,11 +27,21 @@ public class WorkflowActivityInstanceWrapper<T extends WorkflowActivity> impleme
   /**
    * Constructor for WorkflowActivityWrapper.
    *
+   * @param name     Name of the activity to wrap.
+   * @param instance Instance of the activity to wrap.
+   */
+  public WorkflowActivityInstanceWrapper(String name, T instance) {
+    this.name = name;
+    this.activity = instance;
+  }
+
+  /**
+   * Constructor for WorkflowActivityWrapper.
+   *
    * @param instance Instance of the activity to wrap.
    */
   public WorkflowActivityInstanceWrapper(T instance) {
-    this.name = instance.getClass().getCanonicalName();
-    this.activity = instance;
+    this(instance.getClass().getCanonicalName(), instance);
   }
 
   @Override

@@ -127,7 +127,7 @@
     <dependency>
       <groupId>io.dapr</groupId>
       <artifactId>dapr-sdk-workflows</artifactId>
-      <version>${dapr.sdk.alpha.version}</version>
+      <version>${dapr.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dapr</groupId>

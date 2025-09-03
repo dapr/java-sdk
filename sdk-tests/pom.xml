@@ -22,8 +22,6 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <dapr.sdk.version>1.16.0-rc-1</dapr.sdk.version>
-    <dapr.sdk.alpha.version>0.16.0-rc-1</dapr.sdk.alpha.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
 
@@ -315,18 +313,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.2.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <!--suppress UnresolvedMavenProperty -->
-              <skip>${skipITs}</skip>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

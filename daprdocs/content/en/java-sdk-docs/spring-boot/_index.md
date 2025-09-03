@@ -56,13 +56,13 @@ This will connect to the default Dapr gRPC endpoint `localhost:50001`, requiring
 {{% alert title="Note" color="primary" %}}
 By default, the following properties are preconfigured for `DaprClient` and `DaprWorkflowClient`:
 ```properties
-dapr.client.http-endpoint=http://localhost
-dapr.client.http-port=3500
-dapr.client.grpc-endpoint=localhost
-dapr.client.grpc-port=50001
-dapr.client.api-token=<Your Remote App API Token>
+dapr.client.httpEndpoint=http://localhost
+dapr.client.httpPort=3500
+dapr.client.grpcEndpoint=localhost
+dapr.client.grpcPort=50001
+dapr.client.apiToken=<your remote api token>
 ```
-These values are used by default, but you can override them in your `application.properties` file to suit your environment.
+These values are used by default, but you can override them in your `application.properties` file to suit your environment. Please note that both kebab case and camel case are supported.
 {{% /alert %}}
 
 You can use the `DaprClient` to interact with the Dapr APIs anywhere in your application, for example from inside a REST endpoint: 
@@ -95,7 +95,7 @@ public class DaprTestContainersConfig {
   @ServiceConnection
   public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer){
     
-    return new DaprContainer("daprio/daprd:1.16.0-rc.3")
+    return new DaprContainer("daprio/daprd:1.16.0-rc.5")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))
@@ -250,7 +250,7 @@ Finally, because Dapr PubSub requires a bidirectional connection between your ap
 @ServiceConnection
 public DaprContainer daprContainer(Network daprNetwork, PostgreSQLContainer<?> postgreSQLContainer, RabbitMQContainer rabbitMQContainer){
     
-    return new DaprContainer("daprio/daprd:1.16.0-rc.3")
+    return new DaprContainer("daprio/daprd:1.16.0-rc.5")
             .withAppName("producer-app")
             .withNetwork(daprNetwork)
             .withComponent(new Component("kvstore", "state.postgresql", "v1", STATE_STORE_PROPERTIES))

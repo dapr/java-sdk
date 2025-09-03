@@ -15,12 +15,15 @@ package io.dapr.workflows.runtime;
 
 import io.dapr.durabletask.TaskActivityContext;
 import io.dapr.workflows.WorkflowActivityContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Wrapper for Durable Task Framework {@link TaskActivityContext}.
  */
 class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   private final TaskActivityContext innerContext;
+  private final Logger logger;
 
   /**
    * Constructor for WorkflowActivityContext.
@@ -29,10 +32,36 @@ class DefaultWorkflowActivityContext implements WorkflowActivityContext {
    * @throws IllegalArgumentException if context is null
    */
   public DefaultWorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
+    this(context, LoggerFactory.getLogger(WorkflowActivityContext.class));
+  }
+
+  /**
+   * Constructor for WorkflowActivityContext.
+   *
+   * @param context TaskActivityContext
+   * @throws IllegalArgumentException if context is null
+   */
+  public DefaultWorkflowActivityContext(TaskActivityContext context, Logger logger) throws IllegalArgumentException {
     if (context == null) {
       throw new IllegalArgumentException("Context cannot be null");
     }
+
+    if (logger == null) {
+      throw new IllegalArgumentException("Logger cannot be null");
+    }
+
     this.innerContext = context;
+    this.logger = logger;
+  }
+
+  /**
+   * Gets the logger for the current activity.
+   *
+   * @return the logger for the current activity
+   */
+  @Override
+  public Logger getLogger() {
+    return this.logger;
   }
 
   /**
@@ -55,5 +84,10 @@ class DefaultWorkflowActivityContext implements WorkflowActivityContext {
   @Override
   public <T> T getInput(Class<T> targetType) {
     return this.innerContext.getInput(targetType);
+  }
+
+  @Override
+  public String getTaskExecutionId() {
+    return this.innerContext.getTaskExecutionId();
   }
 }
