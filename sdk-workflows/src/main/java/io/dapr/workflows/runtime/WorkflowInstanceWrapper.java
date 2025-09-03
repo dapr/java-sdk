@@ -36,6 +36,6 @@ class WorkflowInstanceWrapper<T extends Workflow> implements TaskOrchestrationFa
 
   @Override
   public TaskOrchestration create() {
-    return ctx -> workflow.run(new DefaultWorkflowContext(ctx));
+    return ctx -> workflow.run(new DefaultWorkflowContext(ctx, workflow.getClass()));
   }
 }

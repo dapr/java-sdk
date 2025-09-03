@@ -57,7 +57,7 @@ class WorkflowClassWrapper<T extends Workflow> implements TaskOrchestrationFacto
         );
       }
 
-      workflow.run(new DefaultWorkflowContext(ctx));
+      workflow.run(new DefaultWorkflowContext(ctx, workflow.getClass()));
     };
   }
 }

@@ -51,6 +51,6 @@ public class WorkflowActivityInstanceWrapper<T extends WorkflowActivity> impleme
 
   @Override
   public TaskActivity create() {
-    return ctx -> activity.run(new DefaultWorkflowActivityContext(ctx));
+    return ctx -> activity.run(new DefaultWorkflowActivityContext(ctx, activity.getClass()));
   }
 }

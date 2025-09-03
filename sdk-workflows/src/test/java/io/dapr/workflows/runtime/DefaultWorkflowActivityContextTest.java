@@ -3,6 +3,7 @@ package io.dapr.workflows.runtime;
 import io.dapr.durabletask.TaskActivityContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -15,7 +16,7 @@ class DefaultWorkflowActivityContextTest {
   @DisplayName("Should successfully create context and return correct values for all methods")
   void shouldSuccessfullyCreateContextAndReturnCorrectValuesForAllMethods() {
     TaskActivityContext mockInnerContext = mock(TaskActivityContext.class);
-    DefaultWorkflowActivityContext context = new DefaultWorkflowActivityContext(mockInnerContext);
+    DefaultWorkflowActivityContext context = new DefaultWorkflowActivityContext(mockInnerContext, TaskActivityContext.class);
 
     when(mockInnerContext.getName()).thenReturn("TestActivity");
     when(mockInnerContext.getInput(any())).thenReturn("TestInput");
@@ -34,7 +35,7 @@ class DefaultWorkflowActivityContextTest {
   @DisplayName("Should throw IllegalArgumentException when context parameter is null")
   void shouldThrowIllegalArgumentExceptionWhenContextParameterIsNull() {
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-      new DefaultWorkflowActivityContext(null);
+      new DefaultWorkflowActivityContext(null, TaskActivityContext.class);
     });
     assertEquals("Context cannot be null", exception.getMessage());
   }
@@ -45,7 +46,7 @@ class DefaultWorkflowActivityContextTest {
     TaskActivityContext mockInnerContext = mock(TaskActivityContext.class);
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-      new DefaultWorkflowActivityContext(mockInnerContext, null);
+      new DefaultWorkflowActivityContext(mockInnerContext, (Logger) null);
     });
     assertEquals("Logger cannot be null", exception.getMessage());
   }

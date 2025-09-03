@@ -48,7 +48,6 @@ public class DefaultWorkflowContextTest {
   @BeforeEach
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
-    context = new DefaultWorkflowContext(mockInnerContext);
     testWorkflowContext = new WorkflowContext() {
       @Override
       public Logger getLogger() {
@@ -141,6 +140,7 @@ public class DefaultWorkflowContextTest {
 
       }
     };
+    context = new DefaultWorkflowContext(mockInnerContext, testWorkflowContext.getClass());
   }
 
   @Test
