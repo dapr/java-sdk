@@ -267,35 +267,21 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>com.github.os72</groupId>
-        <artifactId>protoc-jar-maven-plugin</artifactId>
-        <version>3.11.4</version>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          <pluginId>grpc-java</pluginId>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+          <protoSourceRoot>${protobuf.input.directory}</protoSourceRoot>
+        </configuration>
         <executions>
           <execution>
-            <phase>generate-sources</phase>
             <goals>
-              <goal>run</goal>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
             </goals>
-            <configuration>
-              <protocVersion>${protobuf.version}</protocVersion>
-              <addProtoSources>inputs</addProtoSources>
-              <includeMavenTypes>direct</includeMavenTypes>
-              <includeStdTypes>true</includeStdTypes>
-              <inputDirectories>
-                <include>${protobuf.input.directory}</include>
-              </inputDirectories>
-              <outputTargets>
-                <outputTarget>
-                  <type>java</type>
-                  <outputDirectory>${protobuf.output.directory}</outputDirectory>
-                </outputTarget>
-                <outputTarget>
-                  <type>grpc-java</type>
-                  <outputDirectory>${protobuf.output.directory}</outputDirectory>
-                  <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}</pluginArtifact>
-                </outputTarget>
-              </outputTargets>
-            </configuration>
           </execution>
         </executions>
       </plugin>
