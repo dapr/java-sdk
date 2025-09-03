@@ -12,7 +12,7 @@
 
   <artifactId>dapr-sdk-workflows</artifactId>
   <packaging>jar</packaging>
-  <version>0.16.0-rc-1</version>
+  <version>1.16.0-rc-1</version>
   <name>dapr-sdk-workflows</name>
   <description>SDK for Workflows on Dapr</description>
 

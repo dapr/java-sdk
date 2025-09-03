@@ -22,8 +22,6 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
-    <dapr.sdk.version>1.16.0-rc-1</dapr.sdk.version>
-    <dapr.sdk.alpha.version>0.16.0-rc-1</dapr.sdk.alpha.version>
     <protobuf.output.directory>${project.build.directory}/generated-sources</protobuf.output.directory>
     <protobuf.input.directory>${project.basedir}/proto</protobuf.input.directory>
 
