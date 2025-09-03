@@ -45,6 +45,16 @@ public class DefaultWorkflowContext implements WorkflowContext {
    * Constructor for DaprWorkflowContextImpl.
    *
    * @param context TaskOrchestrationContext
+   * @throws IllegalArgumentException if context is null
+   */
+  public DefaultWorkflowContext(TaskOrchestrationContext context) throws IllegalArgumentException {
+    this(context, WorkflowContext.class);
+  }
+  
+  /**
+   * Constructor for DaprWorkflowContextImpl.
+   *
+   * @param context TaskOrchestrationContext
    * @param clazz   Class to use for logger
    * @throws IllegalArgumentException if context is null
    */

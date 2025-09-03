@@ -16,7 +16,7 @@ class DefaultWorkflowActivityContextTest {
   @DisplayName("Should successfully create context and return correct values for all methods")
   void shouldSuccessfullyCreateContextAndReturnCorrectValuesForAllMethods() {
     TaskActivityContext mockInnerContext = mock(TaskActivityContext.class);
-    DefaultWorkflowActivityContext context = new DefaultWorkflowActivityContext(mockInnerContext, TaskActivityContext.class);
+    DefaultWorkflowActivityContext context = new DefaultWorkflowActivityContext(mockInnerContext);
 
     when(mockInnerContext.getName()).thenReturn("TestActivity");
     when(mockInnerContext.getInput(any())).thenReturn("TestInput");

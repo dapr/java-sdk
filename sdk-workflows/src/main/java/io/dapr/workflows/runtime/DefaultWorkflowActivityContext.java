@@ -29,6 +29,16 @@ class DefaultWorkflowActivityContext implements WorkflowActivityContext {
    * Constructor for WorkflowActivityContext.
    *
    * @param context TaskActivityContext
+   * @throws IllegalArgumentException if context is null
+   */
+  public DefaultWorkflowActivityContext(TaskActivityContext context) throws IllegalArgumentException {
+    this(context, WorkflowActivityContext.class);
+  }
+
+  /**
+   * Constructor for WorkflowActivityContext.
+   *
+   * @param context TaskActivityContext
    * @param clazz   Class to use for logger
    * @throws IllegalArgumentException if context is null
    */
