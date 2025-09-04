@@ -42,7 +42,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
   private final Logger logger;
 
   /**
-   * Constructor for DaprWorkflowContextImpl.
+   * Constructor for DefaultWorkflowContext.
    *
    * @param context TaskOrchestrationContext
    * @throws IllegalArgumentException if context is null
@@ -50,9 +50,9 @@ public class DefaultWorkflowContext implements WorkflowContext {
   public DefaultWorkflowContext(TaskOrchestrationContext context) throws IllegalArgumentException {
     this(context, WorkflowContext.class);
   }
-  
+
   /**
-   * Constructor for DaprWorkflowContextImpl.
+   * Constructor for DefaultWorkflowContext.
    *
    * @param context TaskOrchestrationContext
    * @param clazz   Class to use for logger
@@ -63,7 +63,7 @@ public class DefaultWorkflowContext implements WorkflowContext {
   }
 
   /**
-   * Constructor for DaprWorkflowContextImpl.
+   * Constructor for DefaultWorkflowContext.
    *
    * @param context TaskOrchestrationContext
    * @param logger  Logger
