@@ -42,13 +42,13 @@ import static org.mockito.Mockito.*;
 
 public class DefaultWorkflowContextTest {
   private DefaultWorkflowContext context;
+  private DefaultWorkflowContext contextWithClass;
   private TaskOrchestrationContext mockInnerContext;
   private WorkflowContext testWorkflowContext;
 
   @BeforeEach
   public void setUp() {
     mockInnerContext = mock(TaskOrchestrationContext.class);
-    context = new DefaultWorkflowContext(mockInnerContext);
     testWorkflowContext = new WorkflowContext() {
       @Override
       public Logger getLogger() {
@@ -141,6 +141,8 @@ public class DefaultWorkflowContextTest {
 
       }
     };
+    context = new DefaultWorkflowContext(mockInnerContext);
+    contextWithClass = new DefaultWorkflowContext(mockInnerContext, testWorkflowContext.getClass());
   }
 
   @Test
