@@ -338,6 +338,146 @@ daprWorkflowClient.raiseEvent(instanceId, "MyEvenet", event);
 
 Check the [Dapr Workflow documentation](https://docs.dapr.io/developing-applications/building-blocks/workflow/workflow-overview/) for more information about how to work with Dapr Workflows.
 
+## Using Dapr Cloud Config with Spring Boot
+
+To enable dapr cloud config, you should add following properties in your application's config (properties for example):
+
+```properties
+# default enable is true, don't need to specify
+dapr.cloudconfig.enabled = true
+spring.config.import[0] = <schema>
+spring.config.import[1] = <schema>
+spring.config.import[2] = <schema>
+#... keep going if you want to import more configs
+```
+
+There are other config of the dapr cloud config, listed below:
+
+```properties
+#enable dapr cloud config or not (default = true).
+dapr.cloudconfig.enabled=true
+#timeout for getting dapr config (include wait for dapr sidecar) (default = 2000).
+dapr.cloudconfig.timeout=2000
+#whether enable dapr client wait for sidecar, if no response, will throw IOException (default = false).
+dapr.cloudconfig.wait-sidecar-enabled=false
+#retries of dapr client wait for sidecar (default = 3).
+dapr.cloudconfig.wait-sidecar-retries=3
+```
+
+In Dapr Cloud Config component, we support two ways to import config: Secret Store API and Configuration API.
+
+Both of them have their schemas, listed below.
+
+### Cloud Config Import Schemas
+
+#### Secret Store Component
+
+##### url structure
+
+`dapr:secret:<store-name>[/<secret-name>][?<paramters>]`
+
+###### paramters
+
+|  parameter  | description | default | available |
+|--------------------|--------------------|--------------------|--------------------|
+| type | value type | `value` | `value`/`doc`|
+| doc-type | type of doc | `properties` | `yaml`/`properties`/`or any file extensions you want`|
+
+- when type = `value`, if `secret-name` is specified, will treat secret as the value of property, and `secret-name` as the key of property; if none `secret-name` is specified, will get bulk secret and treat every value of secret as the value of property, and every key of secret as the key of property.
+- when type = `doc`, if `secret-name` is specified, will treat secret as a bunch of property, and load it with property or yaml loader; if none `secret-name` is specified, will get bulk secret and and treat every value of secret as bunches of property, and load them with property or yaml loader.
+- secret store with multiValud = true must specify nestedSeparator = ".", and using type = `doc` is not recommanded
+
+##### demo
+
+###### multiValued = false:
+
+####### store content(file secret store as example)
+
+```json
+{
+	"dapr.spring.demo-config-secret.singlevalue": "testvalue",
+	"multivalue-properties": "dapr.spring.demo-config-secret.multivalue.v1=spring\ndapr.spring.demo-config-secret.multivalue.v2=dapr",
+	"multivalue-yaml": "dapr:\n  spring:\n    demo-config-secret:\n      multivalue:\n        v3: cloud"
+}
+```
+
+####### valid demo url
+
+- `dapr:secret:democonfig/multivalue-properties?type=doc&doc-type=properties`
+- `dapr:secret:democonfig/multivalue-yaml?type=doc&doc-type=yaml`
+- `dapr:secret:democonfig/dapr.spring.demo-config.singlevalue?type=value`
+- `dapr:secret:democonfig?type=value`
+- `dapr:secret:democonfig?type=doc`
+
+###### multiValued = true, nestedSeparator = ".":
+
+####### store content(file secret store as example)
+
+```json
+{
+	"value1": {
+		"dapr": {
+			"spring": {
+				"demo-config-secret": {
+					"multivalue": {
+						"v4": "config"
+					}
+				}
+			}
+		}
+	}
+}
+```
+
+will be read as
+
+```json
+{
+	"value1": {
+		"dapr.spring.demo-config-secret.multivalue.v4": "config"
+	}
+}
+```
+
+####### valid demo url
+- `dapr:secret:demo-config-multi/value1?type=value`
+- `dapr:secret:demo-config-multi?type=value`
+
+#### Configuration Component
+
+##### url structure
+
+`dapr:config:<store-name>[/<key>][?<paramters>]`
+
+###### paramters
+
+|  parameter  | description | default | available |
+|--------------------|--------------------|--------------------|--------------------|
+| type | value type | `value` | `doc`/`value` |
+| doc-type | type of doc | `properties` | `yaml`/`properties`/`or any file extensions you want`|
+| subscribe | subscribe this configuration | `false` | `true`/`false` |
+
+- when subscribe = `true`, will subscribe update for the configuration.
+- when type = `value`, if `key` is specified, will treat config value as the value of property, and `key` as the key of property; if none `key` is specified, will get all key and value in the `config-name` and treat every config value as the value of property, and every `key` as the key of property.
+- when type = `doc`, if `key` is specified, will treat config value as a bunch of property, and load it with property or yaml loader; if none `key` is specified, will get all key and value in the `config-name` and treat every config value as bunches of property, and load them with property or yaml loader.
+
+##### Demo
+
+###### store content(table as example)
+
+| key | value |
+|--------------------|--------------------|
+| dapr.spring.demo-config-config.singlevalue | testvalue |
+| multivalue-properties | `dapr.spring.demo-config-config.multivalue.v1=spring\ndapr.spring.demo-config-config.multivalue.v2=dapr` |
+| multivalue-yaml | `dapr:\n  spring:\n    demo-config-config:\n      multivalue:\n        v3: cloud` |
+
+###### valid demo url
+
+- `dapr:config:democonfigconf/dapr.spring.demo-config-config.singlevalue?type=value`
+- `dapr:config:democonfigconf/multivalue-properties?type=doc&doc-type=properties`
+- `dapr:config:democonfigconf/multivalue-yaml?type=doc&doc-type=yaml`
+- `dapr:config:democonfigconf?type=doc`
+- `dapr:config:democonfigconf?type=value`
 
 ## Next steps
 
