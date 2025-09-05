@@ -18,7 +18,9 @@ import io.dapr.client.domain.BulkPublishRequest;
 import io.dapr.client.domain.BulkPublishResponse;
 import io.dapr.client.domain.BulkPublishResponseFailedEntry;
 import io.dapr.client.domain.ConversationRequest;
+import io.dapr.client.domain.ConversationRequestAlpha2;
 import io.dapr.client.domain.ConversationResponse;
+import io.dapr.client.domain.ConversationResponseAlpha2;
 import io.dapr.client.domain.DeleteJobRequest;
 import io.dapr.client.domain.GetJobRequest;
 import io.dapr.client.domain.GetJobResponse;
@@ -313,5 +315,14 @@ public interface DaprPreviewClient extends AutoCloseable {
    * @param conversationRequest request to be passed to the LLM.
    * @return {@link ConversationResponse}.
    */
+  @Deprecated
   public Mono<ConversationResponse> converse(ConversationRequest conversationRequest);
+
+  /*
+   * Converse with an LLM using Alpha2 API.
+   *
+   * @param conversationRequestAlpha2 request to be passed to the LLM with Alpha2 features.
+   * @return {@link ConversationResponseAlpha2}.
+   */
+  public Mono<ConversationResponseAlpha2> converseAlpha2(ConversationRequestAlpha2 conversationRequestAlpha2);
 }
