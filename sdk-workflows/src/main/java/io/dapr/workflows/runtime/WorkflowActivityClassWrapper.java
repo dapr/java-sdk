@@ -70,7 +70,7 @@ public class WorkflowActivityClassWrapper<T extends WorkflowActivity> implements
             String.format("Unable to instantiate instance of activity class '%s'", this.name), e);
       }
 
-      result = activity.run(new DefaultWorkflowActivityContext(ctx));
+      result = activity.run(new DefaultWorkflowActivityContext(ctx, activity.getClass()));
       return result;
     };
   }
