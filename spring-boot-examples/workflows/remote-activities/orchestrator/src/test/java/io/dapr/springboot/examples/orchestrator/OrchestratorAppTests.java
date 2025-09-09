@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
 
@@ -30,7 +31,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(classes = {TestOrchestratorApplication.class, DaprTestContainersConfig.class},
-        webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+        webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"reuse=true"})
 class OrchestratorAppTests {
 
 
@@ -65,7 +66,7 @@ class OrchestratorAppTests {
 //    io.dapr.springboot.examples.orchestrator.Customer customer = customerStore.getCustomer("salaboy");
 //    assertEquals(true, customer.isInCustomerDB());
 //    String workflowId = customer.getWorkflowId();
-//    given().contentType(ContentType.JSON)
+//      given().contentType(ContentType.JSON)
 //            .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
 //            .when()
 //            .post("/customers/followup")

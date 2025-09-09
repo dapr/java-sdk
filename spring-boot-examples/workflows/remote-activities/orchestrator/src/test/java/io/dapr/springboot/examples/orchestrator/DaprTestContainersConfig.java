@@ -18,12 +18,17 @@ import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.MountableFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +73,86 @@ public class DaprTestContainersConfig {
     }
   }
 
+  private Map<String, String> getRedisProps(){
+    Map<String, String> redisProps = new HashMap<>();
+    redisProps.put("redisHost", "redis:6379");
+    redisProps.put("redisPassword", "");
+    redisProps.put("actorStateStore", String.valueOf(true));
+    return redisProps;
+  }
+
+  @Bean("workerOneDapr")
+  public DaprContainer workerOneDapr(Network daprNetwork, RedisContainer redisContainer, Environment env,
+                                     @Qualifier("daprContainer") DaprContainer orchestratorDaprContainer) {
+    boolean reuse = env.getProperty("reuse", Boolean.class, false);
+
+    return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+            .withAppName("worker-one")
+            .withNetworkAliases("worker-one-dapr")
+            .withNetwork(daprNetwork)
+            .withReusablePlacement(reuse)
+            .withReusableScheduler(reuse)
+            .withComponent(new Component("kvstore", "state.redis", "v1", getRedisProps()))
+//            .withDaprLogLevel(DaprLogLevel.DEBUG)
+//            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+            .withAppPort(8081)
+            .withAppHealthCheckPath("/actuator/health")
+            .withAppChannelAddress("host.testcontainers.internal")
+            .dependsOn(orchestratorDaprContainer)
+            .dependsOn(redisContainer);
+  }
+  @Bean
+  public GenericContainer<?> workerOneContainer(Network daprNetwork, @Qualifier("workerOneDapr") DaprContainer workerOneDapr){
+    return new GenericContainer<>("openjdk:17-jdk-slim")
+            .withCopyFileToContainer(MountableFile.forHostPath("../worker-one/target"), "/app")
+            .withWorkingDirectory("/app")
+            .withCommand("java",
+                    "-Ddapr.grpc.endpoint=worker-one-dapr:50001",
+                    "-Ddapr.http.endpoint=worker-one-dapr:3500",
+                    "-jar",
+                    "worker-one-1.17.0-SNAPSHOT.jar")
+            .withNetwork(daprNetwork)
+            .dependsOn(workerOneDapr)
+            .waitingFor(Wait.forLogMessage(".*Started WorkerOneApplication.*", 1))
+            .withLogConsumer(outputFrame -> System.out.println("WorkerOneApplication: " + outputFrame.getUtf8String()));
+  }
+
+  @Bean("workerTwoDapr")
+  public DaprContainer workerTwoDapr(Network daprNetwork, RedisContainer redisContainer, Environment env,
+                                     @Qualifier("daprContainer") DaprContainer orchestratorDaprContainer) {
+    boolean reuse = env.getProperty("reuse", Boolean.class, false);
+
+    return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
+            .withAppName("worker-two")
+            .withNetworkAliases("worker-two-dapr")
+            .withNetwork(daprNetwork)
+            .withReusablePlacement(reuse)
+            .withReusableScheduler(reuse)
+            .withComponent(new Component("kvstore", "state.redis", "v1", getRedisProps()))
+//            .withDaprLogLevel(DaprLogLevel.DEBUG)
+//            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+            .withAppPort(8082)
+            .withAppHealthCheckPath("/actuator/health")
+            .withAppChannelAddress("host.testcontainers.internal")
+            .dependsOn(orchestratorDaprContainer)
+            .dependsOn(redisContainer);
+  }
+  @Bean
+  public GenericContainer<?> workerTwoContainer(Network daprNetwork, @Qualifier("workerTwoDapr") DaprContainer workerTwoDapr){
+    return new GenericContainer<>("openjdk:17-jdk-slim")
+            .withCopyFileToContainer(MountableFile.forHostPath("../worker-two/target"), "/app")
+            .withWorkingDirectory("/app")
+            .withCommand("java",
+                    "-Ddapr.grpc.endpoint=worker-two-dapr:50001",
+                    "-Ddapr.http.endpoint=worker-two-dapr:3500",
+                    "-jar",
+                    "worker-two-1.17.0-SNAPSHOT.jar")
+            .withNetwork(daprNetwork)
+            .dependsOn(workerTwoDapr)
+            .waitingFor(Wait.forLogMessage(".*Started WorkerTwoApplication.*", 1))
+            .withLogConsumer(outputFrame -> System.out.println("WorkerTwoApplication: " + outputFrame.getUtf8String()));
+  }
+
 
   @Bean
   public RedisContainer redisContainer(Network daprNetwork, Environment env){
@@ -82,17 +167,13 @@ public class DaprTestContainersConfig {
   @ServiceConnection
   public DaprContainer daprContainer(Network daprNetwork, RedisContainer redisContainer, Environment env) {
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
-    Map<String, String> redisProps = new HashMap<>();
-    redisProps.put("redisHost", "redis:6379");
-    redisProps.put("redisPassword", "");
-    redisProps.put("actorStateStore", String.valueOf(true));
 
     return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("orchestrator")
             .withNetwork(daprNetwork)
-            .withReusablePlacement(reuse)
-            .withReusableScheduler(reuse)
-            .withComponent(new Component("kvstore", "state.redis", "v1", redisProps))
+//            .withReusablePlacement(reuse)
+//            .withReusableScheduler(reuse)
+            .withComponent(new Component("kvstore", "state.redis", "v1", getRedisProps()))
 //            .withDaprLogLevel(DaprLogLevel.DEBUG)
 //            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
             .withAppPort(8080)
