@@ -29,7 +29,7 @@ timeout_seconds: 180
 <!-- Timeout for above service must be more than sleep + timeout for the client-->
 
 ```sh
-../../mvnw spring-boot:test-run
+../../../mvnw spring-boot:test-run
 ```
 
 <!-- END_STEP -->
