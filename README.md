@@ -13,7 +13,7 @@ This is the Dapr SDK for Java, including the following features:
 
 ## Getting Started
 
-## Architecture Overview
+### Architecture Overview
 
 The diagram below shows how a Java application interacts with the Dapr runtime through the Java SDK:
 
