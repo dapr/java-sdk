@@ -23,13 +23,11 @@ flowchart LR
     B -->|API calls| C[Dapr Sidecar]
     C -->|State Store, Pub/Sub, Service Invocation, Bindings, Actors, Workflows| D[External Components]
     C --> A
-````
+```
 
 * The application creates a Dapr client (HTTP or gRPC).
 * The SDK routes API calls (state, pub/sub, service invocation, bindings, actors, workflows).
 * The Dapr sidecar manages communication with external components and returns responses to the app.
-
-```
 
 
 ### Pre-Requisites
