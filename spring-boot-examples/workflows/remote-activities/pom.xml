@@ -5,11 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.dapr</groupId>
-    <artifactId>spring-boot-examples</artifactId>
+    <artifactId>workflows</artifactId>
     <version>1.17.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>workflows</artifactId>
+  <artifactId>remote-activities</artifactId>
   <version>1.17.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -18,8 +18,9 @@
   </properties>
 
   <modules>
-    <module>patterns</module>
-    <module>remote-activities</module>
+    <module>orchestrator</module>
+    <module>worker-one</module>
+    <module>worker-two</module>
   </modules>
 
   <dependencyManagement>
