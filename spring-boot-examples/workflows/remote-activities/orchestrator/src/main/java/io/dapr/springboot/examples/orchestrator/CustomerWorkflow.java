@@ -13,6 +13,8 @@ limitations under the License.
 
 package io.dapr.springboot.examples.orchestrator;
 
+import io.dapr.durabletask.TaskCanceledException;
+import io.dapr.durabletask.TaskFailedException;
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;
@@ -32,7 +34,7 @@ public class CustomerWorkflow implements Workflow {
       ctx.getLogger().info("Let's register the customer: {}", customer.getCustomerName());
 
       customer = ctx.callActivity("io.dapr.springboot.examples.workerone.RegisterCustomerActivity", customer,
-              new WorkflowTaskOptions("worker-one"), Customer.class).await();
+                new WorkflowTaskOptions("worker-one"), Customer.class).await();
 
       ctx.getLogger().info("Let's wait for the customer: {} to request a follow up.", customer.getCustomerName());
       ctx.waitForExternalEvent("CustomerReachOut", Duration.ofMinutes(5), Customer.class).await();

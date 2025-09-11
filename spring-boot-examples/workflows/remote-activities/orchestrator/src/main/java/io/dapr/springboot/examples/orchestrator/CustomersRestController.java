@@ -15,6 +15,7 @@ package io.dapr.springboot.examples.orchestrator;
 
 import io.dapr.spring.workflows.config.EnableDaprWorkflows;
 import io.dapr.workflows.client.DaprWorkflowClient;
+import io.dapr.workflows.client.WorkflowInstanceStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,24 @@ public class CustomersRestController {
     } else {
       daprWorkflowClient.raiseEvent(workflowIdForCustomer, "CustomerReachOut", customer);
       return "Customer Follow-up requested";
+    }
+  }
+
+  /**
+   *  Request customer output.
+   *  @param customer associated with a workflow instance
+   *  @return Customer status after the workflow execution finished
+   */
+  @PostMapping("/customers/output")
+  public Customer getCustomerOutput(@RequestBody Customer customer) {
+    logger.info("Customer output requested: {}", customer.getCustomerName());
+    String workflowIdForCustomer = customersWorkflows.get(customer.getCustomerName());
+    if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
+      return null;
+    } else {
+      WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+      assert instanceState != null;
+      return instanceState.readOutputAs(Customer.class);
     }
   }
 

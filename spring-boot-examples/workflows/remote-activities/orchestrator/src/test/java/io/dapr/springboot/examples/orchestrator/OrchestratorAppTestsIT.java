@@ -13,15 +13,11 @@ limitations under the License.
 
 package io.dapr.springboot.examples.orchestrator;
 
-import io.dapr.client.DaprClient;
-import io.dapr.testcontainers.DaprContainer;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
 
@@ -31,15 +27,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(classes = {TestOrchestratorApplication.class, DaprTestContainersConfig.class},
-        webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"reuse=true"})
-class OrchestratorAppTests {
+        webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+        properties = {"reuse=false", "tests.workers.enabled=true"})
+class OrchestratorAppTestsIT {
 
-
-  @Autowired
-  private DaprClient daprClient;
-
-  @Autowired
-  private DaprContainer daprContainer;
 
   @BeforeEach
   void setUp() {
@@ -47,8 +38,6 @@ class OrchestratorAppTests {
     org.testcontainers.Testcontainers.exposeHostPorts(8080);
 
   }
-
-
 
   @Test
   void testCustomersWorkflows() throws InterruptedException, IOException {
@@ -65,13 +54,27 @@ class OrchestratorAppTests {
 //            .until(customerStore.getCustomers()::size, equalTo(1));
 //    io.dapr.springboot.examples.orchestrator.Customer customer = customerStore.getCustomer("salaboy");
 //    assertEquals(true, customer.isInCustomerDB());
+
 //    String workflowId = customer.getWorkflowId();
-//      given().contentType(ContentType.JSON)
-//            .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
-//            .when()
-//            .post("/customers/followup")
-//            .then()
-//            .statusCode(200);
+
+    Thread.sleep(1000);
+
+    given().contentType(ContentType.JSON)
+            .body("{\"customerName\": \"salaboy\" }")
+            .when()
+            .post("/customers/followup")
+            .then()
+            .statusCode(200);
+
+    Thread.sleep(1000);
+
+    given().contentType(ContentType.JSON)
+            .body("{\"customerName\": \"salaboy\" }")
+            .when()
+            .post("/customers/output")
+            .then()
+            .statusCode(200);
+//  }
 //
 //    assertEquals(1, customerStore.getCustomers().size());
 //
