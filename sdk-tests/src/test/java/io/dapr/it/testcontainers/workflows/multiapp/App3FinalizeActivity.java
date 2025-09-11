@@ -11,24 +11,24 @@
  * limitations under the License.
 */
 
-package io.dapr.it.testcontainers.workflows.crossapp;
+package io.dapr.it.testcontainers.workflows.multiapp;
 
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class App2TransformActivity implements WorkflowActivity {
+public class App3FinalizeActivity implements WorkflowActivity {
 
-  private static final Logger logger = LoggerFactory.getLogger(App2TransformActivity.class);
+  private static final Logger logger = LoggerFactory.getLogger(App3FinalizeActivity.class);
 
   @Override
   public Object run(WorkflowActivityContext ctx) {
     String input = ctx.getInput(String.class);
-    logger.info("=== App2: TransformActivity called ===");
+    logger.info("=== App3: FinalizeActivity called ===");
     logger.info("Input: {}", input);
     
-    String output = input.toUpperCase() + " [TRANSFORMED BY APP2]";
+    String output = input + " [FINALIZED BY APP3]";
     logger.info("Output: {}", output);
     
     return output;
