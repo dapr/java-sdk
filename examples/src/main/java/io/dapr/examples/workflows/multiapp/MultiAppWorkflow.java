@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.crossapp;
+package io.dapr.examples.workflows.multiapp;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
@@ -21,24 +21,24 @@ import io.dapr.workflows.WorkflowTaskOptions;
  * Example workflow that demonstrates cross-app activity calls.
  * This workflow calls activities in different apps using the appId parameter.
  */
-public class CrossAppWorkflow implements Workflow {
+public class MultiAppWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
       var logger = ctx.getLogger();
       logger.info("=== WORKFLOW STARTING ===");
-      logger.info("Starting CrossAppWorkflow: {}", ctx.getName());
+      logger.info("Starting MultiAppWorkflow: {}", ctx.getName());
       logger.info("Workflow name: {}", ctx.getName());
       logger.info("Workflow instance ID: {}", ctx.getInstanceId());
 
       String input = ctx.getInput(String.class);
-      logger.info("CrossAppWorkflow received input: {}", input);
+      logger.info("MultiAppWorkflow received input: {}", input);
       logger.info("Workflow input: {}", input);
 
       // Call an activity in another app by passing in an active appID to the WorkflowTaskOptions
-      logger.info("Calling cross-app activity in 'app2'...");
-      logger.info("About to call cross-app activity in app2...");
-      String crossAppResult = ctx.callActivity(
+      logger.info("Calling multi-app activity in 'app2'...");
+      logger.info("About to call multi-app activity in app2...");
+      String multiAppResult = ctx.callActivity(
           App2TransformActivity.class.getName(),
           input,
           new WorkflowTaskOptions("app2"),
@@ -46,17 +46,17 @@ public class CrossAppWorkflow implements Workflow {
       ).await();
 
       // Call another activity in a different app
-      logger.info("Calling cross-app activity in 'app3'...");
-      logger.info("About to call cross-app activity in app3...");
+      logger.info("Calling multi-app activity in 'app3'...");
+      logger.info("About to call multi-app activity in app3...");
       String finalResult = ctx.callActivity(
           App3FinalizeActivity.class.getName(),
-          crossAppResult,
+          multiAppResult,
           new WorkflowTaskOptions("app3"),
           String.class
       ).await();
-      logger.info("Final cross-app activity result: {}", finalResult);
+      logger.info("Final multi-app activity result: {}", finalResult);
 
-      logger.info("CrossAppWorkflow finished with: {}", finalResult);
+      logger.info("MultiAppWorkflow finished with: {}", finalResult);
       logger.info("=== WORKFLOW COMPLETING WITH: {} ===", finalResult);
       ctx.complete(finalResult);
     };

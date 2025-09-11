@@ -53,7 +53,7 @@ Those examples contain the following workflow patterns:
 4. [External Event Pattern](#external-event-pattern)
 5. [Child-workflow Pattern](#child-workflow-pattern)
 6. [Compensation Pattern](#compensation-pattern)
-7. [Cross-App Pattern](#cross-app-pattern)
+7. [Multi-App Pattern](#multi-app-pattern)
 
 ### Chaining Pattern
 In the chaining pattern, a sequence of activities executes in a specific order.
@@ -682,30 +682,30 @@ Key Points:
 4. Each activity simulates work with a short delay for demonstration purposes
 
 
-### Cross-App Pattern
+### Multi-App Pattern
 
-The cross-app pattern allows workflows to call activities that are hosted in different Dapr applications. This is useful for microservices architectures allowing multiple applications to host activities that can be orchestrated by Dapr Workflows.
+The multi-app pattern allows workflows to call activities that are hosted in different Dapr applications. This is useful for microservices architectures allowing multiple applications to host activities that can be orchestrated by Dapr Workflows.
 
-The `CrossAppWorkflow` class defines the workflow. It demonstrates calling activities in different apps using the `appId` parameter in `WorkflowTaskOptions`. See the code snippet below:
+The `MultiAppWorkflow` class defines the workflow. It demonstrates calling activities in different apps using the `appId` parameter in `WorkflowTaskOptions`. See the code snippet below:
 ```java
-public class CrossAppWorkflow implements Workflow {
+public class MultiAppWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
       return ctx -> {
           var logger = ctx.getLogger();
           logger.info("=== WORKFLOW STARTING ===");
-          logger.info("Starting CrossAppWorkflow: {}", ctx.getName());
+          logger.info("Starting MultiAppWorkflow: {}", ctx.getName());
           logger.info("Workflow name: {}", ctx.getName());
           logger.info("Workflow instance ID: {}", ctx.getInstanceId());
 
           String input = ctx.getInput(String.class);
-          logger.info("CrossAppWorkflow received input: {}", input);
+          logger.info("MultiAppWorkflow received input: {}", input);
           logger.info("Workflow input: {}", input);
 
           // Call an activity in another app by passing in an active appID to the WorkflowTaskOptions
-          logger.info("Calling cross-app activity in 'app2'...");
-          logger.info("About to call cross-app activity in app2...");
-          String crossAppResult = ctx.callActivity(
+          logger.info("Calling multi-app activity in 'app2'...");
+          logger.info("About to call multi-app activity in app2...");
+          String multiAppResult = ctx.callActivity(
                   App2TransformActivity.class.getName(),
                   input,
                   new WorkflowTaskOptions("app2"),
@@ -713,18 +713,18 @@ public class CrossAppWorkflow implements Workflow {
           ).await();
 
           // Call another activity in a different app
-          logger.info("Calling cross-app activity in 'app3'...");
-          logger.info("About to call cross-app activity in app3...");
+          logger.info("Calling multi-app activity in 'app3'...");
+          logger.info("About to call multi-app activity in app3...");
           String finalResult = ctx.callActivity(
                   App3FinalizeActivity.class.getName(),
-                  crossAppResult,
+                  multiAppResult,
                   new WorkflowTaskOptions("app3"),
                   String.class
           ).await();
-          logger.info("Final cross-app activity result: {}", finalResult);
-          logger.info("Final cross-app activity result: {}", finalResult);
+          logger.info("Final multi-app activity result: {}", finalResult);
+          logger.info("Final multi-app activity result: {}", finalResult);
 
-          logger.info("CrossAppWorkflow finished with: {}", finalResult);
+          logger.info("MultiAppWorkflow finished with: {}", finalResult);
           logger.info("=== WORKFLOW COMPLETING WITH: {} ===" , finalResult);
           ctx.complete(finalResult);
       };
@@ -784,31 +784,31 @@ public class App3FinalizeActivity implements WorkflowActivity {
 
 **Important Limitations:**
 - **Cross-app calls are currently supported for activities only**
-- **Child workflow cross-app calls (suborchestration) are NOT supported**
+- **Child workflow multi-app calls (suborchestration) are NOT supported**
 - The app ID must match the Dapr application ID of the target service
 
 **Running the Cross-App Example:**
 
 This example requires running multiple Dapr applications simultaneously. You'll need to run the following commands in separate terminals:
 
-1. **Start the main workflow worker (crossapp-worker):**
+1. **Start the main workflow worker (multiapp-worker):**
 ```sh
-dapr run --app-id crossapp-worker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.CrossAppWorker
+dapr run --app-id multiapp-worker --resources-path ./components/workflows --dapr-grpc-port 50001 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.multiapp.MultiAppWorker
 ```
 
 2. **Start app2 worker (handles App2TransformActivity):**
 ```sh
-dapr run --app-id app2 --resources-path ./components/workflows --dapr-grpc-port 50002 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.App2Worker
+dapr run --app-id app2 --resources-path ./components/workflows --dapr-grpc-port 50002 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.multiapp.App2Worker
 ```
 
 3. **Start app3 worker (handles App3FinalizeActivity):**
 ```sh
-dapr run --app-id app3 --resources-path ./components/workflows --dapr-grpc-port 50003 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.App3Worker
+dapr run --app-id app3 --resources-path ./components/workflows --dapr-grpc-port 50003 -- java -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.multiapp.App3Worker
 ```
 
 4. **Run the workflow client:**
 ```sh
-java -Djava.util.logging.ConsoleHandler.level=FINE -Dio.dapr.durabletask.level=FINE -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.crossapp.CrossAppWorkflowClient "Hello World"
+java -Djava.util.logging.ConsoleHandler.level=FINE -Dio.dapr.durabletask.level=FINE -jar target/dapr-java-sdk-examples-exec.jar io.dapr.examples.workflows.multiapp.MultiAppWorkflowClient "Hello World"
 ```
 
 **Expected Output:**
@@ -819,15 +819,15 @@ The client will show:
 Input: Hello World
 Created DaprWorkflowClient successfully
 Attempting to start new workflow...
-Started a new cross-app workflow with instance ID: 001113f3-b9d9-438c-932a-a9a9b70b9460
+Started a new multi-app workflow with instance ID: 001113f3-b9d9-438c-932a-a9a9b70b9460
 Waiting for workflow completion...
 Workflow instance with ID: 001113f3-b9d9-438c-932a-a9a9b70b9460 completed with result: HELLO WORLD [TRANSFORMED BY APP2] [FINALIZED BY APP3]
 ```
 
 The workflow demonstrates:
-1. The workflow starts in the main worker (crossapp-worker)
-2. Calls an activity in 'app2' using cross-app functionality
-3. Calls an activity in 'app3' using cross-app functionality
+1. The workflow starts in the main worker (multiapp-worker)
+2. Calls an activity in 'app2' using multi-app functionality
+3. Calls an activity in 'app3' using multi-app functionality
 4. The workflow completes with the final result from all activities
 
 This pattern is particularly useful for:

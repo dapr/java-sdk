@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.crossapp;
+package io.dapr.examples.workflows.multiapp;
 
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;

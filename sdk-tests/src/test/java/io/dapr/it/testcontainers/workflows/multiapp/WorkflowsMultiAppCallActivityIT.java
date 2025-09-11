@@ -11,7 +11,7 @@
  * limitations under the License.
 */
 
-package io.dapr.it.testcontainers.workflows.crossapp;
+package io.dapr.it.testcontainers.workflows.multiapp;
 
 import io.dapr.testcontainers.Component;
 import io.dapr.testcontainers.DaprContainer;
@@ -42,17 +42,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Cross-App Pattern integration test.
+ * Multi-App Pattern integration test.
  *
- * This test demonstrates the cross-app pattern by:
- * 1. Starting 3 Dapr containers (crossapp-worker, app2, app3)
+ * This test demonstrates the multi-app pattern by:
+ * 1. Starting 3 Dapr containers (multiapp-worker, app2, app3)
  * 2. Launching Java processes that register workflows/activities in separate apps
- * 3. Executing a cross-app workflow
+ * 3. Executing a multi-app workflow
  * 4. Asserting successful completion
  */
 @Testcontainers
 @Tag("testcontainers")
-public class WorkflowsCrossAppCallActivityIT {
+public class WorkflowsMultiAppCallActivityIT {
 
   private static final Network DAPR_NETWORK = Network.newNetwork();
   
@@ -71,7 +71,7 @@ public class WorkflowsCrossAppCallActivityIT {
   // Main workflow orchestrator container
   @Container
   private final static DaprContainer MAIN_WORKFLOW_SIDECAR = new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
-      .withAppName("crossapp-worker")
+      .withAppName("multiapp-worker")
       .withNetwork(DAPR_NETWORK)
       .withNetworkAliases("main-workflow-sidecar")
       .withPlacementContainer(sharedPlacementContainer)
@@ -113,18 +113,18 @@ public class WorkflowsCrossAppCallActivityIT {
 
   // TestContainers for each app
   @Container
-  private static GenericContainer<?> crossappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
+  private static GenericContainer<?> multiappWorker = new GenericContainer<>("openjdk:17-jdk-slim")
       .withCopyFileToContainer(MountableFile.forHostPath("target"), "/app")
       .withWorkingDirectory("/app")
       .withCommand("java", "-cp", "test-classes:classes:dependency/*:*",
-          "-Ddapr.app.id=crossapp-worker",
+          "-Ddapr.app.id=multiapp-worker",
           "-Ddapr.grpc.endpoint=main-workflow-sidecar:50001",
           "-Ddapr.http.endpoint=main-workflow-sidecar:3500",
-          "io.dapr.it.testcontainers.workflows.crossapp.CrossAppWorker")
+          "io.dapr.it.testcontainers.workflows.multiapp.MultiAppWorker")
       .withNetwork(DAPR_NETWORK)
       .dependsOn(MAIN_WORKFLOW_SIDECAR)
-      .waitingFor(Wait.forLogMessage(".*CrossAppWorker started.*", 1))
-      .withLogConsumer(outputFrame -> System.out.println("CrossAppWorker: " + outputFrame.getUtf8String()));
+      .waitingFor(Wait.forLogMessage(".*MultiAppWorker started.*", 1))
+      .withLogConsumer(outputFrame -> System.out.println("MultiAppWorker: " + outputFrame.getUtf8String()));
 
   @Container
   private final static GenericContainer<?> app2Worker = new GenericContainer<>("openjdk:17-jdk-slim")
@@ -134,7 +134,7 @@ public class WorkflowsCrossAppCallActivityIT {
           "-Ddapr.app.id=app2",
           "-Ddapr.grpc.endpoint=app2-sidecar:50001",
           "-Ddapr.http.endpoint=app2-sidecar:3500",
-          "io.dapr.it.testcontainers.workflows.crossapp.App2Worker")
+          "io.dapr.it.testcontainers.workflows.multiapp.App2Worker")
       .withNetwork(DAPR_NETWORK)
       .dependsOn(APP2_SIDECAR)
       .waitingFor(Wait.forLogMessage(".*App2Worker started.*", 1))
@@ -148,14 +148,14 @@ public class WorkflowsCrossAppCallActivityIT {
           "-Ddapr.app.id=app3",
           "-Ddapr.grpc.endpoint=app3-sidecar:50001",
           "-Ddapr.http.endpoint=app3-sidecar:3500",
-          "io.dapr.it.testcontainers.workflows.crossapp.App3Worker")
+          "io.dapr.it.testcontainers.workflows.multiapp.App3Worker")
       .withNetwork(DAPR_NETWORK)
       .dependsOn(APP3_SIDECAR)
       .waitingFor(Wait.forLogMessage(".*App3Worker started.*", 1))
       .withLogConsumer(outputFrame -> System.out.println("App3Worker: " + outputFrame.getUtf8String()));
 
   @Test
-  public void testCrossAppWorkflow() throws Exception {
+  public void testMultiAppWorkflow() throws Exception {
     // TestContainers wait strategies ensure all containers are ready before this test runs
 
     String input = "Hello World";
@@ -173,7 +173,7 @@ public class WorkflowsCrossAppCallActivityIT {
     DaprWorkflowClient workflowClient = new DaprWorkflowClient(clientProperties);
 
     try {
-      String instanceId = workflowClient.scheduleNewWorkflow(CrossAppWorkflow.class, input);
+      String instanceId = workflowClient.scheduleNewWorkflow(MultiAppWorkflow.class, input);
       assertNotNull(instanceId, "Workflow instance ID should not be null");
       workflowClient.waitForInstanceStart(instanceId, Duration.ofSeconds(30), false);
 
