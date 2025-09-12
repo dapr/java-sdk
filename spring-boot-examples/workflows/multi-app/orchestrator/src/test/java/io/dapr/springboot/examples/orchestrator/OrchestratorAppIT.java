@@ -20,11 +20,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
+import java.time.Duration;
 
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = {TestOrchestratorApplication.class, DaprTestContainersConfig.class, CustomersRestController.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
@@ -42,6 +44,7 @@ class OrchestratorAppIT {
   @Test
   void testCustomersWorkflows() throws InterruptedException, IOException {
 
+    // Create a new workflow instance for a given customer
     given().contentType(ContentType.JSON)
             .body("{\"customerName\": \"salaboy\"}")
             .when()
@@ -49,16 +52,21 @@ class OrchestratorAppIT {
             .then()
             .statusCode(200);
 
+    // Wait for the workflow instance to be running by checking the status
+    await().atMost(Duration.ofSeconds(5)).until(() ->
+            {
+              String workflowStatus = given().contentType(ContentType.JSON)
+                      .body("{\"customerName\": \"salaboy\" }")
+                      .when()
+                      .post("/customers/status")
+                      .then()
+                      .statusCode(200)
+                      .extract().asString();
+              return workflowStatus.equals("Workflow for Customer: salaboy is RUNNING");
+            }
+    );
 
-//    await().atMost(Duration.ofSeconds(15))
-//            .until(customerStore.getCustomers()::size, equalTo(1));
-//    io.dapr.springboot.examples.orchestrator.Customer customer = customerStore.getCustomer("salaboy");
-//    assertEquals(true, customer.isInCustomerDB());
-
-//    String workflowId = customer.getWorkflowId();
-
-    Thread.sleep(1000);
-
+    // Raise an external event to move the workflow forward
     given().contentType(ContentType.JSON)
             .body("{\"customerName\": \"salaboy\" }")
             .when()
@@ -66,20 +74,30 @@ class OrchestratorAppIT {
             .then()
             .statusCode(200);
 
-    Thread.sleep(1000);
+    // Wait for the workflow instance to be completed by checking the status
+    await().atMost(Duration.ofSeconds(5)).until(() ->
+            {
+              String workflowStatus = given().contentType(ContentType.JSON)
+                      .body("{\"customerName\": \"salaboy\" }")
+                      .when()
+                      .post("/customers/status")
+                      .then()
+                      .statusCode(200).extract().asString();
+              return workflowStatus.equals("Workflow for Customer: salaboy is COMPLETED");
+            }
+    );
 
-    given().contentType(ContentType.JSON)
+    // Get the customer after running all the workflow activities
+    Customer customer = given().contentType(ContentType.JSON)
             .body("{\"customerName\": \"salaboy\" }")
             .when()
             .post("/customers/output")
             .then()
-            .statusCode(200);
-//  }
-//
-//    assertEquals(1, customerStore.getCustomers().size());
-//
-//    await().atMost(Duration.ofSeconds(10))
-//            .until(customerStore.getCustomer("salaboy")::isFollowUp, equalTo(true));
+            .statusCode(200).extract().as(Customer.class);
+
+    assertTrue(customer.isInCustomerDB());
+    assertTrue(customer.isFollowUp());
+
 
   }
 

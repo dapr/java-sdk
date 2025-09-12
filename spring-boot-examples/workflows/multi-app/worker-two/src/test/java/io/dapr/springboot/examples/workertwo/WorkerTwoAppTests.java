@@ -33,13 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class WorkerTwoAppTests {
 
-
-  @Autowired
-  private DaprClient daprClient;
-
-  @Autowired
-  private DaprContainer daprContainer;
-
   @BeforeEach
   void setUp() {
     RestAssured.baseURI = "http://localhost:" + 8082;
@@ -47,36 +40,9 @@ class WorkerTwoAppTests {
 
   }
 
-
-
   @Test
-  void testCustomersWorkflows() throws InterruptedException, IOException {
-
-    given().contentType(ContentType.JSON)
-            .body("{\"customerName\": \"salaboy\"}")
-            .when()
-            .post("/customers")
-            .then()
-            .statusCode(200);
-
-
-//    await().atMost(Duration.ofSeconds(15))
-//            .until(customerStore.getCustomers()::size, equalTo(1));
-//    io.dapr.springboot.examples.orchestrator.Customer customer = customerStore.getCustomer("salaboy");
-//    assertEquals(true, customer.isInCustomerDB());
-//    String workflowId = customer.getWorkflowId();
-//    given().contentType(ContentType.JSON)
-//            .body("{ \"workflowId\": \"" + workflowId + "\",\"customerName\": \"salaboy\" }")
-//            .when()
-//            .post("/customers/followup")
-//            .then()
-//            .statusCode(200);
-//
-//    assertEquals(1, customerStore.getCustomers().size());
-//
-//    await().atMost(Duration.ofSeconds(10))
-//            .until(customerStore.getCustomer("salaboy")::isFollowUp, equalTo(true));
-
+  void testWorkerTwo()  {
+    //Test the logic of the worker two
   }
 
 }

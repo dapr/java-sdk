@@ -75,6 +75,24 @@ public class CustomersRestController {
   }
 
   /**
+   *  Request customer workflow instance status.
+   *  @param customer associated with a workflow instance
+   *  @return the workflow instance status for a given customer
+   */
+  @PostMapping("/customers/status")
+  public String getCustomerStatus(@RequestBody Customer customer) {
+    logger.info("Customer status requested: {}", customer.getCustomerName());
+    String workflowIdForCustomer = customersWorkflows.get(customer.getCustomerName());
+    if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
+      return "N/A";
+    } else {
+      WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+      assert instanceState != null;
+      return "Workflow for Customer: " + customer.getCustomerName() + " is " + instanceState.getRuntimeStatus().name();
+    }
+  }
+
+  /**
    *  Request customer output.
    *  @param customer associated with a workflow instance
    *  @return Customer status after the workflow execution finished

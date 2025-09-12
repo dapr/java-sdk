@@ -665,6 +665,7 @@
       <id>integration-tests</id>
       <modules>
         <module>sdk-tests</module>
+        <module>spring-boot-examples</module>
       </modules>
         <build>
             <plugins>
