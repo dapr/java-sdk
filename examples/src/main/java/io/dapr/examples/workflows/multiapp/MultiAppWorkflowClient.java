@@ -11,7 +11,7 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.crossapp;
+package io.dapr.examples.workflows.multiapp;
 
 import io.dapr.workflows.client.DaprWorkflowClient;
 import io.dapr.workflows.client.WorkflowInstanceStatus;
@@ -25,17 +25,17 @@ import java.util.concurrent.TimeoutException;
  * 2. Start a new workflow instance
  * 3. Wait for completion and get results
  */
-public class CrossAppWorkflowClient {
+public class MultiAppWorkflowClient {
   
   public static void main(String[] args) {
     if (args.length < 1) {
-      System.out.println("Usage: CrossAppWorkflowClientExample <input>");
-      System.out.println("Example: CrossAppWorkflowClientExample \"Hello World\"");
+      System.out.println("Usage: MultiAppWorkflowClientExample <input>");
+      System.out.println("Example: MultiAppWorkflowClientExample \"Hello World\"");
       return;
     }
     
     String input = args[0];
-    System.out.println("=== Starting Cross-App Workflow Client ===");
+    System.out.println("=== Starting Multi-App Workflow Client ===");
     System.out.println("Input: " + input);
     
     try (DaprWorkflowClient client = new DaprWorkflowClient()) {
@@ -43,7 +43,7 @@ public class CrossAppWorkflowClient {
       
       // Start a new workflow instance
       System.out.println("Attempting to start new workflow...");
-      String instanceId = client.scheduleNewWorkflow(CrossAppWorkflow.class, input);
+      String instanceId = client.scheduleNewWorkflow(MultiAppWorkflow.class, input);
       System.out.printf("Started a new cross-app workflow with instance ID: %s%n", instanceId);
       
       // Wait for the workflow to complete

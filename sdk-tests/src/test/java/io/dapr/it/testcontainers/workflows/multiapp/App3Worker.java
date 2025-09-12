@@ -11,28 +11,28 @@
  * limitations under the License.
 */
 
-package io.dapr.it.testcontainers.workflows.crossapp;
+package io.dapr.it.testcontainers.workflows.multiapp;
 
 import io.dapr.workflows.runtime.WorkflowRuntime;
 import io.dapr.workflows.runtime.WorkflowRuntimeBuilder;
 
 /**
- * App2Worker - registers the App2TransformActivity.
- * This app will handle cross-app activity calls from the main workflow.
+ * App3Worker - registers the App3FinalizeActivity.
+ * This app will handle multi-app activity calls from the main workflow.
  */
-public class App2Worker {
+public class App3Worker {
 
     public static void main(String[] args) throws Exception {
-        System.out.println("=== Starting App2Worker (App2TransformActivity) ===");
+        System.out.println("=== Starting App3Worker (App3FinalizeActivity) ===");
         
         // Register the Activity with the builder
         WorkflowRuntimeBuilder builder = new WorkflowRuntimeBuilder()
-            .registerActivity(App2TransformActivity.class);
+            .registerActivity(App3FinalizeActivity.class);
         
         // Build and start the workflow runtime
         try (WorkflowRuntime runtime = builder.build()) {
-            System.out.println("App2Worker started - registered App2TransformActivity only");
-            System.out.println("App2 is ready to receive cross-app activity calls...");
+            System.out.println("App3Worker started - registered App3FinalizeActivity only");
+            System.out.println("App3 is ready to receive cross-app activity calls...");
             System.out.println("Waiting for cross-app activity calls...");
             runtime.start();
         }
