@@ -11,24 +11,24 @@
 limitations under the License.
 */
 
-package io.dapr.examples.workflows.crossapp;
+package io.dapr.examples.workflows.multiapp;
 
 import io.dapr.workflows.WorkflowActivity;
 import io.dapr.workflows.WorkflowActivityContext;
 
 /**
- * TransformActivity for App2 - transforms input to uppercase.
+ * FinalizeActivity for App3 - adds final processing.
  * This activity is called cross-app from the main workflow.
  */
-public class App2TransformActivity implements WorkflowActivity {
-  @Override
-  public Object run(WorkflowActivityContext context) {
-    String input = context.getInput(String.class);
-    var logger = context.getLogger();
-    logger.info("=== App2: TransformActivity called ===");
-    logger.info("Input: {}", input);
-    String result = input.toUpperCase() + " [TRANSFORMED BY APP2]";
-    logger.info("Output: {}", result);
-    return result;
-  }
+public class App3FinalizeActivity implements WorkflowActivity {
+    @Override
+    public Object run(WorkflowActivityContext context) {
+        String input = context.getInput(String.class);
+        var logger = context.getLogger();
+        logger.info("=== App3: FinalizeActivity called ===");
+        logger.info("Input: {}", input);
+        String result = input + " [FINALIZED BY APP3]";
+        logger.info("Output: {}", result);
+        return result;
+    }
 }

@@ -11,27 +11,27 @@
  * limitations under the License.
 */
 
-package io.dapr.it.testcontainers.workflows.crossapp;
+package io.dapr.it.testcontainers.workflows.multiapp;
 
 import io.dapr.workflows.Workflow;
 import io.dapr.workflows.WorkflowStub;
 import io.dapr.workflows.WorkflowTaskOptions;
 import org.slf4j.Logger;
 
-public class CrossAppWorkflow implements Workflow {
+public class MultiAppWorkflow implements Workflow {
   @Override
   public WorkflowStub create() {
     return ctx -> {
       Logger logger = ctx.getLogger();
       String instanceId = ctx.getInstanceId();
-      logger.info("Starting CrossAppWorkflow: {}", ctx.getName());
+      logger.info("Starting MultiAppWorkflow: {}", ctx.getName());
       logger.info("Instance ID: {}", instanceId);
 
       String input = ctx.getInput(String.class);
       logger.info("Workflow input: {}", input);
 
       // Call App2TransformActivity in app2
-      logger.info("Calling cross-app activity in 'app2'...");
+      logger.info("Calling multi-app activity in 'app2'...");
       String transformedByApp2 = ctx.callActivity(
           App2TransformActivity.class.getName(), 
           input,
@@ -40,7 +40,7 @@ public class CrossAppWorkflow implements Workflow {
       ).await();
 
       // Call App3FinalizeActivity in app3
-      logger.info("Calling cross-app activity in 'app3'...");
+      logger.info("Calling multi-app activity in 'app3'...");
       String finalizedByApp3 = ctx.callActivity(
           App3FinalizeActivity.class.getName(), 
           transformedByApp2,
@@ -48,7 +48,7 @@ public class CrossAppWorkflow implements Workflow {
           String.class
       ).await();
 
-      logger.info("Final cross-app activity result: {}", finalizedByApp3);
+      logger.info("Final multi-app activity result: {}", finalizedByApp3);
       ctx.complete(finalizedByApp3);
     };
   }
