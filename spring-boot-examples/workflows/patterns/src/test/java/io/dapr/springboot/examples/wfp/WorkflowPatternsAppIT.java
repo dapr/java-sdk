@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(classes = {TestWorkflowPatternsApplication.class, DaprTestContainersConfig.class,
         DaprAutoConfiguration.class, },
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-class WorkflowPatternsAppTests {
+class WorkflowPatternsAppIT {
 
   @Autowired
   private MicrocksContainersEnsemble ensemble;

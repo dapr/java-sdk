@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest(classes = {TestOrchestratorApplication.class, DaprTestContainersConfig.class, CustomersRestController.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
         properties = {"reuse=false", "tests.workers.enabled=true"})
-class OrchestratorAppTestsIT {
+class OrchestratorAppIT {
 
 
   @BeforeEach

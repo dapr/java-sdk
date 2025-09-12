@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         DaprAutoConfiguration.class, CustomerWorkflow.class, CustomerFollowupActivity.class,
         RegisterCustomerActivity.class, CustomerStore.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-class ProducerAppTests {
+class ProducerAppIT {
 
   private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
 

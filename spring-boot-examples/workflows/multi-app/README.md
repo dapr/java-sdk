@@ -1,6 +1,9 @@
-# Cross App (remote activities) workflow Example
+# Multi App workflow Example
 
-This example demonstrate how you can create distributed workflows where the orchestrator doesn't host the workflow activities. 
+This example demonstrate how you can create distributed workflows where the orchestrator doesn't host the workflow activities.
+
+For more documentation about how Multi App Workflows work [check the official documentation here](https://v1-16.docs.dapr.io/developing-applications/building-blocks/workflow/workflow-multi-app/).
+
 This example is composed by three Spring Boot applications: 
 - `orchestrator`: The `orchestrator` app contains the Dapr Workflow definition and expose REST endpoints to create and raise events against workflow instances.
 - `worker-one`: The `worker-one` app contains the `RegisterCustomerActivity` definition, which will be orchstrated by the `orchestrator` app.
@@ -71,7 +74,18 @@ performs the following orchestration when a new workflow instance is created:
   curl -X POST localhost:8080/customers/output  -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
   ```
 
-## Testing remote activities
+## Testing Multi App Workflows
+
+Testing becomes a complex task when you are dealing with multiple Spring Boot applications. For testing this workflow, 
+we rely on [Testcontainers](https://testcontainers.com) to create the entire setup which enable us to run the workflow end to end.
+
+You can find the end-to-end test in the [OrchestratorAppTestsIT.java]() class inside the `orchestrator` application. 
+This test interact with the application REST endpoints to validate their correct execution. 
+
+But the magic behind the test can be located in the `DaprTestContainersConfig.class` which defines the configuration for 
+all the Dapr containers and the `worker-one` and `worker-two` applications.
+
+
 
 
   

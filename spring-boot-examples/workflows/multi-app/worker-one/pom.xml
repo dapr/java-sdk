@@ -5,13 +5,13 @@
 
   <parent>
     <groupId>io.dapr</groupId>
-    <artifactId>remote-activities</artifactId>
+    <artifactId>multi-app</artifactId>
     <version>1.17.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>orchestrator</artifactId>
-  <name>orchestrator</name>
-  <description>Spring Boot, Testcontainers and Dapr Integration Examples :: Orchestrator App</description>
+  <artifactId>worker-one</artifactId>
+  <name>worker-one</name>
+  <description>Spring Boot, Testcontainers and Dapr Integration Examples :: Worker 1 App</description>
 
   <dependencies>
     <dependency>

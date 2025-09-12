@@ -19,7 +19,7 @@
 
   <modules>
     <module>patterns</module>
-    <module>remote-activities</module>
+    <module>multi-app</module>
   </modules>
 
   <dependencyManagement>
