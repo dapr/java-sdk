@@ -53,13 +53,13 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17 ]
-        spring-boot-version: [  3.4.3 ]
-        spring-boot-display-version: [ 3.4.x ]
+        spring-boot-version: [  3.5.5 ]
+        spring-boot-display-version: [ 3.5.x ]
         experimental: [ false ]
         include:
           - java: 17
-            spring-boot-version: 3.3.9
-            spring-boot-display-version: 3.3.x
+            spring-boot-version: 3.4.9
+            spring-boot-display-version: 3.4.x
             experimental: false
     env:
       GOVER: "1.20"
