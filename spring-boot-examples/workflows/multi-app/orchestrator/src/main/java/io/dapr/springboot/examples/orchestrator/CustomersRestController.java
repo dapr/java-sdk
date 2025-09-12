@@ -67,10 +67,9 @@ public class CustomersRestController {
     String workflowIdForCustomer = customersWorkflows.get(customer.getCustomerName());
     if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
       return "There is no workflow associated with customer: " + customer.getCustomerName();
-    } else {
-      daprWorkflowClient.raiseEvent(workflowIdForCustomer, "CustomerReachOut", customer);
-      return "Customer Follow-up requested";
     }
+    daprWorkflowClient.raiseEvent(workflowIdForCustomer, "CustomerReachOut", customer);
+    return "Customer Follow-up requested";
   }
 
   /**
@@ -84,11 +83,10 @@ public class CustomersRestController {
     String workflowIdForCustomer = customersWorkflows.get(customer.getCustomerName());
     if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
       return "N/A";
-    } else {
-      WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
-      assert instanceState != null;
-      return "Workflow for Customer: " + customer.getCustomerName() + " is " + instanceState.getRuntimeStatus().name();
     }
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+    assert instanceState != null;
+    return "Workflow for Customer: " + customer.getCustomerName() + " is " + instanceState.getRuntimeStatus().name();
   }
 
   /**
@@ -102,11 +100,10 @@ public class CustomersRestController {
     String workflowIdForCustomer = customersWorkflows.get(customer.getCustomerName());
     if (workflowIdForCustomer == null || workflowIdForCustomer.isEmpty()) {
       return null;
-    } else {
-      WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
-      assert instanceState != null;
-      return instanceState.readOutputAs(Customer.class);
     }
+    WorkflowInstanceStatus instanceState = daprWorkflowClient.getInstanceState(workflowIdForCustomer, true);
+    assert instanceState != null;
+    return instanceState.readOutputAs(Customer.class);
   }
 
 
