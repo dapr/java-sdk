@@ -124,7 +124,7 @@ public class DaprTestContainersConfig {
                                                 DaprPlacementContainer daprPlacementContainer,
                                                 DaprSchedulerContainer daprSchedulerContainer){
     return new GenericContainer<>("openjdk:17-jdk-slim")
-            .withCopyFileToContainer(MountableFile.forHostPath("../worker-one/target/*.jar"), "/app/worker-one.jar")
+            .withCopyFileToContainer(MountableFile.forHostPath("../worker-one/target"), "/app")
             .withWorkingDirectory("/app")
             .withCommand("java",
                     "-Ddapr.grpc.endpoint=worker-one:50001",
