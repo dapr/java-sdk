@@ -11,38 +11,32 @@
 limitations under the License.
 */
 
-package io.dapr.springboot.examples.workerone;
+package io.dapr.springboot.examples.workertwo;
 
-import io.dapr.client.DaprClient;
-import io.dapr.testcontainers.DaprContainer;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.io.IOException;
 
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest(classes = {TestWorkerOneApplication.class, DaprTestContainersConfig.class},
+@SpringBootTest(classes = {TestWorkerTwoApplication.class, DaprTestContainersConfig.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-class WorkerOneAppTests {
+class WorkerTwoAppIT {
 
   @BeforeEach
   void setUp() {
-    RestAssured.baseURI = "http://localhost:" + 8081;
-    org.testcontainers.Testcontainers.exposeHostPorts(8081);
+    RestAssured.baseURI = "http://localhost:" + 8082;
+    org.testcontainers.Testcontainers.exposeHostPorts(8082);
 
   }
 
   @Test
-  void testWorkerOne() {
-    //Test the logic of the worker one
+  void testWorkerTwo()  {
+    //Test the logic of the worker two
   }
 
 }

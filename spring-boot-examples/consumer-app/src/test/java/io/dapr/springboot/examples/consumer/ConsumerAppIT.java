@@ -37,7 +37,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 @SpringBootTest(classes = {TestConsumerApplication.class, DaprTestContainersConfig.class,
         ConsumerAppTestConfiguration.class, DaprAutoConfiguration.class},
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-class ConsumerAppTests {
+class ConsumerAppIT {
 
   private static final String SUBSCRIPTION_MESSAGE_PATTERN = ".*app is subscribed to the following topics.*";
 

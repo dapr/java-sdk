@@ -55,9 +55,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.2.2</version>
         <configuration>
           <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- Exclude full package from test coverage -->
+            <exclude>**/*io/dapr/springboot/examples/**</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
