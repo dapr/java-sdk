@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@EnableDaprWorkflows
 public class CustomersRestController {
 
   private final Logger logger = LoggerFactory.getLogger(CustomersRestController.class);

@@ -13,11 +13,13 @@ limitations under the License.
 
 package io.dapr.springboot.examples.orchestrator;
 
+import io.dapr.spring.workflows.config.EnableDaprWorkflows;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 
 @SpringBootApplication
+@EnableDaprWorkflows
 public class OrchestratorApplication {
 
   public static void main(String[] args) {

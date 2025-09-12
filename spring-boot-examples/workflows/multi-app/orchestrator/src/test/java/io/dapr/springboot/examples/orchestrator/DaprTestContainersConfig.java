@@ -27,7 +27,6 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.shaded.org.checkerframework.checker.nullness.qual.Nullable;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -113,11 +112,6 @@ public class DaprTestContainersConfig {
             .withPlacementContainer(daprPlacementContainer)
             .withSchedulerContainer(daprSchedulerContainer)
             .withComponent(new Component("kvstore", "state.redis", "v1", getRedisProps()))
-//            .withDaprLogLevel(DaprLogLevel.DEBUG)
-//            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-//            .withAppPort(8081)
-//            .withAppHealthCheckPath("/actuator/health")
-//            .withAppChannelAddress("host.testcontainers.internal")
             .dependsOn(daprPlacementContainer)
             .dependsOn(daprSchedulerContainer)
             .dependsOn(redisContainer);
@@ -159,11 +153,6 @@ public class DaprTestContainersConfig {
             .withPlacementContainer(daprPlacementContainer)
             .withSchedulerContainer(daprSchedulerContainer)
             .withComponent(new Component("kvstore", "state.redis", "v1", getRedisProps()))
-//            .withDaprLogLevel(DaprLogLevel.DEBUG)
-//            .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
-//            .withAppPort(8082)
-//            .withAppHealthCheckPath("/actuator/health")
-//            .withAppChannelAddress("host.testcontainers.internal")
             .dependsOn(daprPlacementContainer)
             .dependsOn(daprSchedulerContainer)
             .dependsOn(redisContainer);
@@ -214,8 +203,6 @@ public class DaprTestContainersConfig {
             .withPlacementContainer(daprPlacementContainer)
             .withSchedulerContainer(daprSchedulerContainer)
             .withComponent(new Component("kvstore", "state.redis", "v1", getRedisProps()))
-            //.withDaprLogLevel(DaprLogLevel.DEBUG)
-            //.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
             .withAppPort(8080)
             .withAppHealthCheckPath("/actuator/health")
             .withAppChannelAddress("host.testcontainers.internal")

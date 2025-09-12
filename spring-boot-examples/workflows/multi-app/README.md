@@ -45,24 +45,28 @@ performs the following orchestration when a new workflow instance is created:
 
 - Call the `RegisterCustomerActivity` activity which can be found inside the `worker-one` application.  
   - You can find in the workflow definition the configuration to make reference to an Activity that is hosted by a different Dapr application.
-    ```
-            customer = ctx.callActivity("io.dapr.springboot.examples.workerone.RegisterCustomerActivity", 
-                                            customer,
-                                            new WorkflowTaskOptions("worker-one"), 
-                                            Customer.class).
-                                            await();
+    ```java
+      customer = ctx.callActivity("io.dapr.springboot.examples.workerone.RegisterCustomerActivity", 
+                                  customer,
+                                  new WorkflowTaskOptions("worker-one"), 
+                                  Customer.class).
+                                  await();
     ```
 - Wait for an external event of type `CustomerReachOut` with a timeout of 5 minutes:  
+  ```java
+    ctx.waitForExternalEvent("CustomerReachOut", Duration.ofMinutes(5), Customer.class).await();
   ```
-  ctx.waitForExternalEvent("CustomerReachOut", Duration.ofMinutes(5), Customer.class).await();
-  ```
-  You can call the following endpoint on the `orchestrator` app to raise the external event: 
-  ```
-   curl -X POST localhost:8080/customers/followup -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
+- You can check the status of the workflow for a given customer by sending the following request:
+  ```shell
+    curl -X POST localhost:8080/customers/status -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
+  ``` 
+- You can call the following endpoint on the `orchestrator` app to raise the external event: 
+  ```shell
+    curl -X POST localhost:8080/customers/followup -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
   ```
 - When the event is received, the workflow move forward to the last activity called `CustomerFollowUpActivity`, that can be found on the `worker-two` app.
-  ```
-  customer = ctx.callActivity("io.dapr.springboot.examples.workertwo.CustomerFollowupActivity",
+  ```java
+    customer = ctx.callActivity("io.dapr.springboot.examples.workertwo.CustomerFollowupActivity",
                                 customer, 
                                 new WorkflowTaskOptions("worker-two"), 
                                 Customer.class).
@@ -70,8 +74,8 @@ performs the following orchestration when a new workflow instance is created:
   ```
 - The workflow completes by handing out the final version of the `Customer` object that has been modified the workflow activities. You can retrieve the `Customer` payload
   by running the following command: 
-  ```
-  curl -X POST localhost:8080/customers/output  -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
+  ```shell
+    curl -X POST localhost:8080/customers/output  -H 'Content-Type: application/json' -d '{ "customerName": "salaboy" }'
   ```
 
 ## Testing Multi App Workflows
@@ -79,11 +83,15 @@ performs the following orchestration when a new workflow instance is created:
 Testing becomes a complex task when you are dealing with multiple Spring Boot applications. For testing this workflow, 
 we rely on [Testcontainers](https://testcontainers.com) to create the entire setup which enable us to run the workflow end to end.
 
-You can find the end-to-end test in the [OrchestratorAppTestsIT.java]() class inside the `orchestrator` application. 
+You can find the end-to-end test in the [`OrchestratorAppIT.java`](orchestrator/src/test/java/io/dapr/springboot/examples/orchestrator/OrchestratorAppIT.java) class inside the `orchestrator` application. 
 This test interact with the application REST endpoints to validate their correct execution. 
 
-But the magic behind the test can be located in the `DaprTestContainersConfig.class` which defines the configuration for 
-all the Dapr containers and the `worker-one` and `worker-two` applications.
+But the magic behind the test can be located in the [`DaprTestContainersConfig.class`](orchestrator/src/test/java/io/dapr/springboot/examples/orchestrator/DaprTestContainersConfig.java) which defines the configuration for 
+all the Dapr containers and the `worker-one` and `worker-two` applications. Check this class to gain a deeper understand how to configure 
+multiple Dapr-enabled applications. 
+
+
+
 
 
 

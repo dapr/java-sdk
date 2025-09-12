@@ -94,8 +94,6 @@ public class DaprTestContainersConfig {
             .withReusablePlacement(reuse)
             .withReusableScheduler(reuse)
             .withComponent(new Component("kvstore", "state.redis", "v1", redisProps))
-//             .withDaprLogLevel(DaprLogLevel.DEBUG)
-//             .withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
             .withAppPort(8082)
             .withAppHealthCheckPath("/actuator/health")
             .withAppChannelAddress("host.testcontainers.internal")
