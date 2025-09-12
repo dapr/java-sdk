@@ -116,6 +116,7 @@ public class DaprTestContainersConfig {
             .dependsOn(daprSchedulerContainer)
             .dependsOn(redisContainer);
   }
+
   @Bean
   @ConditionalOnProperty(prefix = "tests", name = "workers.enabled", havingValue = "true")
   public GenericContainer<?> workerOneContainer(Network daprNetwork,
@@ -123,13 +124,13 @@ public class DaprTestContainersConfig {
                                                 DaprPlacementContainer daprPlacementContainer,
                                                 DaprSchedulerContainer daprSchedulerContainer){
     return new GenericContainer<>("openjdk:17-jdk-slim")
-            .withCopyFileToContainer(MountableFile.forHostPath("../worker-one/target"), "/app")
+            .withCopyFileToContainer(MountableFile.forHostPath("../worker-one/target/*.jar"), "/app/worker-one.jar")
             .withWorkingDirectory("/app")
             .withCommand("java",
                     "-Ddapr.grpc.endpoint=worker-one:50001",
                     "-Ddapr.http.endpoint=worker-one:3500",
                     "-jar",
-                    "worker-one-1.17.0-SNAPSHOT.jar")
+                    "worker-one.jar")
             .withNetwork(daprNetwork)
             .dependsOn(workerOneDapr)
             .dependsOn(daprPlacementContainer)
@@ -171,7 +172,7 @@ public class DaprTestContainersConfig {
                     "-Ddapr.grpc.endpoint=worker-two:50001",
                     "-Ddapr.http.endpoint=worker-two:3500",
                     "-jar",
-                    "worker-two-1.17.0-SNAPSHOT.jar")
+                    "worker-two.jar")
             .withNetwork(daprNetwork)
             .dependsOn(workerTwoDapr)
             .dependsOn(daprPlacementContainer)
@@ -179,7 +180,6 @@ public class DaprTestContainersConfig {
             .waitingFor(Wait.forLogMessage(".*Started WorkerTwoApplication.*", 1))
             .withLogConsumer(outputFrame -> System.out.println("WorkerTwoApplication: " + outputFrame.getUtf8String()));
   }
-
 
   @Bean
   public RedisContainer redisContainer(Network daprNetwork, Environment env){
@@ -210,7 +210,5 @@ public class DaprTestContainersConfig {
             .dependsOn(daprSchedulerContainer)
             .dependsOn(redisContainer);
   }
-
-
 
 }

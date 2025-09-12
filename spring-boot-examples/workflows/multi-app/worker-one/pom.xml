@@ -53,6 +53,9 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <finalName>worker-one</finalName>
+        </configuration>
         <executions>
           <execution>
             <goals>

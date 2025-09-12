@@ -35,7 +35,6 @@ import static io.dapr.testcontainers.DaprContainerConstants.DAPR_RUNTIME_IMAGE_T
 @TestConfiguration(proxyBeanMethods = false)
 public class DaprTestContainersConfig {
 
-
   @Bean
   public Network getDaprNetwork(Environment env) {
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
@@ -70,7 +69,6 @@ public class DaprTestContainersConfig {
     }
   }
 
-
   @Bean
   public RedisContainer redisContainer(Network daprNetwork, Environment env){
     boolean reuse = env.getProperty("reuse", Boolean.class, false);
@@ -100,9 +98,5 @@ public class DaprTestContainersConfig {
             .withAppChannelAddress("host.testcontainers.internal")
             .dependsOn(redisContainer);
   }
-
-
-
-
 
 }

@@ -87,7 +87,6 @@ public class DaprTestContainersConfig {
     redisProps.put("redisPassword", "");
     redisProps.put("actorStateStore", String.valueOf(true));
 
-
     return new DaprContainer(DAPR_RUNTIME_IMAGE_TAG)
             .withAppName("worker-two")
             .withNetwork(daprNetwork)

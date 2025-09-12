@@ -106,7 +106,5 @@ public class CustomersRestController {
     return instanceState.readOutputAs(Customer.class);
   }
 
-
-
 }
 

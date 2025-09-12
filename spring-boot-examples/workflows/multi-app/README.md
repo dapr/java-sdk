@@ -1,15 +1,15 @@
 # Multi App workflow Example
 
-This example demonstrate how you can create distributed workflows where the orchestrator doesn't host the workflow activities.
+This example demonstrates how you can create distributed workflows where the orchestrator doesn't host the workflow activities.
 
 For more documentation about how Multi App Workflows work [check the official documentation here](https://v1-16.docs.dapr.io/developing-applications/building-blocks/workflow/workflow-multi-app/).
 
 This example is composed by three Spring Boot applications: 
 - `orchestrator`: The `orchestrator` app contains the Dapr Workflow definition and expose REST endpoints to create and raise events against workflow instances.
-- `worker-one`: The `worker-one` app contains the `RegisterCustomerActivity` definition, which will be orchstrated by the `orchestrator` app.
-- `worker-two`: The `worker-two` app contains the `CustomerFollowupActivity` definition, which will be orchstrated by the `orchestrator` app.
+- `worker-one`: The `worker-one` app contains the `RegisterCustomerActivity` definition, which will be called by the `orchestrator` app.
+- `worker-two`: The `worker-two` app contains the `CustomerFollowupActivity` definition, which will be called by the `orchestrator` app.
 
-To start the applications you need to run the following commands on separate terminals, starting from the `remote-activities` directory. 
+To start the applications you need to run the following commands on separate terminals, starting from the `multi-app` directory. 
 To start the `orchestrator` app run: 
 ```bash
 cd orchestrator/
@@ -89,11 +89,3 @@ This test interact with the application REST endpoints to validate their correct
 But the magic behind the test can be located in the [`DaprTestContainersConfig.class`](orchestrator/src/test/java/io/dapr/springboot/examples/orchestrator/DaprTestContainersConfig.java) which defines the configuration for 
 all the Dapr containers and the `worker-one` and `worker-two` applications. Check this class to gain a deeper understand how to configure 
 multiple Dapr-enabled applications. 
-
-
-
-
-
-
-
-  
