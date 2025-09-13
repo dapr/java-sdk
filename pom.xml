@@ -42,7 +42,7 @@
     <spotbugs.fail>true</spotbugs.fail>
     <spotbugs.exclude.filter.file>../spotbugs-exclude.xml</spotbugs.exclude.filter.file>
     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
-    <failsafe.version>3.2.2</failsafe.version>
+    <failsafe.version>3.5.3</failsafe.version>
     <surefire.version>3.2.2</surefire.version>
     <junit-bom.version>5.11.4</junit-bom.version>
     <snakeyaml.version>2.0</snakeyaml.version>
@@ -665,6 +665,7 @@
       <id>integration-tests</id>
       <modules>
         <module>sdk-tests</module>
+        <module>spring-boot-examples</module>
       </modules>
         <build>
             <plugins>
