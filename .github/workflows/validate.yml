@@ -123,8 +123,8 @@ jobs:
           mm.py README.md
         env:
           DOCKER_HOST: ${{steps.setup_docker.outputs.sock}}
-      - name: Validate Spring Boot Workflow examples
-        working-directory: ./spring-boot-examples/workflows
+      - name: Validate Spring Boot Workflow Patterns examples
+        working-directory: ./spring-boot-examples/workflows/patterns
         run: |
           mm.py README.md
         env:
