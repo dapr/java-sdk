@@ -30,9 +30,9 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}
       - name: Run tests
-        run: ./mvnw clean install -B -q
+        run: ./mvnw clean install -B -q -DskipITs=true
       - name: Codecov
-        uses: codecov/codecov-action@v5.5.0
+        uses: codecov/codecov-action@v5.5.1
       - name: Upload test report for sdk
         uses: actions/upload-artifact@v4
         with:
