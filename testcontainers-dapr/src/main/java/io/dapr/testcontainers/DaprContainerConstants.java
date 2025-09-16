@@ -14,7 +14,7 @@ limitations under the License.
 package io.dapr.testcontainers;
 
 public interface DaprContainerConstants {
-  String DAPR_VERSION = "1.16.0-rc.8";
+  String DAPR_VERSION = "1.16.0";
   String DAPR_RUNTIME_IMAGE_TAG = "daprio/daprd:" + DAPR_VERSION;
   String DAPR_PLACEMENT_IMAGE_TAG = "daprio/placement:" + DAPR_VERSION;
   String DAPR_SCHEDULER_IMAGE_TAG = "daprio/scheduler:" + DAPR_VERSION;
