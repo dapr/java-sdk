@@ -30,9 +30,9 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JDK_VER }}
       - name: Run tests
-        run: ./mvnw clean install -B -q
+        run: ./mvnw clean install -B -q -DskipITs=true
       - name: Codecov
-        uses: codecov/codecov-action@v5.5.0
+        uses: codecov/codecov-action@v5.5.1
       - name: Upload test report for sdk
         uses: actions/upload-artifact@v4
         with:
@@ -89,7 +89,7 @@ jobs:
       run: wget -q ${{ env.DAPR_INSTALL_URL }} -O - | /bin/bash -s ${{ env.DAPR_CLI_VER }}
     - name: Set up Go ${{ env.GOVER }}
       if: env.DAPR_REF != '' || env.DAPR_CLI_REF != ''
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ env.GOVER }}
     - name: Checkout Dapr CLI repo to override dapr command.
